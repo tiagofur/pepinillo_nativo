@@ -8,8 +8,6 @@ import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,14 +37,14 @@ class TaskRepository @Inject constructor(
         taskDao.getActiveCount()
             .catch { e -> Log.e(TAG, "Error loading active count", e); emit(0) }
 
-    suspend fun addTask(task: Task) {
+    suspend fun addTask(task: Task): Result<Unit> =
         runCatching { taskDao.insertTask(task.toEntity()) }
             .onFailure { Log.e(TAG, "Error adding task", it) }
-    }
 
-    suspend fun toggleCompletion(taskId: String) {
+    suspend fun toggleCompletion(taskId: String): Result<Unit> =
         runCatching {
-            val entity = taskDao.getTaskById(taskId) ?: return
+            val entity = taskDao.getTaskById(taskId)
+                ?: throw IllegalStateException("Task $taskId not found")
             taskDao.updateTask(
                 entity.copy(
                     isCompleted = !entity.isCompleted,
@@ -55,12 +53,10 @@ class TaskRepository @Inject constructor(
                 ),
             )
         }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }
-    }
 
-    suspend fun deleteTask(taskId: String) {
+    suspend fun deleteTask(taskId: String): Result<Unit> =
         runCatching { taskDao.deleteTaskById(taskId) }
             .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }
-    }
 
     suspend fun getTaskById(taskId: String): Task? =
         runCatching { taskDao.getTaskById(taskId)?.toDomain() }

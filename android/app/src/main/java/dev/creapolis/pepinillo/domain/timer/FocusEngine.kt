@@ -4,12 +4,11 @@ import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.di.ApplicationScope
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,12 +25,12 @@ class FocusEngine @Inject constructor(
     private val taskRepository: TaskRepository,
     private val prefsRepo: UserPreferencesRepository,
     private val feedbackManager: FeedbackManager,
+    @ApplicationScope private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(FocusTimerState())
     val state: StateFlow<FocusTimerState> = _state.asStateFlow()
 
     private var timerJob: Job? = null
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     suspend fun selectMode(mode: FocusMode) {
         if (_state.value.status != TimerStatus.Idle) return
@@ -121,18 +120,16 @@ class FocusEngine @Inject constructor(
 
     fun stop() {
         timerJob?.cancel()
-        val s = _state.value
-        if (s.elapsedMillis > 0 && s.sessionStartTime > 0) {
-            scope.launch {
-                recordSession(s)
-            }
-        }
+        val snapshot = _state.value
         scope.launch {
+            if (snapshot.elapsedMillis > 0 && snapshot.sessionStartTime > 0) {
+                recordSession(snapshot)
+            }
             val prefs = prefsRepo.preferences.first()
             _state.value = FocusTimerState(
-                mode = s.mode,
-                totalMillis = getTotalMillis(s.mode, prefs),
-                linkedTaskId = s.linkedTaskId,
+                mode = snapshot.mode,
+                totalMillis = getTotalMillis(snapshot.mode, prefs),
+                linkedTaskId = snapshot.linkedTaskId,
             )
         }
     }

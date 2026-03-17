@@ -6,9 +6,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Task
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -24,6 +27,7 @@ data class TasksUiState(
     val tasks: List<Task> = emptyList(),
     val selectedFilter: TaskFilter = TaskFilter.All,
     val showAddDialog: Boolean = false,
+    val isLoading: Boolean = true,
 )
 
 val TasksUiState.filteredTasks: List<Task>
@@ -44,6 +48,9 @@ class TasksViewModel @Inject constructor(
     private val _selectedFilter = MutableStateFlow(TaskFilter.All)
     private val _showAddDialog = MutableStateFlow(false)
 
+    private val _errorEvent = MutableSharedFlow<String>()
+    val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
+
     val uiState: StateFlow<TasksUiState> = combine(
         taskRepository.getAllTasks(),
         _selectedFilter,
@@ -53,6 +60,7 @@ class TasksViewModel @Inject constructor(
             tasks = tasks,
             selectedFilter = filter,
             showAddDialog = showDialog,
+            isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TasksUiState())
 
@@ -61,7 +69,9 @@ class TasksViewModel @Inject constructor(
     }
 
     fun toggleTaskCompletion(taskId: String) = viewModelScope.launch {
-        taskRepository.toggleCompletion(taskId)
+        taskRepository.toggleCompletion(taskId).onFailure {
+            _errorEvent.emit("Failed to update task")
+        }
     }
 
     fun showAddDialog() {
@@ -81,12 +91,16 @@ class TasksViewModel @Inject constructor(
                     energyLevel = energyLevel,
                     estimatedPomodoros = estimatedPomodoros,
                 ),
-            )
+            ).onFailure {
+                _errorEvent.emit("Failed to add task")
+            }
             _showAddDialog.value = false
         }
     }
 
     fun deleteTask(taskId: String) = viewModelScope.launch {
-        taskRepository.deleteTask(taskId)
+        taskRepository.deleteTask(taskId).onFailure {
+            _errorEvent.emit("Failed to delete task")
+        }
     }
 }

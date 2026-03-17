@@ -22,4 +22,8 @@ data class DashboardStats(
     val longestSessionMinutes: Int = 0,
     val weeklyData: List<DailyFocus> = emptyList(),
     val modeBreakdown: List<ModeUsage> = emptyList(),
+    val isLoading: Boolean = true,
 )
+
+val DashboardStats.isEmpty: Boolean
+    get() = todayMinutes == 0 && weekMinutes == 0 && currentStreak == 0 && bestStreak == 0

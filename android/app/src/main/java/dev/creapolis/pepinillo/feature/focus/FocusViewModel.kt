@@ -73,10 +73,17 @@ class FocusViewModel @Inject constructor(
         viewModelScope.launch {
             focusEngine.state.collect { state ->
                 val taskId = state.linkedTaskId
-                _linkedTaskName.value = if (taskId != null) {
-                    taskRepository.getTaskById(taskId)?.title
+                if (taskId != null) {
+                    val task = taskRepository.getTaskById(taskId)
+                    if (task != null) {
+                        _linkedTaskName.value = task.title
+                    } else {
+                        // Task was deleted — auto-unlink
+                        focusEngine.linkTask(null)
+                        _linkedTaskName.value = null
+                    }
                 } else {
-                    null
+                    _linkedTaskName.value = null
                 }
             }
         }

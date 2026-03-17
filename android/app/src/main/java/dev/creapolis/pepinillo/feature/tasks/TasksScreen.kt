@@ -1,10 +1,7 @@
 package dev.creapolis.pepinillo.feature.tasks
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,25 +14,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircleOutline
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -43,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.feature.tasks.components.AddTaskDialog
 import dev.creapolis.pepinillo.feature.tasks.components.TaskItem
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun TasksScreen(
@@ -51,6 +52,16 @@ fun TasksScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val filteredTasks = uiState.filteredTasks
+
+    // Error snackbar
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        viewModel.errorEvent.collect { msg ->
+            errorMessage = msg
+            delay(3000)
+            errorMessage = null
+        }
+    }
 
     // Add task dialog
     if (uiState.showAddDialog) {
@@ -61,6 +72,13 @@ fun TasksScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
+        if (uiState.isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -149,6 +167,17 @@ fun TasksScreen(
                 imageVector = Icons.Rounded.Add,
                 contentDescription = "Add task",
             )
+        }
+
+        // ── Error Snackbar ──
+        errorMessage?.let { msg ->
+            Snackbar(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp),
+            ) {
+                Text(text = msg)
+            }
         }
     }
 }

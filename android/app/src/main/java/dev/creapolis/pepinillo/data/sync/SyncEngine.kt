@@ -64,15 +64,18 @@ class SyncEngine @Inject constructor(
 
                 // Mark pushed tasks as synced
                 for (task in dirtyTasks) {
+                    if (task.isDeleted) continue
                     val serverTask = response.tasks.find { it.syncId == task.id }
-                    if (serverTask != null) {
-                        taskDao.markSynced(task.id, now, serverTask.id)
-                    }
+                    val serverId = serverTask?.id ?: (task.serverId ?: 0)
+                    taskDao.markSynced(task.id, now, serverId)
                 }
 
                 // Merge server tasks into local DB (last-write-wins)
                 for (serverTask in response.tasks) {
-                    val local = taskDao.getTaskById(serverTask.syncId)
+                    val localBySyncId = serverTask.syncId.takeIf { it.isNotEmpty() }
+                        ?.let { taskDao.getTaskById(it) }
+                    val local = localBySyncId
+                        ?: taskDao.getTaskByServerId(serverTask.id)
                     if (local == null) {
                         // New task from server
                         taskDao.insertTask(serverTask.toEntity())
@@ -141,7 +144,7 @@ class SyncEngine @Inject constructor(
     )
 
     private fun TaskDto.toEntity() = TaskEntity(
-        id = syncId.ifEmpty { java.util.UUID.randomUUID().toString() },
+        id = syncId.ifEmpty { "server-$id" },
         title = title ?: "",
         notes = description,
         isCompleted = isFinished,

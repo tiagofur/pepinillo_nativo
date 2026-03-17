@@ -20,6 +20,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import dev.creapolis.pepinillo.BuildConfig
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
@@ -27,8 +28,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    // TODO: Replace with actual backend URL
-    private const val BASE_URL = "http://10.0.2.2:8080/api/"
+    private val BASE_URL = BuildConfig.BASE_URL
 
     @Provides
     @Singleton

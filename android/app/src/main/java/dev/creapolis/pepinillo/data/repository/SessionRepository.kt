@@ -28,6 +28,7 @@ class SessionRepository @Inject constructor(
         linkedTaskId: String? = null,
         phase: String? = null,
     ) {
+        if (durationMillis <= 0 || startTime <= 0 || endTime <= startTime) return
         runCatching {
             // Insert the session
             sessionDao.insertSession(
@@ -93,12 +94,12 @@ class SessionRepository @Inject constructor(
         cal.set(Calendar.MILLISECOND, 0)
         var expected = cal.timeInMillis
         var streak = 0
-        val oneDay = 24 * 60 * 60 * 1000L
 
         for (date in sortedDates) {
             if (date == expected) {
                 streak++
-                expected -= oneDay
+                cal.add(Calendar.DAY_OF_YEAR, -1)
+                expected = cal.timeInMillis
             } else if (date < expected) {
                 break
             }
@@ -109,11 +110,13 @@ class SessionRepository @Inject constructor(
     fun calculateBestStreak(allDays: List<DailyStatsEntity>): Int {
         if (allDays.isEmpty()) return 0
         val sortedDates = allDays.map { it.date }.sorted()
-        val oneDay = 24 * 60 * 60 * 1000L
         var best = 1
         var current = 1
+        val cal = Calendar.getInstance()
         for (i in 1 until sortedDates.size) {
-            if (sortedDates[i] - sortedDates[i - 1] == oneDay) {
+            cal.timeInMillis = sortedDates[i - 1]
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+            if (sortedDates[i] == cal.timeInMillis) {
                 current++
                 best = maxOf(best, current)
             } else {

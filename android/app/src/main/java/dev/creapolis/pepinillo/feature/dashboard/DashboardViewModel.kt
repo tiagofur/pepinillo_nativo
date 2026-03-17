@@ -88,6 +88,7 @@ class DashboardViewModel @Inject constructor(
             longestSessionMinutes = longestSession,
             weeklyData = weeklyData,
             modeBreakdown = modeBreakdown,
+            isLoading = false,
         )
     }
 
