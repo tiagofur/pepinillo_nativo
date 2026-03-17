@@ -3,9 +3,12 @@ package dev.creapolis.pepinillo.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.wearable.Wearable
 import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearMessageSender
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class WearViewModel(application: Application) : AndroidViewModel(application) {
     private val sender = WearMessageSender(application)
@@ -16,6 +19,15 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     val pendingCommandCount = WearDataStore.pendingCommandCount
     val lastSyncAtMillis = WearDataStore.lastSyncAtMillis
     val diagnostics = WearDataStore.diagnostics
+
+    init {
+        viewModelScope.launch {
+            while (true) {
+                refreshNodeDiagnostics()
+                delay(5_000)
+            }
+        }
+    }
 
     fun startTimer(mode: String) {
         viewModelScope.launch { sender.startTimer(mode) }
@@ -35,5 +47,21 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
 
     fun completeTask(taskId: String) {
         viewModelScope.launch { sender.completeTask(taskId) }
+    }
+
+    private suspend fun refreshNodeDiagnostics() {
+        val nodes = runCatching {
+            Wearable.getNodeClient(getApplication()).connectedNodes.await()
+        }.getOrElse { error ->
+            WearDataStore.recordSyncFailure("node_check: ${error.javaClass.simpleName}")
+            emptyList()
+        }
+
+        WearDataStore.updateConnectedNodes(
+            count = nodes.size,
+            names = nodes.mapNotNull { node ->
+                node.displayName?.takeIf { it.isNotBlank() } ?: node.id.takeIf { it.isNotBlank() }
+            },
+        )
     }
 }

@@ -54,6 +54,13 @@ object WearDataStore {
         )
     }
 
+    fun updateConnectedNodes(count: Int, names: List<String>) {
+        _diagnostics.value = _diagnostics.value.copy(
+            connectedNodeCount = count.coerceAtLeast(0),
+            connectedNodeNames = names.filter { it.isNotBlank() },
+        )
+    }
+
     fun resetDiagnostics() {
         _diagnostics.value = WearDiagnosticsState()
     }
@@ -105,5 +112,7 @@ data class WearDiagnosticsState(
     val syncFailures: Int = 0,
     val flushAttempts: Int = 0,
     val flushFailures: Int = 0,
+    val connectedNodeCount: Int = 0,
+    val connectedNodeNames: List<String> = emptyList(),
     val lastError: String? = null,
 )

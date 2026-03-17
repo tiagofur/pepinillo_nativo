@@ -59,6 +59,15 @@ fun DiagnosticsScreen(
             )
         }
         item { Text("Conexion: ${if (timerState.isConnected) "Activa" else "Caida"}") }
+        item { Text("Peers Data Layer: ${diagnostics.connectedNodeCount}") }
+        diagnostics.connectedNodeNames.takeIf { it.isNotEmpty() }?.let { names ->
+            item {
+                Text(
+                    text = "Nodos: ${names.joinToString()}",
+                    style = MaterialTheme.typography.caption3,
+                )
+            }
+        }
         item { Text("Timer: ${timerState.status} · ${timerState.displayTime}") }
         item { Text("Modo/Fase: ${timerState.mode} · ${timerState.phaseLabel}") }
         item { Text("Cola offline: $pendingCommandCount") }
