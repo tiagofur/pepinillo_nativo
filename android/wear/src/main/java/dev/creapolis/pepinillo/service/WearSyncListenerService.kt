@@ -63,6 +63,10 @@ class WearSyncListenerService : WearableListenerService() {
             override fun refreshWearSurfaces() {
                 this@WearSyncListenerService.refreshWearSurfaces()
             }
+
+            override fun recordSyncEvent() {
+                WearDataStore.recordSyncEvent()
+            }
         },
     )
 
@@ -125,7 +129,10 @@ class WearSyncListenerService : WearableListenerService() {
         super.onPeerConnected(peer)
         scope.launch {
             runCatching { WearMessageSender(this@WearSyncListenerService).flushPendingCommands() }
-                .onFailure { e -> Log.w(TAG, "Failed to flush pending commands", e) }
+                .onFailure { e ->
+                    Log.w(TAG, "Failed to flush pending commands", e)
+                    WearDataStore.recordSyncFailure("flush_pending: ${e.javaClass.simpleName}")
+                }
 
             runCatching {
                 val buffer = Wearable.getDataClient(this@WearSyncListenerService).dataItems.await()
@@ -166,7 +173,10 @@ class WearSyncListenerService : WearableListenerService() {
                 } finally {
                     buffer.release()
                 }
-            }.onFailure { e -> Log.w(TAG, "Failed to fetch initial wearable snapshot", e) }
+            }.onFailure { e ->
+                Log.w(TAG, "Failed to fetch initial wearable snapshot", e)
+                WearDataStore.recordSyncFailure("initial_snapshot: ${e.javaClass.simpleName}")
+            }
         }
     }
 

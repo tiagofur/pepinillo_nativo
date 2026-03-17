@@ -11,12 +11,14 @@ object WearDataStore {
 
     private val _pendingCommandCount = MutableStateFlow(0)
     private val _lastSyncAtMillis = MutableStateFlow<Long?>(null)
+    private val _diagnostics = MutableStateFlow(WearDiagnosticsState())
 
     val timerState = _timerState.asStateFlow()
     val tasks = _tasks.asStateFlow()
     val stats = _stats.asStateFlow()
     val pendingCommandCount = _pendingCommandCount.asStateFlow()
     val lastSyncAtMillis = _lastSyncAtMillis.asStateFlow()
+    val diagnostics = _diagnostics.asStateFlow()
 
     fun updatePendingCount(count: Int) {
         _pendingCommandCount.value = count
@@ -24,6 +26,36 @@ object WearDataStore {
 
     fun updateLastSyncAtMillis(value: Long?) {
         _lastSyncAtMillis.value = value
+    }
+
+    fun recordSyncEvent() {
+        _diagnostics.value = _diagnostics.value.copy(syncEvents = _diagnostics.value.syncEvents + 1)
+    }
+
+    fun recordSyncFailure(message: String) {
+        _diagnostics.value = _diagnostics.value.copy(
+            syncFailures = _diagnostics.value.syncFailures + 1,
+            lastError = message,
+        )
+    }
+
+    fun recordFlushAttempt(count: Int) {
+        if (count <= 0) return
+        _diagnostics.value = _diagnostics.value.copy(
+            flushAttempts = _diagnostics.value.flushAttempts + count,
+        )
+    }
+
+    fun recordFlushFailures(count: Int, message: String? = null) {
+        if (count <= 0 && message == null) return
+        _diagnostics.value = _diagnostics.value.copy(
+            flushFailures = _diagnostics.value.flushFailures + count.coerceAtLeast(0),
+            lastError = message ?: _diagnostics.value.lastError,
+        )
+    }
+
+    fun resetDiagnostics() {
+        _diagnostics.value = WearDiagnosticsState()
     }
 
     fun updateTimer(newState: WearTimerState) {
@@ -66,4 +98,12 @@ data class WearStatsState(
     val sessions: Int = 0,
     val streak: Int = 0,
     val completedTasks: Int = 0,
+)
+
+data class WearDiagnosticsState(
+    val syncEvents: Int = 0,
+    val syncFailures: Int = 0,
+    val flushAttempts: Int = 0,
+    val flushFailures: Int = 0,
+    val lastError: String? = null,
 )

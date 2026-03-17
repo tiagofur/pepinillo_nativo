@@ -15,6 +15,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     val stats = WearDataStore.stats
     val pendingCommandCount = WearDataStore.pendingCommandCount
     val lastSyncAtMillis = WearDataStore.lastSyncAtMillis
+    val diagnostics = WearDataStore.diagnostics
 
     fun startTimer(mode: String) {
         viewModelScope.launch { sender.startTimer(mode) }

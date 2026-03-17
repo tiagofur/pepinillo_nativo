@@ -61,9 +61,14 @@ class WearMessageSender(private val context: Context) {
     private suspend fun flushPendingCommands(nodeIds: List<String>) {
         val pending = readPendingCommands()
         if (pending.isEmpty()) return
+        WearDataStore.recordFlushAttempt(pending.size)
 
         val stillPending = WearPendingCommandQueue.flush(pending, nodeIds) { nodeId, command ->
             Wearable.getMessageClient(context).sendMessage(nodeId, command.path, command.data).await()
+        }
+
+        if (stillPending.isNotEmpty()) {
+            WearDataStore.recordFlushFailures(stillPending.size, "Flush parcial: ${stillPending.size} pendientes")
         }
 
         writePendingCommands(stillPending)

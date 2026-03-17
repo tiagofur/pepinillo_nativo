@@ -13,12 +13,14 @@ internal interface WearSyncSink {
     fun persistStats(state: WearStatsState)
     fun markSyncedNow()
     fun refreshWearSurfaces()
+    fun recordSyncEvent()
 }
 
 internal class WearSyncProcessor(
     private val sink: WearSyncSink,
 ) {
     fun onTimerData(state: WearTimerState) {
+        sink.recordSyncEvent()
         sink.updateTimer(state)
         sink.persistTimer(state)
         sink.markSyncedNow()
@@ -26,12 +28,14 @@ internal class WearSyncProcessor(
     }
 
     fun onTasksData(tasksJson: String) {
+        sink.recordSyncEvent()
         val tasks = sink.updateTasksFromJson(tasksJson)
         sink.persistTasks(tasks)
         sink.markSyncedNow()
     }
 
     fun onStatsData(state: WearStatsState) {
+        sink.recordSyncEvent()
         sink.updateStats(state)
         sink.persistStats(state)
         sink.markSyncedNow()

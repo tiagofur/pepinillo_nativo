@@ -19,6 +19,7 @@ class WearSyncProcessorTest {
 
         assertEquals(timer, sink.updatedTimer)
         assertEquals(timer, sink.persistedTimer)
+        assertEquals(1, sink.syncEvents)
         assertEquals(1, sink.markSyncedCalls)
         assertEquals(1, sink.refreshCalls)
     }
@@ -35,6 +36,7 @@ class WearSyncProcessorTest {
         assertEquals("payload", sink.lastTasksJson)
         assertEquals(1, sink.persistedTasks.size)
         assertEquals("id-1", sink.persistedTasks.first().id)
+        assertEquals(1, sink.syncEvents)
         assertEquals(1, sink.markSyncedCalls)
         assertEquals(0, sink.refreshCalls)
     }
@@ -64,6 +66,7 @@ class WearSyncProcessorTest {
         var persistedStats: WearStatsState? = null
         var markSyncedCalls: Int = 0
         var refreshCalls: Int = 0
+        var syncEvents: Int = 0
 
         override fun updateTimer(state: WearTimerState) {
             updatedTimer = state
@@ -96,6 +99,10 @@ class WearSyncProcessorTest {
 
         override fun refreshWearSurfaces() {
             refreshCalls++
+        }
+
+        override fun recordSyncEvent() {
+            syncEvents++
         }
     }
 }

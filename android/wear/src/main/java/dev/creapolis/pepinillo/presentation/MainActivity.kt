@@ -43,6 +43,7 @@ private fun WearApp(viewModel: WearViewModel) {
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val pendingCommandCount by viewModel.pendingCommandCount.collectAsStateWithLifecycle()
     val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
+    val diagnostics by viewModel.diagnostics.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 4 })
     val syncStatus = WearSyncStatusFormatter.format(
         lastSyncAtMillis = lastSyncAtMillis,
@@ -87,6 +88,7 @@ private fun WearApp(viewModel: WearViewModel) {
                             pendingCommandCount = pendingCommandCount,
                             syncStatusLabel = syncStatus.label,
                             isSyncStale = syncStatus.isStale,
+                            diagnostics = diagnostics,
                         )
                     }
                 }

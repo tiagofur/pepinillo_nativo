@@ -17,6 +17,7 @@ import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import dev.creapolis.pepinillo.data.WearDiagnosticsState
 import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearTask
 import dev.creapolis.pepinillo.data.WearTimerState
@@ -30,6 +31,7 @@ fun DiagnosticsScreen(
     pendingCommandCount: Int,
     syncStatusLabel: String?,
     isSyncStale: Boolean,
+    diagnostics: WearDiagnosticsState,
 ) {
     val listState = rememberScalingLazyListState()
     val focusRequester = remember { FocusRequester() }
@@ -60,6 +62,19 @@ fun DiagnosticsScreen(
         item { Text("Timer: ${timerState.status} · ${timerState.displayTime}") }
         item { Text("Modo/Fase: ${timerState.mode} · ${timerState.phaseLabel}") }
         item { Text("Cola offline: $pendingCommandCount") }
+        item { Text("Sync events: ${diagnostics.syncEvents}") }
+        item { Text("Sync failures: ${diagnostics.syncFailures}") }
+        item { Text("Flush attempts: ${diagnostics.flushAttempts}") }
+        item { Text("Flush failures: ${diagnostics.flushFailures}") }
+        diagnostics.lastError?.takeIf { it.isNotBlank() }?.let { error ->
+            item {
+                Text(
+                    text = "Ultimo error: $error",
+                    style = MaterialTheme.typography.caption3,
+                    color = MaterialTheme.colors.error,
+                )
+            }
+        }
         item { Text("Tareas activas: ${tasks.size}") }
         item { Text("Stats hoy: ${stats.sessions} ses / ${stats.totalMinutes} min") }
         item { Text("Racha: ${stats.streak} · Completadas: ${stats.completedTasks}") }
