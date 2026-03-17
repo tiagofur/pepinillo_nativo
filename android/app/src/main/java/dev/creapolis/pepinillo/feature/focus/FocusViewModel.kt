@@ -6,17 +6,18 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabel
 import dev.creapolis.pepinillo.domain.timer.progress
+import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.service.FocusTimerService
-import dev.creapolis.pepinillo.widget.FocusTimerWidget
-import dev.creapolis.pepinillo.widget.TimerWidgetState
-import dev.creapolis.pepinillo.widget.updateWidgetState
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -38,6 +39,7 @@ data class FocusUiState(
     val currentStreak: Int = 0,
     val greeting: String = "",
     val currentDate: String = "",
+    val showTaskPicker: Boolean = false,
 )
 
 @HiltViewModel
@@ -45,7 +47,15 @@ class FocusViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val focusEngine: FocusEngine,
     private val sessionRepository: SessionRepository,
+    private val taskRepository: TaskRepository,
 ) : ViewModel() {
+
+    private val _linkedTaskName = MutableStateFlow<String?>(null)
+    private val _showTaskPicker = MutableStateFlow(false)
+    val showTaskPicker: StateFlow<Boolean> = _showTaskPicker.asStateFlow()
+
+    val activeTasks: StateFlow<List<Task>> = taskRepository.getActiveTasks()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         // Watch engine state to manage foreground service lifecycle
@@ -56,18 +66,18 @@ class FocusViewModel @Inject constructor(
                     TimerStatus.Idle -> FocusTimerService.stop(context)
                     TimerStatus.Paused -> { /* service stays alive while paused */ }
                 }
-                
-                // Update widget when state changes
-                val widgetState = TimerWidgetState(
-                    mode = state.mode,
-                    selectedMode = state.mode,
-                    displayTime = state.displayTime,
-                    phaseLabel = state.phaseLabel,
-                    status = state.status,
-                    progress = state.progress,
-                )
-                updateWidgetState(context, widgetState)
-                FocusTimerWidget().updateAll(context)
+            }
+        }
+
+        // Resolve linked task name when engine state changes
+        viewModelScope.launch {
+            focusEngine.state.collect { state ->
+                val taskId = state.linkedTaskId
+                _linkedTaskName.value = if (taskId != null) {
+                    taskRepository.getTaskById(taskId)?.title
+                } else {
+                    null
+                }
             }
         }
     }
@@ -75,7 +85,10 @@ class FocusViewModel @Inject constructor(
     val uiState: StateFlow<FocusUiState> = combine(
         focusEngine.state,
         sessionRepository.getTodaySessionCount(),
-    ) { timerState, todayCount ->
+        sessionRepository.getAllDaysWithSessions(),
+        _linkedTaskName,
+        _showTaskPicker,
+    ) { timerState, todayCount, allDays, linkedTaskName, showPicker ->
         FocusUiState(
             selectedMode = timerState.mode,
             displayTime = timerState.displayTime,
@@ -83,11 +96,12 @@ class FocusViewModel @Inject constructor(
             phaseLabel = timerState.phaseLabel,
             isRunning = timerState.status == TimerStatus.Running,
             isPaused = timerState.status == TimerStatus.Paused,
-            linkedTaskName = null,
+            linkedTaskName = linkedTaskName,
             sessionsToday = todayCount,
-            currentStreak = 0,
+            currentStreak = sessionRepository.calculateCurrentStreak(allDays),
             greeting = computeGreeting(),
             currentDate = computeDate(),
+            showTaskPicker = showPicker,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
         greeting = computeGreeting(),
@@ -109,6 +123,19 @@ class FocusViewModel @Inject constructor(
 
     fun onStopClick() {
         focusEngine.stop()
+    }
+
+    fun onTaskLinkClick() {
+        _showTaskPicker.value = true
+    }
+
+    fun dismissTaskPicker() {
+        _showTaskPicker.value = false
+    }
+
+    fun linkTask(taskId: String?) {
+        focusEngine.linkTask(taskId)
+        _showTaskPicker.value = false
     }
 
     private fun computeGreeting(): String {

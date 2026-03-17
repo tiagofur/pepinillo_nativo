@@ -5,6 +5,7 @@ import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.focus.FocusMode
+import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -24,6 +25,7 @@ class FocusEngine @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val taskRepository: TaskRepository,
     private val prefsRepo: UserPreferencesRepository,
+    private val feedbackManager: FeedbackManager,
 ) {
     private val _state = MutableStateFlow(FocusTimerState())
     val state: StateFlow<FocusTimerState> = _state.asStateFlow()
@@ -105,6 +107,9 @@ class FocusEngine @Inject constructor(
 
     private suspend fun onPhaseComplete() {
         val s = _state.value
+
+        // Sound/haptic feedback on phase completion
+        feedbackManager.onPhaseComplete()
 
         // Record the completed phase as a session
         recordSession(s)

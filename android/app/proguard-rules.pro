@@ -19,3 +19,18 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ── Glance App Widgets ──
+-keep class dev.creapolis.pepinillo.widget.** { *; }
+-keep class androidx.glance.** { *; }
+
+# ── Hilt ──
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-keepclasseswithmembers class * {
+    @dagger.hilt.* <methods>;
+}
+
+# ── Room ──
+-keep class dev.creapolis.pepinillo.data.local.entity.** { *; }
+-keep class dev.creapolis.pepinillo.data.local.dao.** { *; }

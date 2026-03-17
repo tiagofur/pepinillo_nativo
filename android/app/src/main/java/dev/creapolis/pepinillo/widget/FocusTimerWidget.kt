@@ -19,6 +19,7 @@ import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -80,7 +81,7 @@ private fun readTimerState(context: Context): TimerWidgetState {
     val modeName = prefs.getString(KEY_MODE, FocusMode.Pomodoro.name) ?: FocusMode.Pomodoro.name
     val selectedModeName = prefs.getString(KEY_SELECTED_MODE, null)
     val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-    val selectedMode = selectedModeName?.let { FocusMode.entries.find { it.name == it } }
+    val selectedMode = selectedModeName?.let { name -> FocusMode.entries.find { it.name == name } }
     val statusName = prefs.getString(KEY_STATUS, TimerStatus.Idle.name) ?: TimerStatus.Idle.name
     val status = TimerStatus.entries.find { it.name == statusName } ?: TimerStatus.Idle
     
@@ -336,7 +337,7 @@ class SelectModeAction : ActionCallback {
             progress = 1f,
         ))
         
-        FocusTimerWidget().updateAll(context)
+        FocusTimerWidget().updateAll(context = context)
     }
 }
 
@@ -384,7 +385,7 @@ class StopAction : ActionCallback {
             progress = 1f,
         ))
         
-        FocusTimerWidget().updateAll(context)
+        FocusTimerWidget().updateAll(context = context)
     }
 }
 

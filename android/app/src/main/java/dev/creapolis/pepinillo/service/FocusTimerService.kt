@@ -23,10 +23,12 @@ import dev.creapolis.pepinillo.widget.FocusTimerWidget
 import dev.creapolis.pepinillo.widget.TimerWidgetState
 import dev.creapolis.pepinillo.widget.WidgetStateManager
 import dev.creapolis.pepinillo.widget.updateWidgetState
+import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -115,7 +117,7 @@ class FocusTimerService : Service() {
                         progress = state.progress,
                     )
                     updateWidgetState(this@FocusTimerService, widgetState)
-                    FocusTimerWidget().updateAll(this@FocusTimerService)
+                    FocusTimerWidget().updateAll(context = this@FocusTimerService)
                 }
 
                 if (state.status == TimerStatus.Idle) {
@@ -126,12 +128,17 @@ class FocusTimerService : Service() {
 
         // Collect daily stats for stats widget
         serviceScope.launch {
-            sessionRepository.getTodayStats().collect { stats ->
+            combine(
+                sessionRepository.getTodayStats(),
+                sessionRepository.getAllDaysWithSessions(),
+            ) { stats, allDays ->
+                Pair(stats, allDays)
+            }.collect { (stats, allDays) ->
                 WidgetStateManager.updateDailyStats(
                     context = this@FocusTimerService,
                     totalMinutes = stats?.totalMinutes ?: 0,
                     sessions = stats?.sessionsCompleted ?: 0,
-                    streak = 0,
+                    streak = sessionRepository.calculateCurrentStreak(allDays),
                 )
             }
         }
@@ -163,7 +170,7 @@ class FocusTimerService : Service() {
         )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("${state.mode.label} — ${state.phaseLabel}")
             .setContentText(state.displayTime)
             .setContentIntent(openApp)

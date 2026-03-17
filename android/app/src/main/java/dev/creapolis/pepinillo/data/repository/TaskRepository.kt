@@ -1,51 +1,75 @@
 package dev.creapolis.pepinillo.data.repository
 
+import android.util.Log
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
+
+private const val TAG = "TaskRepository"
 
 @Singleton
 class TaskRepository @Inject constructor(
     private val taskDao: TaskDao,
 ) {
     fun getAllTasks(): Flow<List<Task>> =
-        taskDao.getAllTasks().map { entities -> entities.map { it.toDomain() } }
+        taskDao.getAllTasks()
+            .map { entities -> entities.map { it.toDomain() } }
+            .catch { e -> Log.e(TAG, "Error loading all tasks", e); emit(emptyList()) }
 
     fun getActiveTasks(): Flow<List<Task>> =
-        taskDao.getActiveTasks().map { entities -> entities.map { it.toDomain() } }
+        taskDao.getActiveTasks()
+            .map { entities -> entities.map { it.toDomain() } }
+            .catch { e -> Log.e(TAG, "Error loading active tasks", e); emit(emptyList()) }
 
     fun getCompletedTasks(): Flow<List<Task>> =
-        taskDao.getCompletedTasks().map { entities -> entities.map { it.toDomain() } }
+        taskDao.getCompletedTasks()
+            .map { entities -> entities.map { it.toDomain() } }
+            .catch { e -> Log.e(TAG, "Error loading completed tasks", e); emit(emptyList()) }
 
-    fun getActiveCount(): Flow<Int> = taskDao.getActiveCount()
+    fun getActiveCount(): Flow<Int> =
+        taskDao.getActiveCount()
+            .catch { e -> Log.e(TAG, "Error loading active count", e); emit(0) }
 
     suspend fun addTask(task: Task) {
-        taskDao.insertTask(task.toEntity())
+        runCatching { taskDao.insertTask(task.toEntity()) }
+            .onFailure { Log.e(TAG, "Error adding task", it) }
     }
 
     suspend fun toggleCompletion(taskId: String) {
-        val entity = taskDao.getTaskById(taskId) ?: return
-        taskDao.updateTask(
-            entity.copy(
-                isCompleted = !entity.isCompleted,
-                completedAt = if (!entity.isCompleted) System.currentTimeMillis() else null,
-                updatedAt = System.currentTimeMillis(),
-            ),
-        )
+        runCatching {
+            val entity = taskDao.getTaskById(taskId) ?: return
+            taskDao.updateTask(
+                entity.copy(
+                    isCompleted = !entity.isCompleted,
+                    completedAt = if (!entity.isCompleted) System.currentTimeMillis() else null,
+                    updatedAt = System.currentTimeMillis(),
+                ),
+            )
+        }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }
     }
 
     suspend fun deleteTask(taskId: String) {
-        taskDao.deleteTaskById(taskId)
+        runCatching { taskDao.deleteTaskById(taskId) }
+            .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }
     }
 
+    suspend fun getTaskById(taskId: String): Task? =
+        runCatching { taskDao.getTaskById(taskId)?.toDomain() }
+            .onFailure { Log.e(TAG, "Error getting task $taskId", it) }
+            .getOrNull()
+
     suspend fun incrementPomodoros(taskId: String) {
-        taskDao.incrementPomodoros(taskId)
+        runCatching { taskDao.incrementPomodoros(taskId) }
+            .onFailure { Log.e(TAG, "Error incrementing pomodoros for $taskId", it) }
     }
 }
 

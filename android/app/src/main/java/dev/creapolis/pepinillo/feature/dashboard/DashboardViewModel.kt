@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    sessionRepository: SessionRepository,
+    private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
     val stats: StateFlow<DashboardStats> = combine(
@@ -75,8 +75,8 @@ class DashboardViewModel @Inject constructor(
         ).filter { it.totalMinutes > 0 }
 
         // Calculate streak
-        val streak = calculateStreak(allDays)
-        val bestStreak = calculateBestStreak(allDays)
+        val streak = sessionRepository.calculateCurrentStreak(allDays)
+        val bestStreak = sessionRepository.calculateBestStreak(allDays)
 
         return DashboardStats(
             todayMinutes = todayMinutes,
@@ -91,43 +91,4 @@ class DashboardViewModel @Inject constructor(
         )
     }
 
-    private fun calculateStreak(allDays: List<DailyStatsEntity>): Int {
-        if (allDays.isEmpty()) return 0
-        val sortedDates = allDays.map { it.date }.sortedDescending()
-        val cal = Calendar.getInstance()
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
-        var expected = cal.timeInMillis
-        var streak = 0
-        val oneDay = 24 * 60 * 60 * 1000L
-
-        for (date in sortedDates) {
-            if (date == expected) {
-                streak++
-                expected -= oneDay
-            } else if (date < expected) {
-                break
-            }
-        }
-        return streak
-    }
-
-    private fun calculateBestStreak(allDays: List<DailyStatsEntity>): Int {
-        if (allDays.isEmpty()) return 0
-        val sortedDates = allDays.map { it.date }.sorted()
-        val oneDay = 24 * 60 * 60 * 1000L
-        var best = 1
-        var current = 1
-        for (i in 1 until sortedDates.size) {
-            if (sortedDates[i] - sortedDates[i - 1] == oneDay) {
-                current++
-                best = maxOf(best, current)
-            } else {
-                current = 1
-            }
-        }
-        return best
-    }
 }

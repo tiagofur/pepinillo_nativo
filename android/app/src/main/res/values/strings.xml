@@ -1,7 +1,99 @@
 <resources>
     <string name="app_name">Pepinillo</string>
+
+    <!-- Widgets -->
     <string name="widget_timer_name">Focus Timer</string>
     <string name="widget_timer_description">Control your focus timer from the home screen</string>
     <string name="widget_stats_name">Daily Stats</string>
     <string name="widget_stats_description">See your daily focus stats at a glance</string>
+
+    <!-- Focus Screen -->
+    <string name="greeting_morning">Good morning</string>
+    <string name="greeting_afternoon">Good afternoon</string>
+    <string name="greeting_evening">Good evening</string>
+    <string name="focus_phase_label">Focus</string>
+    <string name="tap_to_link_task">Tap to link a task</string>
+    <string name="sessions_today">sessions today</string>
+    <string name="day_streak">day streak</string>
+    <string name="btn_start_focus">Start Focus</string>
+    <string name="btn_pause">Pause</string>
+    <string name="btn_resume">Resume</string>
+    <string name="btn_stop">Stop</string>
+
+    <!-- Focus Modes -->
+    <string name="mode_pomodoro">Pomodoro</string>
+    <string name="mode_flow">Flow</string>
+    <string name="mode_blocks">Blocks</string>
+    <string name="mode_chrono">Chrono</string>
+
+    <!-- Tasks Screen -->
+    <string name="tasks_title">Tasks</string>
+    <string name="filter_all">All</string>
+    <string name="filter_active">Active</string>
+    <string name="filter_completed">Completed</string>
+    <string name="no_tasks_yet">No tasks yet</string>
+    <string name="add_task_hint">What do you need to focus on?</string>
+    <string name="add_task_title">Add Task</string>
+    <string name="task_title_label">Task title</string>
+    <string name="energy_level_label">Energy Level</string>
+    <string name="pomodoro_estimate_label">Pomodoro Estimate</string>
+    <string name="btn_add">Add</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="today_focus">Today\'s Focus</string>
+    <string name="this_week">This Week</string>
+    <string name="minutes_short">min</string>
+    <string name="sessions_label">sessions</string>
+    <string name="current_streak">Current Streak</string>
+    <string name="best_streak">Best Streak</string>
+    <string name="days_short">days</string>
+    <string name="weekly_overview">Weekly Overview</string>
+    <string name="mode_breakdown">Mode Breakdown</string>
+    <string name="longest_session">Longest Session</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="timer_settings">Timer Settings</string>
+    <string name="pomodoro_duration">Pomodoro Duration</string>
+    <string name="short_break">Short Break</string>
+    <string name="long_break">Long Break</string>
+    <string name="time_block">Time Block</string>
+    <string name="minutes_unit">min</string>
+    <string name="automation">Automation</string>
+    <string name="auto_start_breaks">Auto-start Breaks</string>
+    <string name="auto_start_next_pomodoro">Auto-start next Pomodoro</string>
+    <string name="feedback_section">Feedback</string>
+    <string name="sound">Sound</string>
+    <string name="vibration">Vibration</string>
+    <string name="appearance">Appearance</string>
+    <string name="theme_mode">Theme Mode</string>
+    <string name="dynamic_color">Dynamic Color</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Profile</string>
+    <string name="sign_in">Sign In</string>
+    <string name="total_focus_time">Total Focus Time</string>
+    <string name="tasks_completed">Tasks Completed</string>
+    <string name="total_sessions">Total Sessions</string>
+
+    <!-- Accessibility -->
+    <string name="cd_profile">Profile</string>
+    <string name="cd_link_task">Link task</string>
+    <string name="cd_streak">Streak</string>
+    <string name="cd_stop_timer">Stop timer</string>
+    <string name="cd_start_timer">Start timer</string>
+    <string name="cd_pause_timer">Pause timer</string>
+    <string name="cd_completed">Completed</string>
+
+    <!-- Task Picker -->
+    <string name="link_a_task">Link a task</string>
+    <string name="unlink_task">Unlink task</string>
+    <string name="no_active_tasks">No active tasks. Create a task first.</string>
+    <string name="pomodoro_progress">%1$d/%2$d pomodoros</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">Focus Timer</string>
+    <string name="notification_channel_description">Shows the active focus timer</string>
 </resources>

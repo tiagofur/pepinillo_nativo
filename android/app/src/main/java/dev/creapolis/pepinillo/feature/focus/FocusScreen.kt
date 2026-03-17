@@ -41,13 +41,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.focus.components.CircularTimerRing
 import dev.creapolis.pepinillo.feature.focus.components.ModeChip
+import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -58,6 +63,7 @@ fun FocusScreen(
     onProfileClick: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val activeTasks by viewModel.activeTasks.collectAsState()
     val modeColors = uiState.selectedMode.colorScheme()
 
     // Animated colors for smooth mode transitions
@@ -131,7 +137,11 @@ fun FocusScreen(
         ) {
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(260.dp),
+                modifier = Modifier
+                    .size(260.dp)
+                    .semantics {
+                        contentDescription = "${uiState.phaseLabel}: ${uiState.displayTime}, ${uiState.selectedMode.label} mode"
+                    },
             ) {
                 CircularTimerRing(
                     progress = animatedProgress,
@@ -188,19 +198,19 @@ fun FocusScreen(
                     color = MaterialTheme.colorScheme.outlineVariant,
                     shape = RoundedCornerShape(24.dp),
                 )
-                .clickable { }
+                .clickable { viewModel.onTaskLinkClick() }
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Rounded.Link,
-                contentDescription = null,
+                contentDescription = "Link task",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = uiState.linkedTaskName ?: "Tap to link a task",
+                text = uiState.linkedTaskName ?: stringResource(R.string.tap_to_link_task),
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (uiState.linkedTaskName != null) {
                     MaterialTheme.colorScheme.onSurface
@@ -230,7 +240,8 @@ fun FocusScreen(
                     .weight(1f)
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .semantics { contentDescription = "${uiState.sessionsToday} sessions today" },
             ) {
                 Column {
                     Text(
@@ -241,7 +252,7 @@ fun FocusScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "sessions today",
+                        text = stringResource(R.string.sessions_today),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -254,7 +265,8 @@ fun FocusScreen(
                     .weight(1f)
                     .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .semantics { contentDescription = "${uiState.currentStreak} day streak" },
             ) {
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -267,14 +279,14 @@ fun FocusScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = Icons.Rounded.LocalFireDepartment,
-                            contentDescription = null,
+                            contentDescription = "Streak",
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "day streak",
+                        text = stringResource(R.string.day_streak),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -305,11 +317,11 @@ fun FocusScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Rounded.Stop,
-                            contentDescription = null,
+                            contentDescription = "Stop timer",
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Stop",
+                            text = stringResource(R.string.btn_stop),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
@@ -336,14 +348,14 @@ fun FocusScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = if (isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                            contentDescription = null,
+                            contentDescription = if (isRunning) "Pause timer" else "Start timer",
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = when {
-                                isRunning -> "Pause"
-                                uiState.isPaused -> "Resume"
-                                else -> "Start Focus"
+                                isRunning -> stringResource(R.string.btn_pause)
+                                uiState.isPaused -> stringResource(R.string.btn_resume)
+                                else -> stringResource(R.string.btn_start_focus)
                             },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
@@ -354,6 +366,15 @@ fun FocusScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    if (uiState.showTaskPicker) {
+        TaskPickerDialog(
+            tasks = activeTasks,
+            currentLinkedTaskName = uiState.linkedTaskName,
+            onTaskSelected = { taskId -> viewModel.linkTask(taskId) },
+            onDismiss = { viewModel.dismissTaskPicker() },
+        )
     }
 }
 

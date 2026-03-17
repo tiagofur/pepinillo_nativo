@@ -26,6 +26,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -75,13 +79,17 @@ fun TaskItem(
                         Modifier
                     },
                 )
-                .clickable(onClick = onToggleCompletion),
+                .clickable(onClick = onToggleCompletion)
+                .semantics {
+                    role = Role.Checkbox
+                    contentDescription = if (task.isCompleted) "Mark ${task.title} incomplete" else "Mark ${task.title} complete"
+                },
             contentAlignment = Alignment.Center,
         ) {
             if (task.isCompleted) {
                 Icon(
                     imageVector = Icons.Rounded.Check,
-                    contentDescription = null,
+                    contentDescription = "Completed",
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onPrimary,
                 )
