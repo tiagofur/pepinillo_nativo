@@ -4,22 +4,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Scaffold
-import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import androidx.wear.compose.material.Vignette
+import androidx.wear.compose.material.VignettePosition
 import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.data.WearSyncStatusFormatter
 import dev.creapolis.pepinillo.viewmodel.WearViewModel
@@ -50,13 +55,16 @@ private fun WearApp(viewModel: WearViewModel) {
         isConnected = timerState.isConnected,
     )
 
+    // Hide TimeText when timer is active to avoid overlap
+    val showTimeText = timerState.status != "Running" && timerState.status != "Paused"
+
     WearTheme {
         Scaffold(
-            timeText = { TimeText() },
+            timeText = { if (showTimeText) TimeText() },
+            vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
         ) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
             ) {
                 HorizontalPager(state = pagerState) { page ->
                     when (page) {
@@ -93,12 +101,12 @@ private fun WearApp(viewModel: WearViewModel) {
                     }
                 }
 
-                PageDots(
+                PageIndicator(
                     currentPage = pagerState.currentPage,
                     totalPages = 4,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 4.dp),
+                        .padding(bottom = 8.dp),
                 )
             }
         }
@@ -106,17 +114,29 @@ private fun WearApp(viewModel: WearViewModel) {
 }
 
 @Composable
-private fun PageDots(
+private fun PageIndicator(
     currentPage: Int,
     totalPages: Int,
     modifier: Modifier = Modifier,
 ) {
+    val activeColor = MaterialTheme.colors.primary
+    val inactiveColor = MaterialTheme.colors.onSurface.copy(alpha = 0.3f)
+
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         repeat(totalPages) { index ->
-            Text(if (index == currentPage) "●" else "○")
+            val color = if (index == currentPage) activeColor else inactiveColor
+            val size = if (index == currentPage) 6.dp else 4.dp
+            Canvas(modifier = Modifier.size(size)) {
+                drawCircle(
+                    color = color,
+                    radius = this.size.minDimension / 2f,
+                    center = Offset(this.size.width / 2f, this.size.height / 2f),
+                )
+            }
         }
     }
 }

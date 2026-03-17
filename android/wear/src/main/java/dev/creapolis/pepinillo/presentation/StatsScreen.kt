@@ -3,6 +3,9 @@ package dev.creapolis.pepinillo.presentation
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -11,8 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material.Chip
+import androidx.wear.compose.material.ChipDefaults
+import androidx.wear.compose.material.ListHeader
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import dev.creapolis.pepinillo.data.WearStatsState
@@ -43,19 +51,106 @@ fun StatsScreen(
             .focusRequester(focusRequester)
             .focusable(),
     ) {
-        item { Text(text = "Hoy") }
+        // Header
+        item {
+            ListHeader {
+                Text(
+                    text = "Hoy",
+                    color = MaterialTheme.colors.primary,
+                )
+            }
+        }
+
+        // Sync status
         if (!syncStatusLabel.isNullOrBlank()) {
             item {
                 Text(
                     text = syncStatusLabel,
-                    style = MaterialTheme.typography.caption3,
-                    color = if (isSyncStale) MaterialTheme.colors.error else MaterialTheme.colors.onSurface,
+                    style = MaterialTheme.typography.caption2,
+                    color = if (isSyncStale) MaterialTheme.colors.error else MaterialTheme.colors.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp),
                 )
             }
         }
-        item { Text(text = "⏱ ${state.totalMinutes} min") }
-        item { Text(text = "✅ ${state.sessions} sesiones") }
-        item { Text(text = "🔥 racha ${state.streak}") }
-        item { Text(text = "📋 ${state.completedTasks} tareas") }
+
+        // Focus time
+        item {
+            StatChip(
+                emoji = "⏱",
+                label = "Tiempo de enfoque",
+                value = formatMinutes(state.totalMinutes),
+            )
+        }
+
+        // Sessions
+        item {
+            StatChip(
+                emoji = "✅",
+                label = "Sesiones",
+                value = "${state.sessions}",
+            )
+        }
+
+        // Streak
+        item {
+            StatChip(
+                emoji = "🔥",
+                label = "Racha",
+                value = "${state.streak} días",
+            )
+        }
+
+        // Completed tasks
+        item {
+            StatChip(
+                emoji = "📋",
+                label = "Tareas completadas",
+                value = "${state.completedTasks}",
+            )
+        }
     }
+}
+
+@Composable
+private fun StatChip(
+    emoji: String,
+    label: String,
+    value: String,
+) {
+    Chip(
+        onClick = { },
+        enabled = false,
+        label = {
+            Text(
+                text = value,
+                color = MaterialTheme.colors.primary,
+            )
+        },
+        secondaryLabel = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.caption2,
+            )
+        },
+        icon = {
+            Text(
+                text = emoji,
+                modifier = Modifier.size(24.dp),
+                textAlign = TextAlign.Center,
+            )
+        },
+        colors = ChipDefaults.secondaryChipColors(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+    )
+}
+
+private fun formatMinutes(totalMinutes: Int): String {
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }

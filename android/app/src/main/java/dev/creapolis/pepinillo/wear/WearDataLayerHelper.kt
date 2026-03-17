@@ -88,5 +88,24 @@ object WearDataLayerHelper {
         return arr.toString()
     }
 
+    /** Push the current idle state so the watch knows the phone is connected. */
+    fun pushIdleState(context: Context, mode: String, displayTime: String) {
+        val request = PutDataMapRequest.create(PATH_TIMER).apply {
+            dataMap.putString("mode", mode)
+            dataMap.putString("phase", "Work")
+            dataMap.putString("status", "Idle")
+            dataMap.putString("displayTime", displayTime)
+            dataMap.putString("phaseLabel", "Listo")
+            dataMap.putFloat("progress", 1f)
+            dataMap.putLong("elapsedMillis", 0L)
+            dataMap.putLong("totalMillis", 0L)
+            dataMap.putInt("completedSessions", 0)
+            dataMap.putLong("timestamp", System.currentTimeMillis())
+        }.asPutDataRequest().setUrgent()
+
+        Wearable.getDataClient(context).putDataItem(request)
+            .addOnFailureListener { e -> Log.w(TAG, "Failed pushing idle state", e) }
+    }
+
     fun isRunning(status: String): Boolean = status == TimerStatus.Running.name
 }

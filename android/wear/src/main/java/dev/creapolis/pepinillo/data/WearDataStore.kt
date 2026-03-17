@@ -86,10 +86,10 @@ object WearDataStore {
 data class WearTimerState(
     val mode: String = "Pomodoro",
     val phase: String = "Work",
-    val status: String = "Disconnected",
-    val displayTime: String = "00:00",
-    val phaseLabel: String = "Sincronizando",
-    val progress: Float = 0f,
+    val status: String = "Idle",
+    val displayTime: String = "25:00",
+    val phaseLabel: String = "Listo",
+    val progress: Float = 1f,
     val isConnected: Boolean = false,
 )
 
