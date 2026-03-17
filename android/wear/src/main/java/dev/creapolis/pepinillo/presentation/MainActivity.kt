@@ -43,7 +43,7 @@ private fun WearApp(viewModel: WearViewModel) {
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val pendingCommandCount by viewModel.pendingCommandCount.collectAsStateWithLifecycle()
     val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
-    val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
+    val pagerState = rememberPagerState(initialPage = 1, pageCount = { 4 })
     val syncStatus = WearSyncStatusFormatter.format(
         lastSyncAtMillis = lastSyncAtMillis,
         isConnected = timerState.isConnected,
@@ -74,18 +74,26 @@ private fun WearApp(viewModel: WearViewModel) {
                             onResume = viewModel::resumeTimer,
                             onStop = viewModel::stopTimer,
                         )
-                        else -> TasksScreen(
+                        2 -> TasksScreen(
                             tasks = tasks,
                             syncStatusLabel = syncStatus.label,
                             isSyncStale = syncStatus.isStale,
                             onCompleteTask = viewModel::completeTask,
+                        )
+                        else -> DiagnosticsScreen(
+                            timerState = timerState,
+                            tasks = tasks,
+                            stats = stats,
+                            pendingCommandCount = pendingCommandCount,
+                            syncStatusLabel = syncStatus.label,
+                            isSyncStale = syncStatus.isStale,
                         )
                     }
                 }
 
                 PageDots(
                     currentPage = pagerState.currentPage,
-                    totalPages = 3,
+                    totalPages = 4,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 4.dp),
