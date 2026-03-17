@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.CircularProgressIndicator
+import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import dev.creapolis.pepinillo.data.WearTimerState
@@ -21,7 +22,8 @@ import dev.creapolis.pepinillo.data.WearTimerState
 fun TimerScreen(
     state: WearTimerState,
     pendingCommandCount: Int = 0,
-    lastSyncLabel: String? = null,
+    syncStatusLabel: String? = null,
+    isSyncStale: Boolean = false,
     onStartMode: (String) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -54,12 +56,18 @@ fun TimerScreen(
             modifier = Modifier.padding(bottom = 8.dp),
         )
 
-        if (!lastSyncLabel.isNullOrBlank() && state.status != "Disconnected") {
-            Text(
-                text = lastSyncLabel,
-                style = MaterialTheme.typography.caption3,
-                textAlign = TextAlign.Center,
+        if (!syncStatusLabel.isNullOrBlank()) {
+            Chip(
+                onClick = { },
+                enabled = false,
                 modifier = Modifier.padding(bottom = 8.dp),
+                label = {
+                    Text(
+                        text = syncStatusLabel,
+                        textAlign = TextAlign.Center,
+                        color = if (isSyncStale) MaterialTheme.colors.error else MaterialTheme.colors.onSurface,
+                    )
+                },
             )
         }
 
@@ -110,7 +118,7 @@ fun TimerScreen(
                     )
                 }
                 Text(
-                    text = "Conecta el telefono para sincronizar",
+                    text = "Esperando reconexion con el telefono",
                     style = MaterialTheme.typography.caption2,
                     textAlign = TextAlign.Center,
                 )

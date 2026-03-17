@@ -14,25 +14,26 @@ class WearDataStoreTest {
         WearDataStore.updateTasks(emptyList())
         WearDataStore.updateStats(WearStatsState())
         WearDataStore.updatePendingCount(0)
+        WearDataStore.updateLastSyncAtMillis(null)
     }
 
     @Test
-        fun `updateTasks replaces current wearable tasks`() {
-                WearDataStore.updateTasks(
-                        listOf(
-                                WearTask("task-1", "Deep work", "DEEP", "2/4"),
-                                WearTask("task-2", "Inbox", "ADMIN", ""),
-                        ),
-                )
+    fun `updateTasks replaces current wearable tasks`() {
+        WearDataStore.updateTasks(
+            listOf(
+                WearTask("task-1", "Deep work", "DEEP", "2/4"),
+                WearTask("task-2", "Inbox", "ADMIN", ""),
+            ),
+        )
 
-                val tasks = WearDataStore.tasks.value
-                assertEquals(2, tasks.size)
-                assertEquals("task-1", tasks[0].id)
-                assertEquals("Deep work", tasks[0].title)
-                assertEquals("DEEP", tasks[0].energyEmoji)
-                assertEquals("2/4", tasks[0].pomodoroProgress)
-                assertEquals("task-2", tasks[1].id)
-                assertEquals("Inbox", tasks[1].title)
+        val tasks = WearDataStore.tasks.value
+        assertEquals(2, tasks.size)
+        assertEquals("task-1", tasks[0].id)
+        assertEquals("Deep work", tasks[0].title)
+        assertEquals("DEEP", tasks[0].energyEmoji)
+        assertEquals("2/4", tasks[0].pomodoroProgress)
+        assertEquals("task-2", tasks[1].id)
+        assertEquals("Inbox", tasks[1].title)
     }
 
     @Test
@@ -64,6 +65,7 @@ class WearDataStoreTest {
             ),
         )
         WearDataStore.updatePendingCount(3)
+        WearDataStore.updateLastSyncAtMillis(123_456L)
 
         val timer = WearDataStore.timerState.value
         val stats = WearDataStore.stats.value
@@ -78,6 +80,7 @@ class WearDataStoreTest {
         assertEquals(6, stats.streak)
         assertEquals(7, stats.completedTasks)
         assertEquals(3, WearDataStore.pendingCommandCount.value)
+        assertEquals(123_456L, WearDataStore.lastSyncAtMillis.value)
         assertFalse(WearDataStore.tasks.value.isNotEmpty())
     }
 }

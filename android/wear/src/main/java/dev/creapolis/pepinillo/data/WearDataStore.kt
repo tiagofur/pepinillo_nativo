@@ -10,20 +10,20 @@ object WearDataStore {
     private val _stats = MutableStateFlow(WearStatsState())
 
     private val _pendingCommandCount = MutableStateFlow(0)
-    private val _lastSyncLabel = MutableStateFlow<String?>(null)
+    private val _lastSyncAtMillis = MutableStateFlow<Long?>(null)
 
     val timerState = _timerState.asStateFlow()
     val tasks = _tasks.asStateFlow()
     val stats = _stats.asStateFlow()
     val pendingCommandCount = _pendingCommandCount.asStateFlow()
-    val lastSyncLabel = _lastSyncLabel.asStateFlow()
+    val lastSyncAtMillis = _lastSyncAtMillis.asStateFlow()
 
     fun updatePendingCount(count: Int) {
         _pendingCommandCount.value = count
     }
 
-    fun updateLastSyncLabel(label: String?) {
-        _lastSyncLabel.value = label
+    fun updateLastSyncAtMillis(value: Long?) {
+        _lastSyncAtMillis.value = value
     }
 
     fun updateTimer(newState: WearTimerState) {
@@ -31,18 +31,7 @@ object WearDataStore {
     }
 
     fun updateTasksFromJson(tasksJson: String) {
-        val parsed = runCatching {
-            val arr = JSONArray(tasksJson)
-            (0 until arr.length()).map { idx ->
-                val obj = arr.getJSONObject(idx)
-                WearTask(
-                    id = obj.optString("id"),
-                    title = obj.optString("title"),
-                    energyEmoji = obj.optString("energyEmoji", "⚡"),
-                    pomodoroProgress = obj.optString("pomodoroProgress", ""),
-                )
-            }
-        }.getOrDefault(emptyList())
+        val parsed = WearSnapshotTaskCodec.deserialize(tasksJson)
         _tasks.value = parsed
     }
 

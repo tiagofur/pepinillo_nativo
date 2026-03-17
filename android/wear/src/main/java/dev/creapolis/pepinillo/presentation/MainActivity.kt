@@ -21,6 +21,7 @@ import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
 import dev.creapolis.pepinillo.data.WearSnapshotStore
+import dev.creapolis.pepinillo.data.WearSyncStatusFormatter
 import dev.creapolis.pepinillo.viewmodel.WearViewModel
 
 class MainActivity : ComponentActivity() {
@@ -41,8 +42,12 @@ private fun WearApp(viewModel: WearViewModel) {
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
     val pendingCommandCount by viewModel.pendingCommandCount.collectAsStateWithLifecycle()
-    val lastSyncLabel by viewModel.lastSyncLabel.collectAsStateWithLifecycle()
+    val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
+    val syncStatus = WearSyncStatusFormatter.format(
+        lastSyncAtMillis = lastSyncAtMillis,
+        isConnected = timerState.isConnected,
+    )
 
     WearTheme {
         Scaffold(
@@ -58,7 +63,8 @@ private fun WearApp(viewModel: WearViewModel) {
                         1 -> TimerScreen(
                             state = timerState,
                             pendingCommandCount = pendingCommandCount,
-                            lastSyncLabel = lastSyncLabel,
+                            syncStatusLabel = syncStatus.label,
+                            isSyncStale = syncStatus.isStale,
                             onStartMode = viewModel::startTimer,
                             onPause = viewModel::pauseTimer,
                             onResume = viewModel::resumeTimer,

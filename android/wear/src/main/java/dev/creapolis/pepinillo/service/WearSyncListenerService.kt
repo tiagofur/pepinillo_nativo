@@ -23,15 +23,12 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 private const val TAG = "WearSyncListener"
 
 class WearSyncListenerService : WearableListenerService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     private fun refreshWearSurfaces() {
         TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
@@ -44,7 +41,9 @@ class WearSyncListenerService : WearableListenerService() {
     }
 
     private fun markSyncedNow() {
-        WearDataStore.updateLastSyncLabel("Sync ${timeFormatter.format(Date())}")
+        val now = Date().time
+        WearDataStore.updateLastSyncAtMillis(now)
+        WearSnapshotStore.persistLastSyncAtMillis(this, now)
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
