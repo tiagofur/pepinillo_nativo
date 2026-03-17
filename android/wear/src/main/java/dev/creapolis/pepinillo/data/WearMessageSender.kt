@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.data
 
 import android.content.Context
+import android.util.Base64
 import com.google.android.gms.wearable.Wearable
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TASK_COMPLETE
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TIMER_PAUSE
@@ -8,6 +9,8 @@ import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TIMER_RESUME
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TIMER_START
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TIMER_STOP
 import kotlinx.coroutines.tasks.await
+import org.json.JSONArray
+import org.json.JSONObject
 import java.nio.charset.StandardCharsets
 
 object WearDataPaths {
@@ -24,15 +27,113 @@ object WearDataPaths {
 
 class WearMessageSender(private val context: Context) {
 
+    private val prefs by lazy {
+        context.getSharedPreferences("wear_pending_commands", Context.MODE_PRIVATE)
+    }
+
+    private companion object {
+        const val KEY_PENDING = "pending"
+        const val MAX_PENDING_COMMANDS = 40
+    }
+
     suspend fun sendCommand(path: String, data: ByteArray = byteArrayOf()): Boolean {
         val nodes = Wearable.getNodeClient(context).connectedNodes.await()
-        if (nodes.isEmpty()) return false
+        if (nodes.isEmpty()) {
+            enqueuePendingCommand(path, data)
+            return false
+        }
+
+        flushPendingCommands(nodes.map { it.id })
 
         nodes.forEach { node ->
             Wearable.getMessageClient(context).sendMessage(node.id, path, data).await()
         }
         return true
     }
+
+    suspend fun flushPendingCommands() {
+        val nodes = Wearable.getNodeClient(context).connectedNodes.await()
+        if (nodes.isEmpty()) return
+        flushPendingCommands(nodes.map { it.id })
+    }
+
+    private suspend fun flushPendingCommands(nodeIds: List<String>) {
+        val pending = readPendingCommands()
+        if (pending.isEmpty()) return
+
+        val stillPending = mutableListOf<PendingCommand>()
+
+        pending.forEach { cmd ->
+            val sent = runCatching {
+                nodeIds.forEach { nodeId ->
+                    Wearable.getMessageClient(context).sendMessage(nodeId, cmd.path, cmd.data).await()
+                }
+            }.isSuccess
+
+            if (!sent) {
+                stillPending += cmd
+            }
+        }
+
+        writePendingCommands(stillPending)
+    }
+
+    private fun enqueuePendingCommand(path: String, data: ByteArray) {
+        val arr = JSONArray(prefs.getString(KEY_PENDING, "[]") ?: "[]")
+        arr.put(
+            JSONObject().apply {
+                put("path", path)
+                put("data", Base64.encodeToString(data, Base64.NO_WRAP))
+            },
+        )
+
+        val bounded = mutableListOf<PendingCommand>()
+        repeat(arr.length()) { idx ->
+            val obj = arr.getJSONObject(idx)
+            bounded += PendingCommand(
+                path = obj.getString("path"),
+                data = Base64.decode(obj.optString("data", ""), Base64.DEFAULT),
+            )
+        }
+
+        writePendingCommands(bounded.takeLast(MAX_PENDING_COMMANDS))
+    }
+
+    private fun readPendingCommands(): List<PendingCommand> {
+        val json = prefs.getString(KEY_PENDING, "[]") ?: "[]"
+        return runCatching {
+            val arr = JSONArray(json)
+            (0 until arr.length()).map { idx ->
+                val obj = arr.getJSONObject(idx)
+                PendingCommand(
+                    path = obj.getString("path"),
+                    data = Base64.decode(obj.optString("data", ""), Base64.DEFAULT),
+                )
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    private fun clearPendingCommands() {
+        prefs.edit().putString(KEY_PENDING, "[]").apply()
+    }
+
+    private fun writePendingCommands(commands: List<PendingCommand>) {
+        val arr = JSONArray()
+        commands.forEach { cmd ->
+            arr.put(
+                JSONObject().apply {
+                    put("path", cmd.path)
+                    put("data", Base64.encodeToString(cmd.data, Base64.NO_WRAP))
+                },
+            )
+        }
+        prefs.edit().putString(KEY_PENDING, arr.toString()).apply()
+    }
+
+    private data class PendingCommand(
+        val path: String,
+        val data: ByteArray,
+    )
 
     suspend fun startTimer(mode: String): Boolean =
         sendCommand(CMD_TIMER_START, mode.toByteArray(StandardCharsets.UTF_8))

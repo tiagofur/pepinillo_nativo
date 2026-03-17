@@ -8,6 +8,7 @@ import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import dev.creapolis.pepinillo.data.WearDataPaths
 import dev.creapolis.pepinillo.data.WearDataStore
+import dev.creapolis.pepinillo.data.WearMessageSender
 import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.CoroutineScope
@@ -65,6 +66,9 @@ class WearSyncListenerService : WearableListenerService() {
     override fun onPeerConnected(peer: com.google.android.gms.wearable.Node) {
         super.onPeerConnected(peer)
         scope.launch {
+            runCatching { WearMessageSender(this@WearSyncListenerService).flushPendingCommands() }
+                .onFailure { e -> Log.w(TAG, "Failed to flush pending commands", e) }
+
             runCatching {
                 val buffer = Wearable.getDataClient(this@WearSyncListenerService).dataItems.await()
                 try {

@@ -14,7 +14,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
-import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dev.creapolis.pepinillo.widget.WidgetStateManager
