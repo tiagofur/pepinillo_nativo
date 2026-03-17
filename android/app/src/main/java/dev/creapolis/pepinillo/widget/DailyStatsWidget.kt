@@ -44,6 +44,7 @@ private fun StatsContent(context: Context) {
     val minutes = WidgetStateManager.readMinutes(context)
     val sessions = WidgetStateManager.readSessions(context)
     val streak = WidgetStateManager.readStreak(context)
+    val completedTasks = WidgetStateManager.readCompletedTasks(context)
 
     val hours = minutes / 60
     val mins = minutes % 60
@@ -60,7 +61,7 @@ private fun StatsContent(context: Context) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Today's Focus",
+            text = "Hoy",
             style = TextStyle(
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
@@ -74,14 +75,13 @@ private fun StatsContent(context: Context) {
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Focus time
-            StatBlock(value = timeText, label = "Focus Time", emoji = "\u23F1")
-            Spacer(modifier = GlanceModifier.width(24.dp))
-            // Sessions
-            StatBlock(value = "$sessions", label = "Sessions", emoji = "\u2705")
-            Spacer(modifier = GlanceModifier.width(24.dp))
-            // Streak
-            StatBlock(value = "$streak", label = "Streak", emoji = "\uD83D\uDD25")
+            StatBlock(value = timeText, label = "Enfoque", emoji = "\u23F1")
+            Spacer(modifier = GlanceModifier.width(16.dp))
+            StatBlock(value = "$sessions", label = "Sesiones", emoji = "\u2705")
+            Spacer(modifier = GlanceModifier.width(16.dp))
+            StatBlock(value = "$streak", label = "Racha", emoji = "\uD83D\uDD25")
+            Spacer(modifier = GlanceModifier.width(16.dp))
+            StatBlock(value = "$completedTasks", label = "Tareas", emoji = "\uD83D\uDCCB")
         }
     }
 }

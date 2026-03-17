@@ -7,13 +7,17 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.glance.appwidget.updateAll
 import dagger.hilt.android.AndroidEntryPoint
 import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
+import dev.creapolis.pepinillo.domain.timer.FocusPhase
+import dev.creapolis.pepinillo.domain.timer.FocusTimerState
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabel
@@ -23,7 +27,6 @@ import dev.creapolis.pepinillo.widget.FocusTimerWidget
 import dev.creapolis.pepinillo.widget.TimerWidgetState
 import dev.creapolis.pepinillo.widget.WidgetStateManager
 import dev.creapolis.pepinillo.widget.updateWidgetState
-import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -50,6 +53,15 @@ class FocusTimerService : Service() {
         const val ACTION_START_MODE = "dev.creapolis.pepinillo.START_MODE"
         const val ACTION_SELECT_MODE = "dev.creapolis.pepinillo.SELECT_MODE"
 
+        // Recovery SharedPrefs keys
+        private const val RECOVERY_PREFS = "focus_timer_recovery"
+        private const val KEY_R_MODE = "r_mode"
+        private const val KEY_R_PHASE = "r_phase"
+        private const val KEY_R_START = "r_start"
+        private const val KEY_R_TOTAL = "r_total"
+        private const val KEY_R_COMPLETED = "r_completed"
+        private const val KEY_R_ACTIVE = "r_active"
+
         fun start(context: Context) {
             context.startForegroundService(Intent(context, FocusTimerService::class.java))
         }
@@ -57,7 +69,46 @@ class FocusTimerService : Service() {
         fun stop(context: Context) {
             context.stopService(Intent(context, FocusTimerService::class.java))
         }
+
+        fun saveRecoveryState(context: Context, state: FocusTimerState) {
+            context.getSharedPreferences(RECOVERY_PREFS, Context.MODE_PRIVATE).edit()
+                .putString(KEY_R_MODE, state.mode.name)
+                .putString(KEY_R_PHASE, state.phase.name)
+                .putLong(KEY_R_START, state.sessionStartTime)
+                .putLong(KEY_R_TOTAL, state.totalMillis)
+                .putInt(KEY_R_COMPLETED, state.completedSessions)
+                .putBoolean(KEY_R_ACTIVE, true)
+                .apply()
+        }
+
+        fun clearRecoveryState(context: Context) {
+            context.getSharedPreferences(RECOVERY_PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+        }
+
+        fun readRecoveryState(context: Context): RecoveryState? {
+            val prefs = context.getSharedPreferences(RECOVERY_PREFS, Context.MODE_PRIVATE)
+            if (!prefs.getBoolean(KEY_R_ACTIVE, false)) return null
+            val modeName = prefs.getString(KEY_R_MODE, null) ?: return null
+            val phaseName = prefs.getString(KEY_R_PHASE, FocusPhase.Work.name) ?: FocusPhase.Work.name
+            val startTime = prefs.getLong(KEY_R_START, 0L)
+            if (startTime == 0L) return null
+            return RecoveryState(
+                mode = FocusMode.entries.find { it.name == modeName } ?: return null,
+                phase = FocusPhase.entries.find { it.name == phaseName } ?: FocusPhase.Work,
+                sessionStartTime = startTime,
+                totalMillis = prefs.getLong(KEY_R_TOTAL, 0L),
+                completedSessions = prefs.getInt(KEY_R_COMPLETED, 0),
+            )
+        }
     }
+
+    data class RecoveryState(
+        val mode: FocusMode,
+        val phase: FocusPhase,
+        val sessionStartTime: Long,
+        val totalMillis: Long,
+        val completedSessions: Int,
+    )
 
     override fun onCreate() {
         super.onCreate()
@@ -65,24 +116,60 @@ class FocusTimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
+        // null intent = START_STICKY restart after process death — attempt recovery
+        if (intent == null) {
+            startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+            val recovery = readRecoveryState(this)
+            if (recovery != null) {
+                serviceScope.launch {
+                    val elapsed = (System.currentTimeMillis() - recovery.sessionStartTime)
+                        .coerceAtLeast(0L)
+                    focusEngine.restoreState(
+                        mode = recovery.mode,
+                        phase = recovery.phase,
+                        elapsedMillis = elapsed,
+                        totalMillis = recovery.totalMillis,
+                        completedSessions = recovery.completedSessions,
+                        sessionStartTime = recovery.sessionStartTime,
+                    )
+                }
+            } else {
+                // Nothing to restore — stop the service
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            startCollectingIfNeeded()
+            return START_STICKY
+        }
+
+        when (intent.action) {
             ACTION_PAUSE -> focusEngine.pause()
             ACTION_RESUME -> focusEngine.start()
             ACTION_STOP -> {
                 focusEngine.stop()
+                clearRecoveryState(this)
                 stopSelf()
                 return START_NOT_STICKY
             }
             ACTION_START_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
                 val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-                focusEngine.selectMode(mode)
-                focusEngine.start()
+                // startForeground BEFORE the suspend call to satisfy Android's 5-second requirement
+                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+                startCollectingIfNeeded()
+                serviceScope.launch {
+                    focusEngine.selectMode(mode)
+                    focusEngine.start()
+                }
+                return START_STICKY
             }
             ACTION_SELECT_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
                 val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-                focusEngine.selectMode(mode)
+                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+                startCollectingIfNeeded()
+                serviceScope.launch { focusEngine.selectMode(mode) }
+                return START_STICKY
             }
         }
 
@@ -118,6 +205,13 @@ class FocusTimerService : Service() {
                     )
                     updateWidgetState(this@FocusTimerService, widgetState)
                     FocusTimerWidget().updateAll(context = this@FocusTimerService)
+
+                    // Persist recovery state while running so we can restore after process death
+                    if (state.status == TimerStatus.Running) {
+                        saveRecoveryState(this@FocusTimerService, state)
+                    } else if (state.status == TimerStatus.Idle) {
+                        clearRecoveryState(this@FocusTimerService)
+                    }
                 }
 
                 if (state.status == TimerStatus.Idle) {

@@ -71,6 +71,11 @@ class TaskRepository @Inject constructor(
         runCatching { taskDao.incrementPomodoros(taskId) }
             .onFailure { Log.e(TAG, "Error incrementing pomodoros for $taskId", it) }
     }
+
+    suspend fun getCompletedTodayCount(startOfDay: Long): Int =
+        runCatching { taskDao.getCompletedTodayCount(startOfDay) }
+            .onFailure { Log.e(TAG, "Error counting completed tasks today", it) }
+            .getOrDefault(0)
 }
 
 private fun TaskEntity.toDomain() = Task(

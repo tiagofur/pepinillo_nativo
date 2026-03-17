@@ -42,6 +42,9 @@ interface TaskDao {
     @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 0 AND is_deleted = 0")
     fun getActiveCount(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 1 AND is_deleted = 0 AND completed_at >= :startOfDay")
+    suspend fun getCompletedTodayCount(startOfDay: Long): Int
+
     // Sync queries
     @Query("SELECT * FROM tasks WHERE is_dirty = 1")
     suspend fun getDirtyTasks(): List<TaskEntity>

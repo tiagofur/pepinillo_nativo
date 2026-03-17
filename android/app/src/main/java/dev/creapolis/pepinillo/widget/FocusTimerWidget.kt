@@ -320,14 +320,8 @@ class SelectModeAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val modeName = parameters[modeParam] ?: FocusMode.Pomodoro.name
         val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-        
-        context.startService(
-            Intent(context, FocusTimerService::class.java).apply {
-                action = FocusTimerService.ACTION_SELECT_MODE
-                putExtra("mode", modeName)
-            },
-        )
-        
+
+        // Update SharedPrefs immediately so widget re-renders without waiting for the service
         updateWidgetState(context, TimerWidgetState(
             mode = mode,
             selectedMode = mode,
@@ -336,7 +330,7 @@ class SelectModeAction : ActionCallback {
             status = TimerStatus.Idle,
             progress = 1f,
         ))
-        
+
         FocusTimerWidget().updateAll(context = context)
     }
 }
@@ -356,7 +350,7 @@ class StartAction : ActionCallback {
 
 class PauseAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        context.startService(
+        context.startForegroundService(
             Intent(context, FocusTimerService::class.java).apply { action = FocusTimerService.ACTION_PAUSE },
         )
     }
@@ -364,7 +358,7 @@ class PauseAction : ActionCallback {
 
 class ResumeAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        context.startService(
+        context.startForegroundService(
             Intent(context, FocusTimerService::class.java).apply { action = FocusTimerService.ACTION_RESUME },
         )
     }
@@ -391,4 +385,21 @@ class StopAction : ActionCallback {
 
 class FocusTimerWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = FocusTimerWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        // Clear any stale state from a previous widget instance so the widget
+        // always starts in the Idle state when first added to the home screen.
+        updateWidgetState(
+            context,
+            TimerWidgetState(
+                mode = FocusMode.Pomodoro,
+                selectedMode = null,
+                displayTime = FocusMode.Pomodoro.defaultDisplayTime,
+                phaseLabel = FocusMode.Pomodoro.label,
+                status = TimerStatus.Idle,
+                progress = 1f,
+            ),
+        )
+    }
 }

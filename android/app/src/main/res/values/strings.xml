@@ -6,6 +6,8 @@
     <string name="widget_timer_description">Control your focus timer from the home screen</string>
     <string name="widget_stats_name">Daily Stats</string>
     <string name="widget_stats_description">See your daily focus stats at a glance</string>
+    <string name="widget_tasks_name">Tasks</string>
+    <string name="widget_tasks_description">See and complete your active tasks from the home screen</string>
 
     <!-- Focus Screen -->
     <string name="greeting_morning">Good morning</string>

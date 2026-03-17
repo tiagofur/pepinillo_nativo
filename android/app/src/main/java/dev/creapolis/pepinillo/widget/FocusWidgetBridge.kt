@@ -14,7 +14,7 @@ class FocusWidgetBridge @Inject constructor(
 ) {
     val state: StateFlow<FocusTimerState> = focusEngine.state
 
-    fun selectMode(mode: FocusMode) = focusEngine.selectMode(mode)
+    suspend fun selectMode(mode: FocusMode) = focusEngine.selectMode(mode)
     fun start() = focusEngine.start()
     fun pause() = focusEngine.pause()
     fun stop() = focusEngine.stop()

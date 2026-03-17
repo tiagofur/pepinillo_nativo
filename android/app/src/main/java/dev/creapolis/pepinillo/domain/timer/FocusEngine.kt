@@ -33,15 +33,51 @@ class FocusEngine @Inject constructor(
     private var timerJob: Job? = null
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    fun selectMode(mode: FocusMode) {
+    suspend fun selectMode(mode: FocusMode) {
         if (_state.value.status != TimerStatus.Idle) return
-        scope.launch {
-            val prefs = prefsRepo.preferences.first()
+        val prefs = prefsRepo.preferences.first()
+        _state.value = FocusTimerState(
+            mode = mode,
+            totalMillis = getTotalMillis(mode, prefs),
+            linkedTaskId = _state.value.linkedTaskId,
+        )
+    }
+
+    /** Restores timer state after process death (START_STICKY service restart). */
+    suspend fun restoreState(
+        mode: FocusMode,
+        phase: FocusPhase,
+        elapsedMillis: Long,
+        totalMillis: Long,
+        completedSessions: Int,
+        sessionStartTime: Long,
+    ) {
+        val prefs = prefsRepo.preferences.first()
+        val resolvedTotal = if (totalMillis > 0L) totalMillis else getTotalMillis(mode, prefs)
+
+        // If the phase already completed while the process was dead, handle it
+        if (mode != FocusMode.Flow && mode != FocusMode.Chrono && elapsedMillis >= resolvedTotal) {
             _state.value = FocusTimerState(
                 mode = mode,
-                totalMillis = getTotalMillis(mode, prefs),
-                linkedTaskId = _state.value.linkedTaskId,
+                phase = phase,
+                status = TimerStatus.Running,
+                elapsedMillis = resolvedTotal,
+                totalMillis = resolvedTotal,
+                completedSessions = completedSessions,
+                sessionStartTime = sessionStartTime,
             )
+            onPhaseComplete()
+        } else {
+            _state.value = FocusTimerState(
+                mode = mode,
+                phase = phase,
+                status = TimerStatus.Running,
+                elapsedMillis = elapsedMillis,
+                totalMillis = resolvedTotal,
+                completedSessions = completedSessions,
+                sessionStartTime = sessionStartTime,
+            )
+            start()
         }
     }
 

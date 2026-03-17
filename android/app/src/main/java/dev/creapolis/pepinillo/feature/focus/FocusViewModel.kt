@@ -109,7 +109,7 @@ class FocusViewModel @Inject constructor(
     ))
 
     fun selectMode(mode: FocusMode) {
-        focusEngine.selectMode(mode)
+        viewModelScope.launch { focusEngine.selectMode(mode) }
     }
 
     fun onStartStopClick() {
