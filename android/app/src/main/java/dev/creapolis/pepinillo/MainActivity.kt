@@ -32,6 +32,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import dev.creapolis.pepinillo.feature.auth.LoginScreen
+import dev.creapolis.pepinillo.feature.auth.RegisterScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
@@ -91,8 +93,9 @@ fun PepinilloApp() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Hide bottom bar on non-top-level screens (like Profile)
+    // Hide bottom bar on non-top-level screens (like Profile, Auth)
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
+    val authRoutes = setOf("login", "register")
     val showBottomBar = currentRoute in topLevelRoutes
 
     Scaffold(
@@ -159,10 +162,34 @@ fun PepinilloApp() {
             composable("profile") {
                 ProfileScreen(
                     onBackClick = { navController.popBackStack() },
+                    onSignInClick = { navController.navigate("login") },
+                    onSignOutClick = { /* handled internally */ },
                 )
             }
             composable(TopLevelDestination.Settings.route) {
                 SettingsScreen()
+            }
+
+            // Auth routes
+            composable("login") {
+                LoginScreen(
+                    onNavigateToRegister = { navController.navigate("register") },
+                    onAuthenticated = {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable("register") {
+                RegisterScreen(
+                    onNavigateToLogin = { navController.popBackStack() },
+                    onAuthenticated = {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                )
             }
         }
     }

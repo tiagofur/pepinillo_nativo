@@ -43,12 +43,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import dagger.hilt.android.EntryPointAccessors
 
 @Composable
 fun ProfileScreen(
     modifier: Modifier = Modifier,
     onBackClick: () -> Unit = {},
+    onSignInClick: () -> Unit = {},
+    onSignOutClick: () -> Unit = {},
 ) {
     Column(
         modifier = modifier
@@ -232,12 +238,14 @@ fun ProfileScreen(
                 icon = Icons.Rounded.Backup,
                 label = "Backup & Sync",
                 subtitle = "Sign in to enable cloud sync",
+                onClick = onSignInClick,
             )
             ProfileDivider()
             ActionRow(
                 icon = Icons.AutoMirrored.Rounded.ExitToApp,
                 label = "Sign In",
                 subtitle = "Access your data on any device",
+                onClick = onSignInClick,
             )
         }
 
@@ -394,11 +402,12 @@ private fun ActionRow(
     icon: ImageVector,
     label: String,
     subtitle: String,
+    onClick: () -> Unit = {},
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
+            .clickable(onClick = onClick)
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
