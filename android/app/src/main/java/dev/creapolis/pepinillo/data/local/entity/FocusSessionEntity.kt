@@ -21,4 +21,9 @@ data class FocusSessionEntity(
     val phase: String? = null,
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
+    // Sync fields
+    @ColumnInfo(name = "is_dirty", defaultValue = "1")
+    val isDirty: Boolean = true,
+    @ColumnInfo(name = "synced_at")
+    val syncedAt: Long? = null,
 )

@@ -32,8 +32,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.feature.auth.LoginScreen
 import dev.creapolis.pepinillo.feature.auth.RegisterScreen
+import dev.creapolis.pepinillo.feature.onboarding.OnboardingScreen
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
@@ -187,6 +191,16 @@ fun PepinilloApp() {
                     onAuthenticated = {
                         navController.navigate(TopLevelDestination.Focus.route) {
                             popUpTo("login") { inclusive = true }
+                        }
+                    },
+                )
+            }
+
+            composable("onboarding") {
+                OnboardingScreen(
+                    onComplete = {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo("onboarding") { inclusive = true }
                         }
                     },
                 )

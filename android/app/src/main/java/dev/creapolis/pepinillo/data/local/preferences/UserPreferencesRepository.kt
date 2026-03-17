@@ -27,6 +27,7 @@ data class UserPreferences(
     val vibrationEnabled: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.System,
     val dynamicColor: Boolean = true,
+    val onboardingCompleted: Boolean = false,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -47,6 +48,7 @@ class UserPreferencesRepository @Inject constructor(
         val VIBRATION_ENABLED = booleanPreferencesKey("vibration_enabled")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -62,6 +64,7 @@ class UserPreferencesRepository @Inject constructor(
             vibrationEnabled = prefs[Keys.VIBRATION_ENABLED] ?: true,
             themeMode = prefs[Keys.THEME_MODE]?.let { ThemeMode.valueOf(it) } ?: ThemeMode.System,
             dynamicColor = prefs[Keys.DYNAMIC_COLOR] ?: true,
+            onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false,
         )
     }
 
@@ -76,6 +79,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateVibrationEnabled(value: Boolean) = update { it[Keys.VIBRATION_ENABLED] = value }
     suspend fun updateThemeMode(mode: ThemeMode) = update { it[Keys.THEME_MODE] = mode.name }
     suspend fun updateDynamicColor(value: Boolean) = update { it[Keys.DYNAMIC_COLOR] = value }
+    suspend fun completeOnboarding() = update { it[Keys.ONBOARDING_COMPLETED] = true }
 
     private suspend fun update(block: (MutablePreferences) -> Unit) {
         context.dataStore.edit { prefs -> block(prefs) }

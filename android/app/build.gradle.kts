@@ -80,6 +80,11 @@ dependencies {
     // Security
     implementation(libs.androidx.security.crypto)
 
+    // WorkManager
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+
     // Glance (Widgets)
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)

@@ -20,4 +20,11 @@ interface FocusSessionDao {
 
     @Query("SELECT * FROM focus_sessions WHERE created_at >= :startTime AND created_at < :endTime ORDER BY created_at DESC")
     fun getSessionsInRange(startTime: Long, endTime: Long): Flow<List<FocusSessionEntity>>
+
+    // Sync queries
+    @Query("SELECT * FROM focus_sessions WHERE is_dirty = 1")
+    suspend fun getDirtySessions(): List<FocusSessionEntity>
+
+    @Query("UPDATE focus_sessions SET is_dirty = 0, synced_at = :syncedAt WHERE id = :sessionId")
+    suspend fun markSynced(sessionId: String, syncedAt: Long)
 }

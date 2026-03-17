@@ -28,4 +28,13 @@ data class TaskEntity(
     val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long = System.currentTimeMillis(),
+    // Sync fields
+    @ColumnInfo(name = "server_id")
+    val serverId: Int? = null,
+    @ColumnInfo(name = "is_dirty", defaultValue = "1")
+    val isDirty: Boolean = true,
+    @ColumnInfo(name = "is_deleted", defaultValue = "0")
+    val isDeleted: Boolean = false,
+    @ColumnInfo(name = "synced_at")
+    val syncedAt: Long? = null,
 )
