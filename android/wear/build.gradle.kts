@@ -56,5 +56,7 @@ dependencies {
     implementation(libs.androidx.wear.complications.datasource)
     implementation(libs.androidx.concurrent.futures)
 
+    testImplementation(libs.junit)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
