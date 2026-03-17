@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.service
 
 import android.util.Log
+import androidx.wear.tiles.TileService
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
@@ -11,6 +12,7 @@ import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearMessageSender
 import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearTimerState
+import dev.creapolis.pepinillo.tile.FocusTileService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +45,7 @@ class WearSyncListenerService : WearableListenerService() {
                             isConnected = true,
                         ),
                     )
+                    TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
                 }
 
                 WearDataPaths.PATH_TASKS -> {

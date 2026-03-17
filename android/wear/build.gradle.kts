@@ -52,6 +52,9 @@ dependencies {
 
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.androidx.wear.tiles)
+    implementation(libs.androidx.wear.complications.datasource)
+    implementation(libs.androidx.concurrent.futures)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
