@@ -1,12 +1,15 @@
 package dev.creapolis.pepinillo.service
 
+import android.content.ComponentName
 import android.util.Log
 import androidx.wear.tiles.TileService
+import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
 import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
+import dev.creapolis.pepinillo.complication.FocusComplicationDataSource
 import dev.creapolis.pepinillo.data.WearDataPaths
 import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearMessageSender
@@ -25,6 +28,16 @@ private const val TAG = "WearSyncListener"
 
 class WearSyncListenerService : WearableListenerService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private fun refreshWearSurfaces() {
+        TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
+        ComplicationDataSourceUpdateRequester
+            .create(
+                context = this,
+                complicationDataSourceComponent = ComponentName(this, FocusComplicationDataSource::class.java),
+            )
+            .requestUpdateAll()
+    }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
         dataEvents.forEach { event ->
@@ -46,7 +59,7 @@ class WearSyncListenerService : WearableListenerService() {
                     )
                     WearDataStore.updateTimer(timerState)
                     WearSnapshotStore.persistTimerState(this, timerState)
-                    TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
+                    refreshWearSurfaces()
                 }
 
                 WearDataPaths.PATH_TASKS -> {
@@ -94,6 +107,7 @@ class WearSyncListenerService : WearableListenerService() {
                                 )
                                 WearDataStore.updateTimer(timerState)
                                 WearSnapshotStore.persistTimerState(this@WearSyncListenerService, timerState)
+                                refreshWearSurfaces()
                             }
 
                             WearDataPaths.PATH_TASKS -> {
@@ -126,6 +140,7 @@ class WearSyncListenerService : WearableListenerService() {
         val timerState = WearDataStore.timerState.value.copy(isConnected = false, status = "Disconnected")
         WearDataStore.updateTimer(timerState)
         WearSnapshotStore.persistTimerState(this, timerState)
+        refreshWearSurfaces()
     }
 
     override fun onDestroy() {
