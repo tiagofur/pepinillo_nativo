@@ -13,12 +13,17 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import dev.creapolis.pepinillo.data.WearStatsState
 import kotlinx.coroutines.launch
 
 @Composable
-fun StatsScreen(state: WearStatsState) {
+fun StatsScreen(
+    state: WearStatsState,
+    syncStatusLabel: String? = null,
+    isSyncStale: Boolean = false,
+) {
     val listState = rememberScalingLazyListState()
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
@@ -39,6 +44,15 @@ fun StatsScreen(state: WearStatsState) {
             .focusable(),
     ) {
         item { Text(text = "Hoy") }
+        if (!syncStatusLabel.isNullOrBlank()) {
+            item {
+                Text(
+                    text = syncStatusLabel,
+                    style = MaterialTheme.typography.caption3,
+                    color = if (isSyncStale) MaterialTheme.colors.error else MaterialTheme.colors.onSurface,
+                )
+            }
+        }
         item { Text(text = "⏱ ${state.totalMinutes} min") }
         item { Text(text = "✅ ${state.sessions} sesiones") }
         item { Text(text = "🔥 racha ${state.streak}") }

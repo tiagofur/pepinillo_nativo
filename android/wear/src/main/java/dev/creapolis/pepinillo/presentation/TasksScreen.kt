@@ -16,6 +16,7 @@ import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
@@ -26,6 +27,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun TasksScreen(
     tasks: List<WearTask>,
+    syncStatusLabel: String? = null,
+    isSyncStale: Boolean = false,
     onCompleteTask: (String) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -50,6 +53,16 @@ fun TasksScreen(
     ) {
         item {
             Text(text = "Tareas (${tasks.size})")
+        }
+
+        if (!syncStatusLabel.isNullOrBlank()) {
+            item {
+                Text(
+                    text = syncStatusLabel,
+                    style = MaterialTheme.typography.caption3,
+                    color = if (isSyncStale) MaterialTheme.colors.error else MaterialTheme.colors.onSurface,
+                )
+            }
         }
 
         if (tasks.isEmpty()) {

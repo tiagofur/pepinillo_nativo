@@ -59,7 +59,11 @@ private fun WearApp(viewModel: WearViewModel) {
             ) {
                 HorizontalPager(state = pagerState) { page ->
                     when (page) {
-                        0 -> StatsScreen(stats)
+                        0 -> StatsScreen(
+                            state = stats,
+                            syncStatusLabel = syncStatus.label,
+                            isSyncStale = syncStatus.isStale,
+                        )
                         1 -> TimerScreen(
                             state = timerState,
                             pendingCommandCount = pendingCommandCount,
@@ -72,6 +76,8 @@ private fun WearApp(viewModel: WearViewModel) {
                         )
                         else -> TasksScreen(
                             tasks = tasks,
+                            syncStatusLabel = syncStatus.label,
+                            isSyncStale = syncStatus.isStale,
                             onCompleteTask = viewModel::completeTask,
                         )
                     }

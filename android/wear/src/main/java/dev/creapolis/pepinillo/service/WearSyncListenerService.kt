@@ -29,6 +29,42 @@ private const val TAG = "WearSyncListener"
 
 class WearSyncListenerService : WearableListenerService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val processor = WearSyncProcessor(
+        object : WearSyncSink {
+            override fun updateTimer(state: WearTimerState) {
+                WearDataStore.updateTimer(state)
+            }
+
+            override fun persistTimer(state: WearTimerState) {
+                WearSnapshotStore.persistTimerState(this@WearSyncListenerService, state)
+            }
+
+            override fun updateTasksFromJson(tasksJson: String): List<dev.creapolis.pepinillo.data.WearTask> {
+                WearDataStore.updateTasksFromJson(tasksJson)
+                return WearDataStore.tasks.value
+            }
+
+            override fun persistTasks(tasks: List<dev.creapolis.pepinillo.data.WearTask>) {
+                WearSnapshotStore.persistTasks(this@WearSyncListenerService, tasks)
+            }
+
+            override fun updateStats(state: WearStatsState) {
+                WearDataStore.updateStats(state)
+            }
+
+            override fun persistStats(state: WearStatsState) {
+                WearSnapshotStore.persistStats(this@WearSyncListenerService, state)
+            }
+
+            override fun markSyncedNow() {
+                this@WearSyncListenerService.markSyncedNow()
+            }
+
+            override fun refreshWearSurfaces() {
+                this@WearSyncListenerService.refreshWearSurfaces()
+            }
+        },
+    )
 
     private fun refreshWearSurfaces() {
         TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
@@ -64,17 +100,12 @@ class WearSyncListenerService : WearableListenerService() {
                         progress = dataMap.getFloat("progress", 0f),
                         isConnected = true,
                     )
-                    WearDataStore.updateTimer(timerState)
-                    WearSnapshotStore.persistTimerState(this, timerState)
-                    markSyncedNow()
-                    refreshWearSurfaces()
+                    processor.onTimerData(timerState)
                 }
 
                 WearDataPaths.PATH_TASKS -> {
                     val tasksJson = dataMap.getString("tasksJson", "[]")
-                    WearDataStore.updateTasksFromJson(tasksJson)
-                    WearSnapshotStore.persistTasks(this, WearDataStore.tasks.value)
-                    markSyncedNow()
+                    processor.onTasksData(tasksJson)
                 }
 
                 WearDataPaths.PATH_STATS -> {
@@ -84,9 +115,7 @@ class WearSyncListenerService : WearableListenerService() {
                         streak = dataMap.getInt("streak", 0),
                         completedTasks = dataMap.getInt("completedTasksToday", 0),
                     )
-                    WearDataStore.updateStats(statsState)
-                    WearSnapshotStore.persistStats(this, statsState)
-                    markSyncedNow()
+                    processor.onStatsData(statsState)
                 }
             }
         }
@@ -115,17 +144,12 @@ class WearSyncListenerService : WearableListenerService() {
                                     progress = map.getFloat("progress", 0f),
                                     isConnected = true,
                                 )
-                                WearDataStore.updateTimer(timerState)
-                                WearSnapshotStore.persistTimerState(this@WearSyncListenerService, timerState)
-                                markSyncedNow()
-                                refreshWearSurfaces()
+                                processor.onTimerData(timerState)
                             }
 
                             WearDataPaths.PATH_TASKS -> {
                                 val tasksJson = map.getString("tasksJson", "[]")
-                                WearDataStore.updateTasksFromJson(tasksJson)
-                                WearSnapshotStore.persistTasks(this@WearSyncListenerService, WearDataStore.tasks.value)
-                                markSyncedNow()
+                                processor.onTasksData(tasksJson)
                             }
 
                             WearDataPaths.PATH_STATS -> {
@@ -135,9 +159,7 @@ class WearSyncListenerService : WearableListenerService() {
                                     streak = map.getInt("streak", 0),
                                     completedTasks = map.getInt("completedTasksToday", 0),
                                 )
-                                WearDataStore.updateStats(statsState)
-                                WearSnapshotStore.persistStats(this@WearSyncListenerService, statsState)
-                                markSyncedNow()
+                                processor.onStatsData(statsState)
                             }
                         }
                     }
@@ -150,10 +172,7 @@ class WearSyncListenerService : WearableListenerService() {
 
     override fun onPeerDisconnected(peer: com.google.android.gms.wearable.Node) {
         super.onPeerDisconnected(peer)
-        val timerState = WearDataStore.timerState.value.copy(isConnected = false, status = "Disconnected")
-        WearDataStore.updateTimer(timerState)
-        WearSnapshotStore.persistTimerState(this, timerState)
-        refreshWearSurfaces()
+        processor.onPeerDisconnected(WearDataStore.timerState.value)
     }
 
     override fun onDestroy() {
