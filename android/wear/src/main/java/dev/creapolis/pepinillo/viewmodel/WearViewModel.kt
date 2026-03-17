@@ -13,6 +13,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     val timerState = WearDataStore.timerState
     val tasks = WearDataStore.tasks
     val stats = WearDataStore.stats
+    val pendingCommandCount = WearDataStore.pendingCommandCount
 
     fun startTimer(mode: String) {
         viewModelScope.launch { sender.startTimer(mode) }

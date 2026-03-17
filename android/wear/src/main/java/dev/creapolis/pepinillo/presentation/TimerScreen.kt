@@ -20,6 +20,7 @@ import dev.creapolis.pepinillo.data.WearTimerState
 @Composable
 fun TimerScreen(
     state: WearTimerState,
+    pendingCommandCount: Int = 0,
     onStartMode: (String) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -90,6 +91,14 @@ fun TimerScreen(
             }
 
             "Disconnected" -> {
+                if (pendingCommandCount > 0) {
+                    Text(
+                        text = "\uD83D\uDCE4 $pendingCommandCount en cola",
+                        style = MaterialTheme.typography.caption2,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                }
                 Text(
                     text = "Conecta el telefono para sincronizar",
                     style = MaterialTheme.typography.caption2,

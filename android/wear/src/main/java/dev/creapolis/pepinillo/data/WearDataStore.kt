@@ -9,9 +9,16 @@ object WearDataStore {
     private val _tasks = MutableStateFlow(emptyList<WearTask>())
     private val _stats = MutableStateFlow(WearStatsState())
 
+    private val _pendingCommandCount = MutableStateFlow(0)
+
     val timerState = _timerState.asStateFlow()
     val tasks = _tasks.asStateFlow()
     val stats = _stats.asStateFlow()
+    val pendingCommandCount = _pendingCommandCount.asStateFlow()
+
+    fun updatePendingCount(count: Int) {
+        _pendingCommandCount.value = count
+    }
 
     fun updateTimer(newState: WearTimerState) {
         _timerState.value = newState

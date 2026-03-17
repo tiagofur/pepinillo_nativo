@@ -38,6 +38,7 @@ private fun WearApp(viewModel: WearViewModel) {
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val pendingCommandCount by viewModel.pendingCommandCount.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { 3 })
 
     WearTheme {
@@ -53,6 +54,7 @@ private fun WearApp(viewModel: WearViewModel) {
                         0 -> StatsScreen(stats)
                         1 -> TimerScreen(
                             state = timerState,
+                            pendingCommandCount = pendingCommandCount,
                             onStartMode = viewModel::startTimer,
                             onPause = viewModel::pauseTimer,
                             onResume = viewModel::resumeTimer,

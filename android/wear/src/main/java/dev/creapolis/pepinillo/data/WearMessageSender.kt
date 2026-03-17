@@ -31,6 +31,11 @@ class WearMessageSender(private val context: Context) {
         context.getSharedPreferences("wear_pending_commands", Context.MODE_PRIVATE)
     }
 
+    init {
+        // Restore pending count from persisted state on start
+        WearDataStore.updatePendingCount(readPendingCommands().size)
+    }
+
     private companion object {
         const val KEY_PENDING = "pending"
         const val MAX_PENDING_COMMANDS = 40
@@ -128,6 +133,7 @@ class WearMessageSender(private val context: Context) {
             )
         }
         prefs.edit().putString(KEY_PENDING, arr.toString()).apply()
+        WearDataStore.updatePendingCount(commands.size)
     }
 
     private data class PendingCommand(
