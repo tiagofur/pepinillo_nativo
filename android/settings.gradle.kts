@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Pepinillo"
 include(":app")
+include(":wear")
  

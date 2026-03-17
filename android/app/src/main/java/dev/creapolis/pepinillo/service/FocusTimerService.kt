@@ -23,6 +23,7 @@ import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabel
 import dev.creapolis.pepinillo.domain.timer.progress
 import dev.creapolis.pepinillo.feature.focus.FocusMode
+import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dev.creapolis.pepinillo.widget.FocusTimerWidget
 import dev.creapolis.pepinillo.widget.TimerWidgetState
 import dev.creapolis.pepinillo.widget.WidgetStateManager
@@ -205,6 +206,7 @@ class FocusTimerService : Service() {
                     )
                     updateWidgetState(this@FocusTimerService, widgetState)
                     FocusTimerWidget().updateAll(context = this@FocusTimerService)
+                    WearDataLayerHelper.pushTimer(this@FocusTimerService, state)
 
                     // Persist recovery state while running so we can restore after process death
                     if (state.status == TimerStatus.Running) {

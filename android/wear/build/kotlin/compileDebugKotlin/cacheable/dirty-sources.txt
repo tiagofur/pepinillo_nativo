@@ -1,0 +1,9 @@
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\presentation\StatsScreen.kt
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\data\WearDataStore.kt
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\data\WearMessageSender.kt
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\presentation\MainActivity.kt
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\service\WearSyncListenerService.kt
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\presentation\WearTheme.kt
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\presentation\TasksScreen.kt
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\presentation\TimerScreen.kt
+C:\Users\tfurt\source\repos\pepinillo_nativo\android\wear\src\main\java\dev\creapolis\pepinillo\viewmodel\WearViewModel.kt

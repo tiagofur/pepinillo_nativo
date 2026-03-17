@@ -16,6 +16,7 @@ import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
+import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dev.creapolis.pepinillo.widget.WidgetStateManager
 import dev.creapolis.pepinillo.widget.WidgetTask
 import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
@@ -80,6 +81,15 @@ class WidgetRefreshWorker @AssistedInject constructor(
                 context = appContext,
                 tasks = widgetTasks,
                 completedToday = completedToday,
+            )
+
+            WearDataLayerHelper.pushTasksAndStats(
+                context = appContext,
+                tasks = widgetTasks,
+                totalMinutes = totalMinutes,
+                sessions = sessions,
+                streak = streak,
+                completedTasksToday = completedToday,
             )
 
             Log.d(TAG, "Widget refresh done — ${totalMinutes}m focus, $sessions sessions, $streak streak, $completedToday tasks done")
