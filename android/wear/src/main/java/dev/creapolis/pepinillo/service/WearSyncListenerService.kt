@@ -23,11 +23,15 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private const val TAG = "WearSyncListener"
 
 class WearSyncListenerService : WearableListenerService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     private fun refreshWearSurfaces() {
         TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
@@ -37,6 +41,10 @@ class WearSyncListenerService : WearableListenerService() {
                 complicationDataSourceComponent = ComponentName(this, FocusComplicationDataSource::class.java),
             )
             .requestUpdateAll()
+    }
+
+    private fun markSyncedNow() {
+        WearDataStore.updateLastSyncLabel("Sync ${timeFormatter.format(Date())}")
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
@@ -59,6 +67,7 @@ class WearSyncListenerService : WearableListenerService() {
                     )
                     WearDataStore.updateTimer(timerState)
                     WearSnapshotStore.persistTimerState(this, timerState)
+                    markSyncedNow()
                     refreshWearSurfaces()
                 }
 
@@ -66,6 +75,7 @@ class WearSyncListenerService : WearableListenerService() {
                     val tasksJson = dataMap.getString("tasksJson", "[]")
                     WearDataStore.updateTasksFromJson(tasksJson)
                     WearSnapshotStore.persistTasks(this, WearDataStore.tasks.value)
+                    markSyncedNow()
                 }
 
                 WearDataPaths.PATH_STATS -> {
@@ -77,6 +87,7 @@ class WearSyncListenerService : WearableListenerService() {
                     )
                     WearDataStore.updateStats(statsState)
                     WearSnapshotStore.persistStats(this, statsState)
+                    markSyncedNow()
                 }
             }
         }
@@ -107,6 +118,7 @@ class WearSyncListenerService : WearableListenerService() {
                                 )
                                 WearDataStore.updateTimer(timerState)
                                 WearSnapshotStore.persistTimerState(this@WearSyncListenerService, timerState)
+                                markSyncedNow()
                                 refreshWearSurfaces()
                             }
 
@@ -114,6 +126,7 @@ class WearSyncListenerService : WearableListenerService() {
                                 val tasksJson = map.getString("tasksJson", "[]")
                                 WearDataStore.updateTasksFromJson(tasksJson)
                                 WearSnapshotStore.persistTasks(this@WearSyncListenerService, WearDataStore.tasks.value)
+                                markSyncedNow()
                             }
 
                             WearDataPaths.PATH_STATS -> {
@@ -125,6 +138,7 @@ class WearSyncListenerService : WearableListenerService() {
                                 )
                                 WearDataStore.updateStats(statsState)
                                 WearSnapshotStore.persistStats(this@WearSyncListenerService, statsState)
+                                markSyncedNow()
                             }
                         }
                     }

@@ -21,6 +21,7 @@ import dev.creapolis.pepinillo.data.WearTimerState
 fun TimerScreen(
     state: WearTimerState,
     pendingCommandCount: Int = 0,
+    lastSyncLabel: String? = null,
     onStartMode: (String) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -52,6 +53,15 @@ fun TimerScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 8.dp),
         )
+
+        if (!lastSyncLabel.isNullOrBlank() && state.status != "Disconnected") {
+            Text(
+                text = lastSyncLabel,
+                style = MaterialTheme.typography.caption3,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+        }
 
         when (state.status) {
             "Running" -> {
