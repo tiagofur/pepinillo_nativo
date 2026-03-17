@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Pepinillo</string>
+    <string name="widget_timer_name">Focus Timer</string>
+    <string name="widget_timer_description">Control your focus timer from the home screen</string>
+    <string name="widget_stats_name">Daily Stats</string>
+    <string name="widget_stats_description">See your daily focus stats at a glance</string>
+</resources>

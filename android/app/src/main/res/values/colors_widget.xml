@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_pomodoro">#FF43A047</color>
+    <color name="widget_flow">#FF1E88E5</color>
+    <color name="widget_blocks">#FFFB8C00</color>
+    <color name="widget_chrono">#FF8E24AA</color>
+    <color name="widget_white">#FFFFFFFF</color>
+    <color name="widget_stop_bg">#FFE0E0E0</color>
+    <color name="widget_stop_text">#FF424242</color>
+</resources>

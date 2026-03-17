@@ -1,0 +1,65 @@
+# === macOS ===
+.DS_Store
+*.swp
+*~
+
+# === IDE ===
+.idea/
+*.iml
+.vscode/
+
+# === Android / Gradle ===
+.gradle/
+local.properties
+/build/
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+/captures
+.externalNativeBuild
+.cxx
+
+# === iOS / Xcode ===
+pepinillo_ios/build/
+pepinillo_ios/DerivedData/
+pepinillo_ios/*.xcodeproj/xcuserdata/
+pepinillo_ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+pepinillo_ios/*.xcworkspace/xcuserdata/
+pepinillo_ios/*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+pepinillo_ios/.build/
+pepinillo_ios/.swiftpm/
+
+# XcodeGen (regenerated from project.yml)
+pepinillo_ios/Pepinillo.xcodeproj
+
+# App Store credentials / secrets
+*.cer
+*.p12
+*.mobileprovision
+*.provisionprofile
+authkey*.p8
+
+# === Go / Backend ===
+backend/bin/
+backend/tmp/
+backend/vendor/
+
+# === Python / ML ===
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# === Docker ===
+.docker/
+
+# === Environment / Secrets ===
+.env
+.env.*
+!.env.example
+
+# === Claude Code ===
+.claude/

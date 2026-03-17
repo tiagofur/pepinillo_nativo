@@ -1,0 +1,20 @@
+package domain
+
+import "time"
+
+type PomodoroSession struct {
+	ID                string     `json:"id" gorm:"primaryKey"`
+	UserID            string     `json:"userId" gorm:"type:uuid;index;not null"`
+	TaskID            *int       `json:"taskId" gorm:"index"`
+	StartedAt         time.Time  `json:"startedAt" gorm:"index;not null"`
+	EndedAt           *time.Time `json:"endedAt"`
+	Phase             string     `json:"phase" gorm:"not null"`
+	DurationSeconds   int        `json:"durationSeconds" gorm:"not null"`
+	ElapsedSeconds    int        `json:"elapsedSeconds" gorm:"not null"`
+	PauseCount        int        `json:"pauseCount" gorm:"default:0;not null"`
+	TotalPauseSeconds int        `json:"totalPauseSeconds" gorm:"default:0;not null"`
+	WasCompleted      bool       `json:"wasCompleted" gorm:"default:false;not null"`
+	SharedWithTaskIDs *string    `json:"sharedWithTaskIds"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         time.Time  `json:"updatedAt"`
+}
