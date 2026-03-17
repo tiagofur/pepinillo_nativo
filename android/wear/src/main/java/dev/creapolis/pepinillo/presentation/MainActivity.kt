@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.TimeText
+import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.viewmodel.WearViewModel
 
 class MainActivity : ComponentActivity() {
@@ -27,6 +28,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WearSnapshotStore.bootstrap(this)
         setContent {
             WearApp(viewModel)
         }

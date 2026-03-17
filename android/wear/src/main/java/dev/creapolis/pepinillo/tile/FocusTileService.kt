@@ -11,7 +11,7 @@ import androidx.wear.tiles.ResourceBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
-import dev.creapolis.pepinillo.data.WearDataStore
+import dev.creapolis.pepinillo.data.WearSnapshotStore
 
 class FocusTileService : TileService() {
 
@@ -41,7 +41,7 @@ class FocusTileService : TileService() {
         }
 
     private fun buildTile(): TileBuilders.Tile {
-        val state = WearDataStore.timerState.value
+        val state = WearSnapshotStore.readTimerState(this)
 
         val displayText = when {
             state.status == "Running" || state.status == "Paused" -> state.displayTime

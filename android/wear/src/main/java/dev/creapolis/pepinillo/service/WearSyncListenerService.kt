@@ -10,6 +10,7 @@ import com.google.android.gms.wearable.WearableListenerService
 import dev.creapolis.pepinillo.data.WearDataPaths
 import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearMessageSender
+import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearTimerState
 import dev.creapolis.pepinillo.tile.FocusTileService
@@ -34,33 +35,35 @@ class WearSyncListenerService : WearableListenerService() {
 
             when (path) {
                 WearDataPaths.PATH_TIMER -> {
-                    WearDataStore.updateTimer(
-                        WearTimerState(
-                            mode = dataMap.getString("mode", "Pomodoro"),
-                            phase = dataMap.getString("phase", "Work"),
-                            status = dataMap.getString("status", "Idle"),
-                            displayTime = dataMap.getString("displayTime", "00:00"),
-                            phaseLabel = dataMap.getString("phaseLabel", "Focus"),
-                            progress = dataMap.getFloat("progress", 0f),
-                            isConnected = true,
-                        ),
+                    val timerState = WearTimerState(
+                        mode = dataMap.getString("mode", "Pomodoro"),
+                        phase = dataMap.getString("phase", "Work"),
+                        status = dataMap.getString("status", "Idle"),
+                        displayTime = dataMap.getString("displayTime", "00:00"),
+                        phaseLabel = dataMap.getString("phaseLabel", "Focus"),
+                        progress = dataMap.getFloat("progress", 0f),
+                        isConnected = true,
                     )
+                    WearDataStore.updateTimer(timerState)
+                    WearSnapshotStore.persistTimerState(this, timerState)
                     TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
                 }
 
                 WearDataPaths.PATH_TASKS -> {
-                    WearDataStore.updateTasksFromJson(dataMap.getString("tasksJson", "[]"))
+                    val tasksJson = dataMap.getString("tasksJson", "[]")
+                    WearDataStore.updateTasksFromJson(tasksJson)
+                    WearSnapshotStore.persistTasks(this, WearDataStore.tasks.value)
                 }
 
                 WearDataPaths.PATH_STATS -> {
-                    WearDataStore.updateStats(
-                        WearStatsState(
-                            totalMinutes = dataMap.getInt("totalMinutes", 0),
-                            sessions = dataMap.getInt("sessions", 0),
-                            streak = dataMap.getInt("streak", 0),
-                            completedTasks = dataMap.getInt("completedTasksToday", 0),
-                        ),
+                    val statsState = WearStatsState(
+                        totalMinutes = dataMap.getInt("totalMinutes", 0),
+                        sessions = dataMap.getInt("sessions", 0),
+                        streak = dataMap.getInt("streak", 0),
+                        completedTasks = dataMap.getInt("completedTasksToday", 0),
                     )
+                    WearDataStore.updateStats(statsState)
+                    WearSnapshotStore.persistStats(this, statsState)
                 }
             }
         }
@@ -80,32 +83,34 @@ class WearSyncListenerService : WearableListenerService() {
                         val map = DataMapItem.fromDataItem(item).dataMap
                         when (path) {
                             WearDataPaths.PATH_TIMER -> {
-                                WearDataStore.updateTimer(
-                                    WearTimerState(
-                                        mode = map.getString("mode", "Pomodoro"),
-                                        phase = map.getString("phase", "Work"),
-                                        status = map.getString("status", "Idle"),
-                                        displayTime = map.getString("displayTime", "00:00"),
-                                        phaseLabel = map.getString("phaseLabel", "Focus"),
-                                        progress = map.getFloat("progress", 0f),
-                                        isConnected = true,
-                                    ),
+                                val timerState = WearTimerState(
+                                    mode = map.getString("mode", "Pomodoro"),
+                                    phase = map.getString("phase", "Work"),
+                                    status = map.getString("status", "Idle"),
+                                    displayTime = map.getString("displayTime", "00:00"),
+                                    phaseLabel = map.getString("phaseLabel", "Focus"),
+                                    progress = map.getFloat("progress", 0f),
+                                    isConnected = true,
                                 )
+                                WearDataStore.updateTimer(timerState)
+                                WearSnapshotStore.persistTimerState(this@WearSyncListenerService, timerState)
                             }
 
                             WearDataPaths.PATH_TASKS -> {
-                                WearDataStore.updateTasksFromJson(map.getString("tasksJson", "[]"))
+                                val tasksJson = map.getString("tasksJson", "[]")
+                                WearDataStore.updateTasksFromJson(tasksJson)
+                                WearSnapshotStore.persistTasks(this@WearSyncListenerService, WearDataStore.tasks.value)
                             }
 
                             WearDataPaths.PATH_STATS -> {
-                                WearDataStore.updateStats(
-                                    WearStatsState(
-                                        totalMinutes = map.getInt("totalMinutes", 0),
-                                        sessions = map.getInt("sessions", 0),
-                                        streak = map.getInt("streak", 0),
-                                        completedTasks = map.getInt("completedTasksToday", 0),
-                                    ),
+                                val statsState = WearStatsState(
+                                    totalMinutes = map.getInt("totalMinutes", 0),
+                                    sessions = map.getInt("sessions", 0),
+                                    streak = map.getInt("streak", 0),
+                                    completedTasks = map.getInt("completedTasksToday", 0),
                                 )
+                                WearDataStore.updateStats(statsState)
+                                WearSnapshotStore.persistStats(this@WearSyncListenerService, statsState)
                             }
                         }
                     }
@@ -118,7 +123,9 @@ class WearSyncListenerService : WearableListenerService() {
 
     override fun onPeerDisconnected(peer: com.google.android.gms.wearable.Node) {
         super.onPeerDisconnected(peer)
-        WearDataStore.updateTimer(WearDataStore.timerState.value.copy(isConnected = false, status = "Disconnected"))
+        val timerState = WearDataStore.timerState.value.copy(isConnected = false, status = "Disconnected")
+        WearDataStore.updateTimer(timerState)
+        WearSnapshotStore.persistTimerState(this, timerState)
     }
 
     override fun onDestroy() {

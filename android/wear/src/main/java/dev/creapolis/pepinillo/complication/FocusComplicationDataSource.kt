@@ -8,7 +8,7 @@ import androidx.wear.watchface.complications.data.RangedValueComplicationData
 import androidx.wear.watchface.complications.data.ShortTextComplicationData
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
-import dev.creapolis.pepinillo.data.WearDataStore
+import dev.creapolis.pepinillo.data.WearSnapshotStore
 
 class FocusComplicationDataSource : SuspendingComplicationDataSourceService() {
 
@@ -16,7 +16,7 @@ class FocusComplicationDataSource : SuspendingComplicationDataSourceService() {
         buildData(type, displayTime = "25:00", mode = "Pomodoro", progress = 1f)
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
-        val state = WearDataStore.timerState.value
+        val state = WearSnapshotStore.readTimerState(this)
         return buildData(
             type = request.complicationType,
             displayTime = state.displayTime,

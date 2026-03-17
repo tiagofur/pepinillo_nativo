@@ -40,6 +40,10 @@ object WearDataStore {
         _tasks.value = parsed
     }
 
+    fun updateTasks(newTasks: List<WearTask>) {
+        _tasks.value = newTasks
+    }
+
     fun updateStats(newState: WearStatsState) {
         _stats.value = newState
     }
