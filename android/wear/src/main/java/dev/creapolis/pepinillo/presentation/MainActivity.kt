@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -64,7 +65,9 @@ private fun WearApp(viewModel: WearViewModel) {
             vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
         ) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colors.background),
             ) {
                 HorizontalPager(state = pagerState) { page ->
                     when (page) {
