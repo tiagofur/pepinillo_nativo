@@ -15,7 +15,7 @@ interface FocusSessionDao {
     @Query("SELECT * FROM focus_sessions WHERE created_at >= :startOfDay ORDER BY created_at DESC")
     fun getSessionsForDay(startOfDay: Long): Flow<List<FocusSessionEntity>>
 
-    @Query("SELECT COUNT(*) FROM focus_sessions WHERE created_at >= :startOfDay")
+    @Query("SELECT COUNT(*) FROM focus_sessions WHERE created_at >= :startOfDay AND (phase IS NULL OR phase = 'Work')")
     fun getSessionCountForDay(startOfDay: Long): Flow<Int>
 
     @Query("SELECT * FROM focus_sessions WHERE created_at >= :startTime AND created_at < :endTime ORDER BY created_at DESC")

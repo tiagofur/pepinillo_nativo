@@ -80,7 +80,7 @@ class FocusEngine @Inject constructor(
                 completedSessions = completedSessions,
                 sessionStartTime = sessionStartTime,
             )
-            start()
+            startTimerLoop()
         }
     }
 
@@ -95,6 +95,14 @@ class FocusEngine @Inject constructor(
             )
         }
 
+        startTimerLoop()
+    }
+
+    /**
+     * Creates a new timer tick loop. Called by start() for user actions, and directly
+     * by onPhaseComplete()/restoreState() to bypass the Running guard in start().
+     */
+    private fun startTimerLoop() {
         timerJob?.cancel()
         timerJob = scope.launch {
             // Cache prefs at session start
@@ -192,7 +200,7 @@ class FocusEngine @Inject constructor(
                     linkedTaskId = s.linkedTaskId,
                     sessionStartTime = if (prefs.autoStartBreaks) System.currentTimeMillis() else 0L,
                 )
-                if (prefs.autoStartBreaks) start()
+                if (prefs.autoStartBreaks) startTimerLoop()
             }
 
             s.mode == FocusMode.Pomodoro && (s.phase == FocusPhase.ShortBreak || s.phase == FocusPhase.LongBreak) -> {
@@ -205,7 +213,7 @@ class FocusEngine @Inject constructor(
                     linkedTaskId = s.linkedTaskId,
                     sessionStartTime = if (prefs.autoStartNextPomodoro) System.currentTimeMillis() else 0L,
                 )
-                if (prefs.autoStartNextPomodoro) start()
+                if (prefs.autoStartNextPomodoro) startTimerLoop()
             }
 
             // Blocks mode: just stop when done

@@ -21,9 +21,15 @@ import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.Vignette
 import androidx.wear.compose.material.VignettePosition
+import dev.creapolis.pepinillo.data.WearDataFetcher
+import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.data.WearSyncStatusFormatter
 import dev.creapolis.pepinillo.viewmodel.WearViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
 
 class MainActivity : ComponentActivity() {
     private val viewModel: WearViewModel by viewModels()
@@ -31,6 +37,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WearSnapshotStore.bootstrap(this)
+        lifecycleScope.launch(Dispatchers.IO) {
+            WearDataFetcher.fetchAndApplyAll(this@MainActivity)
+            WearDataFetcher.requestSyncFromPhone(this@MainActivity)
+            // Retry: give the phone time to push data after sync request
+            if (WearDataStore.tasks.value.isEmpty()) {
+                delay(2_000)
+                WearDataFetcher.fetchAndApplyAll(this@MainActivity)
+            }
+            if (WearDataStore.tasks.value.isEmpty()) {
+                delay(5_000)
+                WearDataFetcher.fetchAndApplyAll(this@MainActivity)
+            }
+        }
         setContent {
             WearApp(viewModel)
         }

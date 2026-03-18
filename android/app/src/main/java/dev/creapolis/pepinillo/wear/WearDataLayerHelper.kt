@@ -30,6 +30,7 @@ object WearDataLayerHelper {
     const val CMD_TIMER_RESUME = "/pepinillo/cmd/timer/resume"
     const val CMD_TIMER_STOP = "/pepinillo/cmd/timer/stop"
     const val CMD_TASK_COMPLETE = "/pepinillo/cmd/task/complete"
+    const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
 
     fun pushTimer(context: Context, state: FocusTimerState, linkedTaskName: String? = null) {
         val request = PutDataMapRequest.create(PATH_TIMER).apply {
@@ -59,14 +60,17 @@ object WearDataLayerHelper {
         streak: Int,
         completedTasksToday: Int,
     ) {
+        val json = tasksToJson(tasks)
+        Log.d(TAG, "Pushing ${tasks.size} tasks to wear, json length=${json.length}")
         val tasksRequest = PutDataMapRequest.create(PATH_TASKS).apply {
-            dataMap.putString("tasksJson", tasksToJson(tasks))
+            dataMap.putString("tasksJson", json)
             dataMap.putInt("count", tasks.size)
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
         Wearable.getDataClient(context).putDataItem(tasksRequest)
-            .addOnFailureListener { e -> Log.w(TAG, "Failed pushing tasks", e) }
+            .addOnSuccessListener { Log.d(TAG, "Tasks pushed successfully (${tasks.size} tasks)") }
+            .addOnFailureListener { e -> Log.e(TAG, "Failed pushing tasks (${tasks.size})", e) }
 
         val statsRequest = PutDataMapRequest.create(PATH_STATS).apply {
             dataMap.putInt("totalMinutes", totalMinutes)
@@ -77,7 +81,8 @@ object WearDataLayerHelper {
         }.asPutDataRequest().setUrgent()
 
         Wearable.getDataClient(context).putDataItem(statsRequest)
-            .addOnFailureListener { e -> Log.w(TAG, "Failed pushing stats", e) }
+            .addOnSuccessListener { Log.d(TAG, "Stats pushed successfully") }
+            .addOnFailureListener { e -> Log.e(TAG, "Failed pushing stats", e) }
     }
 
     private fun tasksToJson(tasks: List<WidgetTask>): String {

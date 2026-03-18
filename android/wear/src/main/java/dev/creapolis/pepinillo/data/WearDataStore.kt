@@ -70,7 +70,22 @@ object WearDataStore {
     }
 
     fun updateTasksFromJson(tasksJson: String) {
-        val parsed = WearSnapshotTaskCodec.deserialize(tasksJson)
+        val parsed = runCatching {
+            val arr = JSONArray(tasksJson)
+            (0 until arr.length()).map { i ->
+                val obj = arr.getJSONObject(i)
+                WearTask(
+                    id = obj.getString("id"),
+                    title = obj.getString("title"),
+                    energyEmoji = obj.optString("energyEmoji", ""),
+                    pomodoroProgress = obj.optString("pomodoroProgress", ""),
+                )
+            }
+        }.getOrElse { e ->
+            android.util.Log.w("WearDataStore", "Failed to parse tasks JSON (len=${tasksJson.length})", e)
+            emptyList()
+        }
+        android.util.Log.d("WearDataStore", "updateTasksFromJson: parsed ${parsed.size} tasks")
         _tasks.value = parsed
     }
 

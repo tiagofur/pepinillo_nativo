@@ -9,6 +9,7 @@ import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
+import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabel
@@ -70,7 +71,10 @@ class FocusViewModel @Inject constructor(
         viewModelScope.launch {
             val prefs = prefsRepo.preferences.first()
             val engineState = focusEngine.state.value
-            if (engineState.status == TimerStatus.Idle) {
+            if (engineState.status == TimerStatus.Idle
+                && engineState.completedSessions == 0
+                && engineState.phase == FocusPhase.Work
+            ) {
                 val defaultMode = FocusMode.entries.find { it.name == prefs.defaultMode }
                     ?: FocusMode.Pomodoro
                 focusEngine.selectMode(defaultMode)

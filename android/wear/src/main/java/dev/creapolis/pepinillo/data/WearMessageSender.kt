@@ -20,6 +20,7 @@ object WearDataPaths {
     const val CMD_TIMER_RESUME = "/pepinillo/cmd/timer/resume"
     const val CMD_TIMER_STOP = "/pepinillo/cmd/timer/stop"
     const val CMD_TASK_COMPLETE = "/pepinillo/cmd/task/complete"
+    const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
 }
 
 class WearMessageSender(private val context: Context) {

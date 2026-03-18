@@ -42,6 +42,7 @@ import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
+import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
 import dev.creapolis.pepinillo.feature.settings.SettingsScreen
 import dev.creapolis.pepinillo.feature.tasks.TasksScreen
 import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailScreen
@@ -197,7 +198,14 @@ fun PepinilloApp() {
                 )
             }
             composable(TopLevelDestination.Settings.route) {
-                SettingsScreen()
+                SettingsScreen(
+                    onNavigateToAppSetup = { navController.navigate("app_setup") },
+                )
+            }
+            composable("app_setup") {
+                AppSetupScreen(
+                    onBack = { navController.popBackStack() },
+                )
             }
 
             // Auth routes

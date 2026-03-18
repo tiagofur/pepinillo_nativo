@@ -22,7 +22,8 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
 
     func timeline(for configuration: ConfigureTasksWidgetIntent, in context: Context) async -> Timeline<TasksWidgetEntry> {
         let entry = await buildEntry(configuration: configuration)
-        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 30, to: Date.now) ?? Date.now
+        // Refresh every 15 minutes, or when main app explicitly reloads
+        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: Date.now) ?? Date.now
         return Timeline(entries: [entry], policy: .after(nextRefresh))
     }
 
@@ -33,15 +34,19 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
             let container = try makeWidgetModelContainer()
             let context = ModelContext(container)
 
-            // Fetch active (non-completed) tasks, sorted by priority desc then sort order
+            // Fetch all non-completed, non-template tasks
             var descriptor = FetchDescriptor<TaskItem>(
-                predicate: #Predicate { !$0.isCompleted },
+                predicate: #Predicate<TaskItem> { task in
+                    task.isCompleted == false && task.isRecurringTemplate == false
+                },
                 sortBy: [
                     SortDescriptor(\.sortOrder),
                     SortDescriptor(\.createdAt, order: .reverse),
                 ]
             )
             descriptor.fetchLimit = 8
+            // Avoid loading relationships in widget process
+            descriptor.relationshipKeyPathsForPrefetching = []
 
             let tasks = try context.fetch(descriptor)
 
@@ -55,7 +60,7 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
                     energyIcon: task.energyLevel.icon,
                     completedPomodoros: task.completedPomodoros,
                     estimatedPomodoros: task.estimatedPomodoros,
-                    priorityValue: task.priority.sortValue
+                    priorityValue: task.priority.rawValue
                 )
             }
 
@@ -65,13 +70,8 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
                 activeTaskID: activeTaskID
             )
         } catch {
+            // If SwiftData fetch fails, return empty state
             return .empty
         }
     }
-}
-
-// MARK: - Priority sort value
-
-private extension TaskPriority {
-    var sortValue: Int { rawValue }
 }

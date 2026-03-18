@@ -30,6 +30,7 @@ import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dev.creapolis.pepinillo.widget.FocusTimerWidget
 import dev.creapolis.pepinillo.widget.TimerWidgetState
 import dev.creapolis.pepinillo.widget.WidgetStateManager
+import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
 import dev.creapolis.pepinillo.widget.updateWidgetState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -156,6 +157,8 @@ class FocusTimerService : Service() {
             ACTION_STOP -> {
                 focusEngine.stop()
                 clearRecoveryState(this)
+                // Clear linked task highlight from tasks widget
+                serviceScope.launch { WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, null) }
                 // Refresh tasks+stats on watch after session ends
                 WorkManager.getInstance(this).enqueue(
                     OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
@@ -207,55 +210,62 @@ class FocusTimerService : Service() {
             var previousPhase: dev.creapolis.pepinillo.domain.timer.FocusPhase? = null
             var previousStatus: TimerStatus? = null
             focusEngine.state.collect { state ->
-                // Detect phase change → notify watch to vibrate
-                if (previousPhase != null && state.phase != previousPhase && state.status != TimerStatus.Idle) {
-                    WearDataLayerHelper.pushPhaseComplete(this@FocusTimerService, state.mode.name, previousPhase!!.name)
-                }
-                previousPhase = state.phase
-
-                // Detect status change to bypass throttle (ensures final idle push is never skipped)
-                val statusChanged = previousStatus != null && state.status != previousStatus
-                previousStatus = state.status
-
-                // Update notification every tick
-                getSystemService(NotificationManager::class.java)
-                    .notify(NOTIFICATION_ID, buildNotification(state))
-
-                // Resolve linked task name (only re-query when task changes)
-                if (state.linkedTaskId != cachedLinkedTaskId) {
-                    cachedLinkedTaskId = state.linkedTaskId
-                    cachedLinkedTaskName = state.linkedTaskId?.let {
-                        taskRepository.getTaskById(it)?.title
+                try {
+                    // Detect phase change → notify watch to vibrate
+                    if (previousPhase != null && state.phase != previousPhase && state.status != TimerStatus.Idle) {
+                        WearDataLayerHelper.pushPhaseComplete(this@FocusTimerService, state.mode.name, previousPhase!!.name)
                     }
-                }
+                    previousPhase = state.phase
 
-                // Update widget max once per second to avoid battery drain
-                // Bypass throttle on status transitions so the final idle push always reaches the watch
-                val now = System.currentTimeMillis()
-                if (now - lastWidgetUpdate >= 1000 || statusChanged) {
-                    lastWidgetUpdate = now
-                    val widgetState = TimerWidgetState(
-                        mode = state.mode,
-                        selectedMode = state.mode,
-                        displayTime = state.displayTime,
-                        phaseLabel = state.phaseLabel,
-                        status = state.status,
-                        progress = state.progress,
-                    )
-                    updateWidgetState(this@FocusTimerService, widgetState)
-                    FocusTimerWidget().updateAll(context = this@FocusTimerService)
-                    WearDataLayerHelper.pushTimer(this@FocusTimerService, state, cachedLinkedTaskName)
+                    // Detect status change to bypass throttle (ensures final idle push is never skipped)
+                    val statusChanged = previousStatus != null && state.status != previousStatus
+                    previousStatus = state.status
 
-                    // Persist recovery state while running so we can restore after process death
-                    if (state.status == TimerStatus.Running) {
-                        saveRecoveryState(this@FocusTimerService, state)
-                    } else if (state.status == TimerStatus.Idle) {
-                        clearRecoveryState(this@FocusTimerService)
+                    // Update notification every tick
+                    getSystemService(NotificationManager::class.java)
+                        .notify(NOTIFICATION_ID, buildNotification(state))
+
+                    // Resolve linked task name (only re-query when task changes)
+                    if (state.linkedTaskId != cachedLinkedTaskId) {
+                        cachedLinkedTaskId = state.linkedTaskId
+                        cachedLinkedTaskName = state.linkedTaskId?.let {
+                            taskRepository.getTaskById(it)?.title
+                        }
                     }
-                }
 
-                if (state.status == TimerStatus.Idle) {
-                    stopSelf()
+                    // Update widget max once per second to avoid battery drain
+                    // Bypass throttle on status transitions so the final idle push always reaches the watch
+                    val now = System.currentTimeMillis()
+                    if (now - lastWidgetUpdate >= 1000 || statusChanged) {
+                        lastWidgetUpdate = now
+                        val widgetState = TimerWidgetState(
+                            mode = state.mode,
+                            selectedMode = state.mode,
+                            displayTime = state.displayTime,
+                            phaseLabel = state.phaseLabel,
+                            status = state.status,
+                            progress = state.progress,
+                            linkedTaskName = cachedLinkedTaskName,
+                        )
+                        updateWidgetState(this@FocusTimerService, widgetState)
+                        FocusTimerWidget().updateAll(context = this@FocusTimerService)
+                        // Keep tasks widget in sync with linked task highlight
+                        WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, state.linkedTaskId)
+                        WearDataLayerHelper.pushTimer(this@FocusTimerService, state, cachedLinkedTaskName)
+
+                        // Persist recovery state while running so we can restore after process death
+                        if (state.status == TimerStatus.Running) {
+                            saveRecoveryState(this@FocusTimerService, state)
+                        } else if (state.status == TimerStatus.Idle) {
+                            clearRecoveryState(this@FocusTimerService)
+                        }
+                    }
+
+                    if (state.status == TimerStatus.Idle) {
+                        stopSelf()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("FocusTimerService", "Error in state collector", e)
                 }
             }
         }
@@ -268,11 +278,19 @@ class FocusTimerService : Service() {
             ) { stats, allDays ->
                 Pair(stats, allDays)
             }.collect { (stats, allDays) ->
+                val startOfDay = java.util.Calendar.getInstance().apply {
+                    set(java.util.Calendar.HOUR_OF_DAY, 0)
+                    set(java.util.Calendar.MINUTE, 0)
+                    set(java.util.Calendar.SECOND, 0)
+                    set(java.util.Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                val completedToday = runCatching { taskRepository.getCompletedTodayCount(startOfDay) }.getOrDefault(0)
                 WidgetStateManager.updateDailyStats(
                     context = this@FocusTimerService,
                     totalMinutes = stats?.totalMinutes ?: 0,
                     sessions = stats?.sessionsCompleted ?: 0,
                     streak = sessionRepository.calculateCurrentStreak(allDays),
+                    completedTasksToday = completedToday,
                 )
             }
         }

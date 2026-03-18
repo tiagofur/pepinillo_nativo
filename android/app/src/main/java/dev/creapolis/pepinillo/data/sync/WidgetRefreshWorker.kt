@@ -45,6 +45,7 @@ class WidgetRefreshWorker @AssistedInject constructor(
 
             // ── 2. Tasks ────────────────────────────────────────────────────
             val activeTasks = taskRepository.getActiveTasks().first()
+            Log.d(TAG, "Active tasks from DB: ${activeTasks.size} (${activeTasks.map { it.title }})")
             val startOfDay = startOfDay()
             val completedToday = taskRepository.getCompletedTodayCount(startOfDay)
 
@@ -82,14 +83,19 @@ class WidgetRefreshWorker @AssistedInject constructor(
                 completedToday = completedToday,
             )
 
-            WearDataLayerHelper.pushTasksAndStats(
-                context = appContext,
-                tasks = widgetTasks,
-                totalMinutes = totalMinutes,
-                sessions = sessions,
-                streak = streak,
-                completedTasksToday = completedToday,
-            )
+            // ── 4. Push to wear (independent — failure must not affect widgets) ──
+            runCatching {
+                WearDataLayerHelper.pushTasksAndStats(
+                    context = appContext,
+                    tasks = widgetTasks,
+                    totalMinutes = totalMinutes,
+                    sessions = sessions,
+                    streak = streak,
+                    completedTasksToday = completedToday,
+                )
+            }.onFailure { e ->
+                Log.e(TAG, "Wear push failed (tasks=${widgetTasks.size})", e)
+            }
 
             Log.d(TAG, "Widget refresh done — ${totalMinutes}m focus, $sessions sessions, $streak streak, $completedToday tasks done")
             Result.success()

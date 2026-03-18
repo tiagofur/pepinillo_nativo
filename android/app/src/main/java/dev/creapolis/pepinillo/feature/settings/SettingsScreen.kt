@@ -32,11 +32,22 @@ import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.Warning
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.os.PowerManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -68,10 +79,26 @@ import dev.creapolis.pepinillo.ui.theme.ThemeMode
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onNavigateToAppSetup: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // Check critical permissions for warning badge
+    var hasPermissionIssues by remember { mutableStateOf(false) }
+    fun checkPermissions() {
+        val notificationsOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context, Manifest.permission.POST_NOTIFICATIONS,
+            ) == PackageManager.PERMISSION_GRANTED
+        } else true
+        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val batteryOk = pm.isIgnoringBatteryOptimizations(context.packageName)
+        hasPermissionIssues = !notificationsOk || !batteryOk
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { checkPermissions() }
 
     Column(
         modifier = modifier
@@ -94,6 +121,67 @@ fun SettingsScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // ── APP SETUP BANNER ──
+        SettingsCard {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onNavigateToAppSetup)
+                    .padding(vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Security,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = if (hasPermissionIssues) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "App Setup",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = if (hasPermissionIssues) {
+                            "Action required for best experience"
+                        } else {
+                            "All permissions configured"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (hasPermissionIssues) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+                if (hasPermissionIssues) {
+                    Icon(
+                        imageVector = Icons.Rounded.Warning,
+                        contentDescription = "Action required",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(28.dp))
 
@@ -375,52 +463,6 @@ fun SettingsScreen(
 // ── Reusable components ──
 
 @Composable
-private fun SectionHeader(icon: ImageVector, title: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
-}
-
-@Composable
-private fun SettingsCard(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(24.dp),
-            )
-            .padding(horizontal = 20.dp, vertical = 4.dp),
-    ) {
-        Column { content() }
-    }
-}
-
-@Composable
-private fun SettingsDivider() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-    )
-}
-
-@Composable
 private fun StepperRow(
     label: String,
     value: String,
@@ -646,40 +688,6 @@ private fun ReminderTimeRow(
     }
 }
 
-@Composable
-private fun NavigationRow(
-    label: String,
-    trailing: String? = null,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { }
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f),
-        )
-        if (trailing != null) {
-            Text(
-                text = trailing,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(modifier = Modifier.width(4.dp))
-        Icon(
-            imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-        )
-    }
-}
 
 @Preview(showBackground = true)
 @Composable

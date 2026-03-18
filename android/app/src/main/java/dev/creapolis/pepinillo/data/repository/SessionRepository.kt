@@ -42,21 +42,25 @@ class SessionRepository @Inject constructor(
                 ),
             )
 
-            val today = startOfDay(System.currentTimeMillis())
-            val minutes = (durationMillis / 60_000).toInt()
-            val existing = dailyStatsDao.getStatsForDate(today) ?: DailyStatsEntity(date = today)
+            // Only update daily summary stats for work sessions (not breaks)
+            val isBreakPhase = phase == "ShortBreak" || phase == "LongBreak"
+            if (!isBreakPhase) {
+                val today = startOfDay(System.currentTimeMillis())
+                val minutes = ((durationMillis + 30_000) / 60_000).toInt() // round instead of truncate
+                val existing = dailyStatsDao.getStatsForDate(today) ?: DailyStatsEntity(date = today)
 
-            dailyStatsDao.upsert(
-                existing.copy(
-                    totalMinutes = existing.totalMinutes + minutes,
-                    sessionsCompleted = existing.sessionsCompleted + 1,
-                    longestSessionMinutes = maxOf(existing.longestSessionMinutes, minutes),
-                    pomodoroMinutes = existing.pomodoroMinutes + if (mode == "Pomodoro") minutes else 0,
-                    flowMinutes = existing.flowMinutes + if (mode == "Flow") minutes else 0,
-                    blocksMinutes = existing.blocksMinutes + if (mode == "Blocks") minutes else 0,
-                    stopwatchMinutes = existing.stopwatchMinutes + if (mode == "Chrono") minutes else 0,
-                ),
-            )
+                dailyStatsDao.upsert(
+                    existing.copy(
+                        totalMinutes = existing.totalMinutes + minutes,
+                        sessionsCompleted = existing.sessionsCompleted + 1,
+                        longestSessionMinutes = maxOf(existing.longestSessionMinutes, minutes),
+                        pomodoroMinutes = existing.pomodoroMinutes + if (mode == "Pomodoro") minutes else 0,
+                        flowMinutes = existing.flowMinutes + if (mode == "Flow") minutes else 0,
+                        blocksMinutes = existing.blocksMinutes + if (mode == "Blocks") minutes else 0,
+                        stopwatchMinutes = existing.stopwatchMinutes + if (mode == "Chrono") minutes else 0,
+                    ),
+                )
+            }
         }.onFailure { Log.e(TAG, "Error recording session", it) }
     }
 
@@ -110,6 +114,35 @@ class SessionRepository @Inject constructor(
         val end = cal.timeInMillis
         return dailyStatsDao.getStatsInRange(start, end)
             .catch { e -> Log.e(TAG, "Error loading month stats", e); emit(emptyList()) }
+    }
+
+    fun getWeekSessions(): Flow<List<FocusSessionEntity>> {
+        val now = System.currentTimeMillis()
+        val weekAgo = now - 7L * 24 * 60 * 60 * 1000
+        return sessionDao.getSessionsInRange(startOfDay(weekAgo), now)
+            .catch { e -> Log.e(TAG, "Error loading week sessions", e); emit(emptyList()) }
+    }
+
+    fun getMonthSessions(): Flow<List<FocusSessionEntity>> {
+        val now = System.currentTimeMillis()
+        val monthAgo = now - 30L * 24 * 60 * 60 * 1000
+        return sessionDao.getSessionsInRange(startOfDay(monthAgo), now)
+            .catch { e -> Log.e(TAG, "Error loading month sessions", e); emit(emptyList()) }
+    }
+
+    fun getYearSessions(): Flow<List<FocusSessionEntity>> {
+        val now = System.currentTimeMillis()
+        val yearAgo = now - 364L * 24 * 60 * 60 * 1000
+        return sessionDao.getSessionsInRange(startOfDay(yearAgo), now)
+            .catch { e -> Log.e(TAG, "Error loading year sessions", e); emit(emptyList()) }
+    }
+
+    fun getPreviousWeekSessions(): Flow<List<FocusSessionEntity>> {
+        val now = System.currentTimeMillis()
+        val twoWeeksAgo = now - 14L * 24 * 60 * 60 * 1000
+        val weekAgo = now - 7L * 24 * 60 * 60 * 1000
+        return sessionDao.getSessionsInRange(startOfDay(twoWeeksAgo), startOfDay(weekAgo))
+            .catch { e -> Log.e(TAG, "Error loading previous week sessions", e); emit(emptyList()) }
     }
 
     fun getSessionsForDate(dateMillis: Long): Flow<List<FocusSessionEntity>> {

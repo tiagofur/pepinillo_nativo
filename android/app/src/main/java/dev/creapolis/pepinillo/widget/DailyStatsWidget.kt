@@ -4,16 +4,21 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.background
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
@@ -23,28 +28,75 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import dagger.hilt.android.EntryPointAccessors
 import dev.creapolis.pepinillo.MainActivity
+import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
+import kotlinx.coroutines.flow.first
+import java.util.Calendar
+
+// Glance DataStore preference keys
+val PREF_STATS_MINUTES = intPreferencesKey("stats_minutes")
+val PREF_STATS_SESSIONS = intPreferencesKey("stats_sessions")
+val PREF_STATS_STREAK = intPreferencesKey("stats_streak")
+val PREF_STATS_COMPLETED = intPreferencesKey("stats_completed_tasks")
 
 class DailyStatsWidget : GlanceAppWidget() {
+    override val stateDefinition = PreferencesGlanceStateDefinition
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Fetch fresh data directly from DB so widget never shows stale/empty state
+        try {
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext, WidgetEntryPoint::class.java,
+            )
+            val sessionRepo = entryPoint.sessionRepository()
+            val taskRepo = entryPoint.taskRepository()
+
+            val stats = runCatching { sessionRepo.getTodayStats().first() }.getOrNull()
+            val allDays = runCatching { sessionRepo.getAllDaysWithSessions().first() }.getOrDefault(emptyList())
+            val streak = runCatching { sessionRepo.calculateCurrentStreak(allDays) }.getOrDefault(0)
+            val startOfDay = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val completedToday = runCatching { taskRepo.getCompletedTodayCount(startOfDay) }.getOrDefault(0)
+
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    this[PREF_STATS_MINUTES] = stats?.totalMinutes ?: 0
+                    this[PREF_STATS_SESSIONS] = stats?.sessionsCompleted ?: 0
+                    this[PREF_STATS_STREAK] = streak
+                    this[PREF_STATS_COMPLETED] = completedToday
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DailyStatsWidget", "Failed to fetch stats for widget", e)
+        }
+
         provideContent {
             GlanceTheme {
-                StatsContent(context)
+                StatsContent()
             }
         }
     }
 }
 
 @Composable
-private fun StatsContent(context: Context) {
-    val minutes = WidgetStateManager.readMinutes(context)
-    val sessions = WidgetStateManager.readSessions(context)
-    val streak = WidgetStateManager.readStreak(context)
-    val completedTasks = WidgetStateManager.readCompletedTasks(context)
+private fun StatsContent() {
+    val prefs = currentState<Preferences>()
+    val minutes = prefs[PREF_STATS_MINUTES] ?: 0
+    val sessions = prefs[PREF_STATS_SESSIONS] ?: 0
+    val streak = prefs[PREF_STATS_STREAK] ?: 0
+    val completedTasks = prefs[PREF_STATS_COMPLETED] ?: 0
 
     val hours = minutes / 60
     val mins = minutes % 60
@@ -114,6 +166,47 @@ private fun StatBlock(value: String, label: String, emoji: String) {
     }
 }
 
+suspend fun updateStatsWidgetState(
+    context: Context,
+    totalMinutes: Int,
+    sessions: Int,
+    streak: Int,
+    completedTasksToday: Int,
+) {
+    val manager = GlanceAppWidgetManager(context)
+    val glanceIds = manager.getGlanceIds(DailyStatsWidget::class.java)
+    glanceIds.forEach { glanceId ->
+        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+            prefs.toMutablePreferences().apply {
+                this[PREF_STATS_MINUTES] = totalMinutes
+                this[PREF_STATS_SESSIONS] = sessions
+                this[PREF_STATS_STREAK] = streak
+                this[PREF_STATS_COMPLETED] = completedTasksToday
+            }
+        }
+    }
+}
+
 class DailyStatsWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = DailyStatsWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        // Trigger immediate data refresh when widget is first added
+        WorkManager.getInstance(context).enqueue(
+            OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
+        )
+    }
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetIds: IntArray,
+    ) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        // Refresh data from DB every time the system triggers an update (every 30 min)
+        WorkManager.getInstance(context).enqueue(
+            OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
+        )
+    }
 }

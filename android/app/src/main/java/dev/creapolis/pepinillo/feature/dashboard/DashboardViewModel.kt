@@ -13,6 +13,7 @@ import dev.creapolis.pepinillo.feature.dashboard.model.DashboardStats
 import dev.creapolis.pepinillo.feature.dashboard.model.ModeUsage
 import dev.creapolis.pepinillo.feature.dashboard.model.WeeklyReportData
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -42,18 +43,19 @@ class DashboardViewModel @Inject constructor(
             sessionRepository.getTodayStats(),
             getStatsForPeriod(period),
             sessionRepository.getAllDaysWithSessions(),
-            sessionRepository.getTodaySessions(),
-        ) { todayStats, periodStats, allDays, todaySessions ->
-            buildStats(todayStats, periodStats, allDays, todaySessions, period)
+            getSessionsForPeriod(period),
+        ) { todayStats, periodStats, allDays, periodSessions ->
+            buildStats(todayStats, periodStats, allDays, periodSessions, period)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
     val weeklyReport: StateFlow<WeeklyReportData> = combine(
+        sessionRepository.getWeekSessions(),
+        sessionRepository.getPreviousWeekSessions(),
         sessionRepository.getWeekStats(),
-        sessionRepository.getPreviousWeekStats(),
         sessionRepository.getAllDaysWithSessions(),
-    ) { currentWeek, previousWeek, allDays ->
-        buildWeeklyReport(currentWeek, previousWeek, allDays)
+    ) { currentWeekSessions, previousWeekSessions, currentWeekStats, allDays ->
+        buildWeeklyReport(currentWeekSessions, previousWeekSessions, currentWeekStats, allDays)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WeeklyReportData())
 
     fun setPeriod(period: AnalyticsPeriod) {
@@ -74,28 +76,41 @@ class DashboardViewModel @Inject constructor(
         AnalyticsPeriod.Year -> sessionRepository.getYearStats()
     }
 
+    private fun getSessionsForPeriod(period: AnalyticsPeriod): Flow<List<FocusSessionEntity>> = when (period) {
+        AnalyticsPeriod.Week -> sessionRepository.getWeekSessions()
+        AnalyticsPeriod.Month -> sessionRepository.getMonthSessions()
+        AnalyticsPeriod.Year -> sessionRepository.getYearSessions()
+    }
+
     private fun buildStats(
         today: DailyStatsEntity?,
         periodStats: List<DailyStatsEntity>,
         allDays: List<DailyStatsEntity>,
-        todaySessions: List<FocusSessionEntity>,
+        periodSessions: List<FocusSessionEntity>,
         period: AnalyticsPeriod,
     ): DashboardStats {
         val todayMinutes = today?.totalMinutes ?: 0
         val todaySess = today?.sessionsCompleted ?: 0
-        val periodMinutes = periodStats.sumOf { it.totalMinutes }
-        val periodSessions = periodStats.sumOf { it.sessionsCompleted }
+
+        // Filter out break sessions — only count work sessions in stats
+        val workSessions = periodSessions.filter { it.phase == null || it.phase == "Work" }
+
+        // Compute totals from RAW sessions for accuracy (avoids DailyStats truncation)
+        val periodTotalMillis = workSessions.sumOf { it.durationMillis }
+        val periodMinutes = (periodTotalMillis / 60_000).toInt()
+        val periodSessionCount = workSessions.size
+
         val streak = sessionRepository.calculateCurrentStreak(allDays)
         val bestStreak = sessionRepository.calculateBestStreak(allDays)
 
-        // Chart data
+        // Chart data (DailyStats is fine for per-day bars — visual approximation)
         val chartData = buildChartData(periodStats, period)
 
-        // Mode breakdown
-        val modeBreakdown = buildModeBreakdown(periodStats)
+        // Mode breakdown from raw sessions (accurate, breaks excluded)
+        val modeBreakdown = buildModeBreakdownFromSessions(workSessions)
 
-        // Productivity patterns
-        val peakHours = sessionRepository.computePeakHours(todaySessions)
+        // Productivity patterns from raw sessions (breaks excluded)
+        val peakHours = sessionRepository.computePeakHours(workSessions)
         val bestDay = sessionRepository.computeBestDayOfWeek(periodStats)
         val focusScore = computeFocusScore(periodStats)
 
@@ -106,16 +121,16 @@ class DashboardViewModel @Inject constructor(
             todayMinutes = todayMinutes,
             todaySessions = todaySess,
             weekMinutes = if (period == AnalyticsPeriod.Week) periodMinutes else 0,
-            weekSessions = if (period == AnalyticsPeriod.Week) periodSessions else 0,
+            weekSessions = if (period == AnalyticsPeriod.Week) periodSessionCount else 0,
             currentStreak = streak,
             bestStreak = bestStreak,
-            longestSessionMinutes = periodStats.maxOfOrNull { it.longestSessionMinutes } ?: 0,
+            longestSessionMinutes = workSessions.maxOfOrNull { (it.durationMillis / 60_000).toInt() } ?: 0,
             weeklyData = if (period == AnalyticsPeriod.Week) chartData else emptyList(),
             modeBreakdown = modeBreakdown,
             isLoading = false,
             selectedPeriod = period,
             periodMinutes = periodMinutes,
-            periodSessions = periodSessions,
+            periodSessions = periodSessionCount,
             chartData = chartData,
             peakHourRange = peakHours,
             bestDayOfWeek = bestDay,
@@ -171,21 +186,23 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun buildModeBreakdown(stats: List<DailyStatsEntity>): List<ModeUsage> {
-        val total = stats.sumOf {
-            it.pomodoroMinutes + it.flowMinutes + it.blocksMinutes + it.stopwatchMinutes
-        }.coerceAtLeast(1)
-        val pomodoroMin = stats.sumOf { it.pomodoroMinutes }
-        val flowMin = stats.sumOf { it.flowMinutes }
-        val blocksMin = stats.sumOf { it.blocksMinutes }
-        val stopwatchMin = stats.sumOf { it.stopwatchMinutes }
+    /** Compute mode breakdown from raw sessions for full precision. */
+    private fun buildModeBreakdownFromSessions(sessions: List<FocusSessionEntity>): List<ModeUsage> {
+        if (sessions.isEmpty()) return emptyList()
+        val byMode = sessions.groupBy { it.mode }
+        val totalMillis = sessions.sumOf { it.durationMillis }.coerceAtLeast(1)
 
-        return listOf(
-            ModeUsage("Pomodoro", 0, pomodoroMin, pomodoroMin.toFloat() / total),
-            ModeUsage("Flow", 0, flowMin, flowMin.toFloat() / total),
-            ModeUsage("Blocks", 0, blocksMin, blocksMin.toFloat() / total),
-            ModeUsage("Chrono", 0, stopwatchMin, stopwatchMin.toFloat() / total),
-        ).filter { it.totalMinutes > 0 }
+        return listOf("Pomodoro", "Flow", "Blocks", "Chrono").mapNotNull { mode ->
+            val modeSessions = byMode[mode] ?: return@mapNotNull null
+            val modeMillis = modeSessions.sumOf { it.durationMillis }
+            if (modeMillis == 0L) return@mapNotNull null
+            ModeUsage(
+                modeLabel = mode,
+                sessions = modeSessions.size,
+                totalMinutes = (modeMillis / 60_000).toInt(),
+                fraction = modeMillis.toFloat() / totalMillis,
+            )
+        }
     }
 
     private fun computeFocusScore(stats: List<DailyStatsEntity>): Int {
@@ -194,7 +211,7 @@ class DashboardViewModel @Inject constructor(
         val totalDays = stats.size.coerceAtLeast(1)
         val consistencyRate = daysWithActivity.toFloat() / totalDays
         val avgMinutes = stats.sumOf { it.totalMinutes }.toFloat() / totalDays
-        val minuteScore = (avgMinutes / 60f).coerceAtMost(1f) // 60 min/day = perfect
+        val minuteScore = (avgMinutes / 60f).coerceAtMost(1f)
         return ((consistencyRate * 60 + minuteScore * 40)).toInt().coerceIn(0, 100)
     }
 
@@ -203,8 +220,6 @@ class DashboardViewModel @Inject constructor(
         currentStreak: Int,
     ): List<Achievement> {
         val totalSessions = allDays.sumOf { it.sessionsCompleted }
-        val totalPomodoro = allDays.sumOf { it.pomodoroMinutes }
-        val totalFlow = allDays.sumOf { it.flowMinutes }
         val pomodoroSessions = allDays.count { it.pomodoroMinutes > 0 }
         val flowSessions = allDays.count { it.flowMinutes > 0 }
 
@@ -242,44 +257,48 @@ class DashboardViewModel @Inject constructor(
         )
     }
 
+    /** Weekly report computed from raw sessions for full accuracy. */
     private fun buildWeeklyReport(
-        currentWeek: List<DailyStatsEntity>,
-        previousWeek: List<DailyStatsEntity>,
+        currentWeekSessions: List<FocusSessionEntity>,
+        previousWeekSessions: List<FocusSessionEntity>,
+        currentWeekStats: List<DailyStatsEntity>,
         allDays: List<DailyStatsEntity>,
     ): WeeklyReportData {
-        val currentMinutes = currentWeek.sumOf { it.totalMinutes }
-        val currentSessions = currentWeek.sumOf { it.sessionsCompleted }
-        val previousMinutes = previousWeek.sumOf { it.totalMinutes }
-        val previousSessions = previousWeek.sumOf { it.sessionsCompleted }
+        // Filter out break sessions
+        val currentWork = currentWeekSessions.filter { it.phase == null || it.phase == "Work" }
+        val previousWork = previousWeekSessions.filter { it.phase == null || it.phase == "Work" }
+
+        // Accurate totals from raw sessions (breaks excluded)
+        val currentMinutes = (currentWork.sumOf { it.durationMillis } / 60_000).toInt()
+        val currentSessionCount = currentWork.size
+        val previousMinutes = (previousWork.sumOf { it.durationMillis } / 60_000).toInt()
+        val previousSessionCount = previousWork.size
         val streak = sessionRepository.calculateCurrentStreak(allDays)
 
-        // Dominant mode
-        val pomodoroMin = currentWeek.sumOf { it.pomodoroMinutes }
-        val flowMin = currentWeek.sumOf { it.flowMinutes }
-        val blocksMin = currentWeek.sumOf { it.blocksMinutes }
-        val stopwatchMin = currentWeek.sumOf { it.stopwatchMinutes }
-        val modeMap = mapOf("Pomodoro" to pomodoroMin, "Flow" to flowMin, "Blocks" to blocksMin, "Chrono" to stopwatchMin)
-        val dominant = modeMap.maxByOrNull { it.value }?.takeIf { it.value > 0 }?.key
+        // Dominant mode from raw sessions (breaks excluded)
+        val byMode = currentWork.groupBy { it.mode }
+        val modeMillis = byMode.mapValues { (_, sessions) -> sessions.sumOf { it.durationMillis } }
+        val dominant = modeMillis.maxByOrNull { it.value }?.takeIf { it.value > 0 }?.key
 
-        // Best day
+        // Best day from DailyStats (day-level granularity)
         val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
         val cal = Calendar.getInstance()
-        val bestDay = currentWeek.maxByOrNull { it.totalMinutes }
+        val bestDay = currentWeekStats.maxByOrNull { it.totalMinutes }
         val bestDayName = bestDay?.let {
             cal.timeInMillis = it.date
             dayFormat.format(cal.time)
         }
 
-        // Mode distribution
-        val totalMode = (pomodoroMin + flowMin + blocksMin + stopwatchMin).coerceAtLeast(1)
-        val distribution = listOf(
-            ModeUsage("Pomodoro", 0, pomodoroMin, pomodoroMin.toFloat() / totalMode),
-            ModeUsage("Flow", 0, flowMin, flowMin.toFloat() / totalMode),
-            ModeUsage("Blocks", 0, blocksMin, blocksMin.toFloat() / totalMode),
-            ModeUsage("Chrono", 0, stopwatchMin, stopwatchMin.toFloat() / totalMode),
-        ).filter { it.totalMinutes > 0 }
+        // Mode distribution from raw sessions (breaks excluded)
+        val totalMillis = currentWork.sumOf { it.durationMillis }.coerceAtLeast(1)
+        val distribution = listOf("Pomodoro", "Flow", "Blocks", "Chrono").mapNotNull { mode ->
+            val modeSessions = byMode[mode] ?: return@mapNotNull null
+            val millis = modeSessions.sumOf { it.durationMillis }
+            if (millis == 0L) return@mapNotNull null
+            ModeUsage(mode, modeSessions.size, (millis / 60_000).toInt(), millis.toFloat() / totalMillis)
+        }
 
-        // Weekly chart
+        // Weekly chart (DailyStats for per-day bars)
         val chartDayFormat = SimpleDateFormat("EEE", Locale.getDefault())
         val weeklyChart = (6 downTo 0).map { daysAgo ->
             cal.time = Date()
@@ -287,14 +306,14 @@ class DashboardViewModel @Inject constructor(
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
             val dayStart = cal.timeInMillis
-            DailyFocus(chartDayFormat.format(cal.time), currentWeek.find { it.date == dayStart }?.totalMinutes ?: 0)
+            DailyFocus(chartDayFormat.format(cal.time), currentWeekStats.find { it.date == dayStart }?.totalMinutes ?: 0)
         }
 
         return WeeklyReportData(
             currentWeekMinutes = currentMinutes,
-            currentWeekSessions = currentSessions,
+            currentWeekSessions = currentSessionCount,
             previousWeekMinutes = previousMinutes,
-            previousWeekSessions = previousSessions,
+            previousWeekSessions = previousSessionCount,
             dominantMode = dominant,
             bestDayName = bestDayName,
             bestDayMinutes = bestDay?.totalMinutes ?: 0,

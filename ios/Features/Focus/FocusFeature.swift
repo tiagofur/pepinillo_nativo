@@ -193,6 +193,9 @@ struct FocusFeature {
 
                 updateDisplayFromPhase(&state)
 
+                // Notify widgets immediately that a session has started
+                WidgetCenter.shared.reloadAllTimelines()
+
                 let linkedTitle = state.linkedTaskTitle
 
                 let soundscape = state.selectedSoundscape
@@ -387,6 +390,22 @@ struct FocusFeature {
                 // we'll get updated state via the next .timerTicked.
                 let hapticEnabled = state.config.hapticEnabled
                 let taskTitle = state.linkedTaskTitle
+
+                // Update widget timer dates for the new phase
+                let mode = state.activeMode ?? state.selectedMode
+                let config = state.config
+                let nextPhase = mode.strategy.nextPhase(after: completedPhase, elapsed: 0, config: config)
+                if let nextPhase, let target = mode.strategy.targetDuration(config: config, phase: nextPhase) {
+                    AppGroupDefaults.activeSessionTimerStart = Date.now
+                    AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(target)
+                    AppGroupDefaults.activeSessionPhase = nextPhase.displayName
+                } else {
+                    AppGroupDefaults.activeSessionTimerStart = Date.now
+                    AppGroupDefaults.activeSessionTimerEnd = nil
+                    AppGroupDefaults.activeSessionPhase = nextPhase?.displayName
+                }
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
 
                 // For Pomodoro work phases, send a phase-end notification
                 var phaseNotificationEffect: Effect<Action> = .none

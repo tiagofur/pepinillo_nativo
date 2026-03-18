@@ -32,6 +32,7 @@ internal class WearSyncProcessor(
         val tasks = sink.updateTasksFromJson(tasksJson)
         sink.persistTasks(tasks)
         sink.markSyncedNow()
+        sink.refreshWearSurfaces()
     }
 
     fun onStatsData(state: WearStatsState) {
@@ -39,6 +40,7 @@ internal class WearSyncProcessor(
         sink.updateStats(state)
         sink.persistStats(state)
         sink.markSyncedNow()
+        sink.refreshWearSurfaces()
     }
 
     fun onPeerDisconnected(currentTimer: WearTimerState) {

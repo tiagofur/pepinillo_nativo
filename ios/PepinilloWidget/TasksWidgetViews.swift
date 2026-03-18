@@ -2,10 +2,24 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Views for the Tasks home screen widget.
+// Design follows the Android Wear task list pattern:
+//   - Linked task gets a prominent accent-colored chip at the top with "En progreso" label
+//   - Other tasks show as secondary rows with energy emoji + pomodoro progress
 // Small: task count + next task. Medium: top 3-4 tasks. Large: full list with completion toggles.
 
 import SwiftUI
 import WidgetKit
+
+// MARK: - Energy Emoji Helper
+
+private func energyEmoji(for icon: String) -> String {
+    switch icon {
+    case "brain.head.profile": return "🔥"   // Deep work
+    case "tray":               return "⚡"    // Shallow
+    case "folder":             return "💧"    // Admin
+    default:                   return "⚡"
+    }
+}
 
 // MARK: - Small Widget
 
@@ -60,9 +74,8 @@ struct TasksWidgetSmall: View {
                         // Next task preview
                         if let first = entry.tasks.first {
                             HStack(spacing: 4) {
-                                Image(systemName: first.energyIcon)
+                                Text(energyEmoji(for: first.energyIcon))
                                     .font(.caption2)
-                                    .foregroundStyle(.accentColor)
                                 Text(first.title)
                                     .font(.caption)
                                     .lineLimit(1)
@@ -93,8 +106,19 @@ struct TasksWidgetMedium: View {
     let entry: TasksWidgetEntry
     @Environment(\.showsWidgetContainerBackground) var showsBackground
 
-    private var visibleTasks: [TasksWidgetEntry.WidgetTask] {
-        Array(entry.tasks.prefix(4))
+    /// Linked task shown separately at top, remaining tasks fill below
+    private var linkedTask: TasksWidgetEntry.WidgetTask? {
+        guard let activeID = entry.activeTaskID else { return nil }
+        return entry.tasks.first { $0.id == activeID }
+    }
+
+    private var otherTasks: [TasksWidgetEntry.WidgetTask] {
+        let activeID = entry.activeTaskID
+        return entry.tasks.filter { $0.id != activeID }
+    }
+
+    private var maxOtherRows: Int {
+        linkedTask != nil ? 2 : 4
     }
 
     var body: some View {
@@ -105,19 +129,15 @@ struct TasksWidgetMedium: View {
             }
 
             if showsBackground {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 5) {
                     HStack {
                         Image(systemName: "checklist")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(String(localized: "Tasks"))
+                        Text(String(localized: "Tasks (\(entry.tasks.count))"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Text("\(entry.tasks.count)")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
                     }
 
                     if entry.tasks.isEmpty {
@@ -136,15 +156,19 @@ struct TasksWidgetMedium: View {
                         }
                         Spacer()
                     } else {
-                        ForEach(visibleTasks) { task in
-                            TaskRowCompact(
-                                task: task,
-                                isLinked: task.id == entry.activeTaskID
-                            )
+                        // Linked task chip (Wear-style primary chip)
+                        if let linked = linkedTask {
+                            LinkedTaskChip(task: linked)
                         }
 
-                        if entry.tasks.count > 4 {
-                            Text(String(localized: "+\(entry.tasks.count - 4) more"))
+                        // Other tasks
+                        ForEach(Array(otherTasks.prefix(maxOtherRows))) { task in
+                            TaskRowCompact(task: task)
+                        }
+
+                        let remaining = otherTasks.count - maxOtherRows
+                        if remaining > 0 {
+                            Text(String(localized: "+\(remaining) more"))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
@@ -177,8 +201,18 @@ struct TasksWidgetLarge: View {
     let entry: TasksWidgetEntry
     @Environment(\.showsWidgetContainerBackground) var showsBackground
 
-    private var visibleTasks: [TasksWidgetEntry.WidgetTask] {
-        Array(entry.tasks.prefix(7))
+    private var linkedTask: TasksWidgetEntry.WidgetTask? {
+        guard let activeID = entry.activeTaskID else { return nil }
+        return entry.tasks.first { $0.id == activeID }
+    }
+
+    private var otherTasks: [TasksWidgetEntry.WidgetTask] {
+        let activeID = entry.activeTaskID
+        return entry.tasks.filter { $0.id != activeID }
+    }
+
+    private var maxOtherRows: Int {
+        linkedTask != nil ? 5 : 7
     }
 
     var body: some View {
@@ -193,13 +227,10 @@ struct TasksWidgetLarge: View {
                 HStack {
                     Image(systemName: "checklist")
                         .foregroundStyle(.secondary)
-                    Text(String(localized: "Tasks"))
+                    Text(String(localized: "Tasks (\(entry.tasks.count))"))
                         .font(.subheadline)
                         .fontWeight(.medium)
                     Spacer()
-                    Text(String(localized: "\(entry.tasks.count) active"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
 
                 if entry.tasks.isEmpty {
@@ -220,15 +251,19 @@ struct TasksWidgetLarge: View {
                     }
                     Spacer()
                 } else {
-                    ForEach(visibleTasks) { task in
-                        TaskRowInteractive(
-                            task: task,
-                            isLinked: task.id == entry.activeTaskID
-                        )
+                    // Linked task chip (Wear-style primary chip)
+                    if let linked = linkedTask {
+                        LinkedTaskChip(task: linked)
                     }
 
-                    if entry.tasks.count > 7 {
-                        Text(String(localized: "+\(entry.tasks.count - 7) more"))
+                    // Other tasks with interactive completion
+                    ForEach(Array(otherTasks.prefix(maxOtherRows))) { task in
+                        TaskRowInteractive(task: task)
+                    }
+
+                    let remaining = otherTasks.count - maxOtherRows
+                    if remaining > 0 {
+                        Text(String(localized: "+\(remaining) more"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -252,58 +287,79 @@ struct TasksWidgetLarge: View {
     }
 }
 
+// MARK: - Linked Task Chip (Wear-style primary chip)
+
+private struct LinkedTaskChip: View {
+    let task: TasksWidgetEntry.WidgetTask
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text("▶")
+                .font(.caption)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(task.title)
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Text("🍅")
+                        .font(.caption2)
+                    Text(String(localized: "In progress"))
+                        .font(.caption2)
+                    if task.estimatedPomodoros > 0 {
+                        Text("· \(task.completedPomodoros)/\(task.estimatedPomodoros)")
+                            .font(.caption2)
+                            .monospacedDigit()
+                    }
+                }
+                .opacity(0.85)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.accentColor)
+        )
+    }
+}
+
 // MARK: - Task Row Components
 
 private struct TaskRowCompact: View {
     let task: TasksWidgetEntry.WidgetTask
-    let isLinked: Bool
 
     var body: some View {
         HStack(spacing: 6) {
-            // Energy icon
-            Image(systemName: task.energyIcon)
+            Text(energyEmoji(for: task.energyIcon))
                 .font(.caption2)
-                .foregroundStyle(isLinked ? .accentColor : .secondary)
-                .frame(width: 14)
+                .frame(width: 16)
 
-            // Title
             Text(task.title)
                 .font(.caption)
-                .fontWeight(isLinked ? .semibold : .regular)
-                .foregroundStyle(isLinked ? .primary : .primary)
                 .lineLimit(1)
 
             Spacer(minLength: 4)
 
             // Pomodoro progress
             if task.estimatedPomodoros > 0 {
-                Text("\(task.completedPomodoros)/\(task.estimatedPomodoros)")
+                Text("🍅 \(task.completedPomodoros)/\(task.estimatedPomodoros)")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
-
-            // Linked indicator
-            if isLinked {
-                Image(systemName: "timer")
-                    .font(.caption2)
-                    .foregroundStyle(.accentColor)
-            }
         }
         .padding(.vertical, 2)
-        .padding(.horizontal, isLinked ? 6 : 0)
-        .background(
-            isLinked
-                ? RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.accentColor.opacity(0.1))
-                : nil
-        )
     }
 }
 
 private struct TaskRowInteractive: View {
     let task: TasksWidgetEntry.WidgetTask
-    let isLinked: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -311,25 +367,23 @@ private struct TaskRowInteractive: View {
             Button(intent: CompleteTaskFromWidgetIntent(taskID: task.id)) {
                 Image(systemName: "circle")
                     .font(.body)
-                    .foregroundStyle(isLinked ? .accentColor : .secondary)
+                    .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
 
-            // Energy icon
-            Image(systemName: task.energyIcon)
+            // Energy emoji
+            Text(energyEmoji(for: task.energyIcon))
                 .font(.caption)
-                .foregroundStyle(isLinked ? .accentColor : .secondary)
-                .frame(width: 16)
+                .frame(width: 18)
 
             // Title
             Text(task.title)
                 .font(.subheadline)
-                .fontWeight(isLinked ? .semibold : .regular)
                 .lineLimit(1)
 
             Spacer(minLength: 4)
 
-            // Pomodoro progress bar
+            // Pomodoro progress
             if task.estimatedPomodoros > 0 {
                 HStack(spacing: 2) {
                     PomodoroProgressDots(
@@ -342,22 +396,8 @@ private struct TaskRowInteractive: View {
                         .monospacedDigit()
                 }
             }
-
-            // Linked / focus start
-            if isLinked {
-                Image(systemName: "timer")
-                    .font(.caption)
-                    .foregroundStyle(.accentColor)
-            }
         }
         .padding(.vertical, 3)
-        .padding(.horizontal, isLinked ? 8 : 0)
-        .background(
-            isLinked
-                ? RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.accentColor.opacity(0.08))
-                : nil
-        )
     }
 }
 

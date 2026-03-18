@@ -12,9 +12,9 @@ import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUp
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.DataMapItem
-import com.google.android.gms.wearable.Wearable
 import com.google.android.gms.wearable.WearableListenerService
 import dev.creapolis.pepinillo.complication.FocusComplicationDataSource
+import dev.creapolis.pepinillo.data.WearDataFetcher
 import dev.creapolis.pepinillo.data.WearDataPaths
 import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearMessageSender
@@ -27,7 +27,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import java.util.Date
 
 private const val TAG = "WearSyncListener"
@@ -172,52 +171,7 @@ class WearSyncListenerService : WearableListenerService() {
                     WearDataStore.recordSyncFailure("flush_pending: ${e.javaClass.simpleName}")
                 }
 
-            runCatching {
-                val buffer = Wearable.getDataClient(this@WearSyncListenerService).dataItems.await()
-                try {
-                    buffer.forEach { item ->
-                        val path = item.uri.path ?: return@forEach
-                        val map = DataMapItem.fromDataItem(item).dataMap
-                        when (path) {
-                            WearDataPaths.PATH_TIMER -> {
-                                val lid = map.getString("linkedTaskId", "")
-                                val timerState = WearTimerState(
-                                    mode = map.getString("mode", "Pomodoro"),
-                                    phase = map.getString("phase", "Work"),
-                                    status = map.getString("status", "Idle"),
-                                    displayTime = map.getString("displayTime", "00:00"),
-                                    phaseLabel = map.getString("phaseLabel", "Focus"),
-                                    progress = map.getFloat("progress", 0f),
-                                    isConnected = true,
-                                    linkedTaskId = lid.ifEmpty { null },
-                                    linkedTaskName = map.getString("linkedTaskName", "").ifEmpty { null },
-                                )
-                                processor.onTimerData(timerState)
-                            }
-
-                            WearDataPaths.PATH_TASKS -> {
-                                val tasksJson = map.getString("tasksJson", "[]")
-                                processor.onTasksData(tasksJson)
-                            }
-
-                            WearDataPaths.PATH_STATS -> {
-                                val statsState = WearStatsState(
-                                    totalMinutes = map.getInt("totalMinutes", 0),
-                                    sessions = map.getInt("sessions", 0),
-                                    streak = map.getInt("streak", 0),
-                                    completedTasks = map.getInt("completedTasksToday", 0),
-                                )
-                                processor.onStatsData(statsState)
-                            }
-                        }
-                    }
-                } finally {
-                    buffer.release()
-                }
-            }.onFailure { e ->
-                Log.w(TAG, "Failed to fetch initial wearable snapshot", e)
-                WearDataStore.recordSyncFailure("initial_snapshot: ${e.javaClass.simpleName}")
-            }
+            WearDataFetcher.fetchAndApplyAll(this@WearSyncListenerService)
         }
     }
 

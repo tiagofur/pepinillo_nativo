@@ -66,14 +66,14 @@ val FocusTimerState.progress: Float
 
 val FocusTimerState.phaseLabel: String
     get() = when {
+        phase == FocusPhase.ShortBreak -> "Short Break"
+        phase == FocusPhase.LongBreak -> "Long Break"
         status == TimerStatus.Idle -> when (mode) {
             FocusMode.Pomodoro -> "Focus"
             FocusMode.Flow -> "Flow"
             FocusMode.Blocks -> "Block"
             FocusMode.Chrono -> "Stopwatch"
         }
-        phase == FocusPhase.ShortBreak -> "Short Break"
-        phase == FocusPhase.LongBreak -> "Long Break"
         else -> when (mode) {
             FocusMode.Pomodoro -> "Focus ${completedSessions + 1}"
             FocusMode.Flow -> "Flowing..."

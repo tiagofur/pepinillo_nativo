@@ -9,11 +9,22 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
 import dagger.hilt.android.AndroidEntryPoint
+import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
+import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.service.FocusTimerService
 import dev.creapolis.pepinillo.widget.CompleteTaskWorker
+import dev.creapolis.pepinillo.widget.WidgetTask
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.nio.charset.StandardCharsets
+import java.util.Calendar
 import javax.inject.Inject
 
 private const val TAG = "PhoneWearListener"
@@ -22,16 +33,22 @@ private const val TAG = "PhoneWearListener"
 class PhoneWearListenerService : WearableListenerService() {
 
     @Inject lateinit var focusEngine: FocusEngine
+    @Inject lateinit var taskRepository: TaskRepository
+    @Inject lateinit var sessionRepository: SessionRepository
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onPeerConnected(peer: Node) {
         super.onPeerConnected(peer)
         Log.d(TAG, "Watch connected: ${peer.displayName}")
 
-        // Push actual timer state so watch reflects the real mode (not hardcoded Pomodoro)
         val state = focusEngine.state.value
         WearDataLayerHelper.pushTimer(this, state, null)
 
-        // Trigger immediate widget/wear data refresh (tasks + stats)
+        // Push tasks + stats directly (bypass WorkManager)
+        pushTasksAndStatsDirectly()
+
+        // Also trigger widget refresh
         WorkManager.getInstance(this).enqueue(
             OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
         )
@@ -84,9 +101,66 @@ class PhoneWearListenerService : WearableListenerService() {
                 }
             }
 
+            WearDataLayerHelper.CMD_REQUEST_SYNC -> {
+                Log.d(TAG, "Watch requested sync — pushing directly")
+                pushTasksAndStatsDirectly()
+            }
+
             else -> {
                 Log.d(TAG, "Ignored path: ${messageEvent.path}")
             }
         }
+    }
+
+    private fun pushTasksAndStatsDirectly() {
+        scope.launch {
+            runCatching {
+                val activeTasks = taskRepository.getActiveTasks().first()
+                Log.d(TAG, "Direct push: ${activeTasks.size} active tasks")
+
+                val widgetTasks = activeTasks.take(5).map { task ->
+                    val energyEmoji = when (task.energyLevel) {
+                        EnergyLevel.Deep -> "\uD83D\uDD25"
+                        EnergyLevel.Regular -> "\u26A1"
+                        EnergyLevel.Light -> "\uD83D\uDCA7"
+                    }
+                    val pomodoroProgress = if (task.estimatedPomodoros > 0) {
+                        "${task.completedPomodoros}/${task.estimatedPomodoros} \uD83C\uDF45"
+                    } else ""
+                    WidgetTask(
+                        id = task.id,
+                        title = task.title,
+                        energyEmoji = energyEmoji,
+                        pomodoroProgress = pomodoroProgress,
+                    )
+                }
+
+                val stats = sessionRepository.getTodayStats().first()
+                val allDays = sessionRepository.getAllDaysWithSessions().first()
+                val streak = sessionRepository.calculateCurrentStreak(allDays)
+                val cal = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+                }
+                val completedToday = taskRepository.getCompletedTodayCount(cal.timeInMillis)
+
+                WearDataLayerHelper.pushTasksAndStats(
+                    context = this@PhoneWearListenerService,
+                    tasks = widgetTasks,
+                    totalMinutes = stats?.totalMinutes ?: 0,
+                    sessions = stats?.sessionsCompleted ?: 0,
+                    streak = streak,
+                    completedTasksToday = completedToday,
+                )
+                Log.d(TAG, "Direct push completed: ${widgetTasks.size} tasks")
+            }.onFailure { e ->
+                Log.e(TAG, "Direct push failed", e)
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        scope.cancel()
+        super.onDestroy()
     }
 }

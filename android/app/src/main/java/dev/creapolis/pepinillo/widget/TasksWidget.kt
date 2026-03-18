@@ -1,10 +1,12 @@
 package dev.creapolis.pepinillo.widget
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -13,12 +15,16 @@ import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -29,7 +35,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
-import androidx.glance.layout.wrapContentHeight
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
@@ -38,9 +44,12 @@ import androidx.glance.unit.ColorProvider
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import dagger.hilt.android.EntryPointAccessors
 import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
-import dev.creapolis.pepinillo.widget.CompleteTaskWorker
+import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
+import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
+import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -53,71 +62,132 @@ data class WidgetTask(
     val pomodoroProgress: String, // e.g. "2/4 🍅" or "" if no estimate
 )
 
+// ─────────────────────────── Glance preference keys ──────────────────────
+
+private val PREF_TASKS_JSON = stringPreferencesKey("tasks_json")
+private val PREF_COMPLETED_TODAY = intPreferencesKey("completed_today")
+private val PREF_LINKED_TASK_ID = stringPreferencesKey("linked_task_id")
+private const val MAX_WIDGET_TASKS = 5
+
+private fun tasksFromJson(json: String?): List<WidgetTask> {
+    if (json.isNullOrBlank()) return emptyList()
+    return try {
+        val arr = JSONArray(json)
+        (0 until arr.length()).map { i ->
+            val obj = arr.getJSONObject(i)
+            WidgetTask(
+                id = obj.getString("id"),
+                title = obj.getString("title"),
+                energyEmoji = obj.optString("energyEmoji", "\u26A1"),
+                pomodoroProgress = obj.optString("pomodoroProgress", ""),
+            )
+        }
+    } catch (_: Exception) {
+        emptyList()
+    }
+}
+
+private fun tasksToJson(tasks: List<WidgetTask>): String {
+    val jsonArray = JSONArray()
+    tasks.take(MAX_WIDGET_TASKS).forEach { task ->
+        jsonArray.put(JSONObject().apply {
+            put("id", task.id)
+            put("title", task.title)
+            put("energyEmoji", task.energyEmoji)
+            put("pomodoroProgress", task.pomodoroProgress)
+        })
+    }
+    return jsonArray.toString()
+}
+
 // ─────────────────────────── State manager ────────────────────────────────
 
 object WidgetTaskStateManager {
 
-    private const val PREFS = "pepinillo_tasks_widget"
-    private const val KEY_TASKS = "tasks_json"
-    private const val KEY_COMPLETED_TODAY = "completed_today"
-    private const val MAX_WIDGET_TASKS = 5
-
-    private fun prefs(ctx: Context): SharedPreferences =
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-
-    fun updateTasks(context: Context, tasks: List<WidgetTask>, completedToday: Int = readCompletedToday(context)) {
-        val jsonArray = JSONArray()
-        tasks.take(MAX_WIDGET_TASKS).forEach { task ->
-            jsonArray.put(JSONObject().apply {
-                put("id", task.id)
-                put("title", task.title)
-                put("energyEmoji", task.energyEmoji)
-                put("pomodoroProgress", task.pomodoroProgress)
-            })
-        }
-        prefs(context).edit()
-            .putString(KEY_TASKS, jsonArray.toString())
-            .putInt(KEY_COMPLETED_TODAY, completedToday)
-            .apply()
-    }
-
-    fun readTasks(context: Context): List<WidgetTask> {
-        val json = prefs(context).getString(KEY_TASKS, "[]") ?: "[]"
-        return try {
-            val arr = JSONArray(json)
-            (0 until arr.length()).map { i ->
-                val obj = arr.getJSONObject(i)
-                WidgetTask(
-                    id = obj.getString("id"),
-                    title = obj.getString("title"),
-                    energyEmoji = obj.optString("energyEmoji", "⚡"),
-                    pomodoroProgress = obj.optString("pomodoroProgress", ""),
-                )
+    suspend fun updateTasks(context: Context, tasks: List<WidgetTask>, completedToday: Int = 0) {
+        val manager = GlanceAppWidgetManager(context)
+        val glanceIds = manager.getGlanceIds(TasksWidget::class.java)
+        val json = tasksToJson(tasks)
+        glanceIds.forEach { glanceId ->
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    this[PREF_TASKS_JSON] = json
+                    this[PREF_COMPLETED_TODAY] = completedToday
+                }
             }
-        } catch (_: Exception) {
-            emptyList()
         }
+        TasksWidget().updateAll(context)
     }
 
-    fun readCompletedToday(context: Context): Int =
-        prefs(context).getInt(KEY_COMPLETED_TODAY, 0)
+    suspend fun updateLinkedTaskId(context: Context, taskId: String?) {
+        val manager = GlanceAppWidgetManager(context)
+        val glanceIds = manager.getGlanceIds(TasksWidget::class.java)
+        glanceIds.forEach { glanceId ->
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    if (taskId != null) {
+                        this[PREF_LINKED_TASK_ID] = taskId
+                    } else {
+                        remove(PREF_LINKED_TASK_ID)
+                    }
+                }
+            }
+        }
+        TasksWidget().updateAll(context)
+    }
 }
 
 // ─────────────────────────── Widget ───────────────────────────────────────
 
 class TasksWidget : GlanceAppWidget() {
+    override val stateDefinition = PreferencesGlanceStateDefinition
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Fetch fresh data directly from DB so widget never shows stale/empty state
+        try {
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext, WidgetEntryPoint::class.java,
+            )
+            val taskRepo = entryPoint.taskRepository()
+            val activeTasks = taskRepo.getActiveTasks().first()
+            val widgetTasks = activeTasks.take(MAX_WIDGET_TASKS).map { task ->
+                val energyEmoji = when (task.energyLevel) {
+                    EnergyLevel.Deep -> "\uD83D\uDD25"
+                    EnergyLevel.Light -> "\uD83D\uDCA7"
+                    else -> "\u26A1"
+                }
+                val pomodoroProgress = if (task.estimatedPomodoros > 0) {
+                    "${task.completedPomodoros}/${task.estimatedPomodoros} \uD83C\uDF45"
+                } else ""
+                WidgetTask(
+                    id = task.id,
+                    title = task.title,
+                    energyEmoji = energyEmoji,
+                    pomodoroProgress = pomodoroProgress,
+                )
+            }
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    this[PREF_TASKS_JSON] = tasksToJson(widgetTasks)
+                }
+            }
+        } catch (_: Exception) {
+            // Fallback: render with whatever is already in the DataStore
+        }
+
         provideContent {
             GlanceTheme {
-                TasksContent(context)
+                TasksContent()
             }
         }
     }
 }
 
 @Composable
-private fun TasksContent(context: Context) {
-    val tasks = WidgetTaskStateManager.readTasks(context)
+private fun TasksContent() {
+    val prefs = currentState<Preferences>()
+    val tasks = tasksFromJson(prefs[PREF_TASKS_JSON])
+    val linkedTaskId = prefs[PREF_LINKED_TASK_ID]
 
     Column(
         modifier = GlanceModifier
@@ -133,7 +203,7 @@ private fun TasksContent(context: Context) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "📋 Tareas",
+                text = "\uD83D\uDCCB Tareas (${tasks.size})",
                 style = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -147,10 +217,58 @@ private fun TasksContent(context: Context) {
         if (tasks.isEmpty()) {
             EmptyState()
         } else {
-            tasks.forEach { task ->
+            // Show linked task first with highlight (like Wear's primary chip)
+            val linkedTask = linkedTaskId?.let { id -> tasks.find { it.id == id } }
+            val otherTasks = tasks.filter { it.id != linkedTaskId }
+
+            if (linkedTask != null) {
+                LinkedTaskRow(linkedTask)
+                Spacer(modifier = GlanceModifier.height(6.dp))
+            }
+
+            otherTasks.forEach { task ->
                 TaskRow(task)
                 Spacer(modifier = GlanceModifier.height(6.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun LinkedTaskRow(task: WidgetTask) {
+    Row(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .background(GlanceTheme.colors.primary)
+            .cornerRadius(12.dp)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "\u25B6",
+            style = TextStyle(
+                fontSize = 12.sp,
+                color = ColorProvider(R.color.widget_white),
+            ),
+        )
+        Spacer(modifier = GlanceModifier.width(8.dp))
+        Column(modifier = GlanceModifier.defaultWeight()) {
+            Text(
+                text = task.title,
+                style = TextStyle(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = ColorProvider(R.color.widget_white),
+                ),
+                maxLines = 1,
+            )
+            Text(
+                text = "\uD83C\uDF45 En progreso${if (task.pomodoroProgress.isNotEmpty()) " \u00B7 ${task.pomodoroProgress}" else ""}",
+                style = TextStyle(
+                    fontSize = 10.sp,
+                    color = ColorProvider(R.color.widget_white),
+                ),
+            )
         }
     }
 }
@@ -175,7 +293,7 @@ private fun TaskRow(task: WidgetTask) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "✓",
+                text = "\u2713",
                 style = TextStyle(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -265,4 +383,24 @@ class CompleteTaskWidgetAction : ActionCallback {
 
 class TasksWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = TasksWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        // Load tasks from DB immediately when widget is first added
+        WorkManager.getInstance(context).enqueue(
+            OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
+        )
+    }
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetIds: IntArray,
+    ) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        // Refresh data when system triggers update
+        WorkManager.getInstance(context).enqueue(
+            OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
+        )
+    }
 }
