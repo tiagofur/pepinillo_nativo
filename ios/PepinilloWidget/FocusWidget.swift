@@ -90,5 +90,7 @@ struct PepinilloWidgetBundle: WidgetBundle {
     var body: some Widget {
         FocusHomeScreenWidget()
         FocusLockScreenWidget()
+        TasksHomeScreenWidget()
+        DashboardHomeScreenWidget()
     }
 }

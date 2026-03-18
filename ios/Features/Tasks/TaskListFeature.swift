@@ -7,6 +7,7 @@
 
 import Foundation
 import ComposableArchitecture
+import WidgetKit
 
 @Reducer
 struct TaskListFeature {
@@ -270,6 +271,7 @@ struct TaskListFeature {
                             scheduledForToday: item.scheduledForToday
                         )
                         try await persistence.saveTask(updated)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     }
                 }
 

@@ -23,6 +23,8 @@ data class FocusTimerState(
     val completedSessions: Int = 0,
     val linkedTaskId: String? = null,
     val sessionStartTime: Long = 0L,
+    val breakSuggested: Boolean = false,
+    val midpointTriggered: Boolean = false,
 )
 
 enum class TimerStatus {

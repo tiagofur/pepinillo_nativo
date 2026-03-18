@@ -14,6 +14,7 @@ struct FocusWidgetEntry: TimelineEntry {
 
     // Session state (nil if no active session)
     let isSessionActive: Bool
+    let isPaused: Bool
     let focusMode: String?        // FocusMode.rawValue
     let phase: String?
     let timerText: String?        // e.g. "23:14" or "34:02" for elapsed
@@ -22,6 +23,8 @@ struct FocusWidgetEntry: TimelineEntry {
     let totalPomodoros: Int?
     let linkedTaskTitle: String?
 
+    /// For countdown modes: the phase start date for Text(timerInterval:) live countdown.
+    let timerStart: Date?
     /// For countdown modes: the target end date so widgets can use Text(timerInterval:) for a live timer.
     let timerEnd: Date?
 
@@ -37,6 +40,7 @@ struct FocusWidgetEntry: TimelineEntry {
     static let placeholder = FocusWidgetEntry(
         date: Date(),
         isSessionActive: false,
+        isPaused: false,
         focusMode: nil,
         phase: nil,
         timerText: nil,
@@ -44,6 +48,7 @@ struct FocusWidgetEntry: TimelineEntry {
         pomodoroNumber: nil,
         totalPomodoros: nil,
         linkedTaskTitle: nil,
+        timerStart: nil,
         timerEnd: nil,
         todayFocusMinutes: 95,
         todaySessionsCompleted: 4,
@@ -55,6 +60,7 @@ struct FocusWidgetEntry: TimelineEntry {
     static let idle = FocusWidgetEntry(
         date: Date(),
         isSessionActive: false,
+        isPaused: false,
         focusMode: nil,
         phase: nil,
         timerText: nil,
@@ -62,6 +68,7 @@ struct FocusWidgetEntry: TimelineEntry {
         pomodoroNumber: nil,
         totalPomodoros: nil,
         linkedTaskTitle: nil,
+        timerStart: nil,
         timerEnd: nil,
         todayFocusMinutes: 0,
         todaySessionsCompleted: 0,

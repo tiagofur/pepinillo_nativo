@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.feature.settings
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -8,6 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,23 +25,33 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AvTimer
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.VolumeUp
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,10 +59,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
@@ -117,15 +133,43 @@ fun SettingsScreen(
             StepperRow(
                 label = "Time block duration",
                 value = "${uiState.timeBlockMinutes} min",
-                onDecrease = { viewModel.updateTimeBlockMinutes(uiState.timeBlockMinutes - 10) },
-                onIncrease = { viewModel.updateTimeBlockMinutes(uiState.timeBlockMinutes + 10) },
+                onDecrease = { viewModel.updateTimeBlockMinutes(uiState.timeBlockMinutes - 15) },
+                onIncrease = { viewModel.updateTimeBlockMinutes(uiState.timeBlockMinutes + 15) },
+            )
+            SettingsDivider()
+            SwitchRow(
+                label = "Midpoint check-in",
+                subtitle = "Reminder at halfway through time blocks",
+                isChecked = uiState.midpointCheckIn,
+                onToggle = viewModel::toggleMidpointCheckIn,
             )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
 
+        // ── FLOWTIME SECTION ──
+        SectionHeader(icon = Icons.Rounded.AvTimer, title = "Flowtime")
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsCard {
+            StepperRow(
+                label = "Minimum session",
+                value = "${uiState.flowtimeMinMinutes} min",
+                onDecrease = { viewModel.updateFlowtimeMinMinutes(uiState.flowtimeMinMinutes - 1) },
+                onIncrease = { viewModel.updateFlowtimeMinMinutes(uiState.flowtimeMinMinutes + 1) },
+            )
+        }
+        Text(
+            text = "Minimum focus time before a break is suggested",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp, start = 4.dp),
+        )
+
+        Spacer(modifier = Modifier.height(28.dp))
+
         // ── BEHAVIOR SECTION ──
-        SectionHeader(icon = Icons.Rounded.Notifications, title = "Behavior")
+        SectionHeader(icon = Icons.Rounded.Settings, title = "Behavior")
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
@@ -162,6 +206,49 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
+        // ── GENERAL SECTION ──
+        SectionHeader(icon = Icons.Rounded.Tune, title = "General")
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsCard {
+            // Default mode selector
+            Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                Text(
+                    text = "Default mode",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Mode selected when app launches",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FocusMode.entries.forEach { mode ->
+                        OptionPill(
+                            label = mode.label,
+                            isSelected = uiState.defaultMode == mode,
+                            onClick = { viewModel.setDefaultMode(mode) },
+                        )
+                    }
+                }
+            }
+            SettingsDivider()
+            SwitchRow(
+                label = "Keep screen on",
+                subtitle = "Prevent screen from sleeping during focus",
+                isChecked = uiState.keepScreenOn,
+                onToggle = viewModel::toggleKeepScreenOn,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
         // ── APPEARANCE SECTION ──
         SectionHeader(icon = Icons.Rounded.Palette, title = "Appearance")
         Spacer(modifier = Modifier.height(12.dp))
@@ -185,7 +272,7 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     ThemeMode.entries.forEach { mode ->
-                        ThemeOptionPill(
+                        OptionPill(
                             label = mode.label,
                             isSelected = uiState.themeMode == mode,
                             onClick = { viewModel.setThemeMode(mode) },
@@ -200,6 +287,59 @@ fun SettingsScreen(
                 isChecked = uiState.dynamicColor,
                 onToggle = viewModel::toggleDynamicColor,
             )
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        // ── NOTIFICATIONS SECTION ──
+        SectionHeader(icon = Icons.Rounded.Notifications, title = "Notifications")
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsCard {
+            SwitchRow(
+                label = "Daily reminder",
+                subtitle = "Get reminded to focus each day",
+                isChecked = uiState.dailyReminderEnabled,
+                onToggle = viewModel::toggleDailyReminder,
+            )
+            AnimatedVisibility(visible = uiState.dailyReminderEnabled) {
+                Column {
+                    SettingsDivider()
+                    ReminderTimeRow(
+                        hour = uiState.dailyReminderHour,
+                        minute = uiState.dailyReminderMinute,
+                        onTimeSelected = { h, m -> viewModel.updateDailyReminderTime(h, m) },
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        // ── STREAK SECTION ──
+        SectionHeader(icon = Icons.Rounded.LocalFireDepartment, title = "Streak")
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsCard {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Current streak",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "${uiState.currentStreak} days",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -303,6 +443,12 @@ private fun StepperRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
             IconButton(
                 onClick = onDecrease,
                 modifier = Modifier
@@ -317,12 +463,6 @@ private fun StepperRow(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
             IconButton(
                 onClick = onIncrease,
                 modifier = Modifier
@@ -382,7 +522,7 @@ private fun SwitchRow(
 }
 
 @Composable
-private fun ThemeOptionPill(
+private fun OptionPill(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -394,7 +534,7 @@ private fun ThemeOptionPill(
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         },
         animationSpec = spring(),
-        label = "themeOptionBg",
+        label = "optionPillBg",
     )
     val textColor by animateColorAsState(
         targetValue = if (isSelected) {
@@ -403,7 +543,7 @@ private fun ThemeOptionPill(
             MaterialTheme.colorScheme.onSurfaceVariant
         },
         animationSpec = spring(),
-        label = "themeOptionText",
+        label = "optionPillText",
     )
 
     Text(
@@ -416,6 +556,94 @@ private fun ThemeOptionPill(
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 10.dp),
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReminderTimeRow(
+    hour: Int,
+    minute: Int,
+    onTimeSelected: (Int, Int) -> Unit,
+) {
+    var showPicker by remember { mutableStateOf(false) }
+    val formattedTime = remember(hour, minute) {
+        val h = if (hour % 12 == 0) 12 else hour % 12
+        val amPm = if (hour < 12) "AM" else "PM"
+        String.format("%d:%02d %s", h, minute, amPm)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showPicker = true }
+            .padding(vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "Reminder time",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            text = formattedTime,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+
+    if (showPicker) {
+        val timePickerState = rememberTimePickerState(
+            initialHour = hour,
+            initialMinute = minute,
+        )
+        Dialog(onDismissRequest = { showPicker = false }) {
+            Column(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "Select time",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                TimePicker(state = timePickerState)
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    Text(
+                        text = "Cancel",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { showPicker = false }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "OK",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable {
+                                onTimeSelected(timePickerState.hour, timePickerState.minute)
+                                showPicker = false
+                            }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

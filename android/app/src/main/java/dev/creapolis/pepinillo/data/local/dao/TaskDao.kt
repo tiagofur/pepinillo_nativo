@@ -54,6 +54,9 @@ interface TaskDao {
     @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 1 AND is_deleted = 0 AND completed_at >= :startOfDay")
     suspend fun getCompletedTodayCount(startOfDay: Long): Int
 
+    @Query("SELECT * FROM tasks WHERE is_deleted = 0 AND ((due_date >= :startOfDay AND due_date < :endOfDay) OR (is_completed = 1 AND completed_at >= :startOfDay AND completed_at < :endOfDay))")
+    suspend fun getTasksForDate(startOfDay: Long, endOfDay: Long): List<TaskEntity>
+
     // Sync queries
     @Query("SELECT * FROM tasks WHERE is_dirty = 1")
     suspend fun getDirtyTasks(): List<TaskEntity>

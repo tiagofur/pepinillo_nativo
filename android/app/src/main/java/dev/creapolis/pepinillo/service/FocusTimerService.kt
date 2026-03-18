@@ -205,12 +205,17 @@ class FocusTimerService : Service() {
             var cachedLinkedTaskId: String? = null
             var cachedLinkedTaskName: String? = null
             var previousPhase: dev.creapolis.pepinillo.domain.timer.FocusPhase? = null
+            var previousStatus: TimerStatus? = null
             focusEngine.state.collect { state ->
                 // Detect phase change → notify watch to vibrate
                 if (previousPhase != null && state.phase != previousPhase && state.status != TimerStatus.Idle) {
                     WearDataLayerHelper.pushPhaseComplete(this@FocusTimerService, state.mode.name, previousPhase!!.name)
                 }
                 previousPhase = state.phase
+
+                // Detect status change to bypass throttle (ensures final idle push is never skipped)
+                val statusChanged = previousStatus != null && state.status != previousStatus
+                previousStatus = state.status
 
                 // Update notification every tick
                 getSystemService(NotificationManager::class.java)
@@ -225,8 +230,9 @@ class FocusTimerService : Service() {
                 }
 
                 // Update widget max once per second to avoid battery drain
+                // Bypass throttle on status transitions so the final idle push always reaches the watch
                 val now = System.currentTimeMillis()
-                if (now - lastWidgetUpdate >= 1000) {
+                if (now - lastWidgetUpdate >= 1000 || statusChanged) {
                     lastWidgetUpdate = now
                     val widgetState = TimerWidgetState(
                         mode = state.mode,

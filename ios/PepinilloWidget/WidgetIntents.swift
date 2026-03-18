@@ -6,6 +6,7 @@
 // with the main app via App Group UserDefaults.
 
 import AppIntents
+import SwiftData
 import WidgetKit
 
 // MARK: - Start Focus from Widget
@@ -37,6 +38,21 @@ struct PauseFocusFromWidgetIntent: AppIntent {
     }
 }
 
+// MARK: - Resume Focus from Widget
+
+struct ResumeFocusFromWidgetIntent: AppIntent {
+    static let title: LocalizedStringResource = "Resume Focus"
+    static let description = IntentDescription("Resume the paused focus session.")
+    static let openAppWhenRun: Bool = true
+
+    func perform() async throws -> some IntentResult {
+        AppGroupDefaults.externalResumeRequested = true
+        AppGroupDefaults.activeSessionIsPaused = false
+        WidgetCenter.shared.reloadAllTimelines()
+        return .result()
+    }
+}
+
 // MARK: - Stop Focus from Widget
 
 struct StopFocusFromWidgetIntent: AppIntent {
@@ -47,6 +63,63 @@ struct StopFocusFromWidgetIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         AppGroupDefaults.externalStopRequested = true
         AppGroupDefaults.isSessionActive = false
+        WidgetCenter.shared.reloadAllTimelines()
+        return .result()
+    }
+}
+
+// MARK: - Start Focus with Task from Widget
+
+struct StartFocusWithTaskIntent: AppIntent {
+    static let title: LocalizedStringResource = "Start Focus with Task"
+    static let description = IntentDescription("Start a focus session linked to a specific task.")
+    static let openAppWhenRun: Bool = true
+
+    @Parameter(title: "Task ID")
+    var taskID: String
+
+    init() {}
+
+    init(taskID: String) {
+        self.taskID = taskID
+    }
+
+    func perform() async throws -> some IntentResult {
+        AppGroupDefaults.externalStartRequested = true
+        AppGroupDefaults.requestedTaskID = taskID
+        AppGroupDefaults.isSessionActive = true
+        WidgetCenter.shared.reloadAllTimelines()
+        return .result()
+    }
+}
+
+// MARK: - Complete Task from Widget
+
+struct CompleteTaskFromWidgetIntent: AppIntent {
+    static let title: LocalizedStringResource = "Complete Task"
+    static let description = IntentDescription("Mark a task as completed from the widget.")
+    static let openAppWhenRun: Bool = false
+
+    @Parameter(title: "Task ID")
+    var taskID: String
+
+    init() {}
+
+    init(taskID: String) {
+        self.taskID = taskID
+    }
+
+    func perform() async throws -> some IntentResult {
+        guard let uuid = UUID(uuidString: taskID) else { return .result() }
+        let container = try makeWidgetModelContainer()
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<TaskItem>()
+        let tasks = try context.fetch(descriptor)
+        if let task = tasks.first(where: { $0.id == uuid }) {
+            task.isCompleted = true
+            task.completedAt = Date.now
+            try context.save()
+        }
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }

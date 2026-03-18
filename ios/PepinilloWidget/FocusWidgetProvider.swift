@@ -74,12 +74,14 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
 
             // Check AppGroupDefaults for active session state
             let isActive = AppGroupDefaults.isSessionActive
+            let isPaused = isActive ? AppGroupDefaults.activeSessionIsPaused : false
             let activeMode = isActive ? AppGroupDefaults.activeModeName : nil
             let activePhase = isActive ? AppGroupDefaults.activeSessionPhase : nil
             let activeProgress = isActive ? AppGroupDefaults.activeSessionProgress : nil
             let activePomodoroNumber = isActive ? AppGroupDefaults.activeSessionPomodoroNumber : nil
             let activeTotalPomodoros = isActive ? AppGroupDefaults.activeSessionTotalPomodoros : nil
             let activeTaskTitle = isActive ? AppGroupDefaults.activeSessionTaskTitle : nil
+            let timerStart = isActive ? AppGroupDefaults.activeSessionTimerStart : nil
             let timerEnd = isActive ? AppGroupDefaults.activeSessionTimerEnd : nil
 
             // Build timer text from elapsed/remaining
@@ -102,6 +104,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             return FocusWidgetEntry(
                 date: Date.now,
                 isSessionActive: isActive,
+                isPaused: isPaused,
                 focusMode: activeMode,
                 phase: activePhase,
                 timerText: timerText,
@@ -109,6 +112,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 pomodoroNumber: activePomodoroNumber,
                 totalPomodoros: activeTotalPomodoros,
                 linkedTaskTitle: activeTaskTitle,
+                timerStart: timerStart,
                 timerEnd: timerEnd,
                 todayFocusMinutes: focusMinutes,
                 todaySessionsCompleted: sessionsCompleted,

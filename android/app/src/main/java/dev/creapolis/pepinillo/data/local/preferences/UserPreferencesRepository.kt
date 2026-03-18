@@ -28,6 +28,13 @@ data class UserPreferences(
     val themeMode: ThemeMode = ThemeMode.System,
     val dynamicColor: Boolean = true,
     val onboardingCompleted: Boolean = false,
+    val flowtimeMinMinutes: Int = 5,
+    val defaultMode: String = "Pomodoro",
+    val keepScreenOn: Boolean = false,
+    val dailyReminderEnabled: Boolean = false,
+    val dailyReminderHour: Int = 9,
+    val dailyReminderMinute: Int = 0,
+    val midpointCheckIn: Boolean = false,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -49,6 +56,13 @@ class UserPreferencesRepository @Inject constructor(
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val FLOWTIME_MIN_MINUTES = intPreferencesKey("flowtime_min_minutes")
+        val DEFAULT_MODE = stringPreferencesKey("default_mode")
+        val KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
+        val DAILY_REMINDER_ENABLED = booleanPreferencesKey("daily_reminder_enabled")
+        val DAILY_REMINDER_HOUR = intPreferencesKey("daily_reminder_hour")
+        val DAILY_REMINDER_MINUTE = intPreferencesKey("daily_reminder_minute")
+        val MIDPOINT_CHECK_IN = booleanPreferencesKey("midpoint_check_in")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -65,6 +79,13 @@ class UserPreferencesRepository @Inject constructor(
             themeMode = prefs[Keys.THEME_MODE]?.let { ThemeMode.valueOf(it) } ?: ThemeMode.System,
             dynamicColor = prefs[Keys.DYNAMIC_COLOR] ?: true,
             onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false,
+            flowtimeMinMinutes = prefs[Keys.FLOWTIME_MIN_MINUTES] ?: 5,
+            defaultMode = prefs[Keys.DEFAULT_MODE] ?: "Pomodoro",
+            keepScreenOn = prefs[Keys.KEEP_SCREEN_ON] ?: false,
+            dailyReminderEnabled = prefs[Keys.DAILY_REMINDER_ENABLED] ?: false,
+            dailyReminderHour = prefs[Keys.DAILY_REMINDER_HOUR] ?: 9,
+            dailyReminderMinute = prefs[Keys.DAILY_REMINDER_MINUTE] ?: 0,
+            midpointCheckIn = prefs[Keys.MIDPOINT_CHECK_IN] ?: false,
         )
     }
 
@@ -80,6 +101,13 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateThemeMode(mode: ThemeMode) = update { it[Keys.THEME_MODE] = mode.name }
     suspend fun updateDynamicColor(value: Boolean) = update { it[Keys.DYNAMIC_COLOR] = value }
     suspend fun completeOnboarding() = update { it[Keys.ONBOARDING_COMPLETED] = true }
+    suspend fun updateFlowtimeMinMinutes(value: Int) = update { it[Keys.FLOWTIME_MIN_MINUTES] = value }
+    suspend fun updateDefaultMode(value: String) = update { it[Keys.DEFAULT_MODE] = value }
+    suspend fun updateKeepScreenOn(value: Boolean) = update { it[Keys.KEEP_SCREEN_ON] = value }
+    suspend fun updateDailyReminderEnabled(value: Boolean) = update { it[Keys.DAILY_REMINDER_ENABLED] = value }
+    suspend fun updateDailyReminderHour(value: Int) = update { it[Keys.DAILY_REMINDER_HOUR] = value }
+    suspend fun updateDailyReminderMinute(value: Int) = update { it[Keys.DAILY_REMINDER_MINUTE] = value }
+    suspend fun updateMidpointCheckIn(value: Boolean) = update { it[Keys.MIDPOINT_CHECK_IN] = value }
 
     private suspend fun update(block: (MutablePreferences) -> Unit) {
         context.dataStore.edit { prefs -> block(prefs) }

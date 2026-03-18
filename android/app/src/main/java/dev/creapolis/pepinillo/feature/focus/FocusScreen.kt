@@ -1,9 +1,14 @@
 package dev.creapolis.pepinillo.feature.focus
 
+import android.app.Activity
+import android.view.WindowManager
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,20 +35,25 @@ import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
@@ -65,6 +75,20 @@ fun FocusScreen(
     val uiState by viewModel.uiState.collectAsState()
     val activeTasks by viewModel.activeTasks.collectAsState()
     val modeColors = uiState.selectedMode.colorScheme()
+
+    // Keep screen on during focus sessions
+    val keepScreenActive = uiState.keepScreenOn && (uiState.isRunning || uiState.isPaused)
+    val activity = LocalContext.current as? Activity
+    DisposableEffect(keepScreenActive) {
+        if (keepScreenActive) {
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+        onDispose {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     // Animated colors for smooth mode transitions
     val animatedAccentColor by animateColorAsState(
@@ -182,6 +206,28 @@ fun FocusScreen(
                     mode = mode,
                     isSelected = mode == uiState.selectedMode,
                     onClick = { viewModel.selectMode(mode) },
+                )
+            }
+        }
+
+        // ── BREAK SUGGESTION (Flowtime) ──
+        AnimatedVisibility(
+            visible = uiState.breakSuggested,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "You've been focused for a while — consider a break!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
                 )
             }
         }
@@ -374,6 +420,29 @@ fun FocusScreen(
             currentLinkedTaskName = uiState.linkedTaskName,
             onTaskSelected = { taskId -> viewModel.linkTask(taskId) },
             onDismiss = { viewModel.dismissTaskPicker() },
+        )
+    }
+
+    if (uiState.showStopConfirmation) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissStopConfirmation() },
+            title = { Text(stringResource(R.string.stop_confirm_title)) },
+            text = { Text(stringResource(R.string.stop_confirm_body)) },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.confirmStop() },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                    ),
+                ) {
+                    Text(stringResource(R.string.btn_stop))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissStopConfirmation() }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            },
         )
     }
 }

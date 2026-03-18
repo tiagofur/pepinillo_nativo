@@ -38,6 +38,7 @@ import dev.creapolis.pepinillo.feature.auth.RegisterScreen
 import dev.creapolis.pepinillo.feature.onboarding.OnboardingScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
@@ -181,7 +182,12 @@ fun PepinilloApp() {
                 )
             }
             composable(TopLevelDestination.Dashboard.route) {
-                DashboardScreen()
+                DashboardScreen(
+                    onCalendarClick = { navController.navigate("calendar") },
+                )
+            }
+            composable("calendar") {
+                CalendarScreen(onBack = { navController.popBackStack() })
             }
             composable("profile") {
                 ProfileScreen(

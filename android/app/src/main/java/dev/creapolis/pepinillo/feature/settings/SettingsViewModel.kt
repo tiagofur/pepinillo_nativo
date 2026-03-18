@@ -1,17 +1,27 @@
 package dev.creapolis.pepinillo.feature.settings
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.feature.focus.FocusMode
+import dev.creapolis.pepinillo.service.DailyReminderWorker
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 data class SettingsUiState(
@@ -27,16 +37,31 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.System,
     val dynamicColor: Boolean = true,
     val appVersion: String = "1.0.0",
+    val flowtimeMinMinutes: Int = 5,
+    val defaultMode: FocusMode = FocusMode.Pomodoro,
+    val keepScreenOn: Boolean = false,
+    val dailyReminderEnabled: Boolean = false,
+    val dailyReminderHour: Int = 9,
+    val dailyReminderMinute: Int = 0,
+    val midpointCheckIn: Boolean = false,
+    val currentStreak: Int = 0,
 )
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val prefsRepo: UserPreferencesRepository,
+    private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
-    val uiState: StateFlow<SettingsUiState> = prefsRepo.preferences
-        .map { it.toUiState() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+    val uiState: StateFlow<SettingsUiState> = combine(
+        prefsRepo.preferences,
+        sessionRepository.getAllDaysWithSessions(),
+    ) { prefs, allDays ->
+        prefs.toUiState(
+            currentStreak = sessionRepository.calculateCurrentStreak(allDays),
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     init {
         // Sync theme controller with persisted preferences
@@ -49,7 +74,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updatePomodoroMinutes(value: Int) = viewModelScope.launch {
-        prefsRepo.updatePomodoroMinutes(value.coerceIn(1, 90))
+        prefsRepo.updatePomodoroMinutes(value.coerceIn(1, 120))
     }
 
     fun updateShortBreakMinutes(value: Int) = viewModelScope.launch {
@@ -57,15 +82,15 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateLongBreakMinutes(value: Int) = viewModelScope.launch {
-        prefsRepo.updateLongBreakMinutes(value.coerceIn(1, 60))
+        prefsRepo.updateLongBreakMinutes(value.coerceIn(5, 60))
     }
 
     fun updateSessionsBeforeLongBreak(value: Int) = viewModelScope.launch {
-        prefsRepo.updateSessionsBeforeLongBreak(value.coerceIn(1, 10))
+        prefsRepo.updateSessionsBeforeLongBreak(value.coerceIn(1, 12))
     }
 
     fun updateTimeBlockMinutes(value: Int) = viewModelScope.launch {
-        prefsRepo.updateTimeBlockMinutes(value.coerceIn(10, 180))
+        prefsRepo.updateTimeBlockMinutes(value.coerceIn(5, 480))
     }
 
     fun toggleAutoStartBreaks() = viewModelScope.launch {
@@ -92,7 +117,64 @@ class SettingsViewModel @Inject constructor(
         prefsRepo.updateDynamicColor(!uiState.value.dynamicColor)
     }
 
-    private fun UserPreferences.toUiState() = SettingsUiState(
+    fun updateFlowtimeMinMinutes(value: Int) = viewModelScope.launch {
+        prefsRepo.updateFlowtimeMinMinutes(value.coerceIn(1, 30))
+    }
+
+    fun setDefaultMode(mode: FocusMode) = viewModelScope.launch {
+        prefsRepo.updateDefaultMode(mode.name)
+    }
+
+    fun toggleKeepScreenOn() = viewModelScope.launch {
+        prefsRepo.updateKeepScreenOn(!uiState.value.keepScreenOn)
+    }
+
+    fun toggleDailyReminder() = viewModelScope.launch {
+        val newValue = !uiState.value.dailyReminderEnabled
+        prefsRepo.updateDailyReminderEnabled(newValue)
+        if (newValue) {
+            scheduleDailyReminder(uiState.value.dailyReminderHour, uiState.value.dailyReminderMinute)
+        } else {
+            cancelDailyReminder()
+        }
+    }
+
+    fun updateDailyReminderTime(hour: Int, minute: Int) = viewModelScope.launch {
+        prefsRepo.updateDailyReminderHour(hour)
+        prefsRepo.updateDailyReminderMinute(minute)
+        if (uiState.value.dailyReminderEnabled) {
+            scheduleDailyReminder(hour, minute)
+        }
+    }
+
+    fun toggleMidpointCheckIn() = viewModelScope.launch {
+        prefsRepo.updateMidpointCheckIn(!uiState.value.midpointCheckIn)
+    }
+
+    private fun scheduleDailyReminder(hour: Int, minute: Int) {
+        val now = Calendar.getInstance()
+        val target = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (before(now)) add(Calendar.DAY_OF_YEAR, 1)
+        }
+        val initialDelay = target.timeInMillis - now.timeInMillis
+
+        val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(24, TimeUnit.HOURS)
+            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
+            .build()
+
+        WorkManager.getInstance(context)
+            .enqueueUniquePeriodicWork("daily_reminder", ExistingPeriodicWorkPolicy.REPLACE, request)
+    }
+
+    private fun cancelDailyReminder() {
+        WorkManager.getInstance(context).cancelUniqueWork("daily_reminder")
+    }
+
+    private fun UserPreferences.toUiState(currentStreak: Int = 0) = SettingsUiState(
         pomodoroMinutes = pomodoroMinutes,
         shortBreakMinutes = shortBreakMinutes,
         longBreakMinutes = longBreakMinutes,
@@ -104,5 +186,13 @@ class SettingsViewModel @Inject constructor(
         vibrationEnabled = vibrationEnabled,
         themeMode = themeMode,
         dynamicColor = dynamicColor,
+        flowtimeMinMinutes = flowtimeMinMinutes,
+        defaultMode = FocusMode.entries.find { it.name == defaultMode } ?: FocusMode.Pomodoro,
+        keepScreenOn = keepScreenOn,
+        dailyReminderEnabled = dailyReminderEnabled,
+        dailyReminderHour = dailyReminderHour,
+        dailyReminderMinute = dailyReminderMinute,
+        midpointCheckIn = midpointCheckIn,
+        currentStreak = currentStreak,
     )
 }

@@ -173,6 +173,18 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "activeSessionTaskTitle") }
     }
 
+    /// Whether the active session is currently paused (read by widgets for Pause/Resume button).
+    static var activeSessionIsPaused: Bool {
+        get { defaults?.bool(forKey: "activeSessionIsPaused") ?? false }
+        set { defaults?.set(newValue, forKey: "activeSessionIsPaused") }
+    }
+
+    /// Linked task ID for the active session (UUID string, read by Tasks widget for highlight).
+    static var activeTaskID: String? {
+        get { defaults?.string(forKey: "activeTaskID") }
+        set { defaults?.set(newValue, forKey: "activeTaskID") }
+    }
+
     /// Timestamp when current timer phase started (used by widgets for live Text(.timer) countdown).
     static var activeSessionTimerStart: Date? {
         get { defaults?.object(forKey: "activeSessionTimerStart") as? Date }
@@ -209,6 +221,8 @@ enum AppGroupDefaults {
         defaults?.removeObject(forKey: "activeSessionTaskTitle")
         defaults?.removeObject(forKey: "activeSessionTimerStart")
         defaults?.removeObject(forKey: "activeSessionTimerEnd")
+        defaults?.set(false, forKey: "activeSessionIsPaused")
+        defaults?.removeObject(forKey: "activeTaskID")
     }
 }
 
@@ -240,8 +254,12 @@ func makeSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelContai
 
 /// Non-isolated version for WidgetKit extension process.
 /// WidgetKit runs in a separate process — no @MainActor, no CloudKit sync.
+/// Includes TaskItem + SubTask + FocusSessionRecord so Tasks and Dashboard widgets can read real data.
 func makeWidgetModelContainer() throws -> ModelContainer {
     let schema = Schema([
+        TaskItem.self,
+        SubTask.self,
+        FocusSessionRecord.self,
         DailyStats.self,
         UserPreferences.self,
     ])

@@ -8,21 +8,28 @@ import androidx.work.workDataOf
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
+import dagger.hilt.android.AndroidEntryPoint
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
+import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.service.FocusTimerService
 import dev.creapolis.pepinillo.widget.CompleteTaskWorker
 import java.nio.charset.StandardCharsets
+import javax.inject.Inject
 
 private const val TAG = "PhoneWearListener"
 
+@AndroidEntryPoint
 class PhoneWearListenerService : WearableListenerService() {
+
+    @Inject lateinit var focusEngine: FocusEngine
 
     override fun onPeerConnected(peer: Node) {
         super.onPeerConnected(peer)
         Log.d(TAG, "Watch connected: ${peer.displayName}")
 
-        // Push current timer idle state so watch knows phone is alive
-        WearDataLayerHelper.pushIdleState(this, "Pomodoro", "25:00")
+        // Push actual timer state so watch reflects the real mode (not hardcoded Pomodoro)
+        val state = focusEngine.state.value
+        WearDataLayerHelper.pushTimer(this, state, null)
 
         // Trigger immediate widget/wear data refresh (tasks + stats)
         WorkManager.getInstance(this).enqueue(

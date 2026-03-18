@@ -32,6 +32,9 @@ class FocusEngine @Inject constructor(
 
     private var timerJob: Job? = null
 
+    // Cached preferences for use in the tick loop (avoids reading DataStore every 100ms)
+    private var cachedPrefs: UserPreferences = UserPreferences()
+
     suspend fun selectMode(mode: FocusMode) {
         if (_state.value.status != TimerStatus.Idle) return
         val prefs = prefsRepo.preferences.first()
@@ -52,6 +55,7 @@ class FocusEngine @Inject constructor(
         sessionStartTime: Long,
     ) {
         val prefs = prefsRepo.preferences.first()
+        cachedPrefs = prefs
         val resolvedTotal = if (totalMillis > 0L) totalMillis else getTotalMillis(mode, prefs)
 
         // If the phase already completed while the process was dead, handle it
@@ -93,6 +97,9 @@ class FocusEngine @Inject constructor(
 
         timerJob?.cancel()
         timerJob = scope.launch {
+            // Cache prefs at session start
+            cachedPrefs = prefsRepo.preferences.first()
+
             val tickInterval = 100L
             while (true) {
                 delay(tickInterval)
@@ -101,6 +108,23 @@ class FocusEngine @Inject constructor(
 
                 val newElapsed = s.elapsedMillis + tickInterval
                 _state.update { it.copy(elapsedMillis = newElapsed) }
+
+                // Flowtime: suggest break after minimum session time
+                if (s.mode == FocusMode.Flow && !s.breakSuggested) {
+                    val minMillis = cachedPrefs.flowtimeMinMinutes * 60 * 1000L
+                    if (newElapsed >= minMillis) {
+                        _state.update { it.copy(breakSuggested = true) }
+                        feedbackManager.onPhaseComplete()
+                    }
+                }
+
+                // Blocks: midpoint check-in
+                if (s.mode == FocusMode.Blocks && cachedPrefs.midpointCheckIn && !s.midpointTriggered) {
+                    if (s.totalMillis > 0 && newElapsed >= s.totalMillis / 2) {
+                        _state.update { it.copy(midpointTriggered = true) }
+                        feedbackManager.onPhaseComplete()
+                    }
+                }
 
                 // Check completion for countdown modes
                 if (s.mode != FocusMode.Flow && s.mode != FocusMode.Chrono) {

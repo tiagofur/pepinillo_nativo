@@ -7,8 +7,9 @@ import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.emptyFlow
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,7 +31,6 @@ class SessionRepository @Inject constructor(
     ) {
         if (durationMillis <= 0 || startTime <= 0 || endTime <= startTime) return
         runCatching {
-            // Insert the session
             sessionDao.insertSession(
                 FocusSessionEntity(
                     mode = mode,
@@ -42,7 +42,6 @@ class SessionRepository @Inject constructor(
                 ),
             )
 
-            // Update daily stats
             val today = startOfDay(System.currentTimeMillis())
             val minutes = (durationMillis / 60_000).toInt()
             val existing = dailyStatsDao.getStatsForDate(today) ?: DailyStatsEntity(date = today)
@@ -78,6 +77,45 @@ class SessionRepository @Inject constructor(
         val weekAgo = now - 7L * 24 * 60 * 60 * 1000
         return dailyStatsDao.getStatsInRange(startOfDay(weekAgo), startOfDay(now))
             .catch { e -> Log.e(TAG, "Error loading week stats", e); emit(emptyList()) }
+    }
+
+    fun getMonthStats(): Flow<List<DailyStatsEntity>> {
+        val now = System.currentTimeMillis()
+        val monthAgo = now - 30L * 24 * 60 * 60 * 1000
+        return dailyStatsDao.getStatsInRange(startOfDay(monthAgo), startOfDay(now))
+            .catch { e -> Log.e(TAG, "Error loading month stats", e); emit(emptyList()) }
+    }
+
+    fun getYearStats(): Flow<List<DailyStatsEntity>> {
+        val now = System.currentTimeMillis()
+        val yearAgo = now - 364L * 24 * 60 * 60 * 1000
+        return dailyStatsDao.getStatsInRange(startOfDay(yearAgo), startOfDay(now))
+            .catch { e -> Log.e(TAG, "Error loading year stats", e); emit(emptyList()) }
+    }
+
+    fun getPreviousWeekStats(): Flow<List<DailyStatsEntity>> {
+        val now = System.currentTimeMillis()
+        val twoWeeksAgo = now - 14L * 24 * 60 * 60 * 1000
+        val weekAgo = now - 7L * 24 * 60 * 60 * 1000
+        return dailyStatsDao.getStatsInRange(startOfDay(twoWeeksAgo), startOfDay(weekAgo))
+            .catch { e -> Log.e(TAG, "Error loading previous week stats", e); emit(emptyList()) }
+    }
+
+    fun getStatsForMonth(year: Int, month: Int): Flow<List<DailyStatsEntity>> {
+        val cal = Calendar.getInstance()
+        cal.set(year, month, 1, 0, 0, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val start = cal.timeInMillis
+        cal.add(Calendar.MONTH, 1)
+        val end = cal.timeInMillis
+        return dailyStatsDao.getStatsInRange(start, end)
+            .catch { e -> Log.e(TAG, "Error loading month stats", e); emit(emptyList()) }
+    }
+
+    fun getSessionsForDate(dateMillis: Long): Flow<List<FocusSessionEntity>> {
+        val endOfDay = dateMillis + 24 * 60 * 60 * 1000
+        return sessionDao.getSessionsInRange(dateMillis, endOfDay)
+            .catch { e -> Log.e(TAG, "Error loading sessions for date", e); emit(emptyList()) }
     }
 
     fun getAllDaysWithSessions(): Flow<List<DailyStatsEntity>> =
@@ -124,6 +162,53 @@ class SessionRepository @Inject constructor(
             }
         }
         return best
+    }
+
+    fun computePeakHours(sessions: List<FocusSessionEntity>): String {
+        if (sessions.isEmpty()) return ""
+        val hourBuckets = IntArray(24)
+        val cal = Calendar.getInstance()
+        for (s in sessions) {
+            cal.timeInMillis = s.startTime
+            val hour = cal.get(Calendar.HOUR_OF_DAY)
+            hourBuckets[hour] += (s.durationMillis / 60_000).toInt()
+        }
+        // Find best 2-hour window
+        var bestStart = 0
+        var bestSum = hourBuckets[0] + hourBuckets[1]
+        for (h in 1 until 23) {
+            val sum = hourBuckets[h] + hourBuckets[h + 1]
+            if (sum > bestSum) {
+                bestSum = sum
+                bestStart = h
+            }
+        }
+        if (bestSum == 0) return ""
+        val fmt = { h: Int ->
+            when {
+                h == 0 -> "12 AM"
+                h < 12 -> "$h AM"
+                h == 12 -> "12 PM"
+                else -> "${h - 12} PM"
+            }
+        }
+        return "${fmt(bestStart)}\u2013${fmt((bestStart + 2) % 24)}"
+    }
+
+    fun computeBestDayOfWeek(stats: List<DailyStatsEntity>): String {
+        if (stats.isEmpty()) return ""
+        val dayTotals = IntArray(7)
+        val cal = Calendar.getInstance()
+        val dayFormat = SimpleDateFormat("EEEE", Locale.getDefault())
+        for (s in stats) {
+            cal.timeInMillis = s.date
+            val dow = cal.get(Calendar.DAY_OF_WEEK) - 1 // 0=Sun
+            dayTotals[dow] += s.totalMinutes
+        }
+        val bestIndex = dayTotals.indices.maxByOrNull { dayTotals[it] } ?: return ""
+        if (dayTotals[bestIndex] == 0) return ""
+        cal.set(Calendar.DAY_OF_WEEK, bestIndex + 1)
+        return dayFormat.format(cal.time)
     }
 
     companion object {

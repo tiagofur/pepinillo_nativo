@@ -21,6 +21,8 @@
     <string name="btn_pause">Pause</string>
     <string name="btn_resume">Resume</string>
     <string name="btn_stop">Stop</string>
+    <string name="stop_confirm_title">Stop session?</string>
+    <string name="stop_confirm_body">The timer will stop and your progress so far will be saved.</string>
 
     <!-- Focus Modes -->
     <string name="mode_pomodoro">Pomodoro</string>

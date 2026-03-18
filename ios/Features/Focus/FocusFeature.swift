@@ -164,6 +164,8 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionPomodoroNumber = state.selectedMode == .pomodoro ? 1 : nil
                 AppGroupDefaults.activeSessionTotalPomodoros = state.selectedMode == .pomodoro ? state.config.pomodorosPerCycle : nil
                 AppGroupDefaults.activeSessionTaskTitle = state.linkedTaskTitle
+                AppGroupDefaults.activeSessionIsPaused = false
+                AppGroupDefaults.activeTaskID = state.linkedTaskID?.uuidString
                 AppGroupDefaults.activeSessionTimerStart = Date.now
                 if let target = state.selectedMode.strategy.targetDuration(config: state.config, phase: state.selectedMode.strategy.initialPhase(config: state.config)) {
                     AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(target)
@@ -249,6 +251,9 @@ struct FocusFeature {
                 guard state.isRunning, !state.isPaused else { return .none }
                 state.isPaused = true
                 state.phaseLabel = FocusPhase.paused.displayName
+                AppGroupDefaults.activeSessionIsPaused = true
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
                     .run { _ in await focusClient.pause() },
@@ -262,6 +267,9 @@ struct FocusFeature {
                 guard state.isRunning, state.isPaused else { return .none }
                 state.isPaused = false
                 state.phaseLabel = state.phase.displayName
+                AppGroupDefaults.activeSessionIsPaused = false
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
                     .run { _ in await focusClient.resume() },
@@ -293,6 +301,8 @@ struct FocusFeature {
                 state.linkedTaskID = id
                 state.linkedTaskTitle = title
                 state.modeSuggestion = nil
+                AppGroupDefaults.activeTaskID = id?.uuidString
+                AppGroupDefaults.activeSessionTaskTitle = title
                 guard let taskID = id, !state.isRunning else { return .none }
                 // Query Mode Intelligence for a suggestion
                 return .run { [persistence] send in
