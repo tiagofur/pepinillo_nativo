@@ -1,0 +1,6073 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "-%@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "-%@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "-%@"
+          }
+        }
+      }
+    },
+    "—" : {
+
+    },
+    ", requires Pro" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", requiere Pro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", requer Pro"
+          }
+        }
+      }
+    },
+    ", selected" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", seleccionado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : ", selecionado"
+          }
+        }
+      }
+    },
+    "/ %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/ %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "/ %@"
+          }
+        }
+      }
+    },
+    "%@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@"
+          }
+        }
+      }
+    },
+    "%@ — %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ — %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ — %2$@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ — %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ session in progress" : {
+
+    },
+    "%@ session paused" : {
+
+    },
+    "%@ streak, %lld days" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ streak, %2$lld days"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha de %1$@, %2$lld días"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência de %1$@, %2$lld dias"
+          }
+        }
+      }
+    },
+    "%@ tasks go best with %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ tasks go best with %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las tareas de %1$@ van mejor con %2$@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarefas de %1$@ funcionam melhor com %2$@"
+          }
+        }
+      }
+    },
+    "%@ theme%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ theme%2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema %1$@%2$@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema %1$@%2$@"
+          }
+        }
+      }
+    },
+    "%@ timer" : {
+
+    },
+    "%@ was your most productive day with %lld minutes of focus." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ was your most productive day with %2$lld minutes of focus."
+          }
+        }
+      }
+    },
+    "%@ was your most productive day with %lld minutes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ was your most productive day with %2$lld minutes."
+          }
+        }
+      }
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@, %@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, %3$@%4$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, %3$@%4$@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$@, %3$@%4$@"
+          }
+        }
+      }
+    },
+    "%@, %lld minutes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld minutes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$lld minutos"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@, %2$lld minutos"
+          }
+        }
+      }
+    },
+    "%@, %lld minutes, %lld percent" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld minutes, %3$lld percent"
+          }
+        }
+      }
+    },
+    "%@, %lld out of 5" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld out of 5"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%@: %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$lld of %3$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld de %3$lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@: %2$lld de %3$lld"
+          }
+        }
+      }
+    },
+    "%@: unlocked" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: desbloqueado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: desbloqueado"
+          }
+        }
+      }
+    },
+    "%@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@. %2$@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@. %2$@"
+          }
+        }
+      }
+    },
+    "%@%@%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$@%3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@%2$@%3$@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@%2$@%3$@"
+          }
+        }
+      }
+    },
+    "%lld" : {
+      "comment" : "A label displaying the number of completed pomodoros. The argument is the count of completed pomodoros.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld / %2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "%lld before long break" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld antes del descanso largo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld antes da pausa longa"
+          }
+        }
+      }
+    },
+    "%lld day streak" : {
+
+    },
+    "%lld days" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld días"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dias"
+          }
+        }
+      }
+    },
+    "%lld min" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min"
+          }
+        }
+      }
+    },
+    "%lld min block" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min bloque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min bloco"
+          }
+        }
+      }
+    },
+    "%lld min focus" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min foco"
+          }
+        }
+      }
+    },
+    "%lld min long break" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min descanso largo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min pausa longa"
+          }
+        }
+      }
+    },
+    "%lld min minimum session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min sesión mínima"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min sessão mínima"
+          }
+        }
+      }
+    },
+    "%lld min short break" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min descanso corto"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld min pausa curta"
+          }
+        }
+      }
+    },
+    "%lld minutes of uninterrupted focus. Impressive!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld minutos de enfoque ininterrumpido. ¡Impresionante!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld minutos de foco ininterrupto. Impressionante!"
+          }
+        }
+      }
+    },
+    "%lld percent complete" : {
+
+    },
+    "%lld Sessions!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡%lld Sesiones!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Sessões!"
+          }
+        }
+      }
+    },
+    "%lld sessions. Half a century of focus!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesiones. ¡Medio siglo de enfoque!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sessões. Meio século de foco!"
+          }
+        }
+      }
+    },
+    "%lld-Day Streak!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Racha de %lld Días!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência de %lld Dias!"
+          }
+        }
+      }
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld/500" : {
+
+    },
+    "%lld%%" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%%"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%%"
+          }
+        }
+      }
+    },
+    "%lldh" : {
+      "comment" : "A string that represents a duration in hours, without including any minutes. The single numeric argument is the number of hours.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldh"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldh"
+          }
+        }
+      }
+    },
+    "%lldh %lldm" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lldh %2$lldm"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lldh %2$lldm"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lldh %2$lldm"
+          }
+        }
+      }
+    },
+    "%lldm" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldm"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lldm"
+          }
+        }
+      }
+    },
+    "+%@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "+%@"
+          }
+        }
+      }
+    },
+    "☑ %lld/%lld" : {
+      "comment" : "A badge indicating the progress of a task with subtasks. The first argument is the count of completed subtasks. The second argument is the count of total subtasks.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "☑ %1$lld/%2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "☑ %1$lld/%2$lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "☑ %1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "🍅 %lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "🍅 %1$lld/%2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🍅 %1$lld/%2$lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🍅 %1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "🥒" : {
+
+    },
+    "🧠" : {
+
+    },
+    "7-day focus streak" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha de enfoque de 7 días"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência de foco de 7 dias"
+          }
+        }
+      }
+    },
+    "100 sessions — you're a deep work master." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "100 sesiones — eres un maestro del trabajo profundo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "100 sessões — você é mestre em trabalho profundo."
+          }
+        }
+      }
+    },
+    "100 total focus sessions" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "100 sesiones de enfoque en total"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "100 sessões de foco no total"
+          }
+        }
+      }
+    },
+    "A full month of deep work. You're unstoppable." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un mes completo de trabajo profundo. Eres imparable."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um mês completo de trabalho profundo. Você é imparável."
+          }
+        }
+      }
+    },
+    "A full week! Consistency is your superpower." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Una semana completa! La constancia es tu superpoder."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma semana completa! Consistência é seu superpoder."
+          }
+        }
+      }
+    },
+    "About" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acerca de"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sobre"
+          }
+        }
+      }
+    },
+    "Achievements" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Logros"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conquistas"
+          }
+        }
+      }
+    },
+    "Active" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Activo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ativo"
+          }
+        }
+      }
+    },
+    "Add a task…" : {
+      "comment" : "A placeholder text in the \"Add task\" bar when the user hasn't typed in a task name yet.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar una tarea…"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicionar uma tarefa…"
+          }
+        }
+      }
+    },
+    "Add Due Date" : {
+      "comment" : "A button that allows the user to set a due date for a task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar fecha límite"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicionar data limite"
+          }
+        }
+      }
+    },
+    "Add subtask…" : {
+      "comment" : "A text field prompt to add a new subtask.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar subtarea…"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicionar subtarefa…"
+          }
+        }
+      }
+    },
+    "Add task for today…" : {
+      "comment" : "A placeholder text for the text field in the \"Add Task\" bar, used when the filter is set to show only today's tasks.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar tarea para hoy…"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicionar tarefa para hoje…"
+          }
+        }
+      }
+    },
+    "Add to Today" : {
+      "comment" : "A label for a button that removes a task from the \"Today\" view.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agregar a Hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicionar a Hoje"
+          }
+        }
+      }
+    },
+    "Add your first task below to get started." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agrega tu primera tarea abajo para comenzar."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicione sua primeira tarefa abaixo para começar."
+          }
+        }
+      }
+    },
+    "Admin" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Administrador"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Administrador"
+          }
+        }
+      }
+    },
+    "Advanced analytics" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estadísticas avanzadas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estatísticas avançadas"
+          }
+        }
+      }
+    },
+    "All" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas"
+          }
+        }
+      }
+    },
+    "All focus modes" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todos los modos de enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todos os modos de foco"
+          }
+        }
+      }
+    },
+    "All subtasks completed!" : {
+      "comment" : "A confirmation dialog title when all a task's subtasks are completed.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Todas las subtareas completadas!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas as subtarefas concluídas!"
+          }
+        }
+      }
+    },
+    "Analytics" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Analytics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estadísticas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estatísticas"
+          }
+        }
+      }
+    },
+    "Apple Health" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Health"
+          }
+        }
+      }
+    },
+    "Auto-start breaks" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar pausas automáticamente"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar pausas automaticamente"
+          }
+        }
+      }
+    },
+    "Auto-start session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesión automáticamente"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sessão automaticamente"
+          }
+        }
+      }
+    },
+    "Auto-start work sessions" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesiones de trabajo automáticamente"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sessões de trabalho automaticamente"
+          }
+        }
+      }
+    },
+    "Auto-starts a %@ session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia automáticamente una sesión de %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia automaticamente uma sessão de %@"
+          }
+        }
+      }
+    },
+    "Back to Focus" : {
+
+    },
+    "Based on your history around this time of day, I'd suggest %@. You complete %lld%% of %@ sessions at this hour." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Based on your history around this time of day, I'd suggest %1$@. You complete %2$lld%% of %3$@ sessions at this hour."
+          }
+        }
+      }
+    },
+    "Best" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melhor"
+          }
+        }
+      }
+    },
+    "Best Day" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor Día"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melhor Dia"
+          }
+        }
+      }
+    },
+    "BEST VALUE" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MEJOR VALOR"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MELHOR VALOR"
+          }
+        }
+      }
+    },
+    "Binaural Beats" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Binaural Beats"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Latidos binaurales"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Batidas binaurais"
+          }
+        }
+      }
+    },
+    "binaural beats, lo-fi, ocean, fireplace" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "latidos binaurales, lo-fi, océano, chimenea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "batidas binaurais, lo-fi, oceano, lareira"
+          }
+        }
+      }
+    },
+    "Biweekly" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quincenal"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quinzenal"
+          }
+        }
+      }
+    },
+    "Block" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bloque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bloco"
+          }
+        }
+      }
+    },
+    "Box breathing" : {
+
+    },
+    "Break" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Break"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa"
+          }
+        }
+      }
+    },
+    "Break suggested: %lld min" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Break suggested: %lld min"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa sugerida: %lld min"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa sugerida: %lld min"
+          }
+        }
+      }
+    },
+    "Break Time" : {
+
+    },
+    "Breathe" : {
+
+    },
+    "Breathe in for 4 counts, hold for 4, breathe out for 4, hold for 4. Repeat until your break ends." : {
+
+    },
+    "Café" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Café"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cafetería"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Café"
+          }
+        }
+      }
+    },
+    "Calendar" : {
+
+    },
+    "Century Club" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Club del Centenario"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clube do Centenário"
+          }
+        }
+      }
+    },
+    "Check Focus Stats" : {
+
+    },
+    "Check if a focus session is currently active in Pepinillo." : {
+
+    },
+    "Check Stats" : {
+
+    },
+    "Check your focus stats for today in Pepinillo." : {
+
+    },
+    "Choose soundscape" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir paisaje sonoro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolher paisagem sonora"
+          }
+        }
+      }
+    },
+    "choose what you see on your home screen" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "elige lo que ves en tu pantalla de inicio"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "escolha o que você vê na tela inicial"
+          }
+        }
+      }
+    },
+    "Classic" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clásico"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clássico"
+          }
+        }
+      }
+    },
+    "Classic 25/5 cycles — free" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclos clásicos 25/5 — gratis"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ciclos clássicos 25/5 — grátis"
+          }
+        }
+      }
+    },
+    "Close" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fechar"
+          }
+        }
+      }
+    },
+    "Commit to a fixed block — 1 hour, 2 hours, whatever you need. One task, no interruptions. The way Cal Newport works." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprométete con un bloque fijo — 1 hora, 2 horas, lo que necesites. Una tarea, sin interrupciones. Como trabaja Cal Newport."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprometa-se com um bloco fixo — 1 hora, 2 horas, o que precisar. Uma tarefa, sem interrupções. Como Cal Newport trabalha."
+          }
+        }
+      }
+    },
+    "Commit to a fixed block — pro" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprométete con un bloque fijo — pro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprometa-se com um bloco fixo — pro"
+          }
+        }
+      }
+    },
+    "Complete 10 deep work sessions" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa 10 sesiones de trabajo profundo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete 10 sessões de trabalho profundo"
+          }
+        }
+      }
+    },
+    "Complete 100 pomodoros" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa 100 pomodoros"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete 100 pomodoros"
+          }
+        }
+      }
+    },
+    "Complete sessions to unlock achievements" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa sesiones para desbloquear logros"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete sessões para desbloquear conquistas"
+          }
+        }
+      }
+    },
+    "Complete Task" : {
+      "comment" : "A button that marks a task as complete.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completar Tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concluir Tarefa"
+          }
+        }
+      }
+    },
+    "Complete your first focus session to see your analytics here." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa tu primera sesión de enfoque para ver tus estadísticas aquí."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete sua primeira sessão de foco para ver suas estatísticas aqui."
+          }
+        }
+      }
+    },
+    "Complete your first session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completa tu primera sesión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Complete sua primeira sessão"
+          }
+        }
+      }
+    },
+    "Completed" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completadas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Concluídas"
+          }
+        }
+      }
+    },
+    "Completed Pomodoros" : {
+      "comment" : "A label for the number of completed pomodoros in the task's focus history.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomodoros Completados"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomodoros Concluídos"
+          }
+        }
+      }
+    },
+    "Completion" : {
+
+    },
+    "Completion Rate" : {
+
+    },
+    "Configure Focus Widget" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure Focus Widget"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurar widget de foco"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurar widget de foco"
+          }
+        }
+      }
+    },
+    "Configure how Pepinillo behaves during this Focus Mode." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura cómo se comporta Pepinillo durante este Modo de Enfoque."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure como o Pepinillo se comporta durante este Modo de Foco."
+          }
+        }
+      }
+    },
+    "Consistency" : {
+
+    },
+    "Continue" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuar"
+          }
+        }
+      }
+    },
+    "Current" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actual"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atual"
+          }
+        }
+      }
+    },
+    "Current Session" : {
+
+    },
+    "Current streak" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha actual"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência atual"
+          }
+        }
+      }
+    },
+    "Current Streak" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha Actual"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência Atual"
+          }
+        }
+      }
+    },
+    "Current streak: %lld days." : {
+
+    },
+    "Custom" : {
+      "comment" : "Name of the task list sort order option that allows users to drag tasks to change their order.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalizado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalizado"
+          }
+        }
+      }
+    },
+    "Daily" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diario"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diário"
+          }
+        }
+      }
+    },
+    "Daily reminder" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recordatorio diario"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lembrete diário"
+          }
+        }
+      }
+    },
+    "Date" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fecha"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data"
+          }
+        }
+      }
+    },
+    "Day" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Día"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dia"
+          }
+        }
+      }
+    },
+    "Deep" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profundo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profundo"
+          }
+        }
+      }
+    },
+    "Deep Diver" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buceador Profundo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mergulhador Profundo"
+          }
+        }
+      }
+    },
+    "Deep Work" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabajo Profundo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabalho Profundo"
+          }
+        }
+      }
+    },
+    "Deep Work Companion" : {
+
+    },
+    "Default mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo predeterminado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo padrão"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Excluir"
+          }
+        }
+      }
+    },
+    "Delete Task" : {
+      "comment" : "A button that deletes the current task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar Tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Excluir Tarefa"
+          }
+        }
+      }
+    },
+    "Delete Task?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Eliminar Tarea?"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Excluir Tarefa?"
+          }
+        }
+      }
+    },
+    "detailed charts, weekly reviews" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "gráficos detallados, revisiones semanales"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "gráficos detalhados, revisões semanais"
+          }
+        }
+      }
+    },
+    "Do you want to mark this task as complete?" : {
+      "comment" : "A confirmation dialog message asking the user to confirm they want to mark a task as complete.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Quieres marcar esta tarea como completada?"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deseja marcar esta tarefa como concluída?"
+          }
+        }
+      }
+    },
+    "Dominant Mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo Dominante"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo Dominante"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pronto"
+          }
+        }
+      }
+    },
+    "Double tap to start a focus session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca dos veces para iniciar una sesión de enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque duas vezes para iniciar uma sessão de foco"
+          }
+        }
+      }
+    },
+    "Drink water" : {
+
+    },
+    "Due" : {
+
+    },
+    "Due Date" : {
+      "comment" : "A label for the due date of a task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fecha Límite"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data Limite"
+          }
+        }
+      }
+    },
+    "Duration (minutes)" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duración (minutos)"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duração (minutos)"
+          }
+        }
+      }
+    },
+    "Duration:" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duration:"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duración:"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duração:"
+          }
+        }
+      }
+    },
+    "Early Bird" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Madrugador"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Madrugador"
+          }
+        }
+      }
+    },
+    "End Session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Terminar Sesión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encerrar Sessão"
+          }
+        }
+      }
+    },
+    "End Session?" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Terminar Sesión?"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encerrar Sessão?"
+          }
+        }
+      }
+    },
+    "Energy" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energía"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Energia"
+          }
+        }
+      }
+    },
+    "Energy Level" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nivel de Energía"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nível de Energia"
+          }
+        }
+      }
+    },
+    "Every session counts. Keep stacking them." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada sesión cuenta. Sigue acumulándolas."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada sessão conta. Continue acumulando."
+          }
+        }
+      }
+    },
+    "Failed to fetch reminders." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error al obtener recordatorios."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Falha ao buscar lembretes."
+          }
+        }
+      }
+    },
+    "Filter" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filtrar"
+          }
+        }
+      }
+    },
+    "Fireplace" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fireplace"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chimenea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lareira"
+          }
+        }
+      }
+    },
+    "First Focus" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primer Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primeiro Foco"
+          }
+        }
+      }
+    },
+    "First Session!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Primera Sesión!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primeira Sessão!"
+          }
+        }
+      }
+    },
+    "Flow" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flujo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fluxo"
+          }
+        }
+      }
+    },
+    "Flowtime" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flowtime"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo fluido"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fluxo"
+          }
+        }
+      }
+    },
+    "Flowtime, Time Block, unlimited tasks" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flowtime, Bloques de Tiempo, tareas ilimitadas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flowtime, Blocos de Tempo, tarefas ilimitadas"
+          }
+        }
+      }
+    },
+    "flowtime, time blocks, and stopwatch" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "flowtime, bloques de tiempo y cronómetro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "flowtime, blocos de tempo e cronômetro"
+          }
+        }
+      }
+    },
+    "Focus" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foco"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foco"
+          }
+        }
+      }
+    },
+    "Focus %lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Focus %1$lld/%2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enfoque %1$lld/%2$lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foco %1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "Focus History" : {
+      "comment" : "A section header that indicates the focus history of a task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial de Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Histórico de Foco"
+          }
+        }
+      }
+    },
+    "Focus Insights" : {
+
+    },
+    "Focus Minutes" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutos de Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutos de Foco"
+          }
+        }
+      }
+    },
+    "Focus Mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de Foco"
+          }
+        }
+      }
+    },
+    "Focus Score" : {
+
+    },
+    "Focus session paused. Take a moment." : {
+
+    },
+    "Focus session resumed. Let's go! 🎯" : {
+
+    },
+    "Focus session stopped." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión de enfoque detenida."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessão de foco interrompida."
+          }
+        }
+      }
+    },
+    "Focus Sessions" : {
+
+    },
+    "Focus sessions are logged as Mindful Minutes in the Health app." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las sesiones de enfoque se registran como Minutos de Atención Plena en la app Salud."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As sessões de foco são registradas como Minutos Conscientes no app Saúde."
+          }
+        }
+      }
+    },
+    "Focus Technique" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Técnica de Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Técnica de Foco"
+          }
+        }
+      }
+    },
+    "Focus Time" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo de Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo de Foco"
+          }
+        }
+      }
+    },
+    "Focus Today" : {
+      "comment" : "A toggle to mark a task as one that should be focused on today.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enfoque Hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foco Hoje"
+          }
+        }
+      }
+    },
+    "focused today" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "focused today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "enfocado hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "focado hoje"
+          }
+        }
+      }
+    },
+    "Focusing" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focusing"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enfocado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focando"
+          }
+        }
+      }
+    },
+    "Follow your flow" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sigue tu flujo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siga seu fluxo"
+          }
+        }
+      }
+    },
+    "Follow your natural flow — pro" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sigue tu flujo natural — pro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siga seu fluxo natural — pro"
+          }
+        }
+      }
+    },
+    "For %@, I'd suggest %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "For %1$@, I'd suggest %2$@. %3$@"
+          }
+        }
+      }
+    },
+    "For a morning session, I'd suggest Pomodoro — structured intervals help build momentum early in the day." : {
+
+    },
+    "For an afternoon session, try Flowtime — let your natural rhythm guide the length." : {
+
+    },
+    "For an evening session, try a Time Block — set a fixed duration to avoid going too late." : {
+
+    },
+    "Forest" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forest"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bosque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Floresta"
+          }
+        }
+      }
+    },
+    "Free" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gratis"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grátis"
+          }
+        }
+      }
+    },
+    "Free Focus" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enfoque Libre"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foco Livre"
+          }
+        }
+      }
+    },
+    "General" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geral"
+          }
+        }
+      }
+    },
+    "Get a personalized focus mode suggestion based on your productivity patterns." : {
+
+    },
+    "Get a summary of your focus productivity this week compared to last week." : {
+
+    },
+    "Get access to all focus modes, premium soundscapes, and advanced analytics." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accede a todos los modos de enfoque, paisajes sonoros premium y estadísticas avanzadas."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acesse todos os modos de foco, paisagens sonoras premium e estatísticas avançadas."
+          }
+        }
+      }
+    },
+    "Get Current Focus Session" : {
+
+    },
+    "Get Focus Insights" : {
+
+    },
+    "Get personalized insights about your focus habits and productivity patterns." : {
+
+    },
+    "Get Started" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comenzar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Começar"
+          }
+        }
+      }
+    },
+    "Get up and drink a full glass of water. Staying hydrated helps maintain focus." : {
+
+    },
+    "Get Weekly Focus Report" : {
+
+    },
+    "Go to Analytics" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir a Estadísticas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir para Estatísticas"
+          }
+        }
+      }
+    },
+    "Go to Focus" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir a Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir para Foco"
+          }
+        }
+      }
+    },
+    "Go to Settings" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir a Ajustes"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir para Ajustes"
+          }
+        }
+      }
+    },
+    "Go to Tasks" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir a Tareas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ir para Tarefas"
+          }
+        }
+      }
+    },
+    "Good" : {
+
+    },
+    "Good afternoon," : {
+
+    },
+    "Good evening," : {
+
+    },
+    "Good morning," : {
+
+    },
+    "Great" : {
+
+    },
+    "Halfway there!" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Halfway there!"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Ya vas por la mitad!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metade do caminho!"
+          }
+        }
+      }
+    },
+    "Haptic feedback" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retroalimentación háptica"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Resposta háptica"
+          }
+        }
+      }
+    },
+    "Health Access Denied" : {
+
+    },
+    "High" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alta"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alta"
+          }
+        }
+      }
+    },
+    "How was your focus?" : {
+
+    },
+    "Hydrate" : {
+
+    },
+    "I couldn't access your focus data right now." : {
+
+    },
+    "I couldn't compute the date range." : {
+
+    },
+    "I need at least a few sessions to make a suggestion. Try Pomodoro to start — it's great for building focus habits!" : {
+
+    },
+    "iCloud sync" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronización iCloud"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronização iCloud"
+          }
+        }
+      }
+    },
+    "Import Failed" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error de Importación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Falha na Importação"
+          }
+        }
+      }
+    },
+    "Import from Reminders" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar de Recordatorios"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar de Lembretes"
+          }
+        }
+      }
+    },
+    "iPhone disconnected" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone desconectado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone desconectado"
+          }
+        }
+      }
+    },
+    "Just start the timer and see how long you focus. No targets, no breaks. Perfect for creative work or when you just need to begin." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Solo inicia el temporizador y ve cuánto tiempo te enfocas. Sin metas, sin pausas. Perfecto para trabajo creativo o cuando solo necesitas comenzar."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apenas inicie o cronômetro e veja quanto tempo você foca. Sem metas, sem pausas. Perfeito para trabalho criativo ou quando você só precisa começar."
+          }
+        }
+      }
+    },
+    "Keep Going!" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Going!"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Sigue así!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue assim!"
+          }
+        }
+      }
+    },
+    "Keep Open" : {
+      "comment" : "The text on a button that dismisses a confirmation dialog without taking any action.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantener Abierto"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manter Aberto"
+          }
+        }
+      }
+    },
+    "Keep screen on during sessions" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantener pantalla encendida durante sesiones"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manter tela ligada durante sessões"
+          }
+        }
+      }
+    },
+    "Keep the momentum going!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Mantén el impulso!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenha o ritmo!"
+          }
+        }
+      }
+    },
+    "Legal" : {
+
+    },
+    "Lo-fi" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo-fi"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo-fi"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo-fi"
+          }
+        }
+      }
+    },
+    "Log to Apple Health" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrar en Apple Health"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registrar no Apple Health"
+          }
+        }
+      }
+    },
+    "Long Break" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Long Break"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa larga"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa longa"
+          }
+        }
+      }
+    },
+    "Low" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baja"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baixa"
+          }
+        }
+      }
+    },
+    "Mark as complete" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como completada"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como concluída"
+          }
+        }
+      }
+    },
+    "Mark as incomplete" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como incompleta"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como incompleta"
+          }
+        }
+      }
+    },
+    "Medium" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Media"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Média"
+          }
+        }
+      }
+    },
+    "Meh" : {
+
+    },
+    "Midpoint check-in" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revisión de medio camino"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check-in do meio"
+          }
+        }
+      }
+    },
+    "min" : {
+
+    },
+    "Minimum focus time before a break is suggested." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo mínimo de enfoque antes de sugerir una pausa."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo mínimo de foco antes de sugerir uma pausa."
+          }
+        }
+      }
+    },
+    "Minutes" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutos"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minutos"
+          }
+        }
+      }
+    },
+    "Mode Breakdown" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desglose por Modo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distribuição por Modo"
+          }
+        }
+      }
+    },
+    "Mode Distribution" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distribución por Modo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Distribuição por Modo"
+          }
+        }
+      }
+    },
+    "Monthly" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mensual"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mensal"
+          }
+        }
+      }
+    },
+    "Move" : {
+
+    },
+    "Neck & shoulders" : {
+
+    },
+    "New Task" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nueva Tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova Tarefa"
+          }
+        }
+      }
+    },
+    "New task…" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New task…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nueva tarea…"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova tarefa…"
+          }
+        }
+      }
+    },
+    "Newest" : {
+      "comment" : "Label for sorting tasks by their creation date, from newest to oldest.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más reciente"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mais recente"
+          }
+        }
+      }
+    },
+    "No active subscription found." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No active subscription found."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se encontró suscripción activa."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma assinatura ativa encontrada."
+          }
+        }
+      }
+    },
+    "No activity" : {
+
+    },
+    "No Data Yet" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin Datos Aún"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem Dados Ainda"
+          }
+        }
+      }
+    },
+    "No focus session is running right now." : {
+
+    },
+    "No focus session is running. Ready to start one?" : {
+
+    },
+    "No focus session to resume." : {
+
+    },
+    "No focus sessions in the last 7 days. Start a session to begin tracking your patterns!" : {
+
+    },
+    "No focus sessions yet today. Ready to start one? 🎯" : {
+
+    },
+    "No Matching Tasks" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin Tareas Coincidentes"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma Tarefa Encontrada"
+          }
+        }
+      }
+    },
+    "No Tasks Yet" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin Tareas Aún"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem Tarefas Ainda"
+          }
+        }
+      }
+    },
+    "None" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "None"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ninguno"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum"
+          }
+        }
+      }
+    },
+    "Not enough data yet for insights. Keep focusing!" : {
+
+    },
+    "Notes" : {
+      "comment" : "A label displayed above the section for adding and editing notes.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notas"
+          }
+        }
+      }
+    },
+    "Notifications" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notificaciones"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notificações"
+          }
+        }
+      }
+    },
+    "Ocean" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocean"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Océano"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oceano"
+          }
+        }
+      }
+    },
+    "OK" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Okay" : {
+
+    },
+    "one free skip per week" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "un salto gratis por semana"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "um pulo grátis por semana"
+          }
+        }
+      }
+    },
+    "Only %lld%% of sessions completed. Consider starting with 15-minute Pomodoros." : {
+
+    },
+    "Open menu" : {
+
+    },
+    "Own your calendar" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Domina tu calendario"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Domine seu calendário"
+          }
+        }
+      }
+    },
+    "Pause Focus" : {
+
+    },
+    "Pause Focus Session" : {
+
+    },
+    "Pause session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausar sesión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausar sessão"
+          }
+        }
+      }
+    },
+    "Pause the current focus session in Pepinillo." : {
+
+    },
+    "Paused" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paused"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausado"
+          }
+        }
+      }
+    },
+    "Payment will be charged to your Apple ID. Subscriptions auto-renew unless cancelled 24 hours before the end of the current period." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El pago se cargará a tu Apple ID. Las suscripciones se renuevan automáticamente a menos que se cancelen 24 horas antes del final del período actual."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O pagamento será cobrado no seu Apple ID. As assinaturas são renovadas automaticamente, a menos que sejam canceladas 24 horas antes do final do período atual."
+          }
+        }
+      }
+    },
+    "Peak Day" : {
+
+    },
+    "Peak Hours" : {
+
+    },
+    "Pepinillo" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo"
+          }
+        }
+      }
+    },
+    "Pepinillo Focus" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo Focus"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo Focus"
+          }
+        }
+      }
+    },
+    "Pepinillo Free" : {
+
+    },
+    "Pepinillo Pro" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo Pro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo Pro"
+          }
+        }
+      }
+    },
+    "Pepinillo: %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo: %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo: %@"
+          }
+        }
+      }
+    },
+    "Period" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Período"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Período"
+          }
+        }
+      }
+    },
+    "Personal Best: %lldm" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor Marca: %lldm"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recorde Pessoal: %lldm"
+          }
+        }
+      }
+    },
+    "Pick a guided activity for your %lld-minute break" : {
+
+    },
+    "Pick a task from the list to view details." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige una tarea de la lista para ver los detalles."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha uma tarefa da lista para ver os detalhes."
+          }
+        }
+      }
+    },
+    "Pomo" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomo"
+          }
+        }
+      }
+    },
+    "Pomodoro" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomodoro"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomodoro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomodoro"
+          }
+        }
+      }
+    },
+    "Pomodoro %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Pomodoro %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Pomodoro Master" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maestro Pomodoro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mestre Pomodoro"
+          }
+        }
+      }
+    },
+    "Pomodoros: %lld" : {
+      "comment" : "A stepper that lets the user estimate how many Pomodoros are needed to complete a task. The value displayed is the estimated number of Pomodoros.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomodoros: %lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pomodoros: %lld"
+          }
+        }
+      }
+    },
+    "Preferred Mode" : {
+
+    },
+    "Premium soundscapes" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paisajes sonoros premium"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paisagens sonoras premium"
+          }
+        }
+      }
+    },
+    "Preview %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vista previa %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visualizar %@"
+          }
+        }
+      }
+    },
+    "Priority" : {
+      "comment" : "A label for the priority of a task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prioridad"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prioridade"
+          }
+        }
+      }
+    },
+    "Priority & Focus" : {
+      "comment" : "A section header for the priority and focus settings in the task detail view.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prioridad y Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prioridade e Foco"
+          }
+        }
+      }
+    },
+    "Privacy Policy" : {
+
+    },
+    "Pro" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro"
+          }
+        }
+      }
+    },
+    "Pro soundscapes, subscription required" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paisajes sonoros Pro, suscripción requerida"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paisagens sonoras Pro, assinatura necessária"
+          }
+        }
+      }
+    },
+    "Productivity Patterns" : {
+      "comment" : "A section header in the Analytics view, describing productivity patterns.",
+      "isCommentAutoGenerated" : true
+    },
+    "Purchase is pending approval." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchase is pending approval."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La compra está pendiente de aprobación."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A compra está pendente de aprovação."
+          }
+        }
+      }
+    },
+    "Purchase Status" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estado de Compra"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status da Compra"
+          }
+        }
+      }
+    },
+    "Quick reflection" : {
+
+    },
+    "Rain" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rain"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lluvia"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chuva"
+          }
+        }
+      }
+    },
+    "Ready" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pronto"
+          }
+        }
+      }
+    },
+    "Recurrence" : {
+      "comment" : "A section header for managing how often a task should repeat.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recurrencia"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recorrência"
+          }
+        }
+      }
+    },
+    "Reminder time" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hora del recordatorio"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hora do lembrete"
+          }
+        }
+      }
+    },
+    "Reminders access was denied. Enable it in Settings." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El acceso a Recordatorios fue denegado. Actívalo en Ajustes."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O acesso a Lembretes foi negado. Ative nas Configurações."
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "comment" : "A button that removes a task's recurrence when pressed. It is shown next to a recurrence option in the task details view.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remover"
+          }
+        }
+      }
+    },
+    "Remove Due Date" : {
+      "comment" : "A button that removes a task's due date.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar Fecha Límite"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remover Data Limite"
+          }
+        }
+      }
+    },
+    "Remove from Today" : {
+      "comment" : "A label that toggles a task's \"Add to Today\" state.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar de Hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remover de Hoje"
+          }
+        }
+      }
+    },
+    "Remove Recurrence" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar Recurrencia"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remover Recorrência"
+          }
+        }
+      }
+    },
+    "Repeat" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repetir"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Repetir"
+          }
+        }
+      }
+    },
+    "Restore Purchases" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restore Purchases"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurar compras"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurar compras"
+          }
+        }
+      }
+    },
+    "Resume a paused focus session in Pepinillo." : {
+
+    },
+    "Resume Focus" : {
+
+    },
+    "Resume Focus Session" : {
+
+    },
+    "Resume session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reanudar sesión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retomar sessão"
+          }
+        }
+      }
+    },
+    "Roll your shoulders back 5 times. Tilt your head side to side. Stretch your arms overhead." : {
+
+    },
+    "Room to Grow" : {
+
+    },
+    "Rough" : {
+
+    },
+    "Same as last week — steady consistency." : {
+
+    },
+    "Save" : {
+
+    },
+    "seamlessly across all your Apple devices" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sin interrupciones en todos tus dispositivos Apple"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "perfeitamente em todos os seus dispositivos Apple"
+          }
+        }
+      }
+    },
+    "Select a Task" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleccionar una Tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecionar uma Tarefa"
+          }
+        }
+      }
+    },
+    "Selected" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleccionado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecionado"
+          }
+        }
+      }
+    },
+    "Session Complete" : {
+
+    },
+    "Session Length" : {
+
+    },
+    "sessions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sessions"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sesiones"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "sessões"
+          }
+        }
+      }
+    },
+    "Sessions" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessions"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesiones"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessões"
+          }
+        }
+      }
+    },
+    "Set Repeat" : {
+      "comment" : "A button that, when tapped, presents a menu for setting a task's recurrence.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Establecer Repetición"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Definir Repetição"
+          }
+        }
+      }
+    },
+    "Settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurações"
+          }
+        }
+      }
+    },
+    "Shallow" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Superficial"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Superficial"
+          }
+        }
+      }
+    },
+    "Shallow Work" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabajo Superficial"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabalho Superficial"
+          }
+        }
+      }
+    },
+    "Short Break" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Short Break"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa corta"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausa curta"
+          }
+        }
+      }
+    },
+    "Show Mode Breakdown" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Mode Breakdown"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar desglose de modos"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar distribuição de modos"
+          }
+        }
+      }
+    },
+    "Show Streak" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Streak"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar racha"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar sequência"
+          }
+        }
+      }
+    },
+    "Sign out" : {
+
+    },
+    "Skip" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saltar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pular"
+          }
+        }
+      }
+    },
+    "Skip to next phase" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saltar a la siguiente fase"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pular para a próxima fase"
+          }
+        }
+      }
+    },
+    "Sound effects" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efectos de sonido"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efeitos sonoros"
+          }
+        }
+      }
+    },
+    "Sounds" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sounds"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonidos"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sons"
+          }
+        }
+      }
+    },
+    "Soundscape" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soundscape"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ambiente sonoro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ambiente sonoro"
+          }
+        }
+      }
+    },
+    "Soundscape: %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paisaje sonoro: %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paisagem sonora: %@"
+          }
+        }
+      }
+    },
+    "Stand up and walk around your space. Look at something far away to rest your eyes." : {
+
+    },
+    "Start" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar"
+          }
+        }
+      }
+    },
+    "Start / Pause" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar / Pausar"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar / Pausar"
+          }
+        }
+      }
+    },
+    "Start %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar %@"
+          }
+        }
+      }
+    },
+    "Start ${mode} session on ${task}" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesión de ${mode} en ${task}"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sessão de ${mode} em ${task}"
+          }
+        }
+      }
+    },
+    "Start 10 sessions before 8am" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia 10 sesiones antes de las 8am"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicie 10 sessões antes das 8h"
+          }
+        }
+      }
+    },
+    "Start a deep work session in Pepinillo with your preferred focus technique." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia una sesión de trabajo profundo en Pepinillo con tu técnica de enfoque preferida."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicie uma sessão de trabalho profundo no Pepinillo com sua técnica de foco preferida."
+          }
+        }
+      }
+    },
+    "Start a Focus Session" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a Focus Session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesión de foco"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sessão de foco"
+          }
+        }
+      }
+    },
+    "Start a Pomodoro in %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start a Pomodoro in %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empezar un Pomodoro en %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar um Pomodoro no %@"
+          }
+        }
+      }
+    },
+    "Start deep work in %@" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start deep work in %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empezar trabajo profundo en %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar trabalho profundo no %@"
+          }
+        }
+      }
+    },
+    "Start Focus" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar Foco"
+          }
+        }
+      }
+    },
+    "Start Focus Session" : {
+      "comment" : "A button label that starts a focus session.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar Sesión de Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar Sessão de Foco"
+          }
+        }
+      }
+    },
+    "Start focus session with this task" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesión de enfoque con esta tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sessão de foco com esta tarefa"
+          }
+        }
+      }
+    },
+    "Start Focusing" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empezar a Enfocarse"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Começar a Focar"
+          }
+        }
+      }
+    },
+    "Start or stop a focus session." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia o detiene una sesión de enfoque."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia ou para uma sessão de foco."
+          }
+        }
+      }
+    },
+    "Started %@ session%@. Let's focus! 🎯" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Started %1$@ session%2$@. Let's focus! 🎯"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión de %1$@ iniciada%2$@. ¡A enfocarse! 🎯"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessão de %1$@ iniciada%2$@. Vamos focar! 🎯"
+          }
+        }
+      }
+    },
+    "Stop" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parar"
+          }
+        }
+      }
+    },
+    "Stop Focus" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parar Foco"
+          }
+        }
+      }
+    },
+    "Stop Focus Session" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Focus Session"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener sesión de foco"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parar sessão de foco"
+          }
+        }
+      }
+    },
+    "Stop preview" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener vista previa"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parar visualização"
+          }
+        }
+      }
+    },
+    "Stop session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener sesión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parar sessão"
+          }
+        }
+      }
+    },
+    "Stop Session" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detener Sesión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parar Sessão"
+          }
+        }
+      }
+    },
+    "Stop the current focus session in Pepinillo." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detiene la sesión de enfoque actual en Pepinillo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para a sessão de foco atual no Pepinillo."
+          }
+        }
+      }
+    },
+    "Stopwatch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stopwatch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronómetro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronômetro"
+          }
+        }
+      }
+    },
+    "Streak" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Streak"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência"
+          }
+        }
+      }
+    },
+    "Streak protection" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Protección de racha"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proteção de sequência"
+          }
+        }
+      }
+    },
+    "Stretch" : {
+
+    },
+    "Strong Completion" : {
+
+    },
+    "Subtasks" : {
+      "comment" : "A label displayed above the list of a task's subtasks.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subtareas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subtarefas"
+          }
+        }
+      }
+    },
+    "Subtasks (%lld/%lld)" : {
+      "comment" : "A heading that describes the number of completed and total subtasks. The first argument is the count of completed subtasks. The second argument is the count of total subtasks.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Subtasks (%1$lld/%2$lld)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subtareas (%1$lld/%2$lld)"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subtarefas (%1$lld/%2$lld)"
+          }
+        }
+      }
+    },
+    "Suggest a mode for ${task}" : {
+
+    },
+    "Suggest Focus Mode" : {
+
+    },
+    "Suggest Mode" : {
+
+    },
+    "Sunset" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atardecer"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pôr do Sol"
+          }
+        }
+      }
+    },
+    "Task" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarefa"
+          }
+        }
+      }
+    },
+    "Task Details" : {
+      "comment" : "The title of the view that lists details of a specific task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detalles de Tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detalhes da Tarefa"
+          }
+        }
+      }
+    },
+    "Task title" : {
+      "comment" : "A label for the title of a task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Título de tarea"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Título da tarefa"
+          }
+        }
+      }
+    },
+    "tasks" : {
+
+    },
+    "Tasks" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tasks"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tareas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarefas"
+          }
+        }
+      }
+    },
+    "Terms of Service" : {
+
+    },
+    "That's %lld minutes less than last week." : {
+
+    },
+    "That's %lld minutes more than last week — great improvement!" : {
+
+    },
+    "The classic method" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El método clásico"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O método clássico"
+          }
+        }
+      }
+    },
+    "The hardest part is starting. You did it!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo más difícil es empezar. ¡Lo lograste!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A parte mais difícil é começar. Você conseguiu!"
+          }
+        }
+      }
+    },
+    "Theme" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema"
+          }
+        }
+      }
+    },
+    "This action cannot be undone." : {
+      "comment" : "The message displayed when a user confirms deleting a task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta acción no se puede deshacer."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta ação não pode ser desfeita."
+          }
+        }
+      }
+    },
+    "This Week" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta Semana"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta Semana"
+          }
+        }
+      }
+    },
+    "This week you focused for %lld hours and %lld minutes across %lld sessions." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This week you focused for %1$lld hours and %2$lld minutes across %3$lld sessions."
+          }
+        }
+      }
+    },
+    "This week you focused for %lld minutes across %lld sessions." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This week you focused for %1$lld minutes across %2$lld sessions."
+          }
+        }
+      }
+    },
+    "Time Block" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time Block"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bloque de tiempo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bloco de tempo"
+          }
+        }
+      }
+    },
+    "Time by mode" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time by mode"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo por modo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo por modo"
+          }
+        }
+      }
+    },
+    "To log Mindful Minutes, enable Health access for Pepinillo in Settings > Health > Data Access & Devices." : {
+
+    },
+    "today" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hoje"
+          }
+        }
+      }
+    },
+    "Today" : {
+      "comment" : "Name for the \"Today\" task filter option.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoje"
+          }
+        }
+      }
+    },
+    "Today you've focused %lld minutes across %lld session%@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Today you've focused %1$lld minutes across %2$lld session%3$@."
+          }
+        }
+      }
+    },
+    "Tomorrow" : {
+      "comment" : "A label indicating that a date is in the future.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mañana"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amanhã"
+          }
+        }
+      }
+    },
+    "Top mode" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top mode"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo favorito"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo favorito"
+          }
+        }
+      }
+    },
+    "Total Focus Time" : {
+      "comment" : "A label describing the total focus time for a task.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo Total de Enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo Total de Foco"
+          }
+        }
+      }
+    },
+    "Try %@" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Probar %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Experimentar %@"
+          }
+        }
+      }
+    },
+    "Try changing the filter to see more tasks." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intenta cambiar el filtro para ver más tareas."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tente mudar o filtro para ver mais tarefas."
+          }
+        }
+      }
+    },
+    "Try Pomodoro — it's a solid default for any time of day." : {
+
+    },
+    "Two weeks strong. Your focus muscle is growing." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dos semanas fuertes. Tu músculo de enfoque está creciendo."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duas semanas firmes. Seu músculo de foco está crescendo."
+          }
+        }
+      }
+    },
+    "Unlock Deep Focus" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unlock Deep Focus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desbloquea el foco profundo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desbloqueie o foco profundo"
+          }
+        }
+      }
+    },
+    "Upgrade to Pro" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualizar a Pro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atualizar para Pro"
+          }
+        }
+      }
+    },
+    "Version" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versão"
+          }
+        }
+      }
+    },
+    "Version %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "Walk around" : {
+
+    },
+    "Watch" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crono"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crono"
+          }
+        }
+      }
+    },
+    "Week Warrior" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guerrero Semanal"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guerreiro Semanal"
+          }
+        }
+      }
+    },
+    "Weekdays" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Días laborables"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dias úteis"
+          }
+        }
+      }
+    },
+    "Weekly" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semanal"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semanal"
+          }
+        }
+      }
+    },
+    "Weekly Focus" : {
+
+    },
+    "Weekly Report" : {
+
+    },
+    "Weekly Review" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revisión Semanal"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revisão Semanal"
+          }
+        }
+      }
+    },
+    "Welcome to Pepinillo Pro! 🎉" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to Pepinillo Pro! 🎉"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Bienvenido a Pepinillo Pro! 🎉"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bem-vindo ao Pepinillo Pro! 🎉"
+          }
+        }
+      }
+    },
+    "What went well? What was challenging?" : {
+
+    },
+    "White Noise" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "White Noise"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruido blanco"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruído branco"
+          }
+        }
+      }
+    },
+    "Widget customization" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalización de widgets"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Personalização de widgets"
+          }
+        }
+      }
+    },
+    "Work 25 minutes, rest 5. After 4 cycles, take a longer break. Proven for over 30 years to beat procrastination." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabaja 25 minutos, descansa 5. Después de 4 ciclos, toma un descanso más largo. Comprobado durante más de 30 años para vencer la procrastinación."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabalhe 25 minutos, descanse 5. Após 4 ciclos, faça uma pausa mais longa. Comprovado há mais de 30 anos para vencer a procrastinação."
+          }
+        }
+      }
+    },
+    "Work as long as you're in the zone. Pepinillo tracks your flow and suggests the perfect break length based on how long you focused." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabaja mientras estés en la zona. Pepinillo rastrea tu flujo y sugiere la duración perfecta de pausa según cuánto tiempo te enfocaste."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trabalhe enquanto estiver na zona. O Pepinillo rastreia seu fluxo e sugere a pausa perfeita com base no tempo que você focou."
+          }
+        }
+      }
+    },
+    "working on %@" : {
+
+    },
+    "Yesterday" : {
+      "comment" : "A label indicating that a date is from yesterday.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayer"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ontem"
+          }
+        }
+      }
+    },
+    "You can always change this in Settings." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siempre puedes cambiar esto en Ajustes."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você pode mudar isso nas Configurações a qualquer momento."
+          }
+        }
+      }
+    },
+    "You complete %lld%% of sessions in %@ (avg %lldm)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You complete %1$lld%% of sessions in %2$@ (avg %3$lldm)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Completas el %1$lld%% de sesiones en %2$@ (prom %3$lldm)"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você completa %1$lld%% das sessões em %2$@ (média %3$lldm)"
+          }
+        }
+      }
+    },
+    "You completed %lld%% of sessions. Excellent follow-through!" : {
+
+    },
+    "You completed %lld%% of sessions. Try shorter sessions to boost this." : {
+
+    },
+    "You focused for %lldh %lldm this week across %lld sessions." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You focused for %1$lldh %2$lldm this week across %3$lld sessions."
+          }
+        }
+      }
+    },
+    "You focused on %lld out of 7 days. Keep the momentum going!" : {
+
+    },
+    "You haven't focused yet today. Your streak is %lld days — don't let it drop! 🔥" : {
+
+    },
+    "You haven't had any focus sessions this week yet. Ready to start one?" : {
+
+    },
+    "You used %@ the most (%lld sessions). It seems to work well for you." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You used %1$@ the most (%2$lld sessions). It seems to work well for you."
+          }
+        }
+      }
+    },
+    "You're in a %@ session — %lld minutes in. Keep going! 💪" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "You're in a %1$@ session — %2$lld minutes in. Keep going! 💪"
+          }
+        }
+      }
+    },
+    "You're in a %@ session. Stay focused! 🎯" : {
+
+    },
+    "You're Pro ✓" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eres Pro ✓"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você é Pro ✓"
+          }
+        }
+      }
+    },
+    "You're Pro!" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¡Eres Pro!"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você é Pro!"
+          }
+        }
+      }
+    },
+    "Your average session lasts %lld minutes." : {
+
+    },
+    "Your completion rate is %lld%%." : {
+
+    },
+    "Your default mode" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu modo predeterminado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seu modo padrão"
+          }
+        }
+      }
+    },
+    "Your focus timer and daily streak." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu temporizador de enfoque y racha diaria."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seu cronômetro de foco e sequência diária."
+          }
+        }
+      }
+    },
+    "Your most used mode was %@." : {
+
+    },
+    "Your most used mode: %@." : {
+
+    },
+    "Your streak is %lld day%@. 🔥" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your streak is %1$lld day%2$@. 🔥"
+          }
+        }
+      }
+    },
+    "Zero pressure" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin presión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem pressão"
+          }
+        }
+      }
+    },
+    "Zero pressure tracking — free" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seguimiento sin presión — gratis"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acompanhamento sem pressão — grátis"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.1"
+}

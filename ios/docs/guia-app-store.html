@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pepinillo — Guía de Publicación en App Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root {
+    --green-950: #0a1f0a;
+    --green-900: #14321a;
+    --green-800: #1e4d28;
+    --green-700: #2d6b3a;
+    --green-600: #3d8b4c;
+    --green-500: #4caf50;
+    --green-400: #6ec472;
+    --green-300: #a3d9a5;
+    --green-200: #c8e6c9;
+    --green-100: #e8f5e9;
+    --green-50: #f1f8f2;
+
+    --lime-500: #8bc34a;
+    --lime-400: #a4d65e;
+    --lime-300: #c5e1a5;
+    --lime-200: #dcedc8;
+
+    --amber-600: #f57f17;
+    --amber-500: #ff8f00;
+    --amber-100: #fff8e1;
+    --amber-50: #fffde7;
+
+    --red-600: #c62828;
+    --red-500: #e53935;
+    --red-100: #ffebee;
+    --red-50: #fff5f5;
+
+    --sand-50: #fafaf7;
+    --sand-100: #f5f4ef;
+    --sand-200: #eae8e0;
+    --sand-300: #d5d2c8;
+    --sand-800: #44413a;
+    --sand-900: #2c2a25;
+
+    --font-serif: 'Instrument Serif', Georgia, serif;
+    --font-sans: 'DM Sans', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --nav-width: 280px;
+    --content-max: 780px;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 32px;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--sand-900);
+    background: var(--sand-50);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Noise texture overlay ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ─── Side Navigation ─── */
+  .nav-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--nav-width);
+    height: 100vh;
+    background: var(--green-950);
+    color: var(--green-200);
+    padding: 40px 24px 40px 28px;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .nav-brand {
+    font-family: var(--font-serif);
+    font-size: 26px;
+    color: var(--lime-400);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  .nav-subtitle {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--green-600);
+    margin-bottom: 36px;
+    font-weight: 500;
+  }
+
+  .nav-section-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--green-700);
+    margin-top: 24px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--green-300);
+    font-size: 13.5px;
+    font-weight: 400;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+  }
+
+  .nav-link:hover {
+    background: rgba(255,255,255,0.06);
+    color: #fff;
+  }
+
+  .nav-link.active {
+    background: rgba(76, 175, 80, 0.15);
+    color: var(--lime-400);
+  }
+
+  .nav-link .nav-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--green-700);
+    min-width: 20px;
+    padding-top: 2px;
+  }
+
+  .nav-link.active .nav-num {
+    color: var(--green-500);
+  }
+
+  .nav-footer {
+    margin-top: auto;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 11px;
+    color: var(--green-800);
+    line-height: 1.6;
+  }
+
+  /* ─── Mobile nav toggle ─── */
+  .nav-toggle {
+    display: none;
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 200;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--green-950);
+    border: none;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  }
+
+  .nav-toggle span {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--lime-400);
+    border-radius: 2px;
+    transition: 0.2s;
+  }
+
+  .nav-toggle span + span { margin-top: 5px; }
+
+  /* ─── Main Content ─── */
+  .main {
+    margin-left: var(--nav-width);
+    min-height: 100vh;
+  }
+
+  /* ─── Hero ─── */
+  .hero {
+    background: linear-gradient(160deg, var(--green-900) 0%, var(--green-800) 40%, var(--green-700) 100%);
+    color: white;
+    padding: 100px 60px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(139,195,74,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px;
+    left: -100px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(76,175,80,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+
+  .hero-eyebrow {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: var(--lime-400);
+    font-weight: 600;
+    margin-bottom: 20px;
+    position: relative;
+  }
+
+  .hero h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(38px, 5vw, 60px);
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    position: relative;
+    max-width: 600px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--lime-300);
+  }
+
+  .hero-desc {
+    font-size: 17px;
+    color: var(--green-200);
+    max-width: 520px;
+    line-height: 1.7;
+    position: relative;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 32px;
+    margin-top: 40px;
+    position: relative;
+  }
+
+  .hero-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .hero-meta-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--green-400);
+  }
+
+  .hero-meta-value {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: white;
+  }
+
+  /* ─── Content sections ─── */
+  .content {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: 60px 40px 120px;
+  }
+
+  .section {
+    margin-bottom: 80px;
+    scroll-margin-top: 32px;
+  }
+
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--green-500);
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .section h2 {
+    font-family: var(--font-serif);
+    font-size: 36px;
+    font-weight: 400;
+    color: var(--green-950);
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+
+  .section-lead {
+    font-size: 17px;
+    color: var(--sand-800);
+    margin-bottom: 32px;
+    max-width: 600px;
+  }
+
+  .section h3 {
+    font-family: var(--font-sans);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--green-900);
+    margin-top: 36px;
+    margin-bottom: 12px;
+  }
+
+  .section p {
+    margin-bottom: 16px;
+    color: var(--sand-800);
+  }
+
+  .section ul, .section ol {
+    margin-bottom: 16px;
+    padding-left: 20px;
+  }
+
+  .section li {
+    margin-bottom: 8px;
+    color: var(--sand-800);
+  }
+
+  .section li::marker {
+    color: var(--green-500);
+  }
+
+  /* ─── Step cards ─── */
+  .step-card {
+    background: white;
+    border: 1px solid var(--sand-200);
+    border-radius: 14px;
+    padding: 28px 28px 24px;
+    margin-bottom: 16px;
+    position: relative;
+    transition: box-shadow 0.2s;
+  }
+
+  .step-card:hover {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.04);
+  }
+
+  .step-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    background: var(--green-100);
+  }
+
+  .step-card h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green-950);
+  }
+
+  .step-card p {
+    font-size: 14.5px;
+    line-height: 1.7;
+    color: var(--sand-800);
+  }
+
+  /* ─── Code blocks ─── */
+  .code-block {
+    background: var(--green-950);
+    color: var(--green-200);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.8;
+    padding: 20px 24px;
+    border-radius: 12px;
+    margin: 16px 0 20px;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .code-block .comment { color: var(--green-700); }
+  .code-block .cmd { color: var(--lime-400); }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.88em;
+    background: var(--green-100);
+    color: var(--green-800);
+    padding: 2px 7px;
+    border-radius: 5px;
+  }
+
+  /* ─── Info callouts ─── */
+  .callout {
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+
+  .callout-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .callout-body {
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+
+  .callout-body strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+  }
+
+  .callout.info {
+    background: var(--green-50);
+    border: 1px solid var(--green-200);
+  }
+
+  .callout.tip {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+  }
+
+  .callout.tip .callout-icon { color: #0284c7; }
+
+  /* ─── Warning / Rejection section ─── */
+  .rejection-section {
+    background: linear-gradient(135deg, var(--red-50) 0%, #fff5f0 100%);
+    border: 2px solid #ffcdd2;
+    border-radius: 20px;
+    padding: 40px 36px;
+    margin: 40px 0;
+  }
+
+  .rejection-section h2 {
+    color: var(--red-600) !important;
+  }
+
+  .rejection-card {
+    background: white;
+    border: 1px solid #ffcdd2;
+    border-left: 4px solid var(--red-500);
+    border-radius: 0 12px 12px 0;
+    padding: 24px 24px 20px;
+    margin-bottom: 16px;
+    transition: transform 0.15s;
+  }
+
+  .rejection-card:hover {
+    transform: translateX(4px);
+  }
+
+  .rejection-card-id {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--red-500);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .rejection-card h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--sand-900);
+    margin-bottom: 8px;
+  }
+
+  .rejection-card p {
+    font-size: 14px;
+    color: var(--sand-800);
+    margin-bottom: 10px;
+  }
+
+  .rejection-fix {
+    background: var(--green-50);
+    border: 1px solid var(--green-200);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13.5px;
+    color: var(--green-900);
+    line-height: 1.6;
+  }
+
+  .rejection-fix strong {
+    color: var(--green-700);
+  }
+
+  /* ─── Table ─── */
+  .table-wrap {
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    border-radius: 12px;
+    border: 1px solid var(--sand-200);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead th {
+    background: var(--green-50);
+    text-align: left;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: var(--green-900);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--green-200);
+  }
+
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--sand-200);
+    color: var(--sand-800);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--sand-50); }
+
+  /* ─── Checklist ─── */
+  .checklist {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  .checklist li {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid var(--sand-200);
+    border-radius: 10px;
+    font-size: 14.5px;
+    transition: border-color 0.2s;
+  }
+
+  .checklist li:hover {
+    border-color: var(--green-300);
+  }
+
+  .check-box {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--green-400);
+    border-radius: 5px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ─── Divider ─── */
+  .divider {
+    height: 1px;
+    background: var(--sand-200);
+    margin: 48px 0;
+  }
+
+  /* ─── TestFlight feature grid ─── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .feature-card {
+    background: white;
+    border: 1px solid var(--sand-200);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .feature-card .big-num {
+    font-family: var(--font-serif);
+    font-size: 42px;
+    color: var(--green-600);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .feature-card .label {
+    font-size: 13px;
+    color: var(--sand-800);
+    font-weight: 500;
+  }
+
+  .feature-card .sub {
+    font-size: 11px;
+    color: var(--sand-300);
+    margin-top: 2px;
+  }
+
+  /* ─── Process flow ─── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+
+  .flow-step {
+    background: var(--green-100);
+    color: var(--green-800);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .flow-arrow {
+    color: var(--green-400);
+    font-size: 18px;
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 960px) {
+    .nav-sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.3s ease;
+      box-shadow: 4px 0 40px rgba(0,0,0,0.2);
+    }
+
+    .nav-sidebar.open {
+      transform: translateX(0);
+    }
+
+    .nav-toggle {
+      display: flex;
+    }
+
+    .main {
+      margin-left: 0;
+    }
+
+    .hero {
+      padding: 80px 28px 60px;
+    }
+
+    .content {
+      padding: 40px 24px 100px;
+    }
+
+    .hero-meta {
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .feature-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .rejection-section {
+      padding: 28px 20px;
+      margin: 20px -8px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .hero h1 { font-size: 32px; }
+    .section h2 { font-size: 28px; }
+    .flow { flex-direction: column; align-items: stretch; text-align: center; }
+    .flow-arrow { transform: rotate(90deg); align-self: center; }
+  }
+
+  /* ─── Scroll-reveal animation ─── */
+  .section {
+    opacity: 0;
+    transform: translateY(24px);
+    animation: reveal 0.6s ease forwards;
+  }
+
+  @keyframes reveal {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.1s; }
+  .section:nth-child(3) { animation-delay: 0.15s; }
+  .section:nth-child(4) { animation-delay: 0.2s; }
+
+  /* scrollbar styling */
+  .nav-sidebar::-webkit-scrollbar { width: 4px; }
+  .nav-sidebar::-webkit-scrollbar-thumb { background: var(--green-800); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Mobile nav toggle -->
+<button class="nav-toggle" onclick="document.querySelector('.nav-sidebar').classList.toggle('open')" aria-label="Menú">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- ─── Side Navigation ─── -->
+<nav class="nav-sidebar" id="nav">
+  <div class="nav-brand">Pepinillo</div>
+  <div class="nav-subtitle">Guía App Store</div>
+
+  <div class="nav-section-label">Preparación</div>
+  <a href="#requisitos" class="nav-link"><span class="nav-num">01</span> Requisitos Previos</a>
+  <a href="#preparar" class="nav-link"><span class="nav-num">02</span> Preparar la App</a>
+  <a href="#appstoreconnect" class="nav-link"><span class="nav-num">03</span> App Store Connect</a>
+
+  <div class="nav-section-label">Testing</div>
+  <a href="#testflight" class="nav-link"><span class="nav-num">04</span> TestFlight</a>
+
+  <div class="nav-section-label">Publicación</div>
+  <a href="#subir" class="nav-link"><span class="nav-num">05</span> Subir el Build</a>
+  <a href="#rechazos" class="nav-link"><span class="nav-num">06</span> Evitar Rechazos</a>
+  <a href="#enviar" class="nav-link"><span class="nav-num">07</span> Enviar a Revisión</a>
+  <a href="#despues" class="nav-link"><span class="nav-num">08</span> Post-Aprobación</a>
+
+  <div class="nav-section-label">Referencia</div>
+  <a href="#checklist" class="nav-link"><span class="nav-num">09</span> Checklist Final</a>
+
+  <div class="nav-footer">
+    Guía creada para la publicación<br>de Pepinillo en el App Store.<br>Actualizada — Marzo 2026
+  </div>
+</nav>
+
+<!-- ─── Main Content ─── -->
+<div class="main">
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="hero-eyebrow">Guía Completa</div>
+    <h1>Publica tu app en el <em>App Store</em> sin miedo</h1>
+    <p class="hero-desc">
+      Todo lo que necesitas saber para llevar Pepinillo desde Xcode hasta las manos de millones de usuarios, paso a paso y sin rechazos.
+    </p>
+    <div class="hero-meta">
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Tiempo estimado</span>
+        <span class="hero-meta-value">2 – 4 horas</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Secciones</span>
+        <span class="hero-meta-value">9 pasos</span>
+      </div>
+      <div class="hero-meta-item">
+        <span class="hero-meta-label">Última revisión</span>
+        <span class="hero-meta-value">Marzo 2026</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ═══════ 01. Requisitos Previos ═══════ -->
+    <section class="section" id="requisitos">
+      <span class="section-num">01</span>
+      <h2>Requisitos Previos</h2>
+      <p class="section-lead">Antes de tocar App Store Connect, asegúrate de tener todo esto listo.</p>
+
+      <div class="step-card">
+        <div class="step-card-header">
+          <div class="step-icon">🏢</div>
+          <h4>Apple Developer Program</h4>
+        </div>
+        <p>Inscríbete en <strong>developer.apple.com/programs</strong>. Cuesta <strong>$99 USD/año</strong>. Sin esto no puedes publicar. El proceso de aprobación puede tardar 24-48 horas si es tu primera vez.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-card-header">
+          <div class="step-icon">🖥️</div>
+          <h4>Xcode actualizado</h4>
+        </div>
+        <p>Usa siempre la <strong>última versión estable</strong> de Xcode. Apple rechaza builds compilados con versiones muy antiguas. Descárgalo desde la Mac App Store o developer.apple.com.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-card-header">
+          <div class="step-icon">🎨</div>
+          <h4>App Icon — 1024×1024 px</h4>
+        </div>
+        <p>Necesitas un icono de <strong>1024×1024 px</strong> en PNG sin transparencia ni esquinas redondeadas (Apple las redondea automáticamente). Este es el icono que aparece en el App Store. Xcode también necesita los tamaños menores en tu Asset Catalog.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-card-header">
+          <div class="step-icon">📸</div>
+          <h4>Screenshots</h4>
+        </div>
+        <p>Apple requiere capturas de pantalla para cada tamaño de dispositivo que soportes:</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Dispositivo</th><th>Resolución</th><th>Obligatorio</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>iPhone 6.7" (15 Pro Max)</td><td>1290 × 2796 px</td><td>Sí</td></tr>
+              <tr><td>iPhone 6.1" (15 Pro)</td><td>1179 × 2556 px</td><td>Sí</td></tr>
+              <tr><td>iPad Pro 12.9" (6th gen)</td><td>2048 × 2732 px</td><td>Si soportas iPad</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Mínimo <strong>3 screenshots por tamaño</strong>, máximo 10. Puedes usar el Simulador de Xcode (<code>Cmd+S</code>) para capturar.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-card-header">
+          <div class="step-icon">🔒</div>
+          <h4>Política de Privacidad</h4>
+        </div>
+        <p>Necesitas una <strong>URL pública</strong> con tu política de privacidad. Es <strong>obligatoria</strong> para todas las apps. Puedes hostearla en tu sitio web, GitHub Pages, o Notion pública. Debe explicar qué datos recoges y cómo los usas.</p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-card-header">
+          <div class="step-icon">📝</div>
+          <h4>Textos de la ficha</h4>
+        </div>
+        <p>Ten preparados antes de empezar:</p>
+        <ul>
+          <li><strong>Nombre de la app</strong> (máximo 30 caracteres)</li>
+          <li><strong>Subtítulo</strong> (máximo 30 caracteres) — aparece debajo del nombre</li>
+          <li><strong>Descripción</strong> (máximo 4000 caracteres) — las primeras 3 líneas son las más importantes</li>
+          <li><strong>Texto promocional</strong> (máximo 170 caracteres) — se puede cambiar sin nueva versión</li>
+          <li><strong>Keywords</strong> (máximo 100 caracteres, separados por coma) — para búsquedas en el App Store</li>
+          <li><strong>Categoría primaria</strong> y secundaria (Productividad, Utilidades, etc.)</li>
+          <li><strong>URL de soporte</strong> — un email o página de contacto</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ═══════ 02. Preparar la App ═══════ -->
+    <section class="section" id="preparar">
+      <span class="section-num">02</span>
+      <h2>Preparar la App para Producción</h2>
+      <p class="section-lead">Configuración en Xcode antes de crear el archive.</p>
+
+      <h3>Versión y Build Number</h3>
+      <p>En Xcode, selecciona tu target principal y ve a la pestaña <strong>General</strong>:</p>
+      <ul>
+        <li><strong>Version</strong> (CFBundleShortVersionString): La versión pública, ej. <code>1.0.0</code></li>
+        <li><strong>Build</strong> (CFBundleVersion): Número incremental, ej. <code>1</code>. Cada upload a App Store Connect necesita un build number único y mayor al anterior.</li>
+      </ul>
+
+      <h3>Signing & Capabilities</h3>
+      <ul>
+        <li>Selecciona tu <strong>Team</strong> (la cuenta del Apple Developer Program)</li>
+        <li>Marca <strong>"Automatically manage signing"</strong> — Xcode crea los provisioning profiles por ti</li>
+        <li>Verifica que el <strong>Bundle Identifier</strong> es correcto: <code>com.pepinillo.app</code></li>
+        <li>Asegúrate de que todos los targets (app, widget, watch, control center) tienen el signing configurado</li>
+      </ul>
+
+      <h3>Crear el Archive</h3>
+      <div class="code-block">
+        <span class="comment"># Opción 1: Desde Xcode</span><br>
+        <span class="cmd">Product → Archive</span><br>
+        <span class="comment"># (Asegúrate de que el destino sea "Any iOS Device")</span><br><br>
+        <span class="comment"># Opción 2: Desde terminal</span><br>
+        <span class="cmd">xcodebuild -scheme Pepinillo \</span><br>
+        <span class="cmd">  -destination 'generic/platform=iOS' \</span><br>
+        <span class="cmd">  -archivePath ./build/Pepinillo.xcarchive \</span><br>
+        <span class="cmd">  archive</span>
+      </div>
+
+      <h3>Validar el Archive</h3>
+      <p>Antes de subir, <strong>valida siempre</strong>:</p>
+      <ol>
+        <li>Abre <strong>Window → Organizer</strong> en Xcode</li>
+        <li>Selecciona tu archive</li>
+        <li>Click en <strong>"Validate App"</strong></li>
+        <li>Esto verifica: provisioning profiles, entitlements, icono, y reglas básicas de Apple</li>
+        <li>Si hay errores, corrígelos antes de intentar subir</li>
+      </ol>
+
+      <div class="callout info">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <strong>Consejo</strong>
+          Si usas XcodeGen, recuerda correr <code>xcodegen generate</code> antes del archive para asegurar que el proyecto refleja los últimos cambios en <code>project.yml</code>.
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ 03. App Store Connect ═══════ -->
+    <section class="section" id="appstoreconnect">
+      <span class="section-num">03</span>
+      <h2>App Store Connect — Crear la Ficha</h2>
+      <p class="section-lead">Tu app necesita una presencia en App Store Connect antes de poder subir builds.</p>
+
+      <h3>Crear la App</h3>
+      <ol>
+        <li>Ve a <strong>appstoreconnect.apple.com</strong></li>
+        <li>Click en <strong>"Apps" → "+"  → "New App"</strong></li>
+        <li>Llena:
+          <ul>
+            <li><strong>Plataformas:</strong> iOS (y watchOS si aplica)</li>
+            <li><strong>Nombre:</strong> Pepinillo (debe ser único en el App Store)</li>
+            <li><strong>Idioma principal:</strong> Español</li>
+            <li><strong>Bundle ID:</strong> Selecciona <code>com.pepinillo.app</code></li>
+            <li><strong>SKU:</strong> Un identificador interno, ej. <code>pepinillo-ios-1</code></li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>Información de la App</h3>
+      <p>En la pestaña <strong>"App Information"</strong>:</p>
+      <ul>
+        <li>Categoría primaria: <strong>Productivity</strong></li>
+        <li>Categoría secundaria: <strong>Lifestyle</strong> (opcional)</li>
+        <li><strong>Privacy Policy URL</strong> — obligatorio</li>
+      </ul>
+
+      <h3>Preparar el Envío (App Store tab)</h3>
+      <p>En la sección de la versión (ej. 1.0):</p>
+      <ul>
+        <li><strong>Screenshots:</strong> Sube para cada tamaño de dispositivo</li>
+        <li><strong>App Previews:</strong> Videos opcionales de hasta 30 segundos (recomendado)</li>
+        <li><strong>Descripción:</strong> Tu texto de 4000 caracteres</li>
+        <li><strong>Keywords:</strong> Hasta 100 caracteres, separados por coma</li>
+        <li><strong>Support URL y Marketing URL</strong></li>
+        <li><strong>Notas para el revisor:</strong> Si tu app necesita login, proporciona credenciales de prueba aquí</li>
+      </ul>
+
+      <h3>Clasificación de Edad</h3>
+      <p>Completa el cuestionario de clasificación de edad. Para Pepinillo (timer de enfoque), probablemente la respuesta a todo es "No", resultando en clasificación <strong>4+</strong>.</p>
+
+      <h3>Precio y Disponibilidad</h3>
+      <ul>
+        <li>Selecciona si es <strong>gratis</strong> o de <strong>pago</strong></li>
+        <li>Si tienes suscripciones In-App, configúralas en <strong>"Subscriptions"</strong> (sección aparte)</li>
+        <li>Elige los <strong>países/regiones</strong> donde quieres distribuir</li>
+      </ul>
+
+      <h3>Declaración de Privacidad</h3>
+      <p>En <strong>"App Privacy"</strong> debes declarar <strong>exactamente</strong> qué datos recoges. Para Pepinillo:</p>
+      <ul>
+        <li>Si usas CloudKit: declara los datos que sincronizas</li>
+        <li>Si usas analytics: declara "Analytics" → "Usage Data"</li>
+        <li>Si no recoges nada fuera del dispositivo: selecciona <strong>"Data Not Collected"</strong></li>
+      </ul>
+
+      <div class="callout info">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">
+          <strong>Importante</strong>
+          La declaración de privacidad debe coincidir exactamente con lo que hace tu app. Declarar de más es mejor que declarar de menos — Apple puede rechazarte si descubren que recoges datos no declarados.
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ 04. TestFlight ═══════ -->
+    <section class="section" id="testflight">
+      <span class="section-num">04</span>
+      <h2>TestFlight — Beta Testing</h2>
+      <p class="section-lead">Distribuye versiones de prueba a testers antes de publicar. Esto es lo que buscabas.</p>
+
+      <div class="callout tip">
+        <span class="callout-icon">🧪</span>
+        <div class="callout-body">
+          <strong>¿Qué es TestFlight?</strong>
+          Es la plataforma oficial de Apple para distribuir betas. Tus testers instalan la app <strong>TestFlight</strong> desde el App Store y desde ahí acceden a tu app de pruebas. No necesitan ser desarrolladores.
+        </div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="big-num">100</div>
+          <div class="label">Testers Internos</div>
+          <div class="sub">Miembros de tu equipo en App Store Connect</div>
+        </div>
+        <div class="feature-card">
+          <div class="big-num">10,000</div>
+          <div class="label">Testers Externos</div>
+          <div class="sub">Cualquier persona con email o link público</div>
+        </div>
+        <div class="feature-card">
+          <div class="big-num">90</div>
+          <div class="label">Días de Validez</div>
+          <div class="sub">Cada build expira automáticamente</div>
+        </div>
+        <div class="feature-card">
+          <div class="big-num">∞</div>
+          <div class="label">Builds</div>
+          <div class="sub">Puedes subir cuantos quieras</div>
+        </div>
+      </div>
+
+      <h3>Paso 1: Subir un Build</h3>
+      <p>Primero necesitas subir tu archive a App Store Connect (ver sección 05). Una vez procesado, el build aparece automáticamente en la sección de TestFlight.</p>
+
+      <h3>Paso 2: Testing Interno (inmediato)</h3>
+      <ol>
+        <li>Ve a <strong>App Store Connect → tu app → TestFlight</strong></li>
+        <li>En <strong>"Internal Testing"</strong>, crea un grupo (ej. "Equipo Core")</li>
+        <li>Añade testers — deben ser <strong>usuarios de App Store Connect</strong> con rol de Admin, App Manager, Developer, o Marketing</li>
+        <li><strong>No necesita revisión de Apple</strong> — disponible inmediatamente</li>
+        <li>Los testers reciben una notificación en la app TestFlight</li>
+      </ol>
+
+      <h3>Paso 3: Testing Externo (para amigos, beta testers)</h3>
+      <p>Esto es lo que te interesa para dar acceso a personas específicas:</p>
+      <ol>
+        <li>En TestFlight, crea un grupo de <strong>"External Testing"</strong></li>
+        <li>Añade testers por <strong>email</strong> (hasta 10,000)</li>
+        <li>O activa un <strong>enlace público de TestFlight</strong> — cualquiera con el link puede unirse</li>
+        <li>La primera vez que envías un build a testers externos, Apple hace una <strong>Beta App Review</strong> (tarda ~24-48 hrs)</li>
+        <li>Los builds posteriores generalmente se aprueban automáticamente</li>
+      </ol>
+
+      <div class="callout info">
+        <span class="callout-icon">🔗</span>
+        <div class="callout-body">
+          <strong>Link público de TestFlight</strong>
+          En el grupo externo, activa <strong>"Enable Public Link"</strong>. Obtienes una URL tipo <code>testflight.apple.com/join/XXXXXX</code> que puedes compartir con quien quieras. Puedes limitar el número máximo de testers y desactivar el link cuando quieras.
+        </div>
+      </div>
+
+      <h3>Lo que tus testers ven</h3>
+      <ol>
+        <li>Reciben un email de invitación (o el link público)</li>
+        <li>Descargan <strong>TestFlight</strong> del App Store (gratis)</li>
+        <li>Aceptan la invitación dentro de TestFlight</li>
+        <li>Instalan y prueban tu app</li>
+        <li>Pueden enviar <strong>feedback y screenshots</strong> directamente desde TestFlight</li>
+      </ol>
+    </section>
+
+    <!-- ═══════ 05. Subir el Build ═══════ -->
+    <section class="section" id="subir">
+      <span class="section-num">05</span>
+      <h2>Subir el Build a App Store Connect</h2>
+      <p class="section-lead">El build es el archivo compilado de tu app que Apple procesa y distribuye.</p>
+
+      <h3>Opción A: Desde Xcode (recomendado)</h3>
+      <ol>
+        <li>Abre <strong>Window → Organizer</strong></li>
+        <li>Selecciona tu archive más reciente</li>
+        <li>Click en <strong>"Distribute App"</strong></li>
+        <li>Selecciona <strong>"App Store Connect"</strong></li>
+        <li>Elige <strong>"Upload"</strong> (no "Export")</li>
+        <li>Marca las opciones por defecto (bitcode, symbols)</li>
+        <li>Click en <strong>"Upload"</strong></li>
+        <li>Espera a que termine (puede tardar varios minutos)</li>
+      </ol>
+
+      <h3>Opción B: Transporter</h3>
+      <p>Descarga la app <strong>Transporter</strong> de la Mac App Store. Es útil si exportaste el archive como .ipa y quieres subirlo por separado.</p>
+
+      <h3>Procesamiento</h3>
+
+      <div class="flow">
+        <div class="flow-step">Upload</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Processing (15-30 min)</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Email de confirmación</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Disponible en ASC</div>
+      </div>
+
+      <p>Apple procesa tu build (15-30 minutos). Recibirás un email cuando esté listo. Si hay problemas (ej. missing icons, entitlements inválidos), recibes un email con los errores.</p>
+
+      <div class="callout info">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">
+          <strong>Errores comunes al subir</strong>
+          <ul style="margin-top:8px;margin-bottom:0">
+            <li><strong>ITMS-90717:</strong> Falta el App Icon 1024×1024 en el asset catalog</li>
+            <li><strong>ITMS-90683:</strong> Falta PrivacyInfo.xcprivacy</li>
+            <li><strong>ITMS-90478:</strong> El build number no es mayor al anterior</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ 06. Evitar Rechazos ═══════ -->
+    <section class="section" id="rechazos">
+      <span class="section-num">06</span>
+
+      <div class="rejection-section">
+        <h2>Evitar Rechazos de Apple</h2>
+        <p class="section-lead" style="color:var(--red-600);">
+          Esta es la sección más importante de toda la guía. El 30-40% de las apps son rechazadas en su primer envío. Lee cada punto cuidadosamente.
+        </p>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 2.1</div>
+          <h4>Performance: App Completeness</h4>
+          <p>Tu app no debe tener crashes, contenido placeholder (texto "Lorem ipsum", imágenes genéricas), enlaces rotos, o funcionalidades que no hacen nada.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Prueba TODA la app en un dispositivo real (no solo simulador). Navega por cada pantalla. Prueba con y sin internet. Prueba con datos vacíos y con muchos datos. Si algo no está listo, quítalo — no lo dejes a medias.
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 2.3</div>
+          <h4>Accurate Metadata</h4>
+          <p>Los screenshots, descripción y nombre deben representar fielmente lo que hace la app. No puedes mostrar funcionalidades que no existen o exagerar las capacidades.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Toma screenshots de la app real (no mockups inventados). Que la descripción refleje exactamente lo que el usuario encontrará al abrir la app.
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 3.1.1</div>
+          <h4>In-App Purchase</h4>
+          <p>Si tu app tiene suscripciones o compras, DEBEN usar el sistema de In-App Purchase de Apple. No puedes incluir links a pagos externos ni mencionar que es más barato fuera de la app.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Usa StoreKit 2 para todas las compras. No incluyas botones ni texto que dirija al usuario a pagar fuera de la app. Pepinillo ya usa <code>SubscriptionManager</code> con StoreKit 2, así que estás bien.
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 4.0</div>
+          <h4>Design — Calidad Visual</h4>
+          <p>La app debe verse pulida y profesional. Apple rechaza apps que parecen un web wrapper, que tienen UI inconsistente, o que no siguen los principios básicos de las Human Interface Guidelines.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Pepinillo usa SwiftUI nativo con un design system propio (temas, tipografía consistente), así que aquí no deberías tener problemas. Asegúrate de que no haya pantallas sin estilizar.
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 4.2</div>
+          <h4>Minimum Functionality</h4>
+          <p>La app debe proporcionar valor real. Apple rechaza apps que son demasiado simples, que replican lo que hace un sitio web, o que no justifican ser una app nativa.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Pepinillo tiene widgets, Live Activities, Siri, watchOS, Focus Filters — claramente aprovechas las APIs nativas de Apple. No tendrás este problema.
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 5.1.1</div>
+          <h4>Data Collection and Storage</h4>
+          <p>Debes tener una política de privacidad accesible y declarar todos los datos que recoges en App Store Connect. La declaración debe ser precisa.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Publica tu política de privacidad en una URL pública. En App Store Connect, declara honestamente cada tipo de dato. Si usas CloudKit para sincronización, decláralo. Si solo guardas datos localmente, selecciona "Data Not Collected".
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 5.1.2</div>
+          <h4>Data Use and Sharing</h4>
+          <p>Si usas SDKs de terceros que recopilan datos (analytics, crash reporting), debes declararlo.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Revisa todos tus SPM dependencies. Si alguno recopila datos (ej. Firebase, Amplitude), decláralo en la sección de privacidad. TCA y swift-snapshot-testing no recopilan datos.
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">REQUIRED SINCE 2024</div>
+          <h4>PrivacyInfo.xcprivacy</h4>
+          <p>Desde Spring 2024, Apple requiere un archivo <code>PrivacyInfo.xcprivacy</code> en tu app que declare las "API reasons" — por qué usas ciertas APIs sensibles (UserDefaults, file timestamps, etc.).</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Pepinillo ya tiene <code>PrivacyInfo.xcprivacy</code> en los 4 targets (app, widget, watch, control center). Verifica que esté incluido en el bundle de cada target. Si usas UserDefaults, file timestamp APIs, o disk space APIs, deben estar declarados.
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 2.5.1</div>
+          <h4>Software Requirements</h4>
+          <p>Solo puedes usar APIs públicas de Apple. No uses frameworks privados ni símbolos internos.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Si solo usas SwiftUI, UIKit, WidgetKit, StoreKit, EventKit, etc., estás bien. El validador de Xcode detecta la mayoría de estos problemas antes de subir.
+          </div>
+        </div>
+
+        <div class="rejection-card">
+          <div class="rejection-card-id">GUIDELINE 4.8</div>
+          <h4>Sign in with Apple</h4>
+          <p>Si tu app ofrece login con terceros (Google, Facebook, etc.), <strong>DEBES</strong> también ofrecer "Sign in with Apple" como opción.</p>
+          <div class="rejection-fix">
+            <strong>Cómo evitarlo:</strong> Si Pepinillo no tiene sistema de login/cuentas de usuario, esta regla no aplica. Si en el futuro añades login social, incluye siempre Sign in with Apple.
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════ 07. Enviar a Revisión ═══════ -->
+    <section class="section" id="enviar">
+      <span class="section-num">07</span>
+      <h2>Enviar para Revisión</h2>
+      <p class="section-lead">El momento de la verdad. Todo listo, hora de enviar.</p>
+
+      <h3>Seleccionar el Build</h3>
+      <p>En App Store Connect, en la versión de tu app, busca la sección <strong>"Build"</strong> y selecciona el build que subiste. Solo aparecen builds que ya fueron procesados.</p>
+
+      <h3>Export Compliance</h3>
+      <p>Apple te pregunta: <strong>"¿Tu app usa encriptación?"</strong></p>
+      <ul>
+        <li>Si <strong>solo usas HTTPS</strong> (como la mayoría de apps): Responde <strong>"Yes"</strong> y luego selecciona que tu app está <strong>exenta</strong> bajo las categorías estándar</li>
+        <li>Puedes evitar esta pregunta en cada build añadiendo a tu <code>Info.plist</code>:</li>
+      </ul>
+      <div class="code-block">
+        <span class="comment">&lt;!-- Añadir a Info.plist para no tener que responder cada vez --&gt;</span><br>
+        <span class="cmd">&lt;key&gt;ITSAppUsesNonExemptEncryption&lt;/key&gt;</span><br>
+        <span class="cmd">&lt;false/&gt;</span>
+      </div>
+
+      <h3>Content Rights</h3>
+      <p>Confirma que tienes los derechos sobre todo el contenido de tu app (imágenes, sonidos, textos). Si usas sonidos de terceros en tu soundscape, asegúrate de tener licencia.</p>
+
+      <h3>Enviar</h3>
+      <ol>
+        <li>Revisa que todo esté completo (App Store Connect te muestra warnings si falta algo)</li>
+        <li>Click en <strong>"Add for Review"</strong></li>
+        <li>Luego <strong>"Submit to App Review"</strong></li>
+      </ol>
+
+      <h3>Tiempos de Revisión</h3>
+      <div class="flow">
+        <div class="flow-step">Enviado</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Waiting for Review</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">In Review</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">Approved ✓</div>
+      </div>
+      <ul>
+        <li>Tiempo promedio: <strong>24-48 horas</strong></li>
+        <li>Puede ser más rápido (algunas apps se aprueban en horas)</li>
+        <li>Los fines de semana y festivos pueden ser más lentos</li>
+      </ul>
+
+      <h3>Si te Rechazan</h3>
+      <ol>
+        <li>Lee el mensaje de rechazo <strong>con mucho cuidado</strong> — Apple te dice exactamente cuál guideline violaste</li>
+        <li>Si no entiendes el rechazo, puedes <strong>responder al reviewer</strong> directamente en App Store Connect (Resolution Center)</li>
+        <li>Corrige el problema</li>
+        <li>Sube un nuevo build con un build number mayor</li>
+        <li>Vuelve a enviar para revisión</li>
+      </ol>
+
+      <div class="callout tip">
+        <span class="callout-icon">💬</span>
+        <div class="callout-body">
+          <strong>Consejo: Resolution Center</strong>
+          Si crees que el rechazo es injusto o un malentendido, puedes apelar. Sé profesional, explica tu caso con detalle, y en muchos casos Apple reconsiderará. También puedes pedir una llamada telefónica con el equipo de revisión.
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════ 08. Post-Aprobación ═══════ -->
+    <section class="section" id="despues">
+      <span class="section-num">08</span>
+      <h2>Después de la Aprobación</h2>
+      <p class="section-lead">Tu app fue aprobada. Ahora qué.</p>
+
+      <h3>Release Options</h3>
+      <p>Cuando creaste la versión, elegiste una de estas opciones:</p>
+      <ul>
+        <li><strong>Automatically release:</strong> La app se publica en el App Store inmediatamente después de aprobarse</li>
+        <li><strong>Manually release:</strong> Tú decides cuándo publicarla (útil si quieres coordinar con marketing)</li>
+        <li><strong>Scheduled release:</strong> Se publica en una fecha específica que tú eliges</li>
+      </ul>
+
+      <h3>Monitorear Crashes</h3>
+      <ul>
+        <li>Ve a <strong>Xcode → Organizer → Crashes</strong> para ver crash reports de usuarios reales</li>
+        <li>App Store Connect también muestra métricas en <strong>"Analytics"</strong></li>
+        <li>Revisa diariamente durante la primera semana</li>
+      </ul>
+
+      <h3>Responder Reviews</h3>
+      <p>En App Store Connect → <strong>"Ratings and Reviews"</strong> puedes responder a las reseñas de usuarios. Responde siempre con profesionalismo, especialmente a las negativas.</p>
+
+      <h3>Actualizaciones</h3>
+      <p>Para publicar una actualización:</p>
+      <ol>
+        <li>Incrementa el version number (ej. 1.0.0 → 1.1.0)</li>
+        <li>Crea un nuevo archive</li>
+        <li>Sube a App Store Connect</li>
+        <li>En la nueva versión, escribe <strong>"What's New"</strong> — los cambios que hiciste</li>
+        <li>Envía para revisión (las actualizaciones suelen revisarse más rápido)</li>
+      </ol>
+    </section>
+
+    <!-- ═══════ 09. Checklist Final ═══════ -->
+    <section class="section" id="checklist">
+      <span class="section-num">09</span>
+      <h2>Checklist Final</h2>
+      <p class="section-lead">Revisa cada punto antes de enviar tu app a revisión.</p>
+
+      <h3>Cuenta y Configuración</h3>
+      <ul class="checklist">
+        <li><span class="check-box"></span> Apple Developer Program activo ($99/año pagado)</li>
+        <li><span class="check-box"></span> Bundle ID registrado en el Developer Portal</li>
+        <li><span class="check-box"></span> Signing configurado en todos los targets</li>
+      </ul>
+
+      <h3>Assets Visuales</h3>
+      <ul class="checklist">
+        <li><span class="check-box"></span> App Icon 1024×1024 px (PNG, sin transparencia)</li>
+        <li><span class="check-box"></span> Screenshots iPhone 6.7" (1290×2796) — mínimo 3</li>
+        <li><span class="check-box"></span> Screenshots iPhone 6.1" (1179×2556) — mínimo 3</li>
+        <li><span class="check-box"></span> Screenshots iPad 12.9" (2048×2732) — si soportas iPad</li>
+      </ul>
+
+      <h3>Privacidad y Legal</h3>
+      <ul class="checklist">
+        <li><span class="check-box"></span> Privacy Policy URL pública y accesible</li>
+        <li><span class="check-box"></span> PrivacyInfo.xcprivacy en todos los targets</li>
+        <li><span class="check-box"></span> Declaración de privacidad completa en App Store Connect</li>
+        <li><span class="check-box"></span> Derechos de contenido (sonidos, imágenes) verificados</li>
+      </ul>
+
+      <h3>Build</h3>
+      <ul class="checklist">
+        <li><span class="check-box"></span> Version number configurado (ej. 1.0.0)</li>
+        <li><span class="check-box"></span> Build number único y mayor a builds previos</li>
+        <li><span class="check-box"></span> Archive creado sin errores</li>
+        <li><span class="check-box"></span> Archive validado exitosamente en Xcode</li>
+        <li><span class="check-box"></span> Build subido y procesado en App Store Connect</li>
+        <li><span class="check-box"></span> ITSAppUsesNonExemptEncryption en Info.plist</li>
+      </ul>
+
+      <h3>Testing</h3>
+      <ul class="checklist">
+        <li><span class="check-box"></span> Probado en dispositivo real (no solo simulador)</li>
+        <li><span class="check-box"></span> Sin crashes al navegar todas las pantallas</li>
+        <li><span class="check-box"></span> Probado sin conexión a internet</li>
+        <li><span class="check-box"></span> Probado con datos vacíos (primer uso)</li>
+        <li><span class="check-box"></span> TestFlight distribuido a testers</li>
+        <li><span class="check-box"></span> Feedback de testers incorporado</li>
+      </ul>
+
+      <h3>App Store Connect</h3>
+      <ul class="checklist">
+        <li><span class="check-box"></span> Nombre, subtítulo, descripción completos</li>
+        <li><span class="check-box"></span> Keywords optimizados (100 caracteres)</li>
+        <li><span class="check-box"></span> Categoría y subcategoría seleccionadas</li>
+        <li><span class="check-box"></span> Clasificación de edad completada</li>
+        <li><span class="check-box"></span> Precio y disponibilidad configurados</li>
+        <li><span class="check-box"></span> In-App Purchases configurados (si aplica)</li>
+        <li><span class="check-box"></span> Support URL configurada</li>
+        <li><span class="check-box"></span> Screenshots representan la app real</li>
+        <li><span class="check-box"></span> Sin contenido placeholder ni Lorem ipsum</li>
+        <li><span class="check-box"></span> Build seleccionado en la versión</li>
+      </ul>
+
+      <h3>Envío</h3>
+      <ul class="checklist">
+        <li><span class="check-box"></span> Export compliance respondido</li>
+        <li><span class="check-box"></span> Content rights confirmado</li>
+        <li><span class="check-box"></span> Release option elegida (auto/manual/scheduled)</li>
+        <li><span class="check-box"></span> Notas para el revisor (si necesita login o instrucciones)</li>
+        <li><span class="check-box"></span> ¡Enviado para revisión!</li>
+      </ul>
+
+      <div class="divider"></div>
+
+      <div style="text-align:center;padding:20px 0;">
+        <p style="font-family:var(--font-serif);font-size:28px;color:var(--green-800);margin-bottom:8px;">¡Listo! Ahora a publicar Pepinillo 🥒</p>
+        <p style="color:var(--sand-300);font-size:14px;">Guía creada para Pepinillo — Marzo 2026</p>
+      </div>
+    </section>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('.section[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(link => {
+          link.classList.toggle('active',
+            link.getAttribute('href') === '#' + entry.target.id
+          );
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+
+  // Close mobile nav on link click
+  navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      document.querySelector('.nav-sidebar').classList.remove('open');
+    });
+  });
+</script>
+
+</body>
+</html>

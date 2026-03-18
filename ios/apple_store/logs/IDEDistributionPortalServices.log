@@ -1,0 +1,215 @@
+2026-03-17 04:16:59 +0000  Sending request A375B0E6-08F9-485D-AFB4-E58419FF70D0 to <https://developerservices2.apple.com/services/v1/bundleIds> for session <DVTServicesAccountBasedSession: 0xb4934fd20; account='<DVTAppleIDBasedDeveloperAccount: 0xb4ebc4b40; username='tiagofur@gmail.com'>'>.
+Method: POST
+
+Headers:
+{
+    Accept = "application/vnd.api+json";
+    "Accept-Encoding" = "gzip, deflate";
+    "Content-Length" = 128;
+    "Content-Type" = "application/vnd.api+json";
+    "User-Agent" = Xcode;
+    "X-Apple-App-Info" = "com.apple.gs.xcode.auth";
+    "X-Apple-GS-Token" = "AAAABLwIAAAAAGmzdyERDWdzLnhjb2RlLmF1dGi9AODD6d9fOVJ07GXnguYqQpe7jmZfAkaFu9tkL6DzqzsUaAE9f8f4zG+gVX+hmrW0+WLNQ4D9KJPbAQV0hgTEK7AhDwRaH6TgwbjgYXC7tvGC9EYHpG7wmuaUVdzElRFkfaTB7I3Zxa5gumJwkGHOJXPkKvas";
+    "X-Apple-I-Identity-Id" = "001945-08-9bd84f55-b23f-4217-8557-11c0de0268c8";
+    "X-HTTP-Method-Override" = GET;
+    "X-MMe-Client-Info" = "<Mac14,3> <macOS;26.3.1;25D2128> <com.apple.AuthKit/1 (com.apple.dt.Xcode/24587)>";
+    "X-Mme-Device-Id" = "28D2FB36-B0E9-511D-88E2-B4C883FC1598";
+    "X-Xcode-Version" = "26.3 (17C529)";
+}
+
+Payload:
+{"urlEncodedQueryParams":"teamId=T5SKULSP2M&filter%5BbundleType%5D=bundle&filter%5Bidentifier%5D=com.pepinillo.app,*&limit=200"}
+2026-03-17 04:17:00 +0000  Received response for A375B0E6-08F9-485D-AFB4-E58419FF70D0 @ <https://developerservices2.apple.com/services/v1/bundleIds>. Code = 0
+2026-03-17 04:17:00 +0000  Response payload: {
+  "data" : [ {
+    "type" : "bundleIds",
+    "id" : "55W94884BQ",
+    "attributes" : {
+      "identifier" : "com.pepinillo.app.watch",
+      "seedId" : "T5SKULSP2M",
+      "hasExclusiveManagedCapabilities" : false,
+      "name" : "XC com pepinillo app watch",
+      "entitlementGroupName" : null,
+      "bundleType" : "bundle",
+      "entitlementType" : null,
+      "platform" : "UNIVERSAL",
+      "deploymentDataNotice" : null,
+      "responseId" : "8632ec3e-c722-4dee-bb7c-917c6b129c94",
+      "wildcard" : false
+    },
+    "relationships" : {
+      "bundleIdCapabilities" : {
+        "meta" : {
+          "paging" : {
+            "total" : 0,
+            "limit" : 2147483647
+          }
+        },
+        "links" : {
+          "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/55W94884BQ/relationships/bundleIdCapabilities",
+          "related" : "https://developerservices2.apple.com:443/services/v1/bundleIds/55W94884BQ/bundleIdCapabilities"
+        }
+      },
+      "profiles" : {
+        "meta" : {
+          "paging" : {
+            "total" : 0,
+            "limit" : 2147483647
+          }
+        },
+        "links" : {
+          "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/55W94884BQ/relationships/profiles",
+          "related" : "https://developerservices2.apple.com:443/services/v1/bundleIds/55W94884BQ/profiles"
+        }
+      }
+    },
+    "links" : {
+      "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/55W94884BQ"
+    }
+  }, {
+    "type" : "bundleIds",
+    "id" : "85Y8U93AUM",
+    "attributes" : {
+      "identifier" : "com.pepinillo.app.widget",
+      "seedId" : "T5SKULSP2M",
+      "hasExclusiveManagedCapabilities" : false,
+      "name" : "XC com pepinillo app widget",
+      "entitlementGroupName" : null,
+      "bundleType" : "bundle",
+      "entitlementType" : null,
+      "platform" : "UNIVERSAL",
+      "deploymentDataNotice" : null,
+      "responseId" : "8632ec3e-c722-4dee-bb7c-917c6b129c94",
+      "wildcard" : false
+    },
+    "relationships" : {
+      "bundleIdCapabilities" : {
+        "meta" : {
+          "paging" : {
+            "total" : 0,
+            "limit" : 2147483647
+          }
+        },
+        "links" : {
+          "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/85Y8U93AUM/relationships/bundleIdCapabilities",
+          "related" : "https://developerservices2.apple.com:443/services/v1/bundleIds/85Y8U93AUM/bundleIdCapabilities"
+        }
+      },
+      "profiles" : {
+        "meta" : {
+          "paging" : {
+            "total" : 0,
+            "limit" : 2147483647
+          }
+        },
+        "links" : {
+          "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/85Y8U93AUM/relationships/profiles",
+          "related" : "https://developerservices2.apple.com:443/services/v1/bundleIds/85Y8U93AUM/profiles"
+        }
+      }
+    },
+    "links" : {
+      "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/85Y8U93AUM"
+    }
+  }, {
+    "type" : "bundleIds",
+    "id" : "M8MJTG3W38",
+    "attributes" : {
+      "identifier" : "com.pepinillo.app",
+      "seedId" : "T5SKULSP2M",
+      "hasExclusiveManagedCapabilities" : false,
+      "name" : "XC com pepinillo app",
+      "entitlementGroupName" : null,
+      "bundleType" : "bundle",
+      "entitlementType" : null,
+      "platform" : "UNIVERSAL",
+      "deploymentDataNotice" : null,
+      "responseId" : "8632ec3e-c722-4dee-bb7c-917c6b129c94",
+      "wildcard" : false
+    },
+    "relationships" : {
+      "bundleIdCapabilities" : {
+        "meta" : {
+          "paging" : {
+            "total" : 0,
+            "limit" : 2147483647
+          }
+        },
+        "links" : {
+          "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/M8MJTG3W38/relationships/bundleIdCapabilities",
+          "related" : "https://developerservices2.apple.com:443/services/v1/bundleIds/M8MJTG3W38/bundleIdCapabilities"
+        }
+      },
+      "profiles" : {
+        "meta" : {
+          "paging" : {
+            "total" : 0,
+            "limit" : 2147483647
+          }
+        },
+        "links" : {
+          "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/M8MJTG3W38/relationships/profiles",
+          "related" : "https://developerservices2.apple.com:443/services/v1/bundleIds/M8MJTG3W38/profiles"
+        }
+      }
+    },
+    "links" : {
+      "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/M8MJTG3W38"
+    }
+  }, {
+    "type" : "bundleIds",
+    "id" : "R7V4UTNQS5",
+    "attributes" : {
+      "identifier" : "com.pepinillo.app.controlcenter",
+      "seedId" : "T5SKULSP2M",
+      "hasExclusiveManagedCapabilities" : false,
+      "name" : "XC com pepinillo app controlcenter",
+      "entitlementGroupName" : null,
+      "bundleType" : "bundle",
+      "entitlementType" : null,
+      "platform" : "UNIVERSAL",
+      "deploymentDataNotice" : null,
+      "responseId" : "8632ec3e-c722-4dee-bb7c-917c6b129c94",
+      "wildcard" : false
+    },
+    "relationships" : {
+      "bundleIdCapabilities" : {
+        "meta" : {
+          "paging" : {
+            "total" : 0,
+            "limit" : 2147483647
+          }
+        },
+        "links" : {
+          "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/R7V4UTNQS5/relationships/bundleIdCapabilities",
+          "related" : "https://developerservices2.apple.com:443/services/v1/bundleIds/R7V4UTNQS5/bundleIdCapabilities"
+        }
+      },
+      "profiles" : {
+        "meta" : {
+          "paging" : {
+            "total" : 0,
+            "limit" : 2147483647
+          }
+        },
+        "links" : {
+          "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/R7V4UTNQS5/relationships/profiles",
+          "related" : "https://developerservices2.apple.com:443/services/v1/bundleIds/R7V4UTNQS5/profiles"
+        }
+      }
+    },
+    "links" : {
+      "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds/R7V4UTNQS5"
+    }
+  } ],
+  "links" : {
+    "self" : "https://developerservices2.apple.com:443/services/v1/bundleIds?filter%5BbundleType%5D=bundle&filter%5Bidentifier%5D=com.pepinillo.app%2C%2A&limit=200"
+  },
+  "meta" : {
+    "paging" : {
+      "total" : 4,
+      "limit" : 200
+    }
+  }
+}
+

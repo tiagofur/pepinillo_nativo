@@ -1,0 +1,320 @@
+# project.yml — XcodeGen spec for Pepinillo
+#
+# Usage (on Mac):
+#   brew install xcodegen
+#   cd /path/to/pepinillo_ios
+#   xcodegen generate
+#
+# This generates Pepinillo.xcodeproj with all 5 targets configured.
+# Adjust DEVELOPMENT_TEAM to your Apple Developer Team ID before running.
+#
+# Required one-time steps after generation:
+#   1. Open in Xcode → add TCA via SPM (File > Add Package Dependencies)
+#      URL: https://github.com/pointfreeco/swift-composable-architecture
+#   2. Set your Team in Signing & Capabilities for each target
+#   3. Create iCloud container "iCloud.com.pepinillo.app" in Capabilities
+#   4. Add StoreKit Configuration file for sandbox testing
+
+name: Pepinillo
+
+options:
+  bundleIdPrefix: com.pepinillo
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+    macOS: "14.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+  defaultConfig: Debug
+
+# ── SPM Packages ────────────────────────────────────────────────────────────
+# Note: XcodeGen resolves these but Xcode may ask to re-resolve on first open.
+packages:
+  ComposableArchitecture:
+    url: https://github.com/pointfreeco/swift-composable-architecture
+    from: "1.17.0"
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: "1.17.0"
+
+# ── Build Settings (shared across all targets) ───────────────────────────────
+settings:
+  base:
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: "T5SKULSP2M"  # ← Fill in your Apple Developer Team ID
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_BITCODE: "NO"
+  configs:
+    Debug:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+    Release:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
+
+# ── Configs ──────────────────────────────────────────────────────────────────
+configs:
+  Debug: debug
+  Release: release
+
+# ── Targets ──────────────────────────────────────────────────────────────────
+targets:
+
+  # ── Main iOS App ─────────────────────────────────────────────────────────
+  Pepinillo:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    bundleId: com.pepinillo.app
+
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Pepinillo
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSRequiresIPhoneOS: true
+        UILaunchStoryboardName: LaunchScreen
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+          UISceneConfigurations: {}
+        UIRequiredDeviceCapabilities: [armv7]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Privacy usage descriptions (required for App Store review)
+        NSUserNotificationUsageDescription: >
+          Pepinillo sends reminders to start your focus sessions and notifies
+          you when a Pomodoro or break is complete.
+        NSHealthUpdateUsageDescription: >
+          Pepinillo logs your focus sessions as Mindful Minutes in Apple Health
+          to help you track your wellbeing alongside your productivity.
+        NSHealthShareUsageDescription: >
+          Pepinillo reads your Mindful Minutes from Apple Health to show your
+          focus history and keep your analytics accurate across devices.
+        NSRemindersUsageDescription: >
+          Pepinillo can import tasks from Reminders so you can start focusing
+          on them right away.
+        NSSiriUsageDescription: >
+          Pepinillo uses Siri so you can start and stop focus sessions with
+          your voice.
+        ITSAppUsesNonExemptEncryption: false
+        NSUserActivityTypes:
+          - com.pepinillo.app.focusSession
+          - com.pepinillo.app.viewAnalytics
+          - com.pepinillo.app.viewTask
+          - INSendMessageIntent
+
+    entitlements:
+      path: App/Pepinillo.entitlements
+      properties:
+        com.apple.developer.icloud-services: [CloudKit]
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.pepinillo.app
+        com.apple.security.application-groups:
+          - group.com.pepinillo.app
+        com.apple.developer.healthkit: true
+        com.apple.developer.siri: true
+        com.apple.developer.usernotifications.communication: true
+
+    sources:
+      - path: App
+      - path: Features
+      - path: Domain
+      - path: Shared
+      # App Intents compile directly into the main app (no separate extension needed)
+      - path: PepinilloIntents
+
+    resources:
+      - path: Shared/Resources
+        optional: true
+      - path: App/PrivacyInfo.xcprivacy
+
+    dependencies:
+      - package: ComposableArchitecture
+      # Embed extensions (embed: false because they're app extensions, not frameworks)
+      - target: PepinilloWidgetExtension
+        embed: false
+      - target: PepinilloWatch
+        embed: true
+        buildPhase: embedWatchContent
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+        SUPPORTS_MACCATALYST: "YES"
+
+  # ── Widget Extension (Home Screen, Lock Screen, Live Activities) ────────
+  PepinilloWidgetExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    bundleId: com.pepinillo.app.widget
+
+    info:
+      path: PepinilloWidget/Info.plist
+      properties:
+        CFBundleDisplayName: PepinilloWidget
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        # Live Activities entitlement (enabled via capability)
+        NSSupportsLiveActivities: true
+
+    entitlements:
+      path: PepinilloWidget/PepinilloWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.pepinillo.app
+
+    sources:
+      - path: PepinilloWidget
+      # Live Activities are part of the Widget extension in iOS 16.1+
+      - path: PepinilloLiveActivity
+      # Shared types needed by widget and live activity
+      - path: Features/Focus/FocusModels.swift
+      - path: Domain/Clients/LiveActivityClient.swift
+      - path: Domain/Models
+      - path: Shared/Persistence/AppGroupContainer.swift
+      - path: Shared/Design/ModeColors.swift
+
+    dependencies:
+      - package: ComposableArchitecture
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widget
+        SKIP_INSTALL: "YES"
+
+  # ── Apple Watch App ──────────────────────────────────────────────────────
+  # Single-target Watch app (Xcode 14+ / watchOS 7+ style)
+  PepinilloWatch:
+    type: application
+    platform: watchOS
+    deploymentTarget: "10.0"
+    bundleId: com.pepinillo.app.watch
+
+    info:
+      path: PepinilloWatch/Info.plist
+      properties:
+        CFBundleDisplayName: Pepinillo
+        CFBundleIconName: AppIcon
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.pepinillo.app
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+
+    entitlements:
+      path: PepinilloWatch/PepinilloWatch.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.pepinillo.app
+
+    sources:
+      - path: PepinilloWatch
+      # Watch needs access to shared domain models and design system
+      - path: Domain/Models
+      - path: Domain/Clients
+        excludes:
+          - "SoundscapeClient.swift"
+          - "PersistenceClient.swift"
+          - "NotificationClient.swift"
+          - "SpotlightClient.swift"
+          - "CalendarClient.swift"
+          - "HealthClient.swift"
+      - path: Features/Focus/FocusModels.swift
+      - path: Shared/Design
+
+    dependencies:
+      - package: ComposableArchitecture
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.watch
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+
+  # ── Control Center Extension ─────────────────────────────────────────────
+  # Requires iOS 18+ and the "Control Center" capability in Xcode
+  PepinilloControlCenter:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "18.0"
+    bundleId: com.pepinillo.app.controlcenter
+
+    info:
+      path: ControlCenterExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Pepinillo Focus
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+    entitlements:
+      path: ControlCenterExtension/PepinilloControlCenter.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.pepinillo.app
+
+    sources:
+      - path: ControlCenterExtension
+      - path: Shared/Persistence/AppGroupContainer.swift
+      - path: Domain/Models
+      - path: Features/Focus/FocusModels.swift
+
+    dependencies: []
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.controlcenter
+        SKIP_INSTALL: "YES"
+
+  # ── Unit Tests ───────────────────────────────────────────────────────────
+  PepinilloTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    bundleId: com.pepinillo.tests
+
+    sources:
+      - path: Tests
+
+    dependencies:
+      - target: Pepinillo
+      - package: SnapshotTesting
+
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.tests
+        GENERATE_INFOPLIST_FILE: "YES"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG TESTING
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Pepinillo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pepinillo"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+
+# ── Schemes ──────────────────────────────────────────────────────────────────
+schemes:
+  Pepinillo:
+    build:
+      targets:
+        Pepinillo: all
+        PepinilloWidgetExtension: [build]
+        PepinilloWatch: [build]
+        PepinilloTests: [test]
+    run:
+      config: Debug
+      commandLineArguments: {}
+    test:
+      config: Debug
+      targets:
+        - name: PepinilloTests
+          parallelizable: true
+          randomExecutionOrder: true
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

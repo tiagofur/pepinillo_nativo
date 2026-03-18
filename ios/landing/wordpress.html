@@ -1,0 +1,1346 @@
+<!--
+  PEPINILLO — WordPress Version
+
+  How to use:
+  1. In WordPress, create a new Page
+  2. Select "Full Width" or "Blank" template (depends on your theme)
+  3. Add a "Custom HTML" block (or use the Code Editor)
+  4. Paste ALL of this content
+  5. Publish
+
+  Notes:
+  - All CSS is scoped under .pepinillo-landing to avoid conflicts with your theme
+  - No nav bar included (your WordPress theme handles navigation)
+  - No <html>, <head>, <body> tags (WordPress provides those)
+  - All styles use !important where needed to override theme defaults
+-->
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   PEPINILLO LANDING — SCOPED STYLES FOR WORDPRESS
+   All selectors prefixed with .pepinillo-landing
+   ══════════════════════════════════════════════════════════════ */
+
+.pepinillo-landing {
+  --bg: #ffffff;
+  --bg-card: #f5f5f7;
+  --bg-card-hover: #ececee;
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-tertiary: #86868b;
+  --border: rgba(0,0,0,0.08);
+  --pomodoro: #E8453C;
+  --flowtime: #34A89A;
+  --timeblock: #9333EA;
+  --stopwatch: #059669;
+  --streak: #D97706;
+  --accent: #0071E3;
+  --accent-hover: #0077ED;
+  --glass: rgba(0,0,0,0.03);
+  --glass-border: rgba(0,0,0,0.08);
+  --radius: 20px;
+  --radius-sm: 12px;
+  --max-w: 1200px;
+  --section-pad: clamp(80px, 12vw, 160px);
+
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif !important;
+  background: var(--bg) !important;
+  color: var(--text) !important;
+  line-height: 1.5 !important;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.pepinillo-landing *, .pepinillo-landing *::before, .pepinillo-landing *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.pepinillo-landing a { color: var(--accent) !important; text-decoration: none !important; }
+.pepinillo-landing a:hover { color: var(--accent-hover) !important; }
+
+.pepinillo-landing img { max-width: 100%; }
+
+.pepinillo-landing .pp-container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+/* ── Typography ─────────────────────────────────────────── */
+.pepinillo-landing .pp-label {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent) !important;
+  margin-bottom: 12px !important;
+}
+
+.pepinillo-landing .pp-title {
+  font-size: clamp(32px, 5vw, 56px) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.025em;
+  line-height: 1.1 !important;
+  margin-bottom: 16px !important;
+  color: var(--text) !important;
+}
+
+.pepinillo-landing .pp-subtitle {
+  font-size: clamp(16px, 2vw, 20px) !important;
+  color: var(--text-secondary) !important;
+  max-width: 640px;
+  line-height: 1.6 !important;
+}
+
+.pepinillo-landing .pp-section { padding: var(--section-pad) 0; }
+
+/* ── Scroll Animations ──────────────────────────────────── */
+.pepinillo-landing .pp-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pepinillo-landing .pp-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.pepinillo-landing .pp-d1 { transition-delay: 0.1s; }
+.pepinillo-landing .pp-d2 { transition-delay: 0.2s; }
+.pepinillo-landing .pp-d3 { transition-delay: 0.3s; }
+.pepinillo-landing .pp-d4 { transition-delay: 0.4s; }
+
+/* ── Hero ────────────────────────────────────────────────── */
+.pepinillo-landing .pp-hero {
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-top: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pepinillo-landing .pp-hero::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%);
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.pepinillo-landing .pp-hero-content { position: relative; z-index: 1; }
+
+.pepinillo-landing .pp-hero-badge {
+  display: inline-block;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 980px;
+  padding: 6px 16px;
+  font-size: 13px !important;
+  color: var(--text-secondary) !important;
+  margin-bottom: 24px !important;
+}
+
+.pepinillo-landing .pp-hero-title {
+  font-size: clamp(48px, 8vw, 96px) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.04em;
+  line-height: 1 !important;
+  margin-bottom: 8px !important;
+  background: linear-gradient(135deg, #1d1d1f 0%, #6e6e73 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pepinillo-landing .pp-hero-tagline {
+  font-size: clamp(20px, 3vw, 28px) !important;
+  color: var(--text-secondary) !important;
+  font-weight: 400 !important;
+  margin-bottom: 48px !important;
+}
+
+/* Timer mockup */
+.pepinillo-landing .pp-timer {
+  width: 240px;
+  height: 240px;
+  margin: 0 auto 48px;
+  position: relative;
+}
+
+.pepinillo-landing .pp-timer svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.pepinillo-landing .pp-timer-bg {
+  fill: none;
+  stroke: rgba(0,0,0,0.06);
+  stroke-width: 6;
+}
+
+.pepinillo-landing .pp-timer-progress {
+  fill: none;
+  stroke: url(#pp-timer-gradient);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 628;
+  stroke-dashoffset: 157;
+  animation: pp-timer-pulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes pp-timer-pulse {
+  0% { stroke-dashoffset: 157; }
+  100% { stroke-dashoffset: 220; }
+}
+
+.pepinillo-landing .pp-timer-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.pepinillo-landing .pp-timer-time {
+  font-size: 48px !important;
+  font-weight: 300 !important;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--text) !important;
+}
+
+.pepinillo-landing .pp-timer-label-text {
+  font-size: 13px !important;
+  color: var(--text-secondary) !important;
+  margin-top: 4px !important;
+}
+
+.pepinillo-landing .pp-hero-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pepinillo-landing .pp-btn-primary {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent) !important;
+  color: #fff !important;
+  padding: 14px 28px !important;
+  border-radius: 980px !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none !important;
+}
+.pepinillo-landing .pp-btn-primary:hover { background: var(--accent-hover) !important; transform: scale(1.02); }
+
+.pepinillo-landing .pp-btn-secondary {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  background: transparent !important;
+  color: var(--accent) !important;
+  padding: 14px 28px !important;
+  border-radius: 980px !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  border: 1px solid var(--accent) !important;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none !important;
+}
+.pepinillo-landing .pp-btn-secondary:hover { background: rgba(0,113,227,0.06) !important; }
+
+.pepinillo-landing .pp-hero-platforms {
+  margin-top: 32px !important;
+  font-size: 14px !important;
+  color: var(--text-tertiary) !important;
+}
+
+/* ── Stats Bar ──────────────────────────────────────────── */
+.pepinillo-landing .pp-stats-bar {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 48px 0;
+}
+
+.pepinillo-landing .pp-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  text-align: center;
+}
+
+.pepinillo-landing .pp-stat-number {
+  font-size: clamp(36px, 5vw, 56px) !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.03em;
+  color: var(--accent) !important;
+}
+
+.pepinillo-landing .pp-stat-label {
+  font-size: 14px !important;
+  color: var(--text-secondary) !important;
+  margin-top: 4px !important;
+}
+
+/* ── Steps ──────────────────────────────────────────────── */
+.pepinillo-landing .pp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-step {
+  text-align: center;
+  padding: 32px;
+}
+
+.pepinillo-landing .pp-step-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: var(--accent) !important;
+  margin: 0 auto 20px;
+}
+
+.pepinillo-landing .pp-step-title {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  margin-bottom: 8px !important;
+  color: var(--text) !important;
+}
+
+.pepinillo-landing .pp-step-desc {
+  font-size: 15px !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.6 !important;
+}
+
+/* ── Mode Cards ─────────────────────────────────────────── */
+.pepinillo-landing .pp-modes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-mode-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.pepinillo-landing .pp-mode-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.pepinillo-landing .pp-mode-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0,0,0,0.12);
+  background: var(--bg-card-hover);
+}
+
+.pepinillo-landing .pp-mode-card[data-mode="pomodoro"]::before { background: var(--pomodoro); }
+.pepinillo-landing .pp-mode-card[data-mode="flowtime"]::before { background: var(--flowtime); }
+.pepinillo-landing .pp-mode-card[data-mode="timeblock"]::before { background: var(--timeblock); }
+.pepinillo-landing .pp-mode-card[data-mode="stopwatch"]::before { background: var(--stopwatch); }
+
+.pepinillo-landing .pp-mode-emoji { font-size: 40px; margin-bottom: 16px; display: block; }
+
+.pepinillo-landing .pp-mode-name {
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  margin-bottom: 4px !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text) !important;
+}
+
+.pepinillo-landing .pp-badge {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 2px 8px;
+  border-radius: 980px;
+  background: var(--timeblock);
+  color: #fff !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pepinillo-landing .pp-badge-free { background: var(--stopwatch); }
+
+.pepinillo-landing .pp-mode-desc {
+  font-size: 15px !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.6 !important;
+  margin-bottom: 16px !important;
+}
+
+.pepinillo-landing .pp-mode-detail {
+  font-size: 13px !important;
+  color: var(--text-tertiary) !important;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Ecosystem Grid ─────────────────────────────────────── */
+.pepinillo-landing .pp-eco-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-eco-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 28px;
+  transition: all 0.3s;
+}
+.pepinillo-landing .pp-eco-card:hover {
+  border-color: rgba(0,0,0,0.12);
+  transform: translateY(-2px);
+}
+
+.pepinillo-landing .pp-eco-icon { font-size: 32px; margin-bottom: 16px; display: block; }
+.pepinillo-landing .pp-eco-title { font-size: 17px !important; font-weight: 600 !important; margin-bottom: 6px !important; color: var(--text) !important; }
+.pepinillo-landing .pp-eco-desc { font-size: 14px !important; color: var(--text-secondary) !important; line-height: 1.5 !important; }
+
+/* ── Soundscapes ────────────────────────────────────────── */
+.pepinillo-landing .pp-sound-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-sound-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  text-align: center;
+  transition: all 0.3s;
+  position: relative;
+}
+.pepinillo-landing .pp-sound-card:hover { border-color: rgba(0,0,0,0.12); transform: scale(1.03); }
+
+.pepinillo-landing .pp-sound-card.pro::after {
+  content: 'PRO';
+  position: absolute;
+  top: 10px; right: 10px;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  background: var(--timeblock);
+  color: #fff !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.pepinillo-landing .pp-sound-emoji { font-size: 36px; margin-bottom: 12px; display: block; }
+.pepinillo-landing .pp-sound-name { font-size: 15px !important; font-weight: 600 !important; color: var(--text) !important; }
+
+/* ── Analytics ──────────────────────────────────────────── */
+.pepinillo-landing .pp-analytics-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-analytics-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+}
+
+.pepinillo-landing .pp-analytics-card-title {
+  font-size: 14px !important;
+  color: var(--text-secondary) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600 !important;
+  margin-bottom: 20px !important;
+}
+
+.pepinillo-landing .pp-chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 120px;
+  padding-top: 8px;
+}
+
+.pepinillo-landing .pp-chart-bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  min-height: 8px;
+}
+
+.pepinillo-landing .pp-chart-labels {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.pepinillo-landing .pp-chart-labels span {
+  flex: 1;
+  text-align: center;
+  font-size: 11px !important;
+  color: var(--text-tertiary) !important;
+}
+
+.pepinillo-landing .pp-achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pepinillo-landing .pp-achievement {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--glass);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.pepinillo-landing .pp-achievement-emoji { font-size: 28px; }
+.pepinillo-landing .pp-achievement-name { font-size: 14px !important; font-weight: 600 !important; color: var(--text) !important; }
+.pepinillo-landing .pp-achievement-desc { font-size: 12px !important; color: var(--text-secondary) !important; }
+
+.pepinillo-landing .pp-streak-display {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.pepinillo-landing .pp-streak-fire {
+  font-size: 48px;
+  animation: pp-fire-pulse 2s ease-in-out infinite;
+}
+
+@keyframes pp-fire-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.pepinillo-landing .pp-streak-count {
+  font-size: 56px !important;
+  font-weight: 700 !important;
+  color: var(--streak) !important;
+}
+
+.pepinillo-landing .pp-streak-label {
+  font-size: 16px !important;
+  color: var(--text-secondary) !important;
+}
+
+/* ── Tasks ───────────────────────────────────────────────── */
+.pepinillo-landing .pp-task-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-task-feature {
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.pepinillo-landing .pp-task-feature-icon { font-size: 28px; flex-shrink: 0; }
+.pepinillo-landing .pp-task-feature-title { font-size: 16px !important; font-weight: 600 !important; margin-bottom: 4px !important; color: var(--text) !important; }
+.pepinillo-landing .pp-task-feature-desc { font-size: 14px !important; color: var(--text-secondary) !important; line-height: 1.5 !important; }
+
+/* ── Journal ─────────────────────────────────────────────── */
+.pepinillo-landing .pp-journal-mockup {
+  max-width: 480px;
+  margin: 48px auto 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+}
+
+.pepinillo-landing .pp-journal-rating {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pepinillo-landing .pp-journal-emoji {
+  font-size: 32px;
+  opacity: 0.4;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.pepinillo-landing .pp-journal-emoji.active { opacity: 1; transform: scale(1.2); }
+
+.pepinillo-landing .pp-journal-textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-size: 14px !important;
+  font-family: inherit;
+  resize: none;
+  min-height: 80px;
+  outline: none;
+}
+
+/* ── Siri ────────────────────────────────────────────────── */
+.pepinillo-landing .pp-siri-commands {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-siri-cmd {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  font-size: 14px !important;
+  color: var(--text-secondary) !important;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pepinillo-landing .pp-siri-cmd:hover { border-color: rgba(0,0,0,0.12); color: var(--text) !important; }
+
+.pepinillo-landing .pp-siri-cmd::before {
+  content: '';
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pepinillo-landing .pp-siri-cmd.cat-start::before { background: var(--stopwatch); }
+.pepinillo-landing .pp-siri-cmd.cat-control::before { background: var(--pomodoro); }
+.pepinillo-landing .pp-siri-cmd.cat-stats::before { background: var(--accent); }
+.pepinillo-landing .pp-siri-cmd.cat-ai::before { background: var(--timeblock); }
+
+/* ── Comparison Table ───────────────────────────────────── */
+.pepinillo-landing .pp-comparison { margin-top: 48px; overflow-x: auto; }
+
+.pepinillo-landing .pp-comparison table { width: 100%; border-collapse: collapse; }
+
+.pepinillo-landing .pp-comparison th,
+.pepinillo-landing .pp-comparison td {
+  padding: 16px 24px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px !important;
+  color: var(--text) !important;
+}
+
+.pepinillo-landing .pp-comparison th {
+  color: var(--text-secondary) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pepinillo-landing .pp-comparison th:nth-child(2),
+.pepinillo-landing .pp-comparison th:nth-child(3),
+.pepinillo-landing .pp-comparison td:nth-child(2),
+.pepinillo-landing .pp-comparison td:nth-child(3) {
+  text-align: center;
+  width: 140px;
+}
+
+.pepinillo-landing .pp-check { color: var(--stopwatch) !important; font-size: 18px !important; }
+.pepinillo-landing .pp-cross { color: var(--text-tertiary) !important; font-size: 18px !important; }
+.pepinillo-landing .pp-comparison th.pro-header { color: var(--timeblock) !important; }
+
+/* ── Pricing ─────────────────────────────────────────────── */
+.pepinillo-landing .pp-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-pricing-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px;
+  text-align: center;
+  transition: all 0.3s;
+  position: relative;
+}
+.pepinillo-landing .pp-pricing-card:hover { transform: translateY(-4px); border-color: rgba(0,0,0,0.12); }
+
+.pepinillo-landing .pp-pricing-card.featured {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(0,113,227,0.06) 0%, var(--bg-card) 100%);
+}
+
+.pepinillo-landing .pp-pricing-badge {
+  position: absolute;
+  top: -12px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff !important;
+  padding: 4px 16px;
+  border-radius: 980px;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.pepinillo-landing .pp-pricing-name { font-size: 20px !important; font-weight: 600 !important; margin-bottom: 8px !important; margin-top: 8px !important; color: var(--text) !important; }
+.pepinillo-landing .pp-pricing-price { font-size: 48px !important; font-weight: 700 !important; margin-bottom: 4px !important; color: var(--text) !important; }
+.pepinillo-landing .pp-pricing-price sup { font-size: 20px !important; vertical-align: super; font-weight: 500 !important; }
+.pepinillo-landing .pp-pricing-period { font-size: 15px !important; color: var(--text-secondary) !important; margin-bottom: 24px !important; }
+.pepinillo-landing .pp-pricing-savings { font-size: 13px !important; color: var(--stopwatch) !important; font-weight: 600 !important; margin-bottom: 24px !important; }
+
+.pepinillo-landing .pp-pricing-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border-radius: 980px;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  border: none !important;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pepinillo-landing .pp-pricing-btn.primary { background: var(--accent); color: #fff !important; }
+.pepinillo-landing .pp-pricing-btn.primary:hover { background: var(--accent-hover); }
+.pepinillo-landing .pp-pricing-btn.secondary { background: var(--glass); color: var(--text) !important; border: 1px solid var(--border) !important; }
+.pepinillo-landing .pp-pricing-btn.secondary:hover { background: rgba(0,0,0,0.04); }
+
+.pepinillo-landing .pp-pricing-features { list-style: none !important; margin-top: 24px !important; text-align: left; padding: 0 !important; }
+
+.pepinillo-landing .pp-pricing-features li {
+  font-size: 14px !important;
+  color: var(--text-secondary) !important;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none !important;
+}
+
+.pepinillo-landing .pp-pricing-features li::before {
+  content: '\2713';
+  color: var(--stopwatch) !important;
+  font-weight: 700 !important;
+}
+
+/* ── Themes ──────────────────────────────────────────────── */
+.pepinillo-landing .pp-themes-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.pepinillo-landing .pp-theme-card {
+  text-align: center;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.pepinillo-landing .pp-theme-circle {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  margin: 0 auto 16px;
+}
+
+.pepinillo-landing .pp-theme-name { font-weight: 600 !important; color: var(--text) !important; }
+.pepinillo-landing .pp-theme-desc { font-size: 13px !important; color: var(--text-secondary) !important; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.pepinillo-landing .pp-footer {
+  border-top: 1px solid var(--border);
+  padding: 48px 0;
+  color: var(--text-tertiary) !important;
+  font-size: 13px !important;
+}
+
+.pepinillo-landing .pp-footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+}
+
+.pepinillo-landing .pp-footer-brand { font-size: 18px !important; font-weight: 700 !important; color: var(--text) !important; margin-bottom: 8px !important; }
+.pepinillo-landing .pp-footer-desc { line-height: 1.6 !important; margin-bottom: 16px !important; color: var(--text-tertiary) !important; }
+.pepinillo-landing .pp-footer-heading { font-size: 13px !important; font-weight: 600 !important; color: var(--text-secondary) !important; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 16px !important; }
+.pepinillo-landing .pp-footer-links { list-style: none !important; padding: 0 !important; }
+.pepinillo-landing .pp-footer-links li { margin-bottom: 8px !important; list-style: none !important; }
+.pepinillo-landing .pp-footer-links a { color: var(--text-tertiary) !important; }
+.pepinillo-landing .pp-footer-links a:hover { color: var(--text) !important; }
+
+.pepinillo-landing .pp-footer-bottom {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .pepinillo-landing .pp-eco-grid { grid-template-columns: repeat(2, 1fr); }
+  .pepinillo-landing .pp-siri-commands { grid-template-columns: repeat(2, 1fr); }
+  .pepinillo-landing .pp-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+
+@media (max-width: 768px) {
+  .pepinillo-landing .pp-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .pepinillo-landing .pp-modes-grid { grid-template-columns: 1fr; }
+  .pepinillo-landing .pp-eco-grid { grid-template-columns: 1fr; }
+  .pepinillo-landing .pp-sound-grid { grid-template-columns: repeat(2, 1fr); }
+  .pepinillo-landing .pp-analytics-showcase { grid-template-columns: 1fr; }
+  .pepinillo-landing .pp-achievements-grid { grid-template-columns: repeat(2, 1fr); }
+  .pepinillo-landing .pp-task-features { grid-template-columns: 1fr; }
+  .pepinillo-landing .pp-siri-commands { grid-template-columns: 1fr; }
+  .pepinillo-landing .pp-pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin-left: auto; margin-right: auto; }
+  .pepinillo-landing .pp-steps { grid-template-columns: 1fr; }
+  .pepinillo-landing .pp-themes-grid { grid-template-columns: repeat(2, 1fr); }
+  .pepinillo-landing .pp-footer-grid { grid-template-columns: 1fr; gap: 32px; }
+  .pepinillo-landing .pp-footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+}
+</style>
+
+<div class="pepinillo-landing">
+
+<!-- ═══ HERO ═══ -->
+<div class="pp-section pp-hero">
+  <div class="pp-hero-content">
+    <span class="pp-hero-badge">Available on iPhone, iPad, Mac & Apple Watch</span>
+    <h1 class="pp-hero-title">Pepinillo</h1>
+    <p class="pp-hero-tagline">Your Deep Work Companion</p>
+
+    <div class="pp-timer">
+      <svg viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="pp-timer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#E8453C" />
+            <stop offset="50%" style="stop-color:#9333EA" />
+            <stop offset="100%" style="stop-color:#34A89A" />
+          </linearGradient>
+        </defs>
+        <circle class="pp-timer-bg" cx="100" cy="100" r="90" />
+        <circle class="pp-timer-progress" cx="100" cy="100" r="90" />
+      </svg>
+      <div class="pp-timer-display">
+        <div class="pp-timer-time" id="pp-hero-timer">25:00</div>
+        <div class="pp-timer-label-text">Pomodoro</div>
+      </div>
+    </div>
+
+    <div class="pp-hero-buttons">
+      <a href="#pp-pricing" class="pp-btn-primary">Download on App Store</a>
+      <a href="#pp-modes" class="pp-btn-secondary">Learn More</a>
+    </div>
+    <p class="pp-hero-platforms">iOS 17+ &bull; watchOS 10+ &bull; macOS 14+ &bull; iPadOS 17+</p>
+  </div>
+</div>
+
+<!-- ═══ STATS ═══ -->
+<div class="pp-stats-bar">
+  <div class="pp-container">
+    <div class="pp-stats-grid">
+      <div class="pp-reveal">
+        <div class="pp-stat-number" data-count="4">0</div>
+        <div class="pp-stat-label">Focus Techniques</div>
+      </div>
+      <div class="pp-reveal pp-d1">
+        <div class="pp-stat-number" data-count="9">0</div>
+        <div class="pp-stat-label">Siri Commands</div>
+      </div>
+      <div class="pp-reveal pp-d2">
+        <div class="pp-stat-number" data-count="8">0</div>
+        <div class="pp-stat-label">Soundscapes</div>
+      </div>
+      <div class="pp-reveal pp-d3">
+        <div class="pp-stat-number" data-count="3">0</div>
+        <div class="pp-stat-label">Languages</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<div class="pp-section" id="pp-how">
+  <div class="pp-container">
+    <div class="pp-reveal" style="text-align:center">
+      <p class="pp-label">Getting Started</p>
+      <h2 class="pp-title">Focus in 3 Steps</h2>
+      <p class="pp-subtitle" style="margin:0 auto">No setup needed. Pick a technique, start the timer, and let Pepinillo handle the rest.</p>
+    </div>
+    <div class="pp-steps">
+      <div class="pp-step pp-reveal pp-d1">
+        <div class="pp-step-number">1</div>
+        <h3 class="pp-step-title">Choose Your Mode</h3>
+        <p class="pp-step-desc">Pick from Pomodoro, Flowtime, Time Block, or Stopwatch. Pepinillo's intelligence can suggest the best one for your task.</p>
+      </div>
+      <div class="pp-step pp-reveal pp-d2">
+        <div class="pp-step-number">2</div>
+        <h3 class="pp-step-title">Start Focusing</h3>
+        <p class="pp-step-desc">Tap start or say "Hey Siri, start focusing." Choose a soundscape, link a task, and let the timer guide you.</p>
+      </div>
+      <div class="pp-step pp-reveal pp-d3">
+        <div class="pp-step-number">3</div>
+        <h3 class="pp-step-title">Reflect & Grow</h3>
+        <p class="pp-step-desc">After each session, rate your satisfaction and journal your thoughts. Watch your streak and analytics grow over time.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOCUS MODES ═══ -->
+<div class="pp-section" id="pp-modes">
+  <div class="pp-container">
+    <div class="pp-reveal">
+      <p class="pp-label">Focus Techniques</p>
+      <h2 class="pp-title">4 Modes. One App.</h2>
+      <p class="pp-subtitle">Every brain works differently. Choose the technique that matches your style, and switch between them as your energy changes throughout the day.</p>
+    </div>
+    <div class="pp-modes-grid">
+      <div class="pp-mode-card pp-reveal pp-d1" data-mode="pomodoro">
+        <span class="pp-mode-emoji">🍅</span>
+        <h3 class="pp-mode-name">Pomodoro <span class="pp-badge pp-badge-free">Free</span></h3>
+        <p class="pp-mode-desc">The classic. 25 minutes of focused work followed by a 5-minute break. After 4 cycles, take a longer 15-minute break. Perfect for tasks that need structured momentum.</p>
+        <p class="pp-mode-detail">25m work &rarr; 5m break &rarr; repeat 4x &rarr; 15m long break</p>
+      </div>
+      <div class="pp-mode-card pp-reveal pp-d2" data-mode="flowtime">
+        <span class="pp-mode-emoji">🌊</span>
+        <h3 class="pp-mode-name">Flowtime <span class="pp-badge">Pro</span></h3>
+        <p class="pp-mode-desc">Let your focus flow naturally. Work as long as you want, and Pepinillo suggests smart break durations based on how long you focused. No rigid timers interrupting your flow state.</p>
+        <p class="pp-mode-detail">Smart breaks: &lt;25m &rarr; 5m, &lt;50m &rarr; 8m, &lt;90m &rarr; 10m, 90m+ &rarr; 15m</p>
+      </div>
+      <div class="pp-mode-card pp-reveal pp-d3" data-mode="timeblock">
+        <span class="pp-mode-emoji">📦</span>
+        <h3 class="pp-mode-name">Time Block <span class="pp-badge">Pro</span></h3>
+        <p class="pp-mode-desc">Set a fixed duration (up to 8 hours) and commit. No breaks, no interruptions — just deep, uninterrupted focus. Optional midpoint check-in to ensure you're on track.</p>
+        <p class="pp-mode-detail">Custom duration (1min to 8h) &bull; Optional midpoint alert</p>
+      </div>
+      <div class="pp-mode-card pp-reveal pp-d4" data-mode="stopwatch">
+        <span class="pp-mode-emoji">⏱️</span>
+        <h3 class="pp-mode-name">Stopwatch <span class="pp-badge pp-badge-free">Free</span></h3>
+        <p class="pp-mode-desc">Simple count-up timer with no goals or constraints. Perfect for tracking time on casual work, meetings, or any activity where you just want to know how long it took.</p>
+        <p class="pp-mode-detail">Count up &bull; No breaks &bull; Stop whenever you want</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ECOSYSTEM ═══ -->
+<div class="pp-section" id="pp-ecosystem">
+  <div class="pp-container">
+    <div class="pp-reveal">
+      <p class="pp-label">Apple Ecosystem</p>
+      <h2 class="pp-title">Focus, Everywhere.</h2>
+      <p class="pp-subtitle">Pepinillo integrates deeply with every Apple platform and feature. Your focus flows seamlessly between your devices.</p>
+    </div>
+    <div class="pp-eco-grid">
+      <div class="pp-eco-card pp-reveal pp-d1"><span class="pp-eco-icon">⌚</span><h3 class="pp-eco-title">Apple Watch</h3><p class="pp-eco-desc">Start, pause, and stop sessions from your wrist. Real-time sync with your iPhone. Haptic feedback for phase transitions.</p></div>
+      <div class="pp-eco-card pp-reveal pp-d2"><span class="pp-eco-icon">📱</span><h3 class="pp-eco-title">Widgets</h3><p class="pp-eco-desc">Small, medium, and large home screen widgets. Lock screen widgets for glanceable stats. Interactive buttons to control sessions.</p></div>
+      <div class="pp-eco-card pp-reveal pp-d3"><span class="pp-eco-icon">🏝️</span><h3 class="pp-eco-title">Dynamic Island</h3><p class="pp-eco-desc">Your focus session lives in the Dynamic Island. See your timer, current phase, and pomodoro count at a glance.</p></div>
+      <div class="pp-eco-card pp-reveal pp-d1"><span class="pp-eco-icon">🎙️</span><h3 class="pp-eco-title">Siri & Shortcuts</h3><p class="pp-eco-desc">9 voice commands, fully localized in English, Spanish, and Portuguese. Build custom automations with Shortcuts.</p></div>
+      <div class="pp-eco-card pp-reveal pp-d2"><span class="pp-eco-icon">📺</span><h3 class="pp-eco-title">StandBy Mode</h3><p class="pp-eco-desc">When your iPhone is charging on its side, Pepinillo transforms into a large, high-contrast timer display.</p></div>
+      <div class="pp-eco-card pp-reveal pp-d3"><span class="pp-eco-icon">🔀</span><h3 class="pp-eco-title">Handoff</h3><p class="pp-eco-desc">Start a session on your iPhone, pick it up on your iPad. Your focus state transfers seamlessly between devices.</p></div>
+      <div class="pp-eco-card pp-reveal pp-d1"><span class="pp-eco-icon">❤️</span><h3 class="pp-eco-title">Apple Health</h3><p class="pp-eco-desc">Focus sessions are automatically logged as Mindful Minutes in Apple Health.</p></div>
+      <div class="pp-eco-card pp-reveal pp-d2"><span class="pp-eco-icon">📅</span><h3 class="pp-eco-title">Calendar</h3><p class="pp-eco-desc">Create focus events in your Apple Calendar. Block time for deep work and see your focus schedule.</p></div>
+      <div class="pp-eco-card pp-reveal pp-d3"><span class="pp-eco-icon">🔍</span><h3 class="pp-eco-title">Spotlight</h3><p class="pp-eco-desc">Your tasks are indexed in Spotlight. Search for a task from anywhere and jump straight into a focus session.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SOUNDSCAPES ═══ -->
+<div class="pp-section" id="pp-soundscapes">
+  <div class="pp-container">
+    <div class="pp-reveal" style="text-align:center">
+      <p class="pp-label">Ambient Audio</p>
+      <h2 class="pp-title">Immersive Soundscapes</h2>
+      <p class="pp-subtitle" style="margin:0 auto">Block out distractions with 8 carefully crafted ambient sounds. Smooth fade-in/out, adjustable volume, and seamless looping.</p>
+    </div>
+    <div class="pp-sound-grid">
+      <div class="pp-sound-card pp-reveal"><span class="pp-sound-emoji">🌧️</span><p class="pp-sound-name">Rain</p></div>
+      <div class="pp-sound-card pp-reveal pp-d1"><span class="pp-sound-emoji">🌲</span><p class="pp-sound-name">Forest</p></div>
+      <div class="pp-sound-card pp-reveal pp-d2"><span class="pp-sound-emoji">☕</span><p class="pp-sound-name">Caf&eacute;</p></div>
+      <div class="pp-sound-card pp-reveal pp-d3"><span class="pp-sound-emoji">📻</span><p class="pp-sound-name">White Noise</p></div>
+      <div class="pp-sound-card pro pp-reveal"><span class="pp-sound-emoji">🌊</span><p class="pp-sound-name">Ocean</p></div>
+      <div class="pp-sound-card pro pp-reveal pp-d1"><span class="pp-sound-emoji">🔥</span><p class="pp-sound-name">Fireplace</p></div>
+      <div class="pp-sound-card pro pp-reveal pp-d2"><span class="pp-sound-emoji">🎧</span><p class="pp-sound-name">Binaural Beats</p></div>
+      <div class="pp-sound-card pro pp-reveal pp-d3"><span class="pp-sound-emoji">🎵</span><p class="pp-sound-name">Lo-fi</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ANALYTICS ═══ -->
+<div class="pp-section" id="pp-analytics">
+  <div class="pp-container">
+    <div class="pp-reveal">
+      <p class="pp-label">Insights</p>
+      <h2 class="pp-title">Know Your Focus.</h2>
+      <p class="pp-subtitle">Beautiful charts, detailed breakdowns, and personalized insights help you understand and improve your focus habits over time.</p>
+    </div>
+    <div class="pp-analytics-showcase">
+      <div class="pp-analytics-card pp-reveal">
+        <p class="pp-analytics-card-title">Weekly Focus Time</p>
+        <div class="pp-chart-bars">
+          <div class="pp-chart-bar" style="height:45%;background:var(--pomodoro)"></div>
+          <div class="pp-chart-bar" style="height:70%;background:var(--pomodoro)"></div>
+          <div class="pp-chart-bar" style="height:55%;background:var(--flowtime)"></div>
+          <div class="pp-chart-bar" style="height:85%;background:var(--pomodoro)"></div>
+          <div class="pp-chart-bar" style="height:60%;background:var(--timeblock)"></div>
+          <div class="pp-chart-bar" style="height:90%;background:var(--flowtime)"></div>
+          <div class="pp-chart-bar" style="height:40%;background:var(--pomodoro)"></div>
+        </div>
+        <div class="pp-chart-labels"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+        <div class="pp-streak-display" style="margin-top:32px">
+          <span class="pp-streak-fire">🔥</span>
+          <div>
+            <div class="pp-streak-count" data-count="14">0</div>
+            <div class="pp-streak-label">Day Streak</div>
+          </div>
+        </div>
+      </div>
+      <div class="pp-analytics-card pp-reveal pp-d2">
+        <p class="pp-analytics-card-title">Achievements</p>
+        <div class="pp-achievements-grid">
+          <div class="pp-achievement"><span class="pp-achievement-emoji">🎯</span><div><p class="pp-achievement-name">First Focus</p><p class="pp-achievement-desc">Complete first session</p></div></div>
+          <div class="pp-achievement"><span class="pp-achievement-emoji">🔥</span><div><p class="pp-achievement-name">Week Warrior</p><p class="pp-achievement-desc">7-day streak</p></div></div>
+          <div class="pp-achievement"><span class="pp-achievement-emoji">🌶️</span><div><p class="pp-achievement-name">Pomodoro Master</p><p class="pp-achievement-desc">100 pomodoros</p></div></div>
+          <div class="pp-achievement"><span class="pp-achievement-emoji">🤿</span><div><p class="pp-achievement-name">Deep Diver</p><p class="pp-achievement-desc">10 deep work sessions</p></div></div>
+          <div class="pp-achievement"><span class="pp-achievement-emoji">💯</span><div><p class="pp-achievement-name">Century Club</p><p class="pp-achievement-desc">100 total sessions</p></div></div>
+          <div class="pp-achievement"><span class="pp-achievement-emoji">🐦</span><div><p class="pp-achievement-name">Early Bird</p><p class="pp-achievement-desc">10 sessions before 8am</p></div></div>
+        </div>
+        <div style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border)">
+          <p class="pp-analytics-card-title">What You Also Get</p>
+          <ul style="list-style:none;font-size:14px;color:var(--text-secondary);line-height:2;padding:0">
+            <li>📊 Focus Quality Score (0-100)</li>
+            <li>🕐 Peak Hours Analysis</li>
+            <li>📅 Week-over-Week Comparison</li>
+            <li>🏆 Completion Rate Tracking</li>
+            <li>🧠 Mode Intelligence Suggestions</li>
+            <li>📋 Weekly Review Reports</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ TASKS ═══ -->
+<div class="pp-section" id="pp-tasks">
+  <div class="pp-container">
+    <div class="pp-reveal" style="text-align:center">
+      <p class="pp-label">Task Management</p>
+      <h2 class="pp-title">Focus Meets Productivity</h2>
+      <p class="pp-subtitle" style="margin:0 auto">Link tasks to focus sessions and watch your progress build.</p>
+    </div>
+    <div class="pp-task-features">
+      <div class="pp-task-feature pp-reveal"><span class="pp-task-feature-icon">⚡</span><div><p class="pp-task-feature-title">Energy Levels</p><p class="pp-task-feature-desc">Tag tasks as Deep Work, Shallow Work, or Admin. Batch similar-energy tasks together for optimal focus.</p></div></div>
+      <div class="pp-task-feature pp-reveal pp-d1"><span class="pp-task-feature-icon">📋</span><div><p class="pp-task-feature-title">Subtasks</p><p class="pp-task-feature-desc">Break down large tasks into manageable subtasks with progress tracking.</p></div></div>
+      <div class="pp-task-feature pp-reveal pp-d2"><span class="pp-task-feature-icon">🔄</span><div><p class="pp-task-feature-title">Recurring Tasks</p><p class="pp-task-feature-desc">Daily, weekdays, weekly, biweekly, or monthly recurrence. Never forget your regular deep work sessions.</p></div></div>
+      <div class="pp-task-feature pp-reveal pp-d3"><span class="pp-task-feature-icon">🧠</span><div><p class="pp-task-feature-title">Mode Intelligence</p><p class="pp-task-feature-desc">Pepinillo analyzes your history and suggests the best focus mode for each task.</p></div></div>
+      <div class="pp-task-feature pp-reveal"><span class="pp-task-feature-icon">🔗</span><div><p class="pp-task-feature-title">Focus Linking</p><p class="pp-task-feature-desc">Link any task to a focus session. Track Pomodoro completion per task.</p></div></div>
+      <div class="pp-task-feature pp-reveal pp-d1"><span class="pp-task-feature-icon">📥</span><div><p class="pp-task-feature-title">Reminders Import</p><p class="pp-task-feature-desc">Import tasks directly from Apple Reminders. No need to recreate your existing to-do list.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ JOURNAL ═══ -->
+<div class="pp-section" id="pp-journal">
+  <div class="pp-container">
+    <div class="pp-reveal" style="text-align:center">
+      <p class="pp-label">Reflection</p>
+      <h2 class="pp-title">Journal Every Session</h2>
+      <p class="pp-subtitle" style="margin:0 auto">After each completed session, take a moment to reflect. Rate your satisfaction, write a quick note, and build self-awareness over time.</p>
+    </div>
+    <div class="pp-journal-mockup pp-reveal">
+      <div style="text-align:center;margin-bottom:24px"><h3 style="font-size:20px;font-weight:600;color:var(--text)">Session Complete</h3></div>
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px;text-align:center">🍅 Pomodoro &bull; 25:00</p>
+      <div class="pp-journal-rating">
+        <span class="pp-journal-emoji" data-rating="1">😞</span>
+        <span class="pp-journal-emoji" data-rating="2">😐</span>
+        <span class="pp-journal-emoji" data-rating="3">🙂</span>
+        <span class="pp-journal-emoji active" data-rating="4">😊</span>
+        <span class="pp-journal-emoji" data-rating="5">🔥</span>
+      </div>
+      <textarea class="pp-journal-textarea" readonly>Felt really productive today. Managed to complete the API integration without getting distracted. The cafe soundscape helped a lot.</textarea>
+      <p style="font-size:12px;color:var(--text-tertiary);margin-top:12px;text-align:center">Supports Apple Writing Tools on iOS 18.1+</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SIRI ═══ -->
+<div class="pp-section" id="pp-siri">
+  <div class="pp-container">
+    <div class="pp-reveal" style="text-align:center">
+      <p class="pp-label">Voice Control</p>
+      <h2 class="pp-title">"Hey Siri, Start Focusing"</h2>
+      <p class="pp-subtitle" style="margin:0 auto">9 App Intents, 30 voice phrases, localized in English, Spanish, and Portuguese.</p>
+    </div>
+    <div class="pp-siri-commands">
+      <div class="pp-siri-cmd cat-start pp-reveal">"Start deep work in Pepinillo"</div>
+      <div class="pp-siri-cmd cat-start pp-reveal">"Start a Pomodoro in Pepinillo"</div>
+      <div class="pp-siri-cmd cat-start pp-reveal">"Focus time with Pepinillo"</div>
+      <div class="pp-siri-cmd cat-control pp-reveal">"Stop focusing in Pepinillo"</div>
+      <div class="pp-siri-cmd cat-control pp-reveal">"Pause focus in Pepinillo"</div>
+      <div class="pp-siri-cmd cat-control pp-reveal">"Resume focus in Pepinillo"</div>
+      <div class="pp-siri-cmd cat-stats pp-reveal">"How's my focus today?"</div>
+      <div class="pp-siri-cmd cat-stats pp-reveal">"Weekly report in Pepinillo"</div>
+      <div class="pp-siri-cmd cat-stats pp-reveal">"Am I focusing in Pepinillo?"</div>
+      <div class="pp-siri-cmd cat-ai pp-reveal">"Give me focus insights"</div>
+      <div class="pp-siri-cmd cat-ai pp-reveal">"What mode should I use?"</div>
+      <div class="pp-siri-cmd cat-ai pp-reveal">"How was my focus this week?"</div>
+    </div>
+    <div class="pp-reveal" style="text-align:center;margin-top:32px">
+      <p style="font-size:14px;color:var(--text-tertiary)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--stopwatch);margin-right:6px;vertical-align:middle"></span>Start
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pomodoro);margin:0 6px;vertical-align:middle"></span>Control
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin:0 6px;vertical-align:middle"></span>Stats
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--timeblock);margin:0 6px;vertical-align:middle"></span>Intelligence
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COMPARISON ═══ -->
+<div class="pp-section" id="pp-compare">
+  <div class="pp-container">
+    <div class="pp-reveal" style="text-align:center">
+      <p class="pp-label">Free vs Pro</p>
+      <h2 class="pp-title">Unlock Your Full Potential</h2>
+      <p class="pp-subtitle" style="margin:0 auto">Pepinillo is free to use with Pomodoro and Stopwatch. Upgrade to Pro to unlock everything.</p>
+    </div>
+    <div class="pp-comparison pp-reveal">
+      <table>
+        <thead><tr><th>Feature</th><th>Free</th><th class="pro-header">Pro</th></tr></thead>
+        <tbody>
+          <tr><td>Pomodoro Timer</td><td><span class="pp-check">&#10003;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Stopwatch</td><td><span class="pp-check">&#10003;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Flowtime (Smart Breaks)</td><td><span class="pp-cross">&mdash;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Time Block (Custom Duration)</td><td><span class="pp-cross">&mdash;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>5 Free Soundscapes</td><td><span class="pp-check">&#10003;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>4 Premium Soundscapes</td><td><span class="pp-cross">&mdash;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Widgets & Live Activity</td><td><span class="pp-check">&#10003;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Siri & Shortcuts</td><td><span class="pp-check">&#10003;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Basic Analytics</td><td><span class="pp-check">&#10003;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Advanced Analytics & Weekly Review</td><td><span class="pp-cross">&mdash;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>iCloud Sync (All Devices)</td><td><span class="pp-cross">&mdash;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Streak Protection</td><td><span class="pp-cross">&mdash;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>Mode Intelligence</td><td><span class="pp-cross">&mdash;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+          <tr><td>4 Visual Themes</td><td><span class="pp-cross">&mdash;</span></td><td><span class="pp-check">&#10003;</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PRICING ═══ -->
+<div class="pp-section" id="pp-pricing">
+  <div class="pp-container">
+    <div class="pp-reveal" style="text-align:center">
+      <p class="pp-label">Pricing</p>
+      <h2 class="pp-title">Invest in Your Focus</h2>
+      <p class="pp-subtitle" style="margin:0 auto">Start free with Pomodoro and Stopwatch. Upgrade when you're ready.</p>
+    </div>
+    <div class="pp-pricing-grid">
+      <div class="pp-pricing-card pp-reveal pp-d1">
+        <p class="pp-pricing-name">Monthly</p>
+        <p class="pp-pricing-price"><sup>$</sup>2<sup>.99</sup></p>
+        <p class="pp-pricing-period">per month</p>
+        <p class="pp-pricing-savings">&nbsp;</p>
+        <button class="pp-pricing-btn secondary">Start Free Trial</button>
+        <ul class="pp-pricing-features"><li>All 4 focus modes</li><li>All 8 soundscapes</li><li>Advanced analytics</li><li>iCloud sync</li><li>Cancel anytime</li></ul>
+      </div>
+      <div class="pp-pricing-card featured pp-reveal pp-d2">
+        <span class="pp-pricing-badge">Best Value</span>
+        <p class="pp-pricing-name">Annual</p>
+        <p class="pp-pricing-price"><sup>$</sup>14<sup>.99</sup></p>
+        <p class="pp-pricing-period">per year</p>
+        <p class="pp-pricing-savings">Save 58% vs monthly</p>
+        <button class="pp-pricing-btn primary">Start Free Trial</button>
+        <ul class="pp-pricing-features"><li>Everything in Monthly</li><li>Streak protection</li><li>4 visual themes</li><li>Mode intelligence</li><li>Priority support</li></ul>
+      </div>
+      <div class="pp-pricing-card pp-reveal pp-d3">
+        <p class="pp-pricing-name">Lifetime</p>
+        <p class="pp-pricing-price"><sup>$</sup>29<sup>.99</sup></p>
+        <p class="pp-pricing-period">one-time</p>
+        <p class="pp-pricing-savings">Pay once, own forever</p>
+        <button class="pp-pricing-btn secondary">Buy Now</button>
+        <ul class="pp-pricing-features"><li>Everything in Annual</li><li>All future updates</li><li>No subscriptions ever</li><li>Support indie development</li><li>Best for long-term users</li></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ THEMES ═══ -->
+<div class="pp-section" id="pp-themes">
+  <div class="pp-container">
+    <div class="pp-reveal" style="text-align:center">
+      <p class="pp-label">Personalization</p>
+      <h2 class="pp-title">4 Beautiful Themes</h2>
+      <p class="pp-subtitle" style="margin:0 auto">Classic, Forest, Ocean, or Sunset — each theme transforms the entire app.</p>
+    </div>
+    <div class="pp-themes-grid">
+      <div class="pp-theme-card pp-reveal"><div class="pp-theme-circle" style="background:linear-gradient(135deg,#E8453C,#9333EA)"></div><p class="pp-theme-name">Classic</p><p class="pp-theme-desc">Vibrant & Bold</p></div>
+      <div class="pp-theme-card pp-reveal pp-d1"><div class="pp-theme-circle" style="background:linear-gradient(135deg,#22C55E,#166534)"></div><p class="pp-theme-name">Forest</p><p class="pp-theme-desc">Natural & Calm</p></div>
+      <div class="pp-theme-card pp-reveal pp-d2"><div class="pp-theme-circle" style="background:linear-gradient(135deg,#38BDF8,#1E3A5F)"></div><p class="pp-theme-name">Ocean</p><p class="pp-theme-desc">Deep & Serene</p></div>
+      <div class="pp-theme-card pp-reveal pp-d3"><div class="pp-theme-circle" style="background:linear-gradient(135deg,#F97316,#EC4899)"></div><p class="pp-theme-name">Sunset</p><p class="pp-theme-desc">Warm & Vibrant</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CTA ═══ -->
+<div class="pp-section" style="text-align:center">
+  <div class="pp-container pp-reveal">
+    <p class="pp-label">Ready to Focus?</p>
+    <h2 class="pp-title">Start Your Deep Work Journey</h2>
+    <p class="pp-subtitle" style="margin:0 auto 32px">Download Pepinillo for free. No account required. Just open and focus.</p>
+    <a href="#" class="pp-btn-primary" style="font-size:18px;padding:16px 36px">Download on App Store</a>
+    <p style="margin-top:16px;font-size:14px;color:var(--text-tertiary)">Free &bull; No ads &bull; No account needed</p>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<div class="pp-footer">
+  <div class="pp-container">
+    <div class="pp-footer-grid">
+      <div>
+        <p class="pp-footer-brand">🥒 Pepinillo</p>
+        <p class="pp-footer-desc">Deep Work Companion for Apple. Built with love for the Apple ecosystem.</p>
+        <p style="color:var(--text-tertiary)">Made with ❤️ by Tiago</p>
+      </div>
+      <div>
+        <p class="pp-footer-heading">Product</p>
+        <ul class="pp-footer-links"><li><a href="#pp-modes">Focus Modes</a></li><li><a href="#pp-ecosystem">Ecosystem</a></li><li><a href="#pp-analytics">Analytics</a></li><li><a href="#pp-pricing">Pricing</a></li></ul>
+      </div>
+      <div>
+        <p class="pp-footer-heading">Features</p>
+        <ul class="pp-footer-links"><li><a href="#pp-siri">Siri Commands</a></li><li><a href="#pp-soundscapes">Soundscapes</a></li><li><a href="#pp-tasks">Task Management</a></li><li><a href="#pp-journal">Session Journal</a></li></ul>
+      </div>
+      <div>
+        <p class="pp-footer-heading">Legal</p>
+        <ul class="pp-footer-links"><li><a href="#">Privacy Policy</a></li><li><a href="#">Terms of Use</a></li><li><a href="#">Support</a></li><li><a href="#">Contact</a></li></ul>
+      </div>
+    </div>
+    <div class="pp-footer-bottom">
+      <p>&copy; 2026 Pepinillo. All rights reserved.</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- end .pepinillo-landing -->
+
+<script>
+(function() {
+  var root = document.querySelector('.pepinillo-landing');
+  if (!root) return;
+
+  // Scroll reveal
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  root.querySelectorAll('.pp-reveal').forEach(function(el) { observer.observe(el); });
+
+  // Animated counters
+  var counterObs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        var el = entry.target;
+        var target = parseInt(el.dataset.count);
+        if (el.dataset.animated) return;
+        el.dataset.animated = 'true';
+        var current = 0;
+        var step = Math.max(1, Math.ceil(target / 40));
+        var interval = setInterval(function() {
+          current = Math.min(current + step, target);
+          el.textContent = current;
+          if (current >= target) clearInterval(interval);
+        }, 40);
+      }
+    });
+  }, { threshold: 0.5 });
+
+  root.querySelectorAll('[data-count]').forEach(function(el) { counterObs.observe(el); });
+
+  // Hero timer
+  var display = document.getElementById('pp-hero-timer');
+  if (display) {
+    var seconds = 25 * 60;
+    setInterval(function() {
+      seconds = Math.max(0, seconds - 1);
+      if (seconds === 0) seconds = 25 * 60;
+      var m = Math.floor(seconds / 60);
+      var s = seconds % 60;
+      display.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    }, 1000);
+  }
+
+  // Journal emoji
+  root.querySelectorAll('.pp-journal-emoji').forEach(function(emoji) {
+    emoji.addEventListener('click', function() {
+      root.querySelectorAll('.pp-journal-emoji').forEach(function(e) { e.classList.remove('active'); });
+      emoji.classList.add('active');
+    });
+  });
+})();
+</script>

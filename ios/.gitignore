@@ -1,0 +1,33 @@
+# Xcode
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# XcodeGen (regenerated from project.yml)
+Pepinillo.xcodeproj
+
+# SPM
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# App Store credentials / secrets
+*.cer
+*.p12
+*.mobileprovision
+*.provisionprofile
+authkey*.p8
+
+# Environment / secrets
+.env
+.env.*
+
+# Claude Code
+.claude/

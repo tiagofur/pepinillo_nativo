@@ -1,0 +1,196 @@
+// SiriIntentsTests.swift
+// Pepinillo — Deep Work Companion for Apple
+//
+// Tests for App Intents: FocusModeEntity, FocusModeQuery, TaskEntity,
+// StartFocusIntent, and StopFocusIntent.
+// These tests cover pure logic and entity query behavior without SwiftData.
+
+import Testing
+import AppIntents
+import Foundation
+@testable import Pepinillo
+
+@Suite("Siri Intents")
+struct SiriIntentsTests {
+
+    // MARK: - FocusModeEntity Properties
+
+    @Test("FocusModeEntity IDs match FocusMode rawValues")
+    func focusModeEntityIDs() {
+        #expect(FocusModeEntity.pomodoro.id == "pomodoro")
+        #expect(FocusModeEntity.flowtime.id == "flowtime")
+        #expect(FocusModeEntity.timeBlock.id == "timeBlock")
+        #expect(FocusModeEntity.stopwatch.id == "stopwatch")
+    }
+
+    @Test("FocusModeEntity display names are human-readable")
+    func focusModeEntityDisplayNames() {
+        #expect(FocusModeEntity.pomodoro.displayName == "Pomodoro")
+        #expect(FocusModeEntity.flowtime.displayName == "Flowtime")
+        #expect(FocusModeEntity.timeBlock.displayName == "Time Block")
+        #expect(FocusModeEntity.stopwatch.displayName == "Stopwatch")
+    }
+
+    @Test("FocusModeEntity emoji icons are correct")
+    func focusModeEntityIcons() {
+        #expect(FocusModeEntity.pomodoro.icon == "🍅")
+        #expect(FocusModeEntity.flowtime.icon == "🌊")
+        #expect(FocusModeEntity.timeBlock.icon == "📦")
+        #expect(FocusModeEntity.stopwatch.icon == "⏱️")
+    }
+
+    @Test("FocusModeEntity SF Symbol names are correct")
+    func focusModeEntitySystemImages() {
+        #expect(FocusModeEntity.pomodoro.iconSystemName == "timer")
+        #expect(FocusModeEntity.flowtime.iconSystemName == "wind")
+        #expect(FocusModeEntity.timeBlock.iconSystemName == "rectangle.split.3x1")
+        #expect(FocusModeEntity.stopwatch.iconSystemName == "stopwatch")
+    }
+
+    @Test("FocusModeEntity.allModes contains exactly 4 modes")
+    func allModesCount() {
+        #expect(FocusModeEntity.allModes.count == 4)
+    }
+
+    @Test("FocusModeEntity.allModes includes every mode")
+    func allModesContents() {
+        let ids = Set(FocusModeEntity.allModes.map(\.id))
+        #expect(ids == ["pomodoro", "flowtime", "timeBlock", "stopwatch"])
+    }
+
+    // MARK: - FocusModeQuery
+
+    @Test("FocusModeQuery.entities(for:) filters by identifiers")
+    func focusModeQueryEntitiesForIdentifiers() async throws {
+        let query = FocusModeQuery()
+
+        let twoModes = try await query.entities(for: ["pomodoro", "flowtime"])
+        #expect(twoModes.count == 2)
+        #expect(twoModes.map(\.id).contains("pomodoro"))
+        #expect(twoModes.map(\.id).contains("flowtime"))
+    }
+
+    @Test("FocusModeQuery.entities(for:) returns empty for unknown identifiers")
+    func focusModeQueryUnknownIdentifiers() async throws {
+        let query = FocusModeQuery()
+        let result = try await query.entities(for: ["unknown_mode", "fake_mode"])
+        #expect(result.isEmpty)
+    }
+
+    @Test("FocusModeQuery.entities(for:) returns single mode by identifier")
+    func focusModeQuerySingleEntity() async throws {
+        let query = FocusModeQuery()
+        let result = try await query.entities(for: ["stopwatch"])
+        #expect(result.count == 1)
+        #expect(result.first?.id == "stopwatch")
+    }
+
+    @Test("FocusModeQuery.suggestedEntities() returns all 4 modes")
+    func focusModeQuerySuggestedEntities() async throws {
+        let query = FocusModeQuery()
+        let result = try await query.suggestedEntities()
+        #expect(result.count == 4)
+    }
+
+    @Test("FocusModeQuery.defaultResult() returns pomodoro")
+    func focusModeQueryDefaultResult() async throws {
+        let query = FocusModeQuery()
+        let result = await query.defaultResult()
+        #expect(result?.id == "pomodoro")
+    }
+
+    // MARK: - TaskEntity
+
+    @Test("TaskEntity active task has empty completion subtitle")
+    func taskEntityActiveTaskSubtitle() {
+        let entity = TaskEntity(
+            id: UUID().uuidString,
+            title: "Write unit tests",
+            isCompleted: false
+        )
+        let repr = entity.displayRepresentation
+        // Active tasks show no subtitle (empty string)
+        #expect(repr.subtitle?.key == "")
+    }
+
+    @Test("TaskEntity completed task has 'Completed' subtitle")
+    func taskEntityCompletedTaskSubtitle() {
+        let entity = TaskEntity(
+            id: UUID().uuidString,
+            title: "Finished task",
+            isCompleted: true
+        )
+        let repr = entity.displayRepresentation
+        #expect(repr.subtitle?.key == "Completed")
+    }
+
+    @Test("TaskEntity title appears in display representation")
+    func taskEntityDisplayTitle() {
+        let title = "Design the onboarding flow"
+        let entity = TaskEntity(id: UUID().uuidString, title: title, isCompleted: false)
+        let repr = entity.displayRepresentation
+        #expect(String(describing: repr.title).contains(title))
+    }
+
+    @Test("TaskEntity preserves UUID string as ID")
+    func taskEntityPreservesID() {
+        let uuidString = UUID().uuidString
+        let entity = TaskEntity(id: uuidString, title: "Task", isCompleted: false)
+        #expect(entity.id == uuidString)
+    }
+
+    // MARK: - StartFocusIntent
+
+    @Test("StartFocusIntent.perform() completes without throwing")
+    func startFocusIntentPerforms() async throws {
+        var intent = StartFocusIntent()
+        intent.mode = FocusModeEntity.pomodoro
+        intent.task = nil
+        intent.duration = nil
+        // Smoke test: intent must not throw
+        _ = try await intent.perform()
+    }
+
+    @Test("StartFocusIntent.perform() with task completes without throwing")
+    func startFocusIntentWithTaskPerforms() async throws {
+        var intent = StartFocusIntent()
+        intent.mode = FocusModeEntity.flowtime
+        intent.task = TaskEntity(id: UUID().uuidString, title: "Code review", isCompleted: false)
+        intent.duration = nil
+        _ = try await intent.perform()
+    }
+
+    @Test("StartFocusIntent.perform() with duration completes without throwing")
+    func startFocusIntentWithDurationPerforms() async throws {
+        var intent = StartFocusIntent()
+        intent.mode = FocusModeEntity.timeBlock
+        intent.task = nil
+        intent.duration = 60
+        _ = try await intent.perform()
+    }
+
+    // MARK: - StopFocusIntent
+
+    @Test("StopFocusIntent.perform() completes without throwing")
+    func stopFocusIntentPerforms() async throws {
+        let intent = StopFocusIntent()
+        _ = try await intent.perform()
+    }
+
+    @Test("StopFocusIntent does not open app when run")
+    func stopFocusIntentDoesNotOpenApp() {
+        #expect(StopFocusIntent.openAppWhenRun == false)
+    }
+
+    @Test("StartFocusIntent opens app when run")
+    func startFocusIntentOpensApp() {
+        #expect(StartFocusIntent.openAppWhenRun == true)
+    }
+
+    // MARK: - PepinilloShortcuts
+
+    @Test("PepinilloShortcuts provides at least 2 shortcuts")
+    func shortcutsCount() {
+        #expect(PepinilloShortcuts.appShortcuts.count >= 2)
+    }
+}

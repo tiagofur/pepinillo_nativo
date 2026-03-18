@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pepinillo iOS — Project Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --card: #12121a;
+    --card-hover: #1a1a26;
+    --border: #1e1e2e;
+    --text: #e4e4ef;
+    --text-dim: #8888a0;
+    --accent: #6366f1;
+    --accent-glow: rgba(99,102,241,0.15);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.15);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.15);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.15);
+    --blue: #3b82f6;
+    --blue-dim: rgba(59,130,246,0.15);
+    --orange: #f97316;
+    --orange-dim: rgba(249,115,22,0.15);
+    --purple: #a855f7;
+    --purple-dim: rgba(168,85,247,0.15);
+    --cyan: #06b6d4;
+    --cyan-dim: rgba(6,182,212,0.15);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+    padding: 32px;
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(168,85,247,0.08));
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .header h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 6px;
+  }
+
+  .header .subtitle {
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    font-weight: 400;
+  }
+
+  .header .target {
+    margin-top: 16px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    background: var(--accent-glow);
+    border: 1px solid rgba(99,102,241,0.3);
+    border-radius: 100px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+  }
+
+  .stat-card .number {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-card .label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Progress bar */
+  .progress-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .progress-section h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .progress-bar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    height: 28px;
+    overflow: hidden;
+    display: flex;
+    margin-bottom: 12px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: white;
+    transition: width 0.6s ease;
+  }
+
+  .progress-legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .progress-legend span {
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-dim);
+  }
+
+  .progress-legend .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* Phase sections */
+  .phases {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .phase {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .phase:hover { border-color: rgba(255,255,255,0.1); }
+
+  .phase-header {
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .phase-header:hover { background: var(--card-hover); }
+
+  .phase-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .phase-title h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .phase-badge {
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .badge-done { background: var(--green-dim); color: var(--green); }
+  .badge-active { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-next { background: var(--blue-dim); color: var(--blue); }
+  .badge-future { background: var(--purple-dim); color: var(--purple); }
+
+  .phase-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+  }
+
+  .phase-meta .hours { font-weight: 600; color: var(--text); }
+
+  .chevron {
+    transition: transform 0.3s;
+    color: var(--text-dim);
+  }
+
+  .phase.open .chevron { transform: rotate(180deg); }
+
+  .phase-body {
+    display: none;
+    padding: 0 24px 20px;
+  }
+
+  .phase.open .phase-body { display: block; }
+
+  /* Feature list */
+  .feature-list {
+    list-style: none;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .feature-item:last-child { border-bottom: none; }
+
+  .feature-status {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .status-done { background: var(--green-dim); color: var(--green); }
+  .status-wip { background: var(--yellow-dim); color: var(--yellow); }
+  .status-todo { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+  .status-new { background: var(--accent-glow); color: var(--accent); }
+  .status-skip { background: var(--red-dim); color: var(--red); }
+
+  .feature-content { flex: 1; }
+
+  .feature-content .name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 2px;
+  }
+
+  .feature-content .desc {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .feature-tag {
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .tag-new { background: var(--accent-glow); color: var(--accent); }
+  .tag-critical { background: var(--red-dim); color: var(--red); }
+  .tag-hours { background: rgba(255,255,255,0.05); color: var(--text-dim); }
+  .tag-done { background: var(--green-dim); color: var(--green); }
+  .tag-bonus { background: var(--cyan-dim); color: var(--cyan); }
+
+  /* Competitors */
+  .competitors-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+  }
+
+  .competitors-section h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    min-width: 700px;
+  }
+
+  .comp-table th {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--border);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    position: sticky;
+    top: 0;
+    background: var(--card);
+  }
+
+  .comp-table th:first-child { color: var(--text); }
+
+  .comp-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+
+  .comp-table tr:hover td { background: var(--card-hover); }
+
+  .comp-table .feat-name {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .comp-yes { color: var(--green); }
+  .comp-no { color: #444; }
+  .comp-partial { color: var(--yellow); }
+  .comp-planned { color: var(--accent); }
+
+  /* Timeline */
+  .timeline-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+
+  .timeline-section h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  .timeline {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    min-height: 80px;
+  }
+
+  .timeline-block {
+    flex: 1;
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+    position: relative;
+    margin: 0 4px;
+  }
+
+  .timeline-block .month {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+
+  .timeline-block .phase-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+
+  .timeline-block .weeks {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    margin-top: 4px;
+  }
+
+  .tl-a { background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(34,197,94,0.05)); border: 1px solid rgba(34,197,94,0.2); color: var(--green); }
+  .tl-b { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(59,130,246,0.05)); border: 1px solid rgba(59,130,246,0.2); color: var(--blue); }
+  .tl-polish { background: linear-gradient(135deg, rgba(6,182,212,0.15), rgba(6,182,212,0.05)); border: 1px solid rgba(6,182,212,0.2); color: var(--cyan); }
+  .tl-test { background: linear-gradient(135deg, rgba(234,179,8,0.15), rgba(234,179,8,0.05)); border: 1px solid rgba(234,179,8,0.2); color: var(--yellow); }
+  .tl-launch { background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(168,85,247,0.05)); border: 1px solid rgba(168,85,247,0.2); color: var(--purple); }
+  .tl-c { background: linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05)); border: 1px solid rgba(249,115,22,0.2); color: var(--orange); }
+
+  .arrow-right {
+    display: flex;
+    align-items: center;
+    color: var(--text-dim);
+    font-size: 1.2rem;
+    padding: 0 2px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-dim);
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 12px; }
+    .header h1 { font-size: 1.6rem; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .timeline { flex-direction: column; }
+    .arrow-right { transform: rotate(90deg); justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🥒 Pepinillo iOS</h1>
+  <div class="subtitle">Deep Work Companion for Apple — Project Dashboard</div>
+  <div class="target">🎯 Target Launch: Mayo-Junio 2026</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="number" style="color:var(--green)">101</div>
+    <div class="label">Swift Files</div>
+  </div>
+  <div class="stat-card">
+    <div class="number" style="color:var(--accent)">44</div>
+    <div class="label">Tests Passing</div>
+  </div>
+  <div class="stat-card">
+    <div class="number" style="color:var(--yellow)">~80h</div>
+    <div class="label">Hours to Launch</div>
+  </div>
+  <div class="stat-card">
+    <div class="number" style="color:var(--purple)">~6</div>
+    <div class="label">Weeks Left</div>
+  </div>
+  <div class="stat-card">
+    <div class="number" style="color:var(--blue)">7/8</div>
+    <div class="label">Phase B Done</div>
+  </div>
+  <div class="stat-card">
+    <div class="number" style="color:var(--orange)">$35</div>
+    <div class="label">/year Pro</div>
+  </div>
+</div>
+
+<!-- Overall Progress -->
+<div class="progress-section">
+  <h2>📊 Progreso General</h2>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" style="width:40%;background:var(--green)">Core ✅</div>
+    <div class="progress-bar-fill" style="width:10%;background:var(--green)">Fase A ✅</div>
+    <div class="progress-bar-fill" style="width:18%;background:var(--blue)">Fase B ✅</div>
+    <div class="progress-bar-fill" style="width:10%;background:var(--cyan)">Polish ✅</div>
+    <div class="progress-bar-fill" style="width:7%;background:var(--orange)">C parcial</div>
+  </div>
+  <div class="progress-legend">
+    <span><span class="dot" style="background:var(--green)"></span> Core + Fase A (50%)</span>
+    <span><span class="dot" style="background:var(--blue)"></span> Fase B: 7/8 Features (18%)</span>
+    <span><span class="dot" style="background:var(--cyan)"></span> App Store Polish + AI (10%)</span>
+    <span><span class="dot" style="background:var(--orange)"></span> Fase C parcial (7%)</span>
+    <span><span class="dot" style="background:rgba(255,255,255,0.1)"></span> Launch prep (15%)</span>
+  </div>
+</div>
+
+<!-- Timeline -->
+<div class="timeline-section">
+  <h2>📅 Timeline</h2>
+  <div class="timeline">
+    <div class="timeline-block tl-a">
+      <div class="month">Marzo ✅</div>
+      <div class="phase-name">A + B + Polish</div>
+      <div class="weeks">Core completo</div>
+    </div>
+    <div class="arrow-right">→</div>
+    <div class="timeline-block tl-test">
+      <div class="month">Abril</div>
+      <div class="phase-name">TestFlight</div>
+      <div class="weeks">Beta + Device testing</div>
+    </div>
+    <div class="arrow-right">→</div>
+    <div class="timeline-block tl-test">
+      <div class="month">Mayo</div>
+      <div class="phase-name">Polish</div>
+      <div class="weeks">Bug fixes + Screenshots</div>
+    </div>
+    <div class="arrow-right">→</div>
+    <div class="timeline-block tl-launch">
+      <div class="month">Mayo-Jun</div>
+      <div class="phase-name">🚀 Launch</div>
+      <div class="weeks">App Store</div>
+    </div>
+    <div class="arrow-right">→</div>
+    <div class="timeline-block tl-c">
+      <div class="month">Jun-Dic</div>
+      <div class="phase-name">Fase C</div>
+      <div class="weeks">Diferenciadores · Rolling</div>
+    </div>
+  </div>
+</div>
+
+<!-- Phases -->
+<div class="phases">
+
+  <!-- Core (done) -->
+  <div class="phase open" onclick="this.classList.toggle('open')">
+    <div class="phase-header">
+      <div class="phase-title">
+        <span class="phase-badge badge-done">✅ Completo</span>
+        <h3>Core — Código Implementado</h3>
+      </div>
+      <div class="phase-meta">
+        <span class="hours">21/21 features</span>
+        <span class="chevron">▼</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <ul class="feature-list">
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Multi-mode Focus Engine</div><div class="desc">4 estrategias: Pomodoro, Flowtime, Time Block, Stopwatch. Actor-based, 10Hz tick rate.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Task CRUD + Subtasks</div><div class="desc">Crear, editar, borrar, reordenar. Filtros, energía, recurrencia, prioridad.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Analytics + Mode Breakdown</div><div class="desc">SwiftCharts, estadísticas por modo, peak hours, completion rate, focus quality score.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Weekly Review</div><div class="desc">Comparación semana actual vs anterior. Tendencias, modo ganador, día más productivo.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Streaks + 6 Achievements</div><div class="desc">First Session, Week Streak (3/7/14/30/60/100), Century Club, Pomodoro Master, Deep Diver, Early Bird.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Paywall + StoreKit 2</div><div class="desc">Productos, purchase flow, restore, subscription state tracking.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Sign in with Apple</div><div class="desc">Autenticación nativa. Sin Firebase. Sin backend.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Apple Health (Mindful Minutes)</div><div class="desc">HealthClient con HKHealthStore. Toggle en Settings.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Watch Bridge Bidireccional</div><div class="desc">iOS → Watch: session state, stats. Watch → iOS: commands.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Widgets (S/M/L + Lock Screen)</div><div class="desc">Home Screen 3 tamaños + Lock Screen circular y rectangular.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Live Activity + Dynamic Island</div><div class="desc">Countdown/countup por modo. Mode icon, task name, progress.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Control Center Widget</div><div class="desc">ControlWidgetToggle para quick-start.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Mode Intelligence</div><div class="desc">Análisis de 30 días. Sugiere modo óptimo por tipo de tarea. Confianza > 70%.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Focus Mode Integration</div><div class="desc">FocusFilterIntent con entitlement + perform() funcional.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Reminders Import</div><div class="desc">One-way import via EventKit. Error handling.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Soundscapes (Client)</div><div class="desc">SoundscapeClient, picker, volume control. Falta: audio files.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Accessibility</div><div class="desc">VoiceOver labels, Reduce Motion, Dynamic Type, haptics, contraste, reduceTransparency.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Themes</div><div class="desc">AppTheme + ModeColors compartido en todos los targets.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Onboarding</div><div class="desc">Selección de modo default. Permisos (notificaciones, Health).</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Settings por Modo</div><div class="desc">Duraciones, breaks, auto-start, soundscape, daily reminder.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Recurring Tasks</div><div class="desc">Daily, Weekdays, Weekly, Biweekly, Monthly (iCalendar RRULE).</div></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Fase A -->
+  <div class="phase" onclick="this.classList.toggle('open')">
+    <div class="phase-header">
+      <div class="phase-title">
+        <span class="phase-badge badge-done">✅ Completo</span>
+        <h3>Fase A — Xcode Setup & Integración</h3>
+      </div>
+      <div class="phase-meta">
+        <span class="hours">9/9 tareas</span>
+        <span class="chevron">▼</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <ul class="feature-list">
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Crear proyecto Xcode multi-target</div><div class="desc">XcodeGen + project.yml. 5 targets: Main, Widget, Watch, ControlCenter, Tests</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">SPM: swift-composable-architecture</div><div class="desc">TCA 1.17+ y SnapshotTesting resueltos via XcodeGen</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">App Group + CloudKit + Entitlements</div><div class="desc">group.com.pepinillo.app + iCloud container + HealthKit + Siri + Push + Focus Filter</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Build & Fix</div><div class="desc">Main app compila. 44 tests pasan (0 failures). Watch, Widget targets compilan.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">CloudKit sync configurado</div><div class="desc">SwiftData + CloudKit en main app, .none en extensions. Falta: verificar sync real en device.</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">StoreKit 2 sandbox</div><div class="desc">Pepinillo.storekit con 3 productos configurados</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Audio files (8 soundscapes)</div><div class="desc">8 archivos .m4a incluidos en Shared/Resources/Sounds/</div></div></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Localización .xcstrings</div><div class="desc">Localizable.xcstrings + AppShortcuts.xcstrings con EN, ES, PT</div></div></li>
+        <li class="feature-item"><div class="feature-status status-wip">~</div><div class="feature-content"><div class="name">Testing en device</div><div class="desc">Pendiente: probar en iPhone + Apple Watch reales. Requiere provisioning manual en Xcode.</div></div></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Fase B -->
+  <div class="phase" onclick="this.classList.toggle('open')">
+    <div class="phase-header">
+      <div class="phase-title">
+        <span class="phase-badge badge-done">✅ 7/8 Completo</span>
+        <h3>Fase B — Features Competitivas 2026</h3>
+      </div>
+      <div class="phase-meta">
+        <span class="hours">88/120h completadas</span>
+        <span class="chevron">▼</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <ul class="feature-list">
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">B4 · Siri + App Intents completos</div><div class="desc">TaskEntityQuery real, StopFocusIntent, CheckStatsIntent, frases EN/ES/PT</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">B5 · Notificaciones con acciones</div><div class="desc">Categorías por fase: "Empezar Break" / "Siguiente Pomodoro" / "Terminar"</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">B1 · Timer persistente en notificación</div><div class="desc">Countdown en notificación activa. Actualiza cada minuto.</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">B2 · Widgets interactivos</div><div class="desc">Botones Start/Pause/Stop en widgets con AppIntent actions</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">B3 · StandBy mode</div><div class="desc">Widget optimizado para iPhone horizontal: fuente grande, alto contraste</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">B6 · Liquid Glass theme</div><div class="desc">GlassModifier.swift: .glassEffect() iOS 26+, fallback ultraThinMaterial, reduceTransparency</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">B7 · iPad + Stage Manager</div><div class="desc">.defaultSize en iPad, split view constraints, múltiples ventanas</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-skip">✗</div><div class="feature-content"><div class="name">B8 · macOS nativo</div><div class="desc">Diferido para v1.1. Menu bar timer, ventana principal, keyboard-first UX</div></div><span class="feature-tag tag-hours">Diferido · 32h</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- App Store Polish (NEW - not in original PRD) -->
+  <div class="phase" onclick="this.classList.toggle('open')">
+    <div class="phase-header">
+      <div class="phase-title">
+        <span class="phase-badge badge-done">✅ Completo</span>
+        <h3>App Store Polish — NO en PRD Original</h3>
+      </div>
+      <div class="phase-meta">
+        <span class="hours">6/6 features</span>
+        <span class="chevron">▼</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <ul class="feature-list">
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">PrivacyInfo.xcprivacy</div><div class="desc">Privacy manifests para 4 targets (app, widget, watch, control center). BLOQUEANTE para App Store.</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Focus Filter Entitlement + Impl.</div><div class="desc">com.apple.developer.focus-filter + perform() escribe a AppGroupDefaults</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Accessibility Mejorada</div><div class="desc">Timer circle a11y value/label, widget combine, bar chart labels, reduceTransparency</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Siri Phrase Localization (ES+PT)</div><div class="desc">AppShortcuts.xcstrings con 21 frases en 3 idiomas para todos los intents</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">Intent Donation (Siri Suggestions)</div><div class="desc">StartFocusIntent en sessionCompleted, CheckStatsIntent en analytics. Entrena sugerencias proactivas.</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">WritingTools en Journal</div><div class="desc">.writingToolsBehavior(.complete) condicional iOS 18.1+ en SessionJournalView</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Apple Intelligence (NEW - not in original PRD as separate intents) -->
+  <div class="phase" onclick="this.classList.toggle('open')">
+    <div class="phase-header">
+      <div class="phase-title">
+        <span class="phase-badge badge-done">✅ Completo</span>
+        <h3>Apple Intelligence Intents — NO en PRD Original</h3>
+      </div>
+      <div class="phase-meta">
+        <span class="hours">4/4 features</span>
+        <span class="chevron">▼</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <ul class="feature-list">
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">GetWeeklyReportIntent</div><div class="desc">"How was my focus this week?" — reporte con tendencia, completion rate, best day, modo dominante, streak</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">GetInsightsIntent</div><div class="desc">"Give me focus insights" — top 3 insights personalizados con emoji, reutiliza InsightsService</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">GetModeSuggestionIntent</div><div class="desc">"What mode should I use?" — sugerencia por tarea o time-of-day, reutiliza ModeIntelligenceService</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">WeeklyReportService</div><div class="desc">Servicio puro extraído de WeeklyReviewFeature — compartido entre TCA reducer y Siri intent</div></div><span class="feature-tag tag-bonus">Bonus</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Fase C -->
+  <div class="phase" onclick="this.classList.toggle('open')">
+    <div class="phase-header">
+      <div class="phase-title">
+        <span class="phase-badge badge-active">🟡 4/8 Parcial</span>
+        <h3>Fase C — Diferenciadores</h3>
+      </div>
+      <div class="phase-meta">
+        <span class="hours">44/104h completadas</span>
+        <span class="chevron">▼</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <ul class="feature-list">
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">C1 · Session Journaling</div><div class="desc">Post-session sheet con nota (500 chars) + emoji satisfacción (1-5). Persistido en SwiftData.</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">C3 · Apple Calendar Integration</div><div class="desc">EventKit: crear eventos de foco en calendario al iniciar Time Block</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">C5 · Spotlight Integration</div><div class="desc">CSSearchableIndex para tareas. Deep link desde búsqueda.</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-done">✓</div><div class="feature-content"><div class="name">C6 · Apple Intelligence</div><div class="desc">Implementado como 3 App Intents (no Writing Tools API). Siri lee reportes, insights, y sugiere modos.</div></div><span class="feature-tag tag-done">Completo</span></li>
+        <li class="feature-item"><div class="feature-status status-wip">~</div><div class="feature-content"><div class="name">C4 · Shortcuts Automations</div><div class="desc">Intent donation hecho. Falta: exponer todos los intents como Shortcuts actions completos.</div></div><span class="feature-tag tag-hours">Parcial · 4h rest.</span></li>
+        <li class="feature-item"><div class="feature-status status-todo">○</div><div class="feature-content"><div class="name">C2 · Handoff entre Devices</div><div class="desc">NSUserActivity. Empezar en iPhone, continuar en Mac.</div></div><span class="feature-tag tag-hours">Post-launch · 16h</span></li>
+        <li class="feature-item"><div class="feature-status status-todo">○</div><div class="feature-content"><div class="name">C7 · ADHD-Friendly Mode</div><div class="desc">Breaks guiados, gentle mode, visual cues prominentes. Inspirado en Focus Bear.</div></div><span class="feature-tag tag-hours">Post-launch · 12h</span></li>
+        <li class="feature-item"><div class="feature-status status-todo">○</div><div class="feature-content"><div class="name">C8 · Social Focus (SharePlay)</div><div class="desc">Sesiones compartidas. Ver timer del compañero. Social streaks.</div></div><span class="feature-tag tag-hours">Futuro · 24h</span></li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- Competitors -->
+<div class="competitors-section">
+  <h2>⚔️ Competidores vs Pepinillo</h2>
+  <table class="comp-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>🥒 Pepinillo</th>
+        <th>Focus App</th>
+        <th>Structured</th>
+        <th>Focused Work 5</th>
+        <th>Session</th>
+        <th>TickTick</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="feat-name">Pomodoro</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-yes">✅</td><td class="comp-partial">⚠️</td><td class="comp-yes">✅</td></tr>
+      <tr><td class="feat-name">Flowtime</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Time Block</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Stopwatch</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Task Management</td><td class="comp-yes">✅ Full</td><td class="comp-partial">⚠️</td><td class="comp-partial">⚠️</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-yes">✅</td></tr>
+      <tr><td class="feat-name">Subtasks</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-yes">✅</td></tr>
+      <tr><td class="feat-name">Mode Intelligence</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Weekly Review</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-partial">⚠️</td></tr>
+      <tr><td class="feat-name">Live Activities</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-partial">⚠️</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Apple Watch</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-partial">⚠️</td><td class="comp-no">✗</td><td class="comp-partial">⚠️</td></tr>
+      <tr><td class="feat-name">Apple Health</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Liquid Glass</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Interactive Widgets</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-partial">⚠️</td><td class="comp-no">✗</td><td class="comp-partial">⚠️</td></tr>
+      <tr><td class="feat-name">Session Journaling</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-yes">✅</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Siri Intents (localized)</td><td class="comp-yes">✅ 7 intents</td><td class="comp-partial">⚠️</td><td class="comp-partial">⚠️</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Apple Intelligence</td><td class="comp-yes">✅ 3 intents</td><td class="comp-partial">⚠️</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">Privacy Manifest</td><td class="comp-yes">✅</td><td class="comp-partial">⚠️</td><td class="comp-partial">⚠️</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-partial">⚠️</td></tr>
+      <tr><td class="feat-name">StandBy Mode</td><td class="comp-yes">✅</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">ADHD Mode</td><td class="comp-planned">🟡 C7</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td></tr>
+      <tr><td class="feat-name">LATAM Pricing</td><td class="comp-yes">✅</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">✗</td><td class="comp-no">N/A</td><td class="comp-no">✗</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  Pepinillo iOS · Dashboard actualizado Marzo 16, 2026 · Tiago David + Claude
+</div>
+
+<script>
+  // Close all phases except Core on load
+  document.querySelectorAll('.phase').forEach((phase, i) => {
+    if (i > 0) phase.classList.remove('open');
+  });
+</script>
+
+</body>
+</html>

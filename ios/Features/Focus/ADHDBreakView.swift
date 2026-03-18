@@ -1,0 +1,141 @@
+// ADHDBreakView.swift
+// Pepinillo — Deep Work Companion for Apple
+//
+// Guided break activities for ADHD-friendly mode.
+// Shows structured, sensory-friendly break suggestions to help
+// neurodivergent users transition back to focus after a break.
+
+import SwiftUI
+
+struct ADHDBreakView: View {
+    let breakDurationMinutes: Int
+    let onDismiss: () -> Void
+
+    @State private var selectedActivity: BreakActivity?
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Text("Break Time")
+                    .font(.title.bold())
+
+                Text("Pick a guided activity for your \(breakDurationMinutes)-minute break")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 16) {
+                    ForEach(BreakActivity.allCases) { activity in
+                        Button {
+                            selectedActivity = activity
+                        } label: {
+                            VStack(spacing: 8) {
+                                Text(activity.emoji)
+                                    .font(.system(size: 36))
+                                Text(activity.title)
+                                    .font(.subheadline.bold())
+                                Text(activity.subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(selectedActivity == activity
+                                          ? Color.accentColor.opacity(0.15)
+                                          : Color(.secondarySystemBackground))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .strokeBorder(selectedActivity == activity
+                                                  ? Color.accentColor
+                                                  : .clear, lineWidth: 2)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal)
+
+                if let activity = selectedActivity {
+                    Text(activity.instructions)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                        .transition(.opacity)
+                }
+
+                Spacer()
+
+                Button {
+                    onDismiss()
+                } label: {
+                    Text("Back to Focus")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 24)
+            }
+            .padding(.top, 16)
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+// MARK: - Break Activities
+
+enum BreakActivity: String, CaseIterable, Identifiable {
+    case breathe
+    case stretch
+    case hydrate
+    case movement
+
+    var id: String { rawValue }
+
+    var emoji: String {
+        switch self {
+        case .breathe:  return "🫁"
+        case .stretch:  return "🧘"
+        case .hydrate:  return "💧"
+        case .movement: return "🚶"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .breathe:  return String(localized: "Breathe")
+        case .stretch:  return String(localized: "Stretch")
+        case .hydrate:  return String(localized: "Hydrate")
+        case .movement: return String(localized: "Move")
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .breathe:  return String(localized: "Box breathing")
+        case .stretch:  return String(localized: "Neck & shoulders")
+        case .hydrate:  return String(localized: "Drink water")
+        case .movement: return String(localized: "Walk around")
+        }
+    }
+
+    var instructions: String {
+        switch self {
+        case .breathe:
+            return String(localized: "Breathe in for 4 counts, hold for 4, breathe out for 4, hold for 4. Repeat until your break ends.")
+        case .stretch:
+            return String(localized: "Roll your shoulders back 5 times. Tilt your head side to side. Stretch your arms overhead.")
+        case .hydrate:
+            return String(localized: "Get up and drink a full glass of water. Staying hydrated helps maintain focus.")
+        case .movement:
+            return String(localized: "Stand up and walk around your space. Look at something far away to rest your eyes.")
+        }
+    }
+}

@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pepinillo — Deep Work Companion for Apple</title>
+<meta name="description" content="Master your focus with 4 science-backed techniques. Pomodoro, Flowtime, Time Block & Stopwatch — all in one beautiful app designed for the Apple ecosystem.">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   RESET & BASE
+   ══════════════════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #ffffff;
+  --bg-card: #f5f5f7;
+  --bg-card-hover: #ececee;
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-tertiary: #86868b;
+  --border: rgba(0,0,0,0.08);
+  --pomodoro: #E8453C;
+  --flowtime: #34A89A;
+  --timeblock: #9333EA;
+  --stopwatch: #059669;
+  --streak: #D97706;
+  --accent: #0071E3;
+  --accent-hover: #0077ED;
+  --glass: rgba(0,0,0,0.03);
+  --glass-border: rgba(0,0,0,0.08);
+  --radius: 20px;
+  --radius-sm: 12px;
+  --max-w: 1200px;
+  --section-pad: clamp(80px, 12vw, 160px);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+
+img { max-width: 100%; }
+
+.container { max-width: var(--max-w); margin: 0 auto; padding: 0 24px; }
+
+/* ══════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+   ══════════════════════════════════════════════════════════════ */
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: clamp(32px, 5vw, 56px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin-bottom: 16px;
+}
+
+.section-subtitle {
+  font-size: clamp(16px, 2vw, 20px);
+  color: var(--text-secondary);
+  max-width: 640px;
+  line-height: 1.6;
+}
+
+section { padding: var(--section-pad) 0; }
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLL ANIMATIONS
+   ══════════════════════════════════════════════════════════════ */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ══════════════════════════════════════════════════════════════
+   NAV
+   ══════════════════════════════════════════════════════════════ */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(255,255,255,0.72);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.3s;
+}
+
+.nav-inner {
+  max-width: var(--max-w);
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 28px;
+  list-style: none;
+}
+
+.nav-links a {
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--text); }
+
+.nav-cta {
+  background: var(--accent);
+  color: #fff !important;
+  padding: 6px 16px;
+  border-radius: 980px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+.nav-cta:hover { background: var(--accent-hover); }
+
+.nav-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 24px;
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HERO
+   ══════════════════════════════════════════════════════════════ */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding-top: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+#hero::before {
+  content: '';
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168,85,247,0.08) 0%, transparent 70%);
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.hero-content { position: relative; z-index: 1; }
+
+.hero-badge {
+  display: inline-block;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 980px;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.hero-title {
+  font-size: clamp(48px, 8vw, 96px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #1d1d1f 0%, #6e6e73 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-tagline {
+  font-size: clamp(20px, 3vw, 28px);
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-bottom: 48px;
+}
+
+/* Timer mockup */
+.hero-timer {
+  width: 240px;
+  height: 240px;
+  margin: 0 auto 48px;
+  position: relative;
+}
+
+.hero-timer svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.timer-bg {
+  fill: none;
+  stroke: rgba(0,0,0,0.06);
+  stroke-width: 6;
+}
+
+.timer-progress {
+  fill: none;
+  stroke: url(#timer-gradient);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 628;
+  stroke-dashoffset: 157;
+  animation: timer-pulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes timer-pulse {
+  0% { stroke-dashoffset: 157; }
+  100% { stroke-dashoffset: 220; }
+}
+
+.timer-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.timer-time {
+  font-size: 48px;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.timer-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 980px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-primary:hover { background: var(--accent-hover); transform: scale(1.02); }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--accent);
+  padding: 14px 28px;
+  border-radius: 980px;
+  font-size: 16px;
+  font-weight: 500;
+  border: 1px solid var(--accent);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { background: rgba(0,113,227,0.1); }
+
+.hero-platforms {
+  margin-top: 32px;
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STATS BAR
+   ══════════════════════════════════════════════════════════════ */
+.stats-bar {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 48px 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 32px;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FOCUS MODES
+   ══════════════════════════════════════════════════════════════ */
+.modes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.mode-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.mode-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.mode-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,255,255,0.15);
+  background: var(--bg-card-hover);
+}
+
+.mode-card[data-mode="pomodoro"]::before { background: var(--pomodoro); }
+.mode-card[data-mode="flowtime"]::before { background: var(--flowtime); }
+.mode-card[data-mode="timeblock"]::before { background: var(--timeblock); }
+.mode-card[data-mode="stopwatch"]::before { background: var(--stopwatch); }
+
+.mode-emoji {
+  font-size: 40px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.mode-name {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 980px;
+  background: var(--timeblock);
+  color: #fff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mode-badge.free {
+  background: var(--stopwatch);
+}
+
+.mode-desc {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.mode-detail {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   HOW IT WORKS
+   ══════════════════════════════════════════════════════════════ */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-top: 48px;
+}
+
+.step {
+  text-align: center;
+  padding: 32px;
+}
+
+.step-number {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 auto 20px;
+}
+
+.step-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.step-desc {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ECOSYSTEM
+   ══════════════════════════════════════════════════════════════ */
+.eco-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.eco-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 28px;
+  transition: all 0.3s;
+}
+.eco-card:hover {
+  border-color: rgba(255,255,255,0.15);
+  transform: translateY(-2px);
+}
+
+.eco-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+  display: block;
+}
+
+.eco-title {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.eco-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SOUNDSCAPES
+   ══════════════════════════════════════════════════════════════ */
+.sound-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.sound-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 24px;
+  text-align: center;
+  transition: all 0.3s;
+  position: relative;
+}
+.sound-card:hover {
+  border-color: rgba(255,255,255,0.15);
+  transform: scale(1.03);
+}
+
+.sound-card.pro::after {
+  content: 'PRO';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--timeblock);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.sound-emoji {
+  font-size: 36px;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.sound-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ANALYTICS
+   ══════════════════════════════════════════════════════════════ */
+.analytics-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.analytics-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+}
+
+.analytics-card-title {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Mini chart bars */
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 120px;
+  padding-top: 8px;
+}
+
+.chart-bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  min-height: 8px;
+  transition: height 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chart-bar.animated { animation: bar-grow 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes bar-grow {
+  from { height: 0; }
+}
+
+.chart-labels {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.chart-labels span {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* Achievements */
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.achievement {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--glass);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.achievement-emoji { font-size: 28px; }
+.achievement-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+.achievement-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Streak */
+.streak-display {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.streak-fire {
+  font-size: 48px;
+  animation: fire-pulse 2s ease-in-out infinite;
+}
+
+@keyframes fire-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.streak-count {
+  font-size: 56px;
+  font-weight: 700;
+  color: var(--streak);
+}
+
+.streak-label {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TASKS
+   ══════════════════════════════════════════════════════════════ */
+.task-features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.task-feature {
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.task-feature-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.task-feature-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.task-feature-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SIRI
+   ══════════════════════════════════════════════════════════════ */
+.siri-commands {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 48px;
+}
+
+.siri-cmd {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.siri-cmd:hover {
+  border-color: rgba(255,255,255,0.15);
+  color: var(--text);
+}
+
+.siri-cmd::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.siri-cmd.cat-start::before { background: var(--stopwatch); }
+.siri-cmd.cat-control::before { background: var(--pomodoro); }
+.siri-cmd.cat-stats::before { background: var(--accent); }
+.siri-cmd.cat-ai::before { background: var(--timeblock); }
+
+/* ══════════════════════════════════════════════════════════════
+   JOURNAL
+   ══════════════════════════════════════════════════════════════ */
+.journal-mockup {
+  max-width: 480px;
+  margin: 48px auto 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 32px;
+}
+
+.journal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.journal-mode-info {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.journal-rating {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.journal-emoji {
+  font-size: 32px;
+  opacity: 0.4;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.journal-emoji.active {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.journal-textarea {
+  width: 100%;
+  background: rgba(0,0,0,0.02);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+  min-height: 80px;
+  outline: none;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COMPARISON TABLE
+   ══════════════════════════════════════════════════════════════ */
+.comparison {
+  margin-top: 48px;
+  overflow-x: auto;
+}
+
+.comparison table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.comparison th, .comparison td {
+  padding: 16px 24px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+}
+
+.comparison th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.comparison th:nth-child(2),
+.comparison th:nth-child(3),
+.comparison td:nth-child(2),
+.comparison td:nth-child(3) {
+  text-align: center;
+  width: 140px;
+}
+
+.comparison .check { color: var(--stopwatch); font-size: 18px; }
+.comparison .cross { color: var(--text-tertiary); font-size: 18px; }
+
+.comparison th.pro-header {
+  color: var(--timeblock);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   PRICING
+   ══════════════════════════════════════════════════════════════ */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.pricing-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 36px;
+  text-align: center;
+  transition: all 0.3s;
+  position: relative;
+}
+.pricing-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255,255,255,0.15);
+}
+
+.pricing-card.featured {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, rgba(0,113,227,0.06) 0%, var(--bg-card) 100%);
+}
+
+.pricing-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  padding: 4px 16px;
+  border-radius: 980px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.pricing-name {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  margin-top: 8px;
+}
+
+.pricing-price {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.pricing-price sup {
+  font-size: 20px;
+  vertical-align: super;
+  font-weight: 500;
+}
+
+.pricing-period {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.pricing-savings {
+  font-size: 13px;
+  color: var(--stopwatch);
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.pricing-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  border-radius: 980px;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pricing-btn.primary {
+  background: var(--accent);
+  color: #fff;
+}
+.pricing-btn.primary:hover { background: var(--accent-hover); }
+
+.pricing-btn.secondary {
+  background: var(--glass);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.pricing-btn.secondary:hover { background: rgba(255,255,255,0.08); }
+
+.pricing-features {
+  list-style: none;
+  margin-top: 24px;
+  text-align: left;
+}
+
+.pricing-features li {
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pricing-features li::before {
+  content: '✓';
+  color: var(--stopwatch);
+  font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   FOOTER
+   ══════════════════════════════════════════════════════════════ */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 48px 0;
+  color: var(--text-tertiary);
+  font-size: 13px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 48px;
+}
+
+.footer-brand {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.footer-desc {
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.footer-heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 16px;
+}
+
+.footer-links {
+  list-style: none;
+}
+
+.footer-links li { margin-bottom: 8px; }
+.footer-links a {
+  color: var(--text-tertiary);
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--text); }
+
+.footer-bottom {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-langs {
+  display: flex;
+  gap: 16px;
+}
+.footer-langs a { color: var(--text-tertiary); }
+.footer-langs a.active { color: var(--text); }
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .eco-grid { grid-template-columns: repeat(2, 1fr); }
+  .siri-commands { grid-template-columns: repeat(2, 1fr); }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .nav-hamburger { display: block; }
+
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+  .modes-grid { grid-template-columns: 1fr; }
+  .eco-grid { grid-template-columns: 1fr; }
+  .sound-grid { grid-template-columns: repeat(2, 1fr); }
+  .analytics-showcase { grid-template-columns: 1fr; }
+  .achievements-grid { grid-template-columns: repeat(2, 1fr); }
+  .task-features { grid-template-columns: 1fr; }
+  .siri-commands { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; max-width: 400px; margin-left: auto; margin-right: auto; }
+  .steps { grid-template-columns: 1fr; }
+  .comparison th, .comparison td { padding: 12px 16px; font-size: 14px; }
+  .footer-grid { grid-template-columns: 1fr; gap: 32px; }
+  .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     NAV
+     ═══════════════════════════════════════════════════════════ -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">🥒 Pepinillo</div>
+    <ul class="nav-links">
+      <li><a href="#modes">Focus Modes</a></li>
+      <li><a href="#ecosystem">Ecosystem</a></li>
+      <li><a href="#analytics">Analytics</a></li>
+      <li><a href="#siri">Siri</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#pricing" class="nav-cta">Get Pro</a></li>
+    </ul>
+    <button class="nav-hamburger" onclick="document.querySelector('.nav-links').classList.toggle('show')" aria-label="Menu">☰</button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════════════════════ -->
+<section id="hero">
+  <div class="hero-content">
+    <span class="hero-badge">Available on iPhone, iPad, Mac & Apple Watch</span>
+    <h1 class="hero-title">Pepinillo</h1>
+    <p class="hero-tagline">Your Deep Work Companion</p>
+
+    <div class="hero-timer">
+      <svg viewBox="0 0 200 200">
+        <defs>
+          <linearGradient id="timer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#FF6B6B" />
+            <stop offset="50%" style="stop-color:#A855F7" />
+            <stop offset="100%" style="stop-color:#4ECDC4" />
+          </linearGradient>
+        </defs>
+        <circle class="timer-bg" cx="100" cy="100" r="90" />
+        <circle class="timer-progress" cx="100" cy="100" r="90" />
+      </svg>
+      <div class="timer-display">
+        <div class="timer-time" id="hero-timer-display">25:00</div>
+        <div class="timer-label">Pomodoro</div>
+      </div>
+    </div>
+
+    <div class="hero-buttons">
+      <a href="#pricing" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><path d="M13.5 4.5c0-2.49-2.01-4.5-4.5-4.5S4.5 2.01 4.5 4.5c0 1.77 1.02 3.29 2.5 4.03V18l2-2 2 2V8.53c1.48-.74 2.5-2.26 2.5-4.03zM9 6.75c-1.24 0-2.25-1.01-2.25-2.25S7.76 2.25 9 2.25s2.25 1.01 2.25 2.25S10.24 6.75 9 6.75z"/></svg>
+        Download on App Store
+      </a>
+      <a href="#modes" class="btn-secondary">Learn More</a>
+    </div>
+
+    <p class="hero-platforms">iOS 17+ &bull; watchOS 10+ &bull; macOS 14+ &bull; iPadOS 17+</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     STATS BAR
+     ═══════════════════════════════════════════════════════════ -->
+<div class="stats-bar">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="reveal">
+        <div class="stat-number" data-count="4">0</div>
+        <div class="stat-label">Focus Techniques</div>
+      </div>
+      <div class="reveal reveal-delay-1">
+        <div class="stat-number" data-count="9">0</div>
+        <div class="stat-label">Siri Commands</div>
+      </div>
+      <div class="reveal reveal-delay-2">
+        <div class="stat-number" data-count="8">0</div>
+        <div class="stat-label">Soundscapes</div>
+      </div>
+      <div class="reveal reveal-delay-3">
+        <div class="stat-number" data-count="3">0</div>
+        <div class="stat-label">Languages</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HOW IT WORKS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="how">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <p class="section-label">Getting Started</p>
+      <h2 class="section-title">Focus in 3 Steps</h2>
+      <p class="section-subtitle" style="margin:0 auto">No setup needed. Pick a technique, start the timer, and let Pepinillo handle the rest.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal reveal-delay-1">
+        <div class="step-number">1</div>
+        <h3 class="step-title">Choose Your Mode</h3>
+        <p class="step-desc">Pick from Pomodoro, Flowtime, Time Block, or Stopwatch. Pepinillo's intelligence can suggest the best one for your task.</p>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-number">2</div>
+        <h3 class="step-title">Start Focusing</h3>
+        <p class="step-desc">Tap start or say "Hey Siri, start focusing." Choose a soundscape, link a task, and let the timer guide you.</p>
+      </div>
+      <div class="step reveal reveal-delay-3">
+        <div class="step-number">3</div>
+        <h3 class="step-title">Reflect & Grow</h3>
+        <p class="step-desc">After each session, rate your satisfaction and journal your thoughts. Watch your streak and analytics grow over time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOCUS MODES
+     ═══════════════════════════════════════════════════════════ -->
+<section id="modes">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Focus Techniques</p>
+      <h2 class="section-title">4 Modes. One App.</h2>
+      <p class="section-subtitle">Every brain works differently. Choose the technique that matches your style, and switch between them as your energy changes throughout the day.</p>
+    </div>
+
+    <div class="modes-grid">
+      <div class="mode-card reveal reveal-delay-1" data-mode="pomodoro">
+        <span class="mode-emoji">🍅</span>
+        <h3 class="mode-name">Pomodoro <span class="mode-badge free">Free</span></h3>
+        <p class="mode-desc">The classic. 25 minutes of focused work followed by a 5-minute break. After 4 cycles, take a longer 15-minute break. Perfect for tasks that need structured momentum.</p>
+        <p class="mode-detail">25m work &rarr; 5m break &rarr; repeat 4x &rarr; 15m long break</p>
+      </div>
+
+      <div class="mode-card reveal reveal-delay-2" data-mode="flowtime">
+        <span class="mode-emoji">🌊</span>
+        <h3 class="mode-name">Flowtime <span class="mode-badge">Pro</span></h3>
+        <p class="mode-desc">Let your focus flow naturally. Work as long as you want, and Pepinillo suggests smart break durations based on how long you focused. No rigid timers interrupting your flow state.</p>
+        <p class="mode-detail">Smart breaks: &lt;25m &rarr; 5m, &lt;50m &rarr; 8m, &lt;90m &rarr; 10m, 90m+ &rarr; 15m</p>
+      </div>
+
+      <div class="mode-card reveal reveal-delay-3" data-mode="timeblock">
+        <span class="mode-emoji">📦</span>
+        <h3 class="mode-name">Time Block <span class="mode-badge">Pro</span></h3>
+        <p class="mode-desc">Set a fixed duration (up to 8 hours) and commit. No breaks, no interruptions — just deep, uninterrupted focus. Optional midpoint check-in to ensure you're on track.</p>
+        <p class="mode-detail">Custom duration (1min to 8h) &bull; Optional midpoint alert</p>
+      </div>
+
+      <div class="mode-card reveal reveal-delay-4" data-mode="stopwatch">
+        <span class="mode-emoji">⏱️</span>
+        <h3 class="mode-name">Stopwatch <span class="mode-badge free">Free</span></h3>
+        <p class="mode-desc">Simple count-up timer with no goals or constraints. Perfect for tracking time on casual work, meetings, or any activity where you just want to know how long it took.</p>
+        <p class="mode-detail">Count up &bull; No breaks &bull; Stop whenever you want</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ECOSYSTEM
+     ═══════════════════════════════════════════════════════════ -->
+<section id="ecosystem">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Apple Ecosystem</p>
+      <h2 class="section-title">Focus, Everywhere.</h2>
+      <p class="section-subtitle">Pepinillo integrates deeply with every Apple platform and feature. Your focus flows seamlessly between your devices.</p>
+    </div>
+
+    <div class="eco-grid">
+      <div class="eco-card reveal reveal-delay-1">
+        <span class="eco-icon">⌚</span>
+        <h3 class="eco-title">Apple Watch</h3>
+        <p class="eco-desc">Start, pause, and stop sessions from your wrist. Real-time sync with your iPhone. Haptic feedback for phase transitions. Complications for your watch face.</p>
+      </div>
+      <div class="eco-card reveal reveal-delay-2">
+        <span class="eco-icon">📱</span>
+        <h3 class="eco-title">Widgets</h3>
+        <p class="eco-desc">Small, medium, and large home screen widgets. Lock screen widgets for glanceable stats. Interactive buttons to control sessions without opening the app.</p>
+      </div>
+      <div class="eco-card reveal reveal-delay-3">
+        <span class="eco-icon">🏝️</span>
+        <h3 class="eco-title">Dynamic Island</h3>
+        <p class="eco-desc">Your focus session lives in the Dynamic Island. See your timer, current phase, and pomodoro count at a glance — even while using other apps.</p>
+      </div>
+      <div class="eco-card reveal reveal-delay-1">
+        <span class="eco-icon">🎙️</span>
+        <h3 class="eco-title">Siri & Shortcuts</h3>
+        <p class="eco-desc">9 voice commands, fully localized in English, Spanish, and Portuguese. Build custom automations with the Shortcuts app. Siri learns your habits and suggests focus times.</p>
+      </div>
+      <div class="eco-card reveal reveal-delay-2">
+        <span class="eco-icon">📺</span>
+        <h3 class="eco-title">StandBy Mode</h3>
+        <p class="eco-desc">When your iPhone is charging on its side, Pepinillo's widget transforms into a large, high-contrast timer display. Perfect for your desk setup.</p>
+      </div>
+      <div class="eco-card reveal reveal-delay-3">
+        <span class="eco-icon">🔀</span>
+        <h3 class="eco-title">Handoff</h3>
+        <p class="eco-desc">Start a session on your iPhone, pick it up on your iPad. Your focus state transfers seamlessly between devices using Handoff continuity.</p>
+      </div>
+      <div class="eco-card reveal reveal-delay-1">
+        <span class="eco-icon">❤️</span>
+        <h3 class="eco-title">Apple Health</h3>
+        <p class="eco-desc">Focus sessions are automatically logged as Mindful Minutes in Apple Health. Track your wellbeing alongside your productivity.</p>
+      </div>
+      <div class="eco-card reveal reveal-delay-2">
+        <span class="eco-icon">📅</span>
+        <h3 class="eco-title">Calendar</h3>
+        <p class="eco-desc">Create focus events in your Apple Calendar. Block time for deep work and see your focus schedule alongside other commitments.</p>
+      </div>
+      <div class="eco-card reveal reveal-delay-3">
+        <span class="eco-icon">🔍</span>
+        <h3 class="eco-title">Spotlight</h3>
+        <p class="eco-desc">Your tasks are indexed in Spotlight. Search for a task from anywhere on your device and jump straight into a focus session.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SOUNDSCAPES
+     ═══════════════════════════════════════════════════════════ -->
+<section id="soundscapes">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <p class="section-label">Ambient Audio</p>
+      <h2 class="section-title">Immersive Soundscapes</h2>
+      <p class="section-subtitle" style="margin:0 auto">Block out distractions with 8 carefully crafted ambient sounds. Smooth fade-in/out, adjustable volume, and seamless looping.</p>
+    </div>
+
+    <div class="sound-grid">
+      <div class="sound-card reveal">
+        <span class="sound-emoji">🌧️</span>
+        <p class="sound-name">Rain</p>
+      </div>
+      <div class="sound-card reveal reveal-delay-1">
+        <span class="sound-emoji">🌲</span>
+        <p class="sound-name">Forest</p>
+      </div>
+      <div class="sound-card reveal reveal-delay-2">
+        <span class="sound-emoji">☕</span>
+        <p class="sound-name">Caf&eacute;</p>
+      </div>
+      <div class="sound-card reveal reveal-delay-3">
+        <span class="sound-emoji">📻</span>
+        <p class="sound-name">White Noise</p>
+      </div>
+      <div class="sound-card pro reveal">
+        <span class="sound-emoji">🌊</span>
+        <p class="sound-name">Ocean</p>
+      </div>
+      <div class="sound-card pro reveal reveal-delay-1">
+        <span class="sound-emoji">🔥</span>
+        <p class="sound-name">Fireplace</p>
+      </div>
+      <div class="sound-card pro reveal reveal-delay-2">
+        <span class="sound-emoji">🎧</span>
+        <p class="sound-name">Binaural Beats</p>
+      </div>
+      <div class="sound-card pro reveal reveal-delay-3">
+        <span class="sound-emoji">🎵</span>
+        <p class="sound-name">Lo-fi</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     ANALYTICS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="analytics">
+  <div class="container">
+    <div class="reveal">
+      <p class="section-label">Insights</p>
+      <h2 class="section-title">Know Your Focus.</h2>
+      <p class="section-subtitle">Beautiful charts, detailed breakdowns, and personalized insights help you understand and improve your focus habits over time.</p>
+    </div>
+
+    <div class="analytics-showcase">
+      <div class="analytics-card reveal">
+        <p class="analytics-card-title">Weekly Focus Time</p>
+        <div class="chart-bars" id="chart-weekly">
+          <div class="chart-bar" style="height:45%;background:var(--pomodoro)"></div>
+          <div class="chart-bar" style="height:70%;background:var(--pomodoro)"></div>
+          <div class="chart-bar" style="height:55%;background:var(--flowtime)"></div>
+          <div class="chart-bar" style="height:85%;background:var(--pomodoro)"></div>
+          <div class="chart-bar" style="height:60%;background:var(--timeblock)"></div>
+          <div class="chart-bar" style="height:90%;background:var(--flowtime)"></div>
+          <div class="chart-bar" style="height:40%;background:var(--pomodoro)"></div>
+        </div>
+        <div class="chart-labels">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+
+        <div class="streak-display" style="margin-top:32px">
+          <span class="streak-fire">🔥</span>
+          <div>
+            <div class="streak-count" data-count="14">0</div>
+            <div class="streak-label">Day Streak</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analytics-card reveal reveal-delay-2">
+        <p class="analytics-card-title">Achievements</p>
+        <div class="achievements-grid">
+          <div class="achievement">
+            <span class="achievement-emoji">🎯</span>
+            <div>
+              <p class="achievement-name">First Focus</p>
+              <p class="achievement-desc">Complete first session</p>
+            </div>
+          </div>
+          <div class="achievement">
+            <span class="achievement-emoji">🔥</span>
+            <div>
+              <p class="achievement-name">Week Warrior</p>
+              <p class="achievement-desc">7-day streak</p>
+            </div>
+          </div>
+          <div class="achievement">
+            <span class="achievement-emoji">🌶️</span>
+            <div>
+              <p class="achievement-name">Pomodoro Master</p>
+              <p class="achievement-desc">100 pomodoros</p>
+            </div>
+          </div>
+          <div class="achievement">
+            <span class="achievement-emoji">🤿</span>
+            <div>
+              <p class="achievement-name">Deep Diver</p>
+              <p class="achievement-desc">10 deep work sessions</p>
+            </div>
+          </div>
+          <div class="achievement">
+            <span class="achievement-emoji">💯</span>
+            <div>
+              <p class="achievement-name">Century Club</p>
+              <p class="achievement-desc">100 total sessions</p>
+            </div>
+          </div>
+          <div class="achievement">
+            <span class="achievement-emoji">🐦</span>
+            <div>
+              <p class="achievement-name">Early Bird</p>
+              <p class="achievement-desc">10 sessions before 8am</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;padding-top:24px;border-top:1px solid var(--border)">
+          <p class="analytics-card-title">What You Also Get</p>
+          <ul style="list-style:none;font-size:14px;color:var(--text-secondary);line-height:2">
+            <li>📊 Focus Quality Score (0-100)</li>
+            <li>🕐 Peak Hours Analysis</li>
+            <li>📅 Week-over-Week Comparison</li>
+            <li>🏆 Completion Rate Tracking</li>
+            <li>🧠 Mode Intelligence Suggestions</li>
+            <li>📋 Weekly Review Reports</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TASKS
+     ═══════════════════════════════════════════════════════════ -->
+<section id="tasks">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <p class="section-label">Task Management</p>
+      <h2 class="section-title">Focus Meets Productivity</h2>
+      <p class="section-subtitle" style="margin:0 auto">Link tasks to focus sessions and watch your progress build. Pepinillo combines task management with focus tracking for complete awareness.</p>
+    </div>
+
+    <div class="task-features">
+      <div class="task-feature reveal">
+        <span class="task-feature-icon">⚡</span>
+        <div>
+          <p class="task-feature-title">Energy Levels</p>
+          <p class="task-feature-desc">Tag tasks as Deep Work, Shallow Work, or Admin. Batch similar-energy tasks together for optimal focus.</p>
+        </div>
+      </div>
+      <div class="task-feature reveal reveal-delay-1">
+        <span class="task-feature-icon">📋</span>
+        <div>
+          <p class="task-feature-title">Subtasks</p>
+          <p class="task-feature-desc">Break down large tasks into manageable subtasks with progress tracking. See completion percentage at a glance.</p>
+        </div>
+      </div>
+      <div class="task-feature reveal reveal-delay-2">
+        <span class="task-feature-icon">🔄</span>
+        <div>
+          <p class="task-feature-title">Recurring Tasks</p>
+          <p class="task-feature-desc">Daily, weekdays, weekly, biweekly, or monthly recurrence. Never forget your regular deep work sessions.</p>
+        </div>
+      </div>
+      <div class="task-feature reveal reveal-delay-3">
+        <span class="task-feature-icon">🧠</span>
+        <div>
+          <p class="task-feature-title">Mode Intelligence</p>
+          <p class="task-feature-desc">Pepinillo analyzes your history and suggests the best focus mode for each task. "You complete 85% of Flowtime sessions for this task."</p>
+        </div>
+      </div>
+      <div class="task-feature reveal">
+        <span class="task-feature-icon">🔗</span>
+        <div>
+          <p class="task-feature-title">Focus Linking</p>
+          <p class="task-feature-desc">Link any task to a focus session. Track Pomodoro completion per task. See exactly how much time you invest in each project.</p>
+        </div>
+      </div>
+      <div class="task-feature reveal reveal-delay-1">
+        <span class="task-feature-icon">📥</span>
+        <div>
+          <p class="task-feature-title">Reminders Import</p>
+          <p class="task-feature-desc">Import tasks directly from Apple Reminders. No need to recreate your existing to-do list — bring it all into Pepinillo.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SESSION JOURNAL
+     ═══════════════════════════════════════════════════════════ -->
+<section id="journal">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <p class="section-label">Reflection</p>
+      <h2 class="section-title">Journal Every Session</h2>
+      <p class="section-subtitle" style="margin:0 auto">After each completed session, take a moment to reflect. Rate your satisfaction, write a quick note, and build self-awareness over time.</p>
+    </div>
+
+    <div class="journal-mockup reveal">
+      <div class="journal-header">
+        <h3 style="font-size:20px;font-weight:600">Session Complete</h3>
+      </div>
+      <p class="journal-mode-info">🍅 Pomodoro &bull; 25:00</p>
+      <div class="journal-rating">
+        <span class="journal-emoji" data-rating="1">😞</span>
+        <span class="journal-emoji" data-rating="2">😐</span>
+        <span class="journal-emoji" data-rating="3">🙂</span>
+        <span class="journal-emoji active" data-rating="4">😊</span>
+        <span class="journal-emoji" data-rating="5">🔥</span>
+      </div>
+      <textarea class="journal-textarea" readonly>Felt really productive today. Managed to complete the API integration without getting distracted. The café soundscape helped a lot.</textarea>
+      <p style="font-size:12px;color:var(--text-tertiary);margin-top:12px;text-align:center">Supports Apple Writing Tools on iOS 18.1+</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SIRI
+     ═══════════════════════════════════════════════════════════ -->
+<section id="siri">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <p class="section-label">Voice Control</p>
+      <h2 class="section-title">"Hey Siri, Start Focusing"</h2>
+      <p class="section-subtitle" style="margin:0 auto">9 App Intents, 30 voice phrases, localized in English, Spanish, and Portuguese. Control everything without touching your phone.</p>
+    </div>
+
+    <div class="siri-commands">
+      <div class="siri-cmd cat-start reveal">"Start deep work in Pepinillo"</div>
+      <div class="siri-cmd cat-start reveal">"Start a Pomodoro in Pepinillo"</div>
+      <div class="siri-cmd cat-start reveal">"Focus time with Pepinillo"</div>
+      <div class="siri-cmd cat-control reveal">"Stop focusing in Pepinillo"</div>
+      <div class="siri-cmd cat-control reveal">"Pause focus in Pepinillo"</div>
+      <div class="siri-cmd cat-control reveal">"Resume focus in Pepinillo"</div>
+      <div class="siri-cmd cat-stats reveal">"How's my focus today?"</div>
+      <div class="siri-cmd cat-stats reveal">"Weekly report in Pepinillo"</div>
+      <div class="siri-cmd cat-stats reveal">"Am I focusing in Pepinillo?"</div>
+      <div class="siri-cmd cat-ai reveal">"Give me focus insights"</div>
+      <div class="siri-cmd cat-ai reveal">"What mode should I use?"</div>
+      <div class="siri-cmd cat-ai reveal">"How was my focus this week?"</div>
+    </div>
+
+    <div class="reveal" style="text-align:center;margin-top:32px">
+      <p style="font-size:14px;color:var(--text-tertiary)">
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--stopwatch);margin-right:6px;vertical-align:middle"></span>Start
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pomodoro);margin:0 6px;vertical-align:middle"></span>Control
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin:0 6px;vertical-align:middle"></span>Stats
+        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--timeblock);margin:0 6px;vertical-align:middle"></span>Intelligence
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PRO COMPARISON
+     ═══════════════════════════════════════════════════════════ -->
+<section id="compare">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <p class="section-label">Free vs Pro</p>
+      <h2 class="section-title">Unlock Your Full Potential</h2>
+      <p class="section-subtitle" style="margin:0 auto">Pepinillo is free to use with Pomodoro and Stopwatch. Upgrade to Pro to unlock every technique, soundscape, and cross-device sync.</p>
+    </div>
+
+    <div class="comparison reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Free</th>
+            <th class="pro-header">Pro</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pomodoro Timer</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Stopwatch</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Flowtime (Smart Breaks)</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Time Block (Custom Duration)</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>5 Free Soundscapes</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>4 Premium Soundscapes</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Widgets & Live Activity</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Siri & Shortcuts</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Basic Analytics</td>
+            <td><span class="check">✓</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Advanced Analytics & Weekly Review</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>iCloud Sync (All Devices)</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Streak Protection (1 skip/week)</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>Mode Intelligence</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+          <tr>
+            <td>4 Visual Themes</td>
+            <td><span class="cross">—</span></td>
+            <td><span class="check">✓</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PRICING
+     ═══════════════════════════════════════════════════════════ -->
+<section id="pricing">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <p class="section-label">Pricing</p>
+      <h2 class="section-title">Invest in Your Focus</h2>
+      <p class="section-subtitle" style="margin:0 auto">Start free with Pomodoro and Stopwatch. Upgrade when you're ready to unlock everything.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="pricing-card reveal reveal-delay-1">
+        <p class="pricing-name">Monthly</p>
+        <p class="pricing-price"><sup>$</sup>2<sup>.99</sup></p>
+        <p class="pricing-period">per month</p>
+        <p class="pricing-savings">&nbsp;</p>
+        <button class="pricing-btn secondary">Start Free Trial</button>
+        <ul class="pricing-features">
+          <li>All 4 focus modes</li>
+          <li>All 8 soundscapes</li>
+          <li>Advanced analytics</li>
+          <li>iCloud sync</li>
+          <li>Cancel anytime</li>
+        </ul>
+      </div>
+
+      <div class="pricing-card featured reveal reveal-delay-2">
+        <span class="pricing-badge">Best Value</span>
+        <p class="pricing-name">Annual</p>
+        <p class="pricing-price"><sup>$</sup>14<sup>.99</sup></p>
+        <p class="pricing-period">per year</p>
+        <p class="pricing-savings">Save 58% vs monthly</p>
+        <button class="pricing-btn primary">Start Free Trial</button>
+        <ul class="pricing-features">
+          <li>Everything in Monthly</li>
+          <li>Streak protection</li>
+          <li>4 visual themes</li>
+          <li>Mode intelligence</li>
+          <li>Priority support</li>
+        </ul>
+      </div>
+
+      <div class="pricing-card reveal reveal-delay-3">
+        <p class="pricing-name">Lifetime</p>
+        <p class="pricing-price"><sup>$</sup>29<sup>.99</sup></p>
+        <p class="pricing-period">one-time</p>
+        <p class="pricing-savings">Pay once, own forever</p>
+        <button class="pricing-btn secondary">Buy Now</button>
+        <ul class="pricing-features">
+          <li>Everything in Annual</li>
+          <li>All future updates</li>
+          <li>No subscriptions ever</li>
+          <li>Support indie development</li>
+          <li>Best for long-term users</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     THEMES
+     ═══════════════════════════════════════════════════════════ -->
+<section id="themes">
+  <div class="container">
+    <div class="reveal" style="text-align:center">
+      <p class="section-label">Personalization</p>
+      <h2 class="section-title">4 Beautiful Themes</h2>
+      <p class="section-subtitle" style="margin:0 auto">Classic, Forest, Ocean, or Sunset — each theme transforms the entire app with a carefully crafted color palette.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px">
+      <div class="reveal" style="text-align:center;padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#FF6B6B,#A855F7);margin:0 auto 16px"></div>
+        <p style="font-weight:600">Classic</p>
+        <p style="font-size:13px;color:var(--text-secondary)">Vibrant & Bold</p>
+      </div>
+      <div class="reveal reveal-delay-1" style="text-align:center;padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#22C55E,#166534);margin:0 auto 16px"></div>
+        <p style="font-weight:600">Forest</p>
+        <p style="font-size:13px;color:var(--text-secondary)">Natural & Calm</p>
+      </div>
+      <div class="reveal reveal-delay-2" style="text-align:center;padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#38BDF8,#1E3A5F);margin:0 auto 16px"></div>
+        <p style="font-weight:600">Ocean</p>
+        <p style="font-size:13px;color:var(--text-secondary)">Deep & Serene</p>
+      </div>
+      <div class="reveal reveal-delay-3" style="text-align:center;padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#F97316,#EC4899);margin:0 auto 16px"></div>
+        <p style="font-weight:600">Sunset</p>
+        <p style="font-size:13px;color:var(--text-secondary)">Warm & Vibrant</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     CTA
+     ═══════════════════════════════════════════════════════════ -->
+<section id="cta" style="text-align:center">
+  <div class="container reveal">
+    <p class="section-label">Ready to Focus?</p>
+    <h2 class="section-title">Start Your Deep Work Journey</h2>
+    <p class="section-subtitle" style="margin:0 auto 32px">Download Pepinillo for free. No account required. Just open and focus.</p>
+    <a href="#" class="btn-primary" style="font-size:18px;padding:16px 36px">
+      <svg width="20" height="20" viewBox="0 0 18 18" fill="currentColor"><path d="M13.5 4.5c0-2.49-2.01-4.5-4.5-4.5S4.5 2.01 4.5 4.5c0 1.77 1.02 3.29 2.5 4.03V18l2-2 2 2V8.53c1.48-.74 2.5-2.26 2.5-4.03zM9 6.75c-1.24 0-2.25-1.01-2.25-2.25S7.76 2.25 9 2.25s2.25 1.01 2.25 2.25S10.24 6.75 9 6.75z"/></svg>
+      Download on App Store
+    </a>
+    <p style="margin-top:16px;font-size:14px;color:var(--text-tertiary)">Free &bull; No ads &bull; No account needed</p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <p class="footer-brand">🥒 Pepinillo</p>
+        <p class="footer-desc">Deep Work Companion for Apple. Built with love for the Apple ecosystem. Native SwiftUI, no compromises.</p>
+        <p style="color:var(--text-tertiary)">Made with ❤️ by Tiago</p>
+      </div>
+      <div>
+        <p class="footer-heading">Product</p>
+        <ul class="footer-links">
+          <li><a href="#modes">Focus Modes</a></li>
+          <li><a href="#ecosystem">Ecosystem</a></li>
+          <li><a href="#analytics">Analytics</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-heading">Features</p>
+        <ul class="footer-links">
+          <li><a href="#siri">Siri Commands</a></li>
+          <li><a href="#soundscapes">Soundscapes</a></li>
+          <li><a href="#tasks">Task Management</a></li>
+          <li><a href="#journal">Session Journal</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="footer-heading">Legal</p>
+        <ul class="footer-links">
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Use</a></li>
+          <li><a href="#">Support</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Pepinillo. All rights reserved.</p>
+      <div class="footer-langs">
+        <a href="#" class="active">EN</a>
+        <a href="#">ES</a>
+        <a href="#">PT</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+// ── Scroll Reveal ──────────────────────────────────────────
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── Animated Counters ──────────────────────────────────────
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el = entry.target;
+      const target = parseInt(el.dataset.count);
+      if (el.dataset.animated) return;
+      el.dataset.animated = 'true';
+      let current = 0;
+      const step = Math.max(1, Math.ceil(target / 40));
+      const interval = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = current;
+        if (current >= target) clearInterval(interval);
+      }, 40);
+    }
+  });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('[data-count]').forEach(el => counterObserver.observe(el));
+
+// ── Hero Timer Animation ───────────────────────────────────
+(function animateHeroTimer() {
+  const display = document.getElementById('hero-timer-display');
+  if (!display) return;
+  let seconds = 25 * 60;
+  setInterval(() => {
+    seconds = Math.max(0, seconds - 1);
+    if (seconds === 0) seconds = 25 * 60;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    display.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+  }, 1000);
+})();
+
+// ── Journal Emoji Rating ───────────────────────────────────
+document.querySelectorAll('.journal-emoji').forEach(emoji => {
+  emoji.addEventListener('click', () => {
+    document.querySelectorAll('.journal-emoji').forEach(e => e.classList.remove('active'));
+    emoji.classList.add('active');
+  });
+});
+
+// ── Mobile Nav ─────────────────────────────────────────────
+// Show/hide nav links on mobile
+const style = document.createElement('style');
+style.textContent = `
+  @media (max-width: 768px) {
+    .nav-links.show {
+      display: flex !important;
+      flex-direction: column;
+      position: absolute;
+      top: 52px;
+      left: 0;
+      right: 0;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      padding: 16px 24px 24px;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-links.show a { font-size: 16px; }
+  }
+`;
+document.head.appendChild(style);
+
+// Close mobile nav on link click
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', () => {
+    document.querySelector('.nav-links').classList.remove('show');
+  });
+});
+</script>
+
+</body>
+</html>
