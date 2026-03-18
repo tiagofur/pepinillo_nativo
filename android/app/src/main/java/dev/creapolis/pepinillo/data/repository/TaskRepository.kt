@@ -1,8 +1,10 @@
 package dev.creapolis.pepinillo.data.repository
 
+import android.content.Context
 import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
@@ -14,9 +16,13 @@ import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Subtask
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import dev.creapolis.pepinillo.wear.WearDataLayerHelper
+import dev.creapolis.pepinillo.widget.WidgetTask
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +34,8 @@ class TaskRepository @Inject constructor(
     private val subtaskDao: SubtaskDao,
     private val focusSessionDao: FocusSessionDao,
     private val workManager: WorkManager,
+    private val sessionRepository: SessionRepository,
+    @ApplicationContext private val appContext: Context,
 ) {
     fun getAllTasks(): Flow<List<Task>> =
         taskDao.getAllTasks()
@@ -131,8 +139,48 @@ class TaskRepository @Inject constructor(
             .catch { e -> Log.e(TAG, "Error loading sessions for $taskId", e); emit(emptyList()) }
 
     /** Push updated task list to Wear and widgets immediately. */
-    private fun refreshWearData() {
+    private suspend fun refreshWearData() {
+        // Widgets via WorkManager
         workManager.enqueue(OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build())
+
+        // Wear direct push (WorkManager fails for wear)
+        runCatching {
+            val activeTasks = taskDao.getActiveTasks().first().map { it.toDomain() }
+            val widgetTasks = activeTasks.take(5).map { task ->
+                val energyEmoji = when (task.energyLevel) {
+                    EnergyLevel.Deep -> "\uD83D\uDD25"
+                    EnergyLevel.Regular -> "\u26A1"
+                    EnergyLevel.Light -> "\uD83D\uDCA7"
+                }
+                val pomodoroProgress = if (task.estimatedPomodoros > 0) {
+                    "${task.completedPomodoros}/${task.estimatedPomodoros} \uD83C\uDF45"
+                } else ""
+                WidgetTask(
+                    id = task.id,
+                    title = task.title,
+                    energyEmoji = energyEmoji,
+                    pomodoroProgress = pomodoroProgress,
+                )
+            }
+            val stats = sessionRepository.getTodayStats().first()
+            val allDays = sessionRepository.getAllDaysWithSessions().first()
+            val streak = sessionRepository.calculateCurrentStreak(allDays)
+            val cal = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+            }
+            val completedToday = taskDao.getCompletedTodayCount(cal.timeInMillis)
+            WearDataLayerHelper.pushTasksAndStats(
+                context = appContext,
+                tasks = widgetTasks,
+                totalMinutes = stats?.totalMinutes ?: 0,
+                sessions = stats?.sessionsCompleted ?: 0,
+                streak = streak,
+                completedTasksToday = completedToday,
+            )
+        }.onFailure { e ->
+            Log.e(TAG, "Wear direct push failed", e)
+        }
     }
 }
 
