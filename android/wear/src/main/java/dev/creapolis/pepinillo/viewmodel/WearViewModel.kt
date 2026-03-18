@@ -30,22 +30,51 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startTimer(mode: String) {
+        // Optimistic UI: show Running immediately
+        WearDataStore.updateTimer(
+            timerState.value.copy(
+                mode = mode,
+                status = "Running",
+                phaseLabel = "Focus",
+            ),
+        )
         viewModelScope.launch { sender.startTimer(mode) }
     }
 
     fun pauseTimer() {
+        // Optimistic UI: show Paused immediately
+        WearDataStore.updateTimer(
+            timerState.value.copy(status = "Paused"),
+        )
         viewModelScope.launch { sender.pauseTimer() }
     }
 
     fun resumeTimer() {
+        // Optimistic UI: show Running immediately
+        WearDataStore.updateTimer(
+            timerState.value.copy(status = "Running"),
+        )
         viewModelScope.launch { sender.resumeTimer() }
     }
 
     fun stopTimer() {
+        // Optimistic UI: show Idle immediately
+        WearDataStore.updateTimer(
+            timerState.value.copy(
+                status = "Idle",
+                displayTime = timerState.value.displayTime,
+                progress = 1f,
+                phaseLabel = "Listo",
+            ),
+        )
         viewModelScope.launch { sender.stopTimer() }
     }
 
     fun completeTask(taskId: String) {
+        // Optimistic UI: remove task from list immediately
+        WearDataStore.updateTasks(
+            tasks.value.filter { it.id != taskId },
+        )
         viewModelScope.launch { sender.completeTask(taskId) }
     }
 

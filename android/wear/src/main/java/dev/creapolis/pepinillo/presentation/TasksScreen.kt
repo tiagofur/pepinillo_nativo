@@ -10,7 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -25,16 +24,17 @@ import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
-import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.ListHeader
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import dev.creapolis.pepinillo.data.WearTask
+import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.launch
 
 @Composable
 fun TasksScreen(
     tasks: List<WearTask>,
+    timerState: WearTimerState? = null,
     syncStatusLabel: String? = null,
     isSyncStale: Boolean = false,
     onCompleteTask: (String) -> Unit,
@@ -43,6 +43,9 @@ fun TasksScreen(
     val listState = rememberScalingLazyListState()
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
+
+    val linkedTaskName = timerState?.linkedTaskName
+    val isTimerActive = timerState?.status == "Running" || timerState?.status == "Paused"
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
@@ -69,6 +72,42 @@ fun TasksScreen(
             }
         }
 
+        // Linked task (highlighted) — shown when pomodoro is active with a linked task
+        if (isTimerActive && linkedTaskName != null) {
+            item {
+                val modeColor = WearModeColors.forMode(timerState?.mode ?: "Pomodoro")
+                Chip(
+                    onClick = { },
+                    label = {
+                        Text(
+                            text = linkedTaskName,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = modeColor,
+                        )
+                    },
+                    secondaryLabel = {
+                        Text(
+                            text = "🍅 En progreso",
+                            style = MaterialTheme.typography.caption2,
+                        )
+                    },
+                    icon = {
+                        Text(
+                            text = "▶",
+                            modifier = Modifier.size(24.dp),
+                            textAlign = TextAlign.Center,
+                            color = modeColor,
+                        )
+                    },
+                    colors = ChipDefaults.primaryChipColors(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 2.dp),
+                )
+            }
+        }
+
         // Sync status
         if (!syncStatusLabel.isNullOrBlank()) {
             item {
@@ -84,7 +123,7 @@ fun TasksScreen(
             }
         }
 
-        if (tasks.isEmpty()) {
+        if (tasks.isEmpty() && linkedTaskName == null) {
             // Empty state
             item {
                 Text(

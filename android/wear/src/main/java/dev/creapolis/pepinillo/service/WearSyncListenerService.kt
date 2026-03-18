@@ -71,7 +71,11 @@ class WearSyncListenerService : WearableListenerService() {
     )
 
     private fun refreshWearSurfaces() {
-        TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
+        try {
+            TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Cannot update tile (targetSdk>34 restriction)", e)
+        }
         ComplicationDataSourceUpdateRequester
             .create(
                 context = this,
@@ -95,6 +99,7 @@ class WearSyncListenerService : WearableListenerService() {
 
             when (path) {
                 WearDataPaths.PATH_TIMER -> {
+                    val linkedId = dataMap.getString("linkedTaskId", "")
                     val timerState = WearTimerState(
                         mode = dataMap.getString("mode", "Pomodoro"),
                         phase = dataMap.getString("phase", "Work"),
@@ -103,6 +108,8 @@ class WearSyncListenerService : WearableListenerService() {
                         phaseLabel = dataMap.getString("phaseLabel", "Focus"),
                         progress = dataMap.getFloat("progress", 0f),
                         isConnected = true,
+                        linkedTaskId = linkedId.ifEmpty { null },
+                        linkedTaskName = dataMap.getString("linkedTaskName", "").ifEmpty { null },
                     )
                     processor.onTimerData(timerState)
                 }
@@ -142,6 +149,7 @@ class WearSyncListenerService : WearableListenerService() {
                         val map = DataMapItem.fromDataItem(item).dataMap
                         when (path) {
                             WearDataPaths.PATH_TIMER -> {
+                                val lid = map.getString("linkedTaskId", "")
                                 val timerState = WearTimerState(
                                     mode = map.getString("mode", "Pomodoro"),
                                     phase = map.getString("phase", "Work"),
@@ -150,6 +158,8 @@ class WearSyncListenerService : WearableListenerService() {
                                     phaseLabel = map.getString("phaseLabel", "Focus"),
                                     progress = map.getFloat("progress", 0f),
                                     isConnected = true,
+                                    linkedTaskId = lid.ifEmpty { null },
+                                    linkedTaskName = map.getString("linkedTaskName", "").ifEmpty { null },
                                 )
                                 processor.onTimerData(timerState)
                             }

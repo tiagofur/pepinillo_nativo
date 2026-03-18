@@ -127,7 +127,7 @@ private fun TimerActiveLayout(
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Action buttons
             Row(
@@ -154,6 +154,7 @@ private fun TimerActiveLayout(
                 )
             }
         }
+
     }
 }
 
@@ -267,6 +268,7 @@ private fun IdleLayout(
                 )
             }
         }
+
     }
 }
 

@@ -1,8 +1,11 @@
 package dev.creapolis.pepinillo.data.repository
 
 import android.util.Log
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
+import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
@@ -17,6 +20,7 @@ private const val TAG = "TaskRepository"
 @Singleton
 class TaskRepository @Inject constructor(
     private val taskDao: TaskDao,
+    private val workManager: WorkManager,
 ) {
     fun getAllTasks(): Flow<List<Task>> =
         taskDao.getAllTasks()
@@ -40,6 +44,7 @@ class TaskRepository @Inject constructor(
     suspend fun addTask(task: Task): Result<Unit> =
         runCatching { taskDao.insertTask(task.toEntity()) }
             .onFailure { Log.e(TAG, "Error adding task", it) }
+            .onSuccess { refreshWearData() }
 
     suspend fun toggleCompletion(taskId: String): Result<Unit> =
         runCatching {
@@ -53,10 +58,12 @@ class TaskRepository @Inject constructor(
                 ),
             )
         }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }
+            .onSuccess { refreshWearData() }
 
     suspend fun deleteTask(taskId: String): Result<Unit> =
         runCatching { taskDao.deleteTaskById(taskId) }
             .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }
+            .onSuccess { refreshWearData() }
 
     suspend fun getTaskById(taskId: String): Task? =
         runCatching { taskDao.getTaskById(taskId)?.toDomain() }
@@ -72,6 +79,11 @@ class TaskRepository @Inject constructor(
         runCatching { taskDao.getCompletedTodayCount(startOfDay) }
             .onFailure { Log.e(TAG, "Error counting completed tasks today", it) }
             .getOrDefault(0)
+
+    /** Push updated task list to Wear and widgets immediately. */
+    private fun refreshWearData() {
+        workManager.enqueue(OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build())
+    }
 }
 
 private fun TaskEntity.toDomain() = Task(

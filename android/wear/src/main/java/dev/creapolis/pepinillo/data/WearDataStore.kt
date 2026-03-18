@@ -91,6 +91,8 @@ data class WearTimerState(
     val phaseLabel: String = "Listo",
     val progress: Float = 1f,
     val isConnected: Boolean = false,
+    val linkedTaskId: String? = null,
+    val linkedTaskName: String? = null,
 )
 
 data class WearTask(

@@ -22,7 +22,10 @@ import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabel
 import dev.creapolis.pepinillo.domain.timer.progress
+import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.feature.focus.FocusMode
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dev.creapolis.pepinillo.widget.FocusTimerWidget
 import dev.creapolis.pepinillo.widget.TimerWidgetState
@@ -41,6 +44,7 @@ class FocusTimerService : Service() {
 
     @Inject lateinit var focusEngine: FocusEngine
     @Inject lateinit var sessionRepository: SessionRepository
+    @Inject lateinit var taskRepository: dev.creapolis.pepinillo.data.repository.TaskRepository
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isCollecting = false
@@ -145,10 +149,17 @@ class FocusTimerService : Service() {
 
         when (intent.action) {
             ACTION_PAUSE -> focusEngine.pause()
-            ACTION_RESUME -> focusEngine.start()
+            ACTION_RESUME -> {
+                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+                focusEngine.start()
+            }
             ACTION_STOP -> {
                 focusEngine.stop()
                 clearRecoveryState(this)
+                // Refresh tasks+stats on watch after session ends
+                WorkManager.getInstance(this).enqueue(
+                    OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
+                )
                 stopSelf()
                 return START_NOT_STICKY
             }
@@ -162,6 +173,10 @@ class FocusTimerService : Service() {
                     focusEngine.selectMode(mode)
                     focusEngine.start()
                 }
+                // Push tasks+stats to watch immediately
+                WorkManager.getInstance(this).enqueue(
+                    OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
+                )
                 return START_STICKY
             }
             ACTION_SELECT_MODE -> {
@@ -187,10 +202,20 @@ class FocusTimerService : Service() {
         // Collect timer state — update notification + widget
         serviceScope.launch {
             var lastWidgetUpdate = 0L
+            var cachedLinkedTaskId: String? = null
+            var cachedLinkedTaskName: String? = null
             focusEngine.state.collect { state ->
                 // Update notification every tick
                 getSystemService(NotificationManager::class.java)
                     .notify(NOTIFICATION_ID, buildNotification(state))
+
+                // Resolve linked task name (only re-query when task changes)
+                if (state.linkedTaskId != cachedLinkedTaskId) {
+                    cachedLinkedTaskId = state.linkedTaskId
+                    cachedLinkedTaskName = state.linkedTaskId?.let {
+                        taskRepository.getTaskById(it)?.title
+                    }
+                }
 
                 // Update widget max once per second to avoid battery drain
                 val now = System.currentTimeMillis()
@@ -206,7 +231,7 @@ class FocusTimerService : Service() {
                     )
                     updateWidgetState(this@FocusTimerService, widgetState)
                     FocusTimerWidget().updateAll(context = this@FocusTimerService)
-                    WearDataLayerHelper.pushTimer(this@FocusTimerService, state)
+                    WearDataLayerHelper.pushTimer(this@FocusTimerService, state, cachedLinkedTaskName)
 
                     // Persist recovery state while running so we can restore after process death
                     if (state.status == TimerStatus.Running) {

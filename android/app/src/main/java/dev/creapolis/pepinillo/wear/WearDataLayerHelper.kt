@@ -26,7 +26,7 @@ object WearDataLayerHelper {
     const val CMD_TIMER_STOP = "/pepinillo/cmd/timer/stop"
     const val CMD_TASK_COMPLETE = "/pepinillo/cmd/task/complete"
 
-    fun pushTimer(context: Context, state: FocusTimerState) {
+    fun pushTimer(context: Context, state: FocusTimerState, linkedTaskName: String? = null) {
         val request = PutDataMapRequest.create(PATH_TIMER).apply {
             dataMap.putString("mode", state.mode.name)
             dataMap.putString("phase", state.phase.name)
@@ -37,6 +37,8 @@ object WearDataLayerHelper {
             dataMap.putLong("elapsedMillis", state.elapsedMillis)
             dataMap.putLong("totalMillis", state.totalMillis)
             dataMap.putInt("completedSessions", state.completedSessions)
+            dataMap.putString("linkedTaskId", state.linkedTaskId ?: "")
+            dataMap.putString("linkedTaskName", linkedTaskName ?: "")
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
