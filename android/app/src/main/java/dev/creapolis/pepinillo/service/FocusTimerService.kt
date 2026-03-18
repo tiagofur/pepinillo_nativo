@@ -204,7 +204,14 @@ class FocusTimerService : Service() {
             var lastWidgetUpdate = 0L
             var cachedLinkedTaskId: String? = null
             var cachedLinkedTaskName: String? = null
+            var previousPhase: dev.creapolis.pepinillo.domain.timer.FocusPhase? = null
             focusEngine.state.collect { state ->
+                // Detect phase change → notify watch to vibrate
+                if (previousPhase != null && state.phase != previousPhase && state.status != TimerStatus.Idle) {
+                    WearDataLayerHelper.pushPhaseComplete(this@FocusTimerService, state.mode.name, previousPhase!!.name)
+                }
+                previousPhase = state.phase
+
                 // Update notification every tick
                 getSystemService(NotificationManager::class.java)
                     .notify(NOTIFICATION_ID, buildNotification(state))

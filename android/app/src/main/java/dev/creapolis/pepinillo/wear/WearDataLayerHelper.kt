@@ -4,6 +4,11 @@ import android.content.Context
 import android.util.Log
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.Wearable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.nio.charset.StandardCharsets
 import dev.creapolis.pepinillo.domain.timer.FocusTimerState
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabel
@@ -107,6 +112,23 @@ object WearDataLayerHelper {
 
         Wearable.getDataClient(context).putDataItem(request)
             .addOnFailureListener { e -> Log.w(TAG, "Failed pushing idle state", e) }
+    }
+
+    private const val EVENT_PHASE_COMPLETE = "/pepinillo/event/phase_complete"
+
+    /** Notify the watch that a timer phase just completed (vibration trigger). */
+    fun pushPhaseComplete(context: Context, mode: String, completedPhase: String) {
+        val payload = "$mode|$completedPhase".toByteArray(StandardCharsets.UTF_8)
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                val nodes = Wearable.getNodeClient(context).connectedNodes.await()
+                nodes.forEach { node ->
+                    Wearable.getMessageClient(context)
+                        .sendMessage(node.id, EVENT_PHASE_COMPLETE, payload)
+                        .await()
+                }
+            }.onFailure { e -> Log.w(TAG, "Failed pushing phase complete event", e) }
+        }
     }
 
     fun isRunning(status: String): Boolean = status == TimerStatus.Running.name

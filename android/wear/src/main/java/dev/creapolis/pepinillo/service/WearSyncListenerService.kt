@@ -1,8 +1,13 @@
 package dev.creapolis.pepinillo.service
 
 import android.content.ComponentName
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import androidx.wear.tiles.TileService
+import com.google.android.gms.wearable.MessageEvent
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import com.google.android.gms.wearable.DataEvent
 import com.google.android.gms.wearable.DataEventBuffer
@@ -88,6 +93,32 @@ class WearSyncListenerService : WearableListenerService() {
         val now = Date().time
         WearDataStore.updateLastSyncAtMillis(now)
         WearSnapshotStore.persistLastSyncAtMillis(this, now)
+    }
+
+    override fun onMessageReceived(messageEvent: MessageEvent) {
+        when (messageEvent.path) {
+            "/pepinillo/event/phase_complete" -> {
+                Log.d(TAG, "Phase complete event received — vibrating")
+                vibrateWatch()
+            }
+        }
+    }
+
+    private fun vibrateWatch() {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val manager = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            manager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
+        if (!vibrator.hasVibrator()) return
+        // Double pulse: buzz - pause - buzz (same as phone)
+        val effect = VibrationEffect.createWaveform(
+            longArrayOf(0, 300, 150, 300),
+            -1,
+        )
+        vibrator.vibrate(effect)
     }
 
     override fun onDataChanged(dataEvents: DataEventBuffer) {
