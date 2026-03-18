@@ -47,7 +47,7 @@ struct FocusComplicationProvider: TimelineProvider {
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
-    /// Reads persisted stats from UserDefaults (written by WatchFocusFeature on stats received).
+    /// Reads persisted stats from UserDefaults (written by WatchTimerFeature on stats received).
     private func buildEntry() -> FocusComplicationEntry {
         let defaults = UserDefaults.standard
         let isActive = defaults.bool(forKey: WatchStatsKeys.isSessionActive)

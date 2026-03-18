@@ -1,7 +1,7 @@
-// WatchFocusFeature.swift
+// WatchTimerFeature.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// TCA Reducer for the Apple Watch focus screen.
+// TCA Reducer for the Apple Watch timer screen.
 // Receives state from the iOS app via WatchConnectivity and
 // provides local haptic feedback on phase transitions.
 
@@ -10,10 +10,10 @@ import ComposableArchitecture
 import WatchKit
 import WidgetKit
 
-// MARK: - WatchFocusFeature
+// MARK: - WatchTimerFeature
 
 @Reducer
-struct WatchFocusFeature {
+struct WatchTimerFeature {
 
     // MARK: - State
 
@@ -28,6 +28,7 @@ struct WatchFocusFeature {
         var progress: Double? = nil
         var pomodoroNumber: Int? = nil
         var linkedTaskTitle: String? = nil
+        var linkedTaskID: String? = nil
 
         // Daily stats (mirrored from phone)
         var todayFocusMinutes: Int = 0
@@ -45,7 +46,7 @@ struct WatchFocusFeature {
         case skipTapped
         case modeSelected(FocusMode)
 
-        // Received from iOS via WatchConnectivity
+        // Received from root (routed from WatchConnectivity)
         case sessionStateReceived(WatchSessionState)
         case statsReceived(todayMinutes: Int, sessions: Int, streak: Int)
         case connectivityChanged(Bool)
@@ -68,21 +69,7 @@ struct WatchFocusFeature {
             switch action {
 
             case .onAppear:
-                return .run { send in
-                    let stream = await watchClient.receiveMessages()
-                    for await message in stream {
-                        switch message {
-                        case .sessionState(let s):
-                            await send(.sessionStateReceived(s))
-                        case .stats(let m, let c, let sk):
-                            await send(.statsReceived(todayMinutes: m, sessions: c, streak: sk))
-                        case .connectivityStatus(let connected):
-                            await send(.connectivityChanged(connected))
-                        case .command:
-                            break // commands flow Watch → iOS, not iOS → Watch
-                        }
-                    }
-                }
+                return .none
 
             case .startTapped:
                 guard !state.isSessionActive else { return .none }
@@ -131,6 +118,7 @@ struct WatchFocusFeature {
                 state.progress = s.progress
                 state.pomodoroNumber = s.pomodoroNumber
                 state.linkedTaskTitle = s.linkedTaskTitle
+                state.linkedTaskID = s.linkedTaskID
 
                 if let mode = FocusMode(rawValue: s.modeID) {
                     state.selectedMode = mode
@@ -148,11 +136,9 @@ struct WatchFocusFeature {
                         displayTime: displayTime,
                         modeEmoji: modeEmoji
                     )
-                    // Refresh complications on phase transition or session end
                     if didTransition || !isActive {
                         WidgetCenter.shared.reloadAllTimelines()
                     }
-                    // Haptic on phase change
                     if didTransition {
                         WKInterfaceDevice.current().play(.notification)
                     }

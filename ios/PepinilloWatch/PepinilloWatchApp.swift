@@ -2,6 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Entry point for the watchOS companion app.
+// Uses WatchRootView with vertical-paged TabView for Timer, Tasks, Dashboard.
 
 import SwiftUI
 import ComposableArchitecture
@@ -10,9 +11,9 @@ import ComposableArchitecture
 struct PepinilloWatchApp: App {
     var body: some Scene {
         WindowGroup {
-            WatchFocusView(
-                store: Store(initialState: WatchFocusFeature.State()) {
-                    WatchFocusFeature()
+            WatchRootView(
+                store: Store(initialState: WatchAppFeature.State()) {
+                    WatchAppFeature()
                 }
             )
         }
