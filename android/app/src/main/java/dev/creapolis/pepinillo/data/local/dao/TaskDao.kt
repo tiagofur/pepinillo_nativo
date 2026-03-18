@@ -21,8 +21,14 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE is_completed = 1 AND is_deleted = 0 ORDER BY completed_at DESC")
     fun getCompletedTasks(): Flow<List<TaskEntity>>
 
+    @Query("SELECT * FROM tasks WHERE scheduled_for_today = 1 AND is_completed = 0 AND is_deleted = 0 ORDER BY sort_order ASC, created_at DESC")
+    fun getTasksScheduledForToday(): Flow<List<TaskEntity>>
+
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     suspend fun getTaskById(taskId: String): TaskEntity?
+
+    @Query("SELECT * FROM tasks WHERE id = :taskId")
+    fun getTaskByIdFlow(taskId: String): Flow<TaskEntity?>
 
     @Query("SELECT * FROM tasks WHERE server_id = :serverId LIMIT 1")
     suspend fun getTaskByServerId(serverId: Int): TaskEntity?

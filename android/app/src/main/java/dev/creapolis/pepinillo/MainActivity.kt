@@ -43,6 +43,7 @@ import dev.creapolis.pepinillo.feature.focus.FocusScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
 import dev.creapolis.pepinillo.feature.settings.SettingsScreen
 import dev.creapolis.pepinillo.feature.tasks.TasksScreen
+import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailScreen
 import dev.creapolis.pepinillo.navigation.TopLevelDestination
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
@@ -158,7 +159,26 @@ fun PepinilloApp() {
                 )
             }
             composable(TopLevelDestination.Tasks.route) {
-                TasksScreen()
+                TasksScreen(
+                    onTaskClick = { taskId ->
+                        navController.navigate("tasks/$taskId")
+                    },
+                )
+            }
+            composable("tasks/{taskId}") {
+                TaskDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onStartFocus = { taskId ->
+                        // Navigate to focus screen (task linking can be handled via shared state)
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
             }
             composable(TopLevelDestination.Dashboard.route) {
                 DashboardScreen()

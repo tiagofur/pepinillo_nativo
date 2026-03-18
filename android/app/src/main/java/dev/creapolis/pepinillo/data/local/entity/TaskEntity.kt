@@ -24,6 +24,18 @@ data class TaskEntity(
     val completedPomodoros: Int = 0,
     @ColumnInfo(name = "sort_order")
     val sortOrder: Int = 0,
+    @ColumnInfo(name = "due_date")
+    val dueDate: Long? = null,
+    @ColumnInfo(name = "scheduled_for_today", defaultValue = "0")
+    val scheduledForToday: Boolean = false,
+    @ColumnInfo(name = "recurrence_rule")
+    val recurrenceRule: String? = null,
+    @ColumnInfo(name = "next_occurrence")
+    val nextOccurrence: Long? = null,
+    @ColumnInfo(name = "is_recurring_template", defaultValue = "0")
+    val isRecurringTemplate: Boolean = false,
+    @ColumnInfo(name = "recurring_template_id")
+    val recurringTemplateID: String? = null,
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
     @ColumnInfo(name = "updated_at")
