@@ -1,27 +1,24 @@
-// WatchFocusView.swift
+// WatchTimerView.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// Apple Watch focus screen. Compact timer display, mode picker,
-// start/pause/stop controls. Mirrors iOS session state via WatchConnectivity.
+// Apple Watch timer screen. Large, glanceable timer display with progress ring,
+// mode picker, controls, and linked task indicator.
 
 import SwiftUI
 import ComposableArchitecture
 
-// MARK: - WatchFocusView
+// MARK: - WatchTimerView
 
-struct WatchFocusView: View {
-    @Bindable var store: StoreOf<WatchFocusFeature>
+struct WatchTimerView: View {
+    @Bindable var store: StoreOf<WatchTimerFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(spacing: 8) {
-            if store.isSessionActive {
-                activeSessionView
-            } else {
-                idleView
-            }
+        if store.isSessionActive {
+            activeSessionView
+        } else {
+            idleView
         }
-        .onAppear { store.send(.onAppear) }
     }
 
     // MARK: - Active Session
@@ -29,17 +26,17 @@ struct WatchFocusView: View {
     @State private var showStopConfirmation = false
 
     private var activeSessionView: some View {
-        VStack(spacing: 6) {
-            // Progress ring + time
+        VStack(spacing: 4) {
+            // Progress ring + time (main focus area)
             ZStack {
                 // Background ring track
                 Circle()
-                    .stroke(modeColor.opacity(0.2), lineWidth: 6)
+                    .stroke(modeColor.opacity(0.2), lineWidth: 8)
 
                 if let progress = store.progress {
                     Circle()
                         .trim(from: 0, to: CGFloat(progress))
-                        .stroke(modeColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                        .stroke(modeColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                         .animation(reduceMotion ? nil : .linear(duration: 0.1), value: progress)
                 }
@@ -47,35 +44,47 @@ struct WatchFocusView: View {
                 VStack(spacing: 2) {
                     // Mode emoji
                     Text(store.selectedMode.icon)
-                        .font(.system(size: 14))
+                        .font(.system(size: 16))
 
+                    // Timer display — LARGE and prominent
                     Text(store.displayTime)
-                        .font(.system(.title2, design: .rounded, weight: .medium))
+                        .font(.system(.title, design: .rounded, weight: .semibold))
                         .monospacedDigit()
                         .contentTransition(.numericText())
+                        .minimumScaleFactor(0.7)
 
+                    // Pomodoro number
                     if let num = store.pomodoroNumber {
                         Text("#\(num)")
-                            .font(.caption2)
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .frame(height: 90)
+            .frame(maxWidth: .infinity)
+            .frame(height: 120)
+            .padding(.top, -4)
 
             // Phase label
             Text(store.phaseLabel)
-                .font(.caption2)
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 
             // Linked task
             if let task = store.linkedTaskTitle {
-                Text(task)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.tertiary)
-                    .lineLimit(1)
+                HStack(spacing: 3) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(modeColor)
+                    Text(task)
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+                .lineLimit(1)
             }
+
+            Spacer(minLength: 0)
 
             // Controls
             HStack(spacing: 12) {
@@ -84,10 +93,10 @@ struct WatchFocusView: View {
                     showStopConfirmation = true
                 } label: {
                     Image(systemName: "stop.fill")
-                        .font(.caption)
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(.red)
-                        .frame(width: 32, height: 32)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .frame(width: 36, height: 36)
+                        .background(.red.opacity(0.15), in: Circle())
                 }
                 .buttonStyle(.plain)
 
@@ -96,9 +105,9 @@ struct WatchFocusView: View {
                     store.send(.pauseResumeTapped)
                 } label: {
                     Image(systemName: store.isPaused ? "play.fill" : "pause.fill")
-                        .font(.callout)
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 44, height: 44)
                         .background(modeColor, in: Circle())
                 }
                 .buttonStyle(.plain)
@@ -108,13 +117,14 @@ struct WatchFocusView: View {
                     store.send(.skipTapped)
                 } label: {
                     Image(systemName: "forward.fill")
-                        .font(.caption)
-                        .foregroundStyle(.white)
-                        .frame(width: 32, height: 32)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(width: 36, height: 36)
+                        .background(.white.opacity(0.12), in: Circle())
                 }
                 .buttonStyle(.plain)
             }
+            .padding(.bottom, 2)
         }
         .confirmationDialog(
             String(localized: "End Session?"),
@@ -132,7 +142,7 @@ struct WatchFocusView: View {
     @State private var crownModeIndex: Double = 0
 
     private var idleView: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             // Mode selector (horizontal scroll)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -149,12 +159,33 @@ struct WatchFocusView: View {
                 .padding(.horizontal, 4)
             }
 
+            // Linked task indicator
+            if let task = store.linkedTaskTitle {
+                HStack(spacing: 4) {
+                    Image(systemName: "link")
+                        .font(.system(size: 9))
+                        .foregroundStyle(modeColor)
+                    Text(task)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                .lineLimit(1)
+                .padding(.horizontal, 8)
+            }
+
             // Stats row
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 WatchStatPill(
                     icon: "timer",
                     value: formatMinutes(store.todayFocusMinutes)
                 )
+                if store.todaySessionsCompleted > 0 {
+                    WatchStatPill(
+                        icon: "checkmark.circle",
+                        value: "\(store.todaySessionsCompleted)",
+                        color: .green
+                    )
+                }
                 if store.currentStreakDays > 0 {
                     WatchStatPill(
                         icon: "flame.fill",
@@ -168,16 +199,15 @@ struct WatchFocusView: View {
             Button {
                 store.send(.startTapped)
             } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 6) {
                     Image(systemName: "play.fill")
-                        .font(.caption)
+                        .font(.system(size: 13, weight: .semibold))
                     Text(String(localized: "Start"))
-                        .font(.caption)
-                        .fontWeight(.semibold)
+                        .font(.system(size: 15, weight: .semibold))
                 }
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 36)
+                .frame(height: 40)
                 .background(modeColor, in: Capsule())
             }
             .buttonStyle(.plain)
@@ -223,12 +253,7 @@ struct WatchFocusView: View {
     }
 
     private func colorFor(_ mode: FocusMode) -> Color {
-        switch mode {
-        case .pomodoro:  return ModeColors.pomodoro
-        case .flowtime:  return ModeColors.flowtime
-        case .timeBlock: return ModeColors.timeBlock
-        case .stopwatch: return ModeColors.stopwatch
-        }
+        ModeColors.color(for: mode.rawValue)
     }
 
     private func formatMinutes(_ minutes: Int) -> String {
@@ -277,7 +302,7 @@ private struct WatchModeChip: View {
     }
 }
 
-private struct WatchStatPill: View {
+struct WatchStatPill: View {
     let icon: String
     let value: String
     var color: Color = .accentColor
@@ -298,7 +323,7 @@ private struct WatchStatPill: View {
 
 // MARK: - FocusMode.shortName (Watch-only display helper)
 
-private extension FocusMode {
+extension FocusMode {
     var shortName: String {
         switch self {
         case .pomodoro:  return String(localized: "Pomo")

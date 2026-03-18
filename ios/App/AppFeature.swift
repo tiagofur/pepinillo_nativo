@@ -409,6 +409,58 @@ struct AppFeature {
                     return .send(.focus(.stopTapped))
                 case .skipPhase:
                     return .send(.focus(.skipPhaseTapped))
+                case .linkTask(let idStr):
+                    guard let id = UUID(uuidString: idStr) else { return .none }
+                    let title = state.tasks.tasks.first(where: { $0.id == id })?.title
+                    return .send(.focus(.linkTask(id, title)))
+                case .unlinkTask:
+                    return .send(.focus(.linkTask(nil, nil)))
+                case .toggleTaskCompleted(let idStr):
+                    guard let id = UUID(uuidString: idStr) else { return .none }
+                    return .send(.tasks(.taskCompleted(id)))
+                case .requestTasks:
+                    let tasks = state.tasks.tasks.filter { $0.scheduledForToday }
+                    let watchTasks = tasks.map { task in
+                        WatchTaskItem(
+                            id: task.id,
+                            title: task.title,
+                            isCompleted: task.isCompleted,
+                            priority: task.priority.rawValue,
+                            estimatedPomodoros: task.estimatedPomodoros,
+                            completedPomodoros: task.completedPomodoros
+                        )
+                    }
+                    return .run { [watchClient, watchTasks] _ in
+                        await watchClient.sendTasks(watchTasks)
+                    }
+                case .requestDashboard:
+                    return .run { [watchClient, persistence] _ in
+                        let stats = try? await persistence.fetchDailyStats(Date.now)
+                        let prefs = try? await persistence.fetchPreferences()
+                        let tasks = try? await persistence.fetchTasks()
+                        let todayTasks = tasks?.filter { $0.scheduledForToday } ?? []
+
+                        // Longest session today
+                        let startOfDay = Calendar.current.startOfDay(for: Date.now)
+                        let sessions = try? await persistence.fetchSessions(startOfDay, Date.now)
+                        let longestMinutes = (sessions ?? [])
+                            .map { Int($0.actualDuration) / 60 }
+                            .max() ?? 0
+
+                        let dashStats = WatchDashboardStats(
+                            todayMinutes: stats?.totalFocusMinutes ?? 0,
+                            sessionsCompleted: stats?.sessionsCompleted ?? 0,
+                            tasksCompleted: todayTasks.filter(\.isCompleted).count,
+                            tasksTotal: todayTasks.count,
+                            streakDays: prefs?.currentStreakDays ?? 0,
+                            pomodoroMinutes: stats?.pomodoroMinutes ?? 0,
+                            flowtimeMinutes: stats?.flowtimeMinutes ?? 0,
+                            timeBlockMinutes: stats?.timeBlockMinutes ?? 0,
+                            stopwatchMinutes: stats?.stopwatchMinutes ?? 0,
+                            longestSessionMinutes: longestMinutes
+                        )
+                        await watchClient.sendDashboardStats(dashStats)
+                    }
                 }
 
             // MARK: - Watch State Bridge (iOS → Watch)
@@ -540,6 +592,7 @@ extension WatchSessionState {
             progress:         focusState.progress,
             pomodoroNumber:   focusState.pomodoroNumber,
             linkedTaskTitle:  focusState.linkedTaskTitle,
+            linkedTaskID:     focusState.linkedTaskID?.uuidString,
             isPhaseTransition: isPhaseTransition
         )
     }

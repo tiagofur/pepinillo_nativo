@@ -168,11 +168,30 @@ public struct DailyStatsDTO: Sendable, Equatable {
     public let sessionsCompleted: Int
     public let tasksCompleted: Int
 
-    init(date: Date, totalFocusMinutes: Int, sessionsCompleted: Int, tasksCompleted: Int) {
+    // Per-mode breakdown (minutes)
+    public let pomodoroMinutes: Int
+    public let flowtimeMinutes: Int
+    public let timeBlockMinutes: Int
+    public let stopwatchMinutes: Int
+
+    init(
+        date: Date,
+        totalFocusMinutes: Int,
+        sessionsCompleted: Int,
+        tasksCompleted: Int,
+        pomodoroMinutes: Int = 0,
+        flowtimeMinutes: Int = 0,
+        timeBlockMinutes: Int = 0,
+        stopwatchMinutes: Int = 0
+    ) {
         self.date = date
         self.totalFocusMinutes = totalFocusMinutes
         self.sessionsCompleted = sessionsCompleted
         self.tasksCompleted = tasksCompleted
+        self.pomodoroMinutes = pomodoroMinutes
+        self.flowtimeMinutes = flowtimeMinutes
+        self.timeBlockMinutes = timeBlockMinutes
+        self.stopwatchMinutes = stopwatchMinutes
     }
 
     init(from stats: DailyStats) {
@@ -180,7 +199,11 @@ public struct DailyStatsDTO: Sendable, Equatable {
             date: stats.date,
             totalFocusMinutes: stats.totalFocusMinutes,
             sessionsCompleted: stats.sessionsCompleted,
-            tasksCompleted: stats.tasksCompleted
+            tasksCompleted: stats.tasksCompleted,
+            pomodoroMinutes: stats.pomodoroSeconds / 60,
+            flowtimeMinutes: stats.flowtimeSeconds / 60,
+            timeBlockMinutes: stats.timeBlockSeconds / 60,
+            stopwatchMinutes: stats.stopwatchSeconds / 60
         )
     }
 }
