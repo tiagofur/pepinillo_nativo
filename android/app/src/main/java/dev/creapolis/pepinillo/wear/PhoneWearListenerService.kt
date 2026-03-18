@@ -4,7 +4,6 @@ import android.content.Intent
 import android.util.Log
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.work.workDataOf
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
@@ -15,7 +14,6 @@ import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.service.FocusTimerService
-import dev.creapolis.pepinillo.widget.CompleteTaskWorker
 import dev.creapolis.pepinillo.widget.WidgetTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -93,11 +91,16 @@ class PhoneWearListenerService : WearableListenerService() {
             WearDataLayerHelper.CMD_TASK_COMPLETE -> {
                 val taskId = messageEvent.data.toString(StandardCharsets.UTF_8)
                 if (taskId.isNotBlank()) {
-                    WorkManager.getInstance(this).enqueue(
-                        OneTimeWorkRequestBuilder<CompleteTaskWorker>()
-                            .setInputData(workDataOf(CompleteTaskWorker.KEY_TASK_ID to taskId))
-                            .build(),
-                    )
+                    Log.d(TAG, "Completing task $taskId from watch")
+                    scope.launch {
+                        runCatching {
+                            taskRepository.toggleCompletion(taskId)
+                            Log.d(TAG, "Task $taskId completed — pushing updated tasks")
+                            pushTasksAndStatsDirectly()
+                        }.onFailure { e ->
+                            Log.e(TAG, "Failed to complete task $taskId", e)
+                        }
+                    }
                 }
             }
 
