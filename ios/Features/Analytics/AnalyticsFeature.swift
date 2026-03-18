@@ -134,7 +134,7 @@ struct AnalyticsFeature {
                 state.isLoading = true
                 return .merge(
                     loadData(for: state.period),
-                    .run { _ in try? await CheckStatsIntent().donate() }
+                    .run { _ in _ = try? await CheckStatsIntent().donate() }
                 )
 
             case .periodChanged(let period):

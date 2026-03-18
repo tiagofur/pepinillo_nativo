@@ -442,7 +442,7 @@ struct FocusFeature {
                         if let mode = FocusModeEntity.allModes.first(where: { $0.id == modeName }) {
                             intent.mode = mode
                         }
-                        try? await intent.donate()
+                        _ = try? await intent.donate()
                     }
                 )
 

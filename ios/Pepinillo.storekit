@@ -25,7 +25,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "com.pepinillo.pro.lifetime",
+      "productID" : "com.pepinillo.app.pro.lifetime",
       "referenceName" : "Pro Lifetime",
       "type" : "NonConsumable"
     }
@@ -71,7 +71,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.pepinillo.pro.monthly",
+          "productID" : "com.pepinillo.app.pro.monthly",
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "Pro Monthly",
           "subscriptionGroupID" : "E43EFE78",
@@ -99,7 +99,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "com.pepinillo.pro.annual",
+          "productID" : "com.pepinillo.app.pro.annual",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "Pro Annual",
           "subscriptionGroupID" : "E43EFE78",

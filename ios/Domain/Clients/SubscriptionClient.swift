@@ -11,9 +11,9 @@ import ComposableArchitecture
 // MARK: - Subscription Product IDs
 
 enum PepinilloProduct: String, CaseIterable, Sendable {
-    case monthly  = "com.pepinillo.pro.monthly"
-    case annual   = "com.pepinillo.pro.annual"
-    case lifetime = "com.pepinillo.pro.lifetime"
+    case monthly  = "com.pepinillo.app.pro.monthly"
+    case annual   = "com.pepinillo.app.pro.annual"
+    case lifetime = "com.pepinillo.app.pro.lifetime"
 
     var isSubscription: Bool { self != .lifetime }
 }
