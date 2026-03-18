@@ -75,7 +75,6 @@ fun TasksScreen(
         // Linked task (highlighted) — shown when pomodoro is active with a linked task
         if (isTimerActive && linkedTaskName != null) {
             item {
-                val modeColor = WearModeColors.forMode(timerState?.mode ?: "Pomodoro")
                 Chip(
                     onClick = { },
                     label = {
@@ -83,13 +82,14 @@ fun TasksScreen(
                             text = linkedTaskName,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            color = modeColor,
+                            color = MaterialTheme.colors.onPrimary,
                         )
                     },
                     secondaryLabel = {
                         Text(
                             text = "🍅 En progreso",
                             style = MaterialTheme.typography.caption2,
+                            color = MaterialTheme.colors.onPrimary.copy(alpha = 0.8f),
                         )
                     },
                     icon = {
@@ -97,7 +97,7 @@ fun TasksScreen(
                             text = "▶",
                             modifier = Modifier.size(24.dp),
                             textAlign = TextAlign.Center,
-                            color = modeColor,
+                            color = MaterialTheme.colors.onPrimary,
                         )
                     },
                     colors = ChipDefaults.primaryChipColors(),
