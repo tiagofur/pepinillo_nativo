@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -22,11 +25,14 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
+import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.Chip
 import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.ListHeader
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import androidx.wear.compose.material.dialog.Alert
 import dev.creapolis.pepinillo.data.WearTask
 import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.launch
@@ -44,10 +50,48 @@ fun TasksScreen(
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
 
+    var taskToComplete by remember { mutableStateOf<WearTask?>(null) }
+
     val linkedTaskName = timerState?.linkedTaskName
     val isTimerActive = timerState?.status == "Running" || timerState?.status == "Paused"
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
+    // Confirmation dialog
+    taskToComplete?.let { task ->
+        Alert(
+            title = { Text("¿Completar tarea?", textAlign = TextAlign.Center) },
+            message = {
+                Text(
+                    text = task.title,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
+        ) {
+            item {
+                Button(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onCompleteTask(task.id)
+                        taskToComplete = null
+                    },
+                    colors = ButtonDefaults.primaryButtonColors(),
+                ) {
+                    Text("✓")
+                }
+            }
+            item {
+                Button(
+                    onClick = { taskToComplete = null },
+                    colors = ButtonDefaults.secondaryButtonColors(),
+                ) {
+                    Text("✕")
+                }
+            }
+        }
+    }
 
     ScalingLazyColumn(
         state = listState,
@@ -140,10 +184,7 @@ fun TasksScreen(
             items(tasks) { task ->
                 val progress = if (task.pomodoroProgress.isNotBlank()) task.pomodoroProgress else null
                 Chip(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onCompleteTask(task.id)
-                    },
+                    onClick = { taskToComplete = task },
                     label = {
                         Text(
                             text = task.title,
