@@ -20,7 +20,7 @@ import dev.creapolis.pepinillo.data.local.entity.TaskEntity
         DailyStatsEntity::class,
         SubtaskEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class PepinilloDatabase : RoomDatabase() {
@@ -30,6 +30,17 @@ abstract class PepinilloDatabase : RoomDatabase() {
     abstract fun subtaskDao(): SubtaskDao
 
     companion object {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN due_date INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN scheduled_for_today INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN recurrence_rule TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN next_occurrence INTEGER DEFAULT NULL")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN is_recurring_template INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN recurring_template_id TEXT DEFAULT NULL")
+            }
+        }
+
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Add sync columns to tasks

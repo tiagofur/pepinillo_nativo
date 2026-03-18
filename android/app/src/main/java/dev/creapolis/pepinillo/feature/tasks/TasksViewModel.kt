@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Task
+import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,24 +19,69 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class TaskFilter(val label: String) {
-    All("All"),
+    Today("Today"),
     Active("Active"),
     Completed("Done"),
+    All("All"),
+}
+
+enum class TaskSortOption(val label: String) {
+    Custom("Custom"),
+    Priority("Priority"),
+    DueDate("Due Date"),
+    Energy("Energy"),
+    Newest("Newest"),
 }
 
 data class TasksUiState(
     val tasks: List<Task> = emptyList(),
     val selectedFilter: TaskFilter = TaskFilter.All,
-    val showAddDialog: Boolean = false,
+    val selectedSort: TaskSortOption = TaskSortOption.Custom,
+    val energyFilter: EnergyLevel? = null,
     val isLoading: Boolean = true,
 )
 
 val TasksUiState.filteredTasks: List<Task>
-    get() = when (selectedFilter) {
-        TaskFilter.All -> tasks
-        TaskFilter.Active -> tasks.filter { !it.isCompleted }
-        TaskFilter.Completed -> tasks.filter { it.isCompleted }
+    get() {
+        // 1. Status filter
+        val statusFiltered = when (selectedFilter) {
+            TaskFilter.Today -> tasks.filter { !it.isCompleted && it.scheduledForToday }
+            TaskFilter.Active -> tasks.filter { !it.isCompleted }
+            TaskFilter.Completed -> tasks.filter { it.isCompleted }
+            TaskFilter.All -> tasks
+        }
+        // 2. Energy filter
+        val energyFiltered = if (energyFilter != null) {
+            statusFiltered.filter { it.energyLevel == energyFilter }
+        } else {
+            statusFiltered
+        }
+        // 3. Sort
+        return when (selectedSort) {
+            TaskSortOption.Custom -> energyFiltered.sortedWith(
+                compareBy<Task> { it.isCompleted }.thenBy { it.sortOrder }.thenByDescending { it.createdAt },
+            )
+            TaskSortOption.Priority -> energyFiltered.sortedWith(
+                compareBy<Task> { it.isCompleted }.thenBy { priorityOrdinal(it.priority) }.thenByDescending { it.createdAt },
+            )
+            TaskSortOption.DueDate -> energyFiltered.sortedWith(
+                compareBy<Task> { it.isCompleted }.thenBy(nullsLast()) { it.dueDate }.thenByDescending { it.createdAt },
+            )
+            TaskSortOption.Energy -> energyFiltered.sortedWith(
+                compareBy<Task> { it.isCompleted }.thenBy { it.energyLevel.ordinal }.thenByDescending { it.createdAt },
+            )
+            TaskSortOption.Newest -> energyFiltered.sortedWith(
+                compareBy<Task> { it.isCompleted }.thenByDescending { it.createdAt },
+            )
+        }
     }
+
+private fun priorityOrdinal(p: TaskPriority) = when (p) {
+    TaskPriority.High -> 0
+    TaskPriority.Medium -> 1
+    TaskPriority.Low -> 2
+    TaskPriority.None -> 3
+}
 
 val TasksUiState.activeCount: Int
     get() = tasks.count { !it.isCompleted }
@@ -46,7 +92,8 @@ class TasksViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _selectedFilter = MutableStateFlow(TaskFilter.All)
-    private val _showAddDialog = MutableStateFlow(false)
+    private val _selectedSort = MutableStateFlow(TaskSortOption.Custom)
+    private val _energyFilter = MutableStateFlow<EnergyLevel?>(null)
 
     private val _errorEvent = MutableSharedFlow<String>()
     val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
@@ -54,12 +101,14 @@ class TasksViewModel @Inject constructor(
     val uiState: StateFlow<TasksUiState> = combine(
         taskRepository.getAllTasks(),
         _selectedFilter,
-        _showAddDialog,
-    ) { tasks, filter, showDialog ->
+        _selectedSort,
+        _energyFilter,
+    ) { tasks, filter, sort, energy ->
         TasksUiState(
             tasks = tasks,
             selectedFilter = filter,
-            showAddDialog = showDialog,
+            selectedSort = sort,
+            energyFilter = energy,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TasksUiState())
@@ -68,33 +117,33 @@ class TasksViewModel @Inject constructor(
         _selectedFilter.value = filter
     }
 
+    fun selectSort(sort: TaskSortOption) {
+        _selectedSort.value = sort
+    }
+
+    fun selectEnergyFilter(energy: EnergyLevel?) {
+        _energyFilter.value = energy
+    }
+
     fun toggleTaskCompletion(taskId: String) = viewModelScope.launch {
         taskRepository.toggleCompletion(taskId).onFailure {
             _errorEvent.emit("Failed to update task")
         }
     }
 
-    fun showAddDialog() {
-        _showAddDialog.value = true
-    }
-
-    fun dismissAddDialog() {
-        _showAddDialog.value = false
-    }
-
-    fun addTask(title: String, energyLevel: EnergyLevel, estimatedPomodoros: Int) {
+    fun addQuickTask(title: String) {
         if (title.isBlank()) return
         viewModelScope.launch {
+            val currentFilter = _selectedFilter.value
             taskRepository.addTask(
                 Task(
-                    title = title,
-                    energyLevel = energyLevel,
-                    estimatedPomodoros = estimatedPomodoros,
+                    title = title.trim(),
+                    scheduledForToday = currentFilter == TaskFilter.Today,
+                    sortOrder = uiState.value.tasks.size,
                 ),
             ).onFailure {
                 _errorEvent.emit("Failed to add task")
             }
-            _showAddDialog.value = false
         }
     }
 

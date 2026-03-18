@@ -26,7 +26,7 @@ object DatabaseModule {
             PepinilloDatabase::class.java,
             "pepinillo.db",
         )
-            .addMigrations(PepinilloDatabase.MIGRATION_1_2)
+            .addMigrations(PepinilloDatabase.MIGRATION_1_2, PepinilloDatabase.MIGRATION_2_3)
             .build()
     }
 
