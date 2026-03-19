@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.imeNestedScroll
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -76,7 +79,7 @@ import dev.creapolis.pepinillo.ui.components.TasksListSkeleton
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TasksScreen(
     onTaskClick: (String) -> Unit,
@@ -110,7 +113,8 @@ fun TasksScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .imePadding(),
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -189,7 +193,9 @@ fun TasksScreen(
 
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .imeNestedScroll(),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     itemsIndexed(
@@ -359,8 +365,8 @@ fun TasksScreen(
         SuccessToast(
             message = successMsg,
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 24.dp),
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 88.dp),
             onDismiss = { viewModel.dismissSuccessMessage() },
         )
     }
