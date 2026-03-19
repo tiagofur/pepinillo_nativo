@@ -25,6 +25,7 @@ struct AnalyticsFeature {
         var achievements: [UserAchievement] = []
         var weeklyInsights: [FocusInsight] = []
         var isLoading: Bool = false
+        var isProUser: Bool = false
         @Presents var weeklyReview: WeeklyReviewFeature.State?
 
         // Productivity Insights
@@ -138,6 +139,10 @@ struct AnalyticsFeature {
                 )
 
             case .periodChanged(let period):
+                // Free users can only view 7D
+                if !state.isProUser && period != .week {
+                    return .none
+                }
                 state.period = period
                 state.isLoading = true
                 return loadData(for: period)
@@ -208,6 +213,7 @@ struct AnalyticsFeature {
                 return .none
 
             case .weeklyReviewTapped:
+                guard state.isProUser else { return .none }
                 state.weeklyReview = WeeklyReviewFeature.State()
                 return .none
 

@@ -125,6 +125,21 @@ data class PomodoroSessionDto(
     val updatedAt: Long = 0,
 )
 
+// ── Billing ──
+
+@Serializable
+data class VerifyReceiptRequest(
+    val platform: String = "android",
+    val productId: String,
+    val purchaseToken: String,
+)
+
+@Serializable
+data class VerifyReceiptResponse(
+    val subscriptionTier: String = "free",
+    val subscriptionExpiresAt: Long? = null,
+)
+
 // ── Pomodoro Config ──
 
 @Serializable

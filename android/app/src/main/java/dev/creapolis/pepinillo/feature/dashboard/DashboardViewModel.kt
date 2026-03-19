@@ -3,6 +3,7 @@ package dev.creapolis.pepinillo.feature.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.repository.SessionRepository
@@ -31,7 +32,16 @@ import javax.inject.Inject
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
+    private val featureGate: FeatureGate,
 ) : ViewModel() {
+
+    val isPro: StateFlow<Boolean> = featureGate.subscriptionState.let { flow ->
+        kotlinx.coroutines.flow.MutableStateFlow(flow.value.isPro).also { mutable ->
+            viewModelScope.launch {
+                flow.collect { mutable.value = it.isPro }
+            }
+        }
+    }
 
     private val _selectedPeriod = MutableStateFlow(AnalyticsPeriod.Week)
 
@@ -59,6 +69,10 @@ class DashboardViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WeeklyReportData())
 
     fun setPeriod(period: AnalyticsPeriod) {
+        // Free users can only see Week
+        if (!featureGate.canAccessFullAnalytics() && period != AnalyticsPeriod.Week) {
+            return
+        }
         _selectedPeriod.value = period
     }
 

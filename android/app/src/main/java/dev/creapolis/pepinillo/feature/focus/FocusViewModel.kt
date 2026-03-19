@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
@@ -48,6 +49,8 @@ data class FocusUiState(
     val keepScreenOn: Boolean = false,
     val breakSuggested: Boolean = false,
     val isWaitingForNext: Boolean = false,
+    val isPro: Boolean = false,
+    val showPaywall: Boolean = false,
 )
 
 @HiltViewModel
@@ -57,11 +60,13 @@ class FocusViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val taskRepository: TaskRepository,
     private val prefsRepo: UserPreferencesRepository,
+    private val featureGate: FeatureGate,
 ) : ViewModel() {
 
     private val _linkedTaskName = MutableStateFlow<String?>(null)
     private val _showTaskPicker = MutableStateFlow(false)
     private val _showStopConfirmation = MutableStateFlow(false)
+    private val _showPaywall = MutableStateFlow(false)
     val showTaskPicker: StateFlow<Boolean> = _showTaskPicker.asStateFlow()
 
     val activeTasks: StateFlow<List<Task>> = taskRepository.getActiveTasks()
@@ -126,7 +131,9 @@ class FocusViewModel @Inject constructor(
         },
         prefsRepo.preferences,
         _showStopConfirmation,
-    ) { combined, prefs, showStopConfirm ->
+        featureGate.subscriptionState,
+        _showPaywall,
+    ) { combined, prefs, showStopConfirm, subState, showPaywall ->
         FocusUiState(
             selectedMode = combined.timerState.mode,
             displayTime = combined.timerState.displayTime,
@@ -144,6 +151,8 @@ class FocusViewModel @Inject constructor(
             keepScreenOn = prefs.keepScreenOn,
             breakSuggested = combined.timerState.breakSuggested,
             isWaitingForNext = combined.timerState.status == TimerStatus.WaitingForNext,
+            isPro = subState.isPro,
+            showPaywall = showPaywall,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
         greeting = computeGreeting(),
@@ -151,12 +160,19 @@ class FocusViewModel @Inject constructor(
     ))
 
     fun selectMode(mode: FocusMode) {
+        if (!featureGate.canUseMode(mode)) {
+            _showPaywall.value = true
+            return
+        }
         viewModelScope.launch {
             focusEngine.selectMode(mode)
-            // Push updated state to watch immediately (service is not running while idle)
             val state = focusEngine.state.value
             WearDataLayerHelper.pushTimer(context, state, null)
         }
+    }
+
+    fun dismissPaywall() {
+        _showPaywall.value = false
     }
 
     fun onStartStopClick() {

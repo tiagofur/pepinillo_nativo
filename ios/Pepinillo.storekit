@@ -15,7 +15,7 @@
   ],
   "products" : [
     {
-      "displayPrice" : "29.99",
+      "displayPrice" : "49.99",
       "familyShareable" : false,
       "internalID" : "A87542D8",
       "localizations" : [
@@ -59,7 +59,7 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "2.99",
+          "displayPrice" : "3.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "2E20FCA7",
@@ -87,14 +87,14 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "14.99",
+          "displayPrice" : "24.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "7B20B271",
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Full access to all Pro features, billed annually. Save over 50%.",
+              "description" : "Full access to all Pro features, billed annually. Save 48%.",
               "displayName" : "Pro Annual",
               "locale" : "en_US"
             }

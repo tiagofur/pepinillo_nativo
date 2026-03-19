@@ -71,6 +71,7 @@ fun FocusScreen(
     modifier: Modifier = Modifier,
     viewModel: FocusViewModel = hiltViewModel(),
     onProfileClick: () -> Unit = {},
+    onNavigateToPaywall: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val activeTasks by viewModel.activeTasks.collectAsState()
@@ -206,8 +207,15 @@ fun FocusScreen(
                     mode = mode,
                     isSelected = mode == uiState.selectedMode,
                     onClick = { viewModel.selectMode(mode) },
+                    isLocked = !mode.isFreeTier && !uiState.isPro,
                 )
             }
+        }
+
+        // Navigate to paywall when requested
+        if (uiState.showPaywall) {
+            viewModel.dismissPaywall()
+            onNavigateToPaywall()
         }
 
         // ── BREAK SUGGESTION (Flowtime) ──
