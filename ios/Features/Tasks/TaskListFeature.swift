@@ -23,6 +23,7 @@ struct TaskListFeature {
         var importError: String?
         var selectedTaskID: UUID?
         var recentlyDeletedTask: TaskItemState?
+        var successMessage: String?
         @Presents var detail: TaskDetailFeature.State?
     }
 
@@ -145,6 +146,7 @@ struct TaskListFeature {
         case taskDeleted(UUID)
         case undoDeleteTask
         case undoTimerExpired
+        case successMessageDismissed
         case taskMoved(IndexSet, Int)
         case energyLevelChanged(UUID, EnergyLevel)
         case recurrenceChanged(UUID, String?)
@@ -239,8 +241,9 @@ struct TaskListFeature {
                 )
                 state.tasks.append(newTask)
                 state.newTaskTitle = ""
+                state.successMessage = String(localized: "Task added")
 
-                return .run { _ in
+                return .run { send in
                     let dto = TaskItemDTO(
                         id: newID,
                         title: title,
@@ -248,6 +251,8 @@ struct TaskListFeature {
                         scheduledForToday: newTask.scheduledForToday
                     )
                     try await persistence.saveTask(dto)
+                    try await Task.sleep(for: .seconds(1.5))
+                    await send(.successMessageDismissed)
                 }
 
             case .taskTapped(let id):
@@ -305,6 +310,10 @@ struct TaskListFeature {
                     try await persistence.deleteTask(taskID)
                     try? await spotlight.deindexTask(taskID)
                 }
+
+            case .successMessageDismissed:
+                state.successMessage = nil
+                return .none
 
             case .taskMoved(let source, let destination):
                 state.tasks.move(fromOffsets: source, toOffset: destination)

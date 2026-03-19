@@ -27,6 +27,14 @@ struct TaskListView: View {
             }
         }
         .animation(.spring(), value: store.recentlyDeletedTask != nil)
+        .overlay(alignment: .top) {
+            if let msg = store.successMessage {
+                successBanner(message: msg)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.top, 8)
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: store.successMessage != nil)
         .navigationTitle(String(localized: "Tasks"))
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -96,7 +104,15 @@ struct TaskListView: View {
 
     @ViewBuilder
     private var taskList: some View {
-        if filteredTasks.isEmpty {
+        if store.isLoading {
+            List {
+                ForEach(0..<5, id: \.self) { _ in
+                    TaskRowPlaceholder()
+                }
+            }
+            .listStyle(.plain)
+            .redacted(reason: .placeholder)
+        } else if filteredTasks.isEmpty {
             ContentUnavailableView(
                 store.tasks.isEmpty
                     ? String(localized: "No Tasks Yet")
@@ -233,6 +249,22 @@ struct TaskListView: View {
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
         .padding(.horizontal, 16)
+    }
+
+    // MARK: - Success Banner
+
+    private func successBanner(message: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.subheadline)
+                .foregroundStyle(.green)
+            Text(message)
+                .font(.subheadline.weight(.medium))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.ultraThinMaterial, in: Capsule())
+        .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
     }
 
     // MARK: - Toolbar Items
@@ -546,5 +578,28 @@ struct TaskRow: View {
         formatter.dateStyle = .short
         formatter.timeStyle = .none
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Placeholder Row for Loading Skeleton
+
+private struct TaskRowPlaceholder: View {
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .frame(width: 24, height: 24)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Placeholder task title here")
+                    .font(.body)
+                HStack(spacing: 6) {
+                    Text("Deep Work")
+                        .font(.caption2)
+                    Text("Today")
+                        .font(.caption2)
+                }
+            }
+            Spacer()
+        }
+        .padding(.vertical, 4)
     }
 }

@@ -13,7 +13,7 @@ import ComposableArchitecture
 struct OnboardingView: View {
     let onComplete: (FocusMode) -> Void
 
-    @State private var currentPage: Int = 0
+    @AppStorage("onboarding_current_page") private var currentPage: Int = 0
     @State private var selectedDefaultMode: FocusMode = .pomodoro
 
     private let pages: [OnboardingPage] = OnboardingPage.all
@@ -69,6 +69,7 @@ struct OnboardingView: View {
             if currentPage < pages.count {
                 withAnimation { currentPage += 1 }
             } else {
+                currentPage = 0
                 onComplete(selectedDefaultMode)
             }
         } label: {

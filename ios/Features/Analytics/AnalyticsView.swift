@@ -20,8 +20,9 @@ struct AnalyticsView: View {
                         .padding(.horizontal, 16)
 
                     if store.isLoading {
-                        ProgressView()
-                            .padding(.top, 40)
+                        AnalyticsPlaceholder()
+                            .redacted(reason: .placeholder)
+                            .padding(.horizontal, 16)
                     } else if store.chartData.isEmpty && store.sessionsCompleted == 0 {
                         ContentUnavailableView(
                             String(localized: "No Data Yet"),
@@ -421,5 +422,50 @@ struct StreakCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title) streak, \(days) days")
+    }
+}
+
+// MARK: - Loading Placeholder
+
+private struct AnalyticsPlaceholder: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            // Summary cards placeholder
+            HStack(spacing: 12) {
+                ForEach(0..<3, id: \.self) { _ in
+                    VStack(spacing: 8) {
+                        Text("00h 00m")
+                            .font(.title3.weight(.bold))
+                        Text("Focus Time")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(16)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+            }
+
+            // Chart placeholder
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.secondarySystemBackground))
+                .frame(height: 200)
+
+            // Pattern cards placeholder
+            HStack(spacing: 12) {
+                ForEach(0..<2, id: \.self) { _ in
+                    VStack(spacing: 8) {
+                        Text("9 AM - 12 PM")
+                            .font(.subheadline.weight(.bold))
+                        Text("Peak Hours")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(16)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+            }
+        }
     }
 }
