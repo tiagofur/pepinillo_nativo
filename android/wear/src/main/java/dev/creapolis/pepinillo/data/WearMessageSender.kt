@@ -19,6 +19,7 @@ object WearDataPaths {
     const val CMD_TIMER_PAUSE = "/pepinillo/cmd/timer/pause"
     const val CMD_TIMER_RESUME = "/pepinillo/cmd/timer/resume"
     const val CMD_TIMER_STOP = "/pepinillo/cmd/timer/stop"
+    const val CMD_TIMER_SKIP = "/pepinillo/cmd/timer/skip"
     const val CMD_TASK_COMPLETE = "/pepinillo/cmd/task/complete"
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
 }
@@ -102,6 +103,8 @@ class WearMessageSender(private val context: Context) {
     suspend fun resumeTimer(): Boolean = sendCommand(CMD_TIMER_RESUME)
 
     suspend fun stopTimer(): Boolean = sendCommand(CMD_TIMER_STOP)
+
+    suspend fun skipPhase(): Boolean = sendCommand(WearDataPaths.CMD_TIMER_SKIP)
 
     suspend fun completeTask(taskId: String): Boolean =
         sendCommand(CMD_TASK_COMPLETE, taskId.toByteArray(StandardCharsets.UTF_8))

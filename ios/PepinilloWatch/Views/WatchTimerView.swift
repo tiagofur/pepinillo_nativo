@@ -112,17 +112,19 @@ struct WatchTimerView: View {
                 }
                 .buttonStyle(.plain)
 
-                // Skip phase
-                Button {
-                    store.send(.skipTapped)
-                } label: {
-                    Image(systemName: "forward.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .frame(width: 36, height: 36)
-                        .background(.white.opacity(0.12), in: Circle())
+                // Skip phase (only during break phases)
+                if store.phaseLabel.contains("Break") {
+                    Button {
+                        store.send(.skipTapped)
+                    } label: {
+                        Image(systemName: "forward.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .frame(width: 36, height: 36)
+                            .background(.white.opacity(0.12), in: Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.bottom, 2)
         }

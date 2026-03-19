@@ -70,6 +70,22 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { sender.stopTimer() }
     }
 
+    fun skipPhase() {
+        // Optimistic UI: show Running with next phase
+        val current = timerState.value
+        val nextPhase = if (current.phase == "Work") "ShortBreak" else "Work"
+        val nextLabel = if (nextPhase == "Work") "Focus" else "Descanso"
+        WearDataStore.updateTimer(
+            current.copy(
+                status = "Running",
+                phase = nextPhase,
+                phaseLabel = nextLabel,
+                progress = 1f,
+            ),
+        )
+        viewModelScope.launch { sender.skipPhase() }
+    }
+
     fun completeTask(taskId: String) {
         // Optimistic UI: remove task from list immediately
         WearDataStore.updateTasks(

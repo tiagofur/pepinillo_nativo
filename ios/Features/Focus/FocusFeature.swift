@@ -177,9 +177,10 @@ struct FocusFeature {
                 state.phase = initialPhase
                 state.elapsedSeconds = 0
 
-                // Set pomodoroNumber immediately for Pomodoro mode
-                if state.selectedMode == .pomodoro, case .work(let n, _) = initialPhase {
-                    state.pomodoroNumber = n
+                // Set pomodoroNumber for Pomodoro mode — will be updated from DB in the effect below
+                if state.selectedMode == .pomodoro, case .work(_, _) = initialPhase {
+                    // Temporary value; the real count is loaded from DB in the start effect
+                    state.pomodoroNumber = state.pomodoroNumber ?? 1
                 } else {
                     state.pomodoroNumber = nil
                 }
@@ -202,6 +203,27 @@ struct FocusFeature {
                 let soundscapeVolume = state.soundscapeVolume
 
                 return .merge(
+                    // Load today's completed pomodoro work sessions from DB
+                    // so the engine starts with the correct cycle position
+                    .run { [persistence] send in
+                        if mode == .pomodoro {
+                            let startOfDay = Calendar.current.startOfDay(for: Date.now)
+                            let sessions = try await persistence.fetchSessions(startOfDay, Date.now)
+                            let pomodoroWorkCount = sessions.filter {
+                                $0.mode == "pomodoro" && ($0.taskID != nil || true)
+                            }.count
+                            // Update state via a tick — the engine will pick this up
+                            // We store the DB-derived count for display
+                            await send(.timerTicked(FocusSessionState(
+                                id: UUID(),
+                                mode: .pomodoro,
+                                phase: .work(number: pomodoroWorkCount + 1, total: config.pomodorosPerCycle),
+                                startedAt: Date.now,
+                                pomodoroNumber: pomodoroWorkCount + 1,
+                                totalPomodoros: config.pomodorosPerCycle
+                            )))
+                        }
+                    },
                     // Start engine, then observe its events.
                     // These MUST be sequential: start() creates a fresh AsyncStream,
                     // and events() must read it after start() completes.
@@ -622,7 +644,7 @@ struct FocusFeature {
         state.activeMode = nil
         state.phase = .idle
         state.elapsedSeconds = 0
-        state.pomodoroNumber = nil
+        // Preserve pomodoroNumber so the next session starts with correct cycle position
         state.progress = nil
         state.linkedTaskID = nil
         state.linkedTaskTitle = nil

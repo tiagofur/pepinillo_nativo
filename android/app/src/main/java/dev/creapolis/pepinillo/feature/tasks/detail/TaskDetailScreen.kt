@@ -414,7 +414,7 @@ private fun SubtasksSection(
                     )
                     IconButton(
                         onClick = { onDeleteSubtask(subtask.id) },
-                        modifier = Modifier.size(32.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
                         Icon(
                             Icons.Rounded.Clear,

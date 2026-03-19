@@ -33,7 +33,6 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Summarize
 import androidx.compose.material.icons.rounded.TaskAlt
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +57,7 @@ import dev.creapolis.pepinillo.feature.dashboard.components.ModeBreakdown
 import dev.creapolis.pepinillo.feature.dashboard.model.Achievement
 import dev.creapolis.pepinillo.feature.dashboard.model.AnalyticsPeriod
 import dev.creapolis.pepinillo.feature.dashboard.model.isEmpty
+import dev.creapolis.pepinillo.ui.components.DashboardSkeleton
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +67,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
     onCalendarClick: () -> Unit = {},
     onNavigateToPaywall: () -> Unit = {},
+    onStartFocusClick: () -> Unit = {},
 ) {
     val stats by viewModel.stats.collectAsState()
     val showWeeklyReview by viewModel.showWeeklyReview.collectAsState()
@@ -74,8 +75,13 @@ fun DashboardScreen(
     val isPro by viewModel.isPro.collectAsState()
 
     if (stats.isLoading) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+        ) {
+            Spacer(modifier = Modifier.height(60.dp))
+            DashboardSkeleton()
         }
         return
     }
@@ -133,6 +139,7 @@ fun DashboardScreen(
         // ── EMPTY STATE ──
         if (stats.isEmpty) {
             EmptyDashboardState(
+                onStartFocusClick = onStartFocusClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
@@ -545,7 +552,10 @@ private fun DashboardCard(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun EmptyDashboardState(modifier: Modifier = Modifier) {
+private fun EmptyDashboardState(
+    modifier: Modifier = Modifier,
+    onStartFocusClick: () -> Unit = {},
+) {
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -570,6 +580,19 @@ private fun EmptyDashboardState(modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
         )
+        Spacer(modifier = Modifier.height(20.dp))
+        androidx.compose.material3.OutlinedButton(
+            onClick = onStartFocusClick,
+            shape = RoundedCornerShape(20.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.PlayArrow,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Start your first focus")
+        }
     }
 }
 

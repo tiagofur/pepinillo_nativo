@@ -14,6 +14,7 @@ import dev.creapolis.pepinillo.feature.dashboard.model.DashboardStats
 import dev.creapolis.pepinillo.feature.dashboard.model.ModeUsage
 import dev.creapolis.pepinillo.feature.dashboard.model.WeeklyReportData
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

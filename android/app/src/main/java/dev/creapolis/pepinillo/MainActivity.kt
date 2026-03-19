@@ -26,6 +26,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -193,6 +196,13 @@ fun PepinilloApp() {
                 DashboardScreen(
                     onCalendarClick = { navController.navigate("calendar") },
                     onNavigateToPaywall = { navController.navigate("paywall") },
+                    onStartFocusClick = {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                 )
             }
             composable("calendar") {
@@ -246,8 +256,23 @@ fun PepinilloApp() {
             }
 
             composable("onboarding") {
+                val prefsRepo = remember {
+                    UserPreferencesRepository(navController.context)
+                }
+                val prefs by prefsRepo.preferences.collectAsState(initial = null)
+                val onboardingScope = rememberCoroutineScope()
+
                 OnboardingScreen(
+                    initialPage = prefs?.onboardingPage ?: 0,
+                    onPageChanged = { page ->
+                        onboardingScope.launch {
+                            prefsRepo.updateOnboardingPage(page)
+                        }
+                    },
                     onComplete = {
+                        onboardingScope.launch {
+                            prefsRepo.completeOnboarding()
+                        }
                         navController.navigate(TopLevelDestination.Focus.route) {
                             popUpTo("onboarding") { inclusive = true }
                         }

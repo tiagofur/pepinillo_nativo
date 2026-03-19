@@ -108,6 +108,7 @@ data class WearTimerState(
     val isConnected: Boolean = false,
     val linkedTaskId: String? = null,
     val linkedTaskName: String? = null,
+    val completedSessions: Int = 0,
 )
 
 data class WearTask(

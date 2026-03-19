@@ -1,0 +1,25 @@
+<resources>
+    <!-- TimerScreen -->
+    <string name="focus_complete">\u00a1Enfoque completo!</string>
+    <string name="break_finished">\u00a1Descanso terminado!</string>
+    <string name="start_break">Iniciar descanso</string>
+    <string name="start_focus">Iniciar enfoque</string>
+    <string name="stop">Detener</string>
+    <string name="connecting_to_phone">Conectando con el tel\u00e9fono</string>
+    <string name="queued">%d en cola</string>
+    <string name="start">Iniciar</string>
+
+    <!-- TasksScreen -->
+    <string name="tasks_count">Tareas (%d)</string>
+    <string name="in_progress">En progreso</string>
+    <string name="complete_task">\u00bfCompletar tarea?</string>
+    <string name="no_active_tasks">Sin tareas activas</string>
+
+    <!-- StatsScreen -->
+    <string name="today">Hoy</string>
+    <string name="focus_time">Tiempo de enfoque</string>
+    <string name="sessions">Sesiones</string>
+    <string name="streak">Racha</string>
+    <string name="days">%d d\u00edas</string>
+    <string name="completed_tasks">Tareas completadas</string>
+</resources>

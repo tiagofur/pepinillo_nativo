@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
@@ -23,6 +24,7 @@ import androidx.wear.compose.material.ChipDefaults
 import androidx.wear.compose.material.ListHeader
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.WearStatsState
 import kotlinx.coroutines.launch
 
@@ -55,7 +57,7 @@ fun StatsScreen(
         item {
             ListHeader {
                 Text(
-                    text = "Hoy",
+                    text = stringResource(R.string.today),
                     color = MaterialTheme.colors.primary,
                 )
             }
@@ -80,7 +82,7 @@ fun StatsScreen(
         item {
             StatChip(
                 emoji = "⏱",
-                label = "Tiempo de enfoque",
+                label = stringResource(R.string.focus_time),
                 value = formatMinutes(state.totalMinutes),
             )
         }
@@ -89,7 +91,7 @@ fun StatsScreen(
         item {
             StatChip(
                 emoji = "✅",
-                label = "Sesiones",
+                label = stringResource(R.string.sessions),
                 value = "${state.sessions}",
             )
         }
@@ -98,8 +100,8 @@ fun StatsScreen(
         item {
             StatChip(
                 emoji = "🔥",
-                label = "Racha",
-                value = "${state.streak} días",
+                label = stringResource(R.string.streak),
+                value = stringResource(R.string.days, state.streak),
             )
         }
 
@@ -107,7 +109,7 @@ fun StatsScreen(
         item {
             StatChip(
                 emoji = "📋",
-                label = "Tareas completadas",
+                label = stringResource(R.string.completed_tasks),
                 value = "${state.completedTasks}",
             )
         }

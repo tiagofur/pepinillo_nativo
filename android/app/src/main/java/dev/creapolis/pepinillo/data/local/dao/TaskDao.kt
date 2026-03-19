@@ -72,4 +72,7 @@ interface TaskDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(tasks: List<TaskEntity>)
+
+    @Query("UPDATE tasks SET sort_order = :sortOrder, updated_at = :now, is_dirty = 1 WHERE id = :taskId")
+    suspend fun updateSortOrder(taskId: String, sortOrder: Int, now: Long = System.currentTimeMillis())
 }

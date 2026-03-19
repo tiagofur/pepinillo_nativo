@@ -12,7 +12,6 @@ import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
-import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.service.FocusTimerService
 import dev.creapolis.pepinillo.widget.WidgetTask
 import kotlinx.coroutines.CoroutineScope
@@ -88,6 +87,12 @@ class PhoneWearListenerService : WearableListenerService() {
                 )
             }
 
+            WearDataLayerHelper.CMD_TIMER_SKIP -> {
+                Log.d(TAG, "Skip phase from watch")
+                // Skip = start the next phase (works from WaitingForNext or Running)
+                focusEngine.start()
+            }
+
             WearDataLayerHelper.CMD_TASK_COMPLETE -> {
                 val taskId = messageEvent.data.toString(StandardCharsets.UTF_8)
                 if (taskId.isNotBlank()) {
@@ -121,22 +126,7 @@ class PhoneWearListenerService : WearableListenerService() {
                 val activeTasks = taskRepository.getActiveTasks().first()
                 Log.d(TAG, "Direct push: ${activeTasks.size} active tasks")
 
-                val widgetTasks = activeTasks.take(5).map { task ->
-                    val energyEmoji = when (task.energyLevel) {
-                        EnergyLevel.Deep -> "\uD83D\uDD25"
-                        EnergyLevel.Regular -> "\u26A1"
-                        EnergyLevel.Light -> "\uD83D\uDCA7"
-                    }
-                    val pomodoroProgress = if (task.estimatedPomodoros > 0) {
-                        "${task.completedPomodoros}/${task.estimatedPomodoros} \uD83C\uDF45"
-                    } else ""
-                    WidgetTask(
-                        id = task.id,
-                        title = task.title,
-                        energyEmoji = energyEmoji,
-                        pomodoroProgress = pomodoroProgress,
-                    )
-                }
+                val widgetTasks = activeTasks.take(5).map { WidgetTask.fromTask(it) }
 
                 val stats = sessionRepository.getTodayStats().first()
                 val allDays = sessionRepository.getAllDaysWithSessions().first()

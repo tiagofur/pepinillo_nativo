@@ -22,6 +22,7 @@ struct TaskListFeature {
         var newTaskTitle: String = ""
         var importError: String?
         var selectedTaskID: UUID?
+        var recentlyDeletedTask: TaskItemState?
         @Presents var detail: TaskDetailFeature.State?
     }
 
@@ -142,6 +143,8 @@ struct TaskListFeature {
         case taskTapped(UUID)
         case taskCompleted(UUID)
         case taskDeleted(UUID)
+        case undoDeleteTask
+        case undoTimerExpired
         case taskMoved(IndexSet, Int)
         case energyLevelChanged(UUID, EnergyLevel)
         case recurrenceChanged(UUID, String?)
@@ -157,6 +160,8 @@ struct TaskListFeature {
         case remindersImportFailed(String)
         case importErrorDismissed
     }
+
+    private enum _UndoTimerID: Hashable { case undoTimer }
 
     @Dependency(\.persistenceClient) var persistence
     @Dependency(\.spotlightClient) var spotlight
@@ -276,10 +281,29 @@ struct TaskListFeature {
                 }
 
             case .taskDeleted(let id):
+                guard let task = state.tasks[id: id] else { return .none }
+                state.recentlyDeletedTask = task
                 state.tasks.remove(id: id)
+                return .run { send in
+                    try await Task.sleep(for: .seconds(5))
+                    await send(.undoTimerExpired)
+                }
+                .cancellable(id: _UndoTimerID.undoTimer, cancelInFlight: true)
+
+            case .undoDeleteTask:
+                if let task = state.recentlyDeletedTask {
+                    state.tasks.append(task)
+                }
+                state.recentlyDeletedTask = nil
+                return .cancel(id: _UndoTimerID.undoTimer)
+
+            case .undoTimerExpired:
+                guard let task = state.recentlyDeletedTask else { return .none }
+                let taskID = task.id
+                state.recentlyDeletedTask = nil
                 return .run { [spotlight] _ in
-                    try await persistence.deleteTask(id)
-                    try? await spotlight.deindexTask(id)
+                    try await persistence.deleteTask(taskID)
+                    try? await spotlight.deindexTask(taskID)
                 }
 
             case .taskMoved(let source, let destination):

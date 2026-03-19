@@ -2,7 +2,8 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Root view for the watchOS app. Vertical-paged TabView with three screens:
-// Timer (top), Tasks (middle), Dashboard (bottom).
+// Dashboard (top), Timer (center, default), Tasks (bottom).
+// Hub-and-spoke layout: Timer is always 1 swipe from either screen.
 
 import SwiftUI
 import ComposableArchitecture
@@ -12,6 +13,11 @@ struct WatchRootView: View {
 
     var body: some View {
         TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
+            WatchDashboardView(
+                store: store.scope(state: \.dashboard, action: \.dashboard)
+            )
+            .tag(WatchAppFeature.WatchTab.dashboard)
+
             WatchTimerView(
                 store: store.scope(state: \.timer, action: \.timer)
             )
@@ -22,11 +28,6 @@ struct WatchRootView: View {
                 linkedTaskID: store.timer.linkedTaskID.flatMap { UUID(uuidString: $0) }
             )
             .tag(WatchAppFeature.WatchTab.tasks)
-
-            WatchDashboardView(
-                store: store.scope(state: \.dashboard, action: \.dashboard)
-            )
-            .tag(WatchAppFeature.WatchTab.dashboard)
         }
         .tabViewStyle(.verticalPage)
         .onAppear { store.send(.onAppear) }

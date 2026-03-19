@@ -28,9 +28,9 @@ struct WatchAppFeature {
     }
 
     enum WatchTab: Int, Equatable {
-        case timer = 0
-        case tasks = 1
-        case dashboard = 2
+        case dashboard = 0
+        case timer = 1
+        case tasks = 2
     }
 
     // MARK: - Action

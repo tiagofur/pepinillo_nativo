@@ -140,6 +140,7 @@ class WearSyncListenerService : WearableListenerService() {
                         isConnected = true,
                         linkedTaskId = linkedId.ifEmpty { null },
                         linkedTaskName = dataMap.getString("linkedTaskName", "").ifEmpty { null },
+                        completedSessions = dataMap.getInt("completedSessions", 0),
                     )
                     processor.onTimerData(timerState)
                 }

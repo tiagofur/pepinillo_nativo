@@ -60,7 +60,27 @@ data class WidgetTask(
     val title: String,
     val energyEmoji: String,
     val pomodoroProgress: String, // e.g. "2/4 🍅" or "" if no estimate
-)
+) {
+    companion object {
+        /** Convert a domain Task to a WidgetTask. Shared by TaskRepository, PhoneWearListenerService, etc. */
+        fun fromTask(task: dev.creapolis.pepinillo.feature.tasks.model.Task): WidgetTask {
+            val energyEmoji = when (task.energyLevel) {
+                dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel.Deep -> "\uD83D\uDD25"
+                dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel.Regular -> "\u26A1"
+                dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel.Light -> "\uD83D\uDCA7"
+            }
+            val pomodoroProgress = if (task.estimatedPomodoros > 0) {
+                "${task.completedPomodoros}/${task.estimatedPomodoros} \uD83C\uDF45"
+            } else ""
+            return WidgetTask(
+                id = task.id,
+                title = task.title,
+                energyEmoji = energyEmoji,
+                pomodoroProgress = pomodoroProgress,
+            )
+        }
+    }
+}
 
 // ─────────────────────────── Glance preference keys ──────────────────────
 

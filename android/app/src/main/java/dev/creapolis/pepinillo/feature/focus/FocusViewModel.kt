@@ -49,6 +49,7 @@ data class FocusUiState(
     val keepScreenOn: Boolean = false,
     val breakSuggested: Boolean = false,
     val isWaitingForNext: Boolean = false,
+    val canSkip: Boolean = false,
     val isPro: Boolean = false,
     val showPaywall: Boolean = false,
 )
@@ -67,6 +68,8 @@ class FocusViewModel @Inject constructor(
     private val _showTaskPicker = MutableStateFlow(false)
     private val _showStopConfirmation = MutableStateFlow(false)
     private val _showPaywall = MutableStateFlow(false)
+    private val _successMessage = MutableStateFlow<String?>(null)
+    val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
     val showTaskPicker: StateFlow<Boolean> = _showTaskPicker.asStateFlow()
 
     val activeTasks: StateFlow<List<Task>> = taskRepository.getActiveTasks()
@@ -151,6 +154,9 @@ class FocusViewModel @Inject constructor(
             keepScreenOn = prefs.keepScreenOn,
             breakSuggested = combined.timerState.breakSuggested,
             isWaitingForNext = combined.timerState.status == TimerStatus.WaitingForNext,
+            canSkip = combined.timerState.mode == FocusMode.Pomodoro &&
+                (combined.timerState.status == TimerStatus.Running || combined.timerState.status == TimerStatus.WaitingForNext) &&
+                (combined.timerState.phase == FocusPhase.ShortBreak || combined.timerState.phase == FocusPhase.LongBreak),
             isPro = subState.isPro,
             showPaywall = showPaywall,
         )
@@ -198,6 +204,10 @@ class FocusViewModel @Inject constructor(
         _showStopConfirmation.value = false
     }
 
+    fun onSkipClick() {
+        focusEngine.skipPhase()
+    }
+
     fun onTaskLinkClick() {
         _showTaskPicker.value = true
     }
@@ -209,6 +219,13 @@ class FocusViewModel @Inject constructor(
     fun linkTask(taskId: String?) {
         focusEngine.linkTask(taskId)
         _showTaskPicker.value = false
+        if (taskId != null) {
+            _successMessage.value = "Task linked"
+        }
+    }
+
+    fun dismissSuccessMessage() {
+        _successMessage.value = null
     }
 
     private data class TimerCombined(

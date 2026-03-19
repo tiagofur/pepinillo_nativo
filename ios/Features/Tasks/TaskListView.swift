@@ -19,6 +19,14 @@ struct TaskListView: View {
             taskList
             addTaskBar
         }
+        .overlay(alignment: .bottom) {
+            if let deletedTask = store.recentlyDeletedTask {
+                undoBanner(taskTitle: deletedTask.title)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .padding(.bottom, 60)
+            }
+        }
+        .animation(.spring(), value: store.recentlyDeletedTask != nil)
         .navigationTitle(String(localized: "Tasks"))
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -198,6 +206,33 @@ struct TaskListView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(.bar)
+    }
+
+    // MARK: - Undo Banner
+
+    private func undoBanner(taskTitle: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "trash")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text("\"\(taskTitle)\" deleted")
+                .font(.subheadline)
+                .lineLimit(1)
+            Spacer()
+            Button {
+                HapticManager.impact(.light)
+                store.send(.undoDeleteTask)
+            } label: {
+                Text(String(localized: "Undo"))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.tint)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Toolbar Items

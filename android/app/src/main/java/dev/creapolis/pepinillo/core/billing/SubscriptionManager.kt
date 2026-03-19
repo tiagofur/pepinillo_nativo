@@ -13,6 +13,8 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
+import com.android.billingclient.api.queryProductDetails
+import com.android.billingclient.api.queryPurchasesAsync
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -213,9 +215,9 @@ class SubscriptionManager @Inject constructor(
                 .setProductType(BillingClient.ProductType.INAPP)
                 .build(),
         )
-        val lifetimePurchase = inappResult.purchasesList.firstOrNull {
-            it.purchaseState == Purchase.PurchaseState.PURCHASED &&
-                it.products.any { p -> p == PepinilloProducts.LIFETIME }
+        val lifetimePurchase = inappResult.purchasesList.firstOrNull { purchase ->
+            purchase.purchaseState == Purchase.PurchaseState.PURCHASED &&
+                purchase.products.any { p -> p == PepinilloProducts.LIFETIME }
         }
 
         if (lifetimePurchase != null) {

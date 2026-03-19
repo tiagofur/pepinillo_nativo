@@ -34,6 +34,7 @@ import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -63,6 +64,7 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.focus.components.CircularTimerRing
 import dev.creapolis.pepinillo.feature.focus.components.ModeChip
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
+import dev.creapolis.pepinillo.ui.components.SuccessToast
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -113,8 +115,11 @@ fun FocusScreen(
         label = "progress",
     )
 
+    val successMsg by viewModel.successMessage.collectAsState()
+
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp),
@@ -146,7 +151,7 @@ fun FocusScreen(
                 imageVector = Icons.Outlined.AccountCircle,
                 contentDescription = "Profile",
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .clickable(onClick = onProfileClick),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -417,10 +422,48 @@ fun FocusScreen(
                     }
                 }
             }
+
+            // Skip button (only during Pomodoro break phases)
+            if (uiState.canSkip) {
+                Button(
+                    onClick = { viewModel.onSkipClick() },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(56.dp),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.SkipNext,
+                            contentDescription = "Skip to next phase",
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Skip",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
     }
+
+    // Success toast overlay
+    SuccessToast(
+        message = successMsg,
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .padding(top = 24.dp),
+        onDismiss = { viewModel.dismissSuccessMessage() },
+    )
+    } // Box
 
     if (uiState.showTaskPicker) {
         TaskPickerDialog(

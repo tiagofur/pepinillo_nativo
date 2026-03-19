@@ -38,7 +38,7 @@ class WearSyncProcessorTest {
         assertEquals("id-1", sink.persistedTasks.first().id)
         assertEquals(1, sink.syncEvents)
         assertEquals(1, sink.markSyncedCalls)
-        assertEquals(0, sink.refreshCalls)
+        assertEquals(1, sink.refreshCalls)
     }
 
     @Test

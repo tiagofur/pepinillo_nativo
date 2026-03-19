@@ -18,8 +18,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.material.icons.filled.Battery3Bar
+import androidx.compose.material.icons.filled.Battery1Bar
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Checklist
+import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Today
 import androidx.compose.material3.Icon
@@ -35,6 +39,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,7 +61,11 @@ fun TaskItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtaskProgress: Pair<Int, Int>? = null,
+    showDragHandle: Boolean = false,
+    dragHandleModifier: Modifier = Modifier,
 ) {
+    val haptics = LocalHapticFeedback.current
+
     val checkboxColor by animateColorAsState(
         targetValue = if (task.isCompleted) {
             MaterialTheme.colorScheme.primary
@@ -78,7 +88,7 @@ fun TaskItem(
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(start = 8.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Priority bar (left side indicator)
@@ -92,41 +102,50 @@ fun TaskItem(
             Spacer(modifier = Modifier.width(12.dp))
         }
 
-        // Circular checkbox
+        // Circular checkbox — visual 24dp, touch target 48dp
         Box(
             modifier = Modifier
-                .size(24.dp)
-                .clip(CircleShape)
-                .background(checkboxColor)
-                .then(
-                    if (!task.isCompleted) {
-                        Modifier.border(
-                            width = 2.dp,
-                            color = MaterialTheme.colorScheme.outline,
-                            shape = CircleShape,
-                        )
-                    } else {
-                        Modifier
-                    },
-                )
-                .clickable(onClick = onToggleCompletion)
+                .size(48.dp)
+                .clickable(onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onToggleCompletion()
+                })
                 .semantics {
                     role = Role.Checkbox
                     contentDescription = if (task.isCompleted) "Mark ${task.title} incomplete" else "Mark ${task.title} complete"
                 },
             contentAlignment = Alignment.Center,
         ) {
-            if (task.isCompleted) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = "Completed",
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                )
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(checkboxColor)
+                    .then(
+                        if (!task.isCompleted) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = MaterialTheme.colorScheme.outline,
+                                shape = CircleShape,
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (task.isCompleted) {
+                    Icon(
+                        imageVector = Icons.Rounded.Check,
+                        contentDescription = "Completed",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(4.dp))
 
         // Task content
         Column(modifier = Modifier.weight(1f)) {
@@ -159,6 +178,19 @@ fun TaskItem(
                 MetadataRow(task = task, subtaskProgress = subtaskProgress)
             }
         }
+
+        // Drag handle (visible only when sort is Custom)
+        if (showDragHandle) {
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Rounded.DragHandle,
+                contentDescription = "Reorder task",
+                modifier = dragHandleModifier
+                    .size(40.dp)
+                    .padding(8.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            )
+        }
     }
 }
 
@@ -176,7 +208,7 @@ private fun MetadataRow(
         val color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
         metadataItems.add {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                Icon(Icons.Rounded.CalendarMonth, contentDescription = null, modifier = Modifier.size(14.dp), tint = color)
+                Icon(Icons.Rounded.CalendarMonth, contentDescription = "Due date", modifier = Modifier.size(14.dp), tint = color)
                 Text(dateFormatter.format(Date(dueDate)), style = MaterialTheme.typography.bodySmall, color = color)
             }
         }
@@ -189,10 +221,10 @@ private fun MetadataRow(
         }
     }
 
-    // Energy level
+    // Energy level (icon + label for accessibility — distinguishable without color)
     metadataItems.add {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            EnergyDot(energyLevel = task.energyLevel)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            EnergyIcon(energyLevel = task.energyLevel)
             Text(task.energyLevel.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -213,7 +245,7 @@ private fun MetadataRow(
         if (total > 0) {
             metadataItems.add {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Icon(Icons.Rounded.Checklist, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Rounded.Checklist, contentDescription = "Subtasks", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("$completed/$total", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -226,7 +258,7 @@ private fun MetadataRow(
         if (option != RecurrenceOption.None) {
             metadataItems.add {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Icon(Icons.Rounded.Repeat, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Rounded.Repeat, contentDescription = "Recurring", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(option.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -249,7 +281,7 @@ private fun MetadataRow(
 }
 
 @Composable
-private fun EnergyDot(
+private fun EnergyIcon(
     energyLevel: EnergyLevel,
     modifier: Modifier = Modifier,
 ) {
@@ -258,10 +290,15 @@ private fun EnergyDot(
         EnergyLevel.Regular -> EnergyColors.regular
         EnergyLevel.Light -> EnergyColors.light
     }
-    Box(
-        modifier = modifier
-            .size(8.dp)
-            .clip(CircleShape)
-            .background(color),
+    val icon = when (energyLevel) {
+        EnergyLevel.Deep -> Icons.Filled.BatteryFull
+        EnergyLevel.Regular -> Icons.Filled.Battery3Bar
+        EnergyLevel.Light -> Icons.Filled.Battery1Bar
+    }
+    Icon(
+        imageVector = icon,
+        contentDescription = energyLevel.label,
+        modifier = modifier.size(14.dp),
+        tint = color,
     )
 }

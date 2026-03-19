@@ -102,6 +102,22 @@ class FocusEngine @Inject constructor(
         val current = _state.value
         if (current.status == TimerStatus.Running) return
 
+        // Seed completedSessions from DB if starting fresh (Idle or WaitingForNext with 0 sessions)
+        if (current.mode == FocusMode.Pomodoro && current.status == TimerStatus.Idle) {
+            scope.launch {
+                val todayCount = sessionRepository.getTodayPomodoroWorkCount()
+                _state.update {
+                    it.copy(
+                        status = TimerStatus.Running,
+                        completedSessions = todayCount,
+                        sessionStartTime = if (it.sessionStartTime == 0L) System.currentTimeMillis() else it.sessionStartTime,
+                    )
+                }
+                startTimerLoop()
+            }
+            return
+        }
+
         _state.update {
             it.copy(
                 status = TimerStatus.Running,
@@ -172,6 +188,16 @@ class FocusEngine @Inject constructor(
         _state.update { it.copy(status = TimerStatus.Paused) }
     }
 
+    /** Skip the current phase and advance to the next one (e.g. skip break → start work). */
+    fun skipPhase() {
+        val s = _state.value
+        if (s.status != TimerStatus.Running && s.status != TimerStatus.WaitingForNext) return
+        // Only allow skip during break phases (matches iOS behavior)
+        if (s.phase != FocusPhase.ShortBreak && s.phase != FocusPhase.LongBreak) return
+        timerJob?.cancel()
+        scope.launch { onPhaseComplete() }
+    }
+
     fun stop() {
         timerJob?.cancel()
         val snapshot = _state.value
@@ -184,6 +210,7 @@ class FocusEngine @Inject constructor(
                 mode = snapshot.mode,
                 totalMillis = getTotalMillis(snapshot.mode, prefs),
                 linkedTaskId = snapshot.linkedTaskId,
+                completedSessions = snapshot.completedSessions, // preserve count for display + next start
             )
         }
     }

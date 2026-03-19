@@ -92,10 +92,40 @@ class TaskRepository @Inject constructor(
             .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }
             .onSuccess { refreshWearData() }
 
+    /** Soft-delete: returns the task entity before deleting so it can be restored. */
+    suspend fun deleteTaskWithUndo(taskId: String): Result<Task?> =
+        runCatching {
+            val entity = taskDao.getTaskById(taskId)
+            val task = entity?.toDomain()
+            if (entity != null) taskDao.deleteTaskById(taskId)
+            task
+        }
+            .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }
+            .onSuccess { refreshWearData() }
+
+    /** Restore a previously deleted task. */
+    suspend fun restoreTask(task: Task): Result<Unit> =
+        runCatching { taskDao.insertTask(task.toEntity()) }
+            .onFailure { Log.e(TAG, "Error restoring task ${task.id}", it) }
+            .onSuccess { refreshWearData() }
+
     suspend fun getTaskById(taskId: String): Task? =
         runCatching { taskDao.getTaskById(taskId)?.toDomain() }
             .onFailure { Log.e(TAG, "Error getting task $taskId", it) }
             .getOrNull()
+
+    /**
+     * Batch-update sort orders for a reordered list of tasks.
+     * Each pair is (taskId, newSortOrder).
+     */
+    suspend fun reorderTasks(orderedIds: List<Pair<String, Int>>): Result<Unit> =
+        runCatching {
+            orderedIds.forEach { (id, order) ->
+                taskDao.updateSortOrder(id, order)
+            }
+        }
+            .onFailure { Log.e(TAG, "Error reordering tasks", it) }
+            .onSuccess { refreshWearData() }
 
     suspend fun incrementPomodoros(taskId: String) {
         runCatching { taskDao.incrementPomodoros(taskId) }
@@ -146,22 +176,7 @@ class TaskRepository @Inject constructor(
         // Wear direct push (WorkManager fails for wear)
         runCatching {
             val activeTasks = taskDao.getActiveTasks().first().map { it.toDomain() }
-            val widgetTasks = activeTasks.take(5).map { task ->
-                val energyEmoji = when (task.energyLevel) {
-                    EnergyLevel.Deep -> "\uD83D\uDD25"
-                    EnergyLevel.Regular -> "\u26A1"
-                    EnergyLevel.Light -> "\uD83D\uDCA7"
-                }
-                val pomodoroProgress = if (task.estimatedPomodoros > 0) {
-                    "${task.completedPomodoros}/${task.estimatedPomodoros} \uD83C\uDF45"
-                } else ""
-                WidgetTask(
-                    id = task.id,
-                    title = task.title,
-                    energyEmoji = energyEmoji,
-                    pomodoroProgress = pomodoroProgress,
-                )
-            }
+            val widgetTasks = activeTasks.take(5).map { WidgetTask.fromTask(it) }
             val stats = sessionRepository.getTodayStats().first()
             val allDays = sessionRepository.getAllDaysWithSessions().first()
             val streak = sessionRepository.calculateCurrentStreak(allDays)

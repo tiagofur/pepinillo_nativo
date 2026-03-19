@@ -64,6 +64,12 @@ class SessionRepository @Inject constructor(
         }.onFailure { Log.e(TAG, "Error recording session", it) }
     }
 
+    /** Count today's completed Pomodoro work sessions (for long break calculation). */
+    suspend fun getTodayPomodoroWorkCount(): Int =
+        runCatching { sessionDao.getTodayPomodoroWorkCount(startOfDay(System.currentTimeMillis())) }
+            .onFailure { Log.e(TAG, "Error counting today's pomodoro work sessions", it) }
+            .getOrDefault(0)
+
     fun getTodaySessions(): Flow<List<FocusSessionEntity>> =
         sessionDao.getSessionsForDay(startOfDay(System.currentTimeMillis()))
             .catch { e -> Log.e(TAG, "Error loading today sessions", e); emit(emptyList()) }

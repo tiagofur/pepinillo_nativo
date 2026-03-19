@@ -28,7 +28,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,10 +78,22 @@ private val pages = listOf(
 @Composable
 fun OnboardingScreen(
     onComplete: () -> Unit,
+    initialPage: Int = 0,
+    onPageChanged: (Int) -> Unit = {},
 ) {
-    val pagerState = rememberPagerState(pageCount = { pages.size })
+    val pagerState = rememberPagerState(
+        initialPage = initialPage.coerceIn(0, pages.size - 1),
+        pageCount = { pages.size },
+    )
     val scope = rememberCoroutineScope()
     val isLastPage = pagerState.currentPage == pages.size - 1
+
+    // Persist page changes
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage }.collect { page ->
+            onPageChanged(page)
+        }
+    }
 
     Column(
         modifier = Modifier

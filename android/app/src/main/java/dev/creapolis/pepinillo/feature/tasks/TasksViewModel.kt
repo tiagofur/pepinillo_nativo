@@ -8,6 +8,8 @@ import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -104,6 +106,14 @@ class TasksViewModel @Inject constructor(
     private val _errorEvent = MutableSharedFlow<String>()
     val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
 
+    private val _undoEvent = MutableStateFlow<UndoState?>(null)
+    val undoEvent: StateFlow<UndoState?> = _undoEvent.asStateFlow()
+    private var undoExpiryJob: Job? = null
+
+    private val _successMessage = MutableStateFlow<String?>(null)
+    val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
+    fun dismissSuccessMessage() { _successMessage.value = null }
+
     val uiState: StateFlow<TasksUiState> = combine(
         taskRepository.getAllTasks(),
         _selectedFilter,
@@ -154,7 +164,9 @@ class TasksViewModel @Inject constructor(
                     scheduledForToday = currentFilter == TaskFilter.Today,
                     sortOrder = uiState.value.tasks.size,
                 ),
-            ).onFailure {
+            ).onSuccess {
+                _successMessage.value = "Task added"
+            }.onFailure {
                 _errorEvent.emit("Failed to add task")
             }
         }
@@ -165,8 +177,53 @@ class TasksViewModel @Inject constructor(
     }
 
     fun deleteTask(taskId: String) = viewModelScope.launch {
-        taskRepository.deleteTask(taskId).onFailure {
-            _errorEvent.emit("Failed to delete task")
+        taskRepository.deleteTaskWithUndo(taskId)
+            .onSuccess { deletedTask ->
+                if (deletedTask != null) {
+                    undoExpiryJob?.cancel()
+                    _undoEvent.value = UndoState(task = deletedTask)
+                    undoExpiryJob = viewModelScope.launch {
+                        delay(5000)
+                        _undoEvent.value = null
+                    }
+                }
+            }
+            .onFailure {
+                _errorEvent.emit("Failed to delete task")
+            }
+    }
+
+    fun undoDelete() {
+        val state = _undoEvent.value ?: return
+        undoExpiryJob?.cancel()
+        _undoEvent.value = null
+        viewModelScope.launch {
+            taskRepository.restoreTask(state.task).onFailure {
+                _errorEvent.emit("Failed to restore task")
+            }
+        }
+    }
+
+    fun dismissUndo() {
+        undoExpiryJob?.cancel()
+        _undoEvent.value = null
+    }
+
+    fun reorderTasks(fromIndex: Int, toIndex: Int) {
+        if (fromIndex == toIndex) return
+        val currentTasks = uiState.value.filteredTasks.toMutableList()
+        if (fromIndex !in currentTasks.indices || toIndex !in currentTasks.indices) return
+        val movedTask = currentTasks.removeAt(fromIndex)
+        currentTasks.add(toIndex, movedTask)
+        val orderedIds = currentTasks.mapIndexed { index, task -> task.id to index }
+        viewModelScope.launch {
+            taskRepository.reorderTasks(orderedIds).onFailure {
+                _errorEvent.emit("Failed to reorder tasks")
+            }
         }
     }
 }
+
+data class UndoState(
+    val task: Task,
+)

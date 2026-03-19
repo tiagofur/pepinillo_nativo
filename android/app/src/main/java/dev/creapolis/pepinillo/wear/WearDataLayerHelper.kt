@@ -29,6 +29,7 @@ object WearDataLayerHelper {
     const val CMD_TIMER_PAUSE = "/pepinillo/cmd/timer/pause"
     const val CMD_TIMER_RESUME = "/pepinillo/cmd/timer/resume"
     const val CMD_TIMER_STOP = "/pepinillo/cmd/timer/stop"
+    const val CMD_TIMER_SKIP = "/pepinillo/cmd/timer/skip"
     const val CMD_TASK_COMPLETE = "/pepinillo/cmd/task/complete"
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
 
@@ -122,9 +123,10 @@ object WearDataLayerHelper {
     private const val EVENT_PHASE_COMPLETE = "/pepinillo/event/phase_complete"
 
     /** Notify the watch that a timer phase just completed (vibration trigger). */
-    fun pushPhaseComplete(context: Context, mode: String, completedPhase: String) {
+    fun pushPhaseComplete(context: Context, mode: String, completedPhase: String, scope: CoroutineScope? = null) {
         val payload = "$mode|$completedPhase".toByteArray(StandardCharsets.UTF_8)
-        CoroutineScope(Dispatchers.IO).launch {
+        val effectiveScope = scope ?: CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+        effectiveScope.launch {
             runCatching {
                 val nodes = Wearable.getNodeClient(context).connectedNodes.await()
                 nodes.forEach { node ->

@@ -19,6 +19,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,7 @@ import androidx.wear.compose.material.ListHeader
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.compose.material.dialog.Alert
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.WearTask
 import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.launch
@@ -60,7 +62,7 @@ fun TasksScreen(
     // Confirmation dialog
     taskToComplete?.let { task ->
         Alert(
-            title = { Text("¿Completar tarea?", textAlign = TextAlign.Center) },
+            title = { Text(stringResource(R.string.complete_task), textAlign = TextAlign.Center) },
             message = {
                 Text(
                     text = task.title,
@@ -110,7 +112,7 @@ fun TasksScreen(
         item {
             ListHeader {
                 Text(
-                    text = "Tareas (${tasks.size})",
+                    text = stringResource(R.string.tasks_count, tasks.size),
                     color = MaterialTheme.colors.primary,
                 )
             }
@@ -131,7 +133,7 @@ fun TasksScreen(
                     },
                     secondaryLabel = {
                         Text(
-                            text = "🍅 En progreso",
+                            text = "🍅 ${stringResource(R.string.in_progress)}",
                             style = MaterialTheme.typography.caption2,
                             color = MaterialTheme.colors.onPrimary.copy(alpha = 0.8f),
                         )
@@ -171,7 +173,7 @@ fun TasksScreen(
             // Empty state
             item {
                 Text(
-                    text = "Sin tareas activas",
+                    text = stringResource(R.string.no_active_tasks),
                     style = MaterialTheme.typography.body2,
                     color = MaterialTheme.colors.onSurfaceVariant,
                     textAlign = TextAlign.Center,

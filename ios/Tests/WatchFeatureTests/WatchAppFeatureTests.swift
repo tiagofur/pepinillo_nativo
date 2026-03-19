@@ -675,11 +675,11 @@ struct WatchAppFeatureTests {
         #expect(state.dashboard == WatchDashboardFeature.State())
     }
 
-    @Test("WatchTab raw values are sequential")
+    @Test("WatchTab raw values match hub-and-spoke layout: dashboard-timer-tasks")
     func watchTabRawValues() {
-        #expect(WatchAppFeature.WatchTab.timer.rawValue == 0)
-        #expect(WatchAppFeature.WatchTab.tasks.rawValue == 1)
-        #expect(WatchAppFeature.WatchTab.dashboard.rawValue == 2)
+        #expect(WatchAppFeature.WatchTab.dashboard.rawValue == 0)
+        #expect(WatchAppFeature.WatchTab.timer.rawValue == 1)
+        #expect(WatchAppFeature.WatchTab.tasks.rawValue == 2)
     }
 
     // MARK: - Full Integration Scenarios
