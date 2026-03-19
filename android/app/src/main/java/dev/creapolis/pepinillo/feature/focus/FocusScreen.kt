@@ -348,7 +348,7 @@ fun FocusScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Stop button (only visible when running or paused)
-            if (uiState.isRunning || uiState.isPaused) {
+            if (uiState.isRunning || uiState.isPaused || uiState.isWaitingForNext) {
                 Button(
                     onClick = { viewModel.onStopClick() },
                     modifier = Modifier

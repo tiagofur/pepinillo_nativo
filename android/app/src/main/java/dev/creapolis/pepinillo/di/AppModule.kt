@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -34,7 +35,10 @@ object AppModule {
     @Singleton
     @ApplicationScope
     fun provideApplicationScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.Main)
+        val handler = CoroutineExceptionHandler { _, throwable ->
+            android.util.Log.e("ApplicationScope", "Uncaught coroutine exception", throwable)
+        }
+        return CoroutineScope(SupervisorJob() + Dispatchers.Main + handler)
     }
 
     @Provides

@@ -47,6 +47,7 @@ data class FocusUiState(
     val showStopConfirmation: Boolean = false,
     val keepScreenOn: Boolean = false,
     val breakSuggested: Boolean = false,
+    val isWaitingForNext: Boolean = false,
 )
 
 @HiltViewModel
@@ -86,6 +87,7 @@ class FocusViewModel @Inject constructor(
             focusEngine.state.collect { state ->
                 when (state.status) {
                     TimerStatus.Running -> FocusTimerService.start(context)
+                    TimerStatus.WaitingForNext -> FocusTimerService.start(context)
                     TimerStatus.Idle -> FocusTimerService.stop(context)
                     TimerStatus.Paused -> { /* service stays alive while paused */ }
                 }
@@ -141,6 +143,7 @@ class FocusViewModel @Inject constructor(
             showStopConfirmation = showStopConfirm,
             keepScreenOn = prefs.keepScreenOn,
             breakSuggested = combined.timerState.breakSuggested,
+            isWaitingForNext = combined.timerState.status == TimerStatus.WaitingForNext,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
         greeting = computeGreeting(),
@@ -162,6 +165,7 @@ class FocusViewModel @Inject constructor(
             TimerStatus.Idle -> focusEngine.start()
             TimerStatus.Running -> focusEngine.pause()
             TimerStatus.Paused -> focusEngine.start()
+            TimerStatus.WaitingForNext -> focusEngine.start()
         }
     }
 

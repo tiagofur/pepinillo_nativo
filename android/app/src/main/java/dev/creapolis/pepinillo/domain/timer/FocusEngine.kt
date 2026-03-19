@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.domain.timer
 
+import android.os.SystemClock
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
@@ -53,10 +54,23 @@ class FocusEngine @Inject constructor(
         totalMillis: Long,
         completedSessions: Int,
         sessionStartTime: Long,
+        status: TimerStatus = TimerStatus.Running,
     ) {
         val prefs = prefsRepo.preferences.first()
         cachedPrefs = prefs
         val resolvedTotal = if (totalMillis > 0L) totalMillis else getTotalMillis(mode, prefs)
+
+        // Restore WaitingForNext without starting timer loop
+        if (status == TimerStatus.WaitingForNext) {
+            _state.value = FocusTimerState(
+                mode = mode,
+                phase = phase,
+                status = TimerStatus.WaitingForNext,
+                totalMillis = resolvedTotal,
+                completedSessions = completedSessions,
+            )
+            return
+        }
 
         // If the phase already completed while the process was dead, handle it
         if (mode != FocusMode.Flow && mode != FocusMode.Chrono && elapsedMillis >= resolvedTotal) {
@@ -101,20 +115,28 @@ class FocusEngine @Inject constructor(
     /**
      * Creates a new timer tick loop. Called by start() for user actions, and directly
      * by onPhaseComplete()/restoreState() to bypass the Running guard in start().
+     *
+     * @param cancelPrevious When false, skips cancelling the current timerJob. Used when
+     *   called from within onPhaseComplete() (which runs inside the current timerJob)
+     *   to avoid self-cancellation. The old coroutine exits naturally via break.
      */
-    private fun startTimerLoop() {
-        timerJob?.cancel()
+    private fun startTimerLoop(cancelPrevious: Boolean = true) {
+        if (cancelPrevious) timerJob?.cancel()
         timerJob = scope.launch {
             // Cache prefs at session start
             cachedPrefs = prefsRepo.preferences.first()
 
             val tickInterval = 100L
+            // Use wall-clock anchoring to avoid drift from delay() imprecision
+            val loopStartRealtime = SystemClock.elapsedRealtime()
+            val initialElapsed = _state.value.elapsedMillis
+
             while (true) {
                 delay(tickInterval)
                 val s = _state.value
                 if (s.status != TimerStatus.Running) break
 
-                val newElapsed = s.elapsedMillis + tickInterval
+                val newElapsed = initialElapsed + (SystemClock.elapsedRealtime() - loopStartRealtime)
                 _state.update { it.copy(elapsedMillis = newElapsed) }
 
                 // Flowtime: suggest break after minimum session time
@@ -185,7 +207,8 @@ class FocusEngine @Inject constructor(
             // Pomodoro mode: cycle through work → break → work → ... → long break
             s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.Work -> {
                 val newCompleted = s.completedSessions + 1
-                val isLongBreak = newCompleted % prefs.sessionsBeforeLongBreak == 0
+                val isLongBreak = prefs.sessionsBeforeLongBreak > 0 &&
+                    newCompleted % prefs.sessionsBeforeLongBreak == 0
                 val breakMillis = if (isLongBreak) {
                     prefs.longBreakMinutes * 60 * 1000L
                 } else {
@@ -194,26 +217,26 @@ class FocusEngine @Inject constructor(
                 _state.value = FocusTimerState(
                     mode = FocusMode.Pomodoro,
                     phase = if (isLongBreak) FocusPhase.LongBreak else FocusPhase.ShortBreak,
-                    status = if (prefs.autoStartBreaks) TimerStatus.Running else TimerStatus.Idle,
+                    status = if (prefs.autoStartBreaks) TimerStatus.Running else TimerStatus.WaitingForNext,
                     totalMillis = breakMillis,
                     completedSessions = newCompleted,
                     linkedTaskId = s.linkedTaskId,
                     sessionStartTime = if (prefs.autoStartBreaks) System.currentTimeMillis() else 0L,
                 )
-                if (prefs.autoStartBreaks) startTimerLoop()
+                if (prefs.autoStartBreaks) startTimerLoop(cancelPrevious = false)
             }
 
             s.mode == FocusMode.Pomodoro && (s.phase == FocusPhase.ShortBreak || s.phase == FocusPhase.LongBreak) -> {
                 _state.value = FocusTimerState(
                     mode = FocusMode.Pomodoro,
                     phase = FocusPhase.Work,
-                    status = if (prefs.autoStartNextPomodoro) TimerStatus.Running else TimerStatus.Idle,
+                    status = if (prefs.autoStartNextPomodoro) TimerStatus.Running else TimerStatus.WaitingForNext,
                     totalMillis = prefs.pomodoroMinutes * 60 * 1000L,
                     completedSessions = s.completedSessions,
                     linkedTaskId = s.linkedTaskId,
                     sessionStartTime = if (prefs.autoStartNextPomodoro) System.currentTimeMillis() else 0L,
                 )
-                if (prefs.autoStartNextPomodoro) startTimerLoop()
+                if (prefs.autoStartNextPomodoro) startTimerLoop(cancelPrevious = false)
             }
 
             // Blocks mode: just stop when done

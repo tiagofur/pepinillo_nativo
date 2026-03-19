@@ -67,6 +67,7 @@ class FocusTimerService : Service() {
         private const val KEY_R_TOTAL = "r_total"
         private const val KEY_R_COMPLETED = "r_completed"
         private const val KEY_R_ACTIVE = "r_active"
+        private const val KEY_R_STATUS = "r_status"
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, FocusTimerService::class.java))
@@ -83,6 +84,7 @@ class FocusTimerService : Service() {
                 .putLong(KEY_R_START, state.sessionStartTime)
                 .putLong(KEY_R_TOTAL, state.totalMillis)
                 .putInt(KEY_R_COMPLETED, state.completedSessions)
+                .putString(KEY_R_STATUS, state.status.name)
                 .putBoolean(KEY_R_ACTIVE, true)
                 .apply()
         }
@@ -96,11 +98,15 @@ class FocusTimerService : Service() {
             if (!prefs.getBoolean(KEY_R_ACTIVE, false)) return null
             val modeName = prefs.getString(KEY_R_MODE, null) ?: return null
             val phaseName = prefs.getString(KEY_R_PHASE, FocusPhase.Work.name) ?: FocusPhase.Work.name
+            val statusName = prefs.getString(KEY_R_STATUS, TimerStatus.Running.name) ?: TimerStatus.Running.name
+            val status = TimerStatus.entries.find { it.name == statusName } ?: TimerStatus.Running
             val startTime = prefs.getLong(KEY_R_START, 0L)
-            if (startTime == 0L) return null
+            // Allow startTime == 0 for WaitingForNext (timer not ticking)
+            if (startTime == 0L && status != TimerStatus.WaitingForNext) return null
             return RecoveryState(
                 mode = FocusMode.entries.find { it.name == modeName } ?: return null,
                 phase = FocusPhase.entries.find { it.name == phaseName } ?: FocusPhase.Work,
+                status = status,
                 sessionStartTime = startTime,
                 totalMillis = prefs.getLong(KEY_R_TOTAL, 0L),
                 completedSessions = prefs.getInt(KEY_R_COMPLETED, 0),
@@ -111,6 +117,7 @@ class FocusTimerService : Service() {
     data class RecoveryState(
         val mode: FocusMode,
         val phase: FocusPhase,
+        val status: TimerStatus = TimerStatus.Running,
         val sessionStartTime: Long,
         val totalMillis: Long,
         val completedSessions: Int,
@@ -128,8 +135,8 @@ class FocusTimerService : Service() {
             val recovery = readRecoveryState(this)
             if (recovery != null) {
                 serviceScope.launch {
-                    val elapsed = (System.currentTimeMillis() - recovery.sessionStartTime)
-                        .coerceAtLeast(0L)
+                    val elapsed = if (recovery.status == TimerStatus.WaitingForNext) 0L
+                    else (System.currentTimeMillis() - recovery.sessionStartTime).coerceAtLeast(0L)
                     focusEngine.restoreState(
                         mode = recovery.mode,
                         phase = recovery.phase,
@@ -137,6 +144,7 @@ class FocusTimerService : Service() {
                         totalMillis = recovery.totalMillis,
                         completedSessions = recovery.completedSessions,
                         sessionStartTime = recovery.sessionStartTime,
+                        status = recovery.status,
                     )
                 }
             } else {
@@ -163,6 +171,7 @@ class FocusTimerService : Service() {
                 WorkManager.getInstance(this).enqueue(
                     OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build()
                 )
+                stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
                 return START_NOT_STICKY
             }
@@ -212,7 +221,8 @@ class FocusTimerService : Service() {
             focusEngine.state.collect { state ->
                 try {
                     // Detect phase change → notify watch to vibrate
-                    if (previousPhase != null && state.phase != previousPhase && state.status != TimerStatus.Idle) {
+                    val phaseChanged = previousPhase != null && state.phase != previousPhase
+                    if (phaseChanged && state.status != TimerStatus.Idle) {
                         WearDataLayerHelper.pushPhaseComplete(this@FocusTimerService, state.mode.name, previousPhase!!.name)
                     }
                     previousPhase = state.phase
@@ -234,9 +244,9 @@ class FocusTimerService : Service() {
                     }
 
                     // Update widget max once per second to avoid battery drain
-                    // Bypass throttle on status transitions so the final idle push always reaches the watch
+                    // Bypass throttle on status/phase transitions so recovery and watch stay in sync
                     val now = System.currentTimeMillis()
-                    if (now - lastWidgetUpdate >= 1000 || statusChanged) {
+                    if (now - lastWidgetUpdate >= 1000 || statusChanged || phaseChanged) {
                         lastWidgetUpdate = now
                         val widgetState = TimerWidgetState(
                             mode = state.mode,
@@ -253,8 +263,8 @@ class FocusTimerService : Service() {
                         WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, state.linkedTaskId)
                         WearDataLayerHelper.pushTimer(this@FocusTimerService, state, cachedLinkedTaskName)
 
-                        // Persist recovery state while running so we can restore after process death
-                        if (state.status == TimerStatus.Running) {
+                        // Persist recovery state while running/waiting so we can restore after process death
+                        if (state.status == TimerStatus.Running || state.status == TimerStatus.WaitingForNext) {
                             saveRecoveryState(this@FocusTimerService, state)
                         } else if (state.status == TimerStatus.Idle) {
                             clearRecoveryState(this@FocusTimerService)
@@ -262,6 +272,7 @@ class FocusTimerService : Service() {
                     }
 
                     if (state.status == TimerStatus.Idle) {
+                        stopForeground(STOP_FOREGROUND_REMOVE)
                         stopSelf()
                     }
                 } catch (e: Exception) {
@@ -331,10 +342,11 @@ class FocusTimerService : Service() {
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
-        if (state.status == TimerStatus.Running) {
-            builder.addAction(0, "Pause", servicePending(1, ACTION_PAUSE))
-        } else if (state.status == TimerStatus.Paused) {
-            builder.addAction(0, "Resume", servicePending(2, ACTION_RESUME))
+        when (state.status) {
+            TimerStatus.Running -> builder.addAction(0, "Pause", servicePending(1, ACTION_PAUSE))
+            TimerStatus.Paused -> builder.addAction(0, "Resume", servicePending(2, ACTION_RESUME))
+            TimerStatus.WaitingForNext -> builder.addAction(0, "Start", servicePending(2, ACTION_RESUME))
+            else -> {}
         }
         builder.addAction(0, "Stop", servicePending(3, ACTION_STOP))
 

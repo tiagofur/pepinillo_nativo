@@ -56,12 +56,16 @@ class FeedbackManager @Inject constructor(
     }
 
     private fun vibrate() {
-        if (!vibrator.hasVibrator()) return
-        // Double pulse pattern: buzz - pause - buzz
-        val effect = VibrationEffect.createWaveform(
-            longArrayOf(0, 200, 100, 200),
-            -1, // no repeat
-        )
-        vibrator.vibrate(effect)
+        try {
+            if (!vibrator.hasVibrator()) return
+            // Double pulse pattern: buzz - pause - buzz
+            val effect = VibrationEffect.createWaveform(
+                longArrayOf(0, 200, 100, 200),
+                -1, // no repeat
+            )
+            vibrator.vibrate(effect)
+        } catch (_: Exception) {
+            // Silently fail — vibration is non-critical feedback
+        }
     }
 }
