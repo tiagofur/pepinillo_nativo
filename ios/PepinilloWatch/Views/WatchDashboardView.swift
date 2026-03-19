@@ -57,10 +57,14 @@ struct WatchDashboardView: View {
         .padding(.horizontal, 4)
     }
 
-    private var dateString: String {
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
-        return formatter.string(from: Date())
+        return formatter
+    }()
+
+    private var dateString: String {
+        Self.dateFormatter.string(from: Date())
     }
 
     // MARK: - Main Stats

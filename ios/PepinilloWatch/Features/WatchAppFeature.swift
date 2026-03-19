@@ -6,7 +6,9 @@
 
 import Foundation
 import ComposableArchitecture
+#if os(watchOS)
 import WatchKit
+#endif
 
 // MARK: - WatchAppFeature
 

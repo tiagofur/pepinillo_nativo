@@ -7,7 +7,9 @@
 
 import Foundation
 import ComposableArchitecture
+#if os(watchOS)
 import WatchKit
+#endif
 import WidgetKit
 
 // MARK: - WatchTimerFeature
@@ -77,7 +79,9 @@ struct WatchTimerFeature {
                 return .run { [watchClient] send in
                     await watchClient.sendCommand(.startSession(mode: mode.rawValue))
                     await send(.commandSent(.startSession(mode: mode.rawValue)))
+                    #if os(watchOS)
                     WKInterfaceDevice.current().play(.start)
+                    #endif
                 }
 
             case .pauseResumeTapped:
@@ -86,7 +90,9 @@ struct WatchTimerFeature {
                 return .run { [watchClient] send in
                     await watchClient.sendCommand(command)
                     await send(.commandSent(command))
+                    #if os(watchOS)
                     WKInterfaceDevice.current().play(.click)
+                    #endif
                 }
 
             case .stopTapped:
@@ -94,7 +100,9 @@ struct WatchTimerFeature {
                 return .run { [watchClient] send in
                     await watchClient.sendCommand(.stopSession)
                     await send(.commandSent(.stopSession))
+                    #if os(watchOS)
                     WKInterfaceDevice.current().play(.stop)
+                    #endif
                 }
 
             case .skipTapped:
@@ -102,7 +110,9 @@ struct WatchTimerFeature {
                 return .run { [watchClient] send in
                     await watchClient.sendCommand(.skipPhase)
                     await send(.commandSent(.skipPhase))
+                    #if os(watchOS)
                     WKInterfaceDevice.current().play(.click)
+                    #endif
                 }
 
             case .modeSelected(let mode):
@@ -139,9 +149,11 @@ struct WatchTimerFeature {
                     if didTransition || !isActive {
                         WidgetCenter.shared.reloadAllTimelines()
                     }
+                    #if os(watchOS)
                     if didTransition {
                         WKInterfaceDevice.current().play(.notification)
                     }
+                    #endif
                 }
 
             case .statsReceived(let minutes, let sessions, let streak):

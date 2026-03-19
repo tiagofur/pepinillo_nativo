@@ -67,16 +67,7 @@ struct FocusComplicationProvider: TimelineProvider {
     }
 }
 
-// MARK: - Shared UserDefaults Keys (Watch-side)
-
-enum WatchStatsKeys {
-    static let todayFocusMinutes = "watch.todayFocusMinutes"
-    static let currentStreakDays = "watch.currentStreakDays"
-    static let todaySessionsCompleted = "watch.todaySessionsCompleted"
-    static let isSessionActive = "watch.isSessionActive"
-    static let displayTime = "watch.displayTime"
-    static let modeEmoji = "watch.modeEmoji"
-}
+// WatchStatsKeys is defined in PepinilloWatch/WatchStatsKeys.swift
 
 // MARK: - Complication Views
 

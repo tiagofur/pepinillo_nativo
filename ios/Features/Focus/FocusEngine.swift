@@ -39,6 +39,7 @@ public actor FocusEngine {
 
     // Pause tracking
     private var pauseCount: Int = 0
+    private var phaseBeforePause: FocusPhase?
 
     // Event broadcasting
     private var eventContinuation: AsyncStream<FocusEngineEvent>.Continuation?
@@ -123,6 +124,7 @@ public actor FocusEngine {
     /// Pause the current session.
     public func pause() {
         guard var current = state, !current.isPaused else { return }
+        phaseBeforePause = current.phase
         current.isPaused = true
         current.pausedAt = Date.now
         current.phase = .paused
@@ -306,16 +308,23 @@ public actor FocusEngine {
     }
 
     private func restorePhaseAfterPause(_ current: inout FocusSessionState) {
-        // Restore the work phase based on mode
-        switch current.mode {
-        case .pomodoro:
-            current.phase = .work(number: currentPomodoroNumber, total: config.pomodorosPerCycle)
-        case .flowtime:
-            current.phase = .flow
-        case .timeBlock:
-            current.phase = .block
-        case .stopwatch:
-            current.phase = .freeform
+        // Restore the exact phase that was active before the pause.
+        // This correctly handles pausing during breaks (short break, long break, flow break).
+        if let savedPhase = phaseBeforePause {
+            current.phase = savedPhase
+            phaseBeforePause = nil
+        } else {
+            // Fallback: restore to the default work phase for the mode
+            switch current.mode {
+            case .pomodoro:
+                current.phase = .work(number: currentPomodoroNumber, total: config.pomodorosPerCycle)
+            case .flowtime:
+                current.phase = .flow
+            case .timeBlock:
+                current.phase = .block
+            case .stopwatch:
+                current.phase = .freeform
+            }
         }
     }
 
@@ -332,5 +341,6 @@ public actor FocusEngine {
         totalPausedDuration = 0
         currentPomodoroNumber = 1
         pauseCount = 0
+        phaseBeforePause = nil
     }
 }

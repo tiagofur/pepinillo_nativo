@@ -269,7 +269,9 @@ struct FocusFeature {
             case .resumeTapped:
                 guard state.isRunning, state.isPaused else { return .none }
                 state.isPaused = false
-                state.phaseLabel = state.phase.displayName
+                // Don't update phaseLabel here — the engine's next tick (within 100ms)
+                // will set the correct restored phase. Setting it now would briefly
+                // show "Paused" since state.phase is still .paused from the last tick.
                 AppGroupDefaults.activeSessionIsPaused = false
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
