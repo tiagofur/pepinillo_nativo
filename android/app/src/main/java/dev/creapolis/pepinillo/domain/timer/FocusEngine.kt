@@ -144,7 +144,7 @@ class FocusEngine @Inject constructor(
                     val minMillis = cachedPrefs.flowtimeMinMinutes * 60 * 1000L
                     if (newElapsed >= minMillis) {
                         _state.update { it.copy(breakSuggested = true) }
-                        feedbackManager.onPhaseComplete()
+                        feedbackManager.onFeedbackPulse()
                     }
                 }
 
@@ -152,7 +152,7 @@ class FocusEngine @Inject constructor(
                 if (s.mode == FocusMode.Blocks && cachedPrefs.midpointCheckIn && !s.midpointTriggered) {
                     if (s.totalMillis > 0 && newElapsed >= s.totalMillis / 2) {
                         _state.update { it.copy(midpointTriggered = true) }
-                        feedbackManager.onPhaseComplete()
+                        feedbackManager.onFeedbackPulse()
                     }
                 }
 
@@ -195,8 +195,8 @@ class FocusEngine @Inject constructor(
     private suspend fun onPhaseComplete() {
         val s = _state.value
 
-        // Sound/haptic feedback on phase completion
-        feedbackManager.onPhaseComplete()
+        // Sound/haptic/notification feedback on phase completion
+        feedbackManager.onPhaseComplete(s.mode, s.phase)
 
         // Record the completed phase as a session
         recordSession(s)

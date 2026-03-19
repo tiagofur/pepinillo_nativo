@@ -44,6 +44,7 @@ data class SettingsUiState(
     val dailyReminderHour: Int = 9,
     val dailyReminderMinute: Int = 0,
     val midpointCheckIn: Boolean = false,
+    val timerNotificationsEnabled: Boolean = true,
     val currentStreak: Int = 0,
 )
 
@@ -151,6 +152,10 @@ class SettingsViewModel @Inject constructor(
         prefsRepo.updateMidpointCheckIn(!uiState.value.midpointCheckIn)
     }
 
+    fun toggleTimerNotifications() = viewModelScope.launch {
+        prefsRepo.updateTimerNotificationsEnabled(!uiState.value.timerNotificationsEnabled)
+    }
+
     private fun scheduleDailyReminder(hour: Int, minute: Int) {
         val now = Calendar.getInstance()
         val target = Calendar.getInstance().apply {
@@ -193,6 +198,7 @@ class SettingsViewModel @Inject constructor(
         dailyReminderHour = dailyReminderHour,
         dailyReminderMinute = dailyReminderMinute,
         midpointCheckIn = midpointCheckIn,
+        timerNotificationsEnabled = timerNotificationsEnabled,
         currentStreak = currentStreak,
     )
 }

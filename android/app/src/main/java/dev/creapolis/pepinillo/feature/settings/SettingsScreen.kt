@@ -385,6 +385,13 @@ fun SettingsScreen(
 
         SettingsCard {
             SwitchRow(
+                label = "Timer alerts",
+                subtitle = "Show notification when timer finishes",
+                isChecked = uiState.timerNotificationsEnabled,
+                onToggle = viewModel::toggleTimerNotifications,
+            )
+            SettingsDivider()
+            SwitchRow(
                 label = "Daily reminder",
                 subtitle = "Get reminded to focus each day",
                 isChecked = uiState.dailyReminderEnabled,

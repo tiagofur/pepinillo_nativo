@@ -35,6 +35,7 @@ data class UserPreferences(
     val dailyReminderHour: Int = 9,
     val dailyReminderMinute: Int = 0,
     val midpointCheckIn: Boolean = false,
+    val timerNotificationsEnabled: Boolean = true,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -63,6 +64,7 @@ class UserPreferencesRepository @Inject constructor(
         val DAILY_REMINDER_HOUR = intPreferencesKey("daily_reminder_hour")
         val DAILY_REMINDER_MINUTE = intPreferencesKey("daily_reminder_minute")
         val MIDPOINT_CHECK_IN = booleanPreferencesKey("midpoint_check_in")
+        val TIMER_NOTIFICATIONS_ENABLED = booleanPreferencesKey("timer_notifications_enabled")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -86,6 +88,7 @@ class UserPreferencesRepository @Inject constructor(
             dailyReminderHour = prefs[Keys.DAILY_REMINDER_HOUR] ?: 9,
             dailyReminderMinute = prefs[Keys.DAILY_REMINDER_MINUTE] ?: 0,
             midpointCheckIn = prefs[Keys.MIDPOINT_CHECK_IN] ?: false,
+            timerNotificationsEnabled = prefs[Keys.TIMER_NOTIFICATIONS_ENABLED] ?: true,
         )
     }
 
@@ -108,6 +111,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateDailyReminderHour(value: Int) = update { it[Keys.DAILY_REMINDER_HOUR] = value }
     suspend fun updateDailyReminderMinute(value: Int) = update { it[Keys.DAILY_REMINDER_MINUTE] = value }
     suspend fun updateMidpointCheckIn(value: Boolean) = update { it[Keys.MIDPOINT_CHECK_IN] = value }
+    suspend fun updateTimerNotificationsEnabled(value: Boolean) = update { it[Keys.TIMER_NOTIFICATIONS_ENABLED] = value }
 
     private suspend fun update(block: (MutablePreferences) -> Unit) {
         context.dataStore.edit { prefs -> block(prefs) }
