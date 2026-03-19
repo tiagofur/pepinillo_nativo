@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.feature.tasks.components.TaskItem
 import kotlinx.coroutines.delay
 
@@ -58,6 +59,7 @@ fun TasksScreen(
     onTaskClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TasksViewModel = hiltViewModel(),
+    onNavigateToPaywall: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val filteredTasks = uiState.filteredTasks
@@ -102,9 +104,17 @@ fun TasksScreen(
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "${uiState.activeCount} active",
+                        text = if (!uiState.isPro) {
+                            "${uiState.activeCount}/${FeatureGate.FREE_TASK_LIMIT} active"
+                        } else {
+                            "${uiState.activeCount} active"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (!uiState.isPro && uiState.activeCount >= FeatureGate.FREE_TASK_LIMIT) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                 }
 
@@ -177,6 +187,13 @@ fun TasksScreen(
                 Text(text = msg)
             }
         }
+    }
+
+    // Paywall navigation
+    val showPaywall by viewModel.showPaywall.collectAsState()
+    if (showPaywall) {
+        viewModel.dismissPaywall()
+        onNavigateToPaywall()
     }
 }
 

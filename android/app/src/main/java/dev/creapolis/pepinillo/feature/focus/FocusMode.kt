@@ -37,4 +37,7 @@ enum class FocusMode(
         defaultDisplayTime = "00:00",
         defaultTotalSeconds = null,
     ),
+    ;
+
+    val isFreeTier: Boolean get() = this == Pomodoro || this == Chrono
 }

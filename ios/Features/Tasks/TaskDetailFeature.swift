@@ -28,6 +28,7 @@ struct TaskDetailFeature {
         var newSubtaskTitle: String = ""
         var totalFocusSeconds: TimeInterval = 0
         var isLoading: Bool = false
+        var isProUser: Bool = false
         var showDeleteConfirmation: Bool = false
         var showAllSubtasksCompletedPrompt: Bool = false
 
@@ -172,6 +173,8 @@ struct TaskDetailFeature {
                 return save(state)
 
             case .recurrenceChanged(let rule):
+                // Recurrence is a Pro feature
+                guard state.isProUser || rule == nil else { return .none }
                 state.recurrenceRule = rule
                 return save(state)
 
@@ -184,6 +187,8 @@ struct TaskDetailFeature {
                 return .none
 
             case .addSubtaskTapped:
+                // Subtasks are a Pro feature
+                guard state.isProUser else { return .none }
                 let title = state.newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !title.isEmpty else { return .none }
                 state.newSubtaskTitle = ""

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Summarize
@@ -65,10 +66,12 @@ fun DashboardScreen(
     modifier: Modifier = Modifier,
     viewModel: DashboardViewModel = hiltViewModel(),
     onCalendarClick: () -> Unit = {},
+    onNavigateToPaywall: () -> Unit = {},
 ) {
     val stats by viewModel.stats.collectAsState()
     val showWeeklyReview by viewModel.showWeeklyReview.collectAsState()
     val weeklyReport by viewModel.weeklyReport.collectAsState()
+    val isPro by viewModel.isPro.collectAsState()
 
     if (stats.isLoading) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -106,7 +109,9 @@ fun DashboardScreen(
                 )
             }
             Row {
-                IconButton(onClick = { viewModel.showWeeklyReview() }) {
+                IconButton(onClick = {
+                    if (isPro) viewModel.showWeeklyReview() else onNavigateToPaywall()
+                }) {
                     Icon(
                         Icons.Rounded.Summarize,
                         contentDescription = "Weekly Review",
@@ -138,7 +143,14 @@ fun DashboardScreen(
         // ── PERIOD PICKER ──
         PeriodPicker(
             selected = stats.selectedPeriod,
-            onSelect = { viewModel.setPeriod(it) },
+            onSelect = { period ->
+                if (!isPro && period != AnalyticsPeriod.Week) {
+                    onNavigateToPaywall()
+                } else {
+                    viewModel.setPeriod(period)
+                }
+            },
+            isPro = isPro,
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -273,37 +285,62 @@ fun DashboardScreen(
 // ── Reusable Components ──
 
 @Composable
-private fun PeriodPicker(selected: AnalyticsPeriod, onSelect: (AnalyticsPeriod) -> Unit) {
+private fun PeriodPicker(
+    selected: AnalyticsPeriod,
+    onSelect: (AnalyticsPeriod) -> Unit,
+    isPro: Boolean = true,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         AnalyticsPeriod.entries.forEach { period ->
             val isSelected = period == selected
+            val isLocked = !isPro && period != AnalyticsPeriod.Week
             val bgColor by animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                targetValue = when {
+                    isSelected -> MaterialTheme.colorScheme.primary
+                    isLocked -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                },
                 animationSpec = spring(),
                 label = "periodBg",
             )
             val textColor by animateColorAsState(
-                targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary
-                else MaterialTheme.colorScheme.onSurfaceVariant,
+                targetValue = when {
+                    isSelected -> MaterialTheme.colorScheme.onPrimary
+                    isLocked -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                },
                 animationSpec = spring(),
                 label = "periodText",
             )
-            Text(
-                text = period.label,
-                style = MaterialTheme.typography.labelLarge,
-                color = textColor,
+            Row(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(20.dp))
                     .background(bgColor)
                     .clickable { onSelect(period) }
                     .padding(vertical = 10.dp),
-                textAlign = TextAlign.Center,
-            )
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (isLocked) {
+                    Icon(
+                        Icons.Rounded.Lock,
+                        contentDescription = "Pro",
+                        modifier = Modifier.size(12.dp),
+                        tint = textColor,
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Text(
+                    text = period.label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = textColor,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 }

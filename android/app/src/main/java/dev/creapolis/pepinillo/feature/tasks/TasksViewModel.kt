@@ -3,6 +3,7 @@ package dev.creapolis.pepinillo.feature.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Task
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -39,6 +41,7 @@ data class TasksUiState(
     val selectedSort: TaskSortOption = TaskSortOption.Custom,
     val energyFilter: EnergyLevel? = null,
     val isLoading: Boolean = true,
+    val isPro: Boolean = false,
 )
 
 val TasksUiState.filteredTasks: List<Task>
@@ -89,11 +92,14 @@ val TasksUiState.activeCount: Int
 @HiltViewModel
 class TasksViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
+    private val featureGate: FeatureGate,
 ) : ViewModel() {
 
     private val _selectedFilter = MutableStateFlow(TaskFilter.All)
     private val _selectedSort = MutableStateFlow(TaskSortOption.Custom)
     private val _energyFilter = MutableStateFlow<EnergyLevel?>(null)
+    private val _showPaywall = MutableStateFlow(false)
+    val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
 
     private val _errorEvent = MutableSharedFlow<String>()
     val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
@@ -103,13 +109,15 @@ class TasksViewModel @Inject constructor(
         _selectedFilter,
         _selectedSort,
         _energyFilter,
-    ) { tasks, filter, sort, energy ->
+        featureGate.subscriptionState,
+    ) { tasks, filter, sort, energy, subState ->
         TasksUiState(
             tasks = tasks,
             selectedFilter = filter,
             selectedSort = sort,
             energyFilter = energy,
             isLoading = false,
+            isPro = subState.isPro,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TasksUiState())
 
@@ -133,6 +141,11 @@ class TasksViewModel @Inject constructor(
 
     fun addQuickTask(title: String) {
         if (title.isBlank()) return
+        val activeCount = uiState.value.tasks.count { !it.isCompleted }
+        if (!featureGate.canAddTask(activeCount)) {
+            _showPaywall.value = true
+            return
+        }
         viewModelScope.launch {
             val currentFilter = _selectedFilter.value
             taskRepository.addTask(
@@ -145,6 +158,10 @@ class TasksViewModel @Inject constructor(
                 _errorEvent.emit("Failed to add task")
             }
         }
+    }
+
+    fun dismissPaywall() {
+        _showPaywall.value = false
     }
 
     fun deleteTask(taskId: String) = viewModelScope.launch {

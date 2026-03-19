@@ -91,6 +91,11 @@ class PepinilloApiClient @Inject constructor(
     suspend fun updateConfig(config: PomodoroConfigDto): NetworkResult<PomodoroConfigDto> =
         safeCall { httpClient.put("pomodoro/config") { jsonBody(config) }.body() }
 
+    // ── Billing ──
+
+    suspend fun verifyReceipt(request: VerifyReceiptRequest): NetworkResult<VerifyReceiptResponse> =
+        safeCall { httpClient.post("billing/verify-receipt") { jsonBody(request) }.body() }
+
     // ── Helpers ──
 
     private suspend fun <T> safeCall(block: suspend () -> T): NetworkResult<T> {

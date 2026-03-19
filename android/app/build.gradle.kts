@@ -97,6 +97,9 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
 
+    // Google Play Billing
+    implementation(libs.google.billing.ktx)
+
     // Wear OS (Data Layer)
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)

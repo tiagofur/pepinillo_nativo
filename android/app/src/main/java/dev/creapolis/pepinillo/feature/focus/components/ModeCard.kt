@@ -7,10 +7,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,21 +35,34 @@ fun ModeChip(
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    isLocked: Boolean = false,
 ) {
     val modeColors = mode.colorScheme()
 
     val containerColor by animateColorAsState(
-        targetValue = if (isSelected) modeColors.accentColor else MaterialTheme.colorScheme.surfaceVariant,
+        targetValue = when {
+            isSelected -> modeColors.accentColor
+            isLocked -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            else -> MaterialTheme.colorScheme.surfaceVariant
+        },
         animationSpec = spring(),
         label = "modeChipContainer",
     )
     val iconColor by animateColorAsState(
-        targetValue = if (isSelected) modeColors.onAccentColor else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = when {
+            isSelected -> modeColors.onAccentColor
+            isLocked -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        },
         animationSpec = spring(),
         label = "modeChipIcon",
     )
     val labelColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = when {
+            isSelected -> MaterialTheme.colorScheme.onSurface
+            isLocked -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        },
         animationSpec = spring(),
         label = "modeChipLabel",
     )
@@ -54,26 +72,48 @@ fun ModeChip(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(containerColor)
-                .clickable(role = Role.Button, onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = mode.icon,
-                contentDescription = mode.label,
-                modifier = Modifier.size(24.dp),
-                tint = iconColor,
-            )
+        Box(contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(containerColor)
+                    .clickable(role = Role.Button, onClick = onClick),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = mode.icon,
+                    contentDescription = mode.label,
+                    modifier = Modifier.size(24.dp),
+                    tint = iconColor,
+                )
+            }
+            if (isLocked) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 2.dp, y = (-2).dp)
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Lock,
+                        contentDescription = "Pro",
+                        modifier = Modifier.size(12.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = mode.label,
-            style = MaterialTheme.typography.labelMedium,
-            color = labelColor,
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = mode.label,
+                style = MaterialTheme.typography.labelMedium,
+                color = labelColor,
+            )
+        }
     }
 }

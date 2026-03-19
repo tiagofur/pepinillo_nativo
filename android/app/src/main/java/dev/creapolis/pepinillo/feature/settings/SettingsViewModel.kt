@@ -8,6 +8,8 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.creapolis.pepinillo.core.billing.FeatureGate
+import dev.creapolis.pepinillo.core.billing.SubscriptionTier
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
@@ -46,6 +48,8 @@ data class SettingsUiState(
     val midpointCheckIn: Boolean = false,
     val timerNotificationsEnabled: Boolean = true,
     val currentStreak: Int = 0,
+    val isPro: Boolean = false,
+    val subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
 )
 
 @HiltViewModel
@@ -53,14 +57,18 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val prefsRepo: UserPreferencesRepository,
     private val sessionRepository: SessionRepository,
+    private val featureGate: FeatureGate,
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> = combine(
         prefsRepo.preferences,
         sessionRepository.getAllDaysWithSessions(),
-    ) { prefs, allDays ->
+        featureGate.subscriptionState,
+    ) { prefs, allDays, subState ->
         prefs.toUiState(
             currentStreak = sessionRepository.calculateCurrentStreak(allDays),
+            isPro = subState.isPro,
+            subscriptionTier = subState.tier,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -179,7 +187,11 @@ class SettingsViewModel @Inject constructor(
         WorkManager.getInstance(context).cancelUniqueWork("daily_reminder")
     }
 
-    private fun UserPreferences.toUiState(currentStreak: Int = 0) = SettingsUiState(
+    private fun UserPreferences.toUiState(
+        currentStreak: Int = 0,
+        isPro: Boolean = false,
+        subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
+    ) = SettingsUiState(
         pomodoroMinutes = pomodoroMinutes,
         shortBreakMinutes = shortBreakMinutes,
         longBreakMinutes = longBreakMinutes,
@@ -200,5 +212,7 @@ class SettingsViewModel @Inject constructor(
         midpointCheckIn = midpointCheckIn,
         timerNotificationsEnabled = timerNotificationsEnabled,
         currentStreak = currentStreak,
+        isPro = isPro,
+        subscriptionTier = subscriptionTier,
     )
 }

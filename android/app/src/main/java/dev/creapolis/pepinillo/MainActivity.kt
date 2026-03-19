@@ -41,6 +41,7 @@ import kotlinx.coroutines.runBlocking
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
+import dev.creapolis.pepinillo.feature.paywall.PaywallScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
 import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
 import dev.creapolis.pepinillo.feature.settings.SettingsScreen
@@ -158,12 +159,18 @@ fun PepinilloApp() {
                     onProfileClick = {
                         navController.navigate("profile")
                     },
+                    onNavigateToPaywall = {
+                        navController.navigate("paywall")
+                    },
                 )
             }
             composable(TopLevelDestination.Tasks.route) {
                 TasksScreen(
                     onTaskClick = { taskId ->
                         navController.navigate("tasks/$taskId")
+                    },
+                    onNavigateToPaywall = {
+                        navController.navigate("paywall")
                     },
                 )
             }
@@ -185,6 +192,7 @@ fun PepinilloApp() {
             composable(TopLevelDestination.Dashboard.route) {
                 DashboardScreen(
                     onCalendarClick = { navController.navigate("calendar") },
+                    onNavigateToPaywall = { navController.navigate("paywall") },
                 )
             }
             composable("calendar") {
@@ -200,6 +208,7 @@ fun PepinilloApp() {
             composable(TopLevelDestination.Settings.route) {
                 SettingsScreen(
                     onNavigateToAppSetup = { navController.navigate("app_setup") },
+                    onNavigateToPaywall = { navController.navigate("paywall") },
                 )
             }
             composable("app_setup") {
@@ -227,6 +236,12 @@ fun PepinilloApp() {
                             popUpTo("login") { inclusive = true }
                         }
                     },
+                )
+            }
+
+            composable("paywall") {
+                PaywallScreen(
+                    onDismiss = { navController.popBackStack() },
                 )
             }
 

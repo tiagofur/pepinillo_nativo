@@ -252,12 +252,14 @@ struct AppFeature {
                 state.subscriptionState = sub
                 state.focus.isProUser = sub.isPro
                 state.settings.isProUser = sub.isPro
+                state.analytics.isProUser = sub.isPro
                 return .none
 
             case .subscriptionUpdated(let sub):
                 state.subscriptionState = sub
                 state.focus.isProUser = sub.isPro
                 state.settings.isProUser = sub.isPro
+                state.analytics.isProUser = sub.isPro
                 if sub.isPro { state.focus.showPaywall = false }
                 return .none
 
