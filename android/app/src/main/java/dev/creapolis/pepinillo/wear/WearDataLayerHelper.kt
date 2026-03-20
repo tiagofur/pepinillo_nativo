@@ -1,8 +1,11 @@
 package dev.creapolis.pepinillo.wear
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.google.android.gms.wearable.PutDataMapRequest
+import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,8 +57,7 @@ object WearDataLayerHelper {
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        Wearable.getDataClient(context).putDataItem(request)
-            .addOnFailureListener { e -> Log.w(TAG, "Failed pushing timer", e) }
+        putWithRetry(context, request, "pushTimer")
     }
 
     fun pushTasksAndStats(
@@ -74,9 +76,7 @@ object WearDataLayerHelper {
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        Wearable.getDataClient(context).putDataItem(tasksRequest)
-            .addOnSuccessListener { Log.d(TAG, "Tasks pushed successfully (${tasks.size} tasks)") }
-            .addOnFailureListener { e -> Log.e(TAG, "Failed pushing tasks (${tasks.size})", e) }
+        putWithRetry(context, tasksRequest, "pushTasks(${tasks.size})")
 
         val statsRequest = PutDataMapRequest.create(PATH_STATS).apply {
             dataMap.putInt("totalMinutes", totalMinutes)
@@ -86,9 +86,7 @@ object WearDataLayerHelper {
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        Wearable.getDataClient(context).putDataItem(statsRequest)
-            .addOnSuccessListener { Log.d(TAG, "Stats pushed successfully") }
-            .addOnFailureListener { e -> Log.e(TAG, "Failed pushing stats", e) }
+        putWithRetry(context, statsRequest, "pushStats")
     }
 
     private fun tasksToJson(tasks: List<WidgetTask>): String {
@@ -121,8 +119,7 @@ object WearDataLayerHelper {
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        Wearable.getDataClient(context).putDataItem(request)
-            .addOnFailureListener { e -> Log.w(TAG, "Failed pushing idle state", e) }
+        putWithRetry(context, request, "pushIdleState")
     }
 
     private const val EVENT_PHASE_COMPLETE = "/pepinillo/event/phase_complete"
@@ -155,11 +152,24 @@ object WearDataLayerHelper {
                 dataMap.putLong("timestamp", System.currentTimeMillis())
             }.asPutDataRequest().setUrgent()
 
-            Wearable.getDataClient(context).putDataItem(request)
-                .addOnFailureListener { e -> Log.w(TAG, "Failed pushing theme", e) }
+            putWithRetry(context, request, "pushTheme")
         } catch (e: Exception) {
             // Silently fail - watch will use defaults
         }
+    }
+
+    private fun putWithRetry(context: Context, request: PutDataRequest, tag: String, retries: Int = 2) {
+        Wearable.getDataClient(context).putDataItem(request)
+            .addOnFailureListener { e ->
+                if (retries > 0) {
+                    Log.w(TAG, "$tag failed, retrying ($retries left)", e)
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        putWithRetry(context, request, tag, retries - 1)
+                    }, 1000L)
+                } else {
+                    Log.e(TAG, "$tag failed after all retries", e)
+                }
+            }
     }
 
     fun isRunning(status: String): Boolean = status == TimerStatus.Running.name
