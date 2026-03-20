@@ -3,6 +3,7 @@ package dev.creapolis.pepinillo.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 
 data class FocusModeColorScheme(
@@ -13,15 +14,16 @@ data class FocusModeColorScheme(
 )
 
 @Composable
-fun FocusMode.colorScheme(): FocusModeColorScheme {
+fun FocusMode.colorScheme(phase: FocusPhase = FocusPhase.Work): FocusModeColorScheme {
     val theme = LocalAppTheme.current
     val isDark = isSystemInDarkTheme()
-    val accent = when (this) {
+    val baseAccent = when (this) {
         FocusMode.Pomodoro -> theme.pomodoroColor
         FocusMode.Flow -> theme.flowtimeColor
         FocusMode.Blocks -> theme.timeBlockColor
         FocusMode.Chrono -> theme.stopwatchColor
     }
+    val accent = baseAccent.breakVariant(phase)
     return if (isDark) {
         FocusModeColorScheme(
             containerColor = accent.copy(alpha = 0.15f),

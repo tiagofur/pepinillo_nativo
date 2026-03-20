@@ -78,7 +78,7 @@ fun FocusScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val activeTasks by viewModel.activeTasks.collectAsState()
-    val modeColors = uiState.selectedMode.colorScheme()
+    val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
 
     // Keep screen on during focus sessions
     val keepScreenActive = uiState.keepScreenOn && (uiState.isRunning || uiState.isPaused)
