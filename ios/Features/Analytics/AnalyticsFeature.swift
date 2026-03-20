@@ -297,8 +297,9 @@ struct AnalyticsFeature {
             let earlyBirdCount = lifetimeSessions.filter {
                 calendar.component(.hour, from: $0.startedAt) < 8
             }.count
+            let workPhases: Set<String> = ["work", "flow", "block", "freeform"]
             let pomodoroCompleted = lifetimeSessions.filter {
-                $0.mode == "pomodoro" && $0.wasCompleted
+                $0.focusMode == .pomodoro && $0.wasCompleted && (workPhases.contains($0.phase) || $0.phase.isEmpty)
             }.count
             let flowtimeCompleted = lifetimeSessions.filter {
                 $0.mode == "flowtime" && $0.wasCompleted

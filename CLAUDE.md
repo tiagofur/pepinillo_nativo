@@ -173,6 +173,27 @@ Convention files under `~/.claude/skills/_shared/` (global) or `.agent/skills/_s
 | `openspec` | read `openspec/changes/*/state.yaml`           |
 | `none`     | State not persisted — explain to user          |
 
+---
+
+## Cross-Platform Parity Rule (MANDATORY)
+
+This is a multi-platform project: **Android (phone)**, **Wear OS (watch)**, **iOS (phone)**, and **watchOS (Apple Watch)**.
+
+Whenever a bug is fixed or a new feature is implemented on ANY platform, you MUST check and apply the equivalent fix/feature on ALL other platforms before considering the task complete.
+
+| Changed platform     | Must also review and fix          |
+| -------------------- | --------------------------------- |
+| Android phone        | iOS phone, Wear OS, watchOS       |
+| iOS phone            | Android phone, Wear OS, watchOS   |
+| Wear OS              | watchOS, Android phone, iOS phone |
+| watchOS              | Wear OS, Android phone, iOS phone |
+| Android + Wear OS    | iOS + watchOS                     |
+| iOS + watchOS        | Android + Wear OS                 |
+
+**This is not optional.** The goal is to keep all platforms functionally identical and free of the same bugs. Always proactively ask or check the counterpart platforms — do not wait for the user to request it.
+
+---
+
 Terms os use:
 https://creapolis.dev/terms-of-use/
 privacy policy:

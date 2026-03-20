@@ -75,9 +75,11 @@ public final class TaskItem {
 
     // MARK: - Computed
 
+    private static let workPhases: Set<String> = ["work", "flow", "block", "freeform"]
+
     public var totalFocusTime: TimeInterval {
         sessions
-            .filter { $0.wasCompleted }
+            .filter { $0.wasCompleted && (Self.workPhases.contains($0.phase) || $0.phase.isEmpty) }
             .reduce(0) { $0 + $1.actualDuration }
     }
 
