@@ -169,8 +169,8 @@ private actor SubscriptionManager {
             if let transaction = try? checkVerified(result) {
                 let isSubscription = PepinilloProduct(rawValue: transaction.productID)?.isSubscription ?? false
                 if isSubscription {
-                    // Check if subscription is still valid
-                    if let expiry = transaction.expirationDate, expiry > Date.now {
+                    // Check if subscription is still valid (3-day grace period for payment issues)
+                    if let expiry = transaction.expirationDate, expiry.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
                         return SubscriptionState(
                             isPro: true,
                             activeProductID: transaction.productID,
