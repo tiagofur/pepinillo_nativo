@@ -119,6 +119,7 @@ struct FocusFeature {
         case modeSuggestionDismissed
 
         // Post-session journal
+        case showJournalSheet(sessionID: UUID, modeName: String, actualDuration: TimeInterval)
         case journal(PresentationAction<SessionJournalFeature.Action>)
     }
 
@@ -465,20 +466,25 @@ struct FocusFeature {
             case .sessionCompleted(let result):
                 let modeName = result.mode.rawValue
                 let taskTitle = state.linkedTaskTitle
+                let wasCompleted = result.wasCompleted
+                let sessionID = result.id
+                let actualDuration = result.actualDuration
                 resetState(&state)
 
-                // Present journal sheet for completed sessions
-                if result.wasCompleted {
-                    let minutes = Int(result.actualDuration) / 60
-                    let seconds = Int(result.actualDuration) % 60
-                    state.journal = SessionJournalFeature.State(
-                        sessionID: result.id,
-                        modeName: modeName,
-                        durationFormatted: String(format: "%d:%02d", minutes, seconds)
-                    )
-                }
-
                 return .merge(
+                    // Check preference and present journal sheet if enabled
+                    .run { [persistence] send in
+                        if wasCompleted {
+                            let prefs = try await persistence.fetchPreferences()
+                            if prefs.showJournalAfterSession {
+                                await send(.showJournalSheet(
+                                    sessionID: sessionID,
+                                    modeName: modeName,
+                                    actualDuration: actualDuration
+                                ))
+                            }
+                        }
+                    },
                     .cancel(id: CancelID.engineObservation),
                     .run { [liveActivity] _ in await liveActivity.end(true) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
@@ -612,6 +618,16 @@ struct FocusFeature {
                 return .none
 
             // MARK: Journal
+
+            case .showJournalSheet(let sessionID, let modeName, let actualDuration):
+                let minutes = Int(actualDuration) / 60
+                let seconds = Int(actualDuration) % 60
+                state.journal = SessionJournalFeature.State(
+                    sessionID: sessionID,
+                    modeName: modeName,
+                    durationFormatted: String(format: "%d:%02d", minutes, seconds)
+                )
+                return .none
 
             case .journal(.presented(.saved)):
                 state.journal = nil

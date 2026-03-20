@@ -182,6 +182,13 @@ struct SettingsView: View {
                     set: { _ in store.send(.keepScreenOnToggled) }
                 )
             )
+            Toggle(
+                String(localized: "Post-session reflection"),
+                isOn: Binding(
+                    get: { store.showJournalAfterSession },
+                    set: { _ in store.send(.showJournalAfterSessionToggled) }
+                )
+            )
         } header: {
             Label(String(localized: "General"), systemImage: "gearshape")
         }

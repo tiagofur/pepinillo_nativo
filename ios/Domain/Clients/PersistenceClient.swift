@@ -310,6 +310,7 @@ public struct UserPreferencesDTO: Sendable, Equatable {
     public var currentStreakDays: Int
     public var longestStreakDays: Int
     public var lastFocusDate: Date?
+    public var showJournalAfterSession: Bool
     public var healthLoggingEnabled: Bool
     public var adhdFriendlyEnabled: Bool
     public var calendarIntegrationEnabled: Bool
@@ -342,6 +343,7 @@ public struct UserPreferencesDTO: Sendable, Equatable {
         self.hasCompletedOnboarding = false
         self.currentStreakDays = 0
         self.longestStreakDays = 0
+        self.showJournalAfterSession = true
         self.healthLoggingEnabled = false
         self.adhdFriendlyEnabled = false
         self.calendarIntegrationEnabled = false
@@ -375,6 +377,7 @@ public struct UserPreferencesDTO: Sendable, Equatable {
         self.currentStreakDays = prefs.currentStreakDays
         self.longestStreakDays = prefs.longestStreakDays
         self.lastFocusDate = prefs.lastFocusDate
+        self.showJournalAfterSession = prefs.showJournalAfterSession
         self.healthLoggingEnabled = prefs.healthLoggingEnabled
         self.adhdFriendlyEnabled = prefs.adhdFriendlyEnabled
         self.calendarIntegrationEnabled = prefs.calendarIntegrationEnabled
@@ -574,6 +577,7 @@ extension PersistenceClient: DependencyKey {
                     prefs.dailyReminderEnabled = prefsDTO.dailyReminderEnabled
                     prefs.dailyReminderHour = prefsDTO.dailyReminderHour
                     prefs.dailyReminderMinute = prefsDTO.dailyReminderMinute
+                    prefs.showJournalAfterSession = prefsDTO.showJournalAfterSession
                     prefs.healthLoggingEnabled = prefsDTO.healthLoggingEnabled
                     prefs.adhdFriendlyEnabled = prefsDTO.adhdFriendlyEnabled
                     prefs.calendarIntegrationEnabled = prefsDTO.calendarIntegrationEnabled

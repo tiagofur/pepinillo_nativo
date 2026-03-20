@@ -32,6 +32,7 @@ struct SettingsFeature {
         var soundEnabled: Bool = true
         var hapticEnabled: Bool = true
         var keepScreenOn: Bool = false
+        var showJournalAfterSession: Bool = true
         var defaultMode: FocusMode = .pomodoro
 
         // Theme
@@ -88,6 +89,7 @@ struct SettingsFeature {
         case soundToggled
         case hapticToggled
         case keepScreenOnToggled
+        case showJournalAfterSessionToggled
         case defaultModeChanged(FocusMode)
 
         // Theme
@@ -136,6 +138,7 @@ struct SettingsFeature {
         var soundEnabled: Bool
         var hapticEnabled: Bool
         var keepScreenOn: Bool
+        var showJournalAfterSession: Bool
         var defaultMode: FocusMode
         var themeName: String
         var dailyReminderEnabled: Bool
@@ -160,6 +163,7 @@ struct SettingsFeature {
             soundEnabled = prefs.soundEnabled
             hapticEnabled = prefs.hapticEnabled
             keepScreenOn = prefs.keepScreenOn
+            showJournalAfterSession = prefs.showJournalAfterSession
             defaultMode = FocusMode(rawValue: prefs.defaultMode) ?? .pomodoro
             themeName = prefs.themeName
             dailyReminderEnabled = prefs.dailyReminderEnabled
@@ -204,6 +208,7 @@ struct SettingsFeature {
                 state.soundEnabled = snap.soundEnabled
                 state.hapticEnabled = snap.hapticEnabled
                 state.keepScreenOn = snap.keepScreenOn
+                state.showJournalAfterSession = snap.showJournalAfterSession
                 state.defaultMode = snap.defaultMode
                 state.themeName = snap.themeName
                 state.dailyReminderEnabled = snap.dailyReminderEnabled
@@ -265,6 +270,10 @@ struct SettingsFeature {
 
             case .keepScreenOnToggled:
                 state.keepScreenOn.toggle()
+                return .send(.saveSettings)
+
+            case .showJournalAfterSessionToggled:
+                state.showJournalAfterSession.toggle()
                 return .send(.saveSettings)
 
             case .defaultModeChanged(let mode):
@@ -350,6 +359,7 @@ struct SettingsFeature {
                     soundEnabled: state.soundEnabled,
                     hapticEnabled: state.hapticEnabled,
                     keepScreenOn: state.keepScreenOn,
+                    showJournalAfterSession: state.showJournalAfterSession,
                     defaultMode: state.defaultMode,
                     themeName: state.themeName,
                     dailyReminderEnabled: state.dailyReminderEnabled,
@@ -375,6 +385,7 @@ struct SettingsFeature {
                     prefs.soundEnabled = snapshot.soundEnabled
                     prefs.hapticEnabled = snapshot.hapticEnabled
                     prefs.keepScreenOn = snapshot.keepScreenOn
+                    prefs.showJournalAfterSession = snapshot.showJournalAfterSession
                     prefs.defaultMode = snapshot.defaultMode.rawValue
                     prefs.themeName = snapshot.themeName
                     prefs.dailyReminderEnabled = snapshot.dailyReminderEnabled
@@ -428,6 +439,7 @@ extension SettingsFeature.SettingsSnapshot {
         soundEnabled: Bool,
         hapticEnabled: Bool,
         keepScreenOn: Bool,
+        showJournalAfterSession: Bool = true,
         defaultMode: FocusMode,
         themeName: String,
         dailyReminderEnabled: Bool,
@@ -451,6 +463,7 @@ extension SettingsFeature.SettingsSnapshot {
         self.soundEnabled = soundEnabled
         self.hapticEnabled = hapticEnabled
         self.keepScreenOn = keepScreenOn
+        self.showJournalAfterSession = showJournalAfterSession
         self.defaultMode = defaultMode
         self.themeName = themeName
         self.dailyReminderEnabled = dailyReminderEnabled

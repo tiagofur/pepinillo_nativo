@@ -105,11 +105,14 @@ class FocusViewModel @Inject constructor(
             }
         }
 
-        // Show journal sheet when a work session completes
+        // Show journal sheet when a work session completes (if enabled)
         viewModelScope.launch {
             focusEngine.workSessionCompleted.collect { sessionId ->
                 _lastCompletedSessionId = sessionId
-                _showJournalSheet.value = true
+                val prefs = prefsRepo.preferences.first()
+                if (prefs.showJournalAfterSession) {
+                    _showJournalSheet.value = true
+                }
             }
         }
 

@@ -47,6 +47,7 @@ data class SettingsUiState(
     val dailyReminderMinute: Int = 0,
     val midpointCheckIn: Boolean = false,
     val timerNotificationsEnabled: Boolean = true,
+    val showJournalAfterSession: Boolean = true,
     val currentStreak: Int = 0,
     val isPro: Boolean = false,
     val subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
@@ -164,6 +165,10 @@ class SettingsViewModel @Inject constructor(
         prefsRepo.updateTimerNotificationsEnabled(!uiState.value.timerNotificationsEnabled)
     }
 
+    fun toggleShowJournalAfterSession() = viewModelScope.launch {
+        prefsRepo.updateShowJournalAfterSession(!uiState.value.showJournalAfterSession)
+    }
+
     private fun scheduleDailyReminder(hour: Int, minute: Int) {
         val now = Calendar.getInstance()
         val target = Calendar.getInstance().apply {
@@ -211,6 +216,7 @@ class SettingsViewModel @Inject constructor(
         dailyReminderMinute = dailyReminderMinute,
         midpointCheckIn = midpointCheckIn,
         timerNotificationsEnabled = timerNotificationsEnabled,
+        showJournalAfterSession = showJournalAfterSession,
         currentStreak = currentStreak,
         isPro = isPro,
         subscriptionTier = subscriptionTier,

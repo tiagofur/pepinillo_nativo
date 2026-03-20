@@ -48,6 +48,9 @@ public final class UserPreferences {
     public var longestStreakDays: Int
     public var lastFocusDate: Date?
 
+    // Sessions
+    public var showJournalAfterSession: Bool = true
+
     // Apple Health
     public var healthLoggingEnabled: Bool
 
