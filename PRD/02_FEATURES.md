@@ -254,15 +254,25 @@ App completa para Wear OS:
 | Ocean | PRO |
 | Sunset | PRO |
 
+#### Theme Picker [Todas]
+
+- Selector de tema con **horizontal scroll cards** mostrando preview de cada tema
+- Colores de modo de enfoque consistentes en todos los temas: Pomodoro=rojo, Time Block=morado, Chrono=verde
+- **[Android]**: Incluye una opcion adicional **Material You** (dynamic colors basados en wallpaper)
+- **[iOS]**: Integrado en la pantalla de Settings
+- **[Wear OS]**: El tema seleccionado en el telefono Android se sincroniza automaticamente al reloj via Data Layer API
+- **Tier:** FREE (Classic) / PRO (Forest, Ocean, Sunset)
+
 #### Modos de apariencia [Todas]
 
-- Oscuro / Claro / Seguir sistema
+- **[iOS]**: Selector de apariencia Light / Dark / System en la pantalla de Settings
+- **[Android]**: Seguir tema del sistema (Dark/Light automatico)
 - **Tier:** FREE
 
 #### Efectos especificos por plataforma
 
 - **[iOS]**: Soporte para **Liquid Glass** (iOS 26) como tema premium adicional. Efectos de glassmorphism en componentes de UI.
-- **[Android]**: **Material You** dynamic colors basados en el wallpaper del usuario. Material 3 theming system.
+- **[Android]**: **Material You** dynamic colors como opcion adicional junto a los 4 temas nombrados. Material 3 theming system.
 
 ---
 
@@ -587,10 +597,13 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 | Backend REST API + Room sync | ➖ | 🔄 | ➖ | 🔄 | PRO |
 | **Temas y Diseno** | | | | | |
 | Classic theme | ✅ | ✅ | ✅ | ✅ | FREE |
-| Forest / Ocean / Sunset | ✅ | ✅ | ⬜ | ⬜ | PRO |
+| Forest / Ocean / Sunset | ✅ | ✅ | ⬜ | ✅ | PRO |
+| Theme picker (horizontal scroll cards) | ✅ | ✅ | ➖ | ➖ | FREE |
 | Liquid Glass (iOS 26) | ⬜ | ➖ | ⬜ | ➖ | PRO |
-| Material You dynamic colors | ➖ | ✅ | ➖ | ⬜ | FREE |
-| Dark/Light/System | ✅ | ✅ | ✅ | ✅ | FREE |
+| Material You dynamic colors | ➖ | ✅ | ➖ | ✅ | FREE |
+| Light/Dark/System appearance selector | ✅ | ✅ | ✅ | ✅ | FREE |
+| Focus mode colors (red/purple/green) | ✅ | ✅ | ✅ | ✅ | FREE |
+| Theme sync phone -> watch | ➖ | ➖ | ✅ | ✅ | FREE |
 | Glassmorphism effects | ✅ | ✅ | ➖ | ➖ | FREE |
 | **Localizacion** | | | | | |
 | Ingles (EN) | ✅ | ✅ | ⬜ | ⬜ | FREE |
@@ -661,5 +674,7 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 3. **Android tiene Paywall en progreso**: PaywallScreen y PaywallViewModel existen pero el feature gating completo aun no esta enforcement.
 
 4. **Feature gating inconsistente en iOS**: Segun el analisis del PLAN_FREE_PRO_TIERS, varias features anunciadas como PRO en el paywall de iOS no estan realmente gateadas (analytics >7 dias, sync, widgets, temas, subtareas, recurrencia). Requiere alineacion.
+
+6. **Theme parity achieved**: Ambas plataformas (Android + iOS) tienen 4 temas nombrados (Classic, Forest, Ocean, Sunset) con theme picker de horizontal scroll cards, colores de modo de enfoque consistentes (Pomodoro=rojo, TimeBlock=morado, Chrono=verde), y PRO gating para Forest/Ocean/Sunset. Android ademas ofrece Material You como opcion. iOS tiene selector Light/Dark/System. Wear OS sincroniza el tema seleccionado desde el telefono Android.
 
 5. **Session Journaling promovido a P0**: Originalmente P2 en iOS PRD, ahora implementado en ambas plataformas phone como parte del motor de enfoque.

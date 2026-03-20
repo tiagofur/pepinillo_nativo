@@ -62,7 +62,11 @@
 - **CloudKit sync:** sincronizacion transparente via iCloud
 
 ### Diseno ✅
-- 4 temas visuales + Liquid Glass
+- 4 temas nombrados (Classic, Forest, Ocean, Sunset) + Liquid Glass
+- **Theme picker:** horizontal scroll cards con preview
+- **Appearance selector:** Light / Dark / System
+- **Focus mode colors:** colores consistentes por modo (Pomodoro=rojo, TimeBlock=morado, Chrono=verde)
+- **PRO gating:** Forest, Ocean, Sunset requieren suscripcion PRO
 - Glassmorphism en componentes clave
 - Haptic feedback contextual
 - Soporte Reduce Motion (accesibilidad)
@@ -130,6 +134,11 @@
 - **DND / Focus Mode:** `DndManager` activa Do Not Disturb durante sesiones
 
 ### Diseno ✅
+- **Unified theme system:** 4 temas nombrados (Classic, Forest, Ocean, Sunset) + Material You dynamic colors
+- **Theme picker:** horizontal scroll cards con preview de cada tema
+- **Focus mode colors:** colores consistentes por modo (Pomodoro=rojo, TimeBlock=morado, Chrono=verde)
+- **PRO gating:** Forest, Ocean, Sunset requieren suscripcion PRO
+- **Wear OS theme sync:** el tema seleccionado en el phone se sincroniza al reloj via Data Layer API
 - Material 3 + Material You (dynamic color)
 - Adaptive layouts (phone, tablet, foldable con hinge avoidance)
 - Shimmer loading placeholders
@@ -255,7 +264,11 @@
 
 | Feature | iOS | Android | Notas |
 |---------|-----|---------|-------|
-| Theming | ✅ 4 temas + Liquid Glass | ✅ Material You dynamic | |
+| Theming | ✅ 4 temas + Liquid Glass | ✅ 4 temas + Material You | Cross-platform parity achieved |
+| Theme picker (horizontal scroll) | ✅ | ✅ | Ambas plataformas |
+| Appearance selector (Light/Dark/System) | ✅ | ✅ | |
+| Focus mode colors (red/purple/green) | ✅ | ✅ | Consistente en ambas plataformas |
+| Wear OS / watchOS theme sync | ✅ WatchConnectivity | ✅ Data Layer | Phone -> watch |
 | Glassmorphism | ✅ | ⬜ | Solo iOS |
 | Haptic feedback | ✅ | ⬜ | Android no tiene haptics implementados |
 | Reduce Motion | ✅ | ⬜ | |
