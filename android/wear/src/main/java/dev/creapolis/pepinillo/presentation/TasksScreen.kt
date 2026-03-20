@@ -1,9 +1,9 @@
 package dev.creapolis.pepinillo.presentation
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -41,7 +42,6 @@ import dev.creapolis.pepinillo.data.WearTask
 import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TasksScreen(
     tasks: List<WearTask>,
@@ -118,47 +118,58 @@ fun TasksScreen(
             items(tasks) { task ->
                 val progress = if (task.pomodoroProgress.isNotBlank()) task.pomodoroProgress else null
                 val isLinked = timerState?.linkedTaskId == task.id
-                Chip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = task.title,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    secondaryLabel = if (isLinked) {
-                        {
-                            Text(
-                                text = "🔗 ${stringResource(R.string.linked_to_timer)}",
-                                style = MaterialTheme.typography.caption2,
-                                color = MaterialTheme.colors.primary,
-                            )
-                        }
-                    } else {
-                        progress?.let {
-                            { Text(text = "🍅 $it", style = MaterialTheme.typography.caption2) }
-                        }
-                    },
-                    icon = {
-                        Text(
-                            text = task.energyEmoji,
-                            modifier = Modifier.size(24.dp),
-                            textAlign = TextAlign.Center,
-                        )
-                    },
-                    colors = if (isLinked) ChipDefaults.primaryChipColors() else ChipDefaults.secondaryChipColors(),
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp)
-                        .combinedClickable(
-                            onClick = { taskToComplete = task },
-                            onLongClick = {
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onToggleTaskLink(task.id, task.title)
+                        .padding(vertical = 2.dp),
+                ) {
+                    Chip(
+                        onClick = { },
+                        label = {
+                            Text(
+                                text = task.title,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        },
+                        secondaryLabel = if (isLinked) {
+                            {
+                                Text(
+                                    text = "🔗 ${stringResource(R.string.linked_to_timer)}",
+                                    style = MaterialTheme.typography.caption2,
+                                    color = MaterialTheme.colors.primary,
+                                )
+                            }
+                        } else {
+                            progress?.let {
+                                { Text(text = "🍅 $it", style = MaterialTheme.typography.caption2) }
+                            }
+                        },
+                        icon = {
+                            Text(
+                                text = task.energyEmoji,
+                                modifier = Modifier.size(24.dp),
+                                textAlign = TextAlign.Center,
+                            )
+                        },
+                        colors = if (isLinked) ChipDefaults.primaryChipColors() else ChipDefaults.secondaryChipColors(),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    // Transparent overlay intercepts touch events before Chip's internal handler
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .pointerInput(task.id) {
+                                detectTapGestures(
+                                    onTap = { taskToComplete = task },
+                                    onLongPress = {
+                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onToggleTaskLink(task.id, task.title)
+                                    },
+                                )
                             },
-                        ),
-                )
+                    )
+                }
             }
         }
     }
