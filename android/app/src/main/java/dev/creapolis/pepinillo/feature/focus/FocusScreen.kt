@@ -441,14 +441,18 @@ fun FocusScreen(
         // ── 6. ACTION BUTTONS ──
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = if (uiState.isRunning || uiState.isPaused || uiState.isWaitingForNext) {
+                Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally)
+            } else {
+                Arrangement.spacedBy(12.dp)
+            },
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Stop button (only visible when running or paused)
             if (uiState.isRunning || uiState.isPaused || uiState.isWaitingForNext) {
                 Button(
                     onClick = { viewModel.onStopClick() },
-                    modifier = Modifier
-                        .size(56.dp),
+                    modifier = Modifier.size(56.dp),
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -512,8 +516,7 @@ fun FocusScreen(
             if (uiState.canSkip) {
                 Button(
                     onClick = { viewModel.onSkipClick() },
-                    modifier = Modifier
-                        .size(56.dp),
+                    modifier = Modifier.size(56.dp),
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
