@@ -50,6 +50,7 @@ fun TasksScreen(
     isSyncStale: Boolean = false,
     onCompleteTask: (String) -> Unit,
     onToggleTaskLink: (String, String) -> Unit = { _, _ -> },
+    isActive: Boolean = true,
 ) {
     val haptics = LocalHapticFeedback.current
     val listState = rememberScalingLazyListState()
@@ -58,7 +59,9 @@ fun TasksScreen(
 
     var taskToComplete by remember { mutableStateOf<WearTask?>(null) }
 
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    LaunchedEffect(isActive) {
+        if (isActive) focusRequester.requestFocus()
+    }
 
     ScalingLazyColumn(
         state = listState,

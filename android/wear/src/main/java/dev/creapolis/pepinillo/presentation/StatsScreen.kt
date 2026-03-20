@@ -33,12 +33,15 @@ fun StatsScreen(
     state: WearStatsState,
     syncStatusLabel: String? = null,
     isSyncStale: Boolean = false,
+    isActive: Boolean = true,
 ) {
     val listState = rememberScalingLazyListState()
     val focusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    LaunchedEffect(isActive) {
+        if (isActive) focusRequester.requestFocus()
+    }
 
     ScalingLazyColumn(
         state = listState,

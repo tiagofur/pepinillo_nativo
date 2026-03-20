@@ -5,17 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.compose.foundation.pager.HorizontalPager
+import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material.HorizontalPageIndicator
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PageIndicatorState
@@ -32,7 +29,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
-import kotlin.math.abs
 
 class MainActivity : ComponentActivity() {
     private val viewModel: WearViewModel by viewModels()
@@ -60,8 +56,8 @@ class MainActivity : ComponentActivity() {
 }
 
 private const val TOTAL_PAGES = 3
-private const val SWIPE_THRESHOLD = 50f // minimum pixels to register as a swipe
 
+@OptIn(androidx.wear.compose.foundation.ExperimentalWearFoundationApi::class)
 @Composable
 private fun WearApp(viewModel: WearViewModel) {
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
@@ -70,9 +66,7 @@ private fun WearApp(viewModel: WearViewModel) {
     val pendingCommandCount by viewModel.pendingCommandCount.collectAsStateWithLifecycle()
     val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
 
-    // Hub-and-spoke: Dashboard(0) ← Timer(1) → Tasks(2)
-    var currentPage by remember { mutableIntStateOf(1) }
-
+    val pagerState = rememberPagerState(initialPage = 1, pageCount = { TOTAL_PAGES })
     val syncStatus = WearSyncStatusFormatter.format(
         lastSyncAtMillis = lastSyncAtMillis,
         isConnected = timerState.isConnected,
@@ -80,11 +74,11 @@ private fun WearApp(viewModel: WearViewModel) {
 
     val showTimeText = timerState.status != "Running" && timerState.status != "Paused"
 
-    val pageIndicatorState = remember(currentPage) {
+    val pageIndicatorState = remember {
         object : PageIndicatorState {
             override val pageCount: Int get() = TOTAL_PAGES
-            override val pageOffset: Float get() = 0f
-            override val selectedPage: Int get() = currentPage
+            override val pageOffset: Float get() = pagerState.currentPageOffsetFraction
+            override val selectedPage: Int get() = pagerState.currentPage
         }
     }
 
@@ -100,36 +94,18 @@ private fun WearApp(viewModel: WearViewModel) {
                 )
             },
         ) {
-            Box(
+            HorizontalPager(
+                state = pagerState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colors.background)
-                    .pointerInput(currentPage) {
-                        var totalDrag = 0f
-                        detectHorizontalDragGestures(
-                            onDragStart = { totalDrag = 0f },
-                            onDragEnd = {
-                                if (abs(totalDrag) > SWIPE_THRESHOLD) {
-                                    if (totalDrag < 0 && currentPage < TOTAL_PAGES - 1) {
-                                        // Swipe left → next page
-                                        currentPage++
-                                    } else if (totalDrag > 0 && currentPage > 0) {
-                                        // Swipe right → previous page
-                                        currentPage--
-                                    }
-                                }
-                            },
-                            onHorizontalDrag = { _, dragAmount ->
-                                totalDrag += dragAmount
-                            },
-                        )
-                    },
-            ) {
-                when (currentPage) {
+                    .background(MaterialTheme.colors.background),
+            ) { page ->
+                when (page) {
                     0 -> StatsScreen(
                         state = stats,
                         syncStatusLabel = syncStatus.label,
                         isSyncStale = syncStatus.isStale,
+                        isActive = page == pagerState.settledPage,
                     )
                     1 -> TimerScreen(
                         state = timerState,
@@ -150,6 +126,7 @@ private fun WearApp(viewModel: WearViewModel) {
                         isSyncStale = syncStatus.isStale,
                         onCompleteTask = viewModel::completeTask,
                         onToggleTaskLink = viewModel::toggleTaskLink,
+                        isActive = page == pagerState.settledPage,
                     )
                 }
             }
