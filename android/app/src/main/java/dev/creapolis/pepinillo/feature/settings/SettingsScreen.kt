@@ -129,65 +129,67 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // ── APP SETUP BANNER ──
-        SettingsCard {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onNavigateToAppSetup)
-                    .padding(vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Security,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
-                    tint = if (hasPermissionIssues) {
-                        MaterialTheme.colorScheme.error
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "App Setup",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = if (hasPermissionIssues) {
-                            "Action required for best experience"
-                        } else {
-                            "All permissions configured"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (hasPermissionIssues) {
+        if (hasPermissionIssues) {
+            SettingsCard {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onNavigateToAppSetup)
+                        .padding(vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Security,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp),
+                        tint = if (hasPermissionIssues) {
                             MaterialTheme.colorScheme.error
                         } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                            MaterialTheme.colorScheme.primary
                         },
                     )
-                }
-                if (hasPermissionIssues) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "App Setup",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = if (hasPermissionIssues) {
+                                "Action required for best experience"
+                            } else {
+                                "All permissions configured"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (hasPermissionIssues) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
+                    if (hasPermissionIssues) {
+                        Icon(
+                            imageVector = Icons.Rounded.Warning,
+                            contentDescription = "Action required",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
                     Icon(
-                        imageVector = Icons.Rounded.Warning,
-                        contentDescription = "Action required",
+                        imageVector = Icons.Rounded.ChevronRight,
+                        contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.error,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
                 }
-                Icon(
-                    imageVector = Icons.Rounded.ChevronRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                )
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // ── SUBSCRIPTION SECTION ──
         if (!uiState.isPro) {
@@ -355,6 +357,13 @@ fun SettingsScreen(
                 subtitle = "Continue after break ends",
                 isChecked = uiState.autoStartNextPomodoro,
                 onToggle = viewModel::toggleAutoStartNextPomodoro,
+            )
+            SettingsDivider()
+            SwitchRow(
+                label = "Post-session reflection",
+                subtitle = "Show journal after each focus session",
+                isChecked = uiState.showJournalAfterSession,
+                onToggle = viewModel::toggleShowJournalAfterSession,
             )
             SettingsDivider()
             SwitchRow(
@@ -527,6 +536,10 @@ fun SettingsScreen(
 
         SettingsCard {
             NavigationRow(label = "Version", trailing = uiState.appVersion)
+            if (!hasPermissionIssues) {
+                SettingsDivider()
+                NavigationRow(label = "App Setup", onClick = onNavigateToAppSetup)
+            }
             SettingsDivider()
             NavigationRow(label = "Privacy Policy")
             SettingsDivider()
