@@ -31,6 +31,8 @@ object WearDataLayerHelper {
     const val CMD_TIMER_STOP = "/pepinillo/cmd/timer/stop"
     const val CMD_TIMER_SKIP = "/pepinillo/cmd/timer/skip"
     const val CMD_TASK_COMPLETE = "/pepinillo/cmd/task/complete"
+    const val CMD_TASK_LINK = "/pepinillo/cmd/task/link"
+    const val CMD_TASK_UNLINK = "/pepinillo/cmd/task/unlink"
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
 
     fun pushTimer(context: Context, state: FocusTimerState, linkedTaskName: String? = null) {

@@ -33,7 +33,7 @@ data class TaskDetailUiState(
         get() = subtasks.count { it.isCompleted } to subtasks.size
 
     val totalFocusTimeMillis: Long
-        get() = focusSessions.sumOf { it.durationMillis }
+        get() = focusSessions.filter { it.phase == null || it.phase == "Work" }.sumOf { it.durationMillis }
 
     val totalFocusTimeFormatted: String
         get() {
@@ -44,7 +44,7 @@ data class TaskDetailUiState(
         }
 
     val focusPomodoroCount: Int
-        get() = focusSessions.count { it.mode == "pomodoro" }
+        get() = focusSessions.count { it.mode.equals("Pomodoro", ignoreCase = true) && (it.phase == null || it.phase == "Work") }
 }
 
 @HiltViewModel

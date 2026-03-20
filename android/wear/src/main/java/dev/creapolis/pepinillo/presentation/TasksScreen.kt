@@ -58,9 +58,6 @@ fun TasksScreen(
 
     var taskToComplete by remember { mutableStateOf<WearTask?>(null) }
 
-    val linkedTaskName = timerState?.linkedTaskName
-    val isTimerActive = timerState?.status == "Running" || timerState?.status == "Paused"
-
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     ScalingLazyColumn(
@@ -86,42 +83,6 @@ fun TasksScreen(
             }
         }
 
-        // Linked task (highlighted) — shown when pomodoro is active with a linked task
-        if (isTimerActive && linkedTaskName != null) {
-            item {
-                Chip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = linkedTaskName,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = MaterialTheme.colors.onPrimary,
-                        )
-                    },
-                    secondaryLabel = {
-                        Text(
-                            text = "🍅 ${stringResource(R.string.in_progress)}",
-                            style = MaterialTheme.typography.caption2,
-                            color = MaterialTheme.colors.onPrimary.copy(alpha = 0.8f),
-                        )
-                    },
-                    icon = {
-                        Text(
-                            text = "▶",
-                            modifier = Modifier.size(24.dp),
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colors.onPrimary,
-                        )
-                    },
-                    colors = ChipDefaults.primaryChipColors(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp),
-                )
-            }
-        }
-
         // Sync status
         if (!syncStatusLabel.isNullOrBlank()) {
             item {
@@ -137,7 +98,7 @@ fun TasksScreen(
             }
         }
 
-        if (tasks.isEmpty() && linkedTaskName == null) {
+        if (tasks.isEmpty()) {
             // Empty state
             item {
                 Text(

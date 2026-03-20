@@ -109,6 +109,34 @@ class PhoneWearListenerService : WearableListenerService() {
                 }
             }
 
+            WearDataLayerHelper.CMD_TASK_LINK -> {
+                val taskId = messageEvent.data.toString(StandardCharsets.UTF_8)
+                if (taskId.isNotBlank()) {
+                    Log.d(TAG, "Linking task $taskId from watch")
+                    scope.launch {
+                        focusEngine.linkTask(taskId)
+                        val taskName = taskRepository.getTaskById(taskId)?.title
+                        WearDataLayerHelper.pushTimer(
+                            this@PhoneWearListenerService,
+                            focusEngine.state.value,
+                            taskName,
+                        )
+                    }
+                }
+            }
+
+            WearDataLayerHelper.CMD_TASK_UNLINK -> {
+                Log.d(TAG, "Unlinking task from watch")
+                scope.launch {
+                    focusEngine.linkTask(null)
+                    WearDataLayerHelper.pushTimer(
+                        this@PhoneWearListenerService,
+                        focusEngine.state.value,
+                        null,
+                    )
+                }
+            }
+
             WearDataLayerHelper.CMD_REQUEST_SYNC -> {
                 Log.d(TAG, "Watch requested sync — pushing directly")
                 pushTasksAndStatsDirectly()
