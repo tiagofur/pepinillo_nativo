@@ -95,10 +95,19 @@ fun TaskDetailScreen(
     onBack: () -> Unit,
     onStartFocus: (taskId: String) -> Unit,
     onViewAnalytics: (taskId: String) -> Unit = {},
+    onNavigateToPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TaskDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isPro = viewModel.isPro
+
+    // Paywall navigation
+    val showPaywall by viewModel.showPaywall.collectAsState()
+    if (showPaywall) {
+        viewModel.dismissPaywall()
+        onNavigateToPaywall()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.navigateBack.collect { onBack() }
@@ -189,6 +198,7 @@ fun TaskDetailScreen(
                     onAddSubtask = viewModel::addSubtask,
                     onToggleSubtask = viewModel::toggleSubtask,
                     onDeleteSubtask = viewModel::deleteSubtask,
+                    isPro = isPro,
                 )
             }
 
@@ -221,6 +231,7 @@ fun TaskDetailScreen(
                 RecurrenceSection(
                     currentRule = task.recurrenceRule,
                     onRecurrenceChange = viewModel::updateRecurrence,
+                    isPro = isPro,
                 )
             }
 
@@ -366,6 +377,7 @@ private fun SubtasksSection(
     onAddSubtask: (String) -> Unit,
     onToggleSubtask: (String) -> Unit,
     onDeleteSubtask: (String) -> Unit,
+    isPro: Boolean = true,
 ) {
     var newSubtaskTitle by rememberSaveable { mutableStateOf("") }
 
@@ -379,11 +391,30 @@ private fun SubtasksSection(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    "Subtasks",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        "Subtasks",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    if (!isPro) {
+                        Text(
+                            "PRO",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiary,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.tertiary,
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
+                }
                 if (subtasks.isNotEmpty()) {
                     Text(
                         "${progress.first}/${progress.second}",
@@ -438,8 +469,11 @@ private fun SubtasksSection(
                     value = newSubtaskTitle,
                     onValueChange = { newSubtaskTitle = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Add subtask...") },
+                    placeholder = {
+                        Text(if (isPro) "Add subtask..." else "Upgrade to PRO to add subtasks")
+                    },
                     singleLine = true,
+                    enabled = isPro,
                     textStyle = MaterialTheme.typography.bodyMedium,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color.Transparent,
@@ -460,7 +494,7 @@ private fun SubtasksSection(
                             newSubtaskTitle = ""
                         }
                     },
-                    enabled = newSubtaskTitle.isNotBlank(),
+                    enabled = isPro && newSubtaskTitle.isNotBlank(),
                 ) {
                     Icon(Icons.Rounded.Add, contentDescription = "Add subtask")
                 }
@@ -657,6 +691,7 @@ private fun DetailsSection(
 private fun RecurrenceSection(
     currentRule: String?,
     onRecurrenceChange: (RecurrenceOption) -> Unit,
+    isPro: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val currentOption = RecurrenceOption.fromRrule(currentRule)
@@ -674,10 +709,27 @@ private fun RecurrenceSection(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Icon(Icons.Rounded.Repeat, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text("Repeat", style = MaterialTheme.typography.bodyLarge)
+                    if (!isPro) {
+                        Text(
+                            "PRO",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onTertiary,
+                            modifier = Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.tertiary,
+                                    RoundedCornerShape(4.dp),
+                                )
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        )
+                    }
                 }
                 Text(
                     currentOption.label,
@@ -688,7 +740,28 @@ private fun RecurrenceSection(
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 RecurrenceOption.entries.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option.label) },
+                        text = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                Text(option.label)
+                                if (!isPro && option != RecurrenceOption.None) {
+                                    Text(
+                                        "PRO",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onTertiary,
+                                        modifier = Modifier
+                                            .background(
+                                                MaterialTheme.colorScheme.tertiary,
+                                                RoundedCornerShape(4.dp),
+                                            )
+                                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                }
+                            }
+                        },
                         onClick = {
                             onRecurrenceChange(option)
                             expanded = false

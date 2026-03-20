@@ -197,6 +197,9 @@ fun PepinilloApp() {
                     onViewAnalytics = { taskId ->
                         navController.navigate("tasks/$taskId/analytics")
                     },
+                    onNavigateToPaywall = {
+                        navController.navigate("paywall")
+                    },
                 )
             }
             composable("tasks/{taskId}/analytics") {

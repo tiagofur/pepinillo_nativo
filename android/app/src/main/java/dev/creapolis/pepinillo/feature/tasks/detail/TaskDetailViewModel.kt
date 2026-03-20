@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -51,11 +53,17 @@ data class TaskDetailUiState(
 class TaskDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val taskRepository: TaskRepository,
+    private val featureGate: FeatureGate,
 ) : ViewModel() {
 
     private val taskId: String = checkNotNull(savedStateHandle["taskId"])
 
     private val _showDeleteDialog = MutableStateFlow(false)
+
+    private val _showPaywall = MutableStateFlow(false)
+    val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
+
+    val isPro: Boolean get() = featureGate.isPro
 
     private val _navigateBack = MutableSharedFlow<Unit>()
     val navigateBack: SharedFlow<Unit> = _navigateBack.asSharedFlow()
@@ -94,7 +102,13 @@ class TaskDetailViewModel @Inject constructor(
     fun updateEstimatedPomodoros(count: Int) = updateTask { it.copy(estimatedPomodoros = count.coerceIn(1, 8)) }
     fun updateDueDate(millis: Long?) = updateTask { it.copy(dueDate = millis) }
     fun toggleScheduledForToday() = updateTask { it.copy(scheduledForToday = !it.scheduledForToday) }
-    fun updateRecurrence(option: RecurrenceOption) = updateTask { it.copy(recurrenceRule = option.rrule) }
+    fun updateRecurrence(option: RecurrenceOption) {
+        if (option != RecurrenceOption.None && !featureGate.canUseRecurrence()) {
+            _showPaywall.value = true
+            return
+        }
+        updateTask { it.copy(recurrenceRule = option.rrule) }
+    }
 
     fun toggleCompletion() {
         viewModelScope.launch {
@@ -108,6 +122,10 @@ class TaskDetailViewModel @Inject constructor(
 
     fun addSubtask(title: String) {
         if (title.isBlank()) return
+        if (!featureGate.canUseSubtasks()) {
+            _showPaywall.value = true
+            return
+        }
         viewModelScope.launch {
             taskRepository.addSubtask(taskId, title.trim()).onFailure {
                 _errorEvent.emit("Failed to add subtask")
@@ -126,6 +144,10 @@ class TaskDetailViewModel @Inject constructor(
             _errorEvent.emit("Failed to delete subtask")
         }
     }
+
+    // ── Paywall ──
+
+    fun dismissPaywall() { _showPaywall.value = false }
 
     // ── Delete ──
 
