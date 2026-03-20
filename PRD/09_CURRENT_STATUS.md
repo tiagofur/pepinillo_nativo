@@ -148,14 +148,16 @@
 ### Billing ⚠️ Parcial
 - Play Billing 7.1.1 declarado como dependencia
 - `BillingManager` y `SubscriptionManager` existen
-- Feature gating **NO implementado** (todo esta desbloqueado)
+- `acknowledgePurchase` now has retry logic with exponential backoff (3 retries, persistent fallback)
+- Feature gating for subtasks & recurrence implemented (PRO badges, disabled inputs for free users)
+- Feature gating for other PRO features still pending
 - Paywall UI incompleta
 
 ### Pendiente Android
 
 | Item | Prioridad | Notas |
 |------|-----------|-------|
-| Feature gating enforcement | P0 | Todo desbloqueado actualmente |
+| Feature gating enforcement | P0 | Subtasks & recurrence gated; other features still need gating |
 | Paywall UI completa | P0 | Pantalla de suscripcion funcional |
 | Firebase Analytics/Crashlytics | P1 | Plugins comentados, falta `google-services.json` |
 | CI/CD pipeline | P1 | GitHub Actions (build + lint + tests) |
@@ -240,7 +242,7 @@
 | Health (Mindful Minutes/Sessions) | ✅ HealthKit | ✅ Health Connect | |
 | Calendar integration | ⬜ | ✅ Google Calendar | iOS no tiene integracion de calendario |
 | System Focus Mode / DND | ✅ FocusFilterIntent | ✅ DndManager | |
-| Soundscapes | ✅ AVAudioPlayer | ✅ ExoPlayer/Media3 | |
+| Soundscapes | ✅ AVAudioPlayer (4 soundscapes) | ⬜ Not implemented | Android missing; iOS has 4 functional |
 | Mode Intelligence | ✅ | ✅ | |
 
 ### Auth y Sync
@@ -257,7 +259,7 @@
 |---------|-----|---------|-------|
 | Billing SDK | ✅ StoreKit 2 | ⚠️ Play Billing 7.1.1 (parcial) | |
 | Paywall UI | ✅ | ⚠️ Incompleta | |
-| Feature gating | ⚠️ No enforced | ⚠️ No enforced | Critico en ambas plataformas |
+| Feature gating | ⚠️ No enforced | ⚠️ Partial (subtasks/recurrence gated) | Critico en ambas plataformas |
 | Productos (monthly/annual/lifetime) | ✅ 3 productos | ⬜ Por configurar | |
 
 ### Diseno y Accesibilidad
@@ -358,13 +360,51 @@
 
 ---
 
-## 7. Resumen de Brechas Criticas
+## 7. Production Audit Fixes (2026-03-20)
+
+The following issues were identified during a production readiness audit and have been fixed:
+
+### Monetization Fixes
+
+| Fix | Platform | Details |
+|-----|----------|---------|
+| Subtasks & recurrence PRO gating | Android | `FeatureGate` injected into `TaskDetailViewModel`; UI shows PRO badges and disables inputs for free users |
+| `acknowledgePurchase` retry logic | Android | Exponential backoff (3 retries), persistent fallback to SharedPreferences, retry on next app launch |
+| Subscription grace period buffer | iOS | 3-day buffer added before revoking access after subscription expiry |
+
+### Stability Fixes
+
+| Fix | Platform | Details |
+|-----|----------|---------|
+| Timer crash recovery for Paused state | Android | Timer now saves `Paused` state (previously only saved `Running`/`WaitingForNext`) |
+| POST_NOTIFICATIONS permission check | Android | `FocusTimerService` checks permission before calling `notify()` on Android 13+ (API 33) |
+
+### Quality Fixes
+
+| Fix | Platform | Details |
+|-----|----------|---------|
+| Notification string localization | iOS | 12 notification strings now use `String(localized:)` instead of hardcoded English |
+| Notification string localization | Android | 8 strings in `FocusTimerService` + `DailyReminderWorker` now use `getString(R.string.xxx)` |
+| Wear OS data sync retry | Wear OS | Data layer sync now retries failed pushes up to 2 times with 1-second delay |
+
+### Remaining Items (Not Yet Fixed)
+
+| Item | Platform | Details |
+|------|----------|---------|
+| Live Activity is a stub | iOS | Not wired to TCA; needs full integration |
+| SwiftData migration strategy | iOS | No `ModelVersion`/`VersionedSchema` defined |
+| Soundscapes not implemented | Android | iOS has 4 functional soundscapes; Android still missing |
+| Accessibility labels | iOS | 29 labels currently; could use more coverage |
+
+---
+
+## 8. Resumen de Brechas Criticas
 
 ### Ambas Plataformas
 
 | Brecha | iOS | Android | Impacto |
 |--------|-----|---------|---------|
-| Feature gating no enforced | ⚠️ | ⚠️ | Usuarios free tienen acceso a todo. Sin revenue |
+| Feature gating no enforced | ⚠️ | ⚠️ Partial | Android: subtasks/recurrence gated. iOS + other Android features still need gating |
 | Backend endpoints faltantes | Bajo (usa CloudKit) | Alto (depende del backend) | Stats y billing verification |
 
 ### Solo iOS
