@@ -55,7 +55,7 @@ fun TimerScreen(
     onSkip: () -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
-    val modeColor = WearModeColors.forMode(state.mode)
+    val modeColor = WearModeColors.forModeAndPhase(state.mode, state.phase)
 
     when (state.status) {
         "Running", "Paused" -> TimerActiveLayout(

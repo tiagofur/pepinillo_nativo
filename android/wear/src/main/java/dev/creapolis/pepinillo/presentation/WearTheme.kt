@@ -54,6 +54,16 @@ object WearModeColors {
         "Chrono" -> Chrono
         else -> Pomodoro
     }
+
+    @Composable
+    fun forModeAndPhase(mode: String, phase: String): Color {
+        val base = forMode(mode)
+        return when (phase) {
+            "ShortBreak" -> base.shortBreakVariant()
+            "LongBreak" -> base.longBreakVariant()
+            else -> base
+        }
+    }
 }
 
 @Composable
