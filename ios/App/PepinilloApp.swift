@@ -10,6 +10,7 @@
 import SwiftUI
 import SwiftData
 import UserNotifications
+import ActivityKit
 import ComposableArchitecture
 
 @main
@@ -44,6 +45,9 @@ struct PepinilloApp: App {
                 AppFeature()
             } withDependencies: {
                 $0.persistenceClient = PersistenceClient.live(container: container)
+                if #available(iOS 16.2, *) {
+                    $0.liveActivityClient = LiveActivityManager.makeClient()
+                }
                 // notificationClient, subscriptionClient, soundscapeClient, signInWithAppleClient
                 // use their liveValue automatically via @DependencyKey
             }

@@ -129,6 +129,8 @@ targets:
       - path: Shared
       # App Intents compile directly into the main app (no separate extension needed)
       - path: PepinilloIntents
+      # Live Activity manager (ActivityKit implementation injected at app launch)
+      - path: PepinilloLiveActivity/LiveActivityManager.swift
       # Watch feature reducers (shared for testability — WatchKit calls are #if os(watchOS) guarded)
       - path: PepinilloWatch/Features
       - path: PepinilloWatch/WatchStatsKeys.swift

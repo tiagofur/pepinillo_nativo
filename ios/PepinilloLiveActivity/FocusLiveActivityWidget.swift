@@ -45,7 +45,7 @@ struct FocusLiveActivityWidget: Widget {
                                     .fill(Color.white.opacity(0.15))
                                     .frame(height: 3)
                                 Capsule()
-                                    .fill(modeColor(for: context.state.focusMode))
+                                    .fill(ModeColors.color(for: context.state.focusMode))
                                     .frame(width: geo.size.width * progress, height: 3)
                             }
                         }
@@ -64,13 +64,4 @@ struct FocusLiveActivityWidget: Widget {
         }
     }
 
-    private func modeColor(for mode: String) -> Color {
-        switch mode {
-        case "pomodoro":  return Color(red: 0.91, green: 0.30, blue: 0.24)
-        case "flowtime":  return Color(red: 0.20, green: 0.53, blue: 0.92)
-        case "timeBlock": return Color(red: 0.56, green: 0.27, blue: 0.87)
-        case "stopwatch": return Color(red: 0.18, green: 0.72, blue: 0.44)
-        default:          return .blue
-        }
-    }
 }
