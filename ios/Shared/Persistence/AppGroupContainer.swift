@@ -233,14 +233,7 @@ enum AppGroupDefaults {
 /// (widgets receive `.none` to avoid double-sync writes).
 @MainActor
 func makeSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelContainer {
-    let schema = Schema([
-        TaskItem.self,
-        SubTask.self,
-        FocusSessionRecord.self,
-        DailyStats.self,
-        UserPreferences.self,
-        ProductivityReport.self,
-    ])
+    let schema = Schema(versionedSchema: SchemaV1.self)
 
     let config = ModelConfiguration(
         schema: schema,
@@ -248,7 +241,11 @@ func makeSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelContai
         cloudKitDatabase: enableCloudKit ? .automatic : .none
     )
 
-    return try ModelContainer(for: schema, configurations: [config])
+    return try ModelContainer(
+        for: schema,
+        migrationPlan: PepinilloMigrationPlan.self,
+        configurations: [config]
+    )
 }
 
 // MARK: - Widget / Extension Container (non-CloudKit, non-MainActor)
@@ -257,14 +254,7 @@ func makeSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelContai
 /// WidgetKit runs in a separate process — no @MainActor, no CloudKit sync.
 /// Includes TaskItem + SubTask + FocusSessionRecord so Tasks and Dashboard widgets can read real data.
 func makeWidgetModelContainer() throws -> ModelContainer {
-    let schema = Schema([
-        TaskItem.self,
-        SubTask.self,
-        FocusSessionRecord.self,
-        DailyStats.self,
-        UserPreferences.self,
-        ProductivityReport.self,
-    ])
+    let schema = Schema(versionedSchema: SchemaV1.self)
 
     let config = ModelConfiguration(
         schema: schema,
@@ -272,7 +262,11 @@ func makeWidgetModelContainer() throws -> ModelContainer {
         cloudKitDatabase: .none
     )
 
-    return try ModelContainer(for: schema, configurations: [config])
+    return try ModelContainer(
+        for: schema,
+        migrationPlan: PepinilloMigrationPlan.self,
+        configurations: [config]
+    )
 }
 
 // MARK: - Intents Extension Container (includes TaskItem for Siri queries)
@@ -280,14 +274,7 @@ func makeWidgetModelContainer() throws -> ModelContainer {
 /// Non-isolated container for the Intents extension (Siri Shortcuts).
 /// Includes TaskItem + SubTask so Siri can suggest real user tasks.
 func makeIntentsModelContainer() throws -> ModelContainer {
-    let schema = Schema([
-        TaskItem.self,
-        SubTask.self,
-        FocusSessionRecord.self,
-        DailyStats.self,
-        UserPreferences.self,
-        ProductivityReport.self,
-    ])
+    let schema = Schema(versionedSchema: SchemaV1.self)
 
     let config = ModelConfiguration(
         schema: schema,
@@ -295,5 +282,9 @@ func makeIntentsModelContainer() throws -> ModelContainer {
         cloudKitDatabase: .none
     )
 
-    return try ModelContainer(for: schema, configurations: [config])
+    return try ModelContainer(
+        for: schema,
+        migrationPlan: PepinilloMigrationPlan.self,
+        configurations: [config]
+    )
 }
