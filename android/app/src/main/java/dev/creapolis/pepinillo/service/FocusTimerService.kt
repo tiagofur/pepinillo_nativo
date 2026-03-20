@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.service
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,8 +9,11 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.glance.appwidget.updateAll
 import dagger.hilt.android.AndroidEntryPoint
 import dev.creapolis.pepinillo.MainActivity
@@ -232,8 +236,11 @@ class FocusTimerService : Service() {
                     previousStatus = state.status
 
                     // Update notification every tick
-                    getSystemService(NotificationManager::class.java)
-                        .notify(NOTIFICATION_ID, buildNotification(state))
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                        ContextCompat.checkSelfPermission(this@FocusTimerService, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                        getSystemService(NotificationManager::class.java)
+                            .notify(NOTIFICATION_ID, buildNotification(state))
+                    }
 
                     // Resolve linked task name (only re-query when task changes)
                     if (state.linkedTaskId != cachedLinkedTaskId) {
@@ -264,7 +271,7 @@ class FocusTimerService : Service() {
                         WearDataLayerHelper.pushTimer(this@FocusTimerService, state, cachedLinkedTaskName)
 
                         // Persist recovery state while running/waiting so we can restore after process death
-                        if (state.status == TimerStatus.Running || state.status == TimerStatus.WaitingForNext) {
+                        if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused || state.status == TimerStatus.WaitingForNext) {
                             saveRecoveryState(this@FocusTimerService, state)
                         } else if (state.status == TimerStatus.Idle) {
                             clearRecoveryState(this@FocusTimerService)
@@ -343,12 +350,12 @@ class FocusTimerService : Service() {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
         when (state.status) {
-            TimerStatus.Running -> builder.addAction(0, "Pause", servicePending(1, ACTION_PAUSE))
-            TimerStatus.Paused -> builder.addAction(0, "Resume", servicePending(2, ACTION_RESUME))
-            TimerStatus.WaitingForNext -> builder.addAction(0, "Start", servicePending(2, ACTION_RESUME))
+            TimerStatus.Running -> builder.addAction(0, getString(R.string.btn_pause), servicePending(1, ACTION_PAUSE))
+            TimerStatus.Paused -> builder.addAction(0, getString(R.string.btn_resume), servicePending(2, ACTION_RESUME))
+            TimerStatus.WaitingForNext -> builder.addAction(0, getString(R.string.btn_start_focus), servicePending(2, ACTION_RESUME))
             else -> {}
         }
-        builder.addAction(0, "Stop", servicePending(3, ACTION_STOP))
+        builder.addAction(0, getString(R.string.btn_stop), servicePending(3, ACTION_STOP))
 
         return builder.build()
     }

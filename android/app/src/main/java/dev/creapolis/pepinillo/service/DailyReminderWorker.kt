@@ -25,10 +25,10 @@ class DailyReminderWorker(
     private fun ensureNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Daily Reminder",
+            context.getString(R.string.daily_reminder_channel_name),
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = "Daily focus reminder notifications"
+            description = context.getString(R.string.daily_reminder_channel_description)
         }
         context.getSystemService(NotificationManager::class.java)
             .createNotificationChannel(channel)
@@ -47,8 +47,8 @@ class DailyReminderWorker(
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("Time to focus!")
-            .setContentText("Start a focus session today and keep your streak going.")
+            .setContentTitle(context.getString(R.string.daily_reminder_title))
+            .setContentText(context.getString(R.string.daily_reminder_text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

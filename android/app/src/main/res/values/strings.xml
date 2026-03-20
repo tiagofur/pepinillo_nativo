@@ -172,4 +172,10 @@
     <!-- Notification -->
     <string name="notification_channel_name">Focus Timer</string>
     <string name="notification_channel_description">Shows the active focus timer</string>
+
+    <!-- Daily Reminder -->
+    <string name="daily_reminder_channel_name">Daily Reminder</string>
+    <string name="daily_reminder_channel_description">Daily focus reminder notifications</string>
+    <string name="daily_reminder_title">Time to focus!</string>
+    <string name="daily_reminder_text">Start a focus session today and keep your streak going.</string>
 </resources>
