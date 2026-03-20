@@ -360,11 +360,11 @@ struct FocusView: View {
     }
 
     private var modeColor: Color {
-        theme.color(for: currentMode)
+        theme.color(for: currentMode, phase: store.phase)
     }
 
     private var modeGradient: AngularGradient {
-        theme.ringGradient(for: currentMode)
+        theme.ringGradient(for: currentMode, phase: store.phase)
     }
 }
 

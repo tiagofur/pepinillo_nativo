@@ -22,7 +22,7 @@ private extension FocusActivityAttributes.ContentState {
     }
 
     var modeColor: Color {
-        ModeColors.color(for: focusMode)
+        ModeColors.color(for: focusMode, phase: phase)
     }
 
     var modeSystemImage: String {

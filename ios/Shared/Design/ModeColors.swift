@@ -23,4 +23,15 @@ enum ModeColors {
         default:          return .blue
         }
     }
+
+    /// Returns the mode color adjusted for the current phase string (for widgets and Live Activity).
+    static func color(for modeRawValue: String, phase: String) -> Color {
+        let base = color(for: modeRawValue)
+        switch phase {
+        case "Short Break": return base.shortBreakVariant()
+        case "Long Break":  return base.longBreakVariant()
+        case "Break":       return base.shortBreakVariant()
+        default:            return base
+        }
+    }
 }

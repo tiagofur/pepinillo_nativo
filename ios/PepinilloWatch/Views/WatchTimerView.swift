@@ -251,7 +251,14 @@ struct WatchTimerView: View {
     // MARK: - Helpers
 
     private var modeColor: Color {
-        colorFor(store.selectedMode)
+        let base = colorFor(store.selectedMode)
+        let phase = store.phaseLabel
+        if phase.contains("Long Break") {
+            return base.longBreakVariant()
+        } else if phase.contains("Break") {
+            return base.shortBreakVariant()
+        }
+        return base
     }
 
     private func colorFor(_ mode: FocusMode) -> Color {

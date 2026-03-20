@@ -185,6 +185,7 @@ targets:
       - path: Domain/Models
       - path: Shared/Persistence/AppGroupContainer.swift
       - path: Shared/Design/ModeColors.swift
+      - path: Shared/Design/PhaseColors.swift
 
     dependencies:
       - package: ComposableArchitecture

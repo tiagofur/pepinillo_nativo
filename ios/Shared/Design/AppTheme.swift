@@ -28,9 +28,26 @@ struct AppTheme: Sendable {
         }
     }
 
+    /// Returns the accent color adjusted for the current phase (calmer during breaks).
+    func color(for mode: FocusMode, phase: FocusPhase) -> Color {
+        let base = color(for: mode)
+        return phase.isBreak ? base.breakVariant(for: phase) : base
+    }
+
     /// Gradient for the timer ring progress arc.
     func ringGradient(for mode: FocusMode) -> AngularGradient {
         let c = color(for: mode)
+        return AngularGradient(
+            colors: [c.opacity(0.4), c],
+            center: .center,
+            startAngle: .degrees(0),
+            endAngle: .degrees(360)
+        )
+    }
+
+    /// Gradient for the timer ring, adjusted for break phases.
+    func ringGradient(for mode: FocusMode, phase: FocusPhase) -> AngularGradient {
+        let c = color(for: mode, phase: phase)
         return AngularGradient(
             colors: [c.opacity(0.4), c],
             center: .center,
