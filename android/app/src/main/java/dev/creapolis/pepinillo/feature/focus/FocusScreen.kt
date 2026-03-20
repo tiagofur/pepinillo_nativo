@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -447,60 +448,62 @@ fun FocusScreen(
                 Button(
                     onClick = { viewModel.onStopClick() },
                     modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
+                        .size(56.dp),
+                    shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     ),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Rounded.Stop,
-                            contentDescription = "Stop timer",
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.btn_stop),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.Stop,
+                        contentDescription = stringResource(R.string.btn_stop),
+                        modifier = Modifier.size(28.dp),
+                    )
                 }
             }
 
             // Start/Pause button
             Button(
                 onClick = { viewModel.onStartStopClick() },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(56.dp),
-                shape = RoundedCornerShape(28.dp),
+                modifier = if (uiState.isRunning || uiState.isPaused) {
+                    Modifier.size(56.dp)
+                } else {
+                    Modifier
+                        .weight(1f)
+                        .height(56.dp)
+                },
+                shape = if (uiState.isRunning || uiState.isPaused) CircleShape else RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = animatedAccentColor,
                     contentColor = animatedOnAccentColor,
                 ),
+                contentPadding = if (uiState.isRunning || uiState.isPaused) PaddingValues(0.dp) else ButtonDefaults.ContentPadding,
             ) {
                 AnimatedContent(
                     targetState = uiState.isRunning,
                     label = "startStop",
                 ) { isRunning ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isRunning || uiState.isPaused) {
                         Icon(
                             imageVector = if (isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                            contentDescription = if (isRunning) "Pause timer" else "Start timer",
+                            contentDescription = if (isRunning) stringResource(R.string.btn_pause) else stringResource(R.string.btn_resume),
+                            modifier = Modifier.size(28.dp),
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = when {
-                                isRunning -> stringResource(R.string.btn_pause)
-                                uiState.isPaused -> stringResource(R.string.btn_resume)
-                                else -> stringResource(R.string.btn_start_focus)
-                            },
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Rounded.PlayArrow,
+                                contentDescription = "Start timer",
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.btn_start_focus),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
                     }
                 }
             }
@@ -510,26 +513,19 @@ fun FocusScreen(
                 Button(
                     onClick = { viewModel.onSkipClick() },
                     modifier = Modifier
-                        .weight(1f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
+                        .size(56.dp),
+                    shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,
                         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     ),
+                    contentPadding = PaddingValues(0.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Rounded.SkipNext,
-                            contentDescription = "Skip to next phase",
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Skip",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.SkipNext,
+                        contentDescription = "Skip to next phase",
+                        modifier = Modifier.size(28.dp),
+                    )
                 }
             }
         }
