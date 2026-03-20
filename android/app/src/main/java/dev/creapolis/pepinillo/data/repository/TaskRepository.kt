@@ -114,6 +114,9 @@ class TaskRepository @Inject constructor(
             .onFailure { Log.e(TAG, "Error getting task $taskId", it) }
             .getOrNull()
 
+    suspend fun getTaskTitle(taskId: String): String =
+        getTaskById(taskId)?.title ?: "Unknown Task"
+
     /**
      * Batch-update sort orders for a reordered list of tasks.
      * Each pair is (taskId, newSortOrder).

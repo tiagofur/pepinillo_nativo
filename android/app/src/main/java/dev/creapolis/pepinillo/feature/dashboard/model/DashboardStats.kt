@@ -48,6 +48,39 @@ data class WeeklyReportData(
     }
 }
 
+data class TopTaskUsage(
+    val taskId: String,
+    val taskTitle: String,
+    val totalMinutes: Int,
+)
+
+data class MonthlyReportData(
+    val currentMonthMinutes: Int = 0,
+    val currentMonthSessions: Int = 0,
+    val previousMonthMinutes: Int = 0,
+    val previousMonthSessions: Int = 0,
+    val dominantMode: String? = null,
+    val bestWeekLabel: String? = null,
+    val bestWeekMinutes: Int = 0,
+    val completionRate: Double = 0.0,
+    val topTasks: List<TopTaskUsage> = emptyList(),
+    val modeDistribution: List<ModeUsage> = emptyList(),
+    val monthlyChartData: List<DailyFocus> = emptyList(),
+) {
+    val minutesDelta: Int get() = currentMonthMinutes - previousMonthMinutes
+    val sessionsDelta: Int get() = currentMonthSessions - previousMonthSessions
+    val minutesTrend: Trend get() = when {
+        minutesDelta > 0 -> Trend.Up
+        minutesDelta < 0 -> Trend.Down
+        else -> Trend.Neutral
+    }
+    val sessionsTrend: Trend get() = when {
+        sessionsDelta > 0 -> Trend.Up
+        sessionsDelta < 0 -> Trend.Down
+        else -> Trend.Neutral
+    }
+}
+
 data class Achievement(
     val id: String,
     val title: String,

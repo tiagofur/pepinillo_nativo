@@ -7,11 +7,14 @@ import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.dashboard.model.Achievement
 import dev.creapolis.pepinillo.feature.dashboard.model.AnalyticsPeriod
 import dev.creapolis.pepinillo.feature.dashboard.model.DailyFocus
 import dev.creapolis.pepinillo.feature.dashboard.model.DashboardStats
 import dev.creapolis.pepinillo.feature.dashboard.model.ModeUsage
+import dev.creapolis.pepinillo.feature.dashboard.model.MonthlyReportData
+import dev.creapolis.pepinillo.feature.dashboard.model.TopTaskUsage
 import dev.creapolis.pepinillo.feature.dashboard.model.WeeklyReportData
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -33,6 +36,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
+    private val taskRepository: TaskRepository,
     private val featureGate: FeatureGate,
 ) : ViewModel() {
 
@@ -48,6 +52,9 @@ class DashboardViewModel @Inject constructor(
 
     private val _showWeeklyReview = MutableStateFlow(false)
     val showWeeklyReview: StateFlow<Boolean> = _showWeeklyReview.asStateFlow()
+
+    private val _showMonthlyReview = MutableStateFlow(false)
+    val showMonthlyReview: StateFlow<Boolean> = _showMonthlyReview.asStateFlow()
 
     val stats: StateFlow<DashboardStats> = _selectedPeriod.flatMapLatest { period ->
         combine(
@@ -69,6 +76,15 @@ class DashboardViewModel @Inject constructor(
         buildWeeklyReport(currentWeekSessions, previousWeekSessions, currentWeekStats, allDays)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WeeklyReportData())
 
+    val monthlyReport: StateFlow<MonthlyReportData> = combine(
+        sessionRepository.getMonthSessions(),
+        sessionRepository.getPreviousMonthSessions(),
+        sessionRepository.getMonthStats(),
+        sessionRepository.getAllDaysWithSessions(),
+    ) { currentMonthSessions, previousMonthSessions, currentMonthStats, _ ->
+        buildMonthlyReport(currentMonthSessions, previousMonthSessions, currentMonthStats)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MonthlyReportData())
+
     fun setPeriod(period: AnalyticsPeriod) {
         // Free users can only see Week
         if (!featureGate.canAccessFullAnalytics() && period != AnalyticsPeriod.Week) {
@@ -83,6 +99,14 @@ class DashboardViewModel @Inject constructor(
 
     fun dismissWeeklyReview() {
         _showWeeklyReview.value = false
+    }
+
+    fun showMonthlyReview() {
+        _showMonthlyReview.value = true
+    }
+
+    fun dismissMonthlyReview() {
+        _showMonthlyReview.value = false
     }
 
     private fun getStatsForPeriod(period: AnalyticsPeriod) = when (period) {
@@ -335,6 +359,94 @@ class DashboardViewModel @Inject constructor(
             currentStreak = streak,
             modeDistribution = distribution,
             weeklyChartData = weeklyChart,
+        )
+    }
+
+    /** Monthly report computed from raw sessions for full accuracy. */
+    private suspend fun buildMonthlyReport(
+        currentMonthSessions: List<FocusSessionEntity>,
+        previousMonthSessions: List<FocusSessionEntity>,
+        currentMonthStats: List<DailyStatsEntity>,
+    ): MonthlyReportData {
+        // Filter out break sessions
+        val currentWork = currentMonthSessions.filter { it.phase == null || it.phase == "Work" }
+        val previousWork = previousMonthSessions.filter { it.phase == null || it.phase == "Work" }
+
+        // Accurate totals from raw sessions
+        val currentMinutes = (currentWork.sumOf { it.durationMillis } / 60_000).toInt()
+        val currentSessionCount = currentWork.size
+        val previousMinutes = (previousWork.sumOf { it.durationMillis } / 60_000).toInt()
+        val previousSessionCount = previousWork.size
+
+        // Completion rate
+        val completedCount = currentWork.count { it.wasCompleted }
+        val completionRate = if (currentSessionCount > 0) completedCount.toDouble() / currentSessionCount else 0.0
+
+        // Dominant mode from raw sessions
+        val byMode = currentWork.groupBy { it.mode }
+        val modeMillis = byMode.mapValues { (_, sessions) -> sessions.sumOf { it.durationMillis } }
+        val dominant = modeMillis.maxByOrNull { it.value }?.takeIf { it.value > 0 }?.key
+
+        // Best week within month
+        val cal = Calendar.getInstance()
+        val weekTotals = mutableMapOf<Int, Long>()
+        for (session in currentWork) {
+            cal.timeInMillis = session.startTime
+            val weekOfMonth = cal.get(Calendar.WEEK_OF_MONTH)
+            weekTotals[weekOfMonth] = (weekTotals[weekOfMonth] ?: 0L) + session.durationMillis
+        }
+        val bestWeekEntry = weekTotals.maxByOrNull { it.value }
+        val bestWeekLabel = bestWeekEntry?.let { "Week ${it.key}" }
+        val bestWeekMinutes = ((bestWeekEntry?.value ?: 0L) / 60_000).toInt()
+
+        // Top 3 tasks by focus time
+        val taskMillis = mutableMapOf<String, Long>()
+        for (session in currentWork) {
+            val taskId = session.linkedTaskId ?: continue
+            taskMillis[taskId] = (taskMillis[taskId] ?: 0L) + session.durationMillis
+        }
+        val topTaskEntries = taskMillis.entries.sortedByDescending { it.value }.take(3)
+        val topTasks = topTaskEntries.map { (taskId, millis) ->
+            val title = taskRepository.getTaskTitle(taskId)
+            TopTaskUsage(
+                taskId = taskId,
+                taskTitle = title,
+                totalMinutes = (millis / 60_000).toInt(),
+            )
+        }
+
+        // Mode distribution from raw sessions
+        val totalMillis = currentWork.sumOf { it.durationMillis }.coerceAtLeast(1)
+        val distribution = listOf("Pomodoro", "Flow", "Blocks", "Chrono").mapNotNull { mode ->
+            val modeSessions = byMode[mode] ?: return@mapNotNull null
+            val millis = modeSessions.sumOf { it.durationMillis }
+            if (millis == 0L) return@mapNotNull null
+            ModeUsage(mode, modeSessions.size, (millis / 60_000).toInt(), millis.toFloat() / totalMillis)
+        }
+
+        // Monthly chart (DailyStats for per-day bars)
+        val chartDayFormat = SimpleDateFormat("d", Locale.getDefault())
+        val monthlyChart = (29 downTo 0).map { daysAgo ->
+            cal.time = Date()
+            cal.add(Calendar.DAY_OF_YEAR, -daysAgo)
+            cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+            val dayStart = cal.timeInMillis
+            DailyFocus(chartDayFormat.format(cal.time), currentMonthStats.find { it.date == dayStart }?.totalMinutes ?: 0)
+        }
+
+        return MonthlyReportData(
+            currentMonthMinutes = currentMinutes,
+            currentMonthSessions = currentSessionCount,
+            previousMonthMinutes = previousMinutes,
+            previousMonthSessions = previousSessionCount,
+            dominantMode = dominant,
+            bestWeekLabel = bestWeekLabel,
+            bestWeekMinutes = bestWeekMinutes,
+            completionRate = completionRate,
+            topTasks = topTasks,
+            modeDistribution = distribution,
+            monthlyChartData = monthlyChart,
         )
     }
 }

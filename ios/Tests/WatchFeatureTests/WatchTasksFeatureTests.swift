@@ -2,7 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // TCA reducer tests for the WatchTasksFeature.
-// Covers: task tapping (link/unlink), toggle completed,
+// Covers: task long press (link/unlink), tap (toggle completed),
 // task list reception, and guard conditions.
 
 import Testing
@@ -51,25 +51,50 @@ struct WatchTasksFeatureTests {
         return state
     }
 
-    // MARK: - taskTapped: Linking
+    // MARK: - taskTapped: Completion toggle
 
-    @Test("taskTapped links an incomplete task")
-    func taskTappedLinksIncomplete() async {
+    @Test("taskTapped toggles completion of an incomplete task")
+    func taskTappedTogglesCompletion() async {
         let state = Self.stateWithTasks()
 
         let store = TestStore(initialState: state) {
             WatchTasksFeature()
         }
 
-        await store.send(.taskTapped(Self.taskA.id)) {
+        await store.send(.taskTapped(Self.taskA.id))
+
+        await store.receive(.toggleCompleted(Self.taskA.id)) {
+            let idx = $0.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
+            $0.tasks[idx] = WatchTaskItem(
+                id: Self.taskA.id,
+                title: "Write documentation",
+                isCompleted: true,
+                priority: 2,
+                estimatedPomodoros: 3,
+                completedPomodoros: 1
+            )
+        }
+    }
+
+    // MARK: - taskLongPressed: Linking
+
+    @Test("taskLongPressed links an incomplete task")
+    func taskLongPressedLinksIncomplete() async {
+        let state = Self.stateWithTasks()
+
+        let store = TestStore(initialState: state) {
+            WatchTasksFeature()
+        }
+
+        await store.send(.taskLongPressed(Self.taskA.id)) {
             $0.linkedTaskID = Self.taskA.id
         }
 
         await store.receive(.taskLinked(Self.taskA.id, "Write documentation"))
     }
 
-    @Test("taskTapped on a different task switches link")
-    func taskTappedSwitchesLink() async {
+    @Test("taskLongPressed on a different task switches link")
+    func taskLongPressedSwitchesLink() async {
         var state = Self.stateWithTasks()
         state.linkedTaskID = Self.taskA.id
 
@@ -77,18 +102,17 @@ struct WatchTasksFeatureTests {
             WatchTasksFeature()
         }
 
-        // Tapping a different task should link the new one
-        await store.send(.taskTapped(Self.taskB.id)) {
+        await store.send(.taskLongPressed(Self.taskB.id)) {
             $0.linkedTaskID = Self.taskB.id
         }
 
         await store.receive(.taskLinked(Self.taskB.id, "Review PR"))
     }
 
-    // MARK: - taskTapped: Unlinking
+    // MARK: - taskLongPressed: Unlinking
 
-    @Test("taskTapped on already-linked task unlinks it")
-    func taskTappedUnlinks() async {
+    @Test("taskLongPressed on already-linked task unlinks it")
+    func taskLongPressedUnlinks() async {
         var state = Self.stateWithTasks()
         state.linkedTaskID = Self.taskA.id
 
@@ -96,29 +120,28 @@ struct WatchTasksFeatureTests {
             WatchTasksFeature()
         }
 
-        await store.send(.taskTapped(Self.taskA.id)) {
+        await store.send(.taskLongPressed(Self.taskA.id)) {
             $0.linkedTaskID = nil
         }
 
         await store.receive(.taskUnlinked)
     }
 
-    // MARK: - taskTapped: Guard conditions
+    // MARK: - taskLongPressed: Guard conditions
 
-    @Test("taskTapped on completed task does nothing")
-    func taskTappedCompletedTask() async {
+    @Test("taskLongPressed on completed task does nothing")
+    func taskLongPressedCompletedTask() async {
         let state = Self.stateWithTasks()
 
         let store = TestStore(initialState: state) {
             WatchTasksFeature()
         }
 
-        // Completed task should be ignored
-        await store.send(.taskTapped(Self.completedTask.id))
+        await store.send(.taskLongPressed(Self.completedTask.id))
     }
 
-    @Test("taskTapped on nonexistent task ID does nothing")
-    func taskTappedNonexistentID() async {
+    @Test("taskLongPressed on nonexistent task ID does nothing")
+    func taskLongPressedNonexistentID() async {
         let state = Self.stateWithTasks()
         let fakeID = UUID()
 
@@ -126,13 +149,13 @@ struct WatchTasksFeatureTests {
             WatchTasksFeature()
         }
 
-        await store.send(.taskTapped(fakeID))
+        await store.send(.taskLongPressed(fakeID))
     }
 
-    @Test("taskTapped on completed task that is already linked still unlinks")
-    func taskTappedUnlinksEvenIfCompleted() async {
+    @Test("taskLongPressed on completed task that is already linked still unlinks")
+    func taskLongPressedUnlinksEvenIfCompleted() async {
         // Edge case: a task was linked, then completed externally,
-        // tapping it should still unlink because it matches linkedTaskID.
+        // long pressing it should still unlink because it matches linkedTaskID.
         var state = Self.stateWithTasks()
         state.linkedTaskID = Self.completedTask.id
 
@@ -140,7 +163,7 @@ struct WatchTasksFeatureTests {
             WatchTasksFeature()
         }
 
-        await store.send(.taskTapped(Self.completedTask.id)) {
+        await store.send(.taskLongPressed(Self.completedTask.id)) {
             $0.linkedTaskID = nil
         }
 
@@ -371,7 +394,7 @@ struct WatchTasksFeatureTests {
 
     // MARK: - Combined Scenarios
 
-    @Test("link task, receive new tasks, task still linked")
+    @Test("link task via long press, receive new tasks, task still linked")
     func linkThenReceiveNewTasks() async {
         var state = Self.stateWithTasks()
         state.linkedTaskID = nil
@@ -380,8 +403,8 @@ struct WatchTasksFeatureTests {
             WatchTasksFeature()
         }
 
-        // Link task A
-        await store.send(.taskTapped(Self.taskA.id)) {
+        // Link task A via long press
+        await store.send(.taskLongPressed(Self.taskA.id)) {
             $0.linkedTaskID = Self.taskA.id
         }
         await store.receive(.taskLinked(Self.taskA.id, "Write documentation"))
@@ -404,7 +427,7 @@ struct WatchTasksFeatureTests {
         #expect(store.state.linkedTaskID == Self.taskA.id)
     }
 
-    @Test("toggle task then link it")
+    @Test("toggle task then try to link it via long press")
     func toggleThenLink() async {
         let state = Self.stateWithTasks()
 
@@ -425,7 +448,7 @@ struct WatchTasksFeatureTests {
             )
         }
 
-        // Now try to link the completed task — should fail (guard)
-        await store.send(.taskTapped(Self.taskA.id))
+        // Now try to link the completed task via long press — should fail (guard)
+        await store.send(.taskLongPressed(Self.taskA.id))
     }
 }

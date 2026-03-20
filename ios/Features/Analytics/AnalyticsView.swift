@@ -59,16 +59,41 @@ struct AnalyticsView: View {
             .refreshable { store.send(.onAppear) }
             .navigationTitle(String(localized: "Analytics"))
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            store.send(.aiReportTapped(.week))
+                        } label: {
+                            Label(String(localized: "Weekly AI Report"), systemImage: "sparkles")
+                        }
+                        Button {
+                            store.send(.aiReportTapped(.month))
+                        } label: {
+                            Label(String(localized: "Monthly AI Report"), systemImage: "sparkles")
+                        }
+                    } label: {
+                        Label(String(localized: "AI Report"), systemImage: "sparkles")
+                    }
                     Button {
                         store.send(.weeklyReviewTapped)
                     } label: {
                         Label(String(localized: "Weekly Review"), systemImage: "calendar.badge.clock")
                     }
+                    Button {
+                        store.send(.monthlyReviewTapped)
+                    } label: {
+                        Label(String(localized: "Monthly Review"), systemImage: "calendar.badge.checkmark")
+                    }
                 }
             }
             .sheet(item: $store.scope(state: \.weeklyReview, action: \.weeklyReview)) { weeklyStore in
                 WeeklyReviewView(store: weeklyStore)
+            }
+            .sheet(item: $store.scope(state: \.monthlyReview, action: \.monthlyReview)) { monthlyStore in
+                MonthlyReviewView(store: monthlyStore)
+            }
+            .sheet(item: $store.scope(state: \.aiReport, action: \.aiReport)) { aiReportStore in
+                AIReportView(store: aiReportStore)
             }
             .onAppear { store.send(.onAppear) }
         }

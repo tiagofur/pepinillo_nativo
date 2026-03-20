@@ -27,6 +27,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Clear
@@ -93,6 +94,7 @@ import java.util.Locale
 fun TaskDetailScreen(
     onBack: () -> Unit,
     onStartFocus: (taskId: String) -> Unit,
+    onViewAnalytics: (taskId: String) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TaskDetailViewModel = hiltViewModel(),
 ) {
@@ -236,6 +238,7 @@ fun TaskDetailScreen(
                     FocusHistorySection(
                         totalTime = uiState.totalFocusTimeFormatted,
                         pomodoroCount = uiState.focusPomodoroCount,
+                        onViewAnalytics = { onViewAnalytics(task.id) },
                     )
                 }
             }
@@ -748,6 +751,7 @@ private fun NotesSection(
 private fun FocusHistorySection(
     totalTime: String,
     pomodoroCount: Int,
+    onViewAnalytics: () -> Unit = {},
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
@@ -770,6 +774,30 @@ private fun FocusHistorySection(
             ) {
                 Text("Completed Pomodoros", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("$pomodoroCount", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onViewAnalytics)
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Filled.BarChart,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Focus Analytics",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                )
             }
         }
     }

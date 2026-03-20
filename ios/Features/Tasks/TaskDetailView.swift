@@ -82,6 +82,10 @@ struct TaskDetailView: View {
         } message: {
             Text(String(localized: "This action cannot be undone."))
         }
+        .sheet(item: $store.scope(state: \.taskAnalytics, action: \.taskAnalytics)) { analyticsStore in
+            TaskAnalyticsView(store: analyticsStore)
+                .presentationDetents([.large])
+        }
     }
 
     // MARK: - Sections
@@ -309,6 +313,12 @@ struct TaskDetailView: View {
             LabeledContent(String(localized: "Completed Pomodoros")) {
                 Text("\(store.completedPomodoros)")
                     .foregroundStyle(.secondary)
+            }
+            Button {
+                store.send(.viewAnalyticsTapped)
+            } label: {
+                Label(String(localized: "Focus Analytics"), systemImage: "chart.bar.xaxis")
+                    .foregroundStyle(.tint)
             }
         } header: {
             Text(String(localized: "Focus History"))

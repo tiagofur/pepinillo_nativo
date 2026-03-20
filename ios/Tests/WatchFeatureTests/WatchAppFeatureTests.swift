@@ -452,8 +452,8 @@ struct WatchAppFeatureTests {
 
         store.exhaustivity = .off
 
-        // Simulate user tapping task A in the tasks tab
-        await store.send(.tasks(.taskTapped(Self.taskA.id))) {
+        // Simulate user long pressing task A in the tasks tab
+        await store.send(.tasks(.taskLongPressed(Self.taskA.id))) {
             $0.tasks.linkedTaskID = Self.taskA.id
         }
 
@@ -486,7 +486,7 @@ struct WatchAppFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.tasks(.taskTapped(Self.taskA.id)))
+        await store.send(.tasks(.taskLongPressed(Self.taskA.id)))
         await store.receive(.tasks(.taskLinked(Self.taskA.id, "Write documentation")))
 
         commandsSent.withValue {
@@ -516,8 +516,8 @@ struct WatchAppFeatureTests {
 
         store.exhaustivity = .off
 
-        // Tap same task to unlink
-        await store.send(.tasks(.taskTapped(Self.taskA.id))) {
+        // Long press same task to unlink
+        await store.send(.tasks(.taskLongPressed(Self.taskA.id))) {
             $0.tasks.linkedTaskID = nil
         }
 
@@ -549,7 +549,7 @@ struct WatchAppFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.tasks(.taskTapped(Self.taskA.id)))
+        await store.send(.tasks(.taskLongPressed(Self.taskA.id)))
         await store.receive(.tasks(.taskUnlinked))
 
         commandsSent.withValue {
@@ -719,7 +719,7 @@ struct WatchAppFeatureTests {
         }
 
         // 4. Link task A
-        await store.send(.tasks(.taskTapped(Self.taskA.id))) {
+        await store.send(.tasks(.taskLongPressed(Self.taskA.id))) {
             $0.tasks.linkedTaskID = Self.taskA.id
         }
         await store.receive(.tasks(.taskLinked(Self.taskA.id, "Write documentation"))) {
@@ -796,7 +796,7 @@ struct WatchAppFeatureTests {
         store.exhaustivity = .off
 
         // Link task A
-        await store.send(.tasks(.taskTapped(Self.taskA.id))) {
+        await store.send(.tasks(.taskLongPressed(Self.taskA.id))) {
             $0.tasks.linkedTaskID = Self.taskA.id
         }
         await store.receive(.tasks(.taskLinked(Self.taskA.id, "Write documentation"))) {
@@ -911,8 +911,8 @@ struct WatchAppFeatureTests {
 
         store.exhaustivity = .off
 
-        // Tap a different task — the child sends taskLinked directly (not unlink first)
-        await store.send(.tasks(.taskTapped(Self.taskB.id))) {
+        // Long press a different task — the child sends taskLinked directly (not unlink first)
+        await store.send(.tasks(.taskLongPressed(Self.taskB.id))) {
             $0.tasks.linkedTaskID = Self.taskB.id
         }
 

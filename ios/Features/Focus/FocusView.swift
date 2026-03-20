@@ -39,16 +39,39 @@ struct FocusView: View {
                 .foregroundStyle(.secondary)
                 .padding(.top, 12)
 
-            // Linked task
+            // Linked task (tappable to change/unlink)
             if let taskTitle = store.linkedTaskTitle {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle")
-                        .font(.caption)
-                    Text(taskTitle)
-                        .font(.subheadline)
-                        .lineLimit(1)
+                Button {
+                    store.send(.taskPickerTapped)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle")
+                            .font(.caption)
+                        Text(taskTitle)
+                            .font(.subheadline)
+                            .lineLimit(1)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2)
+                    }
+                    .foregroundStyle(.tertiary)
                 }
-                .foregroundStyle(.tertiary)
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Linked task: \(taskTitle). Tap to change or unlink."))
+                .padding(.top, 8)
+            } else if store.isRunning {
+                Button {
+                    store.send(.taskPickerTapped)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle")
+                            .font(.caption)
+                        Text(String(localized: "Link Task"))
+                            .font(.subheadline)
+                    }
+                    .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Link a task to this session"))
                 .padding(.top, 8)
             }
 
@@ -133,6 +156,25 @@ struct FocusView: View {
                 isProUser: store.isProUser,
                 onSelect: { store.send(.soundscapeSelected($0)) },
                 onNeedsPro: { store.send(.paywallTapped) }
+            )
+            .presentationDetents([.medium])
+        }
+        // Task Picker sheet
+        .sheet(
+            isPresented: Binding(
+                get: { store.isTaskPickerPresented },
+                set: { if !$0 { store.send(.taskPickerDismissed) } }
+            )
+        ) {
+            TaskPickerView(
+                linkedTaskID: store.linkedTaskID,
+                tasks: store.availableTasks,
+                onSelectTask: { id, title in
+                    store.send(.linkTask(id, title))
+                },
+                onUnlink: {
+                    store.send(.unlinkTaskTapped)
+                }
             )
             .presentationDetents([.medium])
         }

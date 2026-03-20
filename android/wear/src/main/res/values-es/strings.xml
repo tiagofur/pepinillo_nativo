@@ -14,6 +14,7 @@
     <string name="in_progress">En progreso</string>
     <string name="complete_task">\u00bfCompletar tarea?</string>
     <string name="no_active_tasks">Sin tareas activas</string>
+    <string name="linked_to_timer">Vinculada al temporizador</string>
 
     <!-- StatsScreen -->
     <string name="today">Hoy</string>

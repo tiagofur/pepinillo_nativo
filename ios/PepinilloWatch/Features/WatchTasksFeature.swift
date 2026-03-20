@@ -26,6 +26,7 @@ struct WatchTasksFeature {
     enum Action: Equatable {
         // User interactions
         case taskTapped(UUID)
+        case taskLongPressed(UUID)
         case toggleCompleted(UUID)
 
         // Cross-feature (handled by parent WatchAppFeature)
@@ -43,8 +44,12 @@ struct WatchTasksFeature {
             switch action {
 
             case .taskTapped(let id):
+                // Tap toggles completion
+                return .send(.toggleCompleted(id))
+
+            case .taskLongPressed(let id):
+                // Long press links/unlinks task to timer
                 if state.linkedTaskID == id {
-                    // Unlink if tapping already linked task
                     state.linkedTaskID = nil
                     return .send(.taskUnlinked)
                 }

@@ -2,10 +2,11 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Apple Watch tasks screen. Shows today's tasks synced from iOS.
-// Tap to link a task to the active timer, swipe to toggle completion.
+// Tap to toggle completion, long press to link/unlink a task to the timer.
 
 import SwiftUI
 import ComposableArchitecture
+import WatchKit
 
 // MARK: - WatchTasksView
 
@@ -50,7 +51,7 @@ struct WatchTasksView: View {
                         task: task,
                         isLinked: linkedTaskID == task.id,
                         onTap: { store.send(.taskTapped(task.id)) },
-                        onToggle: { store.send(.toggleCompleted(task.id)) }
+                        onLongPress: { store.send(.taskLongPressed(task.id)) }
                     )
                 }
             }
@@ -93,19 +94,16 @@ private struct WatchTaskRow: View {
     let task: WatchTaskItem
     let isLinked: Bool
     let onTap: () -> Void
-    let onToggle: () -> Void
+    let onLongPress: () -> Void
 
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 8) {
-                // Completion checkbox
-                Button(action: onToggle) {
-                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .font(.system(size: 16))
-                        .foregroundStyle(task.isCompleted ? .green : .secondary)
-                }
-                .buttonStyle(.plain)
-                .frame(width: 24, height: 24)
+                // Completion indicator
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 16))
+                    .foregroundStyle(task.isCompleted ? .green : .secondary)
+                    .frame(width: 24, height: 24)
 
                 // Task info
                 VStack(alignment: .leading, spacing: 1) {
@@ -159,5 +157,9 @@ private struct WatchTaskRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
+        .onLongPressGesture {
+            WKInterfaceDevice.current().play(.click)
+            onLongPress()
+        }
     }
 }

@@ -149,6 +149,7 @@ private fun WearApp(viewModel: WearViewModel) {
                         syncStatusLabel = syncStatus.label,
                         isSyncStale = syncStatus.isStale,
                         onCompleteTask = viewModel::completeTask,
+                        onToggleTaskLink = viewModel::toggleTaskLink,
                     )
                 }
             }

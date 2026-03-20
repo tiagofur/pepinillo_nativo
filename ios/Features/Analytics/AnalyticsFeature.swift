@@ -27,6 +27,8 @@ struct AnalyticsFeature {
         var isLoading: Bool = false
         var isProUser: Bool = false
         @Presents var weeklyReview: WeeklyReviewFeature.State?
+        @Presents var monthlyReview: MonthlyReviewFeature.State?
+        @Presents var aiReport: AIReportFeature.State?
 
         // Productivity Insights
         var peakHourRange: String = ""
@@ -94,6 +96,12 @@ struct AnalyticsFeature {
         case weeklyReviewTapped
         case weeklyReviewDismissed
         case weeklyReview(PresentationAction<WeeklyReviewFeature.Action>)
+        case monthlyReviewTapped
+        case monthlyReviewDismissed
+        case monthlyReview(PresentationAction<MonthlyReviewFeature.Action>)
+        case aiReportTapped(ReportPeriod)
+        case aiReportDismissed
+        case aiReport(PresentationAction<AIReportFeature.Action>)
     }
 
     /// Value-type snapshot for transferring daily aggregated data across concurrency boundaries.
@@ -223,10 +231,40 @@ struct AnalyticsFeature {
 
             case .weeklyReview:
                 return .none
+
+            case .monthlyReviewTapped:
+                guard state.isProUser else { return .none }
+                state.monthlyReview = MonthlyReviewFeature.State()
+                return .none
+
+            case .monthlyReviewDismissed:
+                state.monthlyReview = nil
+                return .none
+
+            case .monthlyReview:
+                return .none
+
+            case .aiReportTapped(let period):
+                guard state.isProUser else { return .none }
+                state.aiReport = AIReportFeature.State(period: period)
+                return .none
+
+            case .aiReportDismissed:
+                state.aiReport = nil
+                return .none
+
+            case .aiReport:
+                return .none
             }
         }
         .ifLet(\.$weeklyReview, action: \.weeklyReview) {
             WeeklyReviewFeature()
+        }
+        .ifLet(\.$monthlyReview, action: \.monthlyReview) {
+            MonthlyReviewFeature()
+        }
+        .ifLet(\.$aiReport, action: \.aiReport) {
+            AIReportFeature()
         }
     }
 

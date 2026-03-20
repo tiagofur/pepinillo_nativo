@@ -94,6 +94,22 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { sender.completeTask(taskId) }
     }
 
+    fun toggleTaskLink(taskId: String, taskTitle: String) {
+        if (timerState.value.linkedTaskId == taskId) {
+            // Optimistic UI: unlink immediately
+            WearDataStore.updateTimer(
+                timerState.value.copy(linkedTaskId = null, linkedTaskName = null),
+            )
+            viewModelScope.launch { sender.unlinkTask() }
+        } else {
+            // Optimistic UI: link immediately
+            WearDataStore.updateTimer(
+                timerState.value.copy(linkedTaskId = taskId, linkedTaskName = taskTitle),
+            )
+            viewModelScope.launch { sender.linkTask(taskId) }
+        }
+    }
+
     private suspend fun refreshNodeDiagnostics() {
         val nodes = runCatching {
             Wearable.getNodeClient(getApplication()).connectedNodes.await()

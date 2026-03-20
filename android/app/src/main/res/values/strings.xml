@@ -97,6 +97,78 @@
     <string name="no_active_tasks">No active tasks. Create a task first.</string>
     <string name="pomodoro_progress">%1$d/%2$d pomodoros</string>
 
+    <!-- Session Journal -->
+    <string name="journal_session_complete">Session Complete</string>
+    <string name="journal_how_was_focus">How was your focus?</string>
+    <string name="journal_rating_rough">Rough</string>
+    <string name="journal_rating_meh">Meh</string>
+    <string name="journal_rating_okay">Okay</string>
+    <string name="journal_rating_good">Good</string>
+    <string name="journal_rating_great">Great</string>
+    <string name="journal_quick_reflection">Quick reflection</string>
+    <string name="journal_placeholder">What went well? What was challenging?</string>
+    <string name="journal_save">Save</string>
+    <string name="journal_skip">Skip</string>
+
+    <!-- Task Analytics -->
+    <string name="task_analytics_title">Focus Analytics</string>
+    <string name="task_analytics_no_data">No Data Yet</string>
+    <string name="task_analytics_no_data_description">Complete a focus session on this task to see analytics.</string>
+    <string name="task_analytics_focus_time">Focus Time</string>
+    <string name="task_analytics_sessions">Sessions</string>
+    <string name="task_analytics_completion">Completion</string>
+    <string name="task_analytics_focus_quality">Focus Quality</string>
+    <string name="task_analytics_interruptions">Interruptions</string>
+    <string name="task_analytics_avg_per_session">Avg/Session</string>
+    <string name="task_analytics_total_pauses">Total Pauses</string>
+    <string name="task_analytics_avg_duration">Avg Duration</string>
+    <string name="task_analytics_estimation">Estimation Accuracy</string>
+    <string name="task_analytics_estimated">Estimated</string>
+    <string name="task_analytics_completed_label">Completed</string>
+    <string name="task_analytics_over_estimate">Over estimate by %1$d%%</string>
+    <string name="task_analytics_estimate_used">%1$d%% of estimate used</string>
+    <string name="task_analytics_mode_distribution">Mode Distribution</string>
+    <string name="task_analytics_peak_hour">Peak Focus Hour</string>
+    <string name="task_analytics_avg_satisfaction">Avg Satisfaction</string>
+
+    <!-- AI Report -->
+    <string name="ai_report_title">AI Productivity Report</string>
+    <string name="ai_report_period_week">Week</string>
+    <string name="ai_report_period_month">Month</string>
+    <string name="ai_report_generating">Generating your report\u2026</string>
+    <string name="ai_report_generating_subtitle">AI is analyzing your productivity data</string>
+    <string name="ai_report_error_title">Report Generation Failed</string>
+    <string name="ai_report_retry">Retry</string>
+    <string name="ai_report_regenerate">Regenerate</string>
+    <string name="ai_report_highlights">Highlights</string>
+    <string name="ai_report_insights">Insights</string>
+    <string name="ai_report_recommendations">Recommendations</string>
+    <string name="ai_report_button">AI Report</string>
+
+    <!-- Template Report -->
+    <string name="report_title_strong">A Strong %1$s of Focus</string>
+    <string name="report_title_momentum">Building Momentum</string>
+    <string name="report_title_growing">Growing Your Focus Practice</string>
+    <string name="report_title_review">Your %1$s in Review</string>
+    <string name="report_highlight_focus">You focused for %1$dh %2$dm across %3$d sessions</string>
+    <string name="report_highlight_completion_up">Completion rate: %1$d%% — up from %2$d%%</string>
+    <string name="report_highlight_completion_down">Completion rate: %1$d%% — down from %2$d%%</string>
+    <string name="report_highlight_completion">Completion rate: %1$d%%</string>
+    <string name="report_highlight_best_day">%1$s was your most productive day</string>
+    <string name="report_insight_quality">Your focus quality score of %1$d shows strong discipline</string>
+    <string name="report_insight_pattern">Your peak focus window is %1$s. %2$s is your preferred technique</string>
+    <string name="report_insight_interruptions">You averaged %1$s interruptions per session. Consider using Do Not Disturb during focus blocks</string>
+    <string name="report_insight_completion_drop">Your completion rate dropped this %1$s. Try shorter sessions to rebuild consistency</string>
+    <string name="report_rec_peak_hours">Schedule your hardest tasks during your %1$s peak window</string>
+    <string name="report_rec_dnd">Try enabling Do Not Disturb or using shorter 15-minute sessions</string>
+    <string name="report_rec_top_task">Your top task consumed %1$dm of focus — consider breaking it into subtasks</string>
+    <string name="report_rec_match_pace">Aim for at least %1$d sessions next %2$s to match your previous pace</string>
+    <string name="report_period_week">Week</string>
+    <string name="report_period_month">Month</string>
+    <string name="report_category_achievement">achievement</string>
+    <string name="report_category_pattern">pattern</string>
+    <string name="report_category_improvement">improvement</string>
+
     <!-- Notification -->
     <string name="notification_channel_name">Focus Timer</string>
     <string name="notification_channel_description">Shows the active focus timer</string>

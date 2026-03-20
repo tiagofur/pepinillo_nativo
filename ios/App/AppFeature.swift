@@ -521,6 +521,10 @@ struct AppFeature {
 
             // MARK: - Cross-feature: Tasks → Focus
 
+            case .tasks(.tasksLoaded):
+                state.focus.availableTasks = state.tasks.tasks
+                return .none
+
             case .tasks(.startFocusOnTask(let taskID)):
                 if let task = state.tasks.tasks[id: taskID] {
                     state.selectedTab = .focus
@@ -568,6 +572,16 @@ struct AppFeature {
 
             case .handoffAnalyticsReceived:
                 state.selectedTab = .analytics
+                return .none
+
+            case .tasks(.addTaskTapped),
+                 .tasks(.taskCompleted),
+                 .tasks(.taskDeleted),
+                 .tasks(.undoDeleteTask),
+                 .tasks(.remindersImported),
+                 .tasks(.detail(.presented(.delegate(.taskDeleted)))):
+                // Keep focus task list in sync after mutations
+                state.focus.availableTasks = state.tasks.tasks
                 return .none
 
             case .focus, .tasks, .analytics, .settings:

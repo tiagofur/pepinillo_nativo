@@ -88,6 +88,76 @@ public final class SwiftDataPersistenceService {
         return try context.fetch(descriptor)
     }
 
+    public func fetchSessionsForTask(taskID: UUID) throws -> [FocusSessionRecord] {
+        let descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == taskID })
+        guard let task = try context.fetch(descriptor).first else { return [] }
+        return task.sessions.sorted { $0.startedAt > $1.startedAt }
+    }
+
+    public func fetchTaskAnalytics(taskID: UUID) throws -> TaskAnalyticsDTO {
+        let taskDescriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == taskID })
+        guard let task = try context.fetch(taskDescriptor).first else {
+            throw PersistenceError.notFound
+        }
+
+        let sessions = task.sessions
+        let totalSessions = sessions.count
+        let completedSessions = sessions.filter(\.wasCompleted).count
+        let totalFocusSeconds = Int(sessions.reduce(0.0) { $0 + $1.actualDuration })
+        let avgSessionSeconds = totalSessions > 0 ? totalFocusSeconds / totalSessions : 0
+        let totalInterruptions = sessions.reduce(0) { $0 + $1.interruptions }
+        let avgInterruptionsPerSession = totalSessions > 0
+            ? Double(totalInterruptions) / Double(totalSessions)
+            : 0.0
+        let totalPauses = sessions.reduce(0) { $0 + $1.pauseCount }
+
+        // Average satisfaction (only rated sessions)
+        let ratedSessions = sessions.compactMap(\.satisfactionRating)
+        let avgSatisfactionRating: Double? = ratedSessions.isEmpty
+            ? nil
+            : Double(ratedSessions.reduce(0, +)) / Double(ratedSessions.count)
+
+        // Mode distribution: mode → total seconds
+        var modeDistribution: [String: Int] = [:]
+        for session in sessions {
+            modeDistribution[session.mode, default: 0] += Int(session.actualDuration)
+        }
+
+        // Peak hour bucket: hour with most sessions
+        let calendar = Calendar.current
+        var hourCounts: [Int: Int] = [:]
+        for session in sessions {
+            let hour = calendar.component(.hour, from: session.startedAt)
+            hourCounts[hour, default: 0] += 1
+        }
+        let peakHourBucket = hourCounts.max(by: { $0.value < $1.value })?.key
+
+        // Estimation accuracy: completedPomodoros / estimatedPomodoros
+        let estimated = task.estimatedPomodoros
+        let completed = task.completedPomodoros
+        let estimationAccuracy: Double? = estimated > 0
+            ? Double(completed) / Double(estimated)
+            : nil
+
+        return TaskAnalyticsDTO(
+            taskID: task.id,
+            taskTitle: task.title,
+            totalSessions: totalSessions,
+            completedSessions: completedSessions,
+            totalFocusSeconds: totalFocusSeconds,
+            avgSessionSeconds: avgSessionSeconds,
+            totalInterruptions: totalInterruptions,
+            avgInterruptionsPerSession: avgInterruptionsPerSession,
+            totalPauses: totalPauses,
+            avgSatisfactionRating: avgSatisfactionRating,
+            modeDistribution: modeDistribution,
+            peakHourBucket: peakHourBucket,
+            estimatedPomodoros: estimated,
+            completedPomodoros: completed,
+            estimationAccuracy: estimationAccuracy
+        )
+    }
+
     public func saveJournalEntry(sessionID: UUID, note: String?, rating: Int?) throws {
         let descriptor = FetchDescriptor<FocusSessionRecord>(
             predicate: #Predicate { $0.id == sessionID }

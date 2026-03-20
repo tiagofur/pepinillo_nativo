@@ -10,6 +10,7 @@ import dagger.hilt.components.SingletonComponent
 import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
+import dev.creapolis.pepinillo.data.local.dao.ProductivityReportDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
 import javax.inject.Singleton
@@ -26,7 +27,12 @@ object DatabaseModule {
             PepinilloDatabase::class.java,
             "pepinillo.db",
         )
-            .addMigrations(PepinilloDatabase.MIGRATION_1_2, PepinilloDatabase.MIGRATION_2_3)
+            .addMigrations(
+                PepinilloDatabase.MIGRATION_1_2,
+                PepinilloDatabase.MIGRATION_2_3,
+                PepinilloDatabase.MIGRATION_3_4,
+                PepinilloDatabase.MIGRATION_4_5,
+            )
             .build()
     }
 
@@ -41,4 +47,7 @@ object DatabaseModule {
 
     @Provides
     fun provideSubtaskDao(db: PepinilloDatabase): SubtaskDao = db.subtaskDao()
+
+    @Provides
+    fun provideProductivityReportDao(db: PepinilloDatabase): ProductivityReportDao = db.productivityReportDao()
 }

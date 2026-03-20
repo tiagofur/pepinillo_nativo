@@ -7,12 +7,31 @@ import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
+
+data class TaskAnalytics(
+    val taskId: String,
+    val taskTitle: String,
+    val totalSessions: Int,
+    val completedSessions: Int,
+    val totalFocusMinutes: Int,
+    val avgSessionMinutes: Int,
+    val totalInterruptions: Int,
+    val avgInterruptionsPerSession: Double,
+    val totalPauses: Int,
+    val avgSatisfactionRating: Double?,
+    val modeDistribution: Map<String, Int>,
+    val peakHourBucket: Int?,
+    val estimatedPomodoros: Int,
+    val completedPomodoros: Int,
+    val estimationAccuracy: Double?,
+)
 
 private const val TAG = "SessionRepository"
 
@@ -28,17 +47,35 @@ class SessionRepository @Inject constructor(
         durationMillis: Long,
         linkedTaskId: String? = null,
         phase: String? = null,
-    ) {
-        if (durationMillis <= 0 || startTime <= 0 || endTime <= startTime) return
+        wasCompleted: Boolean = true,
+        interruptions: Int = 0,
+        pauseCount: Int = 0,
+        totalPauseMillis: Long = 0,
+        pomodoroNumber: Int? = null,
+        journalNote: String? = null,
+        satisfactionRating: Int? = null,
+        targetDurationMillis: Long? = null,
+    ): String? {
+        if (durationMillis <= 0 || startTime <= 0 || endTime <= startTime) return null
+        val sessionId = java.util.UUID.randomUUID().toString()
         runCatching {
             sessionDao.insertSession(
                 FocusSessionEntity(
+                    id = sessionId,
                     mode = mode,
                     startTime = startTime,
                     endTime = endTime,
                     durationMillis = durationMillis,
                     linkedTaskId = linkedTaskId,
                     phase = phase,
+                    wasCompleted = wasCompleted,
+                    interruptions = interruptions,
+                    pauseCount = pauseCount,
+                    totalPauseMillis = totalPauseMillis,
+                    pomodoroNumber = pomodoroNumber,
+                    journalNote = journalNote,
+                    satisfactionRating = satisfactionRating,
+                    targetDurationMillis = targetDurationMillis,
                 ),
             )
 
@@ -61,7 +98,14 @@ class SessionRepository @Inject constructor(
                     ),
                 )
             }
-        }.onFailure { Log.e(TAG, "Error recording session", it) }
+        }.onFailure { Log.e(TAG, "Error recording session", it); return null }
+        return sessionId
+    }
+
+    suspend fun saveJournalEntry(sessionId: String, note: String?, rating: Int?) {
+        runCatching {
+            sessionDao.updateJournalEntry(sessionId, note, rating)
+        }.onFailure { Log.e(TAG, "Error saving journal entry", it) }
     }
 
     /** Count today's completed Pomodoro work sessions (for long break calculation). */
@@ -149,6 +193,22 @@ class SessionRepository @Inject constructor(
         val weekAgo = now - 7L * 24 * 60 * 60 * 1000
         return sessionDao.getSessionsInRange(startOfDay(twoWeeksAgo), startOfDay(weekAgo))
             .catch { e -> Log.e(TAG, "Error loading previous week sessions", e); emit(emptyList()) }
+    }
+
+    fun getPreviousMonthSessions(): Flow<List<FocusSessionEntity>> {
+        val now = System.currentTimeMillis()
+        val twoMonthsAgo = now - 60L * 24 * 60 * 60 * 1000
+        val monthAgo = now - 30L * 24 * 60 * 60 * 1000
+        return sessionDao.getSessionsInRange(startOfDay(twoMonthsAgo), startOfDay(monthAgo))
+            .catch { e -> Log.e(TAG, "Error loading previous month sessions", e); emit(emptyList()) }
+    }
+
+    fun getPreviousMonthStats(): Flow<List<DailyStatsEntity>> {
+        val now = System.currentTimeMillis()
+        val twoMonthsAgo = now - 60L * 24 * 60 * 60 * 1000
+        val monthAgo = now - 30L * 24 * 60 * 60 * 1000
+        return dailyStatsDao.getStatsInRange(startOfDay(twoMonthsAgo), startOfDay(monthAgo))
+            .catch { e -> Log.e(TAG, "Error loading previous month stats", e); emit(emptyList()) }
     }
 
     fun getSessionsForDate(dateMillis: Long): Flow<List<FocusSessionEntity>> {
@@ -249,6 +309,74 @@ class SessionRepository @Inject constructor(
         cal.set(Calendar.DAY_OF_WEEK, bestIndex + 1)
         return dayFormat.format(cal.time)
     }
+
+    fun getTaskAnalytics(
+        taskId: String,
+        taskTitle: String,
+        estimatedPomodoros: Int,
+        completedPomodoros: Int,
+    ): Flow<TaskAnalytics> =
+        sessionDao.getSessionsForTask(taskId)
+            .map { sessions ->
+                val workSessions = sessions.filter { it.phase == null || it.phase == "Work" }
+                val totalFocusMinutes = workSessions.sumOf { (it.durationMillis / 60_000).toInt() }
+                val totalSessions = workSessions.size
+                val completedSessions = workSessions.count { it.wasCompleted }
+                val avgSessionMinutes = if (totalSessions > 0) totalFocusMinutes / totalSessions else 0
+                val totalInterruptions = workSessions.sumOf { it.interruptions }
+                val avgInterruptionsPerSession = if (totalSessions > 0) {
+                    totalInterruptions.toDouble() / totalSessions
+                } else 0.0
+                val totalPauses = workSessions.sumOf { it.pauseCount }
+
+                val ratings = workSessions.mapNotNull { it.satisfactionRating }
+                val avgSatisfactionRating = if (ratings.isNotEmpty()) {
+                    ratings.average()
+                } else null
+
+                // Mode distribution: mode name → total minutes
+                val modeDistribution = workSessions
+                    .groupBy { it.mode }
+                    .mapValues { (_, modeSessions) ->
+                        modeSessions.sumOf { (it.durationMillis / 60_000).toInt() }
+                    }
+
+                // Peak hour bucket: hour with most focus minutes
+                val peakHourBucket = if (workSessions.isNotEmpty()) {
+                    val hourBuckets = IntArray(24)
+                    val cal = Calendar.getInstance()
+                    for (s in workSessions) {
+                        cal.timeInMillis = s.startTime
+                        val hour = cal.get(Calendar.HOUR_OF_DAY)
+                        hourBuckets[hour] += (s.durationMillis / 60_000).toInt()
+                    }
+                    val maxMinutes = hourBuckets.max()
+                    if (maxMinutes > 0) hourBuckets.indexOfFirst { it == maxMinutes } else null
+                } else null
+
+                val estimationAccuracy = if (estimatedPomodoros > 0 && completedPomodoros > 0) {
+                    completedPomodoros.toDouble() / estimatedPomodoros
+                } else null
+
+                TaskAnalytics(
+                    taskId = taskId,
+                    taskTitle = taskTitle,
+                    totalSessions = totalSessions,
+                    completedSessions = completedSessions,
+                    totalFocusMinutes = totalFocusMinutes,
+                    avgSessionMinutes = avgSessionMinutes,
+                    totalInterruptions = totalInterruptions,
+                    avgInterruptionsPerSession = avgInterruptionsPerSession,
+                    totalPauses = totalPauses,
+                    avgSatisfactionRating = avgSatisfactionRating,
+                    modeDistribution = modeDistribution,
+                    peakHourBucket = peakHourBucket,
+                    estimatedPomodoros = estimatedPomodoros,
+                    completedPomodoros = completedPomodoros,
+                    estimationAccuracy = estimationAccuracy,
+                )
+            }
+            .catch { e -> Log.e(TAG, "Error computing task analytics for $taskId", e) }
 
     companion object {
         fun startOfDay(millis: Long): Long {

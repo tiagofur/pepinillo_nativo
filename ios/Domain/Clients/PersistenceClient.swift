@@ -116,10 +116,16 @@ public struct SubTaskDTO: Sendable, Equatable, Identifiable {
 public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
     public let id: UUID
     public let startedAt: Date
+    public let endedAt: Date?
     public let mode: String
+    public let phase: String
+    public let targetDuration: TimeInterval?
     public let actualDuration: TimeInterval
     public let wasCompleted: Bool
     public let interruptions: Int
+    public let pauseCount: Int
+    public let totalPauseDuration: TimeInterval
+    public let pomodoroNumber: Int?
     public let taskID: UUID?
     public let journalNote: String?
     public let satisfactionRating: Int?
@@ -127,20 +133,32 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
     public init(
         id: UUID,
         startedAt: Date,
+        endedAt: Date? = nil,
         mode: String,
+        phase: String = "work",
+        targetDuration: TimeInterval? = nil,
         actualDuration: TimeInterval,
         wasCompleted: Bool,
         interruptions: Int,
+        pauseCount: Int = 0,
+        totalPauseDuration: TimeInterval = 0,
+        pomodoroNumber: Int? = nil,
         taskID: UUID?,
         journalNote: String? = nil,
         satisfactionRating: Int? = nil
     ) {
         self.id = id
         self.startedAt = startedAt
+        self.endedAt = endedAt
         self.mode = mode
+        self.phase = phase
+        self.targetDuration = targetDuration
         self.actualDuration = actualDuration
         self.wasCompleted = wasCompleted
         self.interruptions = interruptions
+        self.pauseCount = pauseCount
+        self.totalPauseDuration = totalPauseDuration
+        self.pomodoroNumber = pomodoroNumber
         self.taskID = taskID
         self.journalNote = journalNote
         self.satisfactionRating = satisfactionRating
@@ -150,14 +168,73 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
         self.init(
             id: record.id,
             startedAt: record.startedAt,
+            endedAt: record.endedAt,
             mode: record.mode,
+            phase: record.phase,
+            targetDuration: record.targetDuration,
             actualDuration: record.actualDuration,
             wasCompleted: record.wasCompleted,
             interruptions: record.interruptions,
+            pauseCount: record.pauseCount,
+            totalPauseDuration: record.totalPauseDuration,
+            pomodoroNumber: record.pomodoroNumber,
             taskID: record.task?.id,
             journalNote: record.journalNote,
             satisfactionRating: record.satisfactionRating
         )
+    }
+}
+
+/// Computed per-task analytics (NOT a SwiftData model)
+public struct TaskAnalyticsDTO: Sendable, Equatable {
+    public let taskID: UUID
+    public let taskTitle: String
+    public let totalSessions: Int
+    public let completedSessions: Int
+    public let totalFocusSeconds: Int
+    public let avgSessionSeconds: Int
+    public let totalInterruptions: Int
+    public let avgInterruptionsPerSession: Double
+    public let totalPauses: Int
+    public let avgSatisfactionRating: Double?
+    public let modeDistribution: [String: Int]   // mode → seconds
+    public let peakHourBucket: Int?
+    public let estimatedPomodoros: Int
+    public let completedPomodoros: Int
+    public let estimationAccuracy: Double?
+
+    public init(
+        taskID: UUID,
+        taskTitle: String,
+        totalSessions: Int,
+        completedSessions: Int,
+        totalFocusSeconds: Int,
+        avgSessionSeconds: Int,
+        totalInterruptions: Int,
+        avgInterruptionsPerSession: Double,
+        totalPauses: Int,
+        avgSatisfactionRating: Double?,
+        modeDistribution: [String: Int],
+        peakHourBucket: Int?,
+        estimatedPomodoros: Int,
+        completedPomodoros: Int,
+        estimationAccuracy: Double?
+    ) {
+        self.taskID = taskID
+        self.taskTitle = taskTitle
+        self.totalSessions = totalSessions
+        self.completedSessions = completedSessions
+        self.totalFocusSeconds = totalFocusSeconds
+        self.avgSessionSeconds = avgSessionSeconds
+        self.totalInterruptions = totalInterruptions
+        self.avgInterruptionsPerSession = avgInterruptionsPerSession
+        self.totalPauses = totalPauses
+        self.avgSatisfactionRating = avgSatisfactionRating
+        self.modeDistribution = modeDistribution
+        self.peakHourBucket = peakHourBucket
+        self.estimatedPomodoros = estimatedPomodoros
+        self.completedPomodoros = completedPomodoros
+        self.estimationAccuracy = estimationAccuracy
     }
 }
 
@@ -326,6 +403,8 @@ public struct PersistenceClient: Sendable {
     // Sessions
     public var saveSession: @Sendable (FocusSessionResult) async throws -> Void
     public var fetchSessions: @Sendable (Date, Date) async throws -> [SessionRecordDTO] = { _, _ in [] }
+    public var fetchSessionsForTask: @Sendable (UUID) async throws -> [SessionRecordDTO] = { _ in [] }
+    public var fetchTaskAnalytics: @Sendable (UUID) async throws -> TaskAnalyticsDTO
     public var saveJournalEntry: @Sendable (UUID, String?, Int?) async throws -> Void
 
     // Daily Stats
@@ -443,6 +522,17 @@ extension PersistenceClient: DependencyKey {
                 try await MainActor.run {
                     let records = try service.fetchSessions(from: start, to: end)
                     return records.map { SessionRecordDTO(from: $0) }
+                }
+            },
+            fetchSessionsForTask: { taskID in
+                try await MainActor.run {
+                    let records = try service.fetchSessionsForTask(taskID: taskID)
+                    return records.map { SessionRecordDTO(from: $0) }
+                }
+            },
+            fetchTaskAnalytics: { taskID in
+                try await MainActor.run {
+                    try service.fetchTaskAnalytics(taskID: taskID)
                 }
             },
             saveJournalEntry: { sessionID, note, rating in

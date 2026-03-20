@@ -5,6 +5,8 @@ import com.google.android.gms.wearable.Wearable
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TASK_COMPLETE
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TIMER_PAUSE
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TIMER_RESUME
+import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TASK_LINK
+import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TASK_UNLINK
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TIMER_START
 import dev.creapolis.pepinillo.data.WearDataPaths.CMD_TIMER_STOP
 import kotlinx.coroutines.tasks.await
@@ -21,6 +23,8 @@ object WearDataPaths {
     const val CMD_TIMER_STOP = "/pepinillo/cmd/timer/stop"
     const val CMD_TIMER_SKIP = "/pepinillo/cmd/timer/skip"
     const val CMD_TASK_COMPLETE = "/pepinillo/cmd/task/complete"
+    const val CMD_TASK_LINK = "/pepinillo/cmd/task/link"
+    const val CMD_TASK_UNLINK = "/pepinillo/cmd/task/unlink"
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
 }
 
@@ -108,4 +112,10 @@ class WearMessageSender(private val context: Context) {
 
     suspend fun completeTask(taskId: String): Boolean =
         sendCommand(CMD_TASK_COMPLETE, taskId.toByteArray(StandardCharsets.UTF_8))
+
+    suspend fun linkTask(taskId: String): Boolean =
+        sendCommand(CMD_TASK_LINK, taskId.toByteArray(StandardCharsets.UTF_8))
+
+    suspend fun unlinkTask(): Boolean =
+        sendCommand(CMD_TASK_UNLINK)
 }

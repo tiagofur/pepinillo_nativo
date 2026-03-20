@@ -120,6 +120,10 @@ data class PomodoroSessionDto(
     val pauseCount: Int = 0,
     val totalPauseSeconds: Int = 0,
     val wasCompleted: Boolean = false,
+    val interruptions: Int = 0,
+    val pomodoroNumber: Int? = null,
+    val satisfactionRating: Int? = null,
+    val journalNote: String? = null,
     val sharedWithTaskIds: String? = null,
     val createdAt: Long = 0,
     val updatedAt: Long = 0,
@@ -138,6 +142,22 @@ data class VerifyReceiptRequest(
 data class VerifyReceiptResponse(
     val subscriptionTier: String = "free",
     val subscriptionExpiresAt: Long? = null,
+)
+
+// ── AI Report ──
+
+@Serializable
+data class AIReportResponse(
+    val title: String,
+    val highlights: List<String>,
+    val insights: List<ReportInsight>,
+    val recommendations: List<String>,
+)
+
+@Serializable
+data class ReportInsight(
+    val category: String,
+    val text: String,
 )
 
 // ── Pomodoro Config ──

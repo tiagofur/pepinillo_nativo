@@ -1,5 +1,7 @@
 package dev.creapolis.pepinillo.presentation
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +41,7 @@ import dev.creapolis.pepinillo.data.WearTask
 import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TasksScreen(
     tasks: List<WearTask>,
@@ -46,6 +49,7 @@ fun TasksScreen(
     syncStatusLabel: String? = null,
     isSyncStale: Boolean = false,
     onCompleteTask: (String) -> Unit,
+    onToggleTaskLink: (String, String) -> Unit = { _, _ -> },
 ) {
     val haptics = LocalHapticFeedback.current
     val listState = rememberScalingLazyListState()
@@ -58,42 +62,6 @@ fun TasksScreen(
     val isTimerActive = timerState?.status == "Running" || timerState?.status == "Paused"
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
-
-    // Confirmation dialog
-    taskToComplete?.let { task ->
-        Alert(
-            title = { Text(stringResource(R.string.complete_task), textAlign = TextAlign.Center) },
-            message = {
-                Text(
-                    text = task.title,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            },
-        ) {
-            item {
-                Button(
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onCompleteTask(task.id)
-                        taskToComplete = null
-                    },
-                    colors = ButtonDefaults.primaryButtonColors(),
-                ) {
-                    Text("✓")
-                }
-            }
-            item {
-                Button(
-                    onClick = { taskToComplete = null },
-                    colors = ButtonDefaults.secondaryButtonColors(),
-                ) {
-                    Text("✕")
-                }
-            }
-        }
-    }
 
     ScalingLazyColumn(
         state = listState,
@@ -185,6 +153,7 @@ fun TasksScreen(
         } else {
             items(tasks) { task ->
                 val progress = if (task.pomodoroProgress.isNotBlank()) task.pomodoroProgress else null
+                val isLinked = timerState?.linkedTaskId == task.id
                 Chip(
                     onClick = { taskToComplete = task },
                     label = {
@@ -194,8 +163,18 @@ fun TasksScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
                     },
-                    secondaryLabel = progress?.let {
-                        { Text(text = "🍅 $it", style = MaterialTheme.typography.caption2) }
+                    secondaryLabel = if (isLinked) {
+                        {
+                            Text(
+                                text = "🔗 ${stringResource(R.string.linked_to_timer)}",
+                                style = MaterialTheme.typography.caption2,
+                                color = MaterialTheme.colors.primary,
+                            )
+                        }
+                    } else {
+                        progress?.let {
+                            { Text(text = "🍅 $it", style = MaterialTheme.typography.caption2) }
+                        }
                     },
                     icon = {
                         Text(
@@ -204,11 +183,54 @@ fun TasksScreen(
                             textAlign = TextAlign.Center,
                         )
                     },
-                    colors = ChipDefaults.secondaryChipColors(),
+                    colors = if (isLinked) ChipDefaults.primaryChipColors() else ChipDefaults.secondaryChipColors(),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 2.dp),
+                        .padding(vertical = 2.dp)
+                        .combinedClickable(
+                            onClick = { taskToComplete = task },
+                            onLongClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onToggleTaskLink(task.id, task.title)
+                            },
+                        ),
                 )
+            }
+        }
+    }
+
+    // Confirmation dialog
+    taskToComplete?.let { task ->
+        Alert(
+            title = { Text(stringResource(R.string.complete_task), textAlign = TextAlign.Center) },
+            message = {
+                Text(
+                    text = task.title,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            },
+        ) {
+            item {
+                Button(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onCompleteTask(task.id)
+                        taskToComplete = null
+                    },
+                    colors = ButtonDefaults.primaryButtonColors(),
+                ) {
+                    Text("✓")
+                }
+            }
+            item {
+                Button(
+                    onClick = { taskToComplete = null },
+                    colors = ButtonDefaults.secondaryButtonColors(),
+                ) {
+                    Text("✕")
+                }
             }
         }
     }

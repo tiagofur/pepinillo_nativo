@@ -11,8 +11,11 @@ import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -31,10 +34,21 @@ class FocusEngine @Inject constructor(
     private val _state = MutableStateFlow(FocusTimerState())
     val state: StateFlow<FocusTimerState> = _state.asStateFlow()
 
+    /** Emits the session ID whenever a work session completes (not breaks). */
+    private val _workSessionCompleted = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val workSessionCompleted: SharedFlow<String> = _workSessionCompleted.asSharedFlow()
+
     private var timerJob: Job? = null
 
     // Cached preferences for use in the tick loop (avoids reading DataStore every 100ms)
     private var cachedPrefs: UserPreferences = UserPreferences()
+
+    // Pause / interruption tracking (internal, not exposed in FocusTimerState)
+    private var pauseCount: Int = 0
+    private var pauseStartTime: Long = 0L
+    private var totalPauseMillis: Long = 0L
+    private var interruptionCount: Int = 0
+    private var pomodoroNumber: Int = 1
 
     suspend fun selectMode(mode: FocusMode) {
         if (_state.value.status != TimerStatus.Idle) return
@@ -102,10 +116,25 @@ class FocusEngine @Inject constructor(
         val current = _state.value
         if (current.status == TimerStatus.Running) return
 
+        // Accumulate pause duration when resuming from Paused
+        if (current.status == TimerStatus.Paused && pauseStartTime > 0L) {
+            totalPauseMillis += System.currentTimeMillis() - pauseStartTime
+            pauseStartTime = 0L
+        }
+
+        // Reset tracking fields when starting a fresh session
+        if (current.status == TimerStatus.Idle || current.status == TimerStatus.WaitingForNext) {
+            pauseCount = 0
+            pauseStartTime = 0L
+            totalPauseMillis = 0L
+            interruptionCount = 0
+        }
+
         // Seed completedSessions from DB if starting fresh (Idle or WaitingForNext with 0 sessions)
         if (current.mode == FocusMode.Pomodoro && current.status == TimerStatus.Idle) {
             scope.launch {
                 val todayCount = sessionRepository.getTodayPomodoroWorkCount()
+                pomodoroNumber = todayCount + 1
                 _state.update {
                     it.copy(
                         status = TimerStatus.Running,
@@ -185,6 +214,8 @@ class FocusEngine @Inject constructor(
 
     fun pause() {
         timerJob?.cancel()
+        pauseCount++
+        pauseStartTime = System.currentTimeMillis()
         _state.update { it.copy(status = TimerStatus.Paused) }
     }
 
@@ -200,10 +231,15 @@ class FocusEngine @Inject constructor(
 
     fun stop() {
         timerJob?.cancel()
+        // If paused at the time of stop, accumulate remaining pause duration
+        if (pauseStartTime > 0L) {
+            totalPauseMillis += System.currentTimeMillis() - pauseStartTime
+            pauseStartTime = 0L
+        }
         val snapshot = _state.value
         scope.launch {
             if (snapshot.elapsedMillis > 0 && snapshot.sessionStartTime > 0) {
-                recordSession(snapshot)
+                recordSession(snapshot, wasCompleted = false)
             }
             val prefs = prefsRepo.preferences.first()
             _state.value = FocusTimerState(
@@ -226,7 +262,7 @@ class FocusEngine @Inject constructor(
         feedbackManager.onPhaseComplete(s.mode, s.phase)
 
         // Record the completed phase as a session
-        recordSession(s)
+        recordSession(s, wasCompleted = true)
 
         val prefs = prefsRepo.preferences.first()
 
@@ -254,6 +290,12 @@ class FocusEngine @Inject constructor(
             }
 
             s.mode == FocusMode.Pomodoro && (s.phase == FocusPhase.ShortBreak || s.phase == FocusPhase.LongBreak) -> {
+                pomodoroNumber = s.completedSessions + 1
+                // Reset pause/interruption tracking for the new work session
+                pauseCount = 0
+                pauseStartTime = 0L
+                totalPauseMillis = 0L
+                interruptionCount = 0
                 _state.value = FocusTimerState(
                     mode = FocusMode.Pomodoro,
                     phase = FocusPhase.Work,
@@ -286,18 +328,30 @@ class FocusEngine @Inject constructor(
         }
     }
 
-    private suspend fun recordSession(s: FocusTimerState) {
+    private suspend fun recordSession(s: FocusTimerState, wasCompleted: Boolean = true) {
         if (s.elapsedMillis < 1000) return // ignore sessions shorter than 1 second
 
         val now = System.currentTimeMillis()
-        sessionRepository.recordSession(
+        val targetMillis = if (s.mode == FocusMode.Flow || s.mode == FocusMode.Chrono) null else s.totalMillis
+        val sessionId = sessionRepository.recordSession(
             mode = s.mode.name,
             startTime = s.sessionStartTime,
             endTime = now,
             durationMillis = s.elapsedMillis,
             linkedTaskId = s.linkedTaskId,
             phase = s.phase.name,
+            wasCompleted = wasCompleted,
+            interruptions = interruptionCount,
+            pauseCount = pauseCount,
+            totalPauseMillis = totalPauseMillis,
+            pomodoroNumber = if (s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.Work) pomodoroNumber else null,
+            targetDurationMillis = targetMillis,
         )
+
+        // Emit event for work session completion (for journal UI)
+        if (sessionId != null && s.phase == FocusPhase.Work) {
+            _workSessionCompleted.tryEmit(sessionId)
+        }
 
         // Increment pomodoro count on linked task if this was a work phase
         if (s.linkedTaskId != null && s.phase == FocusPhase.Work) {

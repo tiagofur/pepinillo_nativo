@@ -26,11 +26,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Summarize
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +51,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -56,7 +59,9 @@ import dev.creapolis.pepinillo.feature.dashboard.components.FocusChart
 import dev.creapolis.pepinillo.feature.dashboard.components.ModeBreakdown
 import dev.creapolis.pepinillo.feature.dashboard.model.Achievement
 import dev.creapolis.pepinillo.feature.dashboard.model.AnalyticsPeriod
+import dev.creapolis.pepinillo.feature.dashboard.model.MonthlyReportData
 import dev.creapolis.pepinillo.feature.dashboard.model.isEmpty
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.components.DashboardSkeleton
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 
@@ -68,10 +73,13 @@ fun DashboardScreen(
     onCalendarClick: () -> Unit = {},
     onNavigateToPaywall: () -> Unit = {},
     onStartFocusClick: () -> Unit = {},
+    onNavigateToAIReport: () -> Unit = {},
 ) {
     val stats by viewModel.stats.collectAsState()
     val showWeeklyReview by viewModel.showWeeklyReview.collectAsState()
     val weeklyReport by viewModel.weeklyReport.collectAsState()
+    val showMonthlyReview by viewModel.showMonthlyReview.collectAsState()
+    val monthlyReport by viewModel.monthlyReport.collectAsState()
     val isPro by viewModel.isPro.collectAsState()
 
     if (stats.isLoading) {
@@ -116,11 +124,29 @@ fun DashboardScreen(
             }
             Row {
                 IconButton(onClick = {
+                    if (isPro) onNavigateToAIReport() else onNavigateToPaywall()
+                }) {
+                    Icon(
+                        Icons.Rounded.AutoAwesome,
+                        contentDescription = stringResource(R.string.ai_report_button),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = {
                     if (isPro) viewModel.showWeeklyReview() else onNavigateToPaywall()
                 }) {
                     Icon(
                         Icons.Rounded.Summarize,
                         contentDescription = "Weekly Review",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = {
+                    if (isPro) viewModel.showMonthlyReview() else onNavigateToPaywall()
+                }) {
+                    Icon(
+                        Icons.Rounded.DateRange,
+                        contentDescription = "Monthly Review",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -285,6 +311,14 @@ fun DashboardScreen(
         WeeklyReviewSheet(
             report = weeklyReport,
             onDismiss = { viewModel.dismissWeeklyReview() },
+        )
+    }
+
+    // Monthly Review Bottom Sheet
+    if (showMonthlyReview) {
+        MonthlyReviewSheet(
+            report = monthlyReport,
+            onDismiss = { viewModel.dismissMonthlyReview() },
         )
     }
 }

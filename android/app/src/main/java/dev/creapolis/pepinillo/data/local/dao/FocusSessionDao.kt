@@ -27,10 +27,16 @@ interface FocusSessionDao {
     @Query("SELECT COUNT(*) FROM focus_sessions WHERE created_at >= :startOfDay AND mode = 'Pomodoro' AND phase = 'Work'")
     suspend fun getTodayPomodoroWorkCount(startOfDay: Long): Int
 
+    @Query("UPDATE focus_sessions SET journal_note = :journalNote, satisfaction_rating = :satisfactionRating, is_dirty = 1 WHERE id = :sessionId")
+    suspend fun updateJournalEntry(sessionId: String, journalNote: String?, satisfactionRating: Int?)
+
     // Sync queries
     @Query("SELECT * FROM focus_sessions WHERE is_dirty = 1")
     suspend fun getDirtySessions(): List<FocusSessionEntity>
 
     @Query("UPDATE focus_sessions SET is_dirty = 0, synced_at = :syncedAt WHERE id = :sessionId")
     suspend fun markSynced(sessionId: String, syncedAt: Long)
+
+    @Query("SELECT * FROM focus_sessions WHERE created_at >= :startTime AND created_at < :endTime ORDER BY created_at DESC")
+    suspend fun getSessionsInRangeSync(startTime: Long, endTime: Long): List<FocusSessionEntity>
 }

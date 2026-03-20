@@ -52,6 +52,10 @@ struct FocusFeature {
         var soundscapeVolume: Float = 0.5
         var showSoundscapePicker: Bool = false
 
+        // Task picker
+        var isTaskPickerPresented: Bool = false
+        var availableTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> = []
+
         // UI
         var showModeInfo: Bool = false
         var showSettings: Bool = false
@@ -81,6 +85,11 @@ struct FocusFeature {
         case linkTask(UUID?, String?)
         case customDurationChanged(Int)
         case configUpdated(FocusConfig)
+
+        // Task picker
+        case taskPickerTapped
+        case taskPickerDismissed
+        case unlinkTaskTapped
 
         // Soundscape
         case soundscapePickerTapped
@@ -511,6 +520,20 @@ struct FocusFeature {
             case .interrupted:
                 state.interruptions += 1
                 return .none
+
+            // MARK: Task Picker
+
+            case .taskPickerTapped:
+                state.isTaskPickerPresented = true
+                return .none
+
+            case .taskPickerDismissed:
+                state.isTaskPickerPresented = false
+                return .none
+
+            case .unlinkTaskTapped:
+                state.isTaskPickerPresented = false
+                return .send(.linkTask(nil, nil))
 
             // MARK: Soundscape
 

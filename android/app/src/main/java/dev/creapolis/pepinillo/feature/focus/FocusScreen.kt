@@ -63,6 +63,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.focus.components.CircularTimerRing
 import dev.creapolis.pepinillo.feature.focus.components.ModeChip
+import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.ui.components.SuccessToast
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
@@ -471,6 +472,14 @@ fun FocusScreen(
             currentLinkedTaskName = uiState.linkedTaskName,
             onTaskSelected = { taskId -> viewModel.linkTask(taskId) },
             onDismiss = { viewModel.dismissTaskPicker() },
+        )
+    }
+
+    if (uiState.showJournalSheet) {
+        SessionJournalSheet(
+            onSave = { note, rating -> viewModel.saveJournalEntry(note, rating) },
+            onSkip = { viewModel.skipJournal() },
+            onDismiss = { viewModel.skipJournal() },
         )
     }
 

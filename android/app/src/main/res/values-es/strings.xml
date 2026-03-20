@@ -1,0 +1,73 @@
+<resources>
+    <!-- Session Journal -->
+    <string name="journal_session_complete">Sesi\u00f3n completada</string>
+    <string name="journal_how_was_focus">\u00bfC\u00f3mo fue tu enfoque?</string>
+    <string name="journal_rating_rough">Dif\u00edcil</string>
+    <string name="journal_rating_meh">Regular</string>
+    <string name="journal_rating_okay">Bien</string>
+    <string name="journal_rating_good">Muy bien</string>
+    <string name="journal_rating_great">Excelente</string>
+    <string name="journal_quick_reflection">Reflexi\u00f3n r\u00e1pida</string>
+    <string name="journal_placeholder">\u00bfQu\u00e9 sali\u00f3 bien? \u00bfQu\u00e9 fue desafiante?</string>
+    <string name="journal_save">Guardar</string>
+    <string name="journal_skip">Omitir</string>
+
+    <!-- Task Analytics -->
+    <string name="task_analytics_title">An\u00e1lisis de Enfoque</string>
+    <string name="task_analytics_no_data">Sin datos a\u00fan</string>
+    <string name="task_analytics_no_data_description">Completa una sesi\u00f3n de enfoque en esta tarea para ver los an\u00e1lisis.</string>
+    <string name="task_analytics_focus_time">Tiempo de Enfoque</string>
+    <string name="task_analytics_sessions">Sesiones</string>
+    <string name="task_analytics_completion">Completado</string>
+    <string name="task_analytics_focus_quality">Calidad de Enfoque</string>
+    <string name="task_analytics_interruptions">Interrupciones</string>
+    <string name="task_analytics_avg_per_session">Prom/Sesi\u00f3n</string>
+    <string name="task_analytics_total_pauses">Total Pausas</string>
+    <string name="task_analytics_avg_duration">Duraci\u00f3n Prom</string>
+    <string name="task_analytics_estimation">Precisi\u00f3n de Estimaci\u00f3n</string>
+    <string name="task_analytics_estimated">Estimado</string>
+    <string name="task_analytics_completed_label">Completado</string>
+    <string name="task_analytics_over_estimate">Sobreestimado en %1$d%%</string>
+    <string name="task_analytics_estimate_used">%1$d%% del estimado usado</string>
+    <string name="task_analytics_mode_distribution">Distribuci\u00f3n por Modo</string>
+    <string name="task_analytics_peak_hour">Hora Pico de Enfoque</string>
+    <string name="task_analytics_avg_satisfaction">Satisfacci\u00f3n Prom</string>
+
+    <!-- AI Report -->
+    <string name="ai_report_title">Informe de Productividad IA</string>
+    <string name="ai_report_period_week">Semana</string>
+    <string name="ai_report_period_month">Mes</string>
+    <string name="ai_report_generating">Generando tu informe\u2026</string>
+    <string name="ai_report_generating_subtitle">La IA est\u00e1 analizando tus datos de productividad</string>
+    <string name="ai_report_error_title">Error al generar el informe</string>
+    <string name="ai_report_retry">Reintentar</string>
+    <string name="ai_report_regenerate">Regenerar</string>
+    <string name="ai_report_highlights">Destacados</string>
+    <string name="ai_report_insights">Perspectivas</string>
+    <string name="ai_report_recommendations">Recomendaciones</string>
+    <string name="ai_report_button">Informe IA</string>
+
+    <!-- Template Report -->
+    <string name="report_title_strong">Una %1$s fuerte de enfoque</string>
+    <string name="report_title_momentum">Construyendo impulso</string>
+    <string name="report_title_growing">Desarrollando tu pr\u00e1ctica de enfoque</string>
+    <string name="report_title_review">Tu %1$s en revisi\u00f3n</string>
+    <string name="report_highlight_focus">Te enfocaste %1$dh %2$dm en %3$d sesiones</string>
+    <string name="report_highlight_completion_up">Tasa de completado: %1$d%% — subi\u00f3 de %2$d%%</string>
+    <string name="report_highlight_completion_down">Tasa de completado: %1$d%% — baj\u00f3 de %2$d%%</string>
+    <string name="report_highlight_completion">Tasa de completado: %1$d%%</string>
+    <string name="report_highlight_best_day">%1$s fue tu d\u00eda m\u00e1s productivo</string>
+    <string name="report_insight_quality">Tu puntuaci\u00f3n de calidad de enfoque de %1$d muestra gran disciplina</string>
+    <string name="report_insight_pattern">Tu ventana pico de enfoque es %1$s. %2$s es tu t\u00e9cnica preferida</string>
+    <string name="report_insight_interruptions">Promediaste %1$s interrupciones por sesi\u00f3n. Considera usar No Molestar durante bloques de enfoque</string>
+    <string name="report_insight_completion_drop">Tu tasa de completado baj\u00f3 esta %1$s. Prueba sesiones m\u00e1s cortas para reconstruir la consistencia</string>
+    <string name="report_rec_peak_hours">Programa tus tareas m\u00e1s dif\u00edciles durante tu ventana pico de %1$s</string>
+    <string name="report_rec_dnd">Prueba activar No Molestar o usar sesiones m\u00e1s cortas de 15 minutos</string>
+    <string name="report_rec_top_task">Tu tarea principal consumi\u00f3 %1$dm de enfoque — considera dividirla en subtareas</string>
+    <string name="report_rec_match_pace">Intenta al menos %1$d sesiones la pr\u00f3xima %2$s para igualar tu ritmo anterior</string>
+    <string name="report_period_week">Semana</string>
+    <string name="report_period_month">Mes</string>
+    <string name="report_category_achievement">logro</string>
+    <string name="report_category_pattern">patr\u00f3n</string>
+    <string name="report_category_improvement">mejora</string>
+</resources>

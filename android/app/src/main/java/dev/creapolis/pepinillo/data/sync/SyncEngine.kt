@@ -113,7 +113,13 @@ class SyncEngine @Inject constructor(
                 phase = session.phase ?: "work",
                 durationSeconds = (session.durationMillis / 1000).toInt(),
                 elapsedSeconds = (session.durationMillis / 1000).toInt(),
-                wasCompleted = true,
+                wasCompleted = session.wasCompleted,
+                interruptions = session.interruptions,
+                pauseCount = session.pauseCount,
+                totalPauseSeconds = (session.totalPauseMillis / 1000).toInt(),
+                pomodoroNumber = session.pomodoroNumber,
+                satisfactionRating = session.satisfactionRating,
+                journalNote = session.journalNote,
             )
             when (val result = apiClient.createSession(dto)) {
                 is NetworkResult.Success -> {

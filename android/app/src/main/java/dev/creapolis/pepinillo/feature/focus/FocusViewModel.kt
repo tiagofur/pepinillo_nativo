@@ -52,6 +52,7 @@ data class FocusUiState(
     val canSkip: Boolean = false,
     val isPro: Boolean = false,
     val showPaywall: Boolean = false,
+    val showJournalSheet: Boolean = false,
 )
 
 @HiltViewModel
@@ -68,6 +69,8 @@ class FocusViewModel @Inject constructor(
     private val _showTaskPicker = MutableStateFlow(false)
     private val _showStopConfirmation = MutableStateFlow(false)
     private val _showPaywall = MutableStateFlow(false)
+    private val _showJournalSheet = MutableStateFlow(false)
+    private var _lastCompletedSessionId: String? = null
     private val _successMessage = MutableStateFlow<String?>(null)
     val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
     val showTaskPicker: StateFlow<Boolean> = _showTaskPicker.asStateFlow()
@@ -102,6 +105,14 @@ class FocusViewModel @Inject constructor(
             }
         }
 
+        // Show journal sheet when a work session completes
+        viewModelScope.launch {
+            focusEngine.workSessionCompleted.collect { sessionId ->
+                _lastCompletedSessionId = sessionId
+                _showJournalSheet.value = true
+            }
+        }
+
         // Resolve linked task name when engine state changes
         viewModelScope.launch {
             focusEngine.state.collect { state ->
@@ -132,11 +143,16 @@ class FocusViewModel @Inject constructor(
         ) { timerState, todayCount, allDays, linkedTaskName, showPicker ->
             TimerCombined(timerState, todayCount, allDays, linkedTaskName, showPicker)
         },
-        prefsRepo.preferences,
-        _showStopConfirmation,
-        featureGate.subscriptionState,
-        _showPaywall,
-    ) { combined, prefs, showStopConfirm, subState, showPaywall ->
+        combine(
+            prefsRepo.preferences,
+            _showStopConfirmation,
+            featureGate.subscriptionState,
+            _showPaywall,
+            _showJournalSheet,
+        ) { prefs, showStopConfirm, subState, showPaywall, showJournal ->
+            SettingsCombined(prefs, showStopConfirm, subState, showPaywall, showJournal)
+        },
+    ) { combined, settings ->
         FocusUiState(
             selectedMode = combined.timerState.mode,
             displayTime = combined.timerState.displayTime,
@@ -150,15 +166,16 @@ class FocusViewModel @Inject constructor(
             greeting = computeGreeting(),
             currentDate = computeDate(),
             showTaskPicker = combined.showPicker,
-            showStopConfirmation = showStopConfirm,
-            keepScreenOn = prefs.keepScreenOn,
+            showStopConfirmation = settings.showStopConfirm,
+            keepScreenOn = settings.prefs.keepScreenOn,
             breakSuggested = combined.timerState.breakSuggested,
             isWaitingForNext = combined.timerState.status == TimerStatus.WaitingForNext,
             canSkip = combined.timerState.mode == FocusMode.Pomodoro &&
                 (combined.timerState.status == TimerStatus.Running || combined.timerState.status == TimerStatus.WaitingForNext) &&
                 (combined.timerState.phase == FocusPhase.ShortBreak || combined.timerState.phase == FocusPhase.LongBreak),
-            isPro = subState.isPro,
-            showPaywall = showPaywall,
+            isPro = settings.subState.isPro,
+            showPaywall = settings.showPaywall,
+            showJournalSheet = settings.showJournal,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
         greeting = computeGreeting(),
@@ -228,12 +245,34 @@ class FocusViewModel @Inject constructor(
         _successMessage.value = null
     }
 
+    fun saveJournalEntry(note: String?, rating: Int?) {
+        val sessionId = _lastCompletedSessionId ?: return
+        viewModelScope.launch {
+            sessionRepository.saveJournalEntry(sessionId, note, rating)
+            _showJournalSheet.value = false
+            _lastCompletedSessionId = null
+        }
+    }
+
+    fun skipJournal() {
+        _showJournalSheet.value = false
+        _lastCompletedSessionId = null
+    }
+
     private data class TimerCombined(
         val timerState: dev.creapolis.pepinillo.domain.timer.FocusTimerState,
         val todayCount: Int,
         val allDays: List<dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity>,
         val linkedTaskName: String?,
         val showPicker: Boolean,
+    )
+
+    private data class SettingsCombined(
+        val prefs: dev.creapolis.pepinillo.data.local.preferences.UserPreferences,
+        val showStopConfirm: Boolean,
+        val subState: dev.creapolis.pepinillo.core.billing.SubscriptionState,
+        val showPaywall: Boolean,
+        val showJournal: Boolean,
     )
 
     private fun computeGreeting(): String {

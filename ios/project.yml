@@ -230,6 +230,7 @@ targets:
           - "SpotlightClient.swift"
           - "CalendarClient.swift"
           - "HealthClient.swift"
+          - "AIReportClient.swift"
       - path: Features/Focus/FocusModels.swift
       - path: Shared/Design
 

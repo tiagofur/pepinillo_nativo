@@ -42,12 +42,14 @@ import dev.creapolis.pepinillo.feature.onboarding.OnboardingScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
+import dev.creapolis.pepinillo.feature.dashboard.AIReportScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
 import dev.creapolis.pepinillo.feature.paywall.PaywallScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
 import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
 import dev.creapolis.pepinillo.feature.settings.SettingsScreen
+import dev.creapolis.pepinillo.feature.tasks.TaskAnalyticsScreen
 import dev.creapolis.pepinillo.feature.tasks.TasksScreen
 import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailScreen
 import dev.creapolis.pepinillo.navigation.TopLevelDestination
@@ -190,6 +192,14 @@ fun PepinilloApp() {
                             restoreState = true
                         }
                     },
+                    onViewAnalytics = { taskId ->
+                        navController.navigate("tasks/$taskId/analytics")
+                    },
+                )
+            }
+            composable("tasks/{taskId}/analytics") {
+                TaskAnalyticsScreen(
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(TopLevelDestination.Dashboard.route) {
@@ -203,6 +213,12 @@ fun PepinilloApp() {
                             restoreState = true
                         }
                     },
+                    onNavigateToAIReport = { navController.navigate("ai_report") },
+                )
+            }
+            composable("ai_report") {
+                AIReportScreen(
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable("calendar") {

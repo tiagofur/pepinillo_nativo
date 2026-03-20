@@ -239,6 +239,7 @@ func makeSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelContai
         FocusSessionRecord.self,
         DailyStats.self,
         UserPreferences.self,
+        ProductivityReport.self,
     ])
 
     let config = ModelConfiguration(
@@ -262,6 +263,7 @@ func makeWidgetModelContainer() throws -> ModelContainer {
         FocusSessionRecord.self,
         DailyStats.self,
         UserPreferences.self,
+        ProductivityReport.self,
     ])
 
     let config = ModelConfiguration(
@@ -284,6 +286,7 @@ func makeIntentsModelContainer() throws -> ModelContainer {
         FocusSessionRecord.self,
         DailyStats.self,
         UserPreferences.self,
+        ProductivityReport.self,
     ])
 
     let config = ModelConfiguration(

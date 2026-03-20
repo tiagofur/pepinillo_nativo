@@ -31,6 +31,7 @@ struct TaskDetailFeature {
         var isProUser: Bool = false
         var showDeleteConfirmation: Bool = false
         var showAllSubtasksCompletedPrompt: Bool = false
+        @Presents var taskAnalytics: TaskAnalyticsFeature.State?
 
         struct SubtaskState: Equatable, Identifiable {
             let id: UUID
@@ -99,6 +100,10 @@ struct TaskDetailFeature {
 
         case allSubtasksCompletedPromptDismissed
         case allSubtasksCompletedConfirmed
+
+        // Task Analytics
+        case viewAnalyticsTapped
+        case taskAnalytics(PresentationAction<TaskAnalyticsFeature.Action>)
 
         // Navigation / lifecycle
         case startFocusTapped
@@ -227,6 +232,16 @@ struct TaskDetailFeature {
                 state.subtasks.remove(id: id)
                 return .run { _ in try await persistence.deleteSubtask(id) }
 
+            case .viewAnalyticsTapped:
+                state.taskAnalytics = TaskAnalyticsFeature.State(
+                    taskID: state.taskID,
+                    taskTitle: state.title
+                )
+                return .none
+
+            case .taskAnalytics:
+                return .none
+
             case .startFocusTapped:
                 let taskID = state.taskID
                 let title = state.title
@@ -259,6 +274,9 @@ struct TaskDetailFeature {
             case .delegate:
                 return .none
             }
+        }
+        .ifLet(\.$taskAnalytics, action: \.taskAnalytics) {
+            TaskAnalyticsFeature()
         }
     }
 
