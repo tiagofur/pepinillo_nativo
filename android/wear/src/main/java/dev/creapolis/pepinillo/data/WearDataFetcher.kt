@@ -57,6 +57,19 @@ object WearDataFetcher {
                             WearDataStore.updateStats(statsState)
                             WearSnapshotStore.persistStats(context, statsState)
                         }
+
+                        "/pepinillo/theme" -> {
+                            val themeId = map.getString("themeId") ?: "classic"
+                            val colors = WearThemeColors(
+                                themeId = themeId,
+                                pomodoroColor = map.getLong("pomodoroColor"),
+                                flowtimeColor = map.getLong("flowtimeColor"),
+                                timeBlockColor = map.getLong("timeBlockColor"),
+                                stopwatchColor = map.getLong("stopwatchColor"),
+                                streakColor = map.getLong("streakColor"),
+                            )
+                            WearDataStore.updateThemeColors(colors)
+                        }
                     }
                 }
                 val syncTime = java.util.Date().time

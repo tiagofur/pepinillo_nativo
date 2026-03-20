@@ -12,7 +12,9 @@ import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.service.FocusTimerService
+import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.widget.WidgetTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +34,7 @@ class PhoneWearListenerService : WearableListenerService() {
     @Inject lateinit var focusEngine: FocusEngine
     @Inject lateinit var taskRepository: TaskRepository
     @Inject lateinit var sessionRepository: SessionRepository
+    @Inject lateinit var prefsRepo: UserPreferencesRepository
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -44,6 +47,9 @@ class PhoneWearListenerService : WearableListenerService() {
 
         // Push tasks + stats directly (bypass WorkManager)
         pushTasksAndStatsDirectly()
+
+        // Push current theme to watch
+        pushThemeDirectly()
 
         // Also trigger widget refresh
         WorkManager.getInstance(this).enqueue(
@@ -176,6 +182,20 @@ class PhoneWearListenerService : WearableListenerService() {
                 Log.d(TAG, "Direct push completed: ${widgetTasks.size} tasks")
             }.onFailure { e ->
                 Log.e(TAG, "Direct push failed", e)
+            }
+        }
+    }
+
+    private fun pushThemeDirectly() {
+        scope.launch {
+            runCatching {
+                val prefs = prefsRepo.preferences.first()
+                val themeId = prefs.selectedTheme
+                val theme = AppTheme.named(themeId)
+                WearDataLayerHelper.pushTheme(this@PhoneWearListenerService, themeId, theme)
+                Log.d(TAG, "Theme pushed: $themeId")
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to push theme", e)
             }
         }
     }

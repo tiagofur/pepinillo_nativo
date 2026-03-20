@@ -1,9 +1,12 @@
 package dev.creapolis.pepinillo.presentation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.wear.compose.material.Colors
 import androidx.wear.compose.material.MaterialTheme
+import dev.creapolis.pepinillo.data.WearDataStore
 
 // Pepinillo dark palette — consistent with phone app dark theme
 // OLED-friendly: true black background for battery savings on Wear
@@ -24,12 +27,26 @@ private val PepinilloWearColors = Colors(
 )
 
 // Focus mode accent colors for timer ring and mode-specific UI
+// Colors are synced from the phone app via WearDataStore; defaults match the Classic theme.
 object WearModeColors {
-    val Pomodoro = Color(0xFF81C784)   // Green
-    val Flow = Color(0xFF64B5F6)       // Blue
-    val Blocks = Color(0xFFFFB74D)     // Orange
-    val Chrono = Color(0xFFCE93D8)     // Purple
+    val Pomodoro: Color @Composable get() {
+        val theme by WearDataStore.themeColors.collectAsState()
+        return Color(theme.pomodoroColor.toInt())
+    }
+    val Flow: Color @Composable get() {
+        val theme by WearDataStore.themeColors.collectAsState()
+        return Color(theme.flowtimeColor.toInt())
+    }
+    val Blocks: Color @Composable get() {
+        val theme by WearDataStore.themeColors.collectAsState()
+        return Color(theme.timeBlockColor.toInt())
+    }
+    val Chrono: Color @Composable get() {
+        val theme by WearDataStore.themeColors.collectAsState()
+        return Color(theme.stopwatchColor.toInt())
+    }
 
+    @Composable
     fun forMode(mode: String): Color = when (mode) {
         "Pomodoro" -> Pomodoro
         "Flow" -> Flow

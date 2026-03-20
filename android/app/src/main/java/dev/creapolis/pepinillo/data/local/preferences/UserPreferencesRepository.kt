@@ -27,6 +27,7 @@ data class UserPreferences(
     val vibrationEnabled: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.System,
     val dynamicColor: Boolean = true,
+    val selectedTheme: String = "classic",
     val onboardingCompleted: Boolean = false,
     val onboardingPage: Int = 0,
     val flowtimeMinMinutes: Int = 5,
@@ -58,6 +59,7 @@ class UserPreferencesRepository @Inject constructor(
         val VIBRATION_ENABLED = booleanPreferencesKey("vibration_enabled")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val SELECTED_THEME = stringPreferencesKey("selected_theme")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val ONBOARDING_PAGE = intPreferencesKey("onboarding_page")
         val FLOWTIME_MIN_MINUTES = intPreferencesKey("flowtime_min_minutes")
@@ -84,6 +86,7 @@ class UserPreferencesRepository @Inject constructor(
             vibrationEnabled = prefs[Keys.VIBRATION_ENABLED] ?: true,
             themeMode = prefs[Keys.THEME_MODE]?.let { ThemeMode.valueOf(it) } ?: ThemeMode.System,
             dynamicColor = prefs[Keys.DYNAMIC_COLOR] ?: true,
+            selectedTheme = prefs[Keys.SELECTED_THEME] ?: "classic",
             onboardingCompleted = prefs[Keys.ONBOARDING_COMPLETED] ?: false,
             onboardingPage = prefs[Keys.ONBOARDING_PAGE] ?: 0,
             flowtimeMinMinutes = prefs[Keys.FLOWTIME_MIN_MINUTES] ?: 5,
@@ -109,6 +112,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateVibrationEnabled(value: Boolean) = update { it[Keys.VIBRATION_ENABLED] = value }
     suspend fun updateThemeMode(mode: ThemeMode) = update { it[Keys.THEME_MODE] = mode.name }
     suspend fun updateDynamicColor(value: Boolean) = update { it[Keys.DYNAMIC_COLOR] = value }
+    suspend fun updateSelectedTheme(value: String) = update { it[Keys.SELECTED_THEME] = value }
     suspend fun completeOnboarding() = update {
         it[Keys.ONBOARDING_COMPLETED] = true
         it[Keys.ONBOARDING_PAGE] = 0

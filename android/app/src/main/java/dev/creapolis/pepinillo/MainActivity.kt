@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode by ThemeController.themeMode.collectAsState()
             val dynamicColor by ThemeController.dynamicColor.collectAsState()
+            val selectedTheme by ThemeController.selectedTheme.collectAsState()
 
             val darkTheme = when (themeMode) {
                 ThemeMode.System -> isSystemInDarkTheme()
@@ -82,6 +83,7 @@ class MainActivity : ComponentActivity() {
             PepinilloTheme(
                 darkTheme = darkTheme,
                 dynamicColor = dynamicColor,
+                selectedThemeId = selectedTheme,
             ) {
                 PepinilloApp()
             }

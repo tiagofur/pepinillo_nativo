@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.data
 
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 
@@ -8,6 +9,9 @@ object WearDataStore {
     private val _timerState = MutableStateFlow(WearTimerState())
     private val _tasks = MutableStateFlow(emptyList<WearTask>())
     private val _stats = MutableStateFlow(WearStatsState())
+
+    private val _themeColors = MutableStateFlow(WearThemeColors())
+    val themeColors: StateFlow<WearThemeColors> = _themeColors
 
     private val _pendingCommandCount = MutableStateFlow(0)
     private val _lastSyncAtMillis = MutableStateFlow<Long?>(null)
@@ -96,6 +100,10 @@ object WearDataStore {
     fun updateStats(newState: WearStatsState) {
         _stats.value = newState
     }
+
+    fun updateThemeColors(colors: WearThemeColors) {
+        _themeColors.value = colors
+    }
 }
 
 data class WearTimerState(
@@ -133,4 +141,13 @@ data class WearDiagnosticsState(
     val connectedNodeCount: Int = 0,
     val connectedNodeNames: List<String> = emptyList(),
     val lastError: String? = null,
+)
+
+data class WearThemeColors(
+    val themeId: String = "classic",
+    val pomodoroColor: Long = 0xFFE84D3D,
+    val flowtimeColor: Long = 0xFF3385EB,
+    val timeBlockColor: Long = 0xFF8F45DD,
+    val stopwatchColor: Long = 0xFF2DB870,
+    val streakColor: Long = 0xFFFF991A,
 )

@@ -15,8 +15,8 @@ object EnergyColors {
 }
 
 object ModeColors {
-    val pomodoro: Color @Composable get() = MaterialTheme.colorScheme.primary
-    val flow: Color @Composable get() = MaterialTheme.colorScheme.secondary
-    val blocks: Color @Composable get() = MaterialTheme.colorScheme.tertiary
-    val chrono: Color @Composable get() = MaterialTheme.colorScheme.inversePrimary
+    val pomodoro: Color @Composable get() = LocalAppTheme.current.pomodoroColor
+    val flow: Color @Composable get() = LocalAppTheme.current.flowtimeColor
+    val blocks: Color @Composable get() = LocalAppTheme.current.timeBlockColor
+    val chrono: Color @Composable get() = LocalAppTheme.current.stopwatchColor
 }

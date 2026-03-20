@@ -15,8 +15,10 @@ import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.service.DailyReminderWorker
+import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
+import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -48,6 +50,7 @@ data class SettingsUiState(
     val midpointCheckIn: Boolean = false,
     val timerNotificationsEnabled: Boolean = true,
     val showJournalAfterSession: Boolean = true,
+    val selectedTheme: String = "classic",
     val currentStreak: Int = 0,
     val isPro: Boolean = false,
     val subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
@@ -79,6 +82,11 @@ class SettingsViewModel @Inject constructor(
             prefsRepo.preferences.collect { prefs ->
                 ThemeController.setThemeMode(prefs.themeMode)
                 ThemeController.setDynamicColor(prefs.dynamicColor)
+                ThemeController.setSelectedTheme(prefs.selectedTheme)
+
+                // Push theme to Wear OS
+                val theme = AppTheme.named(prefs.selectedTheme)
+                WearDataLayerHelper.pushTheme(context, prefs.selectedTheme, theme)
             }
         }
     }
@@ -125,6 +133,12 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleDynamicColor() = viewModelScope.launch {
         prefsRepo.updateDynamicColor(!uiState.value.dynamicColor)
+    }
+
+    fun setSelectedTheme(themeId: String) {
+        viewModelScope.launch {
+            prefsRepo.updateSelectedTheme(themeId)
+        }
     }
 
     fun updateFlowtimeMinMinutes(value: Int) = viewModelScope.launch {
@@ -217,6 +231,7 @@ class SettingsViewModel @Inject constructor(
         midpointCheckIn = midpointCheckIn,
         timerNotificationsEnabled = timerNotificationsEnabled,
         showJournalAfterSession = showJournalAfterSession,
+        selectedTheme = selectedTheme,
         currentStreak = currentStreak,
         isPro = isPro,
         subscriptionTier = subscriptionTier,

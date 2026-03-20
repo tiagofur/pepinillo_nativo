@@ -13,7 +13,9 @@ import dev.creapolis.pepinillo.domain.timer.FocusTimerState
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabel
 import dev.creapolis.pepinillo.domain.timer.progress
+import androidx.compose.ui.graphics.toArgb
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
+import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.widget.WidgetTask
 import org.json.JSONArray
 import org.json.JSONObject
@@ -24,6 +26,7 @@ object WearDataLayerHelper {
     const val PATH_TIMER = "/pepinillo/timer"
     const val PATH_TASKS = "/pepinillo/tasks"
     const val PATH_STATS = "/pepinillo/stats"
+    private const val PATH_THEME = "/pepinillo/theme"
 
     const val CMD_TIMER_START = "/pepinillo/cmd/timer/start"
     const val CMD_TIMER_PAUSE = "/pepinillo/cmd/timer/pause"
@@ -137,6 +140,25 @@ object WearDataLayerHelper {
                         .await()
                 }
             }.onFailure { e -> Log.w(TAG, "Failed pushing phase complete event", e) }
+        }
+    }
+
+    fun pushTheme(context: Context, themeId: String, theme: AppTheme) {
+        try {
+            val request = PutDataMapRequest.create(PATH_THEME).apply {
+                dataMap.putString("themeId", themeId)
+                dataMap.putLong("pomodoroColor", theme.pomodoroColor.toArgb().toLong())
+                dataMap.putLong("flowtimeColor", theme.flowtimeColor.toArgb().toLong())
+                dataMap.putLong("timeBlockColor", theme.timeBlockColor.toArgb().toLong())
+                dataMap.putLong("stopwatchColor", theme.stopwatchColor.toArgb().toLong())
+                dataMap.putLong("streakColor", theme.streakColor.toArgb().toLong())
+                dataMap.putLong("timestamp", System.currentTimeMillis())
+            }.asPutDataRequest().setUrgent()
+
+            Wearable.getDataClient(context).putDataItem(request)
+                .addOnFailureListener { e -> Log.w(TAG, "Failed pushing theme", e) }
+        } catch (e: Exception) {
+            // Silently fail - watch will use defaults
         }
     }
 

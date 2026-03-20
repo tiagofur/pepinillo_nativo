@@ -20,6 +20,7 @@ import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearMessageSender
 import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.data.WearStatsState
+import dev.creapolis.pepinillo.data.WearThemeColors
 import dev.creapolis.pepinillo.data.WearTimerState
 import dev.creapolis.pepinillo.tile.FocusTileService
 import kotlinx.coroutines.CoroutineScope
@@ -158,6 +159,19 @@ class WearSyncListenerService : WearableListenerService() {
                         completedTasks = dataMap.getInt("completedTasksToday", 0),
                     )
                     processor.onStatsData(statsState)
+                }
+
+                "/pepinillo/theme" -> {
+                    val themeId = dataMap.getString("themeId") ?: "classic"
+                    val colors = WearThemeColors(
+                        themeId = themeId,
+                        pomodoroColor = dataMap.getLong("pomodoroColor"),
+                        flowtimeColor = dataMap.getLong("flowtimeColor"),
+                        timeBlockColor = dataMap.getLong("timeBlockColor"),
+                        stopwatchColor = dataMap.getLong("stopwatchColor"),
+                        streakColor = dataMap.getLong("streakColor"),
+                    )
+                    WearDataStore.updateThemeColors(colors)
                 }
             }
         }

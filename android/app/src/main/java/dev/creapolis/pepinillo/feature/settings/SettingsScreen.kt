@@ -6,6 +6,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +32,7 @@ import androidx.compose.material.icons.rounded.AvTimer
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
@@ -69,13 +73,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.feature.focus.FocusMode
+import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 
@@ -433,22 +440,72 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
-            // Theme mode selector
+            // Theme picker
             Column(modifier = Modifier.padding(vertical = 12.dp)) {
                 Text(
-                    text = "Theme",
-                    style = MaterialTheme.typography.bodyLarge,
+                    "Theme",
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Choose light, dark, or system default",
+                    "Choose a color theme for your focus modes",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
                 Spacer(modifier = Modifier.height(12.dp))
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(AppTheme.all) { theme ->
+                        val displayName = when (theme.id) {
+                            "classic" -> "Classic"
+                            "materialYou" -> "Material You"
+                            "forest" -> "Forest"
+                            "ocean" -> "Ocean"
+                            "sunset" -> "Sunset"
+                            else -> theme.id
+                        }
+                        val isLocked = !theme.isFree && !uiState.isPro
+                        ThemeCard(
+                            theme = theme,
+                            displayName = displayName,
+                            isSelected = uiState.selectedTheme == theme.id,
+                            isLocked = isLocked,
+                            onClick = {
+                                if (!isLocked) {
+                                    viewModel.setSelectedTheme(theme.id)
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+
+            SettingsDivider()
+
+            // Light/Dark/System selector
+            Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                Text(
+                    "Appearance",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Choose light, dark, or system default",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 ) {
                     ThemeMode.entries.forEach { mode ->
                         OptionPill(
@@ -459,13 +516,6 @@ fun SettingsScreen(
                     }
                 }
             }
-            SettingsDivider()
-            SwitchRow(
-                label = "Dynamic color",
-                subtitle = "Match your wallpaper colors",
-                isChecked = uiState.dynamicColor,
-                onToggle = viewModel::toggleDynamicColor,
-            )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -700,6 +750,82 @@ private fun OptionPill(
             .clickable(onClick = onClick)
             .padding(horizontal = 20.dp, vertical = 10.dp),
     )
+}
+
+@Composable
+private fun ThemeCard(
+    theme: AppTheme,
+    displayName: String,
+    isSelected: Boolean,
+    isLocked: Boolean,
+    onClick: () -> Unit,
+) {
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) theme.pomodoroColor else MaterialTheme.colorScheme.outlineVariant,
+        label = "themeBorder",
+    )
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isSelected) theme.pomodoroColor.copy(alpha = 0.08f) else Color.Transparent,
+        label = "themeBg",
+    )
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(80.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                width = if (isSelected) 2.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(12.dp),
+            )
+            .background(backgroundColor)
+            .clickable(enabled = !isLocked, onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 8.dp),
+    ) {
+        if (theme.id == "materialYou") {
+            Icon(
+                imageVector = Icons.Rounded.Palette,
+                contentDescription = null,
+                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(32.dp),
+            )
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                listOf(
+                    theme.pomodoroColor,
+                    theme.flowtimeColor,
+                    theme.timeBlockColor,
+                    theme.stopwatchColor,
+                ).forEach { color ->
+                    Box(
+                        modifier = Modifier
+                            .size(14.dp)
+                            .clip(CircleShape)
+                            .background(color),
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = displayName,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+        )
+        if (isLocked) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Icon(
+                imageVector = Icons.Rounded.Lock,
+                contentDescription = "Pro feature",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                modifier = Modifier.size(14.dp),
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
