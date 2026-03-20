@@ -94,11 +94,11 @@ extension NotificationClient {
                 }
 
                 if let task = taskTitle, !task.isEmpty {
-                    content.title = "\(modeEmoji) Session complete!"
-                    content.body = "Great work on \(task). Take a well-deserved break."
+                    content.title = "\(modeEmoji) \(String(localized: "Session complete!"))"
+                    content.body = String(localized: "Great work on \(task). Take a well-deserved break.")
                 } else {
-                    content.title = "\(modeEmoji) \(modeName) complete!"
-                    content.body = "Nice work! Time to step away for a bit."
+                    content.title = "\(modeEmoji) \(String(localized: "\(modeName) complete!"))"
+                    content.body = String(localized: "Nice work! Time to step away for a bit.")
                 }
 
                 let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -115,12 +115,12 @@ extension NotificationClient {
                 content.sound = .default
 
                 if isLongBreak {
-                    content.title = "🍅 Great cycle! Time for a long break"
-                    content.body = taskTitle.map { "You completed \(pomodoroNumber) pomodoros on \($0)." }
-                        ?? "You completed \(pomodoroNumber) pomodoros. Take a longer break."
+                    content.title = "🍅 \(String(localized: "Great cycle! Time for a long break"))"
+                    content.body = taskTitle.map { String(localized: "You completed \(pomodoroNumber) pomodoros on \($0).") }
+                        ?? String(localized: "You completed \(pomodoroNumber) pomodoros. Take a longer break.")
                 } else {
-                    content.title = "🍅 Pomodoro \(pomodoroNumber) done!"
-                    content.body = "Take a short break, you've earned it."
+                    content.title = "🍅 \(String(localized: "Pomodoro \(pomodoroNumber) done!"))"
+                    content.body = String(localized: "Take a short break, you've earned it.")
                 }
 
                 content.categoryIdentifier = "SESSION_COMPLETE"
@@ -137,8 +137,8 @@ extension NotificationClient {
 
             scheduleBreakEnd: { minutes in
                 let content = UNMutableNotificationContent()
-                content.title = "⏰ Break time's up!"
-                content.body = "Ready to dive back in? Your next session is waiting."
+                content.title = "⏰ \(String(localized: "Break time's up!"))"
+                content.body = String(localized: "Ready to dive back in? Your next session is waiting.")
                 content.sound = .default
                 content.categoryIdentifier = "BREAK_END"
 
@@ -158,8 +158,8 @@ extension NotificationClient {
 
             scheduleDailyReminder: { hour, minute in
                 let content = UNMutableNotificationContent()
-                content.title = "🔥 Keep your streak alive!"
-                content.body = "Haven't focused today yet. Open Pepinillo and get a session in."
+                content.title = "🔥 \(String(localized: "Keep your streak alive!"))"
+                content.body = String(localized: "Haven't focused today yet. Open Pepinillo and get a session in.")
                 content.sound = .default
                 content.categoryIdentifier = "DAILY_REMINDER"
 
