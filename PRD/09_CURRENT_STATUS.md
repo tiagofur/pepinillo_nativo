@@ -10,7 +10,7 @@
 | Plataforma | Estado | Archivos | Lineas aprox | Build |
 |------------|--------|----------|-------------|-------|
 | iOS (iPhone) | Fases 1-3 completas (todos los P0 + P1) | ~143 Swift | ~30K | Requiere setup Xcode |
-| watchOS | Implementado (timer, tasks, dashboard, complications) | Incluido en iOS | Incluido | Requiere setup Xcode |
+| watchOS | Implementado (timer, tasks, dashboard, enhanced Smart Stack widgets) | Incluido en iOS | Incluido | Requiere setup Xcode |
 | Android (phone) | Sprints 1-4 completos (Foundation + Ecosystem + Polish) | ~97 Kotlin | ~20K | BUILD SUCCESSFUL |
 | Wear OS | Implementado (timer, tasks, stats, tile, complication) | ~18 Kotlin | ~5K | BUILD SUCCESSFUL |
 | Backend (Go) | Endpoints basicos funcionales | N/D | N/D | Funcional |
@@ -46,7 +46,7 @@
 - Drill-down de analytics por tarea individual
 
 ### Ecosistema Apple ✅
-- **watchOS app:** timer con 4 modos, lista de tareas, dashboard, complications
+- **watchOS app:** timer con 4 modos, lista de tareas, dashboard, enhanced Smart Stack widgets (rectangular with live countdown + phase + linked task, circular with actual progress, corner with live countdown), smart relevance scoring (100 active / 10 idle), 5-min refresh when active
 - **Watch-Phone connectivity:** sync bidireccional de estado via WatchConnectivity
 - **Widgets:** Home Screen (S/M/L) + Lock Screen, todos mode-aware
 - **Live Activity + Dynamic Island:** 4 UIs distintas segun el modo activo
@@ -114,7 +114,9 @@
 
 ### Ecosistema Android ✅
 - **Wear OS app:** timer, lista de tareas, stats, diagnosticos
-- **Wear Tile:** `FocusTileService` via Horologist (layouts idle y active)
+- **Wear Focus Timer Tile:** Enhanced `FocusTileService` with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1.
+- **Wear Tasks Tile:** New `TasksTileService` showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header.
+- **WearSnapshotStore extended:** Now persists linkedTaskId, linkedTaskName, completedSessions, and theme colors for tile access.
 - **Wear Complication:** `FocusComplicationDataSource` (SHORT_TEXT + LONG_TEXT)
 - **Wear Data Layer sync:** bidireccional (phone-watch) con fallback local
 - **Widgets Glance:** FocusTimerWidget, DailyStatsWidget (Home Screen)
@@ -221,8 +223,10 @@
 | Watch/Wear app (timer) | ✅ watchOS | ✅ Wear OS | |
 | Watch/Wear tasks | ✅ | ✅ | |
 | Watch/Wear dashboard/stats | ✅ | ✅ | |
-| Watch/Wear complications | ✅ | ✅ | |
-| Watch/Wear tile | N/A | ✅ | watchOS no tiene tiles |
+| Watch/Wear complications (enhanced) | ✅ Enhanced (live countdown, progress, relevance) | ✅ | Both platforms have rich complications |
+| Wear Focus Timer Tile (enhanced) | N/A | ✅ | Progress arc, phase label, session counter, linked task |
+| Wear Tasks Tile | N/A | ✅ | Top 4 tasks with energy emoji + pomodoro progress |
+| watchOS Smart Stack widgets | ✅ Enhanced (live countdown, relevance scoring) | N/A | Rectangular, circular, corner complications |
 | Watch-Phone sync | ✅ WatchConnectivity | ✅ Data Layer | |
 | Home Screen widgets | ✅ | ✅ Glance | |
 | Lock Screen widget | ✅ | ✅ Android 14+ | |
@@ -320,7 +324,7 @@
 | Health | Health Connect | 1.1.0-rc01 | API experimental |
 | Adaptive | material3-window-size-class | via BOM | WindowWidthSizeClass |
 | Foldable | androidx.window | 1.3.0 | FoldingFeature + hinge avoidance |
-| Wear Tiles | Horologist | 0.6.20 | SuspendingTileService |
+| Wear Tiles | Tiles 1.4.1 + ProtoLayout Material 1.2.1 | 1.4.1 | Enhanced FocusTileService + TasksTileService |
 | Wear Complications | watchface-complications | 1.2.1 | SuspendingComplicationDataSourceService |
 | Wear Data Layer | play-services-wearable | 18.2.0 | DataClient + MessageClient |
 | Firebase | -- | -- | Plugins comentados; activar con google-services.json |

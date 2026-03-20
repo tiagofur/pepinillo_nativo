@@ -176,7 +176,7 @@ App completa e independiente para Apple Watch:
 | Lista de tareas | Ver tareas del dia, marcar como completadas | PRO |
 | Dashboard | Stats del dia: horas de focus, sesiones, racha | PRO |
 | Haptics | Feedback haptico al terminar sesion, transiciones de fase | PRO |
-| Complications | Timer activo + horas de focus diarias | PRO |
+| Complications | Enhanced: circular uses actual progress, corner uses live countdown, rectangular shows live countdown + phase + linked task. Smart Stack relevance (score 100 active, 10 idle). 5-min refresh when active (15-min idle). | PRO |
 | Sync | Comunicacion bidireccional con iPhone via WatchConnectivity | PRO |
 
 #### [Wear OS] — Wear OS Companion App
@@ -189,7 +189,8 @@ App completa para Wear OS:
 | Seleccion de modo | Los 4 modos de enfoque disponibles | PRO |
 | Lista de tareas | Tareas del dia con mark-complete | PRO |
 | Stats | Resumen diario de focus time y sesiones | PRO |
-| Tile | Tile nativa (Compose) para acceso rapido al timer | PRO |
+| Focus Timer Tile | Enhanced tile with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1. | PRO |
+| Tasks Tile | Second tile showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header. | PRO |
 | Complication | Datos de focus en watch face | PRO |
 | Sync | DataLayer API para comunicacion con phone | PRO |
 
@@ -586,8 +587,9 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 | Seleccion de modo | ⬜ | ➖ | ⬜ | ✅ | PRO |
 | Lista de tareas en reloj | ⬜ | ➖ | ⬜ | ✅ | PRO |
 | Dashboard/Stats en reloj | ⬜ | ➖ | ⬜ | ✅ | PRO |
-| Complications | ⬜ | ➖ | ⬜ | ✅ | PRO |
-| Tile | ➖ | ➖ | ➖ | ✅ | PRO |
+| Complications (enhanced) | ⬜ | ➖ | ✅ | ✅ | PRO |
+| Focus Timer Tile (enhanced) | ➖ | ➖ | ➖ | ✅ | PRO |
+| Tasks Tile | ➖ | ➖ | ➖ | ✅ | PRO |
 | Haptics en reloj | ⬜ | ➖ | ⬜ | ⬜ | PRO |
 | **Asistente de Voz** | | | | | |
 | Siri Shortcuts + App Intents | ✅ | ➖ | ➖ | ➖ | FREE |
@@ -667,7 +669,7 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 
 ## Notas de Paridad Cross-Platform
 
-1. **Wear OS esta adelantado vs watchOS**: La app de Wear OS tiene timer, tareas, stats, tile y complication implementados. watchOS tiene solo la estructura basica (WatchDashboardFeature) pero aun no tiene funcionalidad equivalente.
+1. **Wear OS y watchOS tiles/widgets enhanced**: Wear OS now has two rich tiles (Focus Timer with progress arc + Tasks with top 4 tasks) and enhanced complications. watchOS Smart Stack widgets redesigned with live countdowns, phase info, linked task names, and smart relevance scoring. Both platforms persist extended snapshot data (linked task, session count, theme colors, phase dates) for tile/widget access.
 
 2. **iOS esta adelantado en ecosistema**: Widgets, Live Activity, Siri, Calendar, Control Center, Mode Intelligence, y Soundscapes ya estan implementados en iOS. Android tiene pendientes en widgets, Quick Settings, Assistant, y Soundscapes.
 
