@@ -63,9 +63,9 @@ data class AppTheme(
             isFree = false,
         )
 
-        val all = listOf(Classic, MaterialYou, Forest, Ocean, Sunset)
-        fun named(id: String) = all.firstOrNull { it.id == id } ?: Classic
+        val all = listOf(MaterialYou, Classic, Forest, Ocean, Sunset)
+        fun named(id: String) = all.firstOrNull { it.id == id } ?: MaterialYou
     }
 }
 
-val LocalAppTheme = staticCompositionLocalOf { AppTheme.Classic }
+val LocalAppTheme = staticCompositionLocalOf { AppTheme.MaterialYou }

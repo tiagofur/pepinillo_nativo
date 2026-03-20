@@ -50,7 +50,7 @@ data class SettingsUiState(
     val midpointCheckIn: Boolean = false,
     val timerNotificationsEnabled: Boolean = true,
     val showJournalAfterSession: Boolean = true,
-    val selectedTheme: String = "classic",
+    val selectedTheme: String = "materialYou",
     val currentStreak: Int = 0,
     val isPro: Boolean = false,
     val subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
@@ -146,6 +146,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun setDefaultMode(mode: FocusMode) = viewModelScope.launch {
+        if (!mode.isFreeTier && uiState.value.subscriptionTier == SubscriptionTier.FREE) return@launch
         prefsRepo.updateDefaultMode(mode.name)
     }
 

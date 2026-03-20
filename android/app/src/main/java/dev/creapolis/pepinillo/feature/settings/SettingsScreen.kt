@@ -416,10 +416,15 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     FocusMode.entries.forEach { mode ->
+                        val isModeLocked = !mode.isFreeTier && !uiState.isPro
                         OptionPill(
-                            label = mode.label,
+                            label = if (isModeLocked) "${mode.label} \uD83D\uDD12" else mode.label,
                             isSelected = uiState.defaultMode == mode,
-                            onClick = { viewModel.setDefaultMode(mode) },
+                            onClick = {
+                                if (!isModeLocked) {
+                                    viewModel.setDefaultMode(mode)
+                                }
+                            },
                         )
                     }
                 }
@@ -783,28 +788,19 @@ private fun ThemeCard(
             .clickable(enabled = !isLocked, onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 8.dp),
     ) {
-        if (theme.id == "materialYou") {
-            Icon(
-                imageVector = Icons.Rounded.Palette,
-                contentDescription = null,
-                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(32.dp),
-            )
-        } else {
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                listOf(
-                    theme.pomodoroColor,
-                    theme.flowtimeColor,
-                    theme.timeBlockColor,
-                    theme.stopwatchColor,
-                ).forEach { color ->
-                    Box(
-                        modifier = Modifier
-                            .size(14.dp)
-                            .clip(CircleShape)
-                            .background(color),
-                    )
-                }
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf(
+                theme.pomodoroColor,
+                theme.flowtimeColor,
+                theme.timeBlockColor,
+                theme.stopwatchColor,
+            ).forEach { color ->
+                Box(
+                    modifier = Modifier
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(color),
+                )
             }
         }
         Spacer(modifier = Modifier.height(8.dp))

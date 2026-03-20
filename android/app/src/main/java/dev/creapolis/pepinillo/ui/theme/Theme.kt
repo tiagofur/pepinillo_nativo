@@ -77,7 +77,7 @@ private val DarkColorScheme = darkColorScheme(
 fun PepinilloTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
-    selectedThemeId: String = "classic",
+    selectedThemeId: String = "materialYou",
     content: @Composable () -> Unit,
 ) {
     val appTheme = AppTheme.named(selectedThemeId)

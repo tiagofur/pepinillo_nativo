@@ -29,7 +29,7 @@ object ThemeController {
         _dynamicColor.value = enabled
     }
 
-    private val _selectedTheme = MutableStateFlow("classic")
+    private val _selectedTheme = MutableStateFlow("materialYou")
     val selectedTheme: StateFlow<String> = _selectedTheme.asStateFlow()
 
     fun setSelectedTheme(id: String) {
