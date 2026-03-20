@@ -194,6 +194,74 @@ Whenever a bug is fixed or a new feature is implemented on ANY platform, you MUS
 
 ---
 
+## PRD Maintenance Rule (MANDATORY)
+
+The unified PRD lives in `PRD/` with 10 documents:
+
+| # | Archivo | Contenido |
+|---|---------|-----------|
+| 01 | `PRODUCT_VISION.md` | Visión, objetivos, usuarios, modos de enfoque |
+| 02 | `FEATURES.md` | Features completas con tabla de paridad cross-platform |
+| 03 | `COMPETITIVE_ANALYSIS.md` | Análisis competitivo global + por plataforma |
+| 04 | `MONETIZATION.md` | Precios, tiers FREE/PRO, feature gating |
+| 05 | `TECHNICAL_ARCHITECTURE_IOS.md` | Arquitectura iOS/watchOS específica |
+| 06 | `TECHNICAL_ARCHITECTURE_ANDROID.md` | Arquitectura Android/Wear OS específica |
+| 07 | `ROADMAP.md` | Timeline y estimaciones ambas plataformas |
+| 08 | `COLLABORATION_GUIDE.md` | Guía de trabajo con Claude Code |
+| 09 | `CURRENT_STATUS.md` | Estado actual de implementación + brechas |
+| 10 | `FLUTTER_MIGRATION_REFERENCE.md` | Referencia de migración desde Flutter |
+
+**After completing any feature, bug fix, or significant modification**, you MUST check if the change affects any PRD document and update it accordingly:
+
+| Type of change | PRD docs to update |
+|----------------|-------------------|
+| New feature implemented | `02_FEATURES.md` (parity table), `09_CURRENT_STATUS.md` |
+| Bug fix | `09_CURRENT_STATUS.md` (if it was a known gap) |
+| Architecture change | `05_...IOS.md` or `06_...ANDROID.md` |
+| New dependency added | `05_...IOS.md` or `06_...ANDROID.md` |
+| Pricing/tier change | `04_MONETIZATION.md` |
+| New competitor discovered | `03_COMPETITIVE_ANALYSIS.md` |
+| Roadmap milestone reached | `07_ROADMAP.md`, `09_CURRENT_STATUS.md` |
+| New platform integration | `02_FEATURES.md`, `09_CURRENT_STATUS.md` |
+
+**This is not optional.** Keeping PRD in sync with the codebase ensures future sessions have accurate context.
+
+---
+
+## Auto-Commit Rule (MANDATORY)
+
+After completing any correction, change, improvement, or new feature, you MUST create a git commit immediately — do not wait for the user to ask.
+
+### Commit Convention
+
+- **Format**: Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `style:`, `test:`)
+- **Language**: English for commit messages
+- **Scope**: Include platform scope when the change is platform-specific: `feat(android):`, `fix(ios):`, `feat(wear):`, `fix(watchos):`
+- **Cross-platform**: When the same change applies to both platforms, use a single commit with no platform scope or list both: `feat(ios,android):`
+- **Co-author**: Always include `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`
+
+### When to Commit
+
+| Situation | Action |
+|-----------|--------|
+| Feature implemented on one platform | Commit immediately |
+| Same feature implemented on both platforms | One commit per platform, or one combined commit |
+| Bug fix | Commit immediately after verifying the fix |
+| Refactor / improvement | Commit immediately |
+| PRD or documentation update | Commit immediately |
+| Multiple small related changes | Group into one logical commit |
+
+### What NOT to Commit
+
+- Incomplete work (half-implemented features)
+- Files with secrets (.env, credentials, API keys)
+- Generated files that should be in .gitignore
+- Temporary debug code
+
+**This is not optional.** Frequent atomic commits create a clean history and reduce the risk of losing work.
+
+---
+
 Terms os use:
 https://creapolis.dev/terms-of-use/
 privacy policy:
