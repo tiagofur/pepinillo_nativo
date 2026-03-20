@@ -16,15 +16,24 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
 
 private const val TAG = "SubscriptionManager"
+private const val PREFS_NAME = "pepinillo_billing"
+private const val KEY_PENDING_ACK_TOKENS = "pending_ack_tokens"
+private const val MAX_ACK_RETRIES = 3
+private const val ACK_RETRY_BASE_DELAY_MS = 1000L
 
 data class ProductInfo(
     val productId: String,
@@ -52,6 +61,8 @@ class SubscriptionManager @Inject constructor(
         .enablePendingPurchases()
         .build()
 
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private var isConnected = false
 
     suspend fun connect() {
@@ -179,20 +190,69 @@ class SubscriptionManager @Inject constructor(
 
     private fun acknowledgePurchase(purchase: Purchase) {
         if (purchase.isAcknowledged) return
+        scope.launch {
+            acknowledgePurchaseWithRetry(purchase.purchaseToken)
+        }
+    }
+
+    private suspend fun acknowledgePurchaseWithRetry(
+        purchaseToken: String,
+        attempt: Int = 0,
+    ) {
         val params = AcknowledgePurchaseParams.newBuilder()
-            .setPurchaseToken(purchase.purchaseToken)
+            .setPurchaseToken(purchaseToken)
             .build()
-        billingClient.acknowledgePurchase(params) { result ->
-            if (result.responseCode == BillingClient.BillingResponseCode.OK) {
-                Log.d(TAG, "Purchase acknowledged")
-            } else {
-                Log.e(TAG, "Acknowledge failed: ${result.debugMessage}")
+
+        val result = suspendCancellableCoroutine { cont ->
+            billingClient.acknowledgePurchase(params) { billingResult ->
+                if (cont.isActive) cont.resume(billingResult)
             }
+        }
+
+        if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+            Log.d(TAG, "Purchase acknowledged")
+            removePendingAckToken(purchaseToken)
+        } else {
+            Log.e(TAG, "Acknowledge failed (attempt ${attempt + 1}/$MAX_ACK_RETRIES): ${result.debugMessage}")
+            if (attempt + 1 < MAX_ACK_RETRIES) {
+                val delayMs = ACK_RETRY_BASE_DELAY_MS * (1L shl attempt)
+                Log.d(TAG, "Retrying acknowledgment in ${delayMs}ms")
+                delay(delayMs)
+                acknowledgePurchaseWithRetry(purchaseToken, attempt + 1)
+            } else {
+                Log.e(TAG, "All acknowledgment retries exhausted, saving token for later")
+                savePendingAckToken(purchaseToken)
+            }
+        }
+    }
+
+    private fun savePendingAckToken(token: String) {
+        val tokens = prefs.getStringSet(KEY_PENDING_ACK_TOKENS, emptySet()).orEmpty()
+        prefs.edit().putStringSet(KEY_PENDING_ACK_TOKENS, tokens + token).apply()
+        Log.d(TAG, "Saved pending ack token for retry on next launch")
+    }
+
+    private fun removePendingAckToken(token: String) {
+        val tokens = prefs.getStringSet(KEY_PENDING_ACK_TOKENS, emptySet()).orEmpty()
+        if (token in tokens) {
+            prefs.edit().putStringSet(KEY_PENDING_ACK_TOKENS, tokens - token).apply()
+        }
+    }
+
+    private suspend fun retryPendingAcknowledgments() {
+        val tokens = prefs.getStringSet(KEY_PENDING_ACK_TOKENS, emptySet()).orEmpty()
+        if (tokens.isEmpty()) return
+        Log.d(TAG, "Retrying ${tokens.size} pending acknowledgment(s)")
+        tokens.toSet().forEach { token ->
+            acknowledgePurchaseWithRetry(token)
         }
     }
 
     suspend fun checkExistingPurchases() {
         if (!isConnected) connect()
+
+        // Retry any acknowledgments that failed in previous sessions
+        retryPendingAcknowledgments()
 
         // Check subscriptions
         val subResult = billingClient.queryPurchasesAsync(
@@ -205,6 +265,9 @@ class SubscriptionManager @Inject constructor(
         }
 
         if (activeSub != null) {
+            if (!activeSub.isAcknowledged) {
+                acknowledgePurchaseWithRetry(activeSub.purchaseToken)
+            }
             updateStateFromPurchase(activeSub)
             return
         }
@@ -221,6 +284,9 @@ class SubscriptionManager @Inject constructor(
         }
 
         if (lifetimePurchase != null) {
+            if (!lifetimePurchase.isAcknowledged) {
+                acknowledgePurchaseWithRetry(lifetimePurchase.purchaseToken)
+            }
             updateStateFromPurchase(lifetimePurchase)
         } else {
             _subscriptionState.value = SubscriptionState()
