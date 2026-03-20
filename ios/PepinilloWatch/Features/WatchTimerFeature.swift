@@ -139,12 +139,20 @@ struct WatchTimerFeature {
                 let displayTime = s.displayTime
                 let modeEmoji = FocusMode(rawValue: s.modeID)?.icon ?? "🧠"
                 let didTransition = s.isPhaseTransition
+                let linkedTaskTitle = s.linkedTaskTitle
+                let phaseName = s.phaseLabel
+                let progress = s.progress
+                let pomodoroNumber = s.pomodoroNumber
 
                 return .run { _ in
                     Self.persistSessionState(
                         isActive: isActive,
                         displayTime: displayTime,
-                        modeEmoji: modeEmoji
+                        modeEmoji: modeEmoji,
+                        linkedTaskTitle: linkedTaskTitle,
+                        phaseName: phaseName,
+                        progress: progress,
+                        pomodoroNumber: pomodoroNumber
                     )
                     if didTransition || !isActive {
                         WidgetCenter.shared.reloadAllTimelines()
@@ -184,10 +192,59 @@ struct WatchTimerFeature {
         defaults.set(streak, forKey: WatchStatsKeys.currentStreakDays)
     }
 
-    private static func persistSessionState(isActive: Bool, displayTime: String, modeEmoji: String) {
+    private static func persistSessionState(
+        isActive: Bool,
+        displayTime: String,
+        modeEmoji: String,
+        linkedTaskTitle: String?,
+        phaseName: String?,
+        progress: Double?,
+        pomodoroNumber: Int?
+    ) {
         let defaults = UserDefaults.standard
         defaults.set(isActive, forKey: WatchStatsKeys.isSessionActive)
         defaults.set(displayTime, forKey: WatchStatsKeys.displayTime)
         defaults.set(modeEmoji, forKey: WatchStatsKeys.modeEmoji)
+
+        if let linkedTaskTitle {
+            defaults.set(linkedTaskTitle, forKey: WatchStatsKeys.linkedTaskTitle)
+        } else {
+            defaults.removeObject(forKey: WatchStatsKeys.linkedTaskTitle)
+        }
+
+        if let phaseName {
+            defaults.set(phaseName, forKey: WatchStatsKeys.phaseName)
+        } else {
+            defaults.removeObject(forKey: WatchStatsKeys.phaseName)
+        }
+
+        defaults.set(progress ?? 0, forKey: WatchStatsKeys.progress)
+
+        if let pomodoroNumber {
+            defaults.set(pomodoroNumber, forKey: WatchStatsKeys.pomodoroNumber)
+        } else {
+            defaults.removeObject(forKey: WatchStatsKeys.pomodoroNumber)
+        }
+
+        // Derive phase start/end dates from displayTime and progress for live countdown
+        if isActive, let progress, progress > 0 {
+            let remainingSeconds = Self.parseDisplayTime(displayTime)
+            if remainingSeconds > 0 {
+                let elapsed = (remainingSeconds / (1.0 - progress)) * progress
+                let phaseStart = Date().addingTimeInterval(-elapsed)
+                let phaseEnd = Date().addingTimeInterval(remainingSeconds)
+                defaults.set(phaseStart.timeIntervalSince1970, forKey: WatchStatsKeys.phaseStartDate)
+                defaults.set(phaseEnd.timeIntervalSince1970, forKey: WatchStatsKeys.phaseEndDate)
+            }
+        } else {
+            defaults.removeObject(forKey: WatchStatsKeys.phaseStartDate)
+            defaults.removeObject(forKey: WatchStatsKeys.phaseEndDate)
+        }
+    }
+
+    private static func parseDisplayTime(_ displayTime: String) -> TimeInterval {
+        let parts = displayTime.split(separator: ":").compactMap { Double($0) }
+        guard parts.count == 2 else { return 0 }
+        return parts[0] * 60 + parts[1]
     }
 }

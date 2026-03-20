@@ -49,6 +49,17 @@
             </intent-filter>
         </service>
 
+        <!-- Tasks Tile -->
+        <service
+            android:name=".tile.TasksTileService"
+            android:exported="true"
+            android:label="Tasks"
+            android:permission="com.google.android.wearable.permission.BIND_TILE_PROVIDER">
+            <intent-filter>
+                <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
+            </intent-filter>
+        </service>
+
         <!-- Wear Complication -->
         <service
             android:name=".complication.FocusComplicationDataSource"

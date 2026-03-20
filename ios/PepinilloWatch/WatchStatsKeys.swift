@@ -16,4 +16,10 @@ enum WatchStatsKeys {
     static let isSessionActive = "watch.isSessionActive"
     static let displayTime = "watch.displayTime"
     static let modeEmoji = "watch.modeEmoji"
+    static let linkedTaskTitle = "watch.linkedTaskTitle"
+    static let phaseName = "watch.phaseName"
+    static let progress = "watch.progress"
+    static let pomodoroNumber = "watch.pomodoroNumber"
+    static let phaseStartDate = "watch.phaseStartDate"
+    static let phaseEndDate = "watch.phaseEndDate"
 }

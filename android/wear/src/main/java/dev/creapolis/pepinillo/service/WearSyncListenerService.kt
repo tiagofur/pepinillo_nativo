@@ -23,6 +23,7 @@ import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearThemeColors
 import dev.creapolis.pepinillo.data.WearTimerState
 import dev.creapolis.pepinillo.tile.FocusTileService
+import dev.creapolis.pepinillo.tile.TasksTileService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -78,6 +79,7 @@ class WearSyncListenerService : WearableListenerService() {
     private fun refreshWearSurfaces() {
         try {
             TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
+            TileService.getUpdater(this).requestUpdate(TasksTileService::class.java)
         } catch (e: SecurityException) {
             Log.w(TAG, "Cannot update tile (targetSdk>34 restriction)", e)
         }
@@ -172,6 +174,7 @@ class WearSyncListenerService : WearableListenerService() {
                         streakColor = dataMap.getLong("streakColor"),
                     )
                     WearDataStore.updateThemeColors(colors)
+                    WearSnapshotStore.persistThemeColors(this@WearSyncListenerService, colors)
                 }
             }
         }

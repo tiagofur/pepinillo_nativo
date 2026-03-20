@@ -2,16 +2,23 @@ package dev.creapolis.pepinillo.tile
 
 import androidx.concurrent.futures.CallbackToFutureAdapter
 import androidx.wear.protolayout.ActionBuilders
+import androidx.wear.protolayout.ColorBuilders
 import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.LayoutElementBuilders
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.TimelineBuilders
+import androidx.wear.protolayout.LayoutElementBuilders.ARC_ANCHOR_START
+import androidx.wear.protolayout.LayoutElementBuilders.FONT_WEIGHT_BOLD
+import androidx.wear.protolayout.LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER
+import androidx.wear.protolayout.LayoutElementBuilders.VERTICAL_ALIGN_CENTER
 import androidx.wear.tiles.RequestBuilders
 import androidx.wear.tiles.ResourceBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
 import dev.creapolis.pepinillo.data.WearSnapshotStore
+import dev.creapolis.pepinillo.data.WearTimerState
+import dev.creapolis.pepinillo.data.WearThemeColors
 
 class FocusTileService : TileService() {
 
@@ -42,65 +49,14 @@ class FocusTileService : TileService() {
 
     private fun buildTile(): TileBuilders.Tile {
         val state = WearSnapshotStore.readTimerState(this)
+        val stats = WearSnapshotStore.readStats(this)
+        val colors = WearSnapshotStore.readThemeColors(this)
 
-        val displayText = when {
-            state.status == "Running" || state.status == "Paused" -> state.displayTime
-            else -> "Pepinillo"
+        val root = when (state.status) {
+            "Running" -> buildRunningLayout(state, colors)
+            "Paused" -> buildPausedLayout(state, colors)
+            else -> buildIdleLayout(state, stats, colors)
         }
-        val labelText = when (state.status) {
-            "Running" -> "${state.mode} \u00b7 ${state.phaseLabel}"
-            "Paused"  -> "En pausa"
-            else      -> "Toca para enfocar"
-        }
-
-        val launchAction = ActionBuilders.LaunchAction.Builder()
-            .setAndroidActivity(
-                ActionBuilders.AndroidActivity.Builder()
-                    .setPackageName(packageName)
-                    .setClassName("dev.creapolis.pepinillo.presentation.MainActivity")
-                    .build(),
-            ).build()
-
-        val root = LayoutElementBuilders.Box.Builder()
-            .setWidth(DimensionBuilders.expand())
-            .setHeight(DimensionBuilders.expand())
-            .setVerticalAlignment(LayoutElementBuilders.VERTICAL_ALIGN_CENTER)
-            .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-            .setModifiers(
-                ModifiersBuilders.Modifiers.Builder()
-                    .setClickable(
-                        ModifiersBuilders.Clickable.Builder()
-                            .setId("launch_app")
-                            .setOnClick(launchAction)
-                            .build(),
-                    ).build(),
-            )
-            .addContent(
-                LayoutElementBuilders.Column.Builder()
-                    .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
-                    .addContent(
-                        LayoutElementBuilders.Text.Builder()
-                            .setText(displayText)
-                            .setFontStyle(
-                                LayoutElementBuilders.FontStyle.Builder()
-                                    .setSize(DimensionBuilders.SpProp.Builder().setValue(28f).build())
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                    .addContent(
-                        LayoutElementBuilders.Text.Builder()
-                            .setText(labelText)
-                            .setFontStyle(
-                                LayoutElementBuilders.FontStyle.Builder()
-                                    .setSize(DimensionBuilders.SpProp.Builder().setValue(14f).build())
-                                    .build(),
-                            )
-                            .build(),
-                    )
-                    .build(),
-            )
-            .build()
 
         return TileBuilders.Tile.Builder()
             .setResourcesVersion(RESOURCES_VERSION)
@@ -120,4 +76,152 @@ class FocusTileService : TileService() {
             )
             .build()
     }
+
+    private fun modeColor(mode: String, colors: WearThemeColors): Long = when (mode) {
+        "Pomodoro" -> colors.pomodoroColor
+        "Flowtime" -> colors.flowtimeColor
+        "TimeBlock" -> colors.timeBlockColor
+        "Stopwatch" -> colors.stopwatchColor
+        else -> 0xFFE84D3D
+    }
+
+    private fun modeEmoji(mode: String): String = when (mode) {
+        "Pomodoro" -> "\uD83C\uDF45"
+        "Flowtime" -> "\uD83C\uDF0A"
+        "TimeBlock" -> "\u23F3"
+        "Stopwatch" -> "\u23F1\uFE0F"
+        else -> "\uD83C\uDF45"
+    }
+
+    private fun launchAction(): ActionBuilders.LaunchAction =
+        ActionBuilders.LaunchAction.Builder()
+            .setAndroidActivity(
+                ActionBuilders.AndroidActivity.Builder()
+                    .setPackageName(packageName)
+                    .setClassName("dev.creapolis.pepinillo.presentation.MainActivity")
+                    .build(),
+            ).build()
+
+    private fun clickableModifiers(): ModifiersBuilders.Modifiers =
+        ModifiersBuilders.Modifiers.Builder()
+            .setClickable(
+                ModifiersBuilders.Clickable.Builder()
+                    .setId("launch_app")
+                    .setOnClick(launchAction())
+                    .build(),
+            ).build()
+
+    private fun text(value: String, sizeSp: Float, bold: Boolean = false, color: Int? = null): LayoutElementBuilders.Text {
+        val fontBuilder = LayoutElementBuilders.FontStyle.Builder()
+            .setSize(DimensionBuilders.SpProp.Builder().setValue(sizeSp).build())
+        if (bold) fontBuilder.setWeight(FONT_WEIGHT_BOLD)
+        if (color != null) fontBuilder.setColor(ColorBuilders.argb(color))
+        return LayoutElementBuilders.Text.Builder()
+            .setText(value)
+            .setFontStyle(fontBuilder.build())
+            .build()
+    }
+
+    private fun spacer(heightDp: Float): LayoutElementBuilders.Spacer =
+        LayoutElementBuilders.Spacer.Builder()
+            .setHeight(DimensionBuilders.dp(heightDp))
+            .setWidth(DimensionBuilders.dp(0f))
+            .build()
+
+    private fun buildIdleLayout(
+        state: WearTimerState,
+        stats: dev.creapolis.pepinillo.data.WearStatsState,
+        colors: WearThemeColors,
+    ): LayoutElementBuilders.LayoutElement {
+        val emoji = modeEmoji(state.mode)
+        val statsText = "${stats.totalMinutes} min \u00b7 \uD83D\uDD25 ${stats.streak}d"
+
+        return LayoutElementBuilders.Box.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
+            .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
+            .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+            .setModifiers(clickableModifiers())
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+                    .addContent(text("$emoji Pepinillo", 20f, bold = true))
+                    .addContent(spacer(6f))
+                    .addContent(text(statsText, 14f, color = 0xFFAAAAAA.toInt()))
+                    .addContent(spacer(8f))
+                    .addContent(text("Toca para enfocar", 14f, color = modeColor(state.mode, colors).toInt()))
+                    .build(),
+            )
+            .build()
+    }
+
+    private fun buildRunningLayout(
+        state: WearTimerState,
+        colors: WearThemeColors,
+    ): LayoutElementBuilders.LayoutElement {
+        val color = modeColor(state.mode, colors)
+        val sessionLabel = "${state.phaseLabel} \u00b7 ${state.completedSessions + 1}/4"
+
+        return LayoutElementBuilders.Box.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
+            .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
+            .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+            .setModifiers(clickableModifiers())
+            .addContent(progressArc(state.progress, color))
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+                    .addContent(text(state.displayTime, 28f, bold = true))
+                    .addContent(spacer(4f))
+                    .addContent(text(sessionLabel, 14f, color = 0xFFAAAAAA.toInt()))
+                    .apply {
+                        val taskName = state.linkedTaskName
+                        if (!taskName.isNullOrEmpty()) {
+                            addContent(spacer(4f))
+                            addContent(text(taskName.take(20), 14f, color = 0xFF888888.toInt()))
+                        }
+                    }
+                    .build(),
+            )
+            .build()
+    }
+
+    private fun buildPausedLayout(
+        state: WearTimerState,
+        colors: WearThemeColors,
+    ): LayoutElementBuilders.LayoutElement {
+        val color = modeColor(state.mode, colors)
+        val dimmedColor = (color and 0x00FFFFFFL) or 0x80000000L
+
+        return LayoutElementBuilders.Box.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
+            .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
+            .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+            .setModifiers(clickableModifiers())
+            .addContent(progressArc(state.progress, dimmedColor))
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+                    .addContent(text(state.displayTime, 28f, bold = true))
+                    .addContent(spacer(4f))
+                    .addContent(text("\u23F8 En pausa", 14f, color = 0xFFAAAAAA.toInt()))
+                    .build(),
+            )
+            .build()
+    }
+
+    private fun progressArc(progress: Float, color: Long): LayoutElementBuilders.Arc =
+        LayoutElementBuilders.Arc.Builder()
+            .setAnchorAngle(DimensionBuilders.DegreesProp.Builder(0f).build())
+            .setAnchorType(ARC_ANCHOR_START)
+            .addContent(
+                LayoutElementBuilders.ArcLine.Builder()
+                    .setLength(DimensionBuilders.DegreesProp.Builder(progress * 360f).build())
+                    .setThickness(DimensionBuilders.dp(8f))
+                    .setColor(ColorBuilders.argb(color.toInt()))
+                    .build(),
+            )
+            .build()
 }

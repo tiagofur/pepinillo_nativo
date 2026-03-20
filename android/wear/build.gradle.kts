@@ -55,6 +55,9 @@ dependencies {
     implementation(libs.androidx.wear.tiles)
     implementation(libs.androidx.wear.complications.datasource)
     implementation(libs.androidx.concurrent.futures)
+    implementation(libs.androidx.protolayout)
+    implementation(libs.androidx.protolayout.material)
+    implementation(libs.androidx.protolayout.expression)
 
     testImplementation(libs.junit)
 
