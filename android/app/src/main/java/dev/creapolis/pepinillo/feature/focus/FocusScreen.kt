@@ -34,6 +34,7 @@ import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.AlertDialog
@@ -41,6 +42,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -65,6 +68,7 @@ import dev.creapolis.pepinillo.feature.focus.components.CircularTimerRing
 import dev.creapolis.pepinillo.feature.focus.components.ModeChip
 import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
+import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
 import dev.creapolis.pepinillo.ui.components.SuccessToast
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
@@ -222,6 +226,83 @@ fun FocusScreen(
         if (uiState.showPaywall) {
             viewModel.dismissPaywall()
             onNavigateToPaywall()
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ── SOUNDSCAPE BUTTON ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    shape = RoundedCornerShape(24.dp),
+                )
+                .clickable { viewModel.onSoundscapePickerClick() }
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = uiState.selectedSoundscape?.emoji ?: "\uD83D\uDD07",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = if (uiState.selectedSoundscape != null) {
+                    stringResource(uiState.selectedSoundscape!!.displayNameRes)
+                } else {
+                    stringResource(R.string.soundscape_choose)
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (uiState.selectedSoundscape != null) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                imageVector = Icons.Rounded.MusicNote,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        // ── VOLUME SLIDER (only when soundscape is selected) ──
+        AnimatedVisibility(
+            visible = uiState.selectedSoundscape != null,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "\uD83D\uDD08",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Slider(
+                    value = uiState.soundscapeVolume,
+                    onValueChange = { viewModel.setSoundscapeVolume(it) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 8.dp),
+                    colors = SliderDefaults.colors(
+                        thumbColor = animatedAccentColor,
+                        activeTrackColor = animatedAccentColor,
+                    ),
+                )
+                Text(
+                    text = "\uD83D\uDD0A",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
 
         // ── BREAK SUGGESTION (Flowtime) ──
@@ -472,6 +553,15 @@ fun FocusScreen(
             currentLinkedTaskName = uiState.linkedTaskName,
             onTaskSelected = { taskId -> viewModel.linkTask(taskId) },
             onDismiss = { viewModel.dismissTaskPicker() },
+        )
+    }
+
+    if (uiState.showSoundscapePicker) {
+        SoundscapePickerSheet(
+            currentSoundscape = uiState.selectedSoundscape,
+            onSoundscapeSelected = { viewModel.selectSoundscape(it) },
+            onDismiss = { viewModel.dismissSoundscapePicker() },
+            onNavigateToPaywall = onNavigateToPaywall,
         )
     }
 

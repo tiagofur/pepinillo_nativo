@@ -9,6 +9,8 @@ import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.domain.soundscape.Soundscape
+import dev.creapolis.pepinillo.domain.soundscape.SoundscapeManager
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
@@ -54,6 +56,9 @@ data class FocusUiState(
     val isPro: Boolean = false,
     val showPaywall: Boolean = false,
     val showJournalSheet: Boolean = false,
+    val selectedSoundscape: Soundscape? = null,
+    val soundscapeVolume: Float = 0.5f,
+    val showSoundscapePicker: Boolean = false,
 )
 
 @HiltViewModel
@@ -64,6 +69,7 @@ class FocusViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val prefsRepo: UserPreferencesRepository,
     private val featureGate: FeatureGate,
+    private val soundscapeManager: SoundscapeManager,
 ) : ViewModel() {
 
     private val _linkedTaskName = MutableStateFlow<String?>(null)
@@ -71,6 +77,9 @@ class FocusViewModel @Inject constructor(
     private val _showStopConfirmation = MutableStateFlow(false)
     private val _showPaywall = MutableStateFlow(false)
     private val _showJournalSheet = MutableStateFlow(false)
+    private val _selectedSoundscape = MutableStateFlow<Soundscape?>(null)
+    private val _soundscapeVolume = MutableStateFlow(0.5f)
+    private val _showSoundscapePicker = MutableStateFlow(false)
     private var _lastCompletedSessionId: String? = null
     private val _successMessage = MutableStateFlow<String?>(null)
     val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
@@ -103,6 +112,29 @@ class FocusViewModel @Inject constructor(
                     TimerStatus.Idle -> FocusTimerService.stop(context)
                     TimerStatus.Paused -> { /* service stays alive while paused */ }
                 }
+            }
+        }
+
+        // Manage soundscape playback tied to timer lifecycle
+        viewModelScope.launch {
+            var wasRunningOrPaused = false
+            focusEngine.state.collect { state ->
+                val isActive = state.status == TimerStatus.Running || state.status == TimerStatus.Paused
+                val soundscape = _selectedSoundscape.value
+                val volume = _soundscapeVolume.value
+
+                when {
+                    // Timer just started → play soundscape
+                    state.status == TimerStatus.Running && !wasRunningOrPaused && soundscape != null -> {
+                        soundscapeManager.play(soundscape, volume)
+                    }
+                    // Timer stopped/completed → fade out soundscape
+                    state.status == TimerStatus.Idle && wasRunningOrPaused -> {
+                        soundscapeManager.fadeOut()
+                    }
+                    // Soundscape continues during pause (don't stop)
+                }
+                wasRunningOrPaused = isActive
             }
         }
 
@@ -156,7 +188,14 @@ class FocusViewModel @Inject constructor(
         ) { prefs, showStopConfirm, subState, showPaywall, showJournal ->
             SettingsCombined(prefs, showStopConfirm, subState, showPaywall, showJournal)
         },
-    ) { combined, settings ->
+        combine(
+            _selectedSoundscape,
+            _soundscapeVolume,
+            _showSoundscapePicker,
+        ) { soundscape, volume, showPicker ->
+            SoundscapeCombined(soundscape, volume, showPicker)
+        },
+    ) { combined, settings, soundscape ->
         FocusUiState(
             selectedMode = combined.timerState.mode,
             displayTime = combined.timerState.displayTime,
@@ -181,6 +220,9 @@ class FocusViewModel @Inject constructor(
             isPro = settings.subState.isPro,
             showPaywall = settings.showPaywall,
             showJournalSheet = settings.showJournal,
+            selectedSoundscape = soundscape.soundscape,
+            soundscapeVolume = soundscape.volume,
+            showSoundscapePicker = soundscape.showPicker,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
         greeting = computeGreeting(),
@@ -264,6 +306,39 @@ class FocusViewModel @Inject constructor(
         _lastCompletedSessionId = null
     }
 
+    // ── Soundscape ──
+
+    fun onSoundscapePickerClick() {
+        _showSoundscapePicker.value = true
+    }
+
+    fun dismissSoundscapePicker() {
+        _showSoundscapePicker.value = false
+    }
+
+    fun selectSoundscape(soundscape: Soundscape?) {
+        _selectedSoundscape.value = soundscape
+        _showSoundscapePicker.value = false
+
+        // If the timer is currently running, start/stop the soundscape immediately
+        val state = focusEngine.state.value
+        if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused) {
+            if (soundscape != null) {
+                soundscapeManager.play(soundscape, _soundscapeVolume.value)
+            } else {
+                soundscapeManager.fadeOut()
+            }
+        }
+    }
+
+    fun setSoundscapeVolume(volume: Float) {
+        _soundscapeVolume.value = volume.coerceIn(0f, 1f)
+        val state = focusEngine.state.value
+        if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused) {
+            soundscapeManager.setVolume(volume)
+        }
+    }
+
     private data class TimerCombined(
         val timerState: dev.creapolis.pepinillo.domain.timer.FocusTimerState,
         val todayCount: Int,
@@ -278,6 +353,12 @@ class FocusViewModel @Inject constructor(
         val subState: dev.creapolis.pepinillo.core.billing.SubscriptionState,
         val showPaywall: Boolean,
         val showJournal: Boolean,
+    )
+
+    private data class SoundscapeCombined(
+        val soundscape: Soundscape?,
+        val volume: Float,
+        val showPicker: Boolean,
     )
 
     private fun computeGreeting(): String {

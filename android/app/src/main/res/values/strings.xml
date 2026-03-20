@@ -173,6 +173,24 @@
     <string name="notification_channel_name">Focus Timer</string>
     <string name="notification_channel_description">Shows the active focus timer</string>
 
+    <!-- Soundscapes -->
+    <string name="soundscape_title">Soundscape</string>
+    <string name="soundscape_none">None</string>
+    <string name="soundscape_rain">Rain</string>
+    <string name="soundscape_forest">Forest</string>
+    <string name="soundscape_cafe">Caf\u00e9</string>
+    <string name="soundscape_white_noise">White Noise</string>
+    <string name="soundscape_ocean">Ocean</string>
+    <string name="soundscape_fireplace">Fireplace</string>
+    <string name="soundscape_binaural">Binaural Beats</string>
+    <string name="soundscape_lofi">Lo-fi</string>
+    <string name="soundscape_section_free">Free Sounds</string>
+    <string name="soundscape_section_pro">Pro Sounds</string>
+    <string name="soundscape_preview">Preview</string>
+    <string name="soundscape_stop_preview">Stop preview</string>
+    <string name="soundscape_requires_pro">Requires Pro</string>
+    <string name="soundscape_choose">Choose soundscape</string>
+
     <!-- Daily Reminder -->
     <string name="daily_reminder_channel_name">Daily Reminder</string>
     <string name="daily_reminder_channel_description">Daily focus reminder notifications</string>

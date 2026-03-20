@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.core.billing
 
+import dev.creapolis.pepinillo.domain.soundscape.Soundscape
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -33,6 +34,8 @@ class FeatureGate @Inject constructor(
     fun canUseSync(): Boolean = isPro
 
     fun canUseWearOS(): Boolean = isPro
+
+    fun canUseSoundscape(soundscape: Soundscape): Boolean = isPro || !soundscape.requiresPro
 
     companion object {
         const val FREE_TASK_LIMIT = 3
