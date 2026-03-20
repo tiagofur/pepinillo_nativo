@@ -102,6 +102,9 @@ struct TaskDetailView: View {
                         .foregroundStyle(store.isCompleted ? .green : .secondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(store.isCompleted
+                    ? String(localized: "Mark task as incomplete")
+                    : String(localized: "Mark task as complete"))
 
                 TextField(
                     String(localized: "Task title"),
@@ -140,6 +143,9 @@ struct TaskDetailView: View {
                             .foregroundStyle(subtask.isCompleted ? .green : .secondary)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(subtask.isCompleted
+                        ? String(localized: "Mark \(subtask.title) as incomplete")
+                        : String(localized: "Mark \(subtask.title) as complete"))
 
                     Text(subtask.title)
                         .strikethrough(subtask.isCompleted)
@@ -270,6 +276,7 @@ struct TaskDetailView: View {
                     }
                     .font(.subheadline)
                     .foregroundStyle(.red)
+                    .accessibilityLabel(String(localized: "Remove recurrence"))
                 }
             } else {
                 Menu {
@@ -320,6 +327,7 @@ struct TaskDetailView: View {
                 Label(String(localized: "Focus Analytics"), systemImage: "chart.bar.xaxis")
                     .foregroundStyle(.tint)
             }
+            .accessibilityHint(String(localized: "View detailed focus session charts for this task"))
         } header: {
             Text(String(localized: "Focus History"))
         }
@@ -335,6 +343,8 @@ struct TaskDetailView: View {
                     .foregroundStyle(.tint)
             }
             .disabled(store.isCompleted)
+            .accessibilityLabel(String(localized: "Start focus session for this task"))
+            .accessibilityHint(store.isCompleted ? String(localized: "Not available for completed tasks") : "")
         }
     }
 
@@ -343,6 +353,7 @@ struct TaskDetailView: View {
             Button(String(localized: "Delete Task"), role: .destructive) {
                 store.send(.deleteTapped)
             }
+            .accessibilityHint(String(localized: "Permanently removes this task"))
         }
     }
 

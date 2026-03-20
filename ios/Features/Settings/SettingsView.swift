@@ -223,6 +223,7 @@ struct SettingsView: View {
                 Text(String(localized: "Dark")).tag("dark")
             }
             .pickerStyle(.segmented)
+            .accessibilityLabel(String(localized: "Appearance mode"))
         } header: {
             Label(String(localized: "Theme"), systemImage: "paintpalette")
         }
@@ -292,12 +293,15 @@ struct SettingsView: View {
             HStack {
                 Image(systemName: "flame.fill")
                     .foregroundStyle(theme.streakColor)
+                    .accessibilityHidden(true)
                 Text(String(localized: "Current streak"))
                 Spacer()
                 Text(String(localized: "\(store.currentStreakDays) days"))
                     .foregroundStyle(.secondary)
                     .fontWeight(.medium)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(String(localized: "Current streak, \(store.currentStreakDays) days"))
         } header: {
             Label(String(localized: "Streak"), systemImage: "flame")
         }
@@ -316,9 +320,12 @@ struct SettingsView: View {
                     Image(systemName: "chevron.right")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                 }
             }
             .foregroundStyle(.primary)
+            .accessibilityLabel(String(localized: "About Pepinillo"))
+            .accessibilityHint(String(localized: "Opens app information and credits"))
         }
     }
 }

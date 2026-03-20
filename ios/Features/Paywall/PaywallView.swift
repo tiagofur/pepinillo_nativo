@@ -38,6 +38,7 @@ struct PaywallView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .background(.ultraThinMaterial)
+                        .accessibilityLabel(String(localized: "Loading purchase options"))
                 }
             }
             .alert(
@@ -73,6 +74,7 @@ private struct ProHeaderSection: View {
             Text("🧠")
                 .font(.system(size: 56))
                 .scaleEffect(appeared ? 1 : 0.5)
+                .accessibilityHidden(true)
 
             Text(String(localized: "Unlock Deep Focus"))
                 .font(.title2)
@@ -136,7 +138,9 @@ private struct ProFeaturesSection: View {
                     Image(systemName: "checkmark")
                         .font(.caption)
                         .foregroundStyle(.green)
+                        .accessibilityHidden(true)
                 }
+                .accessibilityElement(children: .combine)
                 .offset(x: appeared ? 0 : -20)
                 .opacity(appeared ? 1 : 0)
                 .animation(
@@ -267,6 +271,9 @@ private struct PurchaseButton: View {
                 .foregroundStyle(.white)
         }
         .disabled(store.isLoading || store.subscriptionState.isPro)
+        .accessibilityLabel(store.subscriptionState.isPro
+            ? String(localized: "You are already a Pro subscriber")
+            : String(localized: "Continue with purchase"))
         .overlay {
             if store.subscriptionState.isPro {
                 RoundedRectangle(cornerRadius: 14)
@@ -289,6 +296,7 @@ private struct LegalFooter: View {
             }
             .font(.footnote)
             .foregroundStyle(.secondary)
+            .accessibilityHint(String(localized: "Restores previously purchased subscriptions"))
 
             Text(String(localized: "Payment will be charged to your Apple ID. Subscriptions auto-renew unless cancelled 24 hours before the end of the current period."))
                 .font(.caption2)

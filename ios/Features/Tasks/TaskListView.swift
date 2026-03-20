@@ -218,6 +218,7 @@ struct TaskListView: View {
                     .foregroundStyle(.tint)
             }
             .disabled(store.newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty)
+            .accessibilityLabel(String(localized: "Add new task"))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -231,6 +232,7 @@ struct TaskListView: View {
             Image(systemName: "trash")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("\"\(taskTitle)\" deleted")
                 .font(.subheadline)
                 .lineLimit(1)
@@ -258,6 +260,7 @@ struct TaskListView: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.subheadline)
                 .foregroundStyle(.green)
+                .accessibilityHidden(true)
             Text(message)
                 .font(.subheadline.weight(.medium))
         }
@@ -279,6 +282,7 @@ struct TaskListView: View {
         } label: {
             Image(systemName: "square.and.arrow.down")
         }
+        .accessibilityLabel(String(localized: "Import tasks"))
     }
 
     private var sortMenu: some View {
@@ -298,6 +302,8 @@ struct TaskListView: View {
         } label: {
             Image(systemName: store.sortOrder == .custom ? "arrow.up.arrow.down" : "arrow.up.arrow.down.circle.fill")
         }
+        .accessibilityLabel(String(localized: "Sort tasks"))
+        .accessibilityHint(String(localized: "Currently sorted by \(store.sortOrder.displayName)"))
     }
 
     // MARK: - Filtered & Sorted Tasks
@@ -480,10 +486,12 @@ struct TaskRow: View {
                     Image(systemName: "exclamationmark")
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.red)
+                        .accessibilityLabel(String(localized: "High priority"))
                 } else if task.priority == .medium {
                     Image(systemName: "arrow.up")
                         .font(.caption2)
                         .foregroundStyle(.orange)
+                        .accessibilityLabel(String(localized: "Medium priority"))
                 }
                 Text(task.title)
                     .strikethrough(task.isCompleted)

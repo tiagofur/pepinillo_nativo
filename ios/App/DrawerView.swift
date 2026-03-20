@@ -27,6 +27,8 @@ struct DrawerOverlayView: View {
                         }
                         .transition(.opacity)
                         .zIndex(10)
+                        .accessibilityLabel(String(localized: "Close menu"))
+                        .accessibilityAddTraits(.isButton)
                 }
 
                 // Drawer panel
@@ -134,12 +136,15 @@ struct DrawerView: View {
                     Image(systemName: "flame.fill")
                         .font(.caption)
                         .foregroundStyle(theme.streakColor)
+                        .accessibilityHidden(true)
 
                     Text(String(localized: "\(store.analytics.currentStreakDays) day streak"))
                         .font(.caption.weight(.medium))
                         .foregroundStyle(theme.streakColor)
                 }
                 .padding(.top, 4)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(String(localized: "\(store.analytics.currentStreakDays) day focus streak"))
             }
 
             // Sign In with Apple (when not signed in)
@@ -199,6 +204,7 @@ private struct DrawerRow: View {
                 Image(systemName: icon)
                     .frame(width: 22)
                     .foregroundStyle(destructive ? .red : accent ? Color.accentColor : .primary)
+                    .accessibilityHidden(true)
                 Text(label)
                     .foregroundStyle(destructive ? .red : .primary)
                 Spacer()
@@ -208,6 +214,7 @@ private struct DrawerRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(label)
     }
 }
 

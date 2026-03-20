@@ -46,6 +46,8 @@ struct OnboardingView: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 24)
                         .padding(.top, 56)
+                        .accessibilityLabel(String(localized: "Skip onboarding"))
+                        .accessibilityHint(String(localized: "Jump to mode selection"))
                     }
                 }
                 Spacer()
@@ -85,6 +87,9 @@ struct OnboardingView: View {
                 )
                 .clipShape(Capsule())
         }
+        .accessibilityLabel(currentPage < pages.count
+            ? String(localized: "Continue to next page")
+            : String(localized: "Get started with Pepinillo"))
     }
 
     // MARK: - Get Started Page
@@ -94,6 +99,7 @@ struct OnboardingView: View {
             VStack(spacing: 8) {
                 Text("🥒")
                     .font(.system(size: 64))
+                    .accessibilityHidden(true)
                 Text(String(localized: "Your default mode"))
                     .font(.title2)
                     .fontWeight(.bold)
@@ -185,6 +191,7 @@ struct OnboardingPageView: View {
             }
             .scaleEffect(appeared ? 1 : 0.6)
             .opacity(appeared ? 1 : 0)
+            .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text(page.title)
