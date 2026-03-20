@@ -34,6 +34,7 @@ public final class UserPreferences {
     // Theme
     public var themeName: String    // "default", "forest", "ocean", "sunset", "liquidGlass"
     public var followSystemAppearance: Bool
+    public var appearanceMode: String  // "system", "light", "dark"
 
     // Notifications
     public var dailyReminderEnabled: Bool
@@ -90,6 +91,7 @@ public final class UserPreferences {
         self.defaultMode = FocusMode.pomodoro.rawValue
         self.themeName = "default"
         self.followSystemAppearance = true
+        self.appearanceMode = "system"
         // Notifications
         self.dailyReminderEnabled = false
         self.dailyReminderHour = 9

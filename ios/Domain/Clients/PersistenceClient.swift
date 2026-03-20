@@ -303,6 +303,7 @@ public struct UserPreferencesDTO: Sendable, Equatable {
     public var defaultMode: String
     public var themeName: String
     public var followSystemAppearance: Bool
+    public var appearanceMode: String
     public var dailyReminderEnabled: Bool
     public var dailyReminderHour: Int
     public var dailyReminderMinute: Int
@@ -337,6 +338,7 @@ public struct UserPreferencesDTO: Sendable, Equatable {
         self.defaultMode = defaultMode
         self.themeName = themeName
         self.followSystemAppearance = true
+        self.appearanceMode = "system"
         self.dailyReminderEnabled = false
         self.dailyReminderHour = 9
         self.dailyReminderMinute = 0
@@ -370,6 +372,7 @@ public struct UserPreferencesDTO: Sendable, Equatable {
         self.defaultMode = prefs.defaultMode
         self.themeName = prefs.themeName
         self.followSystemAppearance = prefs.followSystemAppearance
+        self.appearanceMode = prefs.appearanceMode
         self.dailyReminderEnabled = prefs.dailyReminderEnabled
         self.dailyReminderHour = prefs.dailyReminderHour
         self.dailyReminderMinute = prefs.dailyReminderMinute
@@ -574,6 +577,7 @@ extension PersistenceClient: DependencyKey {
                     prefs.defaultMode = prefsDTO.defaultMode
                     prefs.themeName = prefsDTO.themeName
                     prefs.followSystemAppearance = prefsDTO.followSystemAppearance
+                    prefs.appearanceMode = prefsDTO.appearanceMode
                     prefs.dailyReminderEnabled = prefsDTO.dailyReminderEnabled
                     prefs.dailyReminderHour = prefsDTO.dailyReminderHour
                     prefs.dailyReminderMinute = prefsDTO.dailyReminderMinute

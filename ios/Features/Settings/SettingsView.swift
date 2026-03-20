@@ -213,6 +213,16 @@ struct SettingsView: View {
                 .padding(.horizontal, 4)
             }
             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+
+            Picker(String(localized: "Appearance"), selection: Binding(
+                get: { store.appearanceMode },
+                set: { store.send(.appearanceModeChanged($0)) }
+            )) {
+                Text(String(localized: "System")).tag("system")
+                Text(String(localized: "Light")).tag("light")
+                Text(String(localized: "Dark")).tag("dark")
+            }
+            .pickerStyle(.segmented)
         } header: {
             Label(String(localized: "Theme"), systemImage: "paintpalette")
         }

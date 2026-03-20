@@ -19,6 +19,14 @@ struct AppView: View {
         AppTheme.named(store.settings.themeName)
     }
 
+    private var preferredColorScheme: ColorScheme? {
+        switch store.settings.appearanceMode {
+        case "light": return .light
+        case "dark": return .dark
+        default: return nil  // follows system
+        }
+    }
+
     var body: some View {
         Group {
             if !store.hasCompletedOnboarding {
@@ -32,6 +40,7 @@ struct AppView: View {
             }
         }
         .environment(\.appTheme, activeTheme)
+        .preferredColorScheme(preferredColorScheme)
         .onAppear {
             store.send(.appLaunched)
         }

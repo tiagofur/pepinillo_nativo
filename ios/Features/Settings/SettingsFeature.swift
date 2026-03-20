@@ -37,6 +37,7 @@ struct SettingsFeature {
 
         // Theme
         var themeName: String = "default"
+        var appearanceMode: String = "system"
 
         // Notifications
         var dailyReminderEnabled: Bool = false
@@ -94,6 +95,7 @@ struct SettingsFeature {
 
         // Theme
         case themeChanged(String)
+        case appearanceModeChanged(String)
 
         // Notifications
         case dailyReminderToggled
@@ -141,6 +143,7 @@ struct SettingsFeature {
         var showJournalAfterSession: Bool
         var defaultMode: FocusMode
         var themeName: String
+        var appearanceMode: String
         var dailyReminderEnabled: Bool
         var dailyReminderHour: Int
         var dailyReminderMinute: Int
@@ -166,6 +169,7 @@ struct SettingsFeature {
             showJournalAfterSession = prefs.showJournalAfterSession
             defaultMode = FocusMode(rawValue: prefs.defaultMode) ?? .pomodoro
             themeName = prefs.themeName
+            appearanceMode = prefs.appearanceMode
             dailyReminderEnabled = prefs.dailyReminderEnabled
             dailyReminderHour = prefs.dailyReminderHour
             dailyReminderMinute = prefs.dailyReminderMinute
@@ -211,6 +215,7 @@ struct SettingsFeature {
                 state.showJournalAfterSession = snap.showJournalAfterSession
                 state.defaultMode = snap.defaultMode
                 state.themeName = snap.themeName
+                state.appearanceMode = snap.appearanceMode
                 state.dailyReminderEnabled = snap.dailyReminderEnabled
                 state.dailyReminderHour = snap.dailyReminderHour
                 state.dailyReminderMinute = snap.dailyReminderMinute
@@ -288,6 +293,10 @@ struct SettingsFeature {
                 state.themeName = name
                 return .send(.saveSettings)
 
+            case .appearanceModeChanged(let mode):
+                state.appearanceMode = mode
+                return .send(.saveSettings)
+
             case .dailyReminderToggled:
                 state.dailyReminderEnabled.toggle()
                 return .send(.saveSettings)
@@ -362,6 +371,7 @@ struct SettingsFeature {
                     showJournalAfterSession: state.showJournalAfterSession,
                     defaultMode: state.defaultMode,
                     themeName: state.themeName,
+                    appearanceMode: state.appearanceMode,
                     dailyReminderEnabled: state.dailyReminderEnabled,
                     dailyReminderHour: state.dailyReminderHour,
                     dailyReminderMinute: state.dailyReminderMinute,
@@ -388,6 +398,7 @@ struct SettingsFeature {
                     prefs.showJournalAfterSession = snapshot.showJournalAfterSession
                     prefs.defaultMode = snapshot.defaultMode.rawValue
                     prefs.themeName = snapshot.themeName
+                    prefs.appearanceMode = snapshot.appearanceMode
                     prefs.dailyReminderEnabled = snapshot.dailyReminderEnabled
                     prefs.dailyReminderHour = snapshot.dailyReminderHour
                     prefs.dailyReminderMinute = snapshot.dailyReminderMinute
@@ -442,6 +453,7 @@ extension SettingsFeature.SettingsSnapshot {
         showJournalAfterSession: Bool = true,
         defaultMode: FocusMode,
         themeName: String,
+        appearanceMode: String = "system",
         dailyReminderEnabled: Bool,
         dailyReminderHour: Int,
         dailyReminderMinute: Int,
@@ -466,6 +478,7 @@ extension SettingsFeature.SettingsSnapshot {
         self.showJournalAfterSession = showJournalAfterSession
         self.defaultMode = defaultMode
         self.themeName = themeName
+        self.appearanceMode = appearanceMode
         self.dailyReminderEnabled = dailyReminderEnabled
         self.dailyReminderHour = dailyReminderHour
         self.dailyReminderMinute = dailyReminderMinute
