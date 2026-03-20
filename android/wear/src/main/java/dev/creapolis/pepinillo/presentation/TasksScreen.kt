@@ -116,7 +116,7 @@ fun TasksScreen(
                 val progress = if (task.pomodoroProgress.isNotBlank()) task.pomodoroProgress else null
                 val isLinked = timerState?.linkedTaskId == task.id
                 Chip(
-                    onClick = { taskToComplete = task },
+                    onClick = { },
                     label = {
                         Text(
                             text = task.title,
