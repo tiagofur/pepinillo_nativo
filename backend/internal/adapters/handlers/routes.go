@@ -112,6 +112,8 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	focus.Put("/sessions/:id", deps.Focus.UpdateSession)
 
 	ai := protected.Group("/ai")
+	ai.Use(middleware.NewRequireProFeatureMiddleware("predictions"))
+	ai.Use(middleware.NewRequireProFeatureMiddleware("advanced_analytics"))
 	ai.Get("/daily-tip", deps.AI.DailyTip)
 	ai.Get("/insights", deps.AI.ListInsights)
 	ai.Get("/weekly-report", deps.AI.WeeklyReport)
