@@ -511,6 +511,118 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 
 ---
 
+### Perfil de Usuario [Todas]
+
+Pantalla de perfil con informacion de cuenta y estadisticas de productividad.
+
+#### Informacion de cuenta
+
+| Campo | Detalle | Tier |
+|-------|---------|------|
+| Avatar | Foto de perfil del usuario (de Google/Apple o personalizada) | FREE |
+| Nombre y email | Datos basicos de la cuenta | FREE |
+| Tipo de cuenta | Free o Pro (con tier: mensual/anual/lifetime + fecha de expiracion) | FREE |
+| Cuentas vinculadas | Proveedores conectados (Google, Apple, email/password) | FREE |
+
+#### Estadisticas del perfil
+
+| Estadistica | Detalle | Tier |
+|-------------|---------|------|
+| Racha actual | Dias consecutivos con al menos 1 sesion | FREE |
+| Racha mas larga | Record historico de dias consecutivos | FREE |
+| Horas totales de enfoque | Suma acumulada de todas las sesiones | FREE |
+| Sesiones totales | Numero total de sesiones completadas | FREE |
+| Tareas completadas | Numero total de tareas marcadas como completadas | FREE |
+| Miembro desde | Fecha de registro de la cuenta | FREE |
+
+**Implementacion:**
+- **[iOS]**: Pantalla SwiftUI con datos de perfil del backend + estadisticas locales/sincronizadas
+- **[Android]**: Pantalla Compose con Circuit presenter, datos del backend via Ktor
+
+---
+
+### Login Social [Todas]
+
+Autenticacion con proveedores sociales ademas de email/password.
+
+#### Proveedores
+
+| Proveedor | Plataforma | Implementacion | Tier |
+|-----------|-----------|----------------|------|
+| Google Sign-In | **[Android]** | Credential Manager API (reemplaza play-services-auth legacy) | FREE |
+| Sign In with Apple | **[iOS]** | AuthenticationServices framework (nativo) | FREE |
+| Email / Password | **[Todas]** | JWT via backend Go (ya implementado) | FREE |
+
+#### Account Linking
+
+- Conectar multiples proveedores a una misma cuenta (ej. Google + Apple + email)
+- Permite al usuario acceder desde cualquier dispositivo con cualquier proveedor vinculado
+- El backend es la fuente de verdad para la identidad del usuario
+- **Tier:** FREE
+
+---
+
+### Cloud Sync y Multi-Dispositivo [Todas]
+
+Sincronizacion bidireccional de datos entre dispositivos via backend Go.
+
+#### Datos sincronizados
+
+| Entidad | Direccion | Resolucion de conflictos |
+|---------|-----------|--------------------------|
+| Tareas | Bidireccional | last-write-wins por `updatedAt` |
+| Sesiones de enfoque | Bidireccional | last-write-wins por `updatedAt` |
+| Estadisticas | Bidireccional | Merge aditivo |
+| Preferencias | Bidireccional | last-write-wins por `updatedAt` |
+
+#### Mecanismos de sync
+
+| Mecanismo | Uso | Detalle |
+|-----------|-----|---------|
+| WebSocket | Real-time | Notificacion instantanea de cambios entre dispositivos conectados |
+| REST API periodico | Fallback | WorkManager (Android) / BackgroundTasks (iOS) cada 15 min |
+| Dirty flags | Offline | Cambios locales se marcan como pendientes y se envian al reconectar |
+
+#### Multi-dispositivo
+
+- Misma cuenta en multiples dispositivos (phone + watch + tablet) se mantiene sincronizada
+- El backend coordina el estado entre dispositivos
+- Offline-first: cada dispositivo funciona independientemente, sync al reconectar
+
+**Implementacion:**
+- **[Android]**: SyncEngine + Room dirty flags + WorkManager (ya existe, necesita mejoras WebSocket)
+- **[iOS]**: Nuevo API client Ktor/URLSession, reemplaza CloudKit como fuente de sync principal
+
+**Tier:** PRO
+
+---
+
+### Suscripciones Cross-Platform [Todas]
+
+Pagar en cualquier tienda (App Store o Google Play) y obtener PRO en todas las plataformas.
+
+#### Flujo
+
+1. Usuario compra suscripcion en App Store o Google Play
+2. El cliente envia el recibo al backend Go (`/api/v1/billing/verify`)
+3. El backend verifica el recibo con la tienda correspondiente (Apple App Store Server API / Google Play Developer API)
+4. El backend actualiza el estado de suscripcion del usuario
+5. Todos los dispositivos del usuario reciben el estado PRO al sincronizar
+
+#### Arquitectura
+
+| Componente | Detalle |
+|------------|---------|
+| Fuente de verdad | Backend Go (no el dispositivo local) |
+| Verificacion Apple | App Store Server API v2 (server-to-server) |
+| Verificacion Google | Google Play Developer API (server-to-server) |
+| Grace period | 3 dias antes de revocar acceso tras fallo de renovacion |
+| Polling | El cliente consulta estado de suscripcion al iniciar app y periodicamente |
+
+**Tier:** — (infraestructura de billing)
+
+---
+
 ## P2 — Futuro
 
 | Feature | Plataforma | Descripcion |
@@ -654,6 +766,26 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 | Pomodoro -> Flowtime auto-switch | ⬜ | ⬜ | ➖ | ➖ | PRO |
 | Tablet/Foldable optimizado | ➖ | ⬜ | ➖ | ➖ | FREE |
 
+### Planificadas — Backend y Cuentas
+
+| Feature | iOS | Android | watchOS | Wear OS | Tier |
+|---------|-----|---------|---------|---------|------|
+| **Perfil de Usuario** | | | | | |
+| Pantalla de perfil (avatar, nombre, tipo cuenta) | ⬜ | ⬜ | ➖ | ➖ | FREE |
+| Estadisticas del perfil (streak, horas, sesiones) | ⬜ | ⬜ | ➖ | ➖ | FREE |
+| Cuentas vinculadas (Google/Apple/email) | ⬜ | ⬜ | ➖ | ➖ | FREE |
+| **Login Social** | | | | | |
+| Google Sign-In (Credential Manager) | ➖ | ⬜ | ➖ | ➖ | FREE |
+| Sign In with Apple | ⬜ | ➖ | ➖ | ➖ | FREE |
+| Account linking (multiples proveedores) | ⬜ | ⬜ | ➖ | ➖ | FREE |
+| **Cloud Sync y Multi-Dispositivo** | | | | | |
+| Sync bidireccional via backend Go | ⬜ | 🔄 | ⬜ | 🔄 | PRO |
+| WebSocket real-time sync | ⬜ | ⬜ | ⬜ | ⬜ | PRO |
+| Multi-device coordination | ⬜ | ⬜ | ⬜ | ⬜ | PRO |
+| **Suscripciones Cross-Platform** | | | | | |
+| Verificacion server-side de recibos | ⬜ | ⬜ | ➖ | ➖ | — |
+| PRO status compartido entre tiendas | ⬜ | ⬜ | ⬜ | ⬜ | — |
+
 ---
 
 ## Resumen de Conteo de Features
@@ -662,8 +794,9 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 |-----------|-------|----------------------------------------|------------|
 | P0 — Must-Have | 52 | 38 | 14 |
 | P1 — Nice-to-Have | 17 | 8 | 9 |
+| Planificadas — Backend y Cuentas | 12 | 0 | 12 |
 | P2 — Futuro | 9 | 0 | 9 |
-| **Total** | **78** | **46** | **32** |
+| **Total** | **90** | **46** | **44** |
 
 ---
 
@@ -680,3 +813,9 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 6. **Theme parity achieved**: Ambas plataformas (Android + iOS) tienen 4 temas nombrados (Classic, Forest, Ocean, Sunset) con theme picker de horizontal scroll cards, colores de modo de enfoque consistentes (Pomodoro=rojo, TimeBlock=morado, Chrono=verde), y PRO gating para Forest/Ocean/Sunset. Android ademas ofrece Material You como opcion. iOS tiene selector Light/Dark/System. Wear OS sincroniza el tema seleccionado desde el telefono Android.
 
 5. **Session Journaling promovido a P0**: Originalmente P2 en iOS PRD, ahora implementado en ambas plataformas phone como parte del motor de enfoque.
+
+7. **Backend Go existente pero no desplegado**: El backend en `backend/` implementa API REST completa (auth, tasks, sessions, stats, billing verify, push notifications, WebSocket, AI insights) pero aun no esta en produccion. Necesita hosting (Railway/Fly.io/VPS) + PostgreSQL + Redis.
+
+8. **Login social planificado**: Google Sign-In (Android via Credential Manager) y Sign In with Apple (iOS via AuthenticationServices) estan planificados. El backend necesita agregar OAuth providers. Account linking permitira conectar multiples proveedores a una cuenta.
+
+9. **Cloud sync unificado planificado**: Actualmente iOS usa CloudKit y Android usa backend Go. El plan es migrar ambas plataformas a sync via backend Go para habilitar cross-platform sync y suscripciones compartidas.

@@ -13,7 +13,7 @@
 | watchOS | Implementado (timer, tasks, dashboard, enhanced Smart Stack widgets) | Incluido en iOS | Incluido | Requiere setup Xcode |
 | Android (phone) | Sprints 1-4 completos (Foundation + Ecosystem + Polish) | ~97 Kotlin | ~20K | BUILD SUCCESSFUL |
 | Wear OS | Implementado (timer, tasks, stats, tile, complication) | ~18 Kotlin | ~5K | BUILD SUCCESSFUL |
-| Backend (Go) | Endpoints basicos funcionales | N/D | N/D | Funcional |
+| Backend (Go) | API REST completa (no desplegado) | ~50 Go | ~8K | Funcional local |
 
 ---
 
@@ -333,16 +333,51 @@
 
 ## 6. Backend (Go)
 
+### Arquitectura
+
+- **Patron:** Hexagonal (puertos y adaptadores)
+- **Lenguaje:** Go 1.24
+- **Framework HTTP:** Fiber v2
+- **ORM / DB:** GORM + PostgreSQL
+- **Directorio:** `backend/`
+
+### Estado del Backend
+
+| Componente | Estado | Detalle |
+|------------|--------|---------|
+| API REST completa | ✅ Implementado | Auth (email/password), tasks CRUD + sync, sessions, stats, user profile |
+| Billing verify (ambas tiendas) | ✅ Implementado | Verificacion de recibos App Store y Google Play |
+| Push notifications | ✅ Implementado | APNS (iOS) + FCM (Android) |
+| WebSocket | ✅ Implementado | Canal de comunicacion en tiempo real |
+| AI Insights | ✅ Implementado | Integracion con Gemini para reportes de productividad |
+| OAuth social login | ❌ No implementado | Google Sign-In y Sign In with Apple faltan como providers |
+| Coordinacion multi-device real-time | ❌ No implementado | WebSocket existe pero falta logica de coordinacion entre dispositivos |
+| Despliegue | ❌ No desplegado | Necesita hosting (Railway/Fly.io/VPS) + PostgreSQL + Redis |
+
 ### Endpoints Implementados
 
 | Endpoint | Metodo | Descripcion |
 |----------|--------|-------------|
-| `/api/v1/auth/register` | POST | Registro de usuario |
+| `/api/v1/auth/register` | POST | Registro de usuario (email/password) |
 | `/api/v1/auth/login` | POST | Login con JWT |
 | `/api/v1/tasks` | GET/POST | Listar y crear tareas |
 | `/api/v1/tasks/:id` | PUT/DELETE | Actualizar y eliminar tareas |
+| `/api/v1/tasks/sync` | POST | Sincronizacion de tareas con dirty flags |
 | `/api/v1/sessions` | GET/POST | Listar y crear sesiones de enfoque |
+| `/api/v1/stats` | GET | Estadisticas de productividad |
 | `/api/v1/user` | GET/PUT | Perfil de usuario |
+| `/api/v1/billing/verify` | POST | Verificacion de recibos (App Store + Google Play) |
+| `/api/v1/notifications/register` | POST | Registro de device token (APNS/FCM) |
+| `/ws` | WebSocket | Canal de comunicacion en tiempo real |
+
+### Integracion con Clientes
+
+| Plataforma | Estado | Detalle |
+|------------|--------|---------|
+| Android | 🔄 Parcial | Auth client + SyncEngine existen, conectan a endpoints del backend |
+| iOS | ❌ No iniciado | iOS actualmente usa CloudKit solamente; necesita API client nuevo |
+| Wear OS | 🔄 Parcial | Hereda sync de Android phone via Data Layer |
+| watchOS | ❌ No iniciado | Hereda de iOS phone via WatchConnectivity |
 
 ### Migraciones Aplicadas
 
@@ -353,14 +388,17 @@
 | 000003 | `energy_level` + campos de recurrencia en tareas |
 | 000004 | Device tokens para push notifications |
 
-### Endpoints Pendientes
+### Trabajo Pendiente del Backend (ordenado por prioridad)
 
-| Endpoint | Metodo | Prioridad | Afecta |
-|----------|--------|-----------|--------|
-| `/api/v1/stats/daily` | GET | P1 | Stats sync en Android |
-| `/api/v1/stats/weekly` | GET | P1 | Weekly Review sync en Android |
-| `/api/v1/subscriptions/verify` | POST | P0 | Verificacion de recibos Play Store |
-| Campo `mode` en FocusSession | -- | P1 | Mode breakdown en servidor |
+| # | Tarea | Prioridad | Dependencias | Estimacion |
+|---|-------|-----------|-------------|------------|
+| 1 | Desplegar backend a hosting en la nube | P0 | Ninguna | 4-8h |
+| 2 | Agregar OAuth providers (Google + Apple) al backend | P0 | #1 (despliegue) | 8-12h |
+| 3 | Android: Agregar Google Sign-In via Credential Manager | P0 | #2 (OAuth backend) | 6-8h |
+| 4 | iOS: Crear API client, conectar auth + sync al backend | P0 | #2 (OAuth backend) | 16-24h |
+| 5 | Mejorar sync engine (WebSocket real-time, bidireccional multi-device) | P1 | #1 (despliegue) | 12-16h |
+| 6 | Verificacion cross-platform de suscripciones | P1 | #1, #4 | 8-12h |
+| 7 | Pantalla de perfil de usuario (ambas plataformas) | P1 | #2, #3, #4 | 8-12h |
 
 ---
 
