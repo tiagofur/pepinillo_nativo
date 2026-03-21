@@ -316,7 +316,7 @@ func (r *AnalyticsRepository) getCurrentStreak(ctx context.Context, userID strin
 	}
 
 	streak := 0
-	today := time.Now().Truncate(24 * time.Hour)
+	_ = time.Now().Truncate(24 * time.Hour) // reserved for future gap detection
 
 	for _, activity := range activities {
 		if activity.Active {

@@ -11,6 +11,9 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 
 	"pepinillo/backend/internal/adapters/behavior"
 	"pepinillo/backend/internal/adapters/handlers"
@@ -38,6 +41,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
+	runMigrations(cfg.DatabaseURL)
+
 	observability.ConfigureAlertRules(observability.AlertRules{
 		BillingMinSamples:                 cfg.AlertBillingMinSamples,
 		BillingFailureRatioWarnPct:        cfg.AlertBillingFailureRatioWarnPct,
@@ -141,6 +146,15 @@ func main() {
 		cfg.JWTRefreshTTLSeconds,
 	)
 
+	var googleClientIDs []string
+	if cfg.GoogleClientIDs != "" {
+		for _, id := range strings.Split(cfg.GoogleClientIDs, ",") {
+			if trimmed := strings.TrimSpace(id); trimmed != "" {
+				googleClientIDs = append(googleClientIDs, trimmed)
+			}
+		}
+	}
+
 	oauthService := services.NewOAuthService(
 		userRepo,
 		authStore,
@@ -148,12 +162,16 @@ func main() {
 		cfg.JWTIssuer,
 		cfg.JWTAccessTTLSeconds,
 		cfg.JWTRefreshTTLSeconds,
+		googleClientIDs,
+		cfg.AppleBundleID,
 	)
+
+	focusRepo := postgres.NewFocusRepository(db)
 
 	taskService := services.NewTaskService(taskRepo, behaviorLog, wsManager)
 	subtaskService := services.NewSubTaskService(subtaskRepo, taskRepo, behaviorLog)
 	pomodoroService := services.NewPomodoroService(pomodoroRepo, behaviorLog, wsManager)
-	focusService := services.NewFocusService(pomodoroRepo, behaviorLog, wsManager)
+	focusService := services.NewFocusService(focusRepo, behaviorLog, wsManager)
 	billingService := services.NewBillingService(userRepo, services.BillingConfig{
 		GooglePlayPackageName:              cfg.GooglePlayPackageName,
 		GooglePlayAPIToken:                 cfg.GooglePlayAPIToken,
@@ -330,4 +348,21 @@ func startRecurringTaskGenerator(taskService *services.TaskService, pushService 
 			run()
 		}
 	}()
+}
+
+func runMigrations(databaseURL string) {
+	m, err := migrate.New(
+		"file://migrations",
+		databaseURL,
+	)
+	if err != nil {
+		log.Printf("migration setup skipped: %v", err)
+		return
+	}
+	defer m.Close()
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("migration failed: %v", err)
+	}
+	log.Println("database migrations applied successfully")
 }

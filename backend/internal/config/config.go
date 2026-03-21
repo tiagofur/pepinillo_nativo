@@ -70,6 +70,8 @@ type Config struct {
 	AlertMuteWindowEnabled                 bool
 	AlertMuteStartHourUTC                  int64
 	AlertMuteEndHourUTC                    int64
+	GoogleClientIDs                        string
+	AppleBundleID                          string
 }
 
 func Load() (*Config, error) {
@@ -137,6 +139,8 @@ func Load() (*Config, error) {
 		AlertMuteWindowEnabled:                 getEnvBool("ALERT_MUTE_WINDOW_ENABLED", false),
 		AlertMuteStartHourUTC:                  getEnvInt64("ALERT_MUTE_START_HOUR_UTC", 0),
 		AlertMuteEndHourUTC:                    getEnvInt64("ALERT_MUTE_END_HOUR_UTC", 0),
+		GoogleClientIDs:                        getEnv("GOOGLE_CLIENT_IDS", ""),
+		AppleBundleID:                          getEnv("APPLE_BUNDLE_ID", ""),
 	}
 
 	if cfg.JWTSecret == "" {

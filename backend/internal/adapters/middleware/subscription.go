@@ -5,7 +5,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"pepinillo/backend/internal/domain"
 	"pepinillo/backend/internal/ports"
 )
 

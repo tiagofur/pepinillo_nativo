@@ -38,7 +38,7 @@ func (s *FocusService) UpsertStats(ctx context.Context, stats *domain.FocusStats
 	if err := s.repo.UpsertStats(ctx, stats); err != nil {
 		return err
 	}
-	_ = s.behaviorLogger.LogEvent(ctx, stats.UserID, "focus_stats_upserted", map[string]any{"date": stats.Date.Format("2006-01-02"), "mode": stats.Mode})
+	_ = s.behaviorLogger.LogEvent(ctx, stats.UserID, "focus_stats_upserted", map[string]any{"date": stats.Date.Format("2006-01-02")})
 	return nil
 }
 

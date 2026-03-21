@@ -2,8 +2,6 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
-
-	"pepinillo/backend/internal/adapters/middleware"
 )
 
 type RequireProFeature struct {

@@ -28,6 +28,23 @@ func NewOAuthHandler(oauth *services.OAuthService) *OAuthHandler {
 	return &OAuthHandler{oauth: oauth}
 }
 
+func mapOAuthError(err error) error {
+	switch {
+	case errors.Is(err, services.ErrUserNotFound):
+		return fiber.NewError(fiber.StatusNotFound, err.Error())
+	case errors.Is(err, services.ErrAccountAlreadyLinked):
+		return fiber.NewError(fiber.StatusConflict, err.Error())
+	case errors.Is(err, services.ErrAccountLinkedToOtherUser):
+		return fiber.NewError(fiber.StatusConflict, err.Error())
+	case errors.Is(err, services.ErrOAuthProviderAlreadyLinked):
+		return fiber.NewError(fiber.StatusConflict, err.Error())
+	case errors.Is(err, services.ErrCannotUnlinkLastAuth):
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
+	default:
+		return err
+	}
+}
+
 func (h *OAuthHandler) LoginWithGoogle(c *fiber.Ctx) error {
 	var req googleLoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -39,10 +56,7 @@ func (h *OAuthHandler) LoginWithGoogle(c *fiber.Ctx) error {
 
 	user, tokens, err := h.oauth.LoginWithGoogle(c.Context(), req.IDToken)
 	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
-		}
-		return err
+		return mapOAuthError(err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -62,10 +76,7 @@ func (h *OAuthHandler) LoginWithApple(c *fiber.Ctx) error {
 
 	user, tokens, err := h.oauth.LoginWithApple(c.Context(), req.IDToken)
 	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
-		}
-		return err
+		return mapOAuthError(err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -90,10 +101,7 @@ func (h *OAuthHandler) LinkGoogleAccount(c *fiber.Ctx) error {
 
 	user, err := h.oauth.LinkGoogleAccount(c.Context(), userID, req.IDToken)
 	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
-		}
-		return err
+		return mapOAuthError(err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -109,10 +117,7 @@ func (h *OAuthHandler) UnlinkGoogleAccount(c *fiber.Ctx) error {
 	}
 
 	if err := h.oauth.UnlinkGoogleAccount(c.Context(), userID); err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
-		}
-		return err
+		return mapOAuthError(err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -136,10 +141,7 @@ func (h *OAuthHandler) LinkAppleAccount(c *fiber.Ctx) error {
 
 	user, err := h.oauth.LinkAppleAccount(c.Context(), userID, req.IDToken)
 	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
-		}
-		return err
+		return mapOAuthError(err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -155,10 +157,7 @@ func (h *OAuthHandler) UnlinkAppleAccount(c *fiber.Ctx) error {
 	}
 
 	if err := h.oauth.UnlinkAppleAccount(c.Context(), userID); err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
-		}
-		return err
+		return mapOAuthError(err)
 	}
 
 	return c.JSON(fiber.Map{
@@ -174,10 +173,7 @@ func (h *OAuthHandler) GetLinkedProviders(c *fiber.Ctx) error {
 
 	providers, err := h.oauth.GetLinkedProviders(c.Context(), userID)
 	if err != nil {
-		if errors.Is(err, services.ErrUserNotFound) {
-			return fiber.NewError(fiber.StatusNotFound, err.Error())
-		}
-		return err
+		return mapOAuthError(err)
 	}
 
 	return c.JSON(providers)
