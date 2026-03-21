@@ -14,7 +14,9 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.contentType
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,17 +25,18 @@ private const val TAG = "PepinilloApi"
 @Singleton
 class PepinilloApiClient @Inject constructor(
     private val httpClient: HttpClient,
+    private val json: Json,
 ) {
     // ── Auth ──
 
     suspend fun login(email: String, password: String): NetworkResult<AuthResponse> =
-        safeCall { httpClient.post("auth/login") { jsonBody(LoginRequest(email, password)) }.body() }
+        safeAuthCall { httpClient.post("auth/login") { jsonBody(LoginRequest(email, password)) } }
 
     suspend fun register(email: String, name: String, password: String): NetworkResult<AuthResponse> =
-        safeCall { httpClient.post("auth/register") { jsonBody(RegisterRequest(email, name, password)) }.body() }
+        safeAuthCall { httpClient.post("auth/register") { jsonBody(RegisterRequest(email, name, password)) } }
 
     suspend fun loginWithGoogle(idToken: String): NetworkResult<AuthResponse> =
-        safeCall { httpClient.post("auth/google") { jsonBody(GoogleLoginRequest(idToken)) }.body() }
+        safeAuthCall { httpClient.post("auth/google") { jsonBody(GoogleLoginRequest(idToken)) } }
 
     suspend fun refreshToken(refreshToken: String): NetworkResult<RefreshResponse> =
         safeCall { httpClient.post("auth/refresh") { jsonBody(RefreshRequest(refreshToken)) }.body() }
@@ -123,6 +126,31 @@ class PepinilloApiClient @Inject constructor(
         safeCall { httpClient.post("billing/verify-receipt") { jsonBody(request) }.body() }
 
     // ── Helpers ──
+
+    private suspend fun safeAuthCall(
+        block: suspend () -> io.ktor.client.statement.HttpResponse,
+    ): NetworkResult<AuthResponse> {
+        return try {
+            val response = block()
+            val rawBody = response.bodyAsText()
+            Log.d(TAG, "AUTH RAW RESPONSE [${response.status}]: $rawBody")
+            val parsed = json.decodeFromString<AuthResponse>(rawBody)
+            NetworkResult.Success(parsed)
+        } catch (e: io.ktor.client.plugins.ClientRequestException) {
+            val rawBody = try { e.response.bodyAsText() } catch (_: Exception) { "n/a" }
+            Log.e(TAG, "AUTH API error ${e.response.status}: $rawBody", e)
+            val errorBody = try { json.decodeFromString<ErrorResponse>(rawBody) } catch (_: Exception) { null }
+            NetworkResult.Error(e.response.status.value, errorBody?.error ?: e.message)
+        } catch (e: io.ktor.client.plugins.ServerResponseException) {
+            val rawBody = try { e.response.bodyAsText() } catch (_: Exception) { "n/a" }
+            Log.e(TAG, "AUTH Server error ${e.response.status}: $rawBody", e)
+            val errorBody = try { json.decodeFromString<ErrorResponse>(rawBody) } catch (_: Exception) { null }
+            NetworkResult.Error(e.response.status.value, errorBody?.error ?: e.message)
+        } catch (e: Exception) {
+            Log.e(TAG, "AUTH error: ${e::class.simpleName}: ${e.message}", e)
+            NetworkResult.NetworkError(e)
+        }
+    }
 
     private suspend fun <T> safeCall(block: suspend () -> T): NetworkResult<T> {
         return try {

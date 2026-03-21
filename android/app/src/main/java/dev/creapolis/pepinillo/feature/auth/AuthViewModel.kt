@@ -73,9 +73,10 @@ class AuthViewModel @Inject constructor(
                     )
                 }
                 is NetworkResult.NetworkError -> {
+                    Log.e("AuthViewModel", "Login network error", result.exception)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = "No internet connection",
+                        error = mapNetworkError(result.exception),
                     )
                 }
             }
@@ -116,7 +117,11 @@ class AuthViewModel @Inject constructor(
                     )
                 }
                 is NetworkResult.NetworkError -> {
-                    _uiState.value = _uiState.value.copy(isLoading = false, error = "No internet connection")
+                    Log.e("AuthViewModel", "Register network error", result.exception)
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = mapNetworkError(result.exception),
+                    )
                 }
             }
         }
@@ -165,9 +170,10 @@ class AuthViewModel @Inject constructor(
                         )
                     }
                     is NetworkResult.NetworkError -> {
+                        Log.e("AuthViewModel", "Google sign-in network error", apiResult.exception)
                         _uiState.value = _uiState.value.copy(
                             googleSignInLoading = false,
-                            error = "No internet connection",
+                            error = mapNetworkError(apiResult.exception),
                         )
                     }
                 }
@@ -212,9 +218,19 @@ class AuthViewModel @Inject constructor(
         message == "weak_password" -> "Password needs 8+ chars with uppercase, lowercase, and a number"
         message == "invalid_email" -> "Please enter a valid email address"
         message == "missing_required_fields" -> "Please fill in all fields"
+        message == "invalid_google_token" -> "Google Sign-In failed. Please try again."
         code == 401 -> "Invalid email or password"
         code in 500..599 -> "Server error. Please try again later."
         else -> "Error: $message"
+    }
+
+    private fun mapNetworkError(exception: Throwable): String = when (exception) {
+        is java.net.UnknownHostException -> "Cannot resolve server: ${exception.message}"
+        is java.net.ConnectException -> "Connection refused: ${exception.message}"
+        is java.net.SocketTimeoutException -> "Connection timed out"
+        is javax.net.ssl.SSLException -> "SSL error: ${exception.message}"
+        is javax.net.ssl.SSLHandshakeException -> "SSL handshake failed: ${exception.message}"
+        else -> "Network error: ${exception::class.simpleName} - ${exception.message}"
     }
 
     private fun validatePassword(password: String): String? {
