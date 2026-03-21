@@ -73,7 +73,7 @@ func (s *AuthService) Register(ctx context.Context, email, name, password string
 		ID:               uuid.NewString(),
 		Email:            email,
 		Name:             name,
-		PasswordHash:     string(hash),
+		PasswordHash:     strPtr(string(hash)),
 		SubscriptionTier: "free",
 	}
 
@@ -115,7 +115,10 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*domai
 		return nil, nil, ErrInvalidCredentials
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+	if user.PasswordHash == nil {
+		return nil, nil, ErrInvalidCredentials
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(password)); err != nil {
 		return nil, nil, ErrInvalidCredentials
 	}
 
@@ -229,7 +232,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, email, code, newPasswor
 	if err != nil {
 		return err
 	}
-	user.PasswordHash = string(hash)
+	user.PasswordHash = strPtr(string(hash))
 	if err := s.users.Update(ctx, user); err != nil {
 		return err
 	}
@@ -258,7 +261,7 @@ func (s *AuthService) UpdatePassword(ctx context.Context, userID, newPassword st
 		return err
 	}
 
-	user.PasswordHash = string(hash)
+	user.PasswordHash = strPtr(string(hash))
 	if err := s.users.Update(ctx, user); err != nil {
 		return err
 	}
@@ -276,14 +279,17 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID, currentPasswor
 	if user == nil {
 		return ErrUserNotFound
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(currentPassword)); err != nil {
+	if user.PasswordHash == nil {
+		return ErrInvalidCredentials
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(currentPassword)); err != nil {
 		return ErrInvalidCredentials
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
 	if err != nil {
 		return err
 	}
-	user.PasswordHash = string(hash)
+	user.PasswordHash = strPtr(string(hash))
 	if err := s.users.Update(ctx, user); err != nil {
 		return err
 	}
@@ -567,4 +573,6 @@ func (s *AuthService) sendUserUpdateNotification(userID string, user *domain.Use
 
 	_ = s.wsManager.SendToUser(userID, msgBytes)
 }
+
+func strPtr(s string) *string { return &s }
 

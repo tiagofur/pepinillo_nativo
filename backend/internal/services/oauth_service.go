@@ -21,13 +21,15 @@ import (
 )
 
 type OAuthService struct {
-	users        ports.UserRepository
-	authStore    ports.AuthStore
-	jwtSecret    string
-	jwtIssuer    string
-	accessTTL    int64
-	refreshTTL   int64
-	googleClient *http.Client
+	users          ports.UserRepository
+	authStore      ports.AuthStore
+	jwtSecret      string
+	jwtIssuer      string
+	accessTTL      int64
+	refreshTTL     int64
+	googleClient   *http.Client
+	googleClientIDs []string
+	appleBundleID  string
 }
 
 type googleTokenInfo struct {
@@ -58,15 +60,19 @@ func NewOAuthService(
 	authStore ports.AuthStore,
 	jwtSecret, jwtIssuer string,
 	accessTTL, refreshTTL int64,
+	googleClientIDs []string,
+	appleBundleID string,
 ) *OAuthService {
 	return &OAuthService{
-		users:        users,
-		authStore:    authStore,
-		jwtSecret:    jwtSecret,
-		jwtIssuer:    jwtIssuer,
-		accessTTL:    accessTTL,
-		refreshTTL:   refreshTTL,
-		googleClient: &http.Client{Timeout: 10 * time.Second},
+		users:           users,
+		authStore:       authStore,
+		jwtSecret:       jwtSecret,
+		jwtIssuer:       jwtIssuer,
+		accessTTL:       accessTTL,
+		refreshTTL:      refreshTTL,
+		googleClient:    &http.Client{Timeout: 10 * time.Second},
+		googleClientIDs: googleClientIDs,
+		appleBundleID:   appleBundleID,
 	}
 }
 
@@ -99,7 +105,7 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 
 	if existing != nil {
 		if existing.GoogleID != nil {
-			return nil, nil, errors.New("email already linked to another google account")
+			return nil, nil, ErrAccountAlreadyLinked
 		}
 		if err := s.users.LinkGoogleAccount(ctx, existing.ID, tokenInfo.Sub, tokenInfo.Email, tokenInfo.Name, tokenInfo.Picture); err != nil {
 			return nil, nil, err
@@ -172,7 +178,7 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken string) (*dom
 
 	if existing != nil {
 		if existing.AppleID != nil {
-			return nil, nil, errors.New("email already linked to another apple account")
+			return nil, nil, ErrAccountAlreadyLinked
 		}
 		var name string
 		if tokenInfo.Name != nil {
@@ -238,7 +244,7 @@ func (s *OAuthService) LinkGoogleAccount(ctx context.Context, userID, idToken st
 	}
 
 	if user.GoogleID != nil {
-		return nil, errors.New("google account already linked")
+		return nil, ErrOAuthProviderAlreadyLinked
 	}
 
 	existing, err := s.users.GetByGoogleID(ctx, tokenInfo.Sub)
@@ -246,7 +252,7 @@ func (s *OAuthService) LinkGoogleAccount(ctx context.Context, userID, idToken st
 		return nil, err
 	}
 	if existing != nil && existing.ID != userID {
-		return nil, errors.New("google account already linked to another user")
+		return nil, ErrAccountLinkedToOtherUser
 	}
 
 	if err := s.users.LinkGoogleAccount(ctx, userID, tokenInfo.Sub, tokenInfo.Email, tokenInfo.Name, tokenInfo.Picture); err != nil {
@@ -269,11 +275,11 @@ func (s *OAuthService) UnlinkGoogleAccount(ctx context.Context, userID string) e
 		return nil
 	}
 
-	hasPassword := user.PasswordHash != ""
+	hasPassword := user.PasswordHash != nil && *user.PasswordHash != ""
 	hasApple := user.AppleID != nil
 
 	if !hasPassword && !hasApple {
-		return errors.New("cannot unlink google account: no other authentication method available")
+		return ErrCannotUnlinkLastAuth
 	}
 
 	return s.users.UnlinkGoogleAccount(ctx, userID)
@@ -294,7 +300,7 @@ func (s *OAuthService) LinkAppleAccount(ctx context.Context, userID, idToken str
 	}
 
 	if user.AppleID != nil {
-		return nil, errors.New("apple account already linked")
+		return nil, ErrOAuthProviderAlreadyLinked
 	}
 
 	existing, err := s.users.GetByAppleID(ctx, tokenInfo.Sub)
@@ -302,7 +308,7 @@ func (s *OAuthService) LinkAppleAccount(ctx context.Context, userID, idToken str
 		return nil, err
 	}
 	if existing != nil && existing.ID != userID {
-		return nil, errors.New("apple account already linked to another user")
+		return nil, ErrAccountLinkedToOtherUser
 	}
 
 	var name string
@@ -330,11 +336,11 @@ func (s *OAuthService) UnlinkAppleAccount(ctx context.Context, userID string) er
 		return nil
 	}
 
-	hasPassword := user.PasswordHash != ""
+	hasPassword := user.PasswordHash != nil && *user.PasswordHash != ""
 	hasGoogle := user.GoogleID != nil
 
 	if !hasPassword && !hasGoogle {
-		return errors.New("cannot unlink apple account: no other authentication method available")
+		return ErrCannotUnlinkLastAuth
 	}
 
 	return s.users.UnlinkAppleAccount(ctx, userID)
@@ -350,7 +356,7 @@ func (s *OAuthService) GetLinkedProviders(ctx context.Context, userID string) (*
 	}
 
 	providers := &domain.LinkedProviders{
-		HasPassword: user.PasswordHash != "",
+		HasPassword: user.PasswordHash != nil && *user.PasswordHash != "",
 	}
 
 	if user.GoogleID != nil {
@@ -389,12 +395,28 @@ func (s *OAuthService) verifyGoogleToken(ctx context.Context, idToken string) (*
 		return nil, err
 	}
 
+	if !s.isValidGoogleAudience(tokenInfo.Aud) {
+		return nil, errors.New("invalid google token audience")
+	}
+
 	now := time.Now().Unix()
 	if tokenInfo.Exp < now {
 		return nil, errors.New("google token expired")
 	}
 
 	return &tokenInfo, nil
+}
+
+func (s *OAuthService) isValidGoogleAudience(aud string) bool {
+	if len(s.googleClientIDs) == 0 {
+		return true // skip validation if not configured
+	}
+	for _, id := range s.googleClientIDs {
+		if id == aud {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken string) (*appleTokenInfo, error) {
@@ -447,6 +469,18 @@ func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken string) (*a
 	aud := parsed.Audience()
 	if len(aud) == 0 {
 		return nil, errors.New("invalid apple token audience")
+	}
+	if s.appleBundleID != "" {
+		validAud := false
+		for _, a := range aud {
+			if a == s.appleBundleID {
+				validAud = true
+				break
+			}
+		}
+		if !validAud {
+			return nil, errors.New("invalid apple token audience")
+		}
 	}
 
 	exp := parsed.Expiration()

@@ -21,7 +21,7 @@ func createTestUser() *domain.User {
 		ID:            uuid.NewString(),
 		Email:         "test@example.com",
 		Name:          "Test User",
-		PasswordHash:  string(hash),
+		PasswordHash:  strPtr(string(hash)),
 		EmailVerified: false,
 	}
 }

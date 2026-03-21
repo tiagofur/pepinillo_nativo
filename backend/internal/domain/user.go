@@ -6,7 +6,7 @@ type User struct {
 	ID                    string     `json:"id" gorm:"type:uuid;primaryKey"`
 	Email                 string     `json:"email" gorm:"uniqueIndex;not null"`
 	Name                  string     `json:"name" gorm:"not null"`
-	PasswordHash          string     `json:"-" gorm:"not null"`
+	PasswordHash          *string    `json:"-"`
 	ImageURL              *string    `json:"imageUrl"`
 	BirthDate             *time.Time `json:"birthDate"`
 	SubscriptionTier      string     `json:"subscriptionTier" gorm:"default:free;not null"`

@@ -79,7 +79,7 @@ func TestProtectedBillingEndpoint_RequiresAndAcceptsJWT(t *testing.T) {
 	}
 
 	userRepo := newIntegrationUserRepo()
-	user := &domain.User{ID: "u1", Email: "billing-protected@test.com", Name: "U1", PasswordHash: "x", SubscriptionTier: "free"}
+	user := &domain.User{ID: "u1", Email: "billing-protected@test.com", Name: "U1", PasswordHash: ptrStr("x"), SubscriptionTier: "free"}
 	require.NoError(t, userRepo.Create(context.Background(), user))
 
 	expiry := time.Now().UTC().Add(30 * 24 * time.Hour)
@@ -149,3 +149,5 @@ func TestProtectedPushAndTaskSyncEndpoints_WithJWT(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, fiber.StatusOK, syncResp.StatusCode)
 }
+
+func ptrStr(s string) *string { return &s }

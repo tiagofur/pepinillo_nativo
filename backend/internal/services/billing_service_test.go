@@ -24,7 +24,7 @@ import (
 
 func TestBillingVerifyReceiptAndroidSuccess(t *testing.T) {
 	repo := newFakeUserRepo()
-	user := &domain.User{ID: "user-1", Email: "billing@test.com", Name: "Billing", PasswordHash: "x", SubscriptionTier: "free"}
+	user := &domain.User{ID: "user-1", Email: "billing@test.com", Name: "Billing", PasswordHash: strPtr("x"), SubscriptionTier: "free"}
 	if err := repo.Create(context.Background(), user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestBillingVerifyReceiptAndroidSuccess(t *testing.T) {
 
 func TestBillingVerifyReceiptIOSSandboxFallback(t *testing.T) {
 	repo := newFakeUserRepo()
-	user := &domain.User{ID: "user-2", Email: "ios@test.com", Name: "iOS", PasswordHash: "x", SubscriptionTier: "free"}
+	user := &domain.User{ID: "user-2", Email: "ios@test.com", Name: "iOS", PasswordHash: strPtr("x"), SubscriptionTier: "free"}
 	if err := repo.Create(context.Background(), user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestBillingVerifyReceiptIOSSandboxFallback(t *testing.T) {
 
 func TestBillingVerifyReceiptProviderNotConfigured(t *testing.T) {
 	repo := newFakeUserRepo()
-	user := &domain.User{ID: "user-3", Email: "cfg@test.com", Name: "Cfg", PasswordHash: "x", SubscriptionTier: "free"}
+	user := &domain.User{ID: "user-3", Email: "cfg@test.com", Name: "Cfg", PasswordHash: strPtr("x"), SubscriptionTier: "free"}
 	_ = repo.Create(context.Background(), user)
 
 	service := NewBillingService(repo, BillingConfig{})
@@ -134,7 +134,7 @@ func TestBillingVerifyReceiptProviderNotConfigured(t *testing.T) {
 
 func TestBillingVerifyReceiptAndroidServiceAccountOAuthSuccess(t *testing.T) {
 	repo := newFakeUserRepo()
-	user := &domain.User{ID: "user-4", Email: "oauth@test.com", Name: "OAuth", PasswordHash: "x", SubscriptionTier: "free"}
+	user := &domain.User{ID: "user-4", Email: "oauth@test.com", Name: "OAuth", PasswordHash: strPtr("x"), SubscriptionTier: "free"}
 	if err := repo.Create(context.Background(), user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestBillingVerifyReceiptAndroidServiceAccountOAuthSuccess(t *testing.T) {
 
 func TestBillingVerifyReceiptIOSAppStoreServerAPISuccess(t *testing.T) {
 	repo := newFakeUserRepo()
-	user := &domain.User{ID: "user-5", Email: "ios-jwt@test.com", Name: "iOS JWT", PasswordHash: "x", SubscriptionTier: "free"}
+	user := &domain.User{ID: "user-5", Email: "ios-jwt@test.com", Name: "iOS JWT", PasswordHash: strPtr("x"), SubscriptionTier: "free"}
 	if err := repo.Create(context.Background(), user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
@@ -268,7 +268,7 @@ func TestBillingVerifyReceiptIOSAppStoreServerAPISuccess(t *testing.T) {
 
 func TestBillingVerifyReceiptIOSAppStoreServerAPIInvalidSignature(t *testing.T) {
 	repo := newFakeUserRepo()
-	user := &domain.User{ID: "user-6", Email: "ios-jws-invalid@test.com", Name: "iOS JWS Invalid", PasswordHash: "x", SubscriptionTier: "free"}
+	user := &domain.User{ID: "user-6", Email: "ios-jws-invalid@test.com", Name: "iOS JWS Invalid", PasswordHash: strPtr("x"), SubscriptionTier: "free"}
 	if err := repo.Create(context.Background(), user); err != nil {
 		t.Fatalf("create user: %v", err)
 	}
