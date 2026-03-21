@@ -176,7 +176,7 @@ private actor SubscriptionManager {
 
             let result = try await Purchases.shared.purchase(package: package)
 
-            if result.customerInfo.entitlements["pro"]?.isActive == true {
+            if result.customerInfo.entitlements["premium"]?.isActive == true {
                 return .success(productID: productID)
             } else {
                 return .failed(message: "Purchase completed but entitlement not active")
@@ -243,8 +243,8 @@ private actor SubscriptionManager {
     }
 
     private func subscriptionStateFromCustomerInfo(_ customerInfo: CustomerInfo) -> SubscriptionState {
-        // Check if user has "pro" entitlement and it's active
-        if let proEntitlement = customerInfo.entitlements["pro"], proEntitlement.isActive {
+        // Check if user has "premium" entitlement and it's active
+        if let proEntitlement = customerInfo.entitlements["premium"], proEntitlement.isActive {
             let expiryDate = proEntitlement.expirationDate
 
             // For subscriptions, check grace period (RevenueCat handles this internally)

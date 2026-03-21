@@ -72,7 +72,7 @@ func IsProTier(tier string) bool {
 func NormalizeTier(tier string) string {
 	normalized := strings.ToLower(strings.TrimSpace(tier))
 	switch normalized {
-	case "pro", "pro_monthly", "pro-monthly":
+	case "premium", "pro", "pro_monthly", "pro-monthly":
 		return ProMonthly
 	case "pro_annual", "pro-annual":
 		return ProAnnual

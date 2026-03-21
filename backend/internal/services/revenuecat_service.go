@@ -272,10 +272,10 @@ func (s *RevenueCatService) handleNonRenewingPurchaseEvent(ctx context.Context, 
 
 // mapRevenueCatProductToTier maps RevenueCat product ID and expiration to our tier system
 func (s *RevenueCatService) mapRevenueCatProductToTier(event RevenueCatEvent) (string, *time.Time) {
-	// Check if "pro" entitlement is active
+	// Check if "premium" entitlement is active
 	hasProEntitlement := false
 	for _, ent := range event.EntitlementIDs {
-		if strings.ToLower(strings.TrimSpace(ent)) == "pro" {
+		if strings.ToLower(strings.TrimSpace(ent)) == "premium" {
 			hasProEntitlement = true
 			break
 		}
@@ -381,8 +381,8 @@ func (s *RevenueCatService) VerifyViaRevenueCat(ctx context.Context, userID stri
 
 // extractRevenueCatEntitlements determines the tier and expiration from a RevenueCat subscriber
 func (s *RevenueCatService) extractRevenueCatEntitlements(subscriber RevenueCatSubscriber) (string, *time.Time) {
-	// Check if "pro" entitlement is active
-	proEntitlement, hasProEntitlement := subscriber.Entitlements["pro"]
+	// Check if "premium" entitlement is active
+	proEntitlement, hasProEntitlement := subscriber.Entitlements["premium"]
 	if !hasProEntitlement {
 		return "free", nil
 	}
