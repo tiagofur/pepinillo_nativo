@@ -303,6 +303,26 @@ enum SchemaV2: VersionedSchema {
     }
 }
 
+// MARK: - Schema V3 (Add Sync Metadata to TaskItem)
+
+/// Adds sync metadata fields to TaskItem: syncId, serverId, isDirty, isDeleted, syncedAt.
+/// Lightweight migration — only adds new columns with defaults, no data transformation needed.
+enum SchemaV3: VersionedSchema {
+    static var versionIdentifier = Schema.Version(3, 0, 0)
+
+    static var models: [any PersistentModel.Type] {
+        [
+            TaskItem.self,
+            SubTask.self,
+            FocusSessionRecord.self,
+            DailyStats.self,
+            UserPreferences.self,
+            ProductivityReport.self,
+            CachedUser.self,
+        ]
+    }
+}
+
 // MARK: - Migration Plan
 
 /// Defines the ordered list of schema versions and migration stages between them.
@@ -313,6 +333,7 @@ enum PepinilloMigrationPlan: SchemaMigrationPlan {
         [
             SchemaV1.self,
             SchemaV2.self,
+            SchemaV3.self,
         ]
     }
 
@@ -320,6 +341,7 @@ enum PepinilloMigrationPlan: SchemaMigrationPlan {
     static var stages: [MigrationStage] {
         [
             .lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self),
+            .lightweight(fromVersion: SchemaV2.self, toVersion: SchemaV3.self),
         ]
     }
 }

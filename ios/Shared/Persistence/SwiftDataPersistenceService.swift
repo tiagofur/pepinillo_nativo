@@ -31,6 +31,7 @@ public final class SwiftDataPersistenceService {
             context.insert(task)
         }
         task.updatedAt = Date.now
+        task.isDirty = true  // Mark dirty for sync
         try context.save()
     }
 
@@ -44,6 +45,25 @@ public final class SwiftDataPersistenceService {
         }
     }
 
+    /// Soft-delete: marks the task as deleted and dirty for sync, instead of removing it.
+    /// Tasks that have never been synced (no serverId, no syncedAt) are hard-deleted immediately.
+    public func softDeleteTask(id: UUID) throws {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == id }
+        )
+        if let task = try context.fetch(descriptor).first {
+            if task.serverId == nil && task.syncedAt == nil {
+                // Never synced — safe to hard delete
+                context.delete(task)
+            } else {
+                task.isDeleted = true
+                task.isDirty = true
+                task.updatedAt = Date.now
+            }
+            try context.save()
+        }
+    }
+
     public func toggleTaskCompletion(id: UUID) throws {
         let descriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate { $0.id == id }
@@ -52,6 +72,7 @@ public final class SwiftDataPersistenceService {
             task.isCompleted.toggle()
             task.completedAt = task.isCompleted ? Date.now : nil
             task.updatedAt = Date.now
+            task.isDirty = true  // Mark dirty for sync
             try context.save()
         }
     }
@@ -71,6 +92,7 @@ public final class SwiftDataPersistenceService {
                 if result.wasCompleted && result.mode == .pomodoro {
                     task.completedPomodoros += 1
                     task.updatedAt = Date.now
+                    task.isDirty = true  // Mark dirty for sync
                 }
             }
         }
@@ -276,6 +298,7 @@ public final class SwiftDataPersistenceService {
         context.insert(subtask)
         subtask.parent = task
         task.updatedAt = Date.now
+        task.isDirty = true  // Mark dirty for sync
         try context.save()
         return subtask
     }
@@ -285,6 +308,7 @@ public final class SwiftDataPersistenceService {
         guard let subtask = try context.fetch(descriptor).first else { return }
         subtask.isCompleted.toggle()
         subtask.parent?.updatedAt = Date.now
+        subtask.parent?.isDirty = true  // Mark dirty for sync
         try context.save()
     }
 
@@ -292,6 +316,7 @@ public final class SwiftDataPersistenceService {
         let descriptor = FetchDescriptor<SubTask>(predicate: #Predicate { $0.id == id })
         if let subtask = try context.fetch(descriptor).first {
             subtask.parent?.updatedAt = Date.now
+            subtask.parent?.isDirty = true  // Mark dirty for sync
             context.delete(subtask)
             try context.save()
         }
@@ -336,6 +361,173 @@ public final class SwiftDataPersistenceService {
             context.delete(user)
         }
         try context.save()
+    }
+
+    // MARK: - Sync Operations
+
+    /// Fetch all tasks that have been modified locally and need to be synced.
+    public func fetchDirtyTasks() throws -> [TaskItem] {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.isDirty == true }
+        )
+        return try context.fetch(descriptor)
+    }
+
+    /// Mark tasks as synced (clean) after successful sync.
+    public func markTasksSynced(syncIds: [String], syncTimestamp: String) throws {
+        let now = Date.now
+        for syncId in syncIds {
+            let syncIdCopy = syncId
+            let descriptor = FetchDescriptor<TaskItem>(
+                predicate: #Predicate { $0.syncId == syncIdCopy }
+            )
+            if let task = try context.fetch(descriptor).first {
+                task.isDirty = false
+                task.syncedAt = now
+            }
+        }
+        // Purge soft-deleted tasks that have been synced
+        let deletedDescriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.isDeleted == true && $0.isDirty == false }
+        )
+        let deletedTasks = try context.fetch(deletedDescriptor)
+        for task in deletedTasks {
+            context.delete(task)
+        }
+        try context.save()
+    }
+
+    /// Insert or update a task from server data (last-write-wins merge).
+    public func upsertTaskFromServer(_ serverTask: TaskSyncDTO) throws {
+        let serverSyncId = serverTask.syncId
+        let syncIdDescriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.syncId == serverSyncId }
+        )
+        let localBySyncId = try context.fetch(syncIdDescriptor).first
+
+        // Also try to find by serverId
+        let serverIdValue = serverTask.id ?? 0
+        let serverIdDescriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.serverId == serverIdValue }
+        )
+        let localByServerId = serverIdValue > 0 ? try context.fetch(serverIdDescriptor).first : nil
+
+        let local = localBySyncId ?? localByServerId
+
+        if let local {
+            // Only update if local isn't dirty (server wins for clean tasks)
+            guard !local.isDirty else { return }
+
+            local.title = serverTask.title ?? local.title
+            local.notes = serverTask.description
+            local.isCompleted = serverTask.isFinished
+            local.completedAt = serverTask.isFinished ? (local.completedAt ?? Date.now) : nil
+            local.priority = TaskPriority(rawValue: serverTask.priority) ?? .none
+            local.energyLevel = Self.energyLevelFromString(serverTask.energyLevel)
+            local.estimatedPomodoros = serverTask.estimatedPomodoros
+            local.completedPomodoros = serverTask.completedPomodoros
+            local.recurrenceRule = serverTask.recurrenceRule
+            if let templateId = serverTask.recurringTemplateId {
+                local.recurringTemplateID = UUID(uuidString: templateId)
+            }
+            if let createdStr = serverTask.createdDate {
+                local.createdAt = ISO8601DateFormatter().date(from: createdStr) ?? local.createdAt
+            }
+            if let finishStr = serverTask.finishDate {
+                local.dueDate = ISO8601DateFormatter().date(from: finishStr)
+            } else {
+                local.dueDate = nil
+            }
+            local.serverId = serverTask.id
+            local.isDirty = false
+            local.syncedAt = Date.now
+            local.updatedAt = Date.now
+
+            // Update subtasks from server
+            if let serverSubTasks = serverTask.subTasks {
+                // Remove existing subtasks and replace with server data
+                for existing in local.subtasks {
+                    context.delete(existing)
+                }
+                local.subtasks = []
+                for (index, serverSub) in serverSubTasks.enumerated() {
+                    let sub = SubTask(title: serverSub.title ?? "", sortOrder: index)
+                    sub.isCompleted = serverSub.isFinished
+                    context.insert(sub)
+                    sub.parent = local
+                }
+            }
+        } else {
+            // New task from server — insert
+            let newTask = TaskItem(
+                title: serverTask.title ?? "",
+                notes: serverTask.description,
+                priority: TaskPriority(rawValue: serverTask.priority) ?? .none,
+                energyLevel: Self.energyLevelFromString(serverTask.energyLevel),
+                estimatedPomodoros: serverTask.estimatedPomodoros
+            )
+            newTask.syncId = serverTask.syncId
+            newTask.serverId = serverTask.id
+            newTask.isCompleted = serverTask.isFinished
+            newTask.completedAt = serverTask.isFinished ? Date.now : nil
+            newTask.completedPomodoros = serverTask.completedPomodoros
+            newTask.recurrenceRule = serverTask.recurrenceRule
+            newTask.isDeleted = serverTask.isDeleted
+            newTask.isDirty = false
+            newTask.syncedAt = Date.now
+            if let templateId = serverTask.recurringTemplateId {
+                newTask.recurringTemplateID = UUID(uuidString: templateId)
+            }
+            if let createdStr = serverTask.createdDate {
+                newTask.createdAt = ISO8601DateFormatter().date(from: createdStr) ?? Date.now
+            }
+            if let finishStr = serverTask.finishDate {
+                newTask.dueDate = ISO8601DateFormatter().date(from: finishStr)
+            }
+            context.insert(newTask)
+
+            // Add subtasks from server
+            if let serverSubTasks = serverTask.subTasks {
+                for (index, serverSub) in serverSubTasks.enumerated() {
+                    let sub = SubTask(title: serverSub.title ?? "", sortOrder: index)
+                    sub.isCompleted = serverSub.isFinished
+                    context.insert(sub)
+                    sub.parent = newTask
+                }
+            }
+        }
+        try context.save()
+    }
+
+    /// Permanently delete a task by syncId (used when server reports deletion).
+    public func purgeTaskBySyncId(_ syncId: String) throws {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.syncId == syncId }
+        )
+        if let task = try context.fetch(descriptor).first {
+            context.delete(task)
+            try context.save()
+        }
+    }
+
+    /// Get the last sync timestamp from UserDefaults.
+    public func getLastSyncTimestamp() -> String? {
+        UserDefaults.standard.string(forKey: "lastTaskSyncTimestamp")
+    }
+
+    /// Save the last sync timestamp to UserDefaults.
+    public func saveLastSyncTimestamp(_ timestamp: String) {
+        UserDefaults.standard.set(timestamp, forKey: "lastTaskSyncTimestamp")
+    }
+
+    /// Convert energy level string from server to EnergyLevel enum.
+    private static func energyLevelFromString(_ str: String?) -> EnergyLevel {
+        switch str?.lowercased() {
+        case "deep": return .deep
+        case "shallow", "light": return .shallow
+        case "admin": return .admin
+        default: return .deep
+        }
     }
 
     // MARK: - Private

@@ -129,6 +129,7 @@ struct AppFeature {
     @Dependency(\.signInWithAppleClient) var appleClient
     @Dependency(\.apiClient) var apiClient
     @Dependency(\.keychainClient) var keychain
+    @Dependency(\.syncClient) var syncClient
 
     private enum CancelID {
         case transactionListener
@@ -224,8 +225,8 @@ struct AppFeature {
                         let user = try? await persistence.fetchCachedUser()
                         await send(.cachedUserLoaded(user))
                     },
-                    // If tokens exist, try to refresh user profile from network
-                    .run { [keychain, apiClient, persistence] send in
+                    // If tokens exist, try to refresh user profile from network and sync tasks
+                    .run { [keychain, apiClient, persistence, syncClient] send in
                         guard await keychain.hasTokens() else { return }
                         do {
                             let apiUser = try await apiClient.getMe()
@@ -242,6 +243,8 @@ struct AppFeature {
                         } catch {
                             // Network error — use cached data silently
                         }
+                        // Sync tasks after profile refresh
+                        try? await syncClient.syncAll()
                     },
                     // Watch: listen for commands from the Watch
                     .run { [watchClient] send in
@@ -383,7 +386,10 @@ struct AppFeature {
                 state.displayName = user.name
                 state.userEmail = user.email
                 state.auth = nil  // dismiss auth sheet
-                return .none
+                // Sync tasks after successful email login
+                return .run { [syncClient] _ in
+                    try? await syncClient.syncAll()
+                }
 
             case .auth(.presented(.delegate(.guestModeSelected))):
                 state.auth = nil  // dismiss auth sheet
@@ -463,7 +469,7 @@ struct AppFeature {
                     // Try to authenticate with backend if identity token available
                     {
                         if let idToken = info.identityToken {
-                            return .run { [apiClient, keychain, persistence] send in
+                            return .run { [apiClient, keychain, persistence, syncClient] send in
                                 do {
                                     let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken))
                                     try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
@@ -477,6 +483,8 @@ struct AppFeature {
                                     )
                                     try? await persistence.saveCachedUser(dto)
                                     await send(.cachedUserLoaded(dto))
+                                    // Sync tasks after successful Apple Sign-In
+                                    try? await syncClient.syncAll()
                                 } catch {
                                     // Backend auth failed — continue with local-only Apple ID (existing behavior)
                                 }

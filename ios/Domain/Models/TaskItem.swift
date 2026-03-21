@@ -33,6 +33,13 @@ public final class TaskItem {
     public var completedPomodoros: Int
     public var preferredMode: String?  // FocusMode.rawValue — which mode works best for this task type
 
+    // MARK: - Sync Metadata
+    public var syncId: String
+    public var serverId: Int?
+    public var isDirty: Bool = true
+    public var isDeleted: Bool = false
+    public var syncedAt: Date?
+
     // MARK: - Recurrence
     public var recurrenceRule: String?       // iCalendar RRULE string, e.g. "FREQ=DAILY", "FREQ=WEEKLY;BYDAY=MO,WE,FR"
     public var nextOccurrence: Date?         // Next date this task should generate a new instance
@@ -57,6 +64,7 @@ public final class TaskItem {
         sortOrder: Int = 0
     ) {
         self.id = UUID()
+        self.syncId = UUID().uuidString
         self.createdAt = Date.now
         self.updatedAt = Date.now
         self.title = title
@@ -69,6 +77,8 @@ public final class TaskItem {
         self.completedPomodoros = 0
         self.isRecurringTemplate = false
         self.scheduledForToday = false
+        self.isDirty = true
+        self.isDeleted = false
         self.subtasks = []
         self.sessions = []
     }

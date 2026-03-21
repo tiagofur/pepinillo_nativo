@@ -80,6 +80,114 @@ public struct ImageUploadResponse: Codable, Sendable, Equatable {
     public let imageUrl: String
 }
 
+// MARK: - Task Sync DTOs
+
+public struct TaskSyncDTO: Codable, Sendable, Equatable {
+    public let id: Int?
+    public let syncId: String
+    public let userId: String?
+    public let title: String?
+    public let description: String?
+    public let energyLevel: String?
+    public let recurrenceRule: String?
+    public let recurringTemplateId: String?
+    public let createdDate: String?
+    public let finishDate: String?
+    public let isFinished: Bool
+    public let priority: Int
+    public let category: String?
+    public let trackingMode: String?
+    public let estimatedPomodoros: Int
+    public let completedPomodoros: Int
+    public let focusedSeconds: Int
+    public let focusedSecondsPomodoro: Int
+    public let focusedSecondsFlowtime: Int
+    public let focusedSecondsTimeblock: Int
+    public let focusedSecondsStopwatch: Int
+    public let activeSessionId: String?
+    public let isDeleted: Bool
+    public let subTasks: [SubTaskSyncDTO]?
+    public let updatedAt: String?
+
+    public init(
+        id: Int? = nil, syncId: String, userId: String? = nil,
+        title: String? = nil, description: String? = nil, energyLevel: String? = nil,
+        recurrenceRule: String? = nil, recurringTemplateId: String? = nil,
+        createdDate: String? = nil, finishDate: String? = nil,
+        isFinished: Bool = false, priority: Int = 0, category: String? = nil,
+        trackingMode: String? = nil, estimatedPomodoros: Int = 0, completedPomodoros: Int = 0,
+        focusedSeconds: Int = 0,
+        focusedSecondsPomodoro: Int = 0, focusedSecondsFlowtime: Int = 0,
+        focusedSecondsTimeblock: Int = 0, focusedSecondsStopwatch: Int = 0,
+        activeSessionId: String? = nil, isDeleted: Bool = false,
+        subTasks: [SubTaskSyncDTO]? = nil, updatedAt: String? = nil
+    ) {
+        self.id = id
+        self.syncId = syncId
+        self.userId = userId
+        self.title = title
+        self.description = description
+        self.energyLevel = energyLevel
+        self.recurrenceRule = recurrenceRule
+        self.recurringTemplateId = recurringTemplateId
+        self.createdDate = createdDate
+        self.finishDate = finishDate
+        self.isFinished = isFinished
+        self.priority = priority
+        self.category = category
+        self.trackingMode = trackingMode
+        self.estimatedPomodoros = estimatedPomodoros
+        self.completedPomodoros = completedPomodoros
+        self.focusedSeconds = focusedSeconds
+        self.focusedSecondsPomodoro = focusedSecondsPomodoro
+        self.focusedSecondsFlowtime = focusedSecondsFlowtime
+        self.focusedSecondsTimeblock = focusedSecondsTimeblock
+        self.focusedSecondsStopwatch = focusedSecondsStopwatch
+        self.activeSessionId = activeSessionId
+        self.isDeleted = isDeleted
+        self.subTasks = subTasks
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct SubTaskSyncDTO: Codable, Sendable, Equatable {
+    public let id: Int?
+    public let taskId: Int?
+    public let title: String?
+    public let isFinished: Bool
+
+    public init(id: Int? = nil, taskId: Int? = nil, title: String? = nil, isFinished: Bool = false) {
+        self.id = id
+        self.taskId = taskId
+        self.title = title
+        self.isFinished = isFinished
+    }
+}
+
+public struct TaskSyncRequest: Codable, Sendable, Equatable {
+    public let tasks: [TaskSyncDTO]
+    public let deletedSyncIds: [String]
+    public let lastSyncAt: String?
+
+    public init(tasks: [TaskSyncDTO], deletedSyncIds: [String], lastSyncAt: String? = nil) {
+        self.tasks = tasks
+        self.deletedSyncIds = deletedSyncIds
+        self.lastSyncAt = lastSyncAt
+    }
+}
+
+public struct TaskSyncResponse: Codable, Sendable, Equatable {
+    public let tasks: [TaskSyncDTO]
+    public let deletedSyncIds: [String]
+    public let syncTimestamp: String
+
+    public init(tasks: [TaskSyncDTO], deletedSyncIds: [String], syncTimestamp: String) {
+        self.tasks = tasks
+        self.deletedSyncIds = deletedSyncIds
+        self.syncTimestamp = syncTimestamp
+    }
+}
+
 // MARK: - Error
 
 struct APIErrorBody: Codable, Sendable {

@@ -30,6 +30,14 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
     public let completedAt: Date?
     public let createdAt: Date
 
+    // Sync metadata
+    public let syncId: String
+    public let serverId: Int?
+    public let isDirty: Bool
+    public let isDeleted: Bool
+    public let syncedAt: Date?
+    public let updatedAt: Date
+
     public init(
         id: UUID = UUID(),
         title: String,
@@ -47,7 +55,13 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         dueDate: Date? = nil,
         scheduledForToday: Bool = false,
         completedAt: Date? = nil,
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        syncId: String = UUID().uuidString,
+        serverId: Int? = nil,
+        isDirty: Bool = true,
+        isDeleted: Bool = false,
+        syncedAt: Date? = nil,
+        updatedAt: Date = .now
     ) {
         self.id = id
         self.title = title
@@ -66,6 +80,12 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         self.scheduledForToday = scheduledForToday
         self.completedAt = completedAt
         self.createdAt = createdAt
+        self.syncId = syncId
+        self.serverId = serverId
+        self.isDirty = isDirty
+        self.isDeleted = isDeleted
+        self.syncedAt = syncedAt
+        self.updatedAt = updatedAt
     }
 
     init(from task: TaskItem) {
@@ -87,6 +107,12 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         self.scheduledForToday = task.scheduledForToday
         self.completedAt = task.completedAt
         self.createdAt = task.createdAt
+        self.syncId = task.syncId
+        self.serverId = task.serverId
+        self.isDirty = task.isDirty
+        self.isDeleted = task.isDeleted
+        self.syncedAt = task.syncedAt
+        self.updatedAt = task.updatedAt
     }
 }
 
@@ -478,6 +504,14 @@ public struct PersistenceClient: Sendable {
 
     // Recurring Tasks
     public var generateRecurringTasks: @Sendable () async throws -> Void
+
+    // Sync Operations
+    public var fetchDirtyTasks: @Sendable () async throws -> [TaskItemDTO] = { [] }
+    public var markTasksSynced: @Sendable (_ syncIds: [String], _ syncTimestamp: String) async throws -> Void
+    public var upsertTaskFromServer: @Sendable (TaskSyncDTO) async throws -> Void
+    public var purgeTaskBySyncId: @Sendable (String) async throws -> Void
+    public var getLastSyncTimestamp: @Sendable () async throws -> String? = { nil }
+    public var saveLastSyncTimestamp: @Sendable (String) async throws -> Void
 }
 
 extension PersistenceClient: DependencyKey {
@@ -495,7 +529,8 @@ extension PersistenceClient: DependencyKey {
             fetchTasks: {
                 try await MainActor.run {
                     let tasks = try service.fetchTasks()
-                    return tasks.map { TaskItemDTO(from: $0) }
+                    // Filter out soft-deleted tasks
+                    return tasks.filter { !$0.isDeleted }.map { TaskItemDTO(from: $0) }
                 }
             },
             saveTask: { taskDTO in
@@ -517,6 +552,7 @@ extension PersistenceClient: DependencyKey {
                         existing.isRecurringTemplate = taskDTO.isRecurringTemplate
                         existing.dueDate = taskDTO.dueDate
                         existing.scheduledForToday = taskDTO.scheduledForToday
+                        existing.isDirty = true  // Mark dirty for sync
                         // Set nextOccurrence when recurrence rule is first applied
                         if taskDTO.isRecurringTemplate, existing.nextOccurrence == nil,
                            let rule = taskDTO.recurrenceRule,
@@ -542,6 +578,7 @@ extension PersistenceClient: DependencyKey {
                         newTask.isRecurringTemplate = taskDTO.isRecurringTemplate
                         newTask.dueDate = taskDTO.dueDate
                         newTask.scheduledForToday = taskDTO.scheduledForToday
+                        newTask.isDirty = true  // New tasks are dirty
                         if taskDTO.isRecurringTemplate,
                            let rule = taskDTO.recurrenceRule,
                            let preset = RecurrencePreset.from(rule: rule) {
@@ -552,7 +589,7 @@ extension PersistenceClient: DependencyKey {
                 }
             },
             deleteTask: { id in
-                try await MainActor.run { try service.deleteTask(id: id) }
+                try await MainActor.run { try service.softDeleteTask(id: id) }
             },
             fetchSubtasks: { taskID in
                 try await MainActor.run {
@@ -664,6 +701,37 @@ extension PersistenceClient: DependencyKey {
             },
             generateRecurringTasks: {
                 try await MainActor.run { try service.generateRecurringTasksIfNeeded() }
+            },
+            fetchDirtyTasks: {
+                try await MainActor.run {
+                    let tasks = try service.fetchDirtyTasks()
+                    return tasks.map { TaskItemDTO(from: $0) }
+                }
+            },
+            markTasksSynced: { syncIds, syncTimestamp in
+                try await MainActor.run {
+                    try service.markTasksSynced(syncIds: syncIds, syncTimestamp: syncTimestamp)
+                }
+            },
+            upsertTaskFromServer: { serverTask in
+                try await MainActor.run {
+                    try service.upsertTaskFromServer(serverTask)
+                }
+            },
+            purgeTaskBySyncId: { syncId in
+                try await MainActor.run {
+                    try service.purgeTaskBySyncId(syncId)
+                }
+            },
+            getLastSyncTimestamp: {
+                try await MainActor.run {
+                    service.getLastSyncTimestamp()
+                }
+            },
+            saveLastSyncTimestamp: { timestamp in
+                try await MainActor.run {
+                    service.saveLastSyncTimestamp(timestamp)
+                }
             }
         )
     }
