@@ -35,27 +35,27 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import dev.creapolis.pepinillo.core.auth.AuthStore
-import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import dagger.hilt.android.EntryPointAccessors
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun ProfileScreen(
     modifier: Modifier = Modifier,
+    viewModel: ProfileViewModel = hiltViewModel(),
     onBackClick: () -> Unit = {},
     onSignInClick: () -> Unit = {},
     onSignOutClick: () -> Unit = {},
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -122,14 +122,14 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Guest User",
+                        text = uiState.user?.name ?: "Guest User",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Sign in to sync your data",
+                        text = if (uiState.isLoggedIn) (uiState.user?.email ?: "") else "Sign in to sync your data",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -161,19 +161,19 @@ fun ProfileScreen(
         ) {
             StatMiniCard(
                 icon = Icons.Rounded.Timer,
-                value = "42h",
+                value = "${uiState.totalFocusTimeMinutes / 60}h",
                 label = "Focus time",
                 modifier = Modifier.weight(1f),
             )
             StatMiniCard(
                 icon = Icons.Rounded.TaskAlt,
-                value = "128",
+                value = "${uiState.totalSessions}",
                 label = "Sessions",
                 modifier = Modifier.weight(1f),
             )
             StatMiniCard(
                 icon = Icons.Rounded.LocalFireDepartment,
-                value = "12",
+                value = "${uiState.bestStreak}",
                 label = "Best streak",
                 modifier = Modifier.weight(1f),
             )
@@ -237,16 +237,25 @@ fun ProfileScreen(
             ActionRow(
                 icon = Icons.Rounded.Backup,
                 label = "Backup & Sync",
-                subtitle = "Sign in to enable cloud sync",
-                onClick = onSignInClick,
+                subtitle = if (uiState.isLoggedIn) "Cloud sync is active" else "Sign in to enable cloud sync",
+                onClick = if (uiState.isLoggedIn) { {} } else onSignInClick,
             )
             ProfileDivider()
-            ActionRow(
-                icon = Icons.AutoMirrored.Rounded.ExitToApp,
-                label = "Sign In",
-                subtitle = "Access your data on any device",
-                onClick = onSignInClick,
-            )
+            if (uiState.isLoggedIn) {
+                ActionRow(
+                    icon = Icons.AutoMirrored.Rounded.ExitToApp,
+                    label = "Sign Out",
+                    subtitle = uiState.user?.email ?: "",
+                    onClick = onSignOutClick,
+                )
+            } else {
+                ActionRow(
+                    icon = Icons.AutoMirrored.Rounded.ExitToApp,
+                    label = "Sign In",
+                    subtitle = "Access your data on any device",
+                    onClick = onSignInClick,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -440,10 +449,5 @@ private fun ActionRow(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun ProfileScreenPreview() {
-    PepinilloTheme {
-        ProfileScreen()
-    }
-}
+// Preview removed: ProfileScreen now requires a HiltViewModel.
+// Use interactive preview or run on device/emulator to test.
