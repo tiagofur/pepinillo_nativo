@@ -168,7 +168,7 @@ struct AppFeature {
                         let prefs = try await persistence.fetchPreferences()
                         // Use Apple User ID if available, otherwise nil for anonymous
                         let userID = prefs.appleUserID
-                        await subscriptionClient.configure("YOUR_REVENUECAT_API_KEY", userID)
+                        await subscriptionClient.configure("appl_xnChlVXXtUFhusIfJyNrNDcMGLj", userID)
                     },
                     // Onboarding check + Apple credential state check
                     .run { [appleClient] send in
