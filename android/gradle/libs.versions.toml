@@ -32,6 +32,7 @@ protolayout = "1.2.1"
 wearComplications = "1.2.1"
 concurrentFutures = "1.2.0"
 mockk = "1.13.13"
+coil = "2.6.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -103,6 +104,9 @@ androidx-protolayout = { group = "androidx.wear.protolayout", name = "protolayou
 androidx-protolayout-material = { group = "androidx.wear.protolayout", name = "protolayout-material", version.ref = "protolayout" }
 androidx-protolayout-expression = { group = "androidx.wear.protolayout", name = "protolayout-expression", version.ref = "protolayout" }
 
+
+# Coil (Image Loading)
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 # Testing
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }

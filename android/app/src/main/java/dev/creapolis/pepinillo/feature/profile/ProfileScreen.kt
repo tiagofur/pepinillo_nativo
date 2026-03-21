@@ -41,10 +41,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 
 @Composable
 fun ProfileScreen(
@@ -112,12 +115,22 @@ fun ProfileScreen(
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(36.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
+                    val imageUrl = uiState.user?.imageUrl
+                    if (imageUrl != null) {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = "Profile photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Rounded.Person,
+                            contentDescription = null,
+                            modifier = Modifier.size(36.dp),
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -134,7 +147,7 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                IconButton(onClick = { }) {
+                IconButton(onClick = { viewModel.showEditSheet() }) {
                     Icon(
                         imageVector = Icons.Rounded.Edit,
                         contentDescription = "Edit profile",
@@ -273,6 +286,16 @@ fun ProfileScreen(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+
+    if (uiState.isEditSheetVisible) {
+        val context = LocalContext.current
+        EditProfileSheet(
+            uiState = uiState,
+            onDismiss = { viewModel.hideEditSheet() },
+            onSave = { name, birthDate -> viewModel.saveProfile(name, birthDate) },
+            onPhotoSelected = { uri -> viewModel.uploadPhoto(context, uri) },
+        )
     }
 }
 

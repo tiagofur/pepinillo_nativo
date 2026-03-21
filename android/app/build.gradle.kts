@@ -97,6 +97,9 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
 
+    // Coil (Image Loading)
+    implementation(libs.coil.compose)
+
     // Google Play Billing
     implementation(libs.google.billing.ktx)
 

@@ -155,6 +155,11 @@ data class UpdateProfileRequest(
 )
 
 @Serializable
+data class ImageUploadResponse(
+    val imageUrl: String,
+)
+
+@Serializable
 data class ErrorResponse(
     val error: String = "",
 )

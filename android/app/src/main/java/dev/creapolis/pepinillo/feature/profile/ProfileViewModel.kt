@@ -1,9 +1,12 @@
 package dev.creapolis.pepinillo.feature.profile
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.UpdateProfileRequest
 import dev.creapolis.pepinillo.data.local.entity.UserEntity
 import dev.creapolis.pepinillo.data.repository.SessionRepository
@@ -24,6 +27,12 @@ data class ProfileUiState(
     val totalSessions: Int = 0,
     val bestStreak: Int = 0,
     val error: String? = null,
+    val isEditSheetVisible: Boolean = false,
+    val editName: String = "",
+    val editBirthDate: String? = null,
+    val editImageUrl: String? = null,
+    val isUploading: Boolean = false,
+    val isSaving: Boolean = false,
 )
 
 @HiltViewModel
@@ -112,6 +121,68 @@ class ProfileViewModel @Inject constructor(
             apiClient.logout(refreshToken)
             userRepository.clearCache()
             authStore.clearAll()
+        }
+    }
+
+    fun showEditSheet() {
+        val user = _uiState.value.user
+        _uiState.update {
+            it.copy(
+                isEditSheetVisible = true,
+                editName = user?.name ?: "",
+                editBirthDate = user?.birthDate,
+                editImageUrl = user?.imageUrl,
+            )
+        }
+    }
+
+    fun hideEditSheet() {
+        _uiState.update { it.copy(isEditSheetVisible = false) }
+    }
+
+    fun saveProfile(name: String, birthDate: String?) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSaving = true) }
+            val result = userRepository.updateProfile(
+                UpdateProfileRequest(name = name, birthDate = birthDate)
+            )
+            _uiState.update {
+                it.copy(
+                    isSaving = false,
+                    isEditSheetVisible = !result.isSuccess,
+                    error = result.exceptionOrNull()?.message,
+                )
+            }
+        }
+    }
+
+    fun uploadPhoto(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isUploading = true) }
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri) ?: return@launch
+                val bytes = inputStream.readBytes()
+                inputStream.close()
+                val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                when (val result = apiClient.uploadProfileImage(bytes, mimeType)) {
+                    is NetworkResult.Success -> {
+                        _uiState.update {
+                            it.copy(
+                                isUploading = false,
+                                editImageUrl = result.data.imageUrl,
+                            )
+                        }
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.update { it.copy(isUploading = false, error = "Upload failed: ${result.message}") }
+                    }
+                    is NetworkResult.NetworkError -> {
+                        _uiState.update { it.copy(isUploading = false, error = "No internet connection") }
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isUploading = false, error = "Failed to read image") }
+            }
         }
     }
 
