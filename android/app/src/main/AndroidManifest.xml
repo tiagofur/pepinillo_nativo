@@ -18,17 +18,12 @@
         android:name=".PepinilloApplication"
         android:supportsRtl="true"
         android:theme="@style/Theme.Pepinillo">
-        <!-- Remove WorkManager auto-init (pulled transitively by navigation) -->
+        <!-- Remove default WorkManager initializer (app uses on-demand init) -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
-            tools:node="merge">
-            <meta-data
-                android:name="androidx.work.impl.WorkManagerInitializer"
-                android:value="androidx.startup"
-                tools:node="remove" />
-        </provider>
+            tools:node="remove" />
 
         <activity
             android:name=".MainActivity"
@@ -57,7 +52,8 @@
             android:enabled="true"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.google.android.gms.wearable.BIND_LISTENER" />
+                <action android:name="com.google.android.gms.wearable.MESSAGE_RECEIVED" />
+                <data android:scheme="wear" android:host="*" />
             </intent-filter>
         </service>
 

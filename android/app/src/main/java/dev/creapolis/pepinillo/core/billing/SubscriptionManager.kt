@@ -4,7 +4,12 @@ import android.app.Activity
 import android.content.Context
 import android.util.Log
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.purchaseWith
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -53,7 +58,7 @@ class SubscriptionManager @Inject constructor(
     private fun initializeRevenueCat() {
         if (isInitialized) return
         try {
-            Purchases.configure(context, REVENUECAT_API_KEY)
+            Purchases.configure(PurchasesConfiguration.Builder(context, REVENUECAT_API_KEY).build())
             Log.d(TAG, "RevenueCat initialized")
             isInitialized = true
             checkEntitlements()
@@ -74,18 +79,16 @@ class SubscriptionManager @Inject constructor(
 
         suspendCancellableCoroutine { cont ->
             try {
-                Purchases.sharedInstance.getOfferings { offerings, error ->
-                    if (error != null) {
+                Purchases.sharedInstance.getOfferingsWith(
+                    onError = { error ->
                         Log.e(TAG, "Failed to load offerings: ${error.message}")
                         if (cont.isActive) cont.resume(Unit)
-                        return@getOfferings
-                    }
-
-                    offerings?.let { off ->
+                    },
+                    onSuccess = { offerings ->
                         val allProducts = mutableListOf<ProductInfo>()
 
                         // Iterate through all offerings and their packages
-                        off.all.values.forEach { offering ->
+                        offerings.all.values.forEach { offering ->
                             offering.availablePackages.forEach { pkg ->
                                 val product = pkg.product
                                 allProducts.add(
@@ -93,11 +96,11 @@ class SubscriptionManager @Inject constructor(
                                         productId = product.id,
                                         title = product.title,
                                         description = product.description,
-                                        formattedPrice = product.priceString,
-                                        priceMicros = (product.price.toPlainString().toDoubleOrNull()?.times(1_000_000) ?: 0.0).toLong(),
-                                        billingPeriod = when {
-                                            product.subscriptionPeriod?.contains("P1M") == true -> "P1M"
-                                            product.subscriptionPeriod?.contains("P1Y") == true -> "P1Y"
+                                        formattedPrice = product.price.formatted,
+                                        priceMicros = (product.price.amountMicros),
+                                        billingPeriod = when (product.period?.unit?.name) {
+                                            "MONTH" -> "P1M"
+                                            "YEAR" -> "P1Y"
                                             else -> null
                                         },
                                         `package` = pkg,
@@ -108,10 +111,9 @@ class SubscriptionManager @Inject constructor(
 
                         _products.value = allProducts
                         Log.d(TAG, "Loaded ${allProducts.size} products")
-                    }
-
-                    if (cont.isActive) cont.resume(Unit)
-                }
+                        if (cont.isActive) cont.resume(Unit)
+                    },
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Exception loading offerings: ${e.message}", e)
                 if (cont.isActive) cont.resume(Unit)
@@ -122,15 +124,14 @@ class SubscriptionManager @Inject constructor(
     fun launchPurchaseFlow(activity: Activity, product: ProductInfo) {
         scope.launch {
             suspendCancellableCoroutine { cont ->
-                Purchases.sharedInstance.purchasePackage(
-                    activity = activity,
-                    aPackage = product.`package`,
-                    onSuccess = { _, _ ->
+                Purchases.sharedInstance.purchaseWith(
+                    purchaseParams = PurchaseParams.Builder(activity, product.`package`).build(),
+                    onSuccess = { _, customerInfo ->
                         Log.d(TAG, "Purchase successful for ${product.productId}")
-                        checkExistingPurchases()
+                        scope.launch { checkExistingPurchases() }
                         if (cont.isActive) cont.resume(Unit)
                     },
-                    onError = { error, _ ->
+                    onError = { error, userCancelled ->
                         Log.e(TAG, "Purchase failed: ${error.message}")
                         if (cont.isActive) cont.resume(Unit)
                     },
@@ -142,18 +143,18 @@ class SubscriptionManager @Inject constructor(
     private fun checkEntitlements() {
         scope.launch {
             suspendCancellableCoroutine { cont ->
-                Purchases.sharedInstance.getCustomerInfo { info, error ->
-                    if (error != null) {
+                Purchases.sharedInstance.getCustomerInfoWith(
+                    onError = { error ->
                         Log.e(TAG, "Failed to get customer info: ${error.message}")
                         if (cont.isActive) cont.resume(Unit)
-                        return@getCustomerInfo
-                    }
-
-                    info?.let { customerInfo ->
+                    },
+                    onSuccess = { customerInfo ->
                         val entitlement = customerInfo.entitlements[ENTITLEMENT_ID]
                         if (entitlement?.isActive == true) {
                             // Find which product is active
-                            val activeProductId = customerInfo.allPurchasedProductIds.firstOrNull { productId ->
+                            val activeProductId = customerInfo.activeSubscriptions.firstOrNull { productId ->
+                                productId in PepinilloProducts.ALL_IDS
+                            } ?: customerInfo.nonSubscriptionTransactions.map { it.productIdentifier }.firstOrNull { productId ->
                                 productId in PepinilloProducts.ALL_IDS
                             }
                             if (activeProductId != null) {
@@ -168,10 +169,10 @@ class SubscriptionManager @Inject constructor(
                             _subscriptionState.value = SubscriptionState()
                             Log.d(TAG, "No active premium entitlement")
                         }
-                    }
 
-                    if (cont.isActive) cont.resume(Unit)
-                }
+                        if (cont.isActive) cont.resume(Unit)
+                    },
+                )
             }
         }
     }

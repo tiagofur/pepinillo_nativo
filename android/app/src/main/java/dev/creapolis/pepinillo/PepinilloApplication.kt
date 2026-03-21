@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfiguration
 import dagger.hilt.android.HiltAndroidApp
 import dev.creapolis.pepinillo.data.sync.SyncWorker
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
@@ -26,7 +27,7 @@ class PepinilloApplication : Application(), Configuration.Provider {
         super.onCreate()
 
         // Initialize RevenueCat
-        Purchases.configure(this, REVENUECAT_API_KEY)
+        Purchases.configure(PurchasesConfiguration.Builder(this, REVENUECAT_API_KEY).build())
 
         SyncWorker.schedule(this)
         WidgetRefreshWorker.schedule(this)
