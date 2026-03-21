@@ -331,3 +331,66 @@ Play Billing ----> Paywall UI ----> Feature gating
 
 **Buffer total de riesgo:** +3-5 semanas por plataforma
 **Timeline realista con riesgo:** iOS Sep-Nov 2026, Android Q1-Q2 2027
+
+---
+
+## 9. Fase Unificada: Backend, Auth, Sync & User Profile
+
+**Objetivo:** Unificar ambas plataformas (iOS + Android) bajo un solo backend para autenticación, sincronización cloud, soporte multi-dispositivo, suscripciones cross-platform y perfiles de usuario.
+
+**Prerequisito:** Ambas apps deben estar funcionales en sus respectivas plataformas (post Fase 2 de cada una como mínimo).
+
+### Sub-fases (en orden)
+
+| # | Sub-fase | Descripción | Dependencias | Estimación |
+|---|----------|-------------|--------------|------------|
+| 1 | **Despliegue del Backend** | Desplegar backend Go en hosting cloud (Railway/Fly.io). Setup de PostgreSQL + Redis. Configurar dominio, SSL, monitoreo y health checks. | Ninguna (inicio de la fase) | 15-20h |
+| 2 | **OAuth Social Login (Backend)** | Agregar endpoints de verificación para Google Sign-In y Sign In with Apple. Migración del modelo de usuario (google_id, apple_id). Soporte para vinculación de cuentas (account linking). | Sub-fase 1 completada | 25-30h |
+| 3 | **Google Sign-In en Android** | Integrar Credential Manager para Google one-tap sign-in. Conectar al endpoint OAuth del backend. Actualizar UI de LoginScreen. | Sub-fase 2 completada | 20-25h |
+| 4 | **Integración Backend en iOS** | Crear cliente API (URLSession + JWT). Conectar Sign In with Apple al backend (POST /auth/apple). Ruta de migración para usuarios existentes de CloudKit. | Sub-fase 2 completada | 25-30h |
+| 5 | **Sync Engine v2** | Sincronización bidireccional en tiempo real vía WebSocket (el backend ya tiene /ws). Resolución de conflictos mejorada. Ambas plataformas sincronizan tareas, sesiones, estadísticas y preferencias a través del backend. | Sub-fases 3 y 4 completadas | 40-50h |
+| 6 | **Suscripciones Cross-Platform** | Verificación server-side de recibos (ambas stores). Backend como fuente de verdad del estado de suscripción. El usuario paga una vez, tiene Pro en todos sus dispositivos. | Sub-fase 5 completada | 30-35h |
+| 7 | **Perfil de Usuario** | Pantalla de perfil en iOS (SwiftUI) y Android (Compose). Muestra: avatar, nombre, email, tier de suscripción, cuentas vinculadas, estadísticas (racha, horas, sesiones, tareas, miembro desde). Editar perfil, gestionar suscripción, cerrar sesión, eliminar cuenta. | Sub-fases 3 y 4 completadas | 25-30h |
+
+**Estimación total:** ~180-220h
+
+### Grafo de Dependencias
+
+```
+Sub-fase 1: Despliegue Backend
+        |
+Sub-fase 2: OAuth Social Login (Backend)
+        |
+   +---------+---------+
+   |                   |
+Sub-fase 3:         Sub-fase 4:
+Google Sign-In      iOS Backend
+(Android)           Integration
+   |                   |
+   +---+-------+-------+
+       |               |
+Sub-fase 5:         Sub-fase 7:
+Sync Engine v2      User Profile
+       |            (puede iniciar después de 3+4)
+Sub-fase 6:
+Suscripciones
+Cross-Platform
+```
+
+**Notas clave:**
+- Sub-fase 1 bloquea todas las demás (se necesita backend corriendo)
+- Sub-fase 2 bloquea 3 y 4 (se necesitan endpoints OAuth)
+- Sub-fases 3 y 4 pueden ejecutarse en paralelo después de la sub-fase 2
+- Sub-fase 5 necesita 3 y 4 completadas (ambas plataformas conectadas)
+- Sub-fase 6 necesita 5 completada (sync funcionando)
+- Sub-fase 7 puede iniciar después de 3 y 4 (datos de perfil disponibles vía /users/me)
+
+### Riesgos Específicos de esta Fase
+
+| Riesgo | Impacto | Mitigación |
+|--------|---------|------------|
+| Migración de usuarios CloudKit existentes en iOS | +1-2 semanas | Diseñar ruta de migración gradual; mantener CloudKit como fallback temporal |
+| Latencia de WebSocket en regiones LATAM | Degradación de UX | Elegir región de hosting cercana (São Paulo/Virginia); fallback a polling HTTP |
+| Verificación de recibos cross-platform (Apple + Google) | +1 semana | Usar librerías probadas server-side; testing exhaustivo con sandbox de ambas stores |
+| Account linking con cuentas duplicadas | Pérdida de datos | Flujo de merge manual con confirmación del usuario; nunca eliminar datos automáticamente |
+| Costos de infraestructura cloud | Operacional | Empezar con tier gratuito/económico de Railway; escalar solo con tracción comprobada |
