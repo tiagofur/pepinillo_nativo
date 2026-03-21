@@ -73,6 +73,7 @@ type Config struct {
 	GoogleClientIDs                        string
 	AppleBundleID                          string
 	RevenueCatAPIKey                       string
+	RevenueCatSecretKey                    string // Secret API Key (V2) for server-to-server validation
 	RevenueCatWebhookAuthToken             string
 	RevenueCatAPIBaseURL                   string
 }
@@ -145,6 +146,7 @@ func Load() (*Config, error) {
 		GoogleClientIDs:                        getEnv("GOOGLE_CLIENT_IDS", ""),
 		AppleBundleID:                          getEnv("APPLE_BUNDLE_ID", ""),
 		RevenueCatAPIKey:                       getEnv("REVENUECAT_API_KEY", ""),
+		RevenueCatSecretKey:                    getEnv("REVENUECAT_SECRET_KEY", ""),
 		RevenueCatWebhookAuthToken:             getEnv("REVENUECAT_WEBHOOK_AUTH_TOKEN", ""),
 		RevenueCatAPIBaseURL:                   getEnv("REVENUECAT_API_BASE_URL", "https://api.revenuecat.com/v1"),
 	}

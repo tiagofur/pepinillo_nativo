@@ -73,11 +73,22 @@
 - 3 idiomas: Ingles, Espanol, Portugues
 
 ### Billing ✅
-- RevenueCat SDK v5+ (wrapping StoreKit 2) con 3 productos (monthly, annual, lifetime)
-- Entitlement: `pro` via RevenueCat Offerings/Packages
-- User identification integrated with Sign in with Apple flow
-- Grace period support via RevenueCat entitlements
-- Paywall implementado
+- **RevenueCat iOS:** Fully configured
+  - SDK v5+ (wrapping StoreKit 2) con 3 productos (monthly, annual, lifetime)
+  - iOS Public API Key: `appl_xnChlVXXtUFhusIfJyNrNDcMGLj` (configured in code)
+  - Entitlement: `pro` via RevenueCat Offerings/Packages
+  - User identification integrated with Sign in with Apple flow
+  - Grace period support via RevenueCat entitlements
+  - Paywall implementado
+- **RevenueCat Backend:** Secret API key created
+  - Secret API Key (V2): `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (label: "Pepinillo Backend")
+  - Environment variable: `REVENUECAT_SECRET_KEY` (loaded in `backend/internal/config/config.go`)
+  - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented)
+  - Webhook URL pending deployment: `https://{YOUR_DOMAIN}/api/v1/webhooks/revenuecat`
+- **RevenueCat Dashboard:** Products and entitlements
+  - iOS products imported (monthly, annual, lifetime)
+  - Entitlements linked (premium/pro)
+  - S2S notifications configured
 
 ### Pendiente iOS
 

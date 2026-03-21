@@ -1,613 +1,888 @@
 # Guía de Configuración de RevenueCat para Pepinillo
 
-Guía paso a paso para configurar App Store Connect y el dashboard de RevenueCat para monetizar la app Pepinillo (timer de enfoque profundo).
+**Para:** Tiago, desarrollador de Pepinillo
+**Fecha:** Marzo 2026
+**Idioma:** Español
+**Objetivo:** Completar la configuración manual de RevenueCat y App Store Connect para monetización iOS
+
+---
+
+## Resumen Ejecutivo
+
+La integración de RevenueCat está parcialmente completa. Este documento guía los pasos manuales necesarios para:
+
+1. Generar y configurar credenciales de App Store Connect
+2. Registrar la app iOS en RevenueCat
+3. Vincular productos y entitlements
+4. Configurar precios y metadata
+5. Activar facturación y webhooks
+6. Testing en Sandbox
+
+**Tiempo estimado:** 45-60 minutos
+**Requisitos:** Acceso administrativo a App Store Connect y RevenueCat
+
+---
+
+## Estado Actual
+
+### Ya Completado
+
+| Componente | Estado |
+|-----------|--------|
+| SDK RevenueCat iOS (v5+) | ✅ Integrado vía SPM |
+| SubscriptionClient.swift | ✅ Reescrito |
+| PaywallFeature/PaywallView | ✅ Adaptado |
+| AppFeature (inicialización) | ✅ Configura RC al lanzar |
+| Backend Go (webhook endpoint) | ✅ POST /api/v1/webhooks/revenuecat |
+| Backend Go (cliente API RC) | ✅ Implementado |
+| Entitlement identifier | ✅ "premium" (alineado) |
+| Product IDs en código | ✅ com.pepinillo.app.pro.* |
+| Subscription Group (ASC) | ✅ "Pepinillo Pro" (ID: 21984205) |
+| Products (ASC) | ✅ Creados, falta metadata |
+| Build 1.0.0 (build 2) | ✅ Subido a ASC |
+
+### Falta Completar
+
+| Componente | Paso |
+|-----------|------|
+| In-App Purchase Key (.p8) | PASO 1 |
+| App iOS en RevenueCat | PASO 2 |
+| API Key en código | PASO 3 |
+| Productos en RevenueCat | PASO 4 |
+| Entitlement vinculado | PASO 5 |
+| Offering actualizado | PASO 6 |
+| Metadata (precios, descripciones) | PASO 7 |
+| Billing Grace Period | PASO 8 |
+| Secret API Key (backend) | PASO 9 |
+| Webhook configurado | PASO 10 |
+| Testing en Sandbox | PASO 11 |
+
+---
+
+## PASO 1: Generar In-App Purchase Key en App Store Connect
+
+Esta es la credencial criptográfica que RevenueCat usará para acceder a tu información de productos en App Store Connect.
+
+### Instrucciones
+
+1. **Abre App Store Connect:**
+   - Ve a https://appstoreconnect.apple.com/access/integrations/api/subs
+   - Esto te lleva directamente a "In-App Purchase API Keys"
+
+2. **Genera una nueva clave:**
+   - Haz clic en el botón **"Generate In-App Purchase Key"** (botón azul)
+
+3. **Configura la clave:**
+   - **Name:** `RevenueCat` (o tu nombre preferido)
+   - **Active:** Deja activado (recomendado)
+
+4. **Descarga el archivo .p8:**
+   - Una vez generada, haz clic en el botón de descarga
+   - Guarda el archivo de forma segura: `AuthKey_XXXXXXXXXX.p8`
+   - ⚠️ **Importante:** Este archivo solo se puede descargar una vez. Si lo pierdes, deberás generar una nueva clave.
+
+5. **Anota dos valores cruciales:**
+   - **Key ID:** Se muestra en la página (ej: `ABCD1234KL`)
+   - **Issuer ID:** Aparece en la parte superior de la página "API Keys" (ej: `69a6de7e-...`, formato UUID)
+   - Guarda estos en un lugar seguro (bloc de notas, gestor de contraseñas, etc.)
+
+### Referencia Visual
+
+```
+[App Store Connect] → Integrations & API → In-App Purchase Keys
+                     └─ Generate In-App Purchase Key
+                        ├─ Name: RevenueCat
+                        ├─ Key ID: XXXXXXXXXX (anota)
+                        ├─ Issuer ID: UUID (anota)
+                        └─ Download .p8 file (guarda)
+```
+
+---
+
+## PASO 2: Completar Configuración de App iOS en RevenueCat
+
+RevenueCat necesita conectarse a tu app iOS en App Store Connect usando la clave generada en PASO 1.
+
+### Instrucciones
+
+1. **Ve a RevenueCat dashboard:**
+   - URL: https://dashboard.revenuecat.com/
+   - Proyecto: "Pepinillo" (d317b1b6)
+
+2. **Accede al formulario de nueva app iOS:**
+   - Ya debería tener un formulario iniciado con:
+     - Name: `Pepinillo iOS`
+     - Bundle ID: `com.pepinillo.app`
+   - Si no lo ves, ve a **Settings > Apps** y haz clic en "Add new app" → iOS
+
+3. **Sube la clave .p8:**
+   - Busca el campo "In-App Purchase Key" o "Upload Key"
+   - Selecciona el archivo `AuthKey_XXXXXXXXXX.p8` descargado en PASO 1
+   - El archivo se cargará automáticamente
+
+4. **Ingresa los identificadores:**
+   - **Key ID:** Pega el Key ID anotado en PASO 1
+   - **Issuer ID:** Pega el Issuer ID (UUID) anotado en PASO 1
+
+5. **Opcional - Apple Small Business Program:**
+   - Si tu cuenta está inscrita en el programa de pequeñas empresas:
+     - ☑️ Marca "Apple Small Business Program" (comisión 15% en lugar de 30%)
+   - Si no, deja desmarcado
+
+6. **Guarda los cambios:**
+   - Haz clic en **"Save changes"** (botón azul)
+   - RevenueCat validará la conexión con Apple
+   - Espera a que se complete (puede tardar 10-30 segundos)
+
+7. **Anota la API Key pública de iOS:**
+   - Una vez guardada, aparecerá en la página:
+     - **Public API Key (iOS):** `xxxxxxxxxxxxxxxx` (larga cadena)
+   - Cópiala y guárdala — la necesitarás en PASO 3
+
+### Qué Hace RevenueCat
+
+Ahora RevenueCat tiene autorización para:
+- Leer tus productos de App Store Connect (monthly, annual, lifetime)
+- Ver precios y configuración
+- Detectar cambios automáticamente
+
+---
+
+## PASO 3: Actualizar API Key en el Código iOS
+
+La app necesita conocer el Public API Key de RevenueCat para enviar requests.
+
+### Instrucciones
+
+1. **Abre tu proyecto Xcode:**
+   - Ruta típica: `ios/Domain/Clients/SubscriptionClient.swift`
+   - O busca donde inicializas RevenueCat (probablemente en AppFeature)
+
+2. **Busca el placeholder de API Key:**
+   ```swift
+   let apiKey = "YOUR_REVENUECAT_API_KEY"  // ← busca esto
+   ```
+   o similar
+
+3. **Reemplaza con la clave de PASO 2:**
+   ```swift
+   let apiKey = "xxxxxxxxxxxxxxxx"  // ← API Key pública iOS de RevenueCat
+   ```
+
+4. **Medida de seguridad (IMPORTANTE):**
+   - ⚠️ **NO commits esta clave a git**
+   - La clave pública es segura incluir en el código compilado
+   - Pero buena práctica: usa `.xcconfig` o variables de entorno en production
+   - Por ahora, está bien incluirla en código si es la clave pública
+
+5. **Verifica la configuración de Purchases:**
+   ```swift
+   Purchases.configure(withAPIKey: apiKey)
+   ```
+   Debería estar llamado en AppFeature o app delegate
+
+### Alternativa Segura (Recomendado para Production)
+
+Si prefieres no tener la clave en código:
+
+1. Crea un archivo `.xcconfig` en `ios/`:
+   ```
+   // Pepinillo.xcconfig
+   REVENUECAT_API_KEY = xxxxxxxxxxxxxxxx
+   ```
+
+2. En Xcode: Build Settings → Set this .xcconfig
+3. En código:
+   ```swift
+   let apiKey = Bundle.main.infoDictionary?["REVENUECAT_API_KEY"] as? String
+   ```
+
+Por ahora, la opción simple (reemplazar directamente) está bien para development.
+
+---
+
+## PASO 4: Registrar Productos iOS en RevenueCat
+
+RevenueCat necesita conocer los 3 productos iOS. Actualmente están en App Store Connect, pero no están registrados en RevenueCat.
+
+### Instrucciones
+
+1. **Ve a RevenueCat Product Catalog:**
+   - Dashboard → **Products** (o Product Catalog)
+
+2. **Haz clic en "Add new product" (o "+"):**
+
+3. **Crea el primer producto (Monthly):**
+   - **Platform:** App Store (iOS)
+   - **Product ID:** `com.pepinillo.app.pro.monthly`
+   - **Type:** Subscription
+   - Haz clic en "Save" o "Create"
+
+4. **Crea el segundo producto (Annual):**
+   - **Platform:** App Store (iOS)
+   - **Product ID:** `com.pepinillo.app.pro.annual`
+   - **Type:** Subscription
+   - Haz clic en "Save"
+
+5. **Crea el tercero (Lifetime):**
+   - **Platform:** App Store (iOS)
+   - **Product ID:** `com.pepinillo.app.pro.lifetime`
+   - **Type:** Non-Consumable (o Non-Subscription)
+   - Haz clic en "Save"
+
+### Resultado Esperado
+
+En Product Catalog > Products deberías ver:
+
+```
+✅ com.pepinillo.app.pro.monthly (App Store)
+✅ com.pepinillo.app.pro.annual (App Store)
+✅ com.pepinillo.app.pro.lifetime (App Store)
+```
+
+Más abajo también deberías ver los 2 productos Android antiguos (de Flutter):
+```
+✅ month_premium:month (Google Play)
+✅ year_premium:year (Google Play)
+```
+
+---
+
+## PASO 5: Vincular Productos al Entitlement "premium"
+
+Los entitlements son características lógicas (ej: "premium"). Los productos son SKUs físicas. Necesitamos vincularlos.
+
+### Instrucciones
+
+1. **Ve a RevenueCat Entitlements:**
+   - Dashboard → **Entitlements** (o Product Catalog > Entitlements)
+
+2. **Abre el entitlement "premium":**
+   - Debería existir (creado previamente)
+   - Haz clic para editarlo
+
+3. **Vincula los productos iOS:**
+   - Busca la sección "Products" o "Link Products"
+   - Selecciona / agrega:
+     - ☑️ `com.pepinillo.app.pro.monthly`
+     - ☑️ `com.pepinillo.app.pro.annual`
+     - ☑️ `com.pepinillo.app.pro.lifetime`
+   - Deja los productos Android existentes (no los quites)
+
+4. **Guarda:**
+   - Haz clic en "Save" o "Update"
+
+### Resultado Esperado
+
+El entitlement "premium" ahora vincula:
+
+```
+Entitlement: premium
+├─ com.pepinillo.app.pro.monthly (App Store)
+├─ com.pepinillo.app.pro.annual (App Store)
+├─ com.pepinillo.app.pro.lifetime (App Store)
+├─ month_premium:month (Google Play) [antiguo]
+└─ year_premium:year (Google Play) [antiguo]
+```
+
+Cuando un usuario compre cualquiera de estos productos, obtendrá el entitlement "premium".
+
+---
+
+## PASO 6: Actualizar el Offering "default"
+
+Los Offerings son colecciones de productos mostrados juntos. El offering "default" es el principal.
+
+### Instrucciones
+
+1. **Ve a RevenueCat Offerings:**
+   - Dashboard → **Offerings** (o Product Catalog > Offerings)
+
+2. **Abre "default":**
+   - Debería existir (creado previamente)
+   - Verás 2 packages antiguas: `$rc_monthly` y `$rc_annual`
+
+3. **Actualiza $rc_monthly:**
+   - Haz clic en editar ($rc_monthly)
+   - Busca "Products" o "Platforms"
+   - **Añade** (no reemplaces):
+     - ☑️ `com.pepinillo.app.pro.monthly` (App Store - nuevo)
+   - Deja el producto Android antiguo si está
+   - Guarda
+
+4. **Actualiza $rc_annual:**
+   - Haz clic en editar ($rc_annual)
+   - Busca "Products"
+   - **Añade** (no reemplaces):
+     - ☑️ `com.pepinillo.app.pro.annual` (App Store - nuevo)
+   - Deja el producto Android antiguo
+   - Guarda
+
+5. **Crea una nueva package para lifetime (si no existe):**
+   - Haz clic en "Add new package"
+   - **ID:** `$rc_lifetime`
+   - **Type:** One-time purchase (o Non-subscription)
+   - **Platforms:**
+     - ☑️ `com.pepinillo.app.pro.lifetime` (App Store)
+   - Guarda
+
+### Resultado Esperado
+
+Offering "default" ahora contiene:
+
+```
+$rc_monthly
+├─ com.pepinillo.app.pro.monthly (App Store) ← nuevo
+└─ month_premium:month (Google Play)
+
+$rc_annual
+├─ com.pepinillo.app.pro.annual (App Store) ← nuevo
+└─ year_premium:year (Google Play)
+
+$rc_lifetime (nuevo)
+└─ com.pepinillo.app.pro.lifetime (App Store)
+```
+
+---
+
+## PASO 7: Completar Metadata en App Store Connect
+
+Ahora los productos existen en RevenueCat, pero App Store Connect necesita precios, descripciones e imágenes de review.
+
+### 7A. Suscripción Monthly
+
+1. **Ve a App Store Connect:**
+   - Selecciona app "Pepinillo — Timer de Enfoque"
+   - **In-App Purchases > Subscriptions > Pepinillo Pro > Pro Monthly**
+
+2. **Configura precios:**
+   - Haz clic en "Pricing"
+   - **USD:** $3.99 / mes
+   - **México (MXN):** $79 / mes (ajusta según tu estrategia LATAM)
+   - **Argentina (ARS):** $799 / mes
+   - **Otros países:** Usa la opción "Automatic" si prefieres
+   - Guarda
+
+3. **Añade localización (Español):**
+   - Haz clic en "Localization"
+   - Selecciona "Español" (o agrégalo si no está)
+   - **Display Name:** `Pepinillo Pro Mensual`
+   - **Description:** `Acceso ilimitado a todas las características premium de Pepinillo. Renovación automática cada mes.`
+   - Guarda
+
+4. **Añade localización (Inglés, si no está):**
+   - **Display Name:** `Pepinillo Pro Monthly`
+   - **Description:** `Unlimited access to all Pepinillo premium features. Auto-renews monthly.`
+   - Guarda
+
+5. **Añade localización (Portugués Brasileño, opcional):**
+   - **Display Name:** `Pepinillo Pro Mensal`
+   - **Description:** `Acesso ilimitado a todos os recursos premium do Pepinillo. Renovação automática mensalmente.`
+   - Guarda
+
+6. **Screenshot de Review:**
+   - Haz clic en "Review Information"
+   - Sube una captura de pantalla mostrando:
+     - Pantalla del paywall o confirmación de compra
+     - O interfaz de la app con features premium habilitados
+   - 1080×1920 px (portrait, iPhone)
+   - Formato: JPG o PNG
+
+7. **Estado:**
+   - Asegúrate de que el estado es "Ready to Submit" o "Approved"
+   - No debe tener advertencias en rojo
+
+### 7B. Suscripción Annual
+
+Repite los pasos de 7A para **Pro Annual**, pero con:
+
+- **USD:** $24.99 / año
+- **México (MXN):** $450 / año (aproximadamente)
+- **Argentina (ARS):** $4500 / año
+- **Display Name:** `Pepinillo Pro Anual` / `Pepinillo Pro Annual`
+- **Description:** `Acceso ilimitado durante un año. Renovación automática anualmente.` / `Unlimited access for one year. Auto-renews annually.`
+
+### 7C. In-App Purchase Lifetime
+
+1. **Ve a App Store Connect:**
+   - **In-App Purchases > Non-Consumable > Pro Lifetime**
+
+2. **Configura precios:**
+   - **USD:** $49.99 (compra única)
+   - **México (MXN):** $999 (único)
+   - **Argentina (ARS):** $9999 (único)
+   - Guarda
+
+3. **Localización (Español):**
+   - **Display Name:** `Pepinillo Pro de por Vida`
+   - **Description:** `Acceso de por vida a todas las características premium de Pepinillo. Compra única, sin renovaciones.`
+   - Guarda
+
+4. **Localización (Inglés):**
+   - **Display Name:** `Pepinillo Pro Lifetime`
+   - **Description:** `Lifetime access to all Pepinillo premium features. One-time purchase, no renewals.`
+   - Guarda
+
+5. **Screenshot:**
+   - Sube captura de pantalla similar a las suscripciones
+   - Mismo formato: 1080×1920 px, JPG/PNG
+
+### Sugerencias de Precios
+
+Si necesitas ajustar los precios, considera:
+
+| Región | Monthly | Annual | Lifetime |
+|--------|---------|--------|----------|
+| **USA** | $3.99 | $24.99 | $49.99 |
+| **México** | $79 MXN | $450 MXN | $999 MXN |
+| **Argentina** | $799 ARS | $4500 ARS | $9999 ARS |
+| **España** | €3,99 | €24,99 | €49,99 |
+| **Colombia** | $16.900 COP | $99.900 COP | $199.900 COP |
+
+App Store Connect tiene opciones de "Automatic" pricing que ajusta por país automáticamente.
+
+---
+
+## PASO 8: Activar Billing Grace Period
+
+El Billing Grace Period permite que los usuarios tengan acceso durante X días si su pago falla.
+
+### Instrucciones
+
+1. **Ve a App Store Connect:**
+   - Selecciona app "Pepinillo"
+   - **General > Billing Settings** (o busca "Subscription Settings")
+
+2. **Busca "Billing Grace Period":**
+   - Si no está configurado, verás un botón "Set Up Billing Grace Period"
+   - Haz clic en él
+
+3. **Activa el período:**
+   - ☑️ Enable Billing Grace Period
+
+4. **Configura duración (recomendado):**
+   - **Para Monthly:** 6 días (da tiempo pero no demasiado)
+   - **Para Annual:** 16 días (más generoso para compras anuales)
+   - O usa el mismo valor para ambas (ej: 7 días)
+
+5. **Guarda:**
+   - Haz clic en "Save" o "Done"
+
+### Ventajas
+
+- Los usuarios reciben notificación de pago fallido
+- Mantienen acceso mientras solucionan el pago
+- Reduce churning (cancelaciones)
+- Apple incrementa el retry automático después del período
+
+---
+
+## PASO 9: Crear Secret API Key en RevenueCat (para Backend)
+
+Tu backend Go necesita una clave privada para validar entitlements y recibir webhooks sin confiar solo en los datos del cliente.
+
+### Credenciales de RevenueCat
+
+**iOS Public API Key (ya configurada):**
+```
+appl_xnChlVXXtUFhusIfJyNrNDcMGLj
+```
+
+**Secret API Key (V2) para Backend:**
+```
+sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ
+Label: "Pepinillo Backend"
+```
+
+### Instrucciones
+
+1. **Ve a RevenueCat API Keys:**
+   - Dashboard → **Settings > API Keys** (o Settings > Developer)
+   - Busca sección "Secret API Keys" o "Server Tokens"
+
+2. **Crea una nueva Secret Key (si aún no existe):**
+   - Haz clic en "New secret API key" o "Create new key"
+
+3. **Configura:**
+   - **Label:** `Backend Server` (o Backend Go)
+   - **Description:** `Production server for Pepinillo, validates entitlements and receives webhooks`
+   - Deja las opciones por defecto
+
+4. **Copia la clave:**
+   - Una vez creada, aparecerá una larga cadena
+   - ⚠️ **Cópiala inmediatamente** — solo se muestra una vez
+   - Guárdala en un gestor de secretos o .env
+
+5. **Añade a tu backend:**
+   - En tu servidor Go, configura la variable de entorno `REVENUECAT_SECRET_KEY`:
+     ```bash
+     export REVENUECAT_SECRET_KEY="sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ"
+     ```
+   - O en tu archivo `.env`:
+     ```
+     REVENUECAT_SECRET_KEY=sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ
+     ```
+   - En el código Go, se carga vía `config.Load()` en `backend/internal/config/config.go`
+
+### Cómo Usar en Backend
+
+En tu código Go (`billing_service.go` o similar):
+
+```go
+// La clave se carga en config.go:
+// RevenueCatSecretKey string (cargada de env REVENUECAT_SECRET_KEY)
+
+// Para validar que un usuario tiene el entitlement "premium"
+func CheckEntitlement(userID string, cfg *config.Config) error {
+    // Llamada a RevenueCat API con cfg.RevenueCatSecretKey
+    // https://docs.revenuecat.com/docs/getting-started
+}
+```
+
+---
+
+## PASO 10: Configurar Webhook en RevenueCat
+
+RevenueCat enviará eventos (compra, renovación, cancelación) a tu backend para actualizar la base de datos.
+
+### Endpoint del Webhook (ya implementado)
+
+**URL del endpoint en el backend:**
+```
+POST /api/v1/webhooks/revenuecat
+```
+
+**Webhook URL completa (pending deployment):**
+```
+https://{YOUR_DOMAIN}/api/v1/webhooks/revenuecat
+```
+
+### 10A. Generar Webhook Secret (Opcional pero Recomendado)
+
+1. **En tu backend:**
+   - Genera un token secreto aleatorio (ej: UUID v4, 32+ caracteres)
+   - Guárdalo como `REVENUECAT_WEBHOOK_AUTH_TOKEN`
+   ```bash
+   REVENUECAT_WEBHOOK_AUTH_TOKEN="sk_webhook_xxxxxxxxxxxxxxxxxxxxxxxx"
+   ```
+
+2. **En tu código, valida el header:**
+   ```go
+   // Valida el header X-RevenueCat-Signature (si RevenueCat lo envía)
+   // O personaliza según tu implementación de autorización
+   signature := r.Header.Get("X-RevenueCat-Signature")
+   expectedSig := hmac(WEBHOOK_AUTH_TOKEN, payload)
+   if signature != expectedSig {
+       http.Error(w, "Unauthorized", http.StatusUnauthorized)
+       return
+   }
+   ```
+   - Nota: La variable se carga en `config.go` como `RevenueCatWebhookAuthToken`
+
+### 10B. Configurar Webhook en RevenueCat
+
+1. **Ve a RevenueCat Integrations:**
+   - Dashboard → **Integrations** (o Integrations > Webhooks)
+
+2. **Añade nuevo Webhook:**
+   - Haz clic en "Add webhook" o "New integration"
+   - Selecciona "Webhook" o "Custom integration"
+
+3. **Configura URL y headers:**
+   - **Webhook URL:** `https://{YOUR_DOMAIN}/api/v1/webhooks/revenuecat`
+     - ⚠️ Reemplaza `{YOUR_DOMAIN}` con tu dominio real (ej: `api.pepinillo.app`)
+     - Debe ser HTTPS (no HTTP)
+     - Ejemplo: `https://api.pepinillo.app/api/v1/webhooks/revenuecat`
+
+4. **Opcionales - Headers de autorización:**
+   - **Header name:** `Authorization`
+   - **Header value:** `Bearer YOUR_WEBHOOK_SECRET`
+   - O personaliza según tu implementación
+
+5. **Selecciona eventos:**
+   - ☑️ **INITIAL_PURCHASE** (primer pago)
+   - ☑️ **RENEWAL** (renovación de suscripción)
+   - ☑️ **CANCELLATION** (cancelación)
+   - ☑️ **EXPIRATION** (expiración de suscripción)
+   - ☑️ **BILLING_ISSUE_DETECTED** (problema de pago)
+   - ☑️ **SUBSCRIBER_ALIAS** (vinculación de cuentas)
+   - ☑️ **PRODUCT_CHANGE** (cambio de plan)
+
+6. **Guarda:**
+   - Haz clic en "Save" o "Create webhook"
+
+### 10C. Estructura del Webhook en tu Backend
+
+Tu endpoint debe procesar JSON como este:
+
+```json
+{
+  "event": {
+    "type": "INITIAL_PURCHASE",
+    "timestamp": "2026-03-21T14:30:00Z"
+  },
+  "data": {
+    "subscriber": {
+      "subscriber_id": "rc_subscriber_123",
+      "original_app_user_id": "user_123_or_email",
+      "entitlements": {
+        "premium": {
+          "expires_date": "2026-04-21T14:30:00Z"
+        }
+      }
+    }
+  }
+}
+```
+
+Pseudocódigo Go:
+
+```go
+func HandleRevenueCatWebhook(w http.ResponseWriter, r *http.Request) {
+    // 1. Valida firma (si implementaste)
+    // 2. Parsea JSON
+    // 3. Actualiza DB del usuario (set entitlement "premium", expires_date)
+    // 4. Retorna HTTP 200 para confirmar
+}
+```
+
+---
+
+## PASO 11: Testing en Sandbox
+
+Antes de lanzar a production, prueba todo en Apple's Sandbox testing environment.
+
+### 11A. Crear Sandbox Tester en App Store Connect
+
+1. **Ve a Usuarios y Acceso:**
+   - App Store Connect → **Users and Access > Sandbox > Sandbox Testers**
+   - (O: Settings > Testers > Sandbox)
+
+2. **Haz clic en "+" para crear nuevo tester:**
+   - **First Name:** `Test`
+   - **Last Name:** `User`
+   - **Email:** `test+sandbox-pepinillo@example.com` (use a real email you control)
+   - **Password:** Genera una contraseña fuerte (mínimo 8 caracteres, mayúscula, número)
+   - **Date of Birth:** Cualquier fecha válida (ej: 01/01/1990)
+   - Haz clic en "Save"
+
+3. **Anota las credenciales:**
+   ```
+   Email: test+sandbox-pepinillo@example.com
+   Password: [tu contraseña segura]
+   ```
+
+### 11B. Configurar Device para Testing
+
+En el **dispositivo de prueba** (iPhone físico o simulador):
+
+1. **Cierra la sesión de tu cuenta personal:**
+   - Settings → [Tu nombre] → Sign Out
+
+2. **Inicia sesión con la cuenta de Sandbox:**
+   - Settings → [Tu nombre]
+   - Sign in with Apple ID
+   - Email: `test+sandbox-pepinillo@example.com`
+   - Password: [la contraseña de sandbox]
+
+3. **Habilita "Sandbox Data" en RevenueCat:**
+   - En tu app iOS, busca un toggle o setting para "Sandbox mode"
+   - O en RevenueCat dashboard, ve a Settings > Testing y copia el Sandbox API key
+   - Úsala en lugar de la clave de production para testing
+
+### 11C. Prueba la Compra
+
+1. **Abre tu app en el dispositivo:**
+   - Debería estar compilada con el API key de RevenueCat
+
+2. **Navega al paywall:**
+   - Haz clic en "Upgrade", "Pro", o donde sea el paywall
+
+3. **Selecciona un producto (ej: Monthly):**
+   - Haz clic en "Subscribe"
+
+4. **Confirma la compra:**
+   - App Store te pedirá confirmar con Face ID / Touch ID / Contraseña
+   - Usa las credenciales del Sandbox tester
+   - ⚠️ **No se cobrará dinero real** — es simulado en Sandbox
+
+5. **Espera confirmación:**
+   - Tu app debería recibir la confirmación de RevenueCat
+   - El entitlement "premium" debería activarse
+   - Verifica en la UI que el acceso premium está habilitado
+
+### 11D. Prueba Restaurar Compras
+
+1. **En el paywall o settings, busca "Restore Purchases":**
+   - Haz clic en "Restore"
+   - RevenueCat debería recuperar tu compra anterior
+
+2. **Verifica:**
+   - El entitlement "premium" sigue activo
+   - Sin necesidad de pagar de nuevo
+
+### 11E. Verifica el Webhook (si tienes servidor)
+
+1. **En tu backend, log de webhooks:**
+   ```go
+   log.Printf("Received webhook event: %+v", event)
+   ```
+
+2. **Realiza una compra de Sandbox:**
+   - Deberías ver el evento `INITIAL_PURCHASE` en los logs
+   - Verifica que la base de datos se actualiza con `entitlement: premium`
+
+3. **Monitorea en RevenueCat:**
+   - Dashboard → Subscribers → Busca tu Sandbox tester ID
+   - Deberías ver eventos y entitlements activos
+
+### 11F. Prueba Cancelación
+
+1. **En App Store Settings:**
+   - Settings → [Sandbox User] → Subscriptions → Pepinillo Pro Monthly
+   - Haz clic en "Cancel subscription"
+
+2. **Verifica:**
+   - En RevenueCat, recibirás evento `CANCELLATION`
+   - Tu backend debería actualizar la base de datos (set entitlement "premium" expired)
+   - En la app, el acceso premium se desactiva
+
+### Checklist de Testing
+
+- [ ] Sandbox tester creado y credenciales anotadas
+- [ ] App compila sin errores
+- [ ] API key de RevenueCat está en código (o .xcconfig)
+- [ ] Paywall se muestra correctamente
+- [ ] Compra de Monthly funciona (sin cobro real)
+- [ ] Compra de Annual funciona (sin cobro real)
+- [ ] Compra de Lifetime funciona (sin cobro real)
+- [ ] Entitlement "premium" se activa después de compra
+- [ ] Restore Purchases funciona
+- [ ] Cancelación se refleja en la app
+- [ ] Webhook llega al backend (verificar logs)
+- [ ] Base de datos se actualiza con entitlements
+
+---
+
+## VERIFICACIÓN FINAL
+
+Antes de lanzar a App Store (TestFlight → Production), verifica este checklist:
+
+### App Store Connect
+
+- [ ] Producto Monthly: metadata (nombre, descripción, precio) completo
+- [ ] Producto Annual: metadata completo
+- [ ] Producto Lifetime: metadata completo
+- [ ] Billing Grace Period habilitado (6-16 días)
+- [ ] Build 1.0.0 (build 2) subido y en estado "Ready to Submit"
+- [ ] Screenshots de review añadidos para cada IAP
+- [ ] No hay advertencias rojas en la página del producto
+
+### RevenueCat Dashboard
+
+- [ ] Proyecto "Pepinillo" (d317b1b6) visible
+- [ ] App iOS "Pepinillo iOS" (com.pepinillo.app) creada
+- [ ] Productos iOS registrados:
+  - [ ] com.pepinillo.app.pro.monthly
+  - [ ] com.pepinillo.app.pro.annual
+  - [ ] com.pepinillo.app.pro.lifetime
+- [ ] Entitlement "premium" vinculado a los 3 productos iOS
+- [ ] Offering "default" actualizado con packages $rc_monthly, $rc_annual, $rc_lifetime
+- [ ] Public API key iOS configurada en app settings
+- [ ] Secret API key creada para backend
+- [ ] Webhook configurado y apuntando a tu servidor
+
+### Código iOS
+
+- [ ] SubscriptionClient.swift usa Public API key correcto
+- [ ] AppFeature inicializa Purchases.configure(...) al lanzar
+- [ ] PaywallView muestra los 3 productos correctamente
+- [ ] Entitlement check usa identifier "premium"
+- [ ] No hay tokens hardcodeados en git (usar .xcconfig si es necesario)
+
+### Backend Go
+
+- [ ] Endpoint POST /api/v1/webhooks/revenuecat implementado
+- [ ] Valida firma de webhook (si configuraste)
+- [ ] Parsea JSON y actualiza base de datos
+- [ ] Retorna HTTP 200 en éxito
+- [ ] Secret API key guardado en variable de entorno
+- [ ] Logs disponibles para debugging
+
+### Testing
+
+- [ ] Compra de Sandbox funciona (Monthly, Annual, Lifetime)
+- [ ] Entitlements se activan en la app
+- [ ] Cancelación actualiza entitlements
+- [ ] Restore Purchases funciona
+- [ ] Webhook recibido en backend (verificar logs)
+- [ ] Base de datos muestra entitlements activos para usuario
+
+### Documentación y Secretos
+
+- [ ] Key ID (.p8), Issuer ID guardados de forma segura
+- [ ] REVENUECAT_SECRET_KEY configurado en servidor
+- [ ] REVENUECAT_WEBHOOK_SECRET configurado (si aplica)
+- [ ] Sandbox tester credentials almacenadas de forma segura
+- [ ] No hay secretos en git (revisar .gitignore)
+
+---
+
+## Próximos Pasos (Post-Setup)
+
+Una vez que este setup esté completo y probado en Sandbox:
+
+1. **Envía la app a TestFlight:**
+   - En App Store Connect, haz clic en "Submit for Review"
+   - Asegúrate de que todos los IAPs están aprobados
+
+2. **Prueba en TestFlight:**
+   - Invita Sandbox testers a TestFlight build
+   - Verifica compras nuevamente en ambiente Sandbox
+
+3. **Monitorea en Production (después del lanzamiento):**
+   - RevenueCat Dashboard → Subscribers
+   - Verifica que los eventos se registran
+   - Observa métricas de conversion, retention, etc.
+
+4. **Soporta múltiples plataformas:**
+   - Cuando hagas parity en Android/Wear OS/watchOS, sigue el mismo proceso
+   - Crea apps Android/Wear OS en RevenueCat
+   - Vincula productos a los mismos entitlements
+
+---
+
+## Contacto y Soporte
+
+- **RevenueCat Docs:** https://docs.revenuecat.com/docs/getting-started
+- **App Store Connect Help:** https://support.apple.com/app-store-connect
+- **RevenueCat Support:** support@revenuecat.com
+
+---
+
+## Notas Importantes
+
+### Seguridad
+
+- ⚠️ **Nunca commits secret keys a git**
+- ⚠️ **Guarda el archivo .p8 en lugar seguro** (descargable solo una vez)
+- ⚠️ **Usa variables de entorno o .xcconfig para production**
+
+### Testing
+
+- Siempre prueba en Sandbox antes de production
+- Las compras de Sandbox nunca cobran dinero
+- Usa cuentas de Sandbox testers separadas
+
+### Monitoreo
+
+- RevenueCat dashboard muestra:
+  - Eventos en tiempo real (compras, renovaciones, cancelaciones)
+  - Métricas de MRR, churn, LTV
+  - Validación de entitlements
+- Revisa logs de webhook regularmente para detectar errores
+
+---
 
 **Última actualización:** Marzo 2026
-**Plataforma:** iOS
-**Desarrollador:** Tiago
-
----
-
-## Parte 1: Configuración en Apple Developer / App Store Connect
-
-### 1.1 Crear App ID (si no existe)
-
-1. Ve a **Apple Developer** → **Certificates, Identifiers & Profiles**
-2. Selecciona **Identifiers** → haz clic en **+** para crear uno nuevo
-3. Elige **App IDs** y continúa
-4. Selecciona **App**
-5. Completa los campos:
-   - **Bundle ID:** `com.pepinillo.app`
-   - **Description:** Pepinillo Focus Timer
-6. En la sección **Capabilities**, habilita:
-   - **In-App Purchase**
-   - **App Groups** (opcional, si usas compartición de datos)
-7. Haz clic en **Continue** y **Register**
-
-### 1.2 Crear Productos de Suscripción en App Store Connect
-
-#### Paso 1: Crear el Grupo de Suscripción
-
-1. Ve a **App Store Connect** → Accede con tu cuenta de Apple Developer
-2. Selecciona la app **Pepinillo**
-3. Ve a **Monetización** → **Suscripciones**
-4. Haz clic en **+** para crear un nuevo grupo
-5. Nombre del grupo: **Pepinillo Pro**
-6. Haz clic en **Create**
-
-#### Paso 2: Crear los Productos
-
-Crea estos 3 productos dentro del grupo "Pepinillo Pro":
-
-##### Producto 1: Suscripción Mensual
-
-- **Nombre del Producto:** Pepinillo Pro Monthly
-- **ID del Producto:** `com.pepinillo.app.pro.monthly`
-- **Tipo:** Auto-renovable
-- **Duración de la suscripción:** 1 mes
-- **Precio (Estados Unidos):** $3.99 USD/mes
-- **Precio (LATAM):** $1.99 USD/mes
-- **Período de prueba:** Opcional (7 días recomendado)
-
-##### Producto 2: Suscripción Anual
-
-- **Nombre del Producto:** Pepinillo Pro Annual
-- **ID del Producto:** `com.pepinillo.app.pro.annual`
-- **Tipo:** Auto-renovable
-- **Duración de la suscripción:** 1 año
-- **Precio (Estados Unidos):** $24.99 USD/año
-- **Precio (LATAM):** $12.99 USD/año
-- **Período de prueba:** Opcional (7 días recomendado)
-
-##### Producto 3: Acceso de Por Vida
-
-- **Nombre del Producto:** Pepinillo Pro Lifetime
-- **ID del Producto:** `com.pepinillo.app.pro.lifetime`
-- **Tipo:** No-consumible
-- **Precio (Estados Unidos):** $49.99 USD
-- **Precio (LATAM):** $29.99 USD
-
-#### Paso 3: Agregar Localizaciones
-
-Para cada producto:
-
-1. Haz clic en **Localización**
-2. Haz clic en **+** para agregar idiomas
-3. Agrega:
-   - **English (US)**
-   - **Spanish (Spain)** (`es`)
-   - **Portuguese (Brazil)** (`pt-BR`)
-
-Ejemplo de textos localizados:
-
-**Inglés:**
-- Título: "Pepinillo Pro Monthly"
-- Descripción: "Unlock unlimited focus sessions, advanced analytics, and premium themes."
-
-**Español:**
-- Título: "Pepinillo Pro Mensual"
-- Descripción: "Desbloquea sesiones de enfoque ilimitadas, análisis avanzados y temas premium."
-
-**Portugués:**
-- Título: "Pepinillo Pro Mensal"
-- Descripción: "Desbloqueie sessões de foco ilimitadas, análises avançadas e temas premium."
-
-### 1.3 Crear Clave API de App Store Connect (para RevenueCat)
-
-Esta clave permite que RevenueCat acceda a los datos de tus transacciones.
-
-1. En **App Store Connect**, ve a **Usuarios y Acceso** → **Integraciones**
-2. Haz clic en **+** junto a "App Store Connect API"
-3. Dale un nombre: `RevenueCat API Key`
-4. Selecciona el rol: **Admin** o **App Manager**
-5. Haz clic en **Generate**
-6. Se descargará automáticamente un archivo `.p8`
-   - **Guarda este archivo en un lugar seguro**
-   - Necesitarás:
-     - El contenido del archivo `.p8`
-     - El **Key ID** (visible en App Store Connect)
-     - El **Issuer ID** (visible en App Store Connect)
-
-### 1.4 Crear Shared Secret (Secreto Compartido)
-
-Este secreto se utiliza como respaldo para validación de recibos heredada.
-
-1. En **App Store Connect**, ve a **Pepinillo** → **Información de la App**
-2. Desplázate hasta **App-Specific Shared Secret**
-3. Haz clic en **Generate** (si no existe)
-4. Copia y guarda el secreto compartido generado
-
----
-
-## Parte 2: Configuración del Dashboard de RevenueCat
-
-### 2.1 Crear Cuenta en RevenueCat
-
-1. Ve a https://app.revenuecat.com
-2. Haz clic en **Sign Up**
-3. Crea tu cuenta (usa tu email de desarrollador)
-4. Completa la verificación por email
-
-### 2.2 Crear Nuevo Proyecto
-
-1. Una vez autenticado, haz clic en **Create a new project**
-2. Nombre del proyecto: **Pepinillo**
-3. Selecciona el país: **España** (o tu país principal)
-4. Haz clic en **Create**
-
-### 2.3 Agregar la App de iOS
-
-1. En el dashboard de RevenueCat, ve a **Apps** en la barra lateral
-2. Haz clic en **Add new app**
-3. Completa el formulario:
-   - **App Name:** Pepinillo
-   - **Platform:** iOS
-   - **Bundle ID:** `com.pepinillo.app`
-   - **Currency:** USD (para precios de App Store Connect)
-
-### 2.4 Configurar App Store Connect como Proveedor
-
-1. En la página de la app en RevenueCat, ve a **Configuration** → **App Store Connect**
-2. Sube el archivo `.p8` que descargaste en el Paso 1.3
-3. Ingresa el **Key ID** de App Store Connect
-4. Ingresa el **Issuer ID** de App Store Connect
-5. Ingresa el **Shared Secret** del Paso 1.4
-6. Haz clic en **Connect**
-7. RevenueCat validará la conexión automáticamente
-
-### 2.5 Configurar Productos en RevenueCat
-
-RevenueCat sincroniza automáticamente los productos de App Store Connect, pero debes crear la estructura de ofertas:
-
-#### Paso 1: Sincronizar Productos (Automático)
-
-1. Ve a **Products** en el dashboard de RevenueCat
-2. Los 3 productos deben aparecer aquí (sincronizados desde App Store Connect):
-   - `com.pepinillo.app.pro.monthly`
-   - `com.pepinillo.app.pro.annual`
-   - `com.pepinillo.app.pro.lifetime`
-
-#### Paso 2: Crear Offerings y Packages
-
-1. Ve a **Offerings** en el dashboard
-2. Haz clic en **Create new offering**
-3. Nombre: **default**
-4. Descripción: Base offering for Pepinillo Pro
-5. Haz clic en **Create**
-
-Ahora agrega los packages:
-
-**Package 1: Monthly**
-- Identifier: `$rc_monthly`
-- Nombre mostrado: Monthly
-- Producto: `com.pepinillo.app.pro.monthly`
-
-**Package 2: Annual**
-- Identifier: `$rc_annual`
-- Nombre mostrado: Annual
-- Producto: `com.pepinillo.app.pro.annual`
-
-**Package 3: Lifetime**
-- Identifier: `$rc_lifetime`
-- Nombre mostrado: Lifetime
-- Producto: `com.pepinillo.app.pro.lifetime`
-
-Guarda la offering.
-
-### 2.6 Crear Entitlements (Derechos)
-
-Los entitlements son características que se desbloquean cuando el usuario compra.
-
-1. Ve a **Entitlements** en el dashboard
-2. Haz clic en **Create new entitlement**
-3. Nombre: **pro**
-4. Descripción: Pepinillo Pro subscription
-5. Haz clic en **Create**
-
-Ahora vincula los productos:
-
-1. En la página de **Entitlements**, selecciona el entitlement **pro**
-2. Haz clic en **Add products**
-3. Selecciona los 3 productos:
-   - `com.pepinillo.app.pro.monthly`
-   - `com.pepinillo.app.pro.annual`
-   - `com.pepinillo.app.pro.lifetime`
-4. Haz clic en **Add**
-
-### 2.7 Obtener Claves API de RevenueCat
-
-Necesitarás dos claves:
-
-**1. Public API Key (para la app iOS)**
-
-1. Ve a **Settings** → **API Keys**
-2. Busca la sección **Public API Keys**
-3. Copia el key para tu app
-4. Este valor reemplazará `"YOUR_REVENUECAT_API_KEY"` en tu código iOS
-
-**2. Secret API Key (para el backend)**
-
-1. En la misma página **Settings** → **API Keys**
-2. Busca la sección **Secret API Keys**
-3. Copia el key
-4. Guárdalo en tu variable de entorno `REVENUECAT_API_KEY`
-
-### 2.8 Configurar Webhooks
-
-Los webhooks permiten que RevenueCat notifique a tu backend sobre eventos de compra.
-
-1. Ve a **Settings** → **Webhooks**
-2. Haz clic en **Add new webhook**
-3. Completa los campos:
-
-**Configuración del Webhook:**
-
-```
-URL: https://tu-dominio-backend.com/api/v1/webhooks/revenuecat
-Método HTTP: POST
-```
-
-**Headers de Autenticación:**
-
-RevenueCat enviará un header `Authorization` en cada webhook. Configura un token:
-
-1. En la página de webhooks, haz clic en **Add authorization header**
-2. Selecciona el tipo: **Bearer token**
-3. Genera un token seguro (una cadena aleatoria larga)
-4. Copia el valor del token y guárdalo en tu env var: `REVENUECAT_WEBHOOK_AUTH_TOKEN`
-
-**Eventos a Habilitar:**
-
-Habilita estos eventos para sincronizar el estado de suscripciones:
-
-- `INITIAL_PURCHASE` — Se dispara cuando un usuario compra por primera vez
-- `RENEWAL` — Se dispara cuando se renueva una suscripción
-- `CANCELLATION` — Se dispara cuando se cancela una suscripción
-- `EXPIRATION` — Se dispara cuando una suscripción expira
-- `BILLING_ISSUE` — Se dispara cuando hay problemas con el pago
-- `PRODUCT_CHANGE` — Se dispara cuando el usuario cambia de producto
-- `NON_RENEWING_PURCHASE` — Se dispara en compras no renovables
-
-4. Haz clic en **Create** para guardar el webhook
-
-**Prueba del Webhook:**
-
-RevenueCat proporciona un botón **Send Test Event**. Usa esto para verificar que tu backend reciba los webhooks correctamente.
-
----
-
-## Parte 3: Variables de Entorno del Backend
-
-Configura estas variables en tu backend (`.env` o en tu plataforma de hosting):
-
-```bash
-# RevenueCat API Configuration
-REVENUECAT_API_KEY=sk_prod_abc123xyz789...
-REVENUECAT_API_BASE_URL=https://api.revenuecat.com/v1
-REVENUECAT_WEBHOOK_AUTH_TOKEN=Bearer secure_token_here_abc123xyz789...
-```
-
-**Notas:**
-
-- `REVENUECAT_API_KEY`: Tu clave secreta de API (no expongas esto)
-- `REVENUECAT_WEBHOOK_AUTH_TOKEN`: El token que configuraste en el webhook
-- `REVENUECAT_API_BASE_URL`: Siempre `https://api.revenuecat.com/v1` para producción
-
----
-
-## Parte 4: Configuración del Código iOS
-
-### 4.1 Reemplazar la Clave API en el Código
-
-En tu proyecto iOS, busca el archivo donde está definida la clave de RevenueCat:
-
-**Archivo:** `Pepinillo/Networking/SubscriptionClient.swift` (o donde tengas tu cliente)
-
-Busca esta línea:
-
-```swift
-private let apiKey = "YOUR_REVENUECAT_API_KEY"
-```
-
-Reemplázala con tu Public API Key de RevenueCat:
-
-```swift
-private let apiKey = "pk_prod_abc123xyz789..."
-```
-
-**Importante:**
-
-- Esta es tu **Public API Key**, no la secreta
-- La encuentras en RevenueCat dashboard → Settings → API Keys → Public API Keys
-- Nunca expongas tu Secret API Key en el código del cliente
-
-### 4.2 Verificar Configuración de RevenueCat en el Código
-
-Busca donde se inicializa RevenueCat (probablemente en `AppDelegate.swift` o `Pepinillo.swift`):
-
-```swift
-import RevenueCat
-
-func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-    RCConfiguration.Builder(withAPIKey: "YOUR_REVENUECAT_API_KEY")
-        .with(usesStoreKit2IfAvailable: true)
-        .build()
-
-    return true
-}
-```
-
-Asegúrate de que:
-
-1. Se usa `RCConfiguration` correctamente
-2. Se habilita StoreKit 2 para iOS 16+
-3. El API key se reemplaza correctamente
-
-### 4.3 Acceder a Entitlements desde la App
-
-Para verificar si el usuario tiene acceso al tier "pro":
-
-```swift
-import RevenueCat
-
-// Obtener el estado de compra del usuario
-Purchases.shared.getCustomerInfo { (customerInfo, error) in
-    if let error = error {
-        print("Error fetching customer info: \(error)")
-        return
-    }
-
-    // Verificar si el usuario tiene el entitlement "pro"
-    if customerInfo?.entitlements["pro"]?.isActive == true {
-        print("Usuario es Pro")
-        // Desbloquear características premium
-    } else {
-        print("Usuario es gratis")
-        // Mostrar paywall
-    }
-}
-```
-
----
-
-## Parte 5: Checklist de Pruebas
-
-Antes de publicar la app, verifica que todo funcione en **sandbox mode**:
-
-### 5.1 Configurar Pruebas en Sandbox
-
-#### En Xcode
-
-1. Ve a **Product** → **Scheme** → **Edit Scheme**
-2. Selecciona **Run**
-3. En **Pre-actions**, asegúrate de que el scheme usa el bundle ID correcto: `com.pepinillo.app`
-
-#### Crear TestFlight Tester (Tester de Sandbox)
-
-1. Ve a **App Store Connect** → **Pepinillo** → **TestFlight**
-2. Crea un grupo de prueba interno
-3. Agrega tu email como tester
-4. Descarga la app desde TestFlight en un dispositivo de prueba
-
-### 5.2 Usar Cuentas de Sandbox en App Store Connect
-
-1. Ve a **App Store Connect** → **Usuarios y Acceso** → **Sandbox**
-2. Crea una cuenta de prueba:
-   - Email: `test+pepinillo@tu-email.com`
-   - Contraseña: segura y generada
-   - Edad: Mayores de 18 años
-3. Guarda las credenciales
-
-En tu dispositivo iOS:
-
-1. Ve a **Settings** → **App Store**
-2. Haz scroll hasta el final
-3. Haz tap en **Sandbox Account**
-4. Inicia sesión con la cuenta de prueba
-5. Cuando hagas una compra de prueba, aparecerá un dialog indicando que es sandbox
-
-### 5.3 Probar Flujo de Compra End-to-End
-
-1. Abre la app Pepinillo en el dispositivo
-2. Ve al paywall (interfaz de compra)
-3. Intenta comprar el plan **Pepinillo Pro Monthly**
-4. Usa las credenciales de sandbox
-5. Confirma la compra
-6. Verifica que el entitlement "pro" se activa en la app
-7. Abre **RevenueCat dashboard** → **Analytics** y verifica que la compra aparezca
-
-### 5.4 Probar Webhooks en Desarrollo
-
-1. En tu máquina local, inicia el servidor backend:
-   ```bash
-   npm run dev  # o el comando correspondiente
-   ```
-
-2. Usa un servicio como **ngrok** para exponer tu localhost:
-   ```bash
-   ngrok http 3000
-   ```
-
-3. Copia la URL pública (ej: `https://abc123.ngrok.io`)
-
-4. En **RevenueCat dashboard** → **Webhooks**, cambia temporalmente la URL a:
-   ```
-   https://abc123.ngrok.io/api/v1/webhooks/revenuecat
-   ```
-
-5. Haz clic en **Send Test Event** para verificar que tu backend recibe el webhook
-
-6. Verifica los logs en tu terminal:
-   ```
-   POST /api/v1/webhooks/revenuecat 200
-   ```
-
-### 5.5 Crear Archivo de Configuración StoreKit (Opcional pero Recomendado)
-
-Para simulaciones más realistas en el simulador:
-
-1. En Xcode, ve a **Product** → **Scheme** → **Edit Scheme**
-2. Selecciona **Run**
-3. En **StoreKit Configuration**, haz clic en **Create Configuration**
-4. Define los 3 productos con sus precios
-5. Esto permite probar compras sin conectar a sandbox de Apple
-
----
-
-## Parte 6: Checklist para Go-Live (Publicación en Producción)
-
-Cuando estés listo para publicar la app:
-
-### 6.1 Cambiar de Sandbox a Producción
-
-#### En Xcode/Código iOS
-
-1. Verifica que el código iOS usa:
-   ```swift
-   RCConfiguration.Builder(withAPIKey: "pk_prod_...")  // Public key PRODUCCIÓN
-   ```
-
-2. Desactiva cualquier flag de prueba o sandbox
-
-#### En App Store Connect
-
-1. Asegúrate de que los 3 productos de suscripción están en estado **Ready to Submit**
-2. Los precios y localizaciones están correctamente configurados
-
-#### En RevenueCat
-
-1. Ve a **Settings** → **Environment**
-2. Cambia a **Production** (si está disponible)
-3. Verifica que los webhooks apunten a la URL de producción:
-   ```
-   https://tu-dominio-produccion.com/api/v1/webhooks/revenuecat
-   ```
-
-### 6.2 Configurar Variables de Entorno en Producción
-
-En tu servidor de producción, configura:
-
-```bash
-REVENUECAT_API_KEY=sk_prod_abc123xyz789...  # Secret key PRODUCCIÓN
-REVENUECAT_WEBHOOK_AUTH_TOKEN=Bearer secure_token...
-REVENUECAT_API_BASE_URL=https://api.revenuecat.com/v1
-```
-
-### 6.3 Preparar Información para App Review
-
-Para que Apple apruebe la app con IAP:
-
-1. Ve a **App Store Connect** → **Pepinillo** → **Información de la App**
-2. En **In-App Purchases**, verifica que están listadas:
-   - Pepinillo Pro Monthly
-   - Pepinillo Pro Annual
-   - Pepinillo Pro Lifetime
-3. Crea un **Promotional Image** para el paywall (opcional)
-4. Agrega una descripción clara de qué incluye Pro
-
-### 6.4 Crear Build de Producción y Submitir para Review
-
-1. En Xcode:
-   ```
-   Product → Archive
-   ```
-
-2. En Organizer, haz clic en **Distribute App**
-3. Selecciona **App Store Connect**
-4. Elige **Manual Signing**
-5. Sube el build a App Store Connect
-
-6. Ve a **App Store Connect** → **Pepinillo** → **Compilaciones**
-7. Selecciona el build que subiste
-8. Haz clic en **Submit for Review**
-9. Completa las preguntas sobre:
-   - Características de contenido
-   - Información de contacto
-   - Información de compra en la app
-10. Revisa y haz clic en **Submit for Review**
-
-### 6.5 Monitorear el Dashboard de RevenueCat en Producción
-
-Una vez aprobada la app:
-
-1. Ve a **RevenueCat dashboard** → **Analytics**
-2. Monitorea:
-   - **Revenue MRR** (ingresos recurrentes mensuales)
-   - **Conversión Rate** (% de usuarios que compran)
-   - **Churn Rate** (% de cancelaciones)
-   - **Product Mix** (cuál plan es más popular)
-
-3. Ve a **Customers** para ver detalles de suscriptores
-
-### 6.6 Verificar Webhooks en Producción
-
-1. Realiza una compra real (o usa TestFlight con tester de App Store)
-2. En **RevenueCat** → **Webhooks**, verifica el log
-3. Confirma que tu backend recibió y procesó el webhook
-4. Verifica que la base de datos se sincronizó correctamente
-
----
-
-## Parte 7: Troubleshooting Común
-
-### Problema: "Invalid App Store Connect API Key"
-
-**Causa:** El archivo `.p8` expiró o los datos (Key ID, Issuer ID) son incorrectos.
-
-**Solución:**
-1. Ve a **App Store Connect** → **Usuarios y Acceso** → **Integraciones**
-2. Revoca la clave anterior
-3. Genera una nueva clave `.p8`
-4. Sube el nuevo archivo a RevenueCat
-
-### Problema: Compra en Sandbox No Se Sincroniza
-
-**Causa:** RevenueCat tarda en sincronizar con sandbox de Apple.
-
-**Solución:**
-1. Espera 5-10 minutos
-2. En la app, fuerza una actualización: `Purchases.shared.invalidateCustomerInfoCache()`
-3. Verifica en RevenueCat Dashboard → Customers que el usuario aparece
-
-### Problema: Webhook No Recibe Eventos
-
-**Causa:** URL de webhook incorrecta o token de autenticación no coincide.
-
-**Solución:**
-1. Verifica la URL en RevenueCat → Settings → Webhooks
-2. Verifica el Authorization header en tu código backend
-3. Usa **Send Test Event** para probar
-4. Revisa los logs de tu servidor
-
-### Problema: "Product Not Found" al Intentar Comprar
-
-**Causa:** El ID del producto en RevenueCat no coincide con App Store Connect.
-
-**Solución:**
-1. Ve a **RevenueCat** → **Products**
-2. Verifica que los IDs sean exactos:
-   - `com.pepinillo.app.pro.monthly`
-   - `com.pepinillo.app.pro.annual`
-   - `com.pepinillo.app.pro.lifetime`
-3. Si están mal, elimina y vuelve a sincronizar desde App Store Connect
-
----
-
-## Recursos Adicionales
-
-- **RevenueCat Docs:** https://docs.revenuecat.com
-- **Apple In-App Purchases Guide:** https://developer.apple.com/in-app-purchase
-- **StoreKit 2 Documentation:** https://developer.apple.com/documentation/storekit
-- **RevenueCat API Reference:** https://docs.revenuecat.com/reference/getting-started-with-the-revenuecat-api
-
----
-
-## Notas Finales
-
-- Siempre prueba en sandbox antes de publicar
-- Mantén tus API keys seguras (nunca en control de versiones)
-- Monitorea el dashboard de RevenueCat regularmente
-- Responde rápidamente a problemas de billing reportados por usuarios
-- Actualiza la documentación cuando cambies estructura de precios
-
-¡Buena suerte con la monetización de Pepinillo!
+**Escrito por:** Pepinillo Development Team
