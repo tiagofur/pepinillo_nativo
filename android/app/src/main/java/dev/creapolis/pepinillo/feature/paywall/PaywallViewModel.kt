@@ -71,11 +71,10 @@ class PaywallViewModel @Inject constructor(
 
         _isPurchasing.value = true
         _error.value = null
-        subscriptionManager.launchPurchaseFlow(activity, product)
 
-        // The result comes through onPurchasesUpdated in SubscriptionManager
-        // We observe subscriptionState to know when it completes
         viewModelScope.launch {
+            subscriptionManager.launchPurchaseFlow(activity, product)
+            // Observe subscription state changes to detect when purchase completes
             subscriptionManager.subscriptionState.collect { state ->
                 if (state.isPro) {
                     _isPurchasing.value = false

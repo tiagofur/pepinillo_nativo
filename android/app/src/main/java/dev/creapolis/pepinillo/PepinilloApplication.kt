@@ -3,10 +3,13 @@ package dev.creapolis.pepinillo
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.revenuecat.purchases.Purchases
 import dagger.hilt.android.HiltAndroidApp
 import dev.creapolis.pepinillo.data.sync.SyncWorker
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import javax.inject.Inject
+
+private const val REVENUECAT_API_KEY = "goog_ITPYSPEdubAzAeoNGxezZuZJELT"
 
 @HiltAndroidApp
 class PepinilloApplication : Application(), Configuration.Provider {
@@ -21,6 +24,10 @@ class PepinilloApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+
+        // Initialize RevenueCat
+        Purchases.configure(this, REVENUECAT_API_KEY)
+
         SyncWorker.schedule(this)
         WidgetRefreshWorker.schedule(this)
     }

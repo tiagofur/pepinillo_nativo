@@ -100,8 +100,8 @@ dependencies {
     // Coil (Image Loading)
     implementation(libs.coil.compose)
 
-    // Google Play Billing
-    implementation(libs.google.billing.ktx)
+    // RevenueCat (Billing)
+    implementation(libs.revenuecat.purchases)
 
 
     // Wear OS (Data Layer)

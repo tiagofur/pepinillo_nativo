@@ -19,14 +19,12 @@ object PepinilloProducts {
     const val ANNUAL = "com.pepinillo.app.pro.annual"
     const val LIFETIME = "com.pepinillo.app.pro.lifetime"
 
-    val SUBSCRIPTION_IDS = listOf(MONTHLY, ANNUAL)
-    val INAPP_IDS = listOf(LIFETIME)
-    val ALL_IDS = SUBSCRIPTION_IDS + INAPP_IDS
+    val ALL_IDS = listOf(MONTHLY, ANNUAL, LIFETIME)
 
     fun tierForProduct(productId: String): SubscriptionTier = when {
-        productId.contains("lifetime") -> SubscriptionTier.LIFETIME
-        productId.contains("annual") || productId.contains("yearly") -> SubscriptionTier.PRO_YEARLY
-        productId.contains("monthly") || productId.contains("month") -> SubscriptionTier.PRO_MONTHLY
+        productId == LIFETIME || productId.contains("lifetime") -> SubscriptionTier.LIFETIME
+        productId == ANNUAL || productId.contains("annual") || productId.contains("yearly") -> SubscriptionTier.PRO_YEARLY
+        productId == MONTHLY || productId.contains("monthly") || productId.contains("month") -> SubscriptionTier.PRO_MONTHLY
         else -> SubscriptionTier.FREE
     }
 }
