@@ -34,3 +34,42 @@
 # ── Room ──
 -keep class dev.creapolis.pepinillo.data.local.entity.** { *; }
 -keep class dev.creapolis.pepinillo.data.local.dao.** { *; }
+
+# ── Ktor ──
+-keep class io.ktor.** { *; }
+-keepclassmembers class io.ktor.** { *; }
+-dontwarn io.ktor.**
+
+# ── OkHttp ──
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class okhttp3.** { *; }
+-keep class okio.** { *; }
+
+# ── Kotlinx Serialization ──
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+-keepclassmembers class kotlinx.serialization.json.** {
+    *** Companion;
+}
+-keepclasseswithmembers class kotlinx.serialization.json.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class dev.creapolis.pepinillo.**$$serializer { *; }
+-keepclassmembers class dev.creapolis.pepinillo.** {
+    *** Companion;
+}
+-keepclasseswithmembers class dev.creapolis.pepinillo.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+
+# ── Kotlin Coroutines ──
+-dontwarn kotlinx.coroutines.**
+-keep class kotlinx.coroutines.** { *; }
+
+# ── Google Credential Manager / Sign-In ──
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-keep class androidx.credentials.** { *; }
+
+# ── RevenueCat ──
+-keep class com.revenuecat.purchases.** { *; }
