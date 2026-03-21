@@ -37,6 +37,12 @@ type TaskRepository interface {
 	Upsert(ctx context.Context, task *domain.Task) error
 	Delete(ctx context.Context, userID string, taskID int) error
 	Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) ([]domain.Task, []string, time.Time, error)
+
+	// Mode-specific tracking methods
+	UpdateTrackingMode(ctx context.Context, taskID int, mode string) error
+	IncrementCompletionCount(ctx context.Context, taskID int, mode string) error
+	IncrementFocusTime(ctx context.Context, taskID int, mode string, seconds int) error
+	SetActiveSession(ctx context.Context, taskID int, sessionID *string) error
 }
 
 type SubTaskRepository interface {

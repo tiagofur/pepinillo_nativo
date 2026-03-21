@@ -16,11 +16,25 @@ type Task struct {
 	IsFinished          bool       `json:"isFinished" gorm:"default:false;not null"`
 	Priority            int        `json:"priority" gorm:"default:0;not null"`
 	Category            *string    `json:"category"`
-	EstimatedPomodoros  int        `json:"estimatedPomodoros" gorm:"default:0;not null"`
-	CompletedPomodoros  int        `json:"completedPomodoros" gorm:"default:0;not null"`
-	FocusedSeconds      int        `json:"focusedSeconds" gorm:"default:0;not null"`
-	ActiveSessionID     *string    `json:"activeSessionId"`
-	IsDeleted           bool       `json:"isDeleted" gorm:"default:false;not null"`
-	UpdatedAt           time.Time  `json:"updatedAt" gorm:"not null"`
-	SubTasks            []SubTask  `json:"subTasks" gorm:"foreignKey:TaskID;constraint:OnDelete:CASCADE"`
+
+	// Legacy Pomodoro fields (for backward compatibility)
+	EstimatedPomodoros int `json:"estimatedPomodoros" gorm:"default:0;not null"`
+	CompletedPomodoros int `json:"completedPomodoros" gorm:"default:0;not null"`
+	FocusedSeconds     int `json:"focusedSeconds" gorm:"default:0;not null"`
+
+	// Mode-specific tracking fields
+	TrackingMode               string `json:"trackingMode" gorm:"type:varchar(20);default:'pomodoro';not null"`
+	CompletedFlowtimeSessions  int    `json:"completedFlowtimeSessions" gorm:"default:0;not null"`
+	CompletedTimeblockSessions int    `json:"completedTimeblockSessions" gorm:"default:0;not null"`
+	CompletedStopwatchSeconds  int    `json:"completedStopwatchSeconds" gorm:"default:0;not null"`
+
+	FocusedSecondsPomodoro  int `json:"focusedSecondsPomodoro" gorm:"default:0;not null"`
+	FocusedSecondsFlowtime  int `json:"focusedSecondsFlowtime" gorm:"default:0;not null"`
+	FocusedSecondsTimeblock int `json:"focusedSecondsTimeblock" gorm:"default:0;not null"`
+	FocusedSecondsStopwatch int `json:"focusedSecondsStopwatch" gorm:"default:0;not null"`
+
+	ActiveSessionID *string   `json:"activeSessionId"`
+	IsDeleted       bool      `json:"isDeleted" gorm:"default:false;not null"`
+	UpdatedAt       time.Time `json:"updatedAt" gorm:"not null"`
+	SubTasks        []SubTask `json:"subTasks" gorm:"foreignKey:TaskID;constraint:OnDelete:CASCADE"`
 }

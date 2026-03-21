@@ -476,3 +476,36 @@ func buildRecurringInstance(template domain.Task, day time.Time, now time.Time) 
 func ptrTimeTask(v time.Time) *time.Time {
 	return &v
 }
+
+// Mode-specific tracking methods
+func (s *TaskService) UpdateTaskTrackingMode(ctx context.Context, taskID int, mode string) error {
+	if err := s.repo.UpdateTrackingMode(ctx, taskID, mode); err != nil {
+		return err
+	}
+	_ = s.behaviorLogger.LogEvent(ctx, "", "task_tracking_mode_updated", map[string]any{"taskId": taskID, "mode": mode})
+	return nil
+}
+
+func (s *TaskService) IncrementTaskCompletion(ctx context.Context, taskID int, mode string) error {
+	if err := s.repo.IncrementCompletionCount(ctx, taskID, mode); err != nil {
+		return err
+	}
+	_ = s.behaviorLogger.LogEvent(ctx, "", "task_completion_incremented", map[string]any{"taskId": taskID, "mode": mode})
+	return nil
+}
+
+func (s *TaskService) IncrementTaskFocusTime(ctx context.Context, taskID int, mode string, seconds int) error {
+	if err := s.repo.IncrementFocusTime(ctx, taskID, mode, seconds); err != nil {
+		return err
+	}
+	_ = s.behaviorLogger.LogEvent(ctx, "", "task_focus_time_incremented", map[string]any{"taskId": taskID, "mode": mode, "seconds": seconds})
+	return nil
+}
+
+func (s *TaskService) SetTaskActiveSession(ctx context.Context, taskID int, sessionID *string) error {
+	if err := s.repo.SetActiveSession(ctx, taskID, sessionID); err != nil {
+		return err
+	}
+	_ = s.behaviorLogger.LogEvent(ctx, "", "task_active_session_set", map[string]any{"taskId": taskID, "sessionId": sessionID})
+	return nil
+}

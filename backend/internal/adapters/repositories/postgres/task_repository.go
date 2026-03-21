@@ -208,3 +208,49 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 func shouldApplyClientUpdate(existingUpdatedAt, clientUpdatedAt time.Time) bool {
 	return !existingUpdatedAt.After(clientUpdatedAt)
 }
+
+func (r *TaskRepository) UpdateTrackingMode(ctx context.Context, taskID int, mode string) error {
+	return r.db.WithContext(ctx).Model(&domain.Task{}).
+		Where("id = ?", taskID).
+		Update("tracking_mode", mode).Error
+}
+
+func (r *TaskRepository) IncrementCompletionCount(ctx context.Context, taskID int, mode string) error {
+	var updateSQL string
+	switch mode {
+	case "pomodoro":
+		updateSQL = "UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1 WHERE id = ?"
+	case "flowtime":
+		updateSQL = "UPDATE tasks SET completed_flowtime_sessions = completed_flowtime_sessions + 1 WHERE id = ?"
+	case "timeblock":
+		updateSQL = "UPDATE tasks SET completed_timeblock_sessions = completed_timeblock_sessions + 1 WHERE id = ?"
+	case "stopwatch":
+		updateSQL = "UPDATE tasks SET completed_stopwatch_seconds = completed_stopwatch_seconds + 1 WHERE id = ?"
+	default:
+		return nil
+	}
+	return r.db.WithContext(ctx).Exec(updateSQL, taskID).Error
+}
+
+func (r *TaskRepository) IncrementFocusTime(ctx context.Context, taskID int, mode string, seconds int) error {
+	var updateSQL string
+	switch mode {
+	case "pomodoro":
+		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_pomodoro = focused_seconds_pomodoro + ? WHERE id = ?"
+	case "flowtime":
+		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_flowtime = focused_seconds_flowtime + ? WHERE id = ?"
+	case "timeblock":
+		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_timeblock = focused_seconds_timeblock + ? WHERE id = ?"
+	case "stopwatch":
+		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_stopwatch = focused_seconds_stopwatch + ? WHERE id = ?"
+	default:
+		return nil
+	}
+	return r.db.WithContext(ctx).Exec(updateSQL, seconds, seconds, taskID).Error
+}
+
+func (r *TaskRepository) SetActiveSession(ctx context.Context, taskID int, sessionID *string) error {
+	return r.db.WithContext(ctx).Model(&domain.Task{}).
+		Where("id = ?", taskID).
+		Update("active_session_id", sessionID).Error
+}

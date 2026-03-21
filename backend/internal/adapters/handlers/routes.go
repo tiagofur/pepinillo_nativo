@@ -74,6 +74,12 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	tasks.Get("/recurrences", deps.Tasks.ListRecurrences)
 	tasks.Post("/recurrences/generate", deps.Tasks.GenerateRecurrences)
 
+	// Mode-specific tracking endpoints
+	tasks.Put("/:id/tracking-mode", deps.Tasks.UpdateTrackingMode)
+	tasks.Post("/:id/completion", deps.Tasks.IncrementCompletion)
+	tasks.Post("/:id/focus-time", deps.Tasks.IncrementFocusTime)
+	tasks.Put("/:id/active-session", deps.Tasks.SetActiveSession)
+
 	// Subtask CRUD (independent)
 	tasks.Get("/:taskId/subtasks", deps.SubTasks.List)
 	tasks.Post("/:taskId/subtasks", deps.SubTasks.Create)
