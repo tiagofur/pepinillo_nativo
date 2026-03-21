@@ -37,7 +37,6 @@ data class ProfileUiState(
     val error: String? = null,
     val isEditSheetVisible: Boolean = false,
     val editName: String = "",
-    val editBirthDate: String? = null,
     val editImageUrl: String? = null,
     val isUploading: Boolean = false,
     val isSaving: Boolean = false,
@@ -165,7 +164,6 @@ class ProfileViewModel @Inject constructor(
             it.copy(
                 isEditSheetVisible = true,
                 editName = user?.name ?: "",
-                editBirthDate = user?.birthDate,
                 editImageUrl = user?.imageUrl,
             )
         }
