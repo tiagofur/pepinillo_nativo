@@ -73,7 +73,10 @@
 - 3 idiomas: Ingles, Espanol, Portugues
 
 ### Billing ✅
-- StoreKit 2 con 3 productos (monthly, annual, lifetime)
+- RevenueCat SDK v5+ (wrapping StoreKit 2) con 3 productos (monthly, annual, lifetime)
+- Entitlement: `pro` via RevenueCat Offerings/Packages
+- User identification integrated with Sign in with Apple flow
+- Grace period support via RevenueCat entitlements
 - Paywall implementado
 
 ### Pendiente iOS
@@ -261,10 +264,11 @@
 
 | Feature | iOS | Android | Notas |
 |---------|-----|---------|-------|
-| Billing SDK | ✅ StoreKit 2 | ⚠️ Play Billing 7.1.1 (parcial) | |
+| Billing SDK | ✅ RevenueCat SDK v5+ (StoreKit 2) | ⚠️ Play Billing 7.1.1 (parcial) | RevenueCat planned for Android |
 | Paywall UI | ✅ | ⚠️ Incompleta | |
 | Feature gating | ⚠️ No enforced | ⚠️ Partial (subtasks/recurrence gated) | Critico en ambas plataformas |
-| Productos (monthly/annual/lifetime) | ✅ 3 productos | ⬜ Por configurar | |
+| Productos (monthly/annual/lifetime) | ✅ 3 productos via RevenueCat | ⬜ Por configurar | |
+| Entitlements verification | ✅ RevenueCat entitlements | ⬜ Pendiente | |
 
 ### Diseno y Accesibilidad
 
@@ -301,7 +305,7 @@
 | Watch | WatchConnectivity | watchOS 10+ | |
 | Intents | App Intents | iOS 17+ | 3 idiomas |
 | Health | HealthKit | iOS 17+ | Mindful Minutes |
-| Billing | StoreKit 2 | iOS 17+ | 3 productos |
+| Billing | RevenueCat SDK v5+ | iOS 17+ | Wraps StoreKit 2, 3 productos, entitlement: `pro` |
 | Audio | AVAudioPlayer | Nativo | Soundscapes |
 
 ### Android
@@ -346,7 +350,11 @@
 | Componente | Estado | Detalle |
 |------------|--------|---------|
 | API REST completa | ✅ Implementado | Auth (email/password), tasks CRUD + sync, sessions, stats, user profile |
-| Billing verify (ambas tiendas) | ✅ Implementado | Verificacion de recibos App Store y Google Play |
+| Billing verify (ambas tiendas) | ✅ Implementado | Verificacion de recibos App Store y Google Play via RevenueCat |
+| RevenueCat webhook endpoint | ✅ Implementado | `POST /api/v1/webhooks/revenuecat` para eventos de ciclo de vida de suscripcion |
+| RevenueCat REST API client | ✅ Implementado | Client servidor para verificacion server-side de entitlements |
+| Direct App Store/Play verification | ✅ Implementado | Fallback para verificacion si RevenueCat no disponible |
+| Subscription lifecycle events | ✅ Implementado | purchase, renewal, cancellation, expiration, billing issues |
 | Push notifications | ✅ Implementado | APNS (iOS) + FCM (Android) |
 | WebSocket | ✅ Implementado | Canal de comunicacion en tiempo real |
 | AI Insights | ✅ Implementado | Integracion con Gemini para reportes de productividad |

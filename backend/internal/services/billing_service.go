@@ -98,6 +98,11 @@ func NewBillingService(users ports.UserRepository, cfg BillingConfig, behavior .
 	}
 }
 
+// SetRevenueCatService sets the RevenueCat service for fallback verification
+func (s *BillingService) SetRevenueCatService(revenuecat *RevenueCatService) {
+	s.revenuecat = revenuecat
+}
+
 func (s *BillingService) VerifyReceipt(ctx context.Context, userID string, input VerifyReceiptInput) (*VerifyReceiptResult, error) {
 	startedAt := time.Now().UTC()
 	platform := strings.ToLower(strings.TrimSpace(input.Platform))
@@ -798,4 +803,63 @@ func mapProductToTier(productID string, expiresAt *time.Time) (string, *time.Tim
 	default:
 		return "", nil, ErrUnsupportedProductID
 	}
+}
+
+// VerifyViaRevenueCat queries RevenueCat API to verify and update subscription status
+// This is a fallback/alternative to direct App Store/Google Play verification
+func (s *BillingService) VerifyViaRevenueCat(ctx context.Context, userID string) (*VerifyReceiptResult, error) {
+	if s.revenuecat == nil {
+		return nil, ErrBillingProviderNotConfigured
+	}
+
+	startedAt := time.Now().UTC()
+
+	// Get current subscription from RevenueCat
+	result, err := s.revenuecat.VerifyViaRevenueCat(ctx, userID)
+	if err != nil {
+		s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
+			"reason":     err.Error(),
+			"source":     "revenuecat",
+			"durationMs": time.Since(startedAt).Milliseconds(),
+		})
+		return nil, err
+	}
+
+	// Update user subscription in database
+	user, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
+			"reason":     err.Error(),
+			"source":     "revenuecat",
+			"durationMs": time.Since(startedAt).Milliseconds(),
+		})
+		return nil, err
+	}
+	if user == nil {
+		s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
+			"reason":     ErrUserNotFound.Error(),
+			"source":     "revenuecat",
+			"durationMs": time.Since(startedAt).Milliseconds(),
+		})
+		return nil, ErrUserNotFound
+	}
+
+	user.SubscriptionTier = result.SubscriptionTier
+	user.SubscriptionExpiresAt = result.SubscriptionExpiresAt
+	if err := s.users.Update(ctx, user); err != nil {
+		s.logBillingEvent(ctx, userID, "billing_verify_failed", map[string]any{
+			"reason":     err.Error(),
+			"source":     "revenuecat",
+			"durationMs": time.Since(startedAt).Milliseconds(),
+		})
+		return nil, err
+	}
+
+	s.logBillingEvent(ctx, userID, "billing_verify_succeeded", map[string]any{
+		"source":     "revenuecat",
+		"tier":       result.SubscriptionTier,
+		"durationMs": time.Since(startedAt).Milliseconds(),
+	})
+
+	return result, nil
 }

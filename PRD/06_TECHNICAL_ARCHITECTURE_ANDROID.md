@@ -25,7 +25,7 @@
 | **Wear Tiles** | Horologist | 0.6.20 | `SuspendingTileService` para Wear OS Tiles |
 | **Wear Complications** | watchface-complications | 1.2.1 | `SuspendingComplicationDataSourceService` |
 | **Wear Data Layer** | play-services-wearable | 18.2.0 | `DataClient` + `MessageClient` para sync phone↔watch |
-| **Billing** | Play Billing Library | 7.1.1 | Suscripciones in-app (FREE/PRO) |
+| **Billing** | Play Billing Library | 7.1.1 | Suscripciones in-app (FREE/PRO); RevenueCat integration planned |
 | **Health** | Health Connect | 1.1.0-rc01 | Mindful Sessions (API experimental) |
 | **Audio** | Media3/ExoPlayer | 1.5.0 | Soundscapes (6 pistas ambientales) |
 | **Charts** | Vico | 1.14.0 | Gráficos `compose-m3` para dashboard |
@@ -879,6 +879,9 @@ class BillingManager @Inject constructor(
     // Tiers:
     //   - FREE: funcionalidad básica (Pomodoro, tasks limitadas)
     //   - PRO: todos los modos, soundscapes, analytics avanzados, widgets
+    //
+    // RevenueCat integration planned for Android (similar to iOS)
+    // Backend webhook endpoint ready: POST /api/v1/webhooks/revenuecat
 }
 ```
 

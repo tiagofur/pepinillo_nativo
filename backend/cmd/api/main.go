@@ -189,6 +189,14 @@ func main() {
 		AppStoreServerAPIBundleID:          cfg.AppStoreServerAPIBundleID,
 		AppStoreServerAPIBaseURL:           cfg.AppStoreServerAPIBaseURL,
 	}, behaviorLog)
+
+	// Initialize RevenueCat service
+	revenuecatService := services.NewRevenueCatService(userRepo, services.RevenueCatConfig{
+		APIKey:           cfg.RevenueCatAPIKey,
+		WebhookAuthToken: cfg.RevenueCatWebhookAuthToken,
+		APIBaseURL:       cfg.RevenueCatAPIBaseURL,
+	}, behaviorLog)
+	billingService.SetRevenueCatService(revenuecatService)
 	noopProvider := noopPush.NewProvider()
 	fcmProvider := fcmPush.NewProvider(fcmPush.Config{
 		ProjectID:                cfg.FCMProjectID,
@@ -241,19 +249,20 @@ func main() {
 	analyticsService := services.NewAnalyticsService(analyticsRepo)
 
 	routeDeps := handlers.RouteHandlers{
-		Auth:      handlers.NewAuthHandler(authService),
-		OAuth:     handlers.NewOAuthHandler(oauthService),
-		Users:     handlers.NewUserHandler(userRepo, fileStorage),
-		Tasks:     handlers.NewTaskHandler(taskService),
-		SubTasks:  handlers.NewSubTaskHandler(subtaskService),
-		Pomodoro:  handlers.NewPomodoroHandler(pomodoroService),
-		Focus:     handlers.NewFocusHandler(focusService),
-		AI:        handlers.NewAIHandler(aiService),
-		Billing:   handlers.NewBillingHandler(billingService),
-		Push:      handlers.NewPushHandler(pushService),
-		WebSocket: handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret),
-		Analytics: handlers.NewAnalyticsHandler(analyticsService),
-		JWTSecret: cfg.JWTSecret,
+		Auth:       handlers.NewAuthHandler(authService),
+		OAuth:      handlers.NewOAuthHandler(oauthService),
+		Users:      handlers.NewUserHandler(userRepo, fileStorage),
+		Tasks:      handlers.NewTaskHandler(taskService),
+		SubTasks:   handlers.NewSubTaskHandler(subtaskService),
+		Pomodoro:   handlers.NewPomodoroHandler(pomodoroService),
+		Focus:      handlers.NewFocusHandler(focusService),
+		AI:         handlers.NewAIHandler(aiService),
+		Billing:    handlers.NewBillingHandler(billingService),
+		RevenueCat: handlers.NewRevenueCatHandler(revenuecatService),
+		Push:       handlers.NewPushHandler(pushService),
+		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret),
+		Analytics:  handlers.NewAnalyticsHandler(analyticsService),
+		JWTSecret:  cfg.JWTSecret,
 		HealthChecks: handlers.DependencyChecksFrom(
 			func(ctx context.Context) error {
 				sqlDB, err := db.DB()

@@ -27,11 +27,11 @@
 | Analytics | TelemetryDeck | -- |
 | Sonido | AVAudioEngine | iOS 17 |
 | Autenticacion | Sign in with Apple | iOS 17 |
-| Suscripciones | StoreKit 2 (nativo) | iOS 17 |
+| Suscripciones | RevenueCat SDK v5+ (wrapping StoreKit 2) | iOS 17 |
 
 ### Decisiones clave
 
-- **Sin RevenueCat:** StoreKit 2 nativo es suficiente para las necesidades de suscripcion de Pepinillo (3 productos: mensual, anual, lifetime).
+- **RevenueCat SDK v5+:** Wraps StoreKit 2 nativo para manejo centralizado de suscripciones, entitlements, y webhooks. Soporta 3 productos (mensual, anual, lifetime) con entitlement unificado `pro`.
 - **Sin Firebase:** CloudKit privado para datos, TelemetryDeck para analytics anonimos, Sign in with Apple para autenticacion.
 - **Swift 6 strict concurrency:** Todo el codigo compila bajo el modo estricto de concurrencia. Los actores (`FocusEngine`, `SoundscapeManager`, `SubscriptionManager`) garantizan seguridad de hilos sin locks manuales.
 
@@ -122,7 +122,7 @@ ios/
 │   │   ├── WatchConnectivityClient.swift  # WCSession bidireccional
 │   │   ├── AIReportClient.swift        # Generacion de reportes IA
 │   │   ├── NotificationClient.swift    # UNUserNotificationCenter
-│   │   ├── SubscriptionClient.swift    # StoreKit 2 nativo
+│   │   ├── SubscriptionClient.swift    # RevenueCat SDK v5+ (wrapping StoreKit 2)
 │   │   ├── SoundscapeClient.swift      # Reproduccion de sonidos ambiente
 │   │   ├── CalendarClient.swift        # EventKit (lectura de calendario)
 │   │   ├── HealthClient.swift          # HealthKit Mindful Minutes
@@ -188,7 +188,7 @@ ios/
 │   │   └── AboutView.swift             # Vista acerca de
 │   │
 │   ├── Paywall/
-│   │   ├── PaywallFeature.swift        # Reducer: suscripcion con StoreKit 2
+│   │   ├── PaywallFeature.swift        # Reducer: suscripcion con RevenueCat
 │   │   └── PaywallView.swift           # Vista del paywall
 │   │
 │   └── Onboarding/
@@ -661,7 +661,7 @@ Las clases `@Model` de SwiftData no son `Sendable` y estan vinculadas al `@MainA
 | 3 | **WatchConnectivityClient** | Comunicacion bidireccional `WCSession`. iOS envia: `WatchSessionState` (cada tick), stats, tareas. Watch envia: `WatchCommand`. |
 | 4 | **AIReportClient** | Genera reportes de productividad. Intenta primero con `OnDeviceReportGenerator` (Foundation Models, iOS 26+), fallback a `TemplateReportGenerator`. |
 | 5 | **NotificationClient** | Wrapper de `UNUserNotificationCenter`. Programa notificaciones de fin de sesion, recordatorios diarios, sugerencias de descanso. |
-| 6 | **SubscriptionClient** | StoreKit 2 nativo. Consulta productos, realiza compras, restaura transacciones, verifica estado de suscripcion. Actor `SubscriptionManager` interno. |
+| 6 | **SubscriptionClient** | RevenueCat SDK v5+. Consulta offerings/packages, realiza compras via StoreKit 2, restaura transacciones, verifica entitlements. Soporta configure/logIn/logOut flow para user identification. |
 | 7 | **SoundscapeClient** | Reproduccion de sonidos ambiente durante sesiones de foco. Actor `SoundscapeManager` con `AVAudioEngine`. 8 soundscapes incluidos. |
 | 8 | **CalendarClient** | Lectura de eventos de `EventKit`. Muestra eventos del calendario junto a sesiones de foco programadas. |
 | 9 | **HealthClient** | Escribe `HKCategorySample` de tipo `.mindfulSession` a Apple Health al completar una sesion. Solicita autorizacion de forma explicita. |
@@ -989,7 +989,7 @@ Swift Testing (`@Test` macro) para todos los tests. Compatible con Xcode 16+.
 | TaskListFeatureTests | `TaskListFeatureTests.swift` | CRUD tareas, filtros, recurrencia |
 | AnalyticsFeatureTests | `AnalyticsFeatureTests.swift` | Dashboard, tendencias |
 | InsightsServiceTests | `InsightsServiceTests.swift` | Servicio de insights |
-| PaywallFeatureTests | `PaywallFeatureTests.swift` | Paywall, StoreKit mock |
+| PaywallFeatureTests | `PaywallFeatureTests.swift` | Paywall, RevenueCat mock |
 | ModeIntelligenceTests | `ModeIntelligenceTests.swift` | Sugerencia de modo |
 | SiriIntentsTests | `SiriIntentsTests.swift` | App Intents |
 | FocusWidgetProviderTests | `FocusWidgetProviderTests.swift` | Timeline provider |
@@ -1017,7 +1017,7 @@ Filosofia: **dependencias minimas**. Usar frameworks de Apple para todo lo posib
 | `swift-snapshot-testing` | 1.17+ | Tests de snapshot UI | Ecosistema de testing de Point-Free (solo test target) |
 
 **Lo que NO usamos (y por que):**
-- **RevenueCat:** StoreKit 2 nativo es suficiente para 3 productos de suscripcion.
+- **RevenueCat SDK v5+:** Implementado para centralizar manejo de suscripciones, entitlements, webhooks, y user identification (via Sign in with Apple).
 - **Firebase:** CloudKit privado para datos, TelemetryDeck para analytics, Sign in with Apple para auth.
 - **Alamofire/Moya:** No hay networking custom -- todo es CloudKit automatico.
 - **Realm/GRDB:** SwiftData es el framework recomendado de Apple con integracion CloudKit nativa.
@@ -1348,7 +1348,7 @@ Las suscripciones se verifican **server-side** para garantizar paridad entre pla
 
 **Pasos detallados:**
 
-1. El usuario completa la compra via `SubscriptionClient` (StoreKit 2 nativo)
+1. El usuario completa la compra via `SubscriptionClient` (RevenueCat SDK v5+, wrapping StoreKit 2)
 2. La app envia `POST /api/v1/billing/verify-receipt` con el `originalTransactionID` y el `signedPayload` (JWS)
 3. El backend valida el recibo contra la App Store Server API (verifica firma JWS, estado de suscripcion)
 4. App Store confirma que la compra es legitima y activa
@@ -1360,17 +1360,18 @@ Las suscripciones se verifican **server-side** para garantizar paridad entre pla
 | Contexto | Fuente |
 |----------|--------|
 | **Cross-platform** | Backend (`User.SubscriptionTier`) — consultado via `/users/me` |
-| **Solo Apple** | StoreKit 2 local (`Transaction.currentEntitlements`) — funciona offline |
-| **Jerarquia** | Backend > StoreKit local. Si el backend dice PRO (compra en Android), la app iOS desbloquea PRO |
+| **Solo Apple** | RevenueCat entitlements local (`RevenueCat.shared.entitlements`) — funciona offline con cache |
+| **Jerarquia** | Backend > RevenueCat entitlements. Si el backend dice PRO (compra en Android), la app iOS desbloquea PRO |
 
-**Paridad cross-platform:** Un usuario que compra PRO en Android (Play Store) vera su estado PRO reflejado en iOS al consultar `/users/me`, porque el backend centraliza el tier.
+**Paridad cross-platform:** Un usuario que compra PRO en Android (Play Store) vera su estado PRO reflejado en iOS al consultar `/users/me`, porque el backend centraliza el tier. RevenueCat sincroniza entitlements cross-platform.
 
-**StoreKit 2 como cache local:**
+**RevenueCat como cache local:**
 
-El `SubscriptionClient` existente sigue funcionando como cache local:
-- `Transaction.currentEntitlements` para verificacion rapida offline
-- `SubscriptionManager` (actor) continua gestionando el estado de StoreKit
-- La diferencia es que ahora tambien se sincroniza con el backend para paridad cross-platform
+El `SubscriptionClient` ahora usa RevenueCat SDK v5+:
+- `RevenueCat.shared.entitlements` para verificacion rapida offline
+- `configure()` y `logIn(userId)` para user identification (integrado con Sign in with Apple)
+- Grace period: automáticamente manejado por RevenueCat según configuración en App Store Connect
+- Se sincroniza con el backend para paridad cross-platform y entitlements verificados por servidor
 
 ### 18.5 Perfil de Usuario
 

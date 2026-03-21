@@ -98,12 +98,15 @@ El usuario obtiene una experiencia funcional y útil en el tier gratuito — suf
 
 | Aspecto | Detalle |
 |---------|---------|
-| Framework | StoreKit 2 (nativo, sin RevenueCat) |
-| Productos | `monthly`, `annual`, `lifetime` |
-| Verificación | Server-side via Go backend (`POST /billing/verify-receipt`) |
-| Restore | StoreKit 2 `Transaction.currentEntitlements` |
-| Cache local | UserDefaults con `isPro`, `tier`, `expirationDate` |
-| Grace period | Manejado por App Store (configurable en App Store Connect) |
+| Framework | RevenueCat SDK v5+ (wrapping StoreKit 2 nativo) |
+| Productos | `monthly`, `annual`, `lifetime` via RevenueCat Offerings/Packages |
+| Entitlement | `pro` (unificado en RevenueCat) |
+| User ID | Integrado con Sign in with Apple flow via `logIn(userId)` |
+| Verificación | Server-side via Go backend (`POST /billing/verify-receipt` y RevenueCat REST API) |
+| Restore | RevenueCat `logIn()` + `entitlements` property |
+| Cache local | RevenueCat SDK cachea entitlements automáticamente |
+| Grace period | Automáticamente manejado por RevenueCat según configuración en App Store Connect |
+| Webhooks | Backend recibe eventos via `POST /api/v1/webhooks/revenuecat` |
 
 ### 5.2 Android
 
@@ -135,10 +138,17 @@ com.pepinillo.app.pro.lifetime   → $49.99 (in-app product, no subscription)
 
 ### 5.4 Backend
 
-- Endpoint existente: `POST /billing/verify-receipt`
-- Soporta verificación de Google Play y App Store
-- Mapeo de tiers: `free`, `pro_monthly`, `pro_yearly`, `lifetime`
-- Actualiza el tier del usuario en base de datos tras verificación exitosa
+- **Endpoint de verificación:** `POST /billing/verify-receipt`
+  - Soporta verificación de Google Play, App Store, y RevenueCat
+  - Mapeo de tiers: `free`, `pro_monthly`, `pro_yearly`, `lifetime`
+  - Actualiza el tier del usuario en base de datos tras verificación exitosa
+
+- **RevenueCat integration:**
+  - Webhook endpoint: `POST /api/v1/webhooks/revenuecat` (recibe eventos de ciclo de vida de suscripción)
+  - REST API client: verifica entitlements via RevenueCat API
+  - Eventos soportados: purchase, renewal, cancellation, expiration, billing issues
+
+- **Fallback:** Direct App Store/Google Play verification si RevenueCat no disponible
 
 ---
 
