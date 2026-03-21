@@ -5,7 +5,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,21 +17,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,13 +45,11 @@ import coil.compose.AsyncImage
 fun EditProfileSheet(
     uiState: ProfileUiState,
     onDismiss: () -> Unit,
-    onSave: (name: String, birthDate: String?) -> Unit,
+    onSave: (name: String) -> Unit,
     onPhotoSelected: (Uri) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var name by remember(uiState.editName) { mutableStateOf(uiState.editName) }
-    var selectedDate by remember(uiState.editBirthDate) { mutableStateOf(uiState.editBirthDate) }
-    var showDatePicker by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -133,30 +125,11 @@ fun EditProfileSheet(
                 shape = RoundedCornerShape(16.dp),
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Birth date
-            OutlinedTextField(
-                value = selectedDate?.take(10) ?: "",
-                onValueChange = {},
-                label = { Text("Birth date") },
-                readOnly = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showDatePicker = true },
-                shape = RoundedCornerShape(16.dp),
-                trailingIcon = {
-                    IconButton(onClick = { showDatePicker = true }) {
-                        Icon(Icons.Rounded.CalendarMonth, "Pick date")
-                    }
-                },
-            )
-
             Spacer(modifier = Modifier.height(24.dp))
 
             // Save button
             Button(
-                onClick = { onSave(name, selectedDate) },
+                onClick = { onSave(name) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -177,25 +150,4 @@ fun EditProfileSheet(
         }
     }
 
-    // Date picker dialog
-    if (showDatePicker) {
-        val datePickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    datePickerState.selectedDateMillis?.let { millis ->
-                        val instant = java.time.Instant.ofEpochMilli(millis)
-                        selectedDate = instant.toString()
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
-            },
-        ) {
-            DatePicker(state = datePickerState)
-        }
-    }
 }

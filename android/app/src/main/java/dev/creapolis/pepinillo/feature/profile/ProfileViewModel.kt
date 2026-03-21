@@ -19,6 +19,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class Achievement(
+    val icon: String,
+    val title: String,
+    val subtitle: String,
+    val isUnlocked: Boolean,
+)
+
 data class ProfileUiState(
     val user: UserEntity? = null,
     val isLoggedIn: Boolean = false,
@@ -26,6 +33,7 @@ data class ProfileUiState(
     val totalFocusTimeMinutes: Long = 0,
     val totalSessions: Int = 0,
     val bestStreak: Int = 0,
+    val achievements: List<Achievement> = emptyList(),
     val error: String? = null,
     val isEditSheetVisible: Boolean = false,
     val editName: String = "",
@@ -81,11 +89,38 @@ class ProfileViewModel @Inject constructor(
                 val totalMinutes = allDays.sumOf { it.totalMinutes.toLong() }
                 val totalSessions = allDays.sumOf { it.sessionsCompleted }
                 val bestStreak = sessionRepository.calculateBestStreak(allDays)
+                val achievements = listOf(
+                    Achievement(
+                        icon = "EmojiEvents",
+                        title = "First Focus",
+                        subtitle = "Complete your first focus session",
+                        isUnlocked = totalSessions >= 1,
+                    ),
+                    Achievement(
+                        icon = "LocalFireDepartment",
+                        title = "On Fire",
+                        subtitle = "Reach a 7-day streak",
+                        isUnlocked = bestStreak >= 7,
+                    ),
+                    Achievement(
+                        icon = "Star",
+                        title = "Centurion",
+                        subtitle = "Complete 100 sessions",
+                        isUnlocked = totalSessions >= 100,
+                    ),
+                    Achievement(
+                        icon = "Timer",
+                        title = "Marathon",
+                        subtitle = "Focus for 4 hours in a single day",
+                        isUnlocked = totalMinutes >= 240,
+                    ),
+                )
                 _uiState.update {
                     it.copy(
                         totalFocusTimeMinutes = totalMinutes,
                         totalSessions = totalSessions,
                         bestStreak = bestStreak,
+                        achievements = achievements,
                     )
                 }
             }
@@ -140,11 +175,11 @@ class ProfileViewModel @Inject constructor(
         _uiState.update { it.copy(isEditSheetVisible = false) }
     }
 
-    fun saveProfile(name: String, birthDate: String?) {
+    fun saveProfile(name: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             val result = userRepository.updateProfile(
-                UpdateProfileRequest(name = name, birthDate = birthDate)
+                UpdateProfileRequest(name = name)
             )
             _uiState.update {
                 it.copy(

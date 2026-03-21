@@ -30,9 +30,11 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -99,62 +101,83 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // ── AVATAR & USER INFO ──
-        ProfileCard {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Avatar
-                Box(
+        if (uiState.isLoggedIn) {
+            ProfileCard {
+                Row(
                     modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
-                    contentAlignment = Alignment.Center,
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val imageUrl = uiState.user?.imageUrl
-                    if (imageUrl != null) {
-                        AsyncImage(
-                            model = imageUrl,
-                            contentDescription = "Profile photo",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop,
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val imageUrl = uiState.user?.imageUrl
+                        if (imageUrl != null) {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = "Profile photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop,
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Rounded.Person,
+                                contentDescription = null,
+                                modifier = Modifier.size(36.dp),
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Text(
+                                text = uiState.user?.name ?: "Guest User",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            val tier = uiState.user?.subscriptionTier
+                            if (!tier.isNullOrEmpty() && tier != "free") {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(6.dp),
+                                ) {
+                                    Text(
+                                        text = "PRO",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = uiState.user?.email ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    } else {
+                    }
+                    IconButton(onClick = { viewModel.showEditSheet() }) {
                         Icon(
-                            imageVector = Icons.Rounded.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(36.dp),
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Edit profile",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = uiState.user?.name ?: "Guest User",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = if (uiState.isLoggedIn) (uiState.user?.email ?: "") else "Sign in to sync your data",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                IconButton(onClick = { viewModel.showEditSheet() }) {
-                    Icon(
-                        imageVector = Icons.Rounded.Edit,
-                        contentDescription = "Edit profile",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
+        } else {
+            GuestSignInCard(onSignInClick = onSignInClick)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -205,33 +228,15 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         ProfileCard {
-            AchievementRow(
-                icon = Icons.Rounded.EmojiEvents,
-                title = "First Focus",
-                subtitle = "Complete your first focus session",
-                isUnlocked = true,
-            )
-            ProfileDivider()
-            AchievementRow(
-                icon = Icons.Rounded.LocalFireDepartment,
-                title = "On Fire",
-                subtitle = "Reach a 7-day streak",
-                isUnlocked = true,
-            )
-            ProfileDivider()
-            AchievementRow(
-                icon = Icons.Rounded.Star,
-                title = "Centurion",
-                subtitle = "Complete 100 sessions",
-                isUnlocked = true,
-            )
-            ProfileDivider()
-            AchievementRow(
-                icon = Icons.Rounded.Timer,
-                title = "Marathon",
-                subtitle = "Focus for 4 hours in a single day",
-                isUnlocked = false,
-            )
+            uiState.achievements.forEachIndexed { index, achievement ->
+                if (index > 0) ProfileDivider()
+                AchievementRow(
+                    icon = achievementIcon(achievement.icon),
+                    title = achievement.title,
+                    subtitle = achievement.subtitle,
+                    isUnlocked = achievement.isUnlocked,
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -246,15 +251,15 @@ fun ProfileScreen(
         )
         Spacer(modifier = Modifier.height(12.dp))
 
-        ProfileCard {
-            ActionRow(
-                icon = Icons.Rounded.Backup,
-                label = "Backup & Sync",
-                subtitle = if (uiState.isLoggedIn) "Cloud sync is active" else "Sign in to enable cloud sync",
-                onClick = if (uiState.isLoggedIn) { {} } else onSignInClick,
-            )
-            ProfileDivider()
-            if (uiState.isLoggedIn) {
+        if (uiState.isLoggedIn) {
+            ProfileCard {
+                ActionRow(
+                    icon = Icons.Rounded.Backup,
+                    label = "Backup & Sync",
+                    subtitle = "Cloud sync is active",
+                    onClick = {},
+                )
+                ProfileDivider()
                 ActionRow(
                     icon = Icons.AutoMirrored.Rounded.ExitToApp,
                     label = "Sign Out",
@@ -263,13 +268,6 @@ fun ProfileScreen(
                         viewModel.logout()
                         onSignOutClick()
                     },
-                )
-            } else {
-                ActionRow(
-                    icon = Icons.AutoMirrored.Rounded.ExitToApp,
-                    label = "Sign In",
-                    subtitle = "Access your data on any device",
-                    onClick = onSignInClick,
                 )
             }
         }
@@ -293,7 +291,7 @@ fun ProfileScreen(
         EditProfileSheet(
             uiState = uiState,
             onDismiss = { viewModel.hideEditSheet() },
-            onSave = { name, birthDate -> viewModel.saveProfile(name, birthDate) },
+            onSave = { name -> viewModel.saveProfile(name) },
             onPhotoSelected = { uri -> viewModel.uploadPhoto(context, uri) },
         )
     }
@@ -475,5 +473,54 @@ private fun ActionRow(
     }
 }
 
-// Preview removed: ProfileScreen now requires a HiltViewModel.
-// Use interactive preview or run on device/emulator to test.
+@Composable
+private fun GuestSignInCard(onSignInClick: () -> Unit) {
+    ProfileCard {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Welcome to Pepinillo",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Sign in to sync your data across devices",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onSignInClick) {
+                Text("Sign In")
+            }
+        }
+    }
+}
+
+private fun achievementIcon(name: String): ImageVector = when (name) {
+    "EmojiEvents" -> Icons.Rounded.EmojiEvents
+    "LocalFireDepartment" -> Icons.Rounded.LocalFireDepartment
+    "Star" -> Icons.Rounded.Star
+    "Timer" -> Icons.Rounded.Timer
+    else -> Icons.Rounded.EmojiEvents
+}
