@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"io"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -33,10 +32,7 @@ func (h *RevenueCatHandler) Webhook(c *fiber.Ctx) error {
 	}
 
 	// Read body
-	bodyBytes, err := io.ReadAll(c.Request().Body)
-	if err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "failed_to_read_body")
-	}
+	bodyBytes := c.Body()
 
 	// Parse payload
 	var payload services.RevenueCatWebhookPayload
