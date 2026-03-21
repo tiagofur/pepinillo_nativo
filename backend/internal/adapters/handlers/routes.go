@@ -10,6 +10,7 @@ import (
 
 type RouteHandlers struct {
 	Auth         *AuthHandler
+	OAuth        *OAuthHandler
 	Users        *UserHandler
 	Tasks        *TaskHandler
 	SubTasks     *SubTaskHandler
@@ -34,6 +35,8 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	auth.Use(authLimiter)
 	auth.Post("/register", loginRegisterLimiter, deps.Auth.Register)
 	auth.Post("/login", loginRegisterLimiter, deps.Auth.Login)
+	auth.Post("/google", loginRegisterLimiter, deps.OAuth.LoginWithGoogle)
+	auth.Post("/apple", loginRegisterLimiter, deps.OAuth.LoginWithApple)
 	auth.Post("/refresh", refreshLimiter, deps.Auth.Refresh)
 	auth.Post("/forgot-password", passwordRecoveryLimiter, deps.Auth.ForgotPassword)
 	auth.Post("/reset-password", passwordRecoveryLimiter, deps.Auth.ResetPassword)
@@ -48,6 +51,13 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	protected.Post("/auth/request-email-change", deps.Auth.RequestEmailChange)
 	protected.Post("/auth/confirm-email-change", deps.Auth.ConfirmEmailChange)
 	protected.Post("/auth/cancel-email-change", deps.Auth.CancelEmailChange)
+
+	// OAuth account linking
+	protected.Post("/auth/link/google", deps.OAuth.LinkGoogleAccount)
+	protected.Post("/auth/link/apple", deps.OAuth.LinkAppleAccount)
+	protected.Delete("/auth/unlink/google", deps.OAuth.UnlinkGoogleAccount)
+	protected.Delete("/auth/unlink/apple", deps.OAuth.UnlinkAppleAccount)
+	protected.Get("/auth/providers", deps.OAuth.GetLinkedProviders)
 
 	users := protected.Group("/users")
 	users.Get("/me", deps.Users.Me)

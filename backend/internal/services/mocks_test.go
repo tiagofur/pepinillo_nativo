@@ -64,6 +64,42 @@ func (m *MockUserRepository) RollbackEmailChange(ctx context.Context, userID str
 	return args.Error(0)
 }
 
+func (m *MockUserRepository) GetByGoogleID(ctx context.Context, googleID string) (*domain.User, error) {
+	args := m.Called(ctx, googleID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.User), args.Error(1)
+}
+
+func (m *MockUserRepository) GetByAppleID(ctx context.Context, appleID string) (*domain.User, error) {
+	args := m.Called(ctx, appleID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.User), args.Error(1)
+}
+
+func (m *MockUserRepository) LinkGoogleAccount(ctx context.Context, userID, googleID, email, name, picture string) error {
+	args := m.Called(ctx, userID, googleID, email, name, picture)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) UnlinkGoogleAccount(ctx context.Context, userID string) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) LinkAppleAccount(ctx context.Context, userID, appleID, email, name string) error {
+	args := m.Called(ctx, userID, appleID, email, name)
+	return args.Error(0)
+}
+
+func (m *MockUserRepository) UnlinkAppleAccount(ctx context.Context, userID string) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
 // MockAuthStore is a testify mock for ports.AuthStore.
 type MockAuthStore struct {
 	mock.Mock

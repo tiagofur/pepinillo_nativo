@@ -15,6 +15,18 @@ type User struct {
 	EmailVerifiedAt       *time.Time `json:"emailVerifiedAt"`
 	PendingEmail          *string    `json:"pendingEmail,omitempty" gorm:"index"`
 	EmailChangedAt        *time.Time `json:"emailChangedAt,omitempty"`
-	CreatedAt             time.Time  `json:"createdAt"`
-	UpdatedAt             time.Time  `json:"updatedAt"`
+
+	// Google OAuth
+	GoogleID      *string `json:"googleId,omitempty" gorm:"uniqueIndex"`
+	GoogleEmail   *string `json:"googleEmail,omitempty"`
+	GoogleName    *string `json:"googleName,omitempty"`
+	GooglePicture *string `json:"googlePicture,omitempty"`
+
+	// Apple OAuth
+	AppleID    *string `json:"appleId,omitempty" gorm:"uniqueIndex"`
+	AppleEmail *string `json:"appleEmail,omitempty"`
+	AppleName  *string `json:"appleName,omitempty"`
+
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }

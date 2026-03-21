@@ -17,6 +17,14 @@ type UserRepository interface {
 	UpdateEmailPending(ctx context.Context, userID, newEmail string) error
 	ConfirmEmailChange(ctx context.Context, userID, newEmail string) error
 	RollbackEmailChange(ctx context.Context, userID string) error
+
+	// OAuth methods
+	GetByGoogleID(ctx context.Context, googleID string) (*domain.User, error)
+	GetByAppleID(ctx context.Context, appleID string) (*domain.User, error)
+	LinkGoogleAccount(ctx context.Context, userID, googleID, email, name, picture string) error
+	UnlinkGoogleAccount(ctx context.Context, userID string) error
+	LinkAppleAccount(ctx context.Context, userID, appleID, email, name string) error
+	UnlinkAppleAccount(ctx context.Context, userID string) error
 }
 
 type TaskRepository interface {

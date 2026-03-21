@@ -143,6 +143,74 @@ func (r *integrationUserRepo) RollbackEmailChange(_ context.Context, userID stri
 	return nil
 }
 
+func (r *integrationUserRepo) GetByGoogleID(_ context.Context, googleID string) (*domain.User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, user := range r.byID {
+		if user.GoogleID != nil && *user.GoogleID == googleID {
+			return user, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *integrationUserRepo) GetByAppleID(_ context.Context, appleID string) (*domain.User, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for _, user := range r.byID {
+		if user.AppleID != nil && *user.AppleID == appleID {
+			return user, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *integrationUserRepo) LinkGoogleAccount(_ context.Context, userID, googleID, email, name, picture string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if u, ok := r.byID[userID]; ok {
+		u.GoogleID = &googleID
+		u.GoogleEmail = &email
+		u.GoogleName = &name
+		u.GooglePicture = &picture
+	}
+	return nil
+}
+
+func (r *integrationUserRepo) UnlinkGoogleAccount(_ context.Context, userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if u, ok := r.byID[userID]; ok {
+		u.GoogleID = nil
+		u.GoogleEmail = nil
+		u.GoogleName = nil
+		u.GooglePicture = nil
+	}
+	return nil
+}
+
+func (r *integrationUserRepo) LinkAppleAccount(_ context.Context, userID, appleID, email, name string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if u, ok := r.byID[userID]; ok {
+		u.AppleID = &appleID
+		u.AppleEmail = &email
+		u.AppleName = &name
+	}
+	return nil
+}
+
+func (r *integrationUserRepo) UnlinkAppleAccount(_ context.Context, userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if u, ok := r.byID[userID]; ok {
+		u.AppleID = nil
+		u.AppleEmail = nil
+		u.AppleName = nil
+	}
+	return nil
+}
+
 func newTestAuthService(repo *integrationUserRepo, notifier *capturingNotifier) *services.AuthService {
 	return services.NewAuthService(
 		repo,

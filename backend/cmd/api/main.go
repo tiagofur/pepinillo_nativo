@@ -140,6 +140,16 @@ func main() {
 		cfg.JWTAccessTTLSeconds,
 		cfg.JWTRefreshTTLSeconds,
 	)
+
+	oauthService := services.NewOAuthService(
+		userRepo,
+		authStore,
+		cfg.JWTSecret,
+		cfg.JWTIssuer,
+		cfg.JWTAccessTTLSeconds,
+		cfg.JWTRefreshTTLSeconds,
+	)
+
 	taskService := services.NewTaskService(taskRepo, behaviorLog, wsManager)
 	subtaskService := services.NewSubTaskService(subtaskRepo, taskRepo, behaviorLog)
 	pomodoroService := services.NewPomodoroService(pomodoroRepo, behaviorLog, wsManager)
@@ -210,6 +220,7 @@ func main() {
 
 	routeDeps := handlers.RouteHandlers{
 		Auth:      handlers.NewAuthHandler(authService),
+		OAuth:     handlers.NewOAuthHandler(oauthService),
 		Users:     handlers.NewUserHandler(userRepo, fileStorage),
 		Tasks:     handlers.NewTaskHandler(taskService),
 		SubTasks:  handlers.NewSubTaskHandler(subtaskService),

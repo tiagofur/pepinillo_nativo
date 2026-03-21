@@ -85,6 +85,62 @@ func (r *fakeUserRepo) RollbackEmailChange(_ context.Context, userID string) err
 	return nil
 }
 
+func (r *fakeUserRepo) GetByGoogleID(_ context.Context, googleID string) (*domain.User, error) {
+	for _, user := range r.byID {
+		if user.GoogleID != nil && *user.GoogleID == googleID {
+			return user, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *fakeUserRepo) GetByAppleID(_ context.Context, appleID string) (*domain.User, error) {
+	for _, user := range r.byID {
+		if user.AppleID != nil && *user.AppleID == appleID {
+			return user, nil
+		}
+	}
+	return nil, nil
+}
+
+func (r *fakeUserRepo) LinkGoogleAccount(_ context.Context, userID, googleID, email, name, picture string) error {
+	if user, ok := r.byID[userID]; ok {
+		user.GoogleID = &googleID
+		user.GoogleEmail = &email
+		user.GoogleName = &name
+		user.GooglePicture = &picture
+	}
+	return nil
+}
+
+func (r *fakeUserRepo) UnlinkGoogleAccount(_ context.Context, userID string) error {
+	if user, ok := r.byID[userID]; ok {
+		user.GoogleID = nil
+		user.GoogleEmail = nil
+		user.GoogleName = nil
+		user.GooglePicture = nil
+	}
+	return nil
+}
+
+func (r *fakeUserRepo) LinkAppleAccount(_ context.Context, userID, appleID, email, name string) error {
+	if user, ok := r.byID[userID]; ok {
+		user.AppleID = &appleID
+		user.AppleEmail = &email
+		user.AppleName = &name
+	}
+	return nil
+}
+
+func (r *fakeUserRepo) UnlinkAppleAccount(_ context.Context, userID string) error {
+	if user, ok := r.byID[userID]; ok {
+		user.AppleID = nil
+		user.AppleEmail = nil
+		user.AppleName = nil
+	}
+	return nil
+}
+
 func newAuthServiceForTest(repo *fakeUserRepo) *AuthService {
 	return NewAuthService(
 		repo,

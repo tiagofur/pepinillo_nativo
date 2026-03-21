@@ -96,3 +96,73 @@ func (r *UserRepository) RollbackEmailChange(ctx context.Context, userID string)
 			"email_changed_at": nil,
 		}).Error
 }
+
+func (r *UserRepository) GetByGoogleID(ctx context.Context, googleID string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where("google_id = ?", googleID).First(&user).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepository) GetByAppleID(ctx context.Context, appleID string) (*domain.User, error) {
+	var user domain.User
+	err := r.db.WithContext(ctx).Where("apple_id = ?", appleID).First(&user).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (r *UserRepository) LinkGoogleAccount(ctx context.Context, userID, googleID, email, name, picture string) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Updates(map[string]any{
+			"google_id":      googleID,
+			"google_email":   email,
+			"google_name":    name,
+			"google_picture": picture,
+			"updated_at":     &now,
+		}).Error
+}
+
+func (r *UserRepository) UnlinkGoogleAccount(ctx context.Context, userID string) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Updates(map[string]any{
+			"google_id":      nil,
+			"google_email":   nil,
+			"google_name":    nil,
+			"google_picture": nil,
+			"updated_at":     &now,
+		}).Error
+}
+
+func (r *UserRepository) LinkAppleAccount(ctx context.Context, userID, appleID, email, name string) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Updates(map[string]any{
+			"apple_id":    appleID,
+			"apple_email": email,
+			"apple_name":  name,
+			"updated_at":  &now,
+		}).Error
+}
+
+func (r *UserRepository) UnlinkAppleAccount(ctx context.Context, userID string) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Updates(map[string]any{
+			"apple_id":    nil,
+			"apple_email": nil,
+			"apple_name":  nil,
+			"updated_at":  &now,
+		}).Error
+}
