@@ -15,6 +15,7 @@ type RouteHandlers struct {
 	Tasks        *TaskHandler
 	SubTasks     *SubTaskHandler
 	Pomodoro     *PomodoroHandler
+	Focus        *FocusHandler
 	AI           *AIHandler
 	Billing      *BillingHandler
 	Push         *PushHandler
@@ -90,6 +91,19 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	pomodoro.Get("/sessions", deps.Pomodoro.ListSessionsByTask)
 	pomodoro.Post("/sessions", deps.Pomodoro.InsertSession)
 	pomodoro.Put("/sessions/:id", deps.Pomodoro.UpdateSession)
+
+	// New Focus endpoints (multi-mode support)
+	focus := protected.Group("/focus")
+	focus.Get("/config", deps.Focus.GetConfig)
+	focus.Put("/config", deps.Focus.UpsertConfig)
+	focus.Get("/stats", deps.Focus.ListStats)
+	focus.Post("/stats", deps.Focus.UpsertStats)
+	focus.Get("/sessions/all", deps.Focus.ListAllSessions)
+	focus.Get("/sessions/range", deps.Focus.ListSessionsByRange)
+	focus.Get("/sessions/task-stats/:taskId", deps.Focus.GetTaskStats)
+	focus.Get("/sessions", deps.Focus.ListSessionsByTask)
+	focus.Post("/sessions", deps.Focus.InsertSession)
+	focus.Put("/sessions/:id", deps.Focus.UpdateSession)
 
 	ai := protected.Group("/ai")
 	ai.Get("/daily-tip", deps.AI.DailyTip)

@@ -153,6 +153,7 @@ func main() {
 	taskService := services.NewTaskService(taskRepo, behaviorLog, wsManager)
 	subtaskService := services.NewSubTaskService(subtaskRepo, taskRepo, behaviorLog)
 	pomodoroService := services.NewPomodoroService(pomodoroRepo, behaviorLog, wsManager)
+	focusService := services.NewFocusService(pomodoroRepo, behaviorLog, wsManager)
 	billingService := services.NewBillingService(userRepo, services.BillingConfig{
 		GooglePlayPackageName:              cfg.GooglePlayPackageName,
 		GooglePlayAPIToken:                 cfg.GooglePlayAPIToken,
@@ -225,6 +226,7 @@ func main() {
 		Tasks:     handlers.NewTaskHandler(taskService),
 		SubTasks:  handlers.NewSubTaskHandler(subtaskService),
 		Pomodoro:  handlers.NewPomodoroHandler(pomodoroService),
+		Focus:     handlers.NewFocusHandler(focusService),
 		AI:        handlers.NewAIHandler(aiService),
 		Billing:   handlers.NewBillingHandler(billingService),
 		Push:      handlers.NewPushHandler(pushService),

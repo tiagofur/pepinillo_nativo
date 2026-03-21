@@ -70,3 +70,17 @@ type DeviceTokenRepository interface {
 	ListByUser(ctx context.Context, userID string) ([]domain.DeviceToken, error)
 	DeleteByToken(ctx context.Context, userID, token string) error
 }
+
+type FocusRepository interface {
+	GetConfig(ctx context.Context, userID string) (*domain.FocusConfig, error)
+	UpsertConfig(ctx context.Context, config *domain.FocusConfig) error
+	UpsertStats(ctx context.Context, stats *domain.FocusStats) error
+	ListStatsByRange(ctx context.Context, userID string, from, to time.Time) ([]domain.FocusStats, error)
+	GetStatsByDate(ctx context.Context, userID string, date time.Time) (*domain.FocusStats, error)
+	InsertSession(ctx context.Context, session *domain.FocusSession) error
+	UpdateSession(ctx context.Context, session *domain.FocusSession) error
+	ListAllSessions(ctx context.Context, userID string) ([]domain.FocusSession, error)
+	ListSessionsByTask(ctx context.Context, userID string, taskID int) ([]domain.FocusSession, error)
+	ListSessionsByRange(ctx context.Context, userID string, from, to time.Time) ([]domain.FocusSession, error)
+	GetTaskStats(ctx context.Context, userID string, taskID int) (*domain.TaskFocusStats, error)
+}
