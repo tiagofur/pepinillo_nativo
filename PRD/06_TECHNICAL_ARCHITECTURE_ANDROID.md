@@ -1077,3 +1077,262 @@ Las siguientes son las decisiones técnicas clave tomadas durante el desarrollo,
 ### 18. WorkManager con Hilt
 **Problema:** Workers necesitan inyección de dependencias pero no soportan `@Inject` estándar.
 **Solución:** `@HiltWorker` + `hilt-work 1.2.0`; `PepinilloApp implements Configuration.Provider` para inicialización custom de WorkManager.
+
+---
+
+## 19. Backend e Integración con Servidor
+
+### 19.1 Visión General del Backend Go
+
+El backend de Pepinillo es una API REST escrita en **Go** con arquitectura hexagonal. Aún **no está desplegado** en producción — se encuentra en desarrollo activo en `backend/`.
+
+| Aspecto | Tecnología |
+|---------|------------|
+| **Lenguaje** | Go |
+| **Framework HTTP** | Fiber |
+| **Base de datos** | PostgreSQL |
+| **Autenticación** | JWT (access + refresh tokens) |
+| **Arquitectura** | Hexagonal (puertos y adaptadores) |
+| **Estado** | En desarrollo, no desplegado |
+
+#### Grupos de Endpoints
+
+| Grupo | Endpoints | Descripción |
+|-------|-----------|-------------|
+| **Auth** | `POST /auth/login`, `POST /auth/register`, `POST /auth/google`, `POST /auth/apple` | Autenticación por email/password + OAuth (Google/Apple) |
+| **Tasks** | `GET/POST/PUT/DELETE /api/v1/tasks` | CRUD de tareas |
+| **Sessions** | `GET/POST /api/v1/pomodoro-sessions` | Registro y consulta de sesiones de enfoque |
+| **Stats** | `GET /api/v1/stats/daily`, `GET /api/v1/stats/weekly` | Estadísticas agregadas (pendiente) |
+| **Billing** | `POST /api/v1/billing/verify-receipt` | Verificación server-side de recibos (Play Store y App Store) |
+| **Push** | `POST /api/v1/push/register` | Registro de tokens FCM para notificaciones push |
+| **WebSocket** | `WS /api/v1/ws` | Canal de sincronización en tiempo real |
+| **AI** | `POST /api/v1/ai/report` | Generación de reportes de productividad |
+| **Users** | `GET /api/v1/users/me`, `PUT /api/v1/users/me` | Perfil del usuario |
+
+#### Modelo de Usuario en Backend
+
+```go
+type User struct {
+    ID               uuid.UUID
+    Email            string
+    Name             string
+    PasswordHash     string
+    ImageURL         string
+    BirthDate        time.Time
+    SubscriptionTier string    // "free" | "pro"
+    EmailVerified    bool
+    CreatedAt        time.Time
+    UpdatedAt        time.Time
+}
+```
+
+### 19.2 Flujo de Autenticación
+
+Android utiliza **Google Sign-In** como método principal de autenticación, con email/password como alternativa.
+
+#### Google Sign-In (método principal)
+
+```
+┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
+│   Android    │     │  Google Identity  │     │  Backend Go  │
+│   App        │     │  Services         │     │              │
+│              │     │                   │     │              │
+│ 1. Credential│────►│ 2. Autenticación  │     │              │
+│    Manager   │     │    con Google     │     │              │
+│              │◄────│ 3. idToken (JWT)  │     │              │
+│              │     │                   │     │              │
+│ 4. POST      │────────────────────────────►│ 5. Verifica   │
+│    /auth/    │     │                   │     │    idToken    │
+│    google    │     │                   │     │    con Google │
+│              │◄────────────────────────────│ 6. JWT access │
+│              │     │                   │     │    + refresh  │
+│ 7. Almacena  │     │                   │     │              │
+│    en Auth   │     │                   │     │              │
+│    Store     │     │                   │     │              │
+└──────────────┘     └──────────────────┘     └──────────────┘
+```
+
+**Pasos detallados:**
+
+1. El usuario toca "Continuar con Google" en `AuthScreen`
+2. Se invoca **Credential Manager** (`androidx.credentials`) para obtener una `GoogleIdTokenCredential`
+3. Google retorna un `idToken` (JWT firmado por Google)
+4. La app envía `POST /auth/google` con el `idToken` en el body
+5. El backend valida el `idToken` contra los servidores de Google, extrae email/nombre/foto
+6. Si el usuario no existe, lo crea; retorna JWT (access + refresh token) de Pepinillo
+7. Los tokens se almacenan en `AuthStore` (basado en `EncryptedSharedPreferences`, cifrado AES-256)
+
+#### Email/Password (alternativa)
+
+- `POST /auth/register` → crea cuenta con email + password
+- `POST /auth/login` → retorna JWT access + refresh tokens
+- Tokens almacenados en `AuthStore` igual que con Google Sign-In
+
+#### Gestión de Tokens
+
+| Token | Almacenamiento | Duración | Renovación |
+|-------|---------------|----------|------------|
+| **Access Token** | `AuthStore` (EncryptedSharedPreferences) | Corta (15-30 min) | Automática vía refresh token |
+| **Refresh Token** | `AuthStore` (EncryptedSharedPreferences) | Larga (30 días) | Requiere re-login al expirar |
+
+El `PepinilloApiClient` (Ktor) incluye un interceptor de autenticación que:
+- Adjunta el access token como `Authorization: Bearer <token>` en cada request
+- Detecta respuestas `401 Unauthorized`
+- Intenta renovar el access token usando el refresh token
+- Si la renovación falla, redirige al usuario a `AuthScreen`
+
+### 19.3 Estrategia de Sincronización Cloud
+
+El backend Go es la **fuente de verdad** para datos cross-platform. La sincronización es bidireccional con resolución last-write-wins.
+
+#### Arquitectura de Sync
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      Android App                         │
+│                                                          │
+│  Room DB ◄──► SyncEngine ◄──► PepinilloApiClient ──────┤
+│  (local)      (dirty flags)    (Ktor HTTP)               │
+│                    ▲                                     │
+│                    │                                     │
+│               SyncWorker          WebSocket              │
+│              (WorkManager)     (real-time push)          │
+└────────────────────┼──────────────────┼─────────────────┘
+                     │                  │
+                     ▼                  ▼
+              ┌──────────────────────────────┐
+              │        Backend Go            │
+              │   PostgreSQL (fuente de      │
+              │   verdad cross-platform)     │
+              └──────────────────────────────┘
+```
+
+#### Flujo de Sincronización
+
+| Paso | Dirección | Descripción |
+|------|-----------|-------------|
+| 1. Escritura local | — | El usuario crea/edita/elimina → Room guarda con `isDirty = true` |
+| 2. Push (upload) | App → Backend | `SyncEngine` envía todas las entidades con `isDirty = true` al backend |
+| 3. Pull (download) | Backend → App | `SyncEngine` consulta el backend por cambios desde `syncedAt` |
+| 4. Merge | — | Resolución last-write-wins basada en `updatedAt` |
+| 5. Mark synced | — | Entidades sincronizadas: `isDirty = false`, `syncedAt = now()` |
+
+#### Triggers de Sincronización
+
+| Tipo | Trigger | Mecanismo | Latencia |
+|------|---------|-----------|----------|
+| **Tiempo real** | Cambio remoto (otro dispositivo) | WebSocket push desde backend | ~1 segundo |
+| **Inmediato** | Tarea completada, sesión finalizada | `OneTimeWorkRequest` expedited | ~2-5 segundos |
+| **Periódico** | Cada 15 minutos | `PeriodicWorkRequest` vía WorkManager | ≤ 15 minutos |
+| **Manual** | Pull-to-refresh del usuario | `SyncEngine.syncAll()` directo | Inmediato |
+
+#### WebSocket (Sincronización en Tiempo Real)
+
+El backend expone `WS /api/v1/ws` para notificar a los dispositivos conectados sobre cambios remotos:
+
+- Al conectar, el cliente envía su JWT para autenticarse
+- El backend emite eventos cuando otro dispositivo del mismo usuario modifica datos
+- El cliente recibe el evento y ejecuta un pull selectivo de los datos modificados
+- Reconexión automática con backoff exponencial si se pierde la conexión
+
+#### WorkManager Fallback
+
+`SyncWorker` actúa como red de seguridad cuando el WebSocket no está disponible:
+
+```kotlin
+@HiltWorker
+class SyncWorker @AssistedInject constructor(
+    @Assisted context: Context,
+    @Assisted params: WorkerParameters,
+    private val syncEngine: SyncEngine,
+) : CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result {
+        return try {
+            syncEngine.syncAll()
+            Result.success()
+        } catch (e: Exception) {
+            Result.retry()
+        }
+    }
+}
+```
+
+- **Periódico:** `PeriodicWorkRequestBuilder<SyncWorker>(15, MINUTES)` con constraint `NetworkType.CONNECTED`
+- **Inmediato:** `OneTimeWorkRequestBuilder<SyncWorker>().setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)` tras acciones del usuario
+
+### 19.4 Suscripciones Cross-Platform
+
+Las suscripciones se verifican **server-side** para garantizar paridad entre plataformas. Un usuario que compra PRO en Android puede usar PRO en iOS y viceversa.
+
+#### Flujo de Verificación
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   Android    │     │  Backend Go  │     │  Google Play  │
+│              │     │              │     │  Developer    │
+│ 1. Usuario   │     │              │     │  API          │
+│    compra    │     │              │     │              │
+│    en Play   │     │              │     │              │
+│    Store     │     │              │     │              │
+│              │     │              │     │              │
+│ 2. POST      │────►│ 3. Valida    │────►│ 4. Verifica  │
+│    /billing/ │     │    recibo    │     │    compra    │
+│    verify-   │     │    con Play  │◄────│ 5. Confirma  │
+│    receipt   │     │    API       │     │    válido    │
+│              │     │              │     │              │
+│              │◄────│ 6. Actualiza │     │              │
+│              │     │    user.sub  │     │              │
+│ 7. Cachea    │     │    tier=pro  │     │              │
+│    PRO local │     │              │     │              │
+└──────────────┘     └──────────────┘     └──────────────┘
+```
+
+**Pasos detallados:**
+
+1. El usuario completa la compra vía Play Billing Library 7.1.1
+2. La app envía `POST /api/v1/billing/verify-receipt` con el token de compra y el product ID
+3. El backend valida el recibo contra la Google Play Developer API
+4-5. Google confirma que la compra es legítima
+6. El backend actualiza `User.SubscriptionTier = "pro"` en PostgreSQL
+7. La app cachea el estado PRO localmente; todas las verificaciones futuras consultan `GET /api/v1/users/me`
+
+**Fuente de verdad:** El campo `subscription_tier` del backend. La app consulta `/users/me` al iniciar y periódicamente para sincronizar el estado de suscripción. El `BillingManager` local actúa como cache.
+
+**Paridad cross-platform:** Un usuario que compra PRO en iOS (App Store) verá su estado PRO reflejado en Android al hacer login, porque el backend centraliza el tier.
+
+### 19.5 Perfil de Usuario
+
+El perfil de usuario combina datos de autenticación, estadísticas y suscripción.
+
+#### Modelo de Datos del Perfil
+
+| Campo | Origen | Descripción |
+|-------|--------|-------------|
+| `name` | Backend (`User.Name`) | Nombre para mostrar (de Google/Apple o manual) |
+| `email` | Backend (`User.Email`) | Email de la cuenta |
+| `avatarUrl` | Backend (`User.ImageURL`) | Foto de perfil (URL de Google/Apple) |
+| `subscriptionTier` | Backend (`User.SubscriptionTier`) | `"free"` o `"pro"` |
+| `subscriptionExpiresAt` | Backend | Fecha de vencimiento de suscripción PRO |
+| `linkedAccounts` | Backend | Proveedores vinculados: Google, Apple, email |
+| `emailVerified` | Backend (`User.EmailVerified`) | Si el email está verificado |
+| `memberSince` | Backend (`User.CreatedAt`) | Fecha de registro |
+
+#### Estadísticas del Perfil (calculadas)
+
+| Estadística | Cálculo | Fuente |
+|-------------|---------|--------|
+| **Racha actual** | Días consecutivos con al menos una sesión | `StatsDao.getStreakCount()` (CTE recursivo) |
+| **Horas totales de enfoque** | Suma de `totalFocusSeconds` de todos los `DailyStatsEntity` | Room local |
+| **Sesiones completadas** | Suma de `sessionsCompleted` de todos los `DailyStatsEntity` | Room local |
+| **Tareas completadas** | Conteo de `TaskEntity` con `isCompleted = true` | Room local |
+| **Modo dominante** | Modo con más segundos totales | Cálculo sobre `DailyStatsEntity` |
+
+#### Pantalla de Perfil
+
+La pantalla de perfil (`ProfileScreen`) muestra:
+
+- **Header:** Avatar, nombre, email, badge PRO/FREE
+- **Estadísticas:** Racha, horas totales, sesiones, tareas completadas, miembro desde
+- **Cuenta:** Cuentas vinculadas (Google, Apple, email), opción de vincular/desvincular
+- **Suscripción:** Estado actual, fecha de vencimiento, botón de gestionar/upgrade
+- **Acciones:** Cerrar sesión, eliminar cuenta

@@ -1135,3 +1135,309 @@ El proyecto Xcode se genera desde `project.yml` via XcodeGen:
 ```bash
 xcodegen generate  # regenerar despues de cambios en project.yml
 ```
+
+---
+
+## 18. Backend e Integracion con Servidor
+
+### 18.1 Vision General del Backend Go
+
+El backend de Pepinillo es una API REST escrita en **Go** con arquitectura hexagonal. Aun **no esta desplegado** en produccion — se encuentra en desarrollo activo en `backend/`.
+
+| Aspecto | Tecnologia |
+|---------|------------|
+| **Lenguaje** | Go |
+| **Framework HTTP** | Fiber |
+| **Base de datos** | PostgreSQL |
+| **Autenticacion** | JWT (access + refresh tokens) |
+| **Arquitectura** | Hexagonal (puertos y adaptadores) |
+| **Estado** | En desarrollo, no desplegado |
+
+#### Grupos de Endpoints
+
+| Grupo | Endpoints | Descripcion |
+|-------|-----------|-------------|
+| **Auth** | `POST /auth/login`, `POST /auth/register`, `POST /auth/google`, `POST /auth/apple` | Autenticacion por email/password + OAuth (Google/Apple) |
+| **Tasks** | `GET/POST/PUT/DELETE /api/v1/tasks` | CRUD de tareas |
+| **Sessions** | `GET/POST /api/v1/pomodoro-sessions` | Registro y consulta de sesiones de enfoque |
+| **Stats** | `GET /api/v1/stats/daily`, `GET /api/v1/stats/weekly` | Estadisticas agregadas (pendiente) |
+| **Billing** | `POST /api/v1/billing/verify-receipt` | Verificacion server-side de recibos (App Store y Play Store) |
+| **Push** | `POST /api/v1/push/register` | Registro de tokens APNs para notificaciones push |
+| **WebSocket** | `WS /api/v1/ws` | Canal de sincronizacion en tiempo real |
+| **AI** | `POST /api/v1/ai/report` | Generacion de reportes de productividad |
+| **Users** | `GET /api/v1/users/me`, `PUT /api/v1/users/me` | Perfil del usuario |
+
+#### Modelo de Usuario en Backend
+
+```go
+type User struct {
+    ID               uuid.UUID
+    Email            string
+    Name             string
+    PasswordHash     string
+    ImageURL         string
+    BirthDate        time.Time
+    SubscriptionTier string    // "free" | "pro"
+    EmailVerified    bool
+    CreatedAt        time.Time
+    UpdatedAt        time.Time
+}
+```
+
+### 18.2 Flujo de Autenticacion
+
+iOS utiliza **Sign In with Apple** como metodo principal de autenticacion, con email/password como alternativa.
+
+#### Sign In with Apple (metodo principal)
+
+```
+┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
+│   iOS App    │     │  Apple Identity   │     │  Backend Go  │
+│              │     │  Services         │     │              │
+│              │     │                   │     │              │
+│ 1. ASAutho-  │────►│ 2. Autenticacion  │     │              │
+│    rization  │     │    biometrica     │     │              │
+│    Controller│◄────│ 3. identityToken  │     │              │
+│              │     │    + authCode     │     │              │
+│              │     │                   │     │              │
+│ 4. POST      │────────────────────────────►│ 5. Verifica   │
+│    /auth/    │     │                   │     │    identity  │
+│    apple     │     │                   │     │    Token con │
+│              │     │                   │     │    Apple     │
+│              │◄────────────────────────────│ 6. JWT access │
+│              │     │                   │     │    + refresh  │
+│ 7. Almacena  │     │                   │     │              │
+│    en        │     │                   │     │              │
+│    Keychain  │     │                   │     │              │
+└──────────────┘     └──────────────────┘     └──────────────┘
+```
+
+**Pasos detallados:**
+
+1. El usuario toca "Continuar con Apple" → se presenta `ASAuthorizationAppleIDProvider` via `SignInWithAppleClient`
+2. Apple autentica con Face ID / Touch ID / password del dispositivo
+3. Apple retorna un `identityToken` (JWT firmado por Apple) y un `authorizationCode`
+4. La app envia `POST /auth/apple` con el `identityToken` en el body
+5. El backend valida el token contra los servidores de Apple (verifica firma, audience, issuer)
+6. Si el usuario no existe, lo crea; retorna JWT (access + refresh token) de Pepinillo
+7. Los tokens se almacenan en **Keychain** (cifrado por hardware, protegido por Secure Enclave)
+
+> **Nota:** Apple solo envia el nombre y email del usuario en la **primera** autorizacion. El backend los persiste en ese momento. En autorizaciones subsecuentes, solo se recibe el `identityToken`.
+
+#### Email/Password (alternativa)
+
+- `POST /auth/register` → crea cuenta con email + password
+- `POST /auth/login` → retorna JWT access + refresh tokens
+- Tokens almacenados en Keychain igual que con Sign In with Apple
+
+#### Gestion de Tokens
+
+| Token | Almacenamiento | Duracion | Renovacion |
+|-------|---------------|----------|------------|
+| **Access Token** | Keychain | Corta (15-30 min) | Automatica via refresh token |
+| **Refresh Token** | Keychain | Larga (30 dias) | Requiere re-login al expirar |
+
+El cliente API (basado en `URLSession`) incluye logica de renovacion automatica:
+- Adjunta el access token como `Authorization: Bearer <token>` en cada request
+- Detecta respuestas `401 Unauthorized`
+- Intenta renovar el access token usando el refresh token
+- Si la renovacion falla, emite una accion TCA que redirige al flujo de login
+
+#### Transicion desde Sign In with Apple Standalone
+
+Actualmente, `SignInWithAppleClient` almacena `appleUserID` en `UserPreferences` (CloudKit). Con el backend:
+
+1. `SignInWithAppleClient` continua obteniendo el `identityToken` de Apple
+2. En lugar de solo guardar el `appleUserID` localmente, ahora tambien envia el token al backend
+3. El backend se convierte en la fuente de verdad para la identidad del usuario
+4. `UserPreferences.appleUserID` se mantiene como cache local para verificacion rapida
+
+### 18.3 Estrategia de Sincronizacion Dual
+
+iOS mantiene **dos capas de sincronizacion** en paralelo durante la transicion al backend:
+
+#### Capa 1: SwiftData + CloudKit (sincronizacion Apple)
+
+La sincronizacion existente via `NSPersistentCloudKitContainer` **se mantiene** intacta:
+
+- Sync automatico entre dispositivos Apple del mismo usuario (iPhone, iPad, Mac, Watch)
+- Sin codigo de sync manual — CloudKit lo gestiona
+- Baja latencia entre dispositivos Apple (~1-5 segundos)
+- Funciona sin backend (modo offline completo)
+
+#### Capa 2: Backend Sync (sincronizacion cross-platform)
+
+Nueva capa de sincronizacion con el backend Go para compartir datos con Android:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        iOS App                               │
+│                                                              │
+│  SwiftData ◄──► CloudKit       SwiftData ◄──► BackendSync  │
+│  (Apple sync,   (automatico)   (mismos datos)  (API REST    │
+│   sin cambios)                                  + WebSocket) │
+│                                                              │
+│  Prioridad: CloudKit para sync Apple-Apple                   │
+│             Backend para sync cross-platform                 │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │  Backend Go  │
+                    │  PostgreSQL  │
+                    └──────────────┘
+```
+
+#### Estrategia de Migracion para Usuarios Existentes de CloudKit
+
+Los usuarios que ya tienen datos en CloudKit necesitan una migracion al backend:
+
+| Paso | Accion | Detalle |
+|------|--------|---------|
+| 1 | Login con backend | El usuario se autentica (Apple/email) por primera vez |
+| 2 | Deteccion de datos locales | La app detecta que existen datos en SwiftData/CloudKit |
+| 3 | Upload inicial | Se suben todas las tareas, sesiones y stats al backend via batch API |
+| 4 | Mapeo de IDs | Se guardan los `serverId` retornados por el backend en los modelos locales |
+| 5 | Sync activo | A partir de este punto, los cambios se sincronizan bidireccionalmente |
+
+> **Importante:** CloudKit sigue siendo la capa primaria para sync Apple-Apple. El backend es un "mirror" adicional para cross-platform. No se elimina CloudKit.
+
+#### WebSocket (Sincronizacion en Tiempo Real)
+
+El backend expone `WS /api/v1/ws` para notificar cambios remotos:
+
+- Al conectar, el cliente envia su JWT para autenticarse
+- El backend emite eventos cuando otro dispositivo (ej: Android) del mismo usuario modifica datos
+- El cliente iOS recibe el evento y ejecuta un pull selectivo
+- Reconexion automatica con backoff exponencial
+
+#### BackgroundTasks (Fallback)
+
+Cuando el WebSocket no esta disponible, se usa `BGAppRefreshTask` como fallback:
+
+- Registrado con `BGTaskScheduler` para ejecucion periodica (~15 minutos)
+- Ejecuta `BackendSyncClient.syncAll()` para push/pull de cambios pendientes
+- Constraint: requiere conexion a internet
+
+### 18.4 Suscripciones Cross-Platform
+
+Las suscripciones se verifican **server-side** para garantizar paridad entre plataformas. Un usuario que compra PRO en iOS puede usar PRO en Android y viceversa.
+
+#### Flujo de Verificacion
+
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│   iOS App    │     │  Backend Go  │     │  App Store   │
+│              │     │              │     │  Server API  │
+│ 1. Usuario   │     │              │     │              │
+│    compra    │     │              │     │              │
+│    con       │     │              │     │              │
+│    StoreKit 2│     │              │     │              │
+│              │     │              │     │              │
+│ 2. POST      │────►│ 3. Valida    │────►│ 4. Verifica  │
+│    /billing/ │     │    recibo    │     │    con App   │
+│    verify-   │     │    con App   │◄────│    Store     │
+│    receipt   │     │    Store API │     │    Server    │
+│              │     │              │     │    Notif. V2 │
+│              │◄────│ 5. Actualiza │     │              │
+│              │     │    user.sub  │     │              │
+│ 6. Cachea    │     │    tier=pro  │     │              │
+│    PRO local │     │              │     │              │
+└──────────────┘     └──────────────┘     └──────────────┘
+```
+
+**Pasos detallados:**
+
+1. El usuario completa la compra via `SubscriptionClient` (StoreKit 2 nativo)
+2. La app envia `POST /api/v1/billing/verify-receipt` con el `originalTransactionID` y el `signedPayload` (JWS)
+3. El backend valida el recibo contra la App Store Server API (verifica firma JWS, estado de suscripcion)
+4. App Store confirma que la compra es legitima y activa
+5. El backend actualiza `User.SubscriptionTier = "pro"` en PostgreSQL
+6. La app cachea el estado PRO localmente; todas las verificaciones futuras consultan `GET /api/v1/users/me`
+
+**Fuentes de verdad:**
+
+| Contexto | Fuente |
+|----------|--------|
+| **Cross-platform** | Backend (`User.SubscriptionTier`) — consultado via `/users/me` |
+| **Solo Apple** | StoreKit 2 local (`Transaction.currentEntitlements`) — funciona offline |
+| **Jerarquia** | Backend > StoreKit local. Si el backend dice PRO (compra en Android), la app iOS desbloquea PRO |
+
+**Paridad cross-platform:** Un usuario que compra PRO en Android (Play Store) vera su estado PRO reflejado en iOS al consultar `/users/me`, porque el backend centraliza el tier.
+
+**StoreKit 2 como cache local:**
+
+El `SubscriptionClient` existente sigue funcionando como cache local:
+- `Transaction.currentEntitlements` para verificacion rapida offline
+- `SubscriptionManager` (actor) continua gestionando el estado de StoreKit
+- La diferencia es que ahora tambien se sincroniza con el backend para paridad cross-platform
+
+### 18.5 Perfil de Usuario
+
+El perfil de usuario combina datos de autenticacion, estadisticas y suscripcion.
+
+#### Modelo de Datos del Perfil
+
+| Campo | Origen | Descripcion |
+|-------|--------|-------------|
+| `name` | Backend (`User.Name`) | Nombre para mostrar (de Apple/Google o manual) |
+| `email` | Backend (`User.Email`) | Email de la cuenta |
+| `avatarUrl` | Backend (`User.ImageURL`) | Foto de perfil (URL de Apple/Google) |
+| `subscriptionTier` | Backend (`User.SubscriptionTier`) | `"free"` o `"pro"` |
+| `subscriptionExpiresAt` | Backend | Fecha de vencimiento de suscripcion PRO |
+| `linkedAccounts` | Backend | Proveedores vinculados: Apple, Google, email |
+| `emailVerified` | Backend (`User.EmailVerified`) | Si el email esta verificado |
+| `memberSince` | Backend (`User.CreatedAt`) | Fecha de registro |
+
+#### Estadisticas del Perfil (calculadas)
+
+| Estadistica | Calculo | Fuente |
+|-------------|---------|--------|
+| **Racha actual** | Dias consecutivos con al menos una sesion | `PersistenceClient` → `DailyStats.hadFocusSession` |
+| **Horas totales de enfoque** | Suma de `totalFocusSeconds` de todos los `DailyStats` | SwiftData local |
+| **Sesiones completadas** | Suma de `sessionsCompleted` de todos los `DailyStats` | SwiftData local |
+| **Tareas completadas** | Conteo de `TaskItem` con `isCompleted = true` | SwiftData local |
+| **Modo dominante** | Modo con mas segundos totales | Calculo sobre `DailyStats` |
+
+#### Implementacion con TCA
+
+El perfil se implementa como un feature TCA:
+
+```swift
+@Reducer
+struct ProfileFeature {
+    @ObservableState
+    struct State: Equatable {
+        var userName: String
+        var userEmail: String
+        var avatarURL: URL?
+        var subscriptionTier: String       // "free" | "pro"
+        var linkedAccounts: [String]       // ["apple", "google", "email"]
+        var memberSince: Date
+        // Stats
+        var currentStreak: Int
+        var totalFocusHours: Double
+        var totalSessions: Int
+        var totalTasksCompleted: Int
+    }
+
+    enum Action {
+        case onAppear
+        case profileLoaded(UserProfile)
+        case statsLoaded(ProfileStats)
+        case logoutTapped
+        case deleteAccountTapped
+        case manageSubscriptionTapped
+    }
+}
+```
+
+#### Pantalla de Perfil
+
+La `ProfileView` (SwiftUI) muestra:
+
+- **Header:** Avatar, nombre, email, badge PRO/FREE
+- **Estadisticas:** Racha, horas totales, sesiones, tareas completadas, miembro desde
+- **Cuenta:** Cuentas vinculadas (Apple, Google, email), opcion de vincular/desvincular
+- **Suscripcion:** Estado actual, fecha de vencimiento, boton de gestionar/upgrade
+- **Acciones:** Cerrar sesion, eliminar cuenta
