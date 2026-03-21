@@ -32,6 +32,9 @@ class PepinilloApiClient @Inject constructor(
     suspend fun register(email: String, name: String, password: String): NetworkResult<AuthResponse> =
         safeCall { httpClient.post("auth/register") { jsonBody(RegisterRequest(email, name, password)) }.body() }
 
+    suspend fun loginWithGoogle(idToken: String): NetworkResult<AuthResponse> =
+        safeCall { httpClient.post("auth/google") { jsonBody(GoogleLoginRequest(idToken)) }.body() }
+
     suspend fun refreshToken(refreshToken: String): NetworkResult<RefreshResponse> =
         safeCall { httpClient.post("auth/refresh") { jsonBody(RefreshRequest(refreshToken)) }.body() }
 

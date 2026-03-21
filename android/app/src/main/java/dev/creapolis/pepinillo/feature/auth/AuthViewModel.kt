@@ -1,8 +1,17 @@
 package dev.creapolis.pepinillo.feature.auth
 
+import android.content.Context
+import android.util.Log
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.NoCredentialException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.creapolis.pepinillo.BuildConfig
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
@@ -16,6 +25,7 @@ import javax.inject.Inject
 
 data class AuthUiState(
     val isLoading: Boolean = false,
+    val googleSignInLoading: Boolean = false,
     val error: String? = null,
     val isAuthenticated: Boolean = false,
     val isGuestMode: Boolean = false,
@@ -108,6 +118,72 @@ class AuthViewModel @Inject constructor(
                 is NetworkResult.NetworkError -> {
                     _uiState.value = _uiState.value.copy(isLoading = false, error = "No internet connection")
                 }
+            }
+        }
+    }
+
+    fun signInWithGoogle(context: Context) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(googleSignInLoading = true, error = null)
+            try {
+                val googleIdOption = GetGoogleIdOption.Builder()
+                    .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
+                    .setFilterByAuthorizedAccounts(false)
+                    .setAutoSelectEnabled(true)
+                    .build()
+
+                val request = GetCredentialRequest.Builder()
+                    .addCredentialOption(googleIdOption)
+                    .build()
+
+                val credentialManager = CredentialManager.create(context)
+                val result = credentialManager.getCredential(context, request)
+                val credential = result.credential
+
+                val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                val idToken = googleIdTokenCredential.idToken
+
+                when (val apiResult = apiClient.loginWithGoogle(idToken)) {
+                    is NetworkResult.Success -> {
+                        authStore.saveTokens(
+                            apiResult.data.tokens.accessToken,
+                            apiResult.data.tokens.refreshToken,
+                        )
+                        authStore.saveUser(
+                            apiResult.data.user.id,
+                            apiResult.data.user.name,
+                            apiResult.data.user.email,
+                        )
+                        userRepository.cacheUserFromDto(apiResult.data.user)
+                        viewModelScope.launch { syncEngine.syncAll() }
+                        _uiState.value = _uiState.value.copy(googleSignInLoading = false, isAuthenticated = true)
+                    }
+                    is NetworkResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            googleSignInLoading = false,
+                            error = mapAuthError(apiResult.code, apiResult.message),
+                        )
+                    }
+                    is NetworkResult.NetworkError -> {
+                        _uiState.value = _uiState.value.copy(
+                            googleSignInLoading = false,
+                            error = "No internet connection",
+                        )
+                    }
+                }
+            } catch (e: GetCredentialCancellationException) {
+                _uiState.value = _uiState.value.copy(googleSignInLoading = false)
+            } catch (e: NoCredentialException) {
+                _uiState.value = _uiState.value.copy(
+                    googleSignInLoading = false,
+                    error = "No Google accounts available on this device",
+                )
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Google Sign-In failed", e)
+                _uiState.value = _uiState.value.copy(
+                    googleSignInLoading = false,
+                    error = "Google Sign-In failed. Please try again.",
+                )
             }
         }
     }

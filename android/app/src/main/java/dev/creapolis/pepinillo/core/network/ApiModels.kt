@@ -18,6 +18,9 @@ data class RegisterRequest(
 )
 
 @Serializable
+data class GoogleLoginRequest(val idToken: String)
+
+@Serializable
 data class RefreshRequest(
     val refreshToken: String,
 )

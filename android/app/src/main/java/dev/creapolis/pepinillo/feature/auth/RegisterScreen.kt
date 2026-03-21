@@ -14,10 +14,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -31,6 +34,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,6 +51,7 @@ fun RegisterScreen(
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
@@ -154,6 +160,34 @@ fun RegisterScreen(
                 )
             } else {
                 Text("Create Account", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        HorizontalDivider(modifier = Modifier.fillMaxWidth())
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        OutlinedButton(
+            onClick = { viewModel.signInWithGoogle(context) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            enabled = !uiState.googleSignInLoading && !uiState.isLoading,
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color.White,
+                contentColor = Color(0xFF1F1F1F),
+            ),
+        ) {
+            if (uiState.googleSignInLoading) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.height(20.dp),
+                )
+            } else {
+                Text("Sign in with Google", style = MaterialTheme.typography.titleMedium)
             }
         }
 
