@@ -57,13 +57,84 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Railway CLI
-        run: npm i -g @railway/cli
-
-      - name: Deploy to Railway
+      - name: Deploy to VPS via SSH
         env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service pepinillo-api --directory backend
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
+          APP_DIR: /opt/pepinillo-api
+        run: |
+          # Create SSH directory and add host key
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Fetch and add host key to known_hosts (GitHub Actions server key)
+          ssh-keyscan -p ${SSH_PORT} ${SSH_HOST} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          # SSH configuration
+          cat > ~/.ssh/config << EOF
+          Host deploy
+            HostName ${SSH_HOST}
+            User ${SSH_USER}
+            Port ${SSH_PORT}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+          EOF
+
+          # Store the last running image tag for rollback
+          ssh deploy "cd ${APP_DIR} && docker compose -f docker-compose.prod.yml images --quiet api" > /tmp/old_image 2>/dev/null || echo "no-previous-image" > /tmp/old_image
+
+          # Deploy: pull latest code, build, and start services
+          ssh deploy << 'DEPLOY_SCRIPT'
+          set -e
+          cd ${APP_DIR}
+
+          # Pull latest changes
+          git pull origin main
+
+          # Build the API image
+          docker compose -f docker-compose.prod.yml build api
+
+          # Start services (will recreate api container with new image)
+          docker compose -f docker-compose.prod.yml up -d
+
+          # Wait for db and redis to be healthy
+          docker compose -f docker-compose.prod.yml exec -T db pg_isready -U pepinillo -d pepinillo || sleep 5
+          docker compose -f docker-compose.prod.yml exec -T redis redis-cli ping || sleep 5
+
+          # Wait for API to be healthy
+          sleep 10
+          DEPLOY_SCRIPT
+
+          # Health check: verify the API is responding
+          HEALTH_CHECK_URL="http://${SSH_HOST}/api/v1/health"
+          MAX_RETRIES=30
+          RETRY_COUNT=0
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if curl -sf $HEALTH_CHECK_URL > /dev/null 2>&1; then
+              echo "Health check passed!"
+              exit 0
+            fi
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Health check attempt $RETRY_COUNT/$MAX_RETRIES failed, retrying in 2s..."
+            sleep 2
+          done
+
+          echo "Health check failed after $MAX_RETRIES attempts"
+
+          # Rollback on health check failure
+          echo "Attempting rollback..."
+          OLD_IMAGE=$(cat /tmp/old_image)
+          if [ "$OLD_IMAGE" != "no-previous-image" ]; then
+            ssh deploy "cd ${APP_DIR} && docker compose -f docker-compose.prod.yml down && docker run --name pepinillo-api-rollback -d $OLD_IMAGE" || true
+          fi
+
+          exit 1
