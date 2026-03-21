@@ -487,19 +487,28 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 
 ### Suscripcion / Billing
 
-#### [iOS] — StoreKit 2
+#### [iOS] — RevenueCat SDK v5+
 
-- API nativa de StoreKit 2 (no RevenueCat)
+- RevenueCat SDK v5+ wrapping StoreKit 2 nativo
 - Productos: Monthly, Annual, Lifetime
-- Verificacion server-side via backend Go
+- iOS Public API Key: `appl_xnChlVXXtUFhusIfJyNrNDcMGLj`
+- Entitlement: `pro` (unified as `premium` in backend)
+- Verificacion server-side via backend Go + RevenueCat
 - Restore purchases nativo
+- Grace period: 3 dias soportado
 
-#### [Android] — Google Play Billing Library 7
+#### [Android] — RevenueCat Purchases SDK v8.10.0 ✅ NEW
 
-- BillingClient 7.x con `billing-ktx` wrappers
-- Mismos 3 productos
-- Verificacion server-side via backend Go (endpoint existente)
-- Grace period: 3 dias para renovacion fallida
+- RevenueCat Purchases SDK v8.10.0
+- Productos: Monthly, Annual, Lifetime
+  - com.pepinillo.app.pro.monthly
+  - com.pepinillo.app.pro.annual
+  - com.pepinillo.app.pro.lifetime
+- Android Public API Key: `goog_ITPYSPEdubAzAeoNGxezZuZJELT`
+- Entitlement: `premium` (unified with iOS)
+- Verificacion server-side via backend Go + RevenueCat
+- Grace period: 3 dias soportado
+- **Cross-platform parity ACHIEVED:** Both iOS and Android now use RevenueCat
 
 #### Precios
 

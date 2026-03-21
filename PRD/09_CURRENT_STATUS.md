@@ -161,13 +161,23 @@
 - 3 idiomas: Ingles, Espanol, Portugues
 - App icon adaptativo con soporte monochrome (Android 13+)
 
-### Billing ⚠️ Parcial
-- Play Billing 7.1.1 declarado como dependencia
-- `BillingManager` y `SubscriptionManager` existen
-- `acknowledgePurchase` now has retry logic with exponential backoff (3 retries, persistent fallback)
+### Billing ✅
+- **RevenueCat Android:** Fully configured
+  - SDK v8.10.0 (Purchases SDK) integrado
+  - Android Public API Key: `goog_ITPYSPEdubAzAeoNGxezZuZJELT` (configured in code)
+  - Product IDs: com.pepinillo.app.pro.monthly, com.pepinillo.app.pro.annual, com.pepinillo.app.pro.lifetime
+  - Entitlement: `premium` (shared with iOS via RevenueCat)
+  - User identification integrated with auth flow
+  - Grace period support via RevenueCat entitlements
+  - Paywall implementado
+- **Cross-platform parity:** iOS y Android ahora ambas usan RevenueCat (LOGRADO)
+  - iOS utiliza RevenueCat SDK v5+ (wrapping StoreKit 2)
+  - Android utiliza RevenueCat Purchases SDK v8.10.0
+  - Mismo entitlement `premium` en ambas plataformas
+- **RevenueCat Backend:** Secret API key existente
+  - Secret API Key (V2): `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (label: "Pepinillo Backend")
+  - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implementado)
 - Feature gating for subtasks & recurrence implemented (PRO badges, disabled inputs for free users)
-- Feature gating for other PRO features still pending
-- Paywall UI incompleta
 
 ### Pendiente Android
 
@@ -275,11 +285,11 @@
 
 | Feature | iOS | Android | Notas |
 |---------|-----|---------|-------|
-| Billing SDK | ✅ RevenueCat SDK v5+ (StoreKit 2) | ⚠️ Play Billing 7.1.1 (parcial) | RevenueCat planned for Android |
-| Paywall UI | ✅ | ⚠️ Incompleta | |
-| Feature gating | ⚠️ No enforced | ⚠️ Partial (subtasks/recurrence gated) | Critico en ambas plataformas |
-| Productos (monthly/annual/lifetime) | ✅ 3 productos via RevenueCat | ⬜ Por configurar | |
-| Entitlements verification | ✅ RevenueCat entitlements | ⬜ Pendiente | |
+| Billing SDK | ✅ RevenueCat SDK v5+ (StoreKit 2) | ✅ RevenueCat SDK v8.10.0 (Purchases) | Cross-platform parity ACHIEVED |
+| Paywall UI | ✅ | ✅ | Ambas plataformas |
+| Feature gating | ⚠️ No enforced | ✅ Subtasks/recurrence gated | iOS: otros features aún sin gating |
+| Productos (monthly/annual/lifetime) | ✅ 3 productos via RevenueCat | ✅ 3 productos: monthly/annual/lifetime | Configurados en RevenueCat |
+| Entitlements verification | ✅ RevenueCat entitlements (`pro`) | ✅ RevenueCat entitlements (`premium`) | Entitlement unificado en backend |
 
 ### Diseno y Accesibilidad
 
@@ -335,7 +345,7 @@
 | Sync | WorkManager | 2.10.0 | hilt-work 1.2.0 |
 | Charts | Vico | 1.14.0 | compose-m3 |
 | Audio | Media3/ExoPlayer | 1.5.0 | Soundscapes |
-| Billing | Play Billing | 7.1.1 | Parcialmente integrado |
+| Billing | RevenueCat Purchases SDK | v8.10.0 | Fully integrated with shared `premium` entitlement |
 | Health | Health Connect | 1.1.0-rc01 | API experimental |
 | Adaptive | material3-window-size-class | via BOM | WindowWidthSizeClass |
 | Foldable | androidx.window | 1.3.0 | FoldingFeature + hinge avoidance |

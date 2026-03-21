@@ -25,7 +25,7 @@
 | **Wear Tiles** | Horologist | 0.6.20 | `SuspendingTileService` para Wear OS Tiles |
 | **Wear Complications** | watchface-complications | 1.2.1 | `SuspendingComplicationDataSourceService` |
 | **Wear Data Layer** | play-services-wearable | 18.2.0 | `DataClient` + `MessageClient` para sync phone↔watch |
-| **Billing** | Play Billing Library | 7.1.1 | Suscripciones in-app (FREE/PRO); RevenueCat integration planned |
+| **Billing** | RevenueCat Purchases SDK | v8.10.0 | Suscripciones in-app (FREE/PRO); shared `premium` entitlement with iOS |
 | **Health** | Health Connect | 1.1.0-rc01 | Mindful Sessions (API experimental) |
 | **Audio** | Media3/ExoPlayer | 1.5.0 | Soundscapes (6 pistas ambientales) |
 | **Charts** | Vico | 1.14.0 | Gráficos `compose-m3` para dashboard |
@@ -861,35 +861,55 @@ Implementados con `WindowSizeClass` de Material 3:
 
 ## 13. Billing
 
-### Google Play Billing
+### RevenueCat Integration (Android)
 
+**Status:** ✅ Fully Configured (2026-03-21)
+
+#### SDK Setup
 ```kotlin
 @Singleton
 class BillingManager @Inject constructor(
     private val context: Context,
 ) {
-    // Play Billing Library 7.1.1
+    // RevenueCat Purchases SDK v8.10.0
+    //
+    // Configuración:
+    // - Android Public API Key: goog_ITPYSPEdubAzAeoNGxezZuZJELT
+    // - Entitlement: "premium" (shared with iOS)
+    // - Productos: monthly, annual, lifetime
     //
     // Flujo de compra:
-    // 1. queryProductDetails() → obtener detalles del producto (precio, periodo)
-    // 2. launchBillingFlow() → mostrar bottom sheet de Google Play
-    // 3. onPurchasesUpdated() → procesar resultado
-    // 4. acknowledgePurchase() → confirmar compra (obligatorio en 3 días)
+    // 1. RevenueCat.logIn(userId) → autenticación del usuario
+    // 2. RevenueCat.getPackages() → obtener ofertas disponibles
+    // 3. RevenueCat.purchasePackage() → mostrar paywall
+    // 4. RevenueCat.purchaserInfo → verificar entitlements
     //
     // Tiers:
     //   - FREE: funcionalidad básica (Pomodoro, tasks limitadas)
     //   - PRO: todos los modos, soundscapes, analytics avanzados, widgets
-    //
-    // RevenueCat integration planned for Android (similar to iOS)
-    // Backend webhook endpoint ready: POST /api/v1/webhooks/revenuecat
 }
 ```
+
+#### Product IDs
+| Plan | Product ID |
+|------|-----------|
+| Monthly | com.pepinillo.app.pro.monthly |
+| Annual | com.pepinillo.app.pro.annual |
+| Lifetime | com.pepinillo.app.pro.lifetime |
+
+#### Entitlement Verification
+
+- **Entitlement ID:** `premium` (shared across iOS and Android)
+- **Local caching:** Estado de suscripción cacheado via RevenueCat SDK
+- **Server-side verification:** Backend Go integrado con RevenueCat REST API
+- **Grace period:** 3 días soportados via RevenueCat
+- **User identification:** Integrado con auth flow de la app
 
 ### FeatureGate
 
 - Verifica tier de suscripción antes de permitir acceso a features PRO
-- Cachea estado de suscripción localmente
-- Verificación server-side vía backend Go (pendiente endpoint `subscriptions/verify`)
+- Cachea estado de suscripción localmente via RevenueCat SDK
+- Verificación server-side vía backend Go (endpoint `/api/v1/webhooks/revenuecat` implementado)
 
 ---
 
