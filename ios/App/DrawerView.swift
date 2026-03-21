@@ -147,6 +147,23 @@ struct DrawerView: View {
                 .accessibilityLabel(String(localized: "\(store.analytics.currentStreakDays) day focus streak"))
             }
 
+            if store.isSignedIn {
+                // Tappable user name to open profile
+                Button {
+                    store.send(.showProfile)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.crop.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text(String(localized: "View Profile"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.top, 4)
+            }
+
             // Sign In with Apple (when not signed in)
             if !store.isSignedIn {
                 SignInWithAppleButton(.signIn) { request in
@@ -172,6 +189,16 @@ struct DrawerView: View {
                 .signInWithAppleButtonStyle(.whiteOutline)
                 .frame(height: 44)
                 .padding(.top, 8)
+
+                // Log in with email
+                Button {
+                    store.send(.showAuth)
+                } label: {
+                    Text(String(localized: "Log in with email"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 4)
             }
         }
     }

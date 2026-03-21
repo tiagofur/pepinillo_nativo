@@ -30,11 +30,16 @@ struct AppFeature {
         var isSettingsPresented: Bool = false
         @Presents var calendar: CalendarFeature.State?
 
+        // Auth & Profile sheets
+        @Presents var auth: AuthFeature.State?
+        @Presents var profile: ProfileFeature.State?
+
         // Sign in with Apple
         var appleUserID: String? = nil
         var displayName: String? = nil
         var userEmail: String? = nil
-        var isSignedIn: Bool { appleUserID != nil }
+        var cachedUser: CachedUserDTO? = nil
+        var isSignedIn: Bool { cachedUser != nil || appleUserID != nil }
     }
 
     enum Tab: String, Equatable, CaseIterable {
@@ -98,6 +103,14 @@ struct AppFeature {
         case calendarSheetDismissed
         case calendar(PresentationAction<CalendarFeature.Action>)
 
+        // Auth & Profile
+        case showAuth
+        case showProfile
+        case auth(PresentationAction<AuthFeature.Action>)
+        case profile(PresentationAction<ProfileFeature.Action>)
+        case cachedUserLoaded(CachedUserDTO?)
+        case tokenRefreshFailed
+
         // Sign in with Apple
         case signInWithAppleSucceeded(AppleUserInfo)
         case signInWithAppleFailed
@@ -114,6 +127,8 @@ struct AppFeature {
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.watchConnectivityClient) var watchClient
     @Dependency(\.signInWithAppleClient) var appleClient
+    @Dependency(\.apiClient) var apiClient
+    @Dependency(\.keychainClient) var keychain
 
     private enum CancelID {
         case transactionListener
@@ -204,6 +219,30 @@ struct AppFeature {
                         }
                     }
                     .cancellable(id: CancelID.notificationActionListener),
+                    // Load cached user from persistence
+                    .run { send in
+                        let user = try? await persistence.fetchCachedUser()
+                        await send(.cachedUserLoaded(user))
+                    },
+                    // If tokens exist, try to refresh user profile from network
+                    .run { [keychain, apiClient, persistence] send in
+                        guard await keychain.hasTokens() else { return }
+                        do {
+                            let apiUser = try await apiClient.getMe()
+                            let dto = CachedUserDTO(
+                                id: apiUser.id, email: apiUser.email, name: apiUser.name,
+                                imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
+                                subscriptionTier: apiUser.subscriptionTier,
+                                subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
+                                emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
+                                createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
+                            )
+                            try? await persistence.saveCachedUser(dto)
+                            await send(.cachedUserLoaded(dto))
+                        } catch {
+                            // Network error — use cached data silently
+                        }
+                    },
                     // Watch: listen for commands from the Watch
                     .run { [watchClient] send in
                         guard watchClient.isSupported() else { return }
@@ -319,6 +358,64 @@ struct AppFeature {
             case .calendar:
                 return .none
 
+            // MARK: - Auth & Profile
+
+            case .showAuth:
+                state.auth = AuthFeature.State()
+                state.isDrawerOpen = false
+                return .none
+
+            case .showProfile:
+                state.profile = ProfileFeature.State()
+                state.isDrawerOpen = false
+                return .none
+
+            case .cachedUserLoaded(let user):
+                state.cachedUser = user
+                if let user {
+                    state.displayName = user.name
+                    state.userEmail = user.email
+                }
+                return .none
+
+            case .auth(.presented(.delegate(.authenticated(let user)))):
+                state.cachedUser = user
+                state.displayName = user.name
+                state.userEmail = user.email
+                state.auth = nil  // dismiss auth sheet
+                return .none
+
+            case .auth(.presented(.delegate(.guestModeSelected))):
+                state.auth = nil  // dismiss auth sheet
+                return .none
+
+            case .auth:
+                return .none
+
+            case .profile(.presented(.delegate(.signedOut))):
+                state.cachedUser = nil
+                state.appleUserID = nil
+                state.displayName = nil
+                state.userEmail = nil
+                state.profile = nil  // dismiss profile sheet
+                return .run { send in
+                    var prefs = try await persistence.fetchPreferences()
+                    prefs.appleUserID = nil
+                    prefs.displayName = nil
+                    prefs.userEmail = nil
+                    try await persistence.savePreferences(prefs)
+                }
+
+            case .profile:
+                return .none
+
+            case .tokenRefreshFailed:
+                state.cachedUser = nil
+                state.appleUserID = nil
+                state.displayName = nil
+                state.userEmail = nil
+                return .none
+
             // MARK: - Sign in with Apple
 
             case .appleCredentialStateChecked(let userID, let authorized):
@@ -353,15 +450,41 @@ struct AppFeature {
                 state.appleUserID = info.userID
                 state.displayName = info.displayName
                 state.userEmail = info.email
-                return .run { [info] send in
-                    var prefs = try await persistence.fetchPreferences()
-                    prefs.appleUserID = info.userID
-                    if let name = info.displayName { prefs.displayName = name }
-                    if let email = info.email { prefs.userEmail = email }
-                    try await persistence.savePreferences(prefs)
-                    // Identify user in RevenueCat
-                    await subscriptionClient.logIn(info.userID)
-                }
+                return .merge(
+                    .run { [info] send in
+                        var prefs = try await persistence.fetchPreferences()
+                        prefs.appleUserID = info.userID
+                        if let name = info.displayName { prefs.displayName = name }
+                        if let email = info.email { prefs.userEmail = email }
+                        try await persistence.savePreferences(prefs)
+                        // Identify user in RevenueCat
+                        await subscriptionClient.logIn(info.userID)
+                    },
+                    // Try to authenticate with backend if identity token available
+                    {
+                        if let idToken = info.identityToken {
+                            return .run { [apiClient, keychain, persistence] send in
+                                do {
+                                    let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken))
+                                    try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
+                                    let dto = CachedUserDTO(
+                                        id: response.user.id, email: response.user.email, name: response.user.name,
+                                        imageUrl: response.user.imageUrl, birthDate: response.user.birthDate,
+                                        subscriptionTier: response.user.subscriptionTier,
+                                        subscriptionExpiresAt: response.user.subscriptionExpiresAt,
+                                        emailVerified: response.user.emailVerified, appleId: response.user.appleId,
+                                        createdAt: response.user.createdAt, updatedAt: response.user.updatedAt
+                                    )
+                                    try? await persistence.saveCachedUser(dto)
+                                    await send(.cachedUserLoaded(dto))
+                                } catch {
+                                    // Backend auth failed — continue with local-only Apple ID (existing behavior)
+                                }
+                            }
+                        }
+                        return .none
+                    }()
+                )
 
             case .signInWithAppleFailed:
                 return .none
@@ -371,7 +494,13 @@ struct AppFeature {
                 state.appleUserID = nil
                 state.displayName = nil
                 state.userEmail = nil
-                return .run { send in
+                state.cachedUser = nil
+                return .run { [keychain, apiClient, persistence] send in
+                    if let refreshToken = await keychain.loadRefreshToken() {
+                        try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))
+                    }
+                    try? await keychain.deleteTokens()
+                    try? await persistence.deleteCachedUser()
                     var prefs = try await persistence.fetchPreferences()
                     prefs.appleUserID = nil
                     prefs.displayName = nil
@@ -601,6 +730,12 @@ struct AppFeature {
         }
         .ifLet(\.$calendar, action: \.calendar) {
             CalendarFeature()
+        }
+        .ifLet(\.$auth, action: \.auth) {
+            AuthFeature()
+        }
+        .ifLet(\.$profile, action: \.profile) {
+            ProfileFeature()
         }
     }
 }

@@ -97,6 +97,20 @@ struct AppView: View {
             WeeklyReviewView(store: weeklyStore)
                 .iPadSheetSizing()
         }
+        // Auth sheet
+        .sheet(item: $store.scope(state: \.auth, action: \.auth)) { authStore in
+            NavigationStack {
+                AuthView(store: authStore)
+            }
+            .presentationDetents([.large])
+        }
+        // Profile sheet
+        .sheet(item: $store.scope(state: \.profile, action: \.profile)) { profileStore in
+            NavigationStack {
+                ProfileView(store: profileStore)
+            }
+            .presentationDetents([.large])
+        }
         // Celebration overlay
         .overlay {
             if let milestone = store.pendingCelebration {
