@@ -72,6 +72,9 @@ type Config struct {
 	AlertMuteEndHourUTC                    int64
 	GoogleClientIDs                        string
 	AppleBundleID                          string
+	RevenueCatAPIKey                       string
+	RevenueCatWebhookAuthToken             string
+	RevenueCatAPIBaseURL                   string
 }
 
 func Load() (*Config, error) {
@@ -141,6 +144,9 @@ func Load() (*Config, error) {
 		AlertMuteEndHourUTC:                    getEnvInt64("ALERT_MUTE_END_HOUR_UTC", 0),
 		GoogleClientIDs:                        getEnv("GOOGLE_CLIENT_IDS", ""),
 		AppleBundleID:                          getEnv("APPLE_BUNDLE_ID", ""),
+		RevenueCatAPIKey:                       getEnv("REVENUECAT_API_KEY", ""),
+		RevenueCatWebhookAuthToken:             getEnv("REVENUECAT_WEBHOOK_AUTH_TOKEN", ""),
+		RevenueCatAPIBaseURL:                   getEnv("REVENUECAT_API_BASE_URL", "https://api.revenuecat.com/v1"),
 	}
 
 	if cfg.JWTSecret == "" {

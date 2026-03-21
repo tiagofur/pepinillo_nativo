@@ -246,7 +246,10 @@ fun ProfileScreen(
                     icon = Icons.AutoMirrored.Rounded.ExitToApp,
                     label = "Sign Out",
                     subtitle = uiState.user?.email ?: "",
-                    onClick = onSignOutClick,
+                    onClick = {
+                        viewModel.logout()
+                        onSignOutClick()
+                    },
                 )
             } else {
                 ActionRow(

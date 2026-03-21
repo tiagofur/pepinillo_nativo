@@ -18,6 +18,7 @@ type RouteHandlers struct {
 	Focus        *FocusHandler
 	AI           *AIHandler
 	Billing      *BillingHandler
+	RevenueCat   *RevenueCatHandler
 	Push         *PushHandler
 	WebSocket    *WebSocketHandler
 	Analytics    *AnalyticsHandler
@@ -125,6 +126,10 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	billing := protected.Group("/billing")
 	billing.Post("/verify-receipt", deps.Billing.VerifyReceipt)
+
+	// RevenueCat webhook (no JWT auth - uses its own auth token)
+	webhooks := api.Group("/webhooks")
+	webhooks.Post("/revenuecat", deps.RevenueCat.Webhook)
 
 	push := protected.Group("/push")
 	push.Post("/devices", deps.Push.RegisterDevice)

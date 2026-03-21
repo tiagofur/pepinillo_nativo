@@ -1,11 +1,11 @@
 // SubscriptionClient.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// TCA dependency wrapping StoreKit 2.
+// TCA dependency wrapping RevenueCat SDK.
 // Manages Pro subscription products, purchases, and entitlement verification.
 
 import Foundation
-import StoreKit
+import RevenueCat
 import ComposableArchitecture
 
 // MARK: - Subscription Product IDs
@@ -53,20 +53,29 @@ enum PurchaseResult: Equatable, Sendable {
 
 @DependencyClient
 struct SubscriptionClient: Sendable {
-    /// Fetch available StoreKit products.
+    /// Configure RevenueCat with API key and user ID.
+    var configure: @Sendable (_ apiKey: String, _ userID: String?) async -> Void = { _, _ in }
+
+    /// Fetch available RevenueCat offerings/packages.
     var fetchProducts: @Sendable () async -> [ProductInfo] = { [] }
 
-    /// Purchase a product by ID.
+    /// Purchase a RevenueCat package by product ID.
     var purchase: @Sendable (_ productID: String) async -> PurchaseResult = { _ in .cancelled }
 
-    /// Restore previous purchases.
+    /// Restore previous purchases via RevenueCat.
     var restorePurchases: @Sendable () async -> SubscriptionState = { .free }
 
     /// Check current entitlement (call on launch + after purchase).
     var checkEntitlement: @Sendable () async -> SubscriptionState = { .free }
 
-    /// Listen to StoreKit transaction updates (call once at app launch).
+    /// Listen to customer info changes via RevenueCat.
     var listenForTransactionUpdates: @Sendable () -> AsyncStream<SubscriptionState> = { .finished }
+
+    /// Identify user with backend user ID.
+    var logIn: @Sendable (_ userID: String) async -> Void = { _ in }
+
+    /// Reset to anonymous (logged out).
+    var logOut: @Sendable () async -> Void = { }
 }
 
 // MARK: - Dependency Keys
@@ -74,11 +83,14 @@ struct SubscriptionClient: Sendable {
 extension SubscriptionClient: DependencyKey {
     static let liveValue = SubscriptionClient.live
     static let testValue = SubscriptionClient(
+        configure: { _, _ in },
         fetchProducts: { PepinilloProduct.allCases.map(\.mockProductInfo) },
         purchase: { _ in .success(productID: PepinilloProduct.annual.rawValue) },
         restorePurchases: { .pro },
         checkEntitlement: { .free },
-        listenForTransactionUpdates: { .finished }
+        listenForTransactionUpdates: { .finished },
+        logIn: { _ in },
+        logOut: { }
     )
 }
 
@@ -95,11 +107,14 @@ extension SubscriptionClient {
     static let live: SubscriptionClient = {
         let manager = SubscriptionManager()
         return SubscriptionClient(
+            configure: { apiKey, userID in await manager.configure(apiKey: apiKey, userID: userID) },
             fetchProducts: { await manager.fetchProducts() },
             purchase: { id in await manager.purchase(productID: id) },
             restorePurchases: { await manager.restorePurchases() },
             checkEntitlement: { await manager.checkEntitlement() },
-            listenForTransactionUpdates: { manager.transactionStream() }
+            listenForTransactionUpdates: { manager.customerInfoStream() },
+            logIn: { userID in await manager.logIn(userID: userID) },
+            logOut: { await manager.logOut() }
         )
     }()
 }
@@ -107,25 +122,39 @@ extension SubscriptionClient {
 // MARK: - Subscription Manager (actor)
 
 private actor SubscriptionManager {
+    private var isConfigured = false
+
+    func configure(apiKey: String, userID: String?) async {
+        guard !isConfigured else { return }
+        isConfigured = true
+
+        Purchases.logLevel = .debug
+        Purchases.configure(withAPIKey: apiKey, appUserID: userID)
+    }
+
     func fetchProducts() async -> [ProductInfo] {
-        let ids = PepinilloProduct.allCases.map(\.rawValue)
         do {
-            let products = try await Product.products(for: ids)
-            return products.compactMap { product -> ProductInfo? in
-                guard let pepProduct = PepinilloProduct(rawValue: product.id) else { return nil }
-                return ProductInfo(
-                    id: product.id,
-                    displayName: product.displayName,
-                    description: product.description,
-                    displayPrice: product.displayPrice,
-                    billingPeriod: pepProduct.isSubscription
-                        ? (product.subscription?.subscriptionPeriod.unit == .month ? "month" : "year")
-                        : "once",
-                    isFeatured: pepProduct == .annual
-                )
+            let offerings = try await Purchases.shared.offerings()
+            guard let offering = offerings.current else {
+                return PepinilloProduct.allCases.map(\.mockProductInfo)
             }
-            .sorted { a, b in
-                // Sort: monthly, annual (featured), lifetime
+
+            var productInfos: [ProductInfo] = []
+            for pepProduct in PepinilloProduct.allCases {
+                if let package = offering.package(identifier: pepProduct.rawValue) ?? offering.availablePackages.first(where: { $0.product.productIdentifier == pepProduct.rawValue }) {
+                    let productInfo = ProductInfo(
+                        id: pepProduct.rawValue,
+                        displayName: package.product.localizedTitle,
+                        description: package.product.localizedDescription,
+                        displayPrice: package.localizedPriceString,
+                        billingPeriod: billingPeriodString(for: package),
+                        isFeatured: pepProduct == .annual
+                    )
+                    productInfos.append(productInfo)
+                }
+            }
+
+            return productInfos.isEmpty ? PepinilloProduct.allCases.map(\.mockProductInfo) : productInfos.sorted { a, b in
                 let order = ["month": 0, "year": 1, "once": 2]
                 return (order[a.billingPeriod] ?? 0) < (order[b.billingPeriod] ?? 0)
             }
@@ -136,21 +165,28 @@ private actor SubscriptionManager {
 
     func purchase(productID: String) async -> PurchaseResult {
         do {
-            guard let product = try await Product.products(for: [productID]).first else {
-                return .failed(message: "Product not found")
+            let offerings = try await Purchases.shared.offerings()
+            guard let offering = offerings.current else {
+                return .failed(message: "No offerings available")
             }
-            let result = try await product.purchase()
-            switch result {
-            case .success(let verification):
-                let transaction = try checkVerified(verification)
-                await transaction.finish()
-                return .success(productID: transaction.productID)
-            case .pending:
-                return .pending
-            case .userCancelled:
+
+            guard let package = offering.package(identifier: productID) ?? offering.availablePackages.first(where: { $0.product.productIdentifier == productID }) else {
+                return .failed(message: "Package not found")
+            }
+
+            let result = try await Purchases.shared.purchase(package: package)
+
+            if result.customerInfo.entitlements["pro"]?.isActive == true {
+                return .success(productID: productID)
+            } else {
+                return .failed(message: "Purchase completed but entitlement not active")
+            }
+        } catch let error as ErrorCode {
+            switch error {
+            case .purchaseCancelledError:
                 return .cancelled
-            @unknown default:
-                return .cancelled
+            default:
+                return .failed(message: error.localizedDescription)
             }
         } catch {
             return .failed(message: error.localizedDescription)
@@ -158,42 +194,29 @@ private actor SubscriptionManager {
     }
 
     func restorePurchases() async -> SubscriptionState {
-        // StoreKit 2: sync transactions
-        try? await AppStore.sync()
-        return await checkEntitlement()
+        do {
+            let customerInfo = try await Purchases.shared.restorePurchases()
+            return await subscriptionStateFromCustomerInfo(customerInfo)
+        } catch {
+            return .free
+        }
     }
 
     func checkEntitlement() async -> SubscriptionState {
-        // Check for active subscriptions or lifetime purchase
-        for await result in Transaction.currentEntitlements {
-            if let transaction = try? checkVerified(result) {
-                let isSubscription = PepinilloProduct(rawValue: transaction.productID)?.isSubscription ?? false
-                if isSubscription {
-                    // Check if subscription is still valid (3-day grace period for payment issues)
-                    if let expiry = transaction.expirationDate, expiry.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
-                        return SubscriptionState(
-                            isPro: true,
-                            activeProductID: transaction.productID,
-                            expirationDate: expiry
-                        )
-                    }
-                } else {
-                    // Lifetime purchase
-                    return SubscriptionState(isPro: true, activeProductID: transaction.productID)
-                }
-            }
+        do {
+            let customerInfo = try await Purchases.shared.customerInfo()
+            return await subscriptionStateFromCustomerInfo(customerInfo)
+        } catch {
+            return .free
         }
-        return .free
     }
 
-    nonisolated func transactionStream() -> AsyncStream<SubscriptionState> {
+    nonisolated func customerInfoStream() -> AsyncStream<SubscriptionState> {
         AsyncStream { continuation in
             let task = Task {
-                for await result in Transaction.updates {
-                    if let _ = try? checkVerified(result) {
-                        let state = await checkEntitlement()
-                        continuation.yield(state)
-                    }
+                for await customerInfo in Purchases.shared.customerInfoStream {
+                    let state = await subscriptionStateFromCustomerInfo(customerInfo)
+                    continuation.yield(state)
                 }
                 continuation.finish()
             }
@@ -201,18 +224,64 @@ private actor SubscriptionManager {
         }
     }
 
-    private nonisolated func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
-        switch result {
-        case .unverified: throw StoreError.failedVerification
-        case .verified(let value): return value
+    func logIn(userID: String) async {
+        do {
+            _ = try await Purchases.shared.logIn(userID)
+        } catch {
+            // Log error but don't fail
+            print("RevenueCat logIn failed: \(error)")
         }
     }
-}
 
-// MARK: - StoreError
+    func logOut() async {
+        do {
+            _ = try await Purchases.shared.logOut()
+        } catch {
+            // Log error but don't fail
+            print("RevenueCat logOut failed: \(error)")
+        }
+    }
 
-enum StoreError: Error {
-    case failedVerification
+    private func subscriptionStateFromCustomerInfo(_ customerInfo: CustomerInfo) -> SubscriptionState {
+        // Check if user has "pro" entitlement and it's active
+        if let proEntitlement = customerInfo.entitlements["pro"], proEntitlement.isActive {
+            let expiryDate = proEntitlement.expirationDate
+
+            // For subscriptions, check grace period (RevenueCat handles this internally)
+            // For lifetime, expiryDate will be nil
+            if let expiry = expiryDate {
+                // Grace period: 3 days after expiration
+                if expiry.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
+                    return SubscriptionState(
+                        isPro: true,
+                        activeProductID: customerInfo.activeSubscriptions.first,
+                        expirationDate: expiry
+                    )
+                }
+            } else {
+                // Lifetime purchase (no expiration)
+                return SubscriptionState(
+                    isPro: true,
+                    activeProductID: customerInfo.allPurchasedProductIdentifiers.first,
+                    expirationDate: nil
+                )
+            }
+        }
+        return .free
+    }
+
+    private nonisolated func billingPeriodString(for package: RevenueCat.Package) -> String {
+        if let subscription = package.product.subscription {
+            switch subscription.subscriptionPeriod.unit {
+            case .day: return "day"
+            case .week: return "week"
+            case .month: return "month"
+            case .year: return "year"
+            @unknown default: return "month"
+            }
+        }
+        return "once"
+    }
 }
 
 // MARK: - Mock helpers for previews / tests

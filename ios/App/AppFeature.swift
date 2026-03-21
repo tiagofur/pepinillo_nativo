@@ -163,6 +163,13 @@ struct AppFeature {
 
             case .appLaunched:
                 return .merge(
+                    // Configure RevenueCat early
+                    .run { send in
+                        let prefs = try await persistence.fetchPreferences()
+                        // Use Apple User ID if available, otherwise nil for anonymous
+                        let userID = prefs.appleUserID
+                        await subscriptionClient.configure("YOUR_REVENUECAT_API_KEY", userID)
+                    },
                     // Onboarding check + Apple credential state check
                     .run { [appleClient] send in
                         let prefs = try await persistence.fetchPreferences()
@@ -179,7 +186,7 @@ struct AppFeature {
                         let sub = await subscriptionClient.checkEntitlement()
                         await send(.subscriptionStateLoaded(sub))
                     },
-                    // StoreKit transaction updates
+                    // RevenueCat customer info stream
                     .run { send in
                         let stream = subscriptionClient.listenForTransactionUpdates()
                         for await sub in stream {
@@ -352,6 +359,8 @@ struct AppFeature {
                     if let name = info.displayName { prefs.displayName = name }
                     if let email = info.email { prefs.userEmail = email }
                     try await persistence.savePreferences(prefs)
+                    // Identify user in RevenueCat
+                    await subscriptionClient.logIn(info.userID)
                 }
 
             case .signInWithAppleFailed:
@@ -368,6 +377,8 @@ struct AppFeature {
                     prefs.displayName = nil
                     prefs.userEmail = nil
                     try await persistence.savePreferences(prefs)
+                    // Reset to anonymous in RevenueCat
+                    await subscriptionClient.logOut()
                 }
 
             // MARK: - Notification Action Bridge

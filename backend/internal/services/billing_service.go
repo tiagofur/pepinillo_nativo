@@ -71,6 +71,7 @@ type BillingService struct {
 	behavior   ports.BehaviorLogger
 	httpClient *http.Client
 	cfg        BillingConfig
+	revenuecat *RevenueCatService
 
 	googleTokenMu        sync.Mutex
 	googleAccessToken    string

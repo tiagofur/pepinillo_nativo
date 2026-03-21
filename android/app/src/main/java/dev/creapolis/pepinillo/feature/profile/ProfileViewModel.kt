@@ -7,6 +7,7 @@ import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.network.UpdateProfileRequest
 import dev.creapolis.pepinillo.data.local.entity.UserEntity
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.data.repository.UserRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,7 @@ class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val sessionRepository: SessionRepository,
     private val authStore: AuthStore,
+    private val apiClient: PepinilloApiClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -101,6 +103,15 @@ class ProfileViewModel @Inject constructor(
                     error = result.exceptionOrNull()?.message,
                 )
             }
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            val refreshToken = authStore.getRefreshToken()
+            apiClient.logout(refreshToken)
+            userRepository.clearCache()
+            authStore.clearAll()
         }
     }
 

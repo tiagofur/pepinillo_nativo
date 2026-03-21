@@ -36,12 +36,18 @@ let package = Package(
             url: "https://github.com/pointfreeco/swift-snapshot-testing",
             from: "1.17.0"
         ),
+        // RevenueCat — Subscription management & analytics
+        .package(
+            url: "https://github.com/RevenueCat/purchases-ios.git",
+            from: "5.0.0"
+        ),
     ],
     targets: [
         .target(
             name: "PepinilloCore",
             dependencies: [
                 .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
+                .product(name: "RevenueCat", package: "purchases-ios"),
             ],
             path: ".",
             exclude: ["Tests", "Package.swift"],
