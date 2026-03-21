@@ -90,3 +90,10 @@ type FocusRepository interface {
 	ListSessionsByRange(ctx context.Context, userID string, from, to time.Time) ([]domain.FocusSession, error)
 	GetTaskStats(ctx context.Context, userID string, taskID int) (*domain.TaskFocusStats, error)
 }
+
+type AnalyticsRepository interface {
+	GenerateWeeklyReport(ctx context.Context, userID string, weekStart, weekEnd time.Time) (*domain.WeeklyReport, error)
+	GenerateMonthlyReport(ctx context.Context, userID string, monthStart, monthEnd time.Time) (*domain.MonthlyReport, error)
+	GetCompletionRate(ctx context.Context, userID string, periodStart, periodEnd time.Time) (*domain.CompletionRateStats, error)
+	GetStreakStats(ctx context.Context, userID string) (*domain.StreakStats, error)
+}

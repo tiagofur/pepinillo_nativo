@@ -219,6 +219,9 @@ func main() {
 	aiService := services.NewAIService(aiRepo, taskRepo, pomodoroRepo, llmProvider, cfg.MLServiceURL)
 	startRecurringTaskGenerator(taskService, pushService)
 
+	analyticsRepo := postgres.NewAnalyticsRepository(db)
+	analyticsService := services.NewAnalyticsService(analyticsRepo)
+
 	routeDeps := handlers.RouteHandlers{
 		Auth:      handlers.NewAuthHandler(authService),
 		OAuth:     handlers.NewOAuthHandler(oauthService),
@@ -231,6 +234,7 @@ func main() {
 		Billing:   handlers.NewBillingHandler(billingService),
 		Push:      handlers.NewPushHandler(pushService),
 		WebSocket: handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret),
+		Analytics: handlers.NewAnalyticsHandler(analyticsService),
 		JWTSecret: cfg.JWTSecret,
 		HealthChecks: handlers.DependencyChecksFrom(
 			func(ctx context.Context) error {
