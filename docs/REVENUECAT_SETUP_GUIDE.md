@@ -828,6 +828,259 @@ Antes de lanzar a App Store (TestFlight → Production), verifica este checklist
 
 ---
 
+## POST-DEPLOYMENT: Configuración al Desplegar Backend
+
+Cuando hayas desplegado tu backend Go en producción, sigue estos pasos críticos para completar la integración de RevenueCat. **Sin estos pasos, los webhooks no funcionarán y los usuarios no podrán verificar sus entitlements.**
+
+### 1. Configura Variables de Entorno en el Servidor
+
+Tu servidor debe tener las siguientes variables de entorno configuradas junto a las variables existentes (DATABASE_URL, JWT_SECRET, etc.):
+
+#### a) Secret Key de RevenueCat (desde PASO 9)
+
+```bash
+# En tu servidor (.env, systemd, Docker, etc.)
+REVENUECAT_SECRET_KEY=sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ
+```
+
+Esta clave permite al backend validar solicitudes de RevenueCat y acceder a la API de RevenueCat para verificar entitlements.
+
+#### b) Token de Autorización del Webhook (nuevo)
+
+Genera un token secreto aleatorio y fuerte para validar webhooks entrantes:
+
+```bash
+# En tu máquina local (genera una sola vez):
+openssl rand -hex 32
+
+# Salida esperada (ejemplo):
+# a7f3e9c2b1d8f4a6c5e9b2d1f8a4c7e9b2d5f8a1c4e7a9d2f5b8e1c4a7d9f
+
+# En tu servidor:
+REVENUECAT_WEBHOOK_AUTH_TOKEN=a7f3e9c2b1d8f4a6c5e9b2d1f8a4c7e9b2d5f8a1c4e7a9d2f5b8e1c4a7d9f
+```
+
+**Importante:** Este token debe ser único y no compartido. Guárdalo de forma segura (gestor de secretos, HashiCorp Vault, AWS Secrets Manager, etc.).
+
+### 2. Configura el Webhook en RevenueCat Dashboard
+
+Una vez el servidor esté en producción, configura el webhook en RevenueCat para que envíe eventos a tu backend.
+
+#### Pasos en RevenueCat Dashboard:
+
+1. **Ve a Integrations > Webhooks:**
+   - URL: https://dashboard.revenuecat.com/
+   - Proyecto: "Pepinillo"
+   - Selecciona **Integrations** (o Settings > Webhooks)
+
+2. **Haz clic en "Add new configuration" o "Add webhook":**
+
+3. **Completa el formulario:**
+
+   | Campo | Valor |
+   |-------|-------|
+   | **Webhook Name** | `Pepinillo Backend` |
+   | **Webhook URL** | `https://{YOUR_DEPLOYED_DOMAIN}/api/v1/webhooks/revenuecat` |
+   | **Environment** | Both (Production + Sandbox) |
+   | **App Filter** | All apps |
+   | **Event Type** | All events |
+
+4. **Configura autorización con el token:**
+   - **Header Name:** `Authorization`
+   - **Header Value:** `Bearer a7f3e9c2b1d8f4a6c5e9b2d1f8a4c7e9b2d5f8a1c4e7a9d2f5b8e1c4a7d9f`
+     (reemplaza con tu token generado en el paso 1b)
+
+5. **Selecciona eventos:**
+   - ☑️ **INITIAL_PURCHASE** (primer pago)
+   - ☑️ **RENEWAL** (renovación)
+   - ☑️ **CANCELLATION** (cancelación)
+   - ☑️ **EXPIRATION** (expiración)
+   - ☑️ **BILLING_ISSUE_DETECTED** (problema de pago)
+   - ☑️ **SUBSCRIBER_ALIAS** (vinculación de cuentas)
+   - ☑️ **PRODUCT_CHANGE** (cambio de plan)
+
+6. **Guarda el webhook:**
+   - Haz clic en "Add webhook" o "Save"
+
+#### Verificación del Webhook:
+
+Después de configurar, RevenueCat debería ofrecerte un botón "Send test event" o similar:
+
+1. Haz clic en **"Send test event"**
+2. Selecciona un evento de prueba (ej: INITIAL_PURCHASE)
+3. Verifica que tu backend lo recibe:
+   - Revisa los logs del servidor: `grep "Received webhook" {log_path}`
+   - O monitorea con `tail -f {log_path} | grep webhook`
+4. Deberías ver un log similar a:
+   ```
+   [INFO] Received webhook event: type=INITIAL_PURCHASE timestamp=2026-03-21T14:00:00Z
+   [INFO] Webhook validated successfully with token
+   [INFO] Updated user subscription status in database
+   ```
+
+### 3. Verifica la Integración End-to-End
+
+Antes de declarar la integración completa, realiza estas pruebas:
+
+#### Prueba 1: Sandbox Purchase Flow
+
+1. **Crea un usuario de prueba en App Store Connect:**
+   - Ve a Users and Access > Sandbox > Sandbox Testers
+   - Crea una cuenta de test (si no existe)
+
+2. **Instala la app desde TestFlight en un dispositivo real:**
+   - Abre TestFlight
+   - Selecciona "Pepinillo"
+   - Instala la última build
+
+3. **Realiza una compra de Sandbox:**
+   - Abre la app
+   - Ve al paywall
+   - Selecciona "Pro Monthly"
+   - Confirma la compra (no se cobrará dinero real)
+
+4. **Verifica en RevenueCat Dashboard:**
+   - Ve a **Subscribers**
+   - Busca al usuario (por email o ID)
+   - Deberías ver:
+     - ✅ Purchase event INITIAL_PURCHASE
+     - ✅ Entitlement "premium" activo
+     - ✅ Fecha de expiración futura
+
+5. **Verifica en tu base de datos:**
+   - Query la tabla de usuarios/subscriptions
+   - Verifica que el usuario tiene:
+     ```sql
+     user_id: <uid>
+     entitlement: "premium"
+     expires_at: 2026-04-21 (dentro de 30 días)
+     ```
+
+#### Prueba 2: Webhook Delivery
+
+1. **Abre los logs de tu servidor:**
+   ```bash
+   # En producción, ajusta al comando real de tu entorno:
+   journalctl -u pepinillo-backend -f
+   # o
+   tail -f /var/log/pepinillo/app.log
+   # o
+   docker logs -f pepinillo-backend
+   ```
+
+2. **Realiza una compra de Sandbox (como en Prueba 1)**
+
+3. **Busca líneas de webhook en los logs:**
+   ```
+   [2026-03-21 14:15:30] INFO: POST /api/v1/webhooks/revenuecat
+   [2026-03-21 14:15:30] INFO: Webhook signature validated
+   [2026-03-21 14:15:30] INFO: Processing event: INITIAL_PURCHASE
+   [2026-03-21 14:15:30] INFO: User premium_user updated: entitlement=premium expires=2026-04-21
+   [2026-03-21 14:15:30] INFO: Response: HTTP 200 OK
+   ```
+
+#### Prueba 3: Validación de Entitlement desde App
+
+1. **En la app iOS, valida que el acceso premium está activo:**
+   - Abre la app
+   - Navega a una característica premium (si existe)
+   - Verifica que no hay paywall
+   - Verifica que muestra "Pro" o similar en la interfaz
+
+2. **Intenta Restore Purchases:**
+   - Ve a Settings > Restore Purchases (si existe)
+   - Haz clic en "Restore"
+   - La app debería confirmar: "Premium feature restored"
+
+#### Prueba 4: Cancelación
+
+1. **Cancela la suscripción desde App Store:**
+   - En el dispositivo: Settings > [Apple ID] > Subscriptions
+   - Selecciona "Pepinillo Pro Monthly"
+   - Haz clic en "Cancel Subscription"
+
+2. **Verifica el evento en RevenueCat:**
+   - Dashboard > Subscribers > busca el usuario
+   - Debería mostrar evento CANCELLATION
+
+3. **Verifica en tu backend:**
+   - Los logs deberían mostrar:
+     ```
+     [INFO] Processing event: CANCELLATION
+     [INFO] User premium_user: entitlement=premium expires_now
+     ```
+   - La base de datos debería mostrar: `expires_at: <ahora>` (pasado)
+
+4. **Verifica en la app:**
+   - Abre la app nuevamente
+   - El paywall debería reaparecer (premium expirado)
+
+### 4. Checklist de Producción Pre-Lanzamiento
+
+Antes de lanzar tu app a la App Store (desde TestFlight), verifica esto:
+
+**Servidor Desplegado:**
+- [ ] `REVENUECAT_SECRET_KEY` está configurado en el servidor
+- [ ] `REVENUECAT_WEBHOOK_AUTH_TOKEN` está configurado (token seguro generado)
+- [ ] El endpoint POST /api/v1/webhooks/revenuecat responde a requests HTTPS
+- [ ] El servidor está en HTTPS (no HTTP) — RevenueCat rechaza webhooks no-HTTPS
+- [ ] Los logs del servidor son accesibles para debugging
+
+**RevenueCat Webhook:**
+- [ ] Webhook configurado apuntando a `https://{YOUR_DOMAIN}/api/v1/webhooks/revenuecat`
+- [ ] Header Authorization con token correcto
+- [ ] Entorno: Both (Production + Sandbox)
+- [ ] Eventos seleccionados: All events (o al menos INITIAL_PURCHASE, RENEWAL, CANCELLATION)
+- [ ] Webhook test enviado y recibido exitosamente
+
+**Base de Datos:**
+- [ ] Tabla de usuarios tiene columna `entitlement` (ej: premium_expires_at)
+- [ ] Código de webhook actualiza entitlements correctamente
+- [ ] Rollback plan si algo falla (ej: script de restore)
+
+**Testing Completado:**
+- [ ] Compra de Sandbox en Monthly, Annual, Lifetime (si aplica)
+- [ ] Entitlements verificados en app y base de datos
+- [ ] Webhooks recibidos en logs del servidor
+- [ ] Cancelación y expiración funcionan
+- [ ] Restore Purchases funciona
+
+**Producción:**
+- [ ] App Store Connect: todos los productos con metadata completa
+- [ ] Build listo para review (sin hardcoded tokens)
+- [ ] RevenueCat project en modo Production
+- [ ] Monitoreo en RevenueCat Dashboard activo
+
+Si algún punto no está verificado, **detén el lanzamiento** y resuelve el problema en Sandbox primero.
+
+### 5. Monitoreo Post-Deployment
+
+Después de lanzar a producción, monitorea activamente:
+
+**RevenueCat Dashboard:**
+- Ve a **Subscribers** y busca nuevos usuarios que han comprado
+- Ve a **Events** para ver eventos en tiempo real
+- Ve a **Revenue** para verificar MRR (Monthly Recurring Revenue)
+- Configura alertas si los eventos disminuyen (posible problema)
+
+**Tu Backend:**
+- Logs de webhook: busca errores con `grep ERROR {log_path}`
+- Tiempo de respuesta del endpoint: debe ser < 1 segundo
+- Si ves timeouts, aumenta capacity del servidor
+
+**Tu Base de Datos:**
+- Query regularmente: `SELECT COUNT(*) FROM users WHERE entitlement = 'premium'`
+- Verifica que `expires_at` está actualizado (debe ser futuro para usuarios activos)
+- Si ves inconsistencias, manualmente fuerza un sync desde RevenueCat API
+
+**Alertas Recomendadas:**
+- Webhook endpoint retorna HTTP 5xx
+- Webhook latency > 5 segundos
+- Cero eventos en las últimas 2 horas (posible desconexión)
+- Tasa de cancelación > X% (ajusta según tu baseline)
+
+---
+
 ## Próximos Pasos (Post-Setup)
 
 Una vez que este setup esté completo y probado en Sandbox:
