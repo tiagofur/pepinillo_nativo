@@ -43,6 +43,7 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080/api/\"")
+            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"254888961741-jhbnemtpraihlkb5ckjajmkqmijlr0tc.apps.googleusercontent.com\"")
         }
         release {
             isMinifyEnabled = true
@@ -50,7 +51,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "BASE_URL", "\"https://api.ppn.creapolis.dev/api/\"")
+            buildConfigField("String", "BASE_URL", "\"https://api.ppn.creapolis.dev/api/v1/\"")
+            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"254888961741-jhbnemtpraihlkb5ckjajmkqmijlr0tc.apps.googleusercontent.com\"")
             signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -119,6 +121,11 @@ dependencies {
     // RevenueCat (Billing)
     implementation(libs.revenuecat.purchases)
 
+
+    // Google Sign-In (Credential Manager)
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
 
     // Wear OS (Data Layer)
     implementation(libs.play.services.wearable)

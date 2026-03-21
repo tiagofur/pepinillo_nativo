@@ -19,6 +19,7 @@ public struct APIClient: Sendable {
     public var getMe: @Sendable () async throws -> APIUser
     public var updateMe: @Sendable (UpdateProfileRequest) async throws -> APIUser
     public var uploadProfileImage: @Sendable (_ imageData: Data, _ mimeType: String) async throws -> ImageUploadResponse
+    public var syncTasks: @Sendable (TaskSyncRequest) async throws -> TaskSyncResponse
 }
 
 // MARK: - Live implementation
@@ -42,6 +43,9 @@ extension APIClient: DependencyKey {
                     fileData: imageData,
                     mimeType: mimeType
                 )
+            },
+            syncTasks: { request in
+                try await helper.authenticatedPost("tasks/sync", body: request)
             }
         )
     }
@@ -57,7 +61,7 @@ private struct APIHelper: Sendable {
     #if DEBUG
     private static let baseURL = "http://localhost:8080/api/v1"
     #else
-    private static let baseURL = "https://api.pepinillo.app/api/v1"
+    private static let baseURL = "https://api.ppn.creapolis.dev/api/v1"
     #endif
 
     private var encoder: JSONEncoder {
@@ -109,6 +113,18 @@ private struct APIHelper: Sendable {
         var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        return try await performAuthenticated(request)
+    }
+
+    func authenticatedPost<Req: Encodable & Sendable, Res: Decodable & Sendable>(
+        _ path: String,
+        body: Req
+    ) async throws -> Res {
+        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try encoder.encode(body)
 
         return try await performAuthenticated(request)
     }
