@@ -114,6 +114,18 @@ func (r *lwwIntegrationTaskRepo) Sync(_ context.Context, userID string, tasks []
 	}
 	return out, nil, now, nil
 }
+func (r *lwwIntegrationTaskRepo) UpdateTrackingMode(_ context.Context, _ int, _ string) error {
+	return nil
+}
+func (r *lwwIntegrationTaskRepo) IncrementCompletionCount(_ context.Context, _ int, _ string) error {
+	return nil
+}
+func (r *lwwIntegrationTaskRepo) IncrementFocusTime(_ context.Context, _ int, _ string, _ int) error {
+	return nil
+}
+func (r *lwwIntegrationTaskRepo) SetActiveSession(_ context.Context, _ int, _ *string) error {
+	return nil
+}
 
 type recurrenceIntegrationTaskRepo struct {
 	items []domain.Task
@@ -162,6 +174,18 @@ func (r *recurrenceIntegrationTaskRepo) Upsert(_ context.Context, task *domain.T
 func (r *recurrenceIntegrationTaskRepo) Delete(_ context.Context, _ string, _ int) error { return nil }
 func (r *recurrenceIntegrationTaskRepo) Sync(_ context.Context, _ string, _ []domain.Task, _ []string, _ *time.Time) ([]domain.Task, []string, time.Time, error) {
 	return nil, nil, time.Now().UTC(), nil
+}
+func (r *recurrenceIntegrationTaskRepo) UpdateTrackingMode(_ context.Context, _ int, _ string) error {
+	return nil
+}
+func (r *recurrenceIntegrationTaskRepo) IncrementCompletionCount(_ context.Context, _ int, _ string) error {
+	return nil
+}
+func (r *recurrenceIntegrationTaskRepo) IncrementFocusTime(_ context.Context, _ int, _ string, _ int) error {
+	return nil
+}
+func (r *recurrenceIntegrationTaskRepo) SetActiveSession(_ context.Context, _ int, _ *string) error {
+	return nil
 }
 
 func TestCritical_TaskSyncLWW_Integration(t *testing.T) {

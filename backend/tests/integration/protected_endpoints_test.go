@@ -55,6 +55,18 @@ func (r *integrationTaskRepo) Sync(_ context.Context, userID string, tasks []dom
 	r.items = append(r.items, tasks...)
 	return tasks, nil, time.Now().UTC(), nil
 }
+func (r *integrationTaskRepo) UpdateTrackingMode(_ context.Context, _ int, _ string) error {
+	return nil
+}
+func (r *integrationTaskRepo) IncrementCompletionCount(_ context.Context, _ int, _ string) error {
+	return nil
+}
+func (r *integrationTaskRepo) IncrementFocusTime(_ context.Context, _ int, _ string, _ int) error {
+	return nil
+}
+func (r *integrationTaskRepo) SetActiveSession(_ context.Context, _ int, _ *string) error {
+	return nil
+}
 
 func makeAccessToken(t *testing.T, userID, email string) string {
 	t.Helper()

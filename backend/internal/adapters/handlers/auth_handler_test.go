@@ -181,7 +181,7 @@ func TestAuthRegisterAndLoginHTTP(t *testing.T) {
 	registerPayload := map[string]any{
 		"email":    "http@test.com",
 		"name":     "HTTP User",
-		"password": "password123",
+		"password": "Password123",
 	}
 	body, _ := json.Marshal(registerPayload)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader(body))
@@ -196,7 +196,7 @@ func TestAuthRegisterAndLoginHTTP(t *testing.T) {
 
 	loginPayload := map[string]any{
 		"email":    "http@test.com",
-		"password": "password123",
+		"password": "Password123",
 	}
 	body, _ = json.Marshal(loginPayload)
 	req = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(body))

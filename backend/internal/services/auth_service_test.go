@@ -160,7 +160,7 @@ func TestRegisterAndLogin(t *testing.T) {
 	service := newAuthServiceForTest(repo)
 	ctx := context.Background()
 
-	user, tokens, err := service.Register(ctx, "user@test.com", "User", "password123")
+	user, tokens, err := service.Register(ctx, "user@test.com", "User", "Password123")
 	if err != nil {
 		t.Fatalf("register failed: %v", err)
 	}
@@ -171,7 +171,7 @@ func TestRegisterAndLogin(t *testing.T) {
 		t.Fatalf("expected non-empty tokens")
 	}
 
-	_, loginTokens, err := service.Login(ctx, "user@test.com", "password123")
+	_, loginTokens, err := service.Login(ctx, "user@test.com", "Password123")
 	if err != nil {
 		t.Fatalf("login failed: %v", err)
 	}
@@ -185,7 +185,7 @@ func TestRefreshFlow(t *testing.T) {
 	service := newAuthServiceForTest(repo)
 	ctx := context.Background()
 
-	_, tokens, err := service.Register(ctx, "refresh@test.com", "Refresh", "password123")
+	_, tokens, err := service.Register(ctx, "refresh@test.com", "Refresh", "Password123")
 	if err != nil {
 		t.Fatalf("register failed: %v", err)
 	}
@@ -204,16 +204,16 @@ func TestChangePassword(t *testing.T) {
 	service := newAuthServiceForTest(repo)
 	ctx := context.Background()
 
-	user, _, err := service.Register(ctx, "changepwd@test.com", "User", "password123")
+	user, _, err := service.Register(ctx, "changepwd@test.com", "User", "Password123")
 	if err != nil {
 		t.Fatalf("register failed: %v", err)
 	}
 
-	if err := service.ChangePassword(ctx, user.ID, "password123", "newpassword123"); err != nil {
+	if err := service.ChangePassword(ctx, user.ID, "Password123", "NewPassword123"); err != nil {
 		t.Fatalf("change password failed: %v", err)
 	}
 
-	if _, _, err := service.Login(ctx, "changepwd@test.com", "newpassword123"); err != nil {
+	if _, _, err := service.Login(ctx, "changepwd@test.com", "NewPassword123"); err != nil {
 		t.Fatalf("login with new password failed: %v", err)
 	}
 }
@@ -234,7 +234,7 @@ func TestResetPassword(t *testing.T) {
 	)
 	ctx := context.Background()
 
-	_, _, err := service.Register(ctx, "reset@test.com", "Reset", "password123")
+	_, _, err := service.Register(ctx, "reset@test.com", "Reset", "Password123")
 	if err != nil {
 		t.Fatalf("register failed: %v", err)
 	}
@@ -243,11 +243,11 @@ func TestResetPassword(t *testing.T) {
 		t.Fatalf("store reset code failed: %v", err)
 	}
 
-	if err := service.ResetPassword(ctx, "reset@test.com", "123456", "newpassword123"); err != nil {
+	if err := service.ResetPassword(ctx, "reset@test.com", "123456", "NewPassword123"); err != nil {
 		t.Fatalf("reset password failed: %v", err)
 	}
 
-	if _, _, err := service.Login(ctx, "reset@test.com", "newpassword123"); err != nil {
+	if _, _, err := service.Login(ctx, "reset@test.com", "NewPassword123"); err != nil {
 		t.Fatalf("login after reset failed: %v", err)
 	}
 }

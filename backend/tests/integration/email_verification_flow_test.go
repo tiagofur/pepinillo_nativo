@@ -236,7 +236,7 @@ func TestAuthService_EmailVerificationFlow_Integration(t *testing.T) {
 	svc := newTestAuthService(repo, notifier)
 
 	// Step 1: Register — sends email verification code
-	registeredUser, _, err := svc.Register(ctx, "integration@example.com", "Integration User", "password123")
+	registeredUser, _, err := svc.Register(ctx, "integration@example.com", "Integration User", "Password123")
 	require.NoError(t, err)
 	require.NotNil(t, registeredUser)
 	assert.False(t, registeredUser.EmailVerified)
@@ -266,7 +266,7 @@ func TestAuthService_EmailChangeFlow_Integration(t *testing.T) {
 	svc := newTestAuthService(repo, notifier)
 
 	// Setup: register and mark email verified
-	user, _, err := svc.Register(ctx, "old@example.com", "Change User", "password123")
+	user, _, err := svc.Register(ctx, "old@example.com", "Change User", "Password123")
 	require.NoError(t, err)
 	require.NoError(t, repo.MarkEmailVerified(ctx, user.ID))
 
@@ -303,7 +303,7 @@ func TestAuthService_ResendVerificationRateLimit(t *testing.T) {
 	svc := newTestAuthService(repo, notifier)
 
 	// Register a user first
-	user, _, err := svc.Register(ctx, "ratelimit@example.com", "Rate Limit User", "password123")
+	user, _, err := svc.Register(ctx, "ratelimit@example.com", "Rate Limit User", "Password123")
 	require.NoError(t, err)
 	require.NotNil(t, user)
 
