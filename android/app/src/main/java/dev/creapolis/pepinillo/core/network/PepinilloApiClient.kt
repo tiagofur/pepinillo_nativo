@@ -31,13 +31,20 @@ class PepinilloApiClient @Inject constructor(
     suspend fun refreshToken(refreshToken: String): NetworkResult<RefreshResponse> =
         safeCall { httpClient.post("auth/refresh") { jsonBody(RefreshRequest(refreshToken)) }.body() }
 
-    suspend fun logout(): NetworkResult<Unit> =
-        safeCall { httpClient.post("auth/logout").body() }
+    suspend fun logout(refreshToken: String?): NetworkResult<Unit> =
+        safeCall {
+            httpClient.post("auth/logout") {
+                jsonBody(RefreshRequest(refreshToken ?: ""))
+            }.body()
+        }
 
     // ── User ──
 
     suspend fun getMe(): NetworkResult<UserDto> =
         safeCall { httpClient.get("users/me").body() }
+
+    suspend fun updateMe(request: UpdateProfileRequest): NetworkResult<UserDto> =
+        safeCall { httpClient.put("users/me") { jsonBody(request) }.body() }
 
     // ── Tasks ──
 
@@ -102,8 +109,11 @@ class PepinilloApiClient @Inject constructor(
         return try {
             NetworkResult.Success(block())
         } catch (e: io.ktor.client.plugins.ClientRequestException) {
+            val errorBody = try {
+                e.response.body<ErrorResponse>()
+            } catch (_: Exception) { null }
             Log.e(TAG, "API error ${e.response.status}", e)
-            NetworkResult.Error(e.response.status.value, e.message)
+            NetworkResult.Error(e.response.status.value, errorBody?.error ?: e.message)
         } catch (e: io.ktor.client.plugins.ServerResponseException) {
             Log.e(TAG, "Server error ${e.response.status}", e)
             NetworkResult.Error(e.response.status.value, e.message)

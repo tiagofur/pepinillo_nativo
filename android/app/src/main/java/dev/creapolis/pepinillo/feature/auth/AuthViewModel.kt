@@ -97,7 +97,7 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
-            apiClient.logout()
+            apiClient.logout(authStore.getRefreshToken())
             authStore.clearAll()
             _uiState.value = AuthUiState(isAuthenticated = false)
         }

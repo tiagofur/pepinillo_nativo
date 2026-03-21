@@ -32,6 +32,7 @@ data class AuthResponse(
 data class TokensDto(
     val accessToken: String,
     val refreshToken: String,
+    val expiresIn: Long = 0,
 )
 
 @Serializable
@@ -47,12 +48,12 @@ data class UserDto(
     val email: String,
     val name: String,
     val imageUrl: String? = null,
-    val birthDate: Long? = null,
+    val birthDate: String? = null,
     val subscriptionTier: String = "free",
-    val subscriptionExpiresAt: Long? = null,
+    val subscriptionExpiresAt: String? = null,
     val emailVerified: Boolean = false,
-    val createdAt: Long = 0,
-    val updatedAt: Long = 0,
+    val createdAt: String = "",
+    val updatedAt: String = "",
 )
 
 // ── Task ──
@@ -142,6 +143,20 @@ data class VerifyReceiptRequest(
 data class VerifyReceiptResponse(
     val subscriptionTier: String = "free",
     val subscriptionExpiresAt: Long? = null,
+)
+
+// ── Profile ──
+
+@Serializable
+data class UpdateProfileRequest(
+    val name: String? = null,
+    val imageUrl: String? = null,
+    val birthDate: String? = null,
+)
+
+@Serializable
+data class ErrorResponse(
+    val error: String = "",
 )
 
 // ── AI Report ──

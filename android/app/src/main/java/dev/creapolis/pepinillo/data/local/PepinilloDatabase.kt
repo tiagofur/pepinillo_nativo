@@ -13,7 +13,9 @@ import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.local.entity.ProductivityReportEntity
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
+import dev.creapolis.pepinillo.data.local.dao.UserDao
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
+import dev.creapolis.pepinillo.data.local.entity.UserEntity
 
 @Database(
     entities = [
@@ -22,8 +24,9 @@ import dev.creapolis.pepinillo.data.local.entity.TaskEntity
         DailyStatsEntity::class,
         SubtaskEntity::class,
         ProductivityReportEntity::class,
+        UserEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 abstract class PepinilloDatabase : RoomDatabase() {
@@ -32,8 +35,29 @@ abstract class PepinilloDatabase : RoomDatabase() {
     abstract fun dailyStatsDao(): DailyStatsDao
     abstract fun subtaskDao(): SubtaskDao
     abstract fun productivityReportDao(): ProductivityReportDao
+    abstract fun userDao(): UserDao
 
     companion object {
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS users (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        email TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        imageUrl TEXT,
+                        birthDate TEXT,
+                        subscriptionTier TEXT NOT NULL DEFAULT 'free',
+                        subscriptionExpiresAt TEXT,
+                        emailVerified INTEGER NOT NULL DEFAULT 0,
+                        createdAt TEXT NOT NULL DEFAULT '',
+                        updatedAt TEXT NOT NULL DEFAULT '',
+                        cachedAt INTEGER NOT NULL DEFAULT 0
+                    )
+                """.trimIndent())
+            }
+        }
+
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("""
