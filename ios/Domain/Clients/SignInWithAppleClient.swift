@@ -15,11 +15,13 @@ public struct AppleUserInfo: Sendable, Equatable {
     public let userID: String       // ASAuthorizationAppleIDCredential.user
     public let displayName: String? // fullName (only available on first sign-in)
     public let email: String?       // email (only available on first sign-in)
+    public let identityToken: String? // JWT identity token for backend verification
 
-    public init(userID: String, displayName: String?, email: String?) {
+    public init(userID: String, displayName: String?, email: String?, identityToken: String? = nil) {
         self.userID = userID
         self.displayName = displayName
         self.email = email
+        self.identityToken = identityToken
     }
 }
 

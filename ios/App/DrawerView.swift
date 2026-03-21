@@ -158,10 +158,12 @@ struct DrawerView: View {
                             store.send(.signInWithAppleFailed)
                             return
                         }
+                        let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
                         store.send(.signInWithAppleSucceeded(AppleUserInfo(
                             userID: cred.user,
                             displayName: cred.fullName?.formatted(),
-                            email: cred.email
+                            email: cred.email,
+                            identityToken: identityToken
                         )))
                     case .failure:
                         store.send(.signInWithAppleFailed)
