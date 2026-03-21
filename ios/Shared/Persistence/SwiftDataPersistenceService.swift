@@ -303,6 +303,41 @@ public final class SwiftDataPersistenceService {
         return task.totalFocusTime
     }
 
+    // MARK: - Cached User
+
+    public func fetchCachedUser() throws -> CachedUser? {
+        let descriptor = FetchDescriptor<CachedUser>()
+        return try context.fetch(descriptor).first
+    }
+
+    public func saveCachedUser(_ dto: CachedUserDTO) throws {
+        // Delete existing first (singleton pattern)
+        try deleteCachedUser()
+        let user = CachedUser()
+        user.id = dto.id
+        user.email = dto.email
+        user.name = dto.name
+        user.imageUrl = dto.imageUrl
+        user.birthDate = dto.birthDate
+        user.subscriptionTier = dto.subscriptionTier
+        user.subscriptionExpiresAt = dto.subscriptionExpiresAt
+        user.emailVerified = dto.emailVerified
+        user.appleId = dto.appleId
+        user.createdAt = dto.createdAt
+        user.updatedAt = dto.updatedAt
+        context.insert(user)
+        try context.save()
+    }
+
+    public func deleteCachedUser() throws {
+        let descriptor = FetchDescriptor<CachedUser>()
+        let users = try context.fetch(descriptor)
+        for user in users {
+            context.delete(user)
+        }
+        try context.save()
+    }
+
     // MARK: - Private
 
     // MARK: - Errors

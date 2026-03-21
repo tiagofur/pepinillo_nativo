@@ -283,6 +283,26 @@ enum SchemaV1: VersionedSchema {
     }
 }
 
+// MARK: - Schema V2 (Add CachedUser)
+
+/// Adds CachedUser model for backend auth sync.
+/// Lightweight migration — only adds a new table, no existing model changes.
+enum SchemaV2: VersionedSchema {
+    static var versionIdentifier = Schema.Version(2, 0, 0)
+
+    static var models: [any PersistentModel.Type] {
+        [
+            TaskItem.self,
+            SubTask.self,
+            FocusSessionRecord.self,
+            DailyStats.self,
+            UserPreferences.self,
+            ProductivityReport.self,
+            CachedUser.self,
+        ]
+    }
+}
+
 // MARK: - Migration Plan
 
 /// Defines the ordered list of schema versions and migration stages between them.
@@ -292,20 +312,14 @@ enum PepinilloMigrationPlan: SchemaMigrationPlan {
     static var schemas: [any VersionedSchema.Type] {
         [
             SchemaV1.self,
+            SchemaV2.self,
         ]
     }
 
     /// Migration stages executed in order when upgrading across versions.
-    /// Empty for V1 — no prior version to migrate from.
-    ///
-    /// When adding V2, add a stage here:
-    ///   .lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self)
-    /// or for complex migrations:
-    ///   .custom(fromVersion: SchemaV1.self, toVersion: SchemaV2.self) { context in
-    ///       // Transform data as needed
-    ///       try context.save()
-    ///   }
     static var stages: [MigrationStage] {
-        []
+        [
+            .lightweight(fromVersion: SchemaV1.self, toVersion: SchemaV2.self),
+        ]
     }
 }

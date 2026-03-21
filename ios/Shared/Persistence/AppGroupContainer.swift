@@ -233,7 +233,7 @@ enum AppGroupDefaults {
 /// (widgets receive `.none` to avoid double-sync writes).
 @MainActor
 func makeSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV1.self)
+    let schema = Schema(versionedSchema: SchemaV2.self)
 
     let config = ModelConfiguration(
         schema: schema,
@@ -254,7 +254,7 @@ func makeSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelContai
 /// WidgetKit runs in a separate process — no @MainActor, no CloudKit sync.
 /// Includes TaskItem + SubTask + FocusSessionRecord so Tasks and Dashboard widgets can read real data.
 func makeWidgetModelContainer() throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV1.self)
+    let schema = Schema(versionedSchema: SchemaV2.self)
 
     let config = ModelConfiguration(
         schema: schema,
@@ -274,7 +274,7 @@ func makeWidgetModelContainer() throws -> ModelContainer {
 /// Non-isolated container for the Intents extension (Siri Shortcuts).
 /// Includes TaskItem + SubTask so Siri can suggest real user tasks.
 func makeIntentsModelContainer() throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV1.self)
+    let schema = Schema(versionedSchema: SchemaV2.self)
 
     let config = ModelConfiguration(
         schema: schema,

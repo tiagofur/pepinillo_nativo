@@ -238,6 +238,55 @@ public struct TaskAnalyticsDTO: Sendable, Equatable {
     }
 }
 
+/// Sendable representation of CachedUser for crossing concurrency boundaries
+public struct CachedUserDTO: Sendable, Equatable {
+    public let id: String
+    public let email: String
+    public let name: String
+    public let imageUrl: String?
+    public let birthDate: String?
+    public let subscriptionTier: String
+    public let subscriptionExpiresAt: String?
+    public let emailVerified: Bool
+    public let appleId: String?
+    public let createdAt: String
+    public let updatedAt: String
+
+    public init(
+        id: String, email: String, name: String,
+        imageUrl: String? = nil, birthDate: String? = nil,
+        subscriptionTier: String = "free", subscriptionExpiresAt: String? = nil,
+        emailVerified: Bool = false, appleId: String? = nil,
+        createdAt: String = "", updatedAt: String = ""
+    ) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.imageUrl = imageUrl
+        self.birthDate = birthDate
+        self.subscriptionTier = subscriptionTier
+        self.subscriptionExpiresAt = subscriptionExpiresAt
+        self.emailVerified = emailVerified
+        self.appleId = appleId
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    init(from user: CachedUser) {
+        self.id = user.id
+        self.email = user.email
+        self.name = user.name
+        self.imageUrl = user.imageUrl
+        self.birthDate = user.birthDate
+        self.subscriptionTier = user.subscriptionTier
+        self.subscriptionExpiresAt = user.subscriptionExpiresAt
+        self.emailVerified = user.emailVerified
+        self.appleId = user.appleId
+        self.createdAt = user.createdAt
+        self.updatedAt = user.updatedAt
+    }
+}
+
 /// Sendable representation of DailyStats
 public struct DailyStatsDTO: Sendable, Equatable {
     public let date: Date
@@ -422,6 +471,11 @@ public struct PersistenceClient: Sendable {
     }
     public var savePreferences: @Sendable (UserPreferencesDTO) async throws -> Void
 
+    // Cached User
+    public var fetchCachedUser: @Sendable () async throws -> CachedUserDTO? = { nil }
+    public var saveCachedUser: @Sendable (CachedUserDTO) async throws -> Void
+    public var deleteCachedUser: @Sendable () async throws -> Void
+
     // Recurring Tasks
     public var generateRecurringTasks: @Sendable () async throws -> Void
 }
@@ -590,6 +644,22 @@ extension PersistenceClient: DependencyKey {
                     prefs.displayName = prefsDTO.displayName
                     prefs.userEmail = prefsDTO.userEmail
                     try service.savePreferences(prefs)
+                }
+            },
+            fetchCachedUser: {
+                try await MainActor.run {
+                    guard let user = try service.fetchCachedUser() else { return nil }
+                    return CachedUserDTO(from: user)
+                }
+            },
+            saveCachedUser: { dto in
+                try await MainActor.run {
+                    try service.saveCachedUser(dto)
+                }
+            },
+            deleteCachedUser: {
+                try await MainActor.run {
+                    try service.deleteCachedUser()
                 }
             },
             generateRecurringTasks: {
