@@ -19,6 +19,7 @@ struct ProfileFeature {
         var user: CachedUserDTO? = nil
         var isLoading = false
         var errorMessage: String? = nil
+        @Presents var editProfile: EditProfileFeature.State?
 
         // Local stats
         var totalFocusMinutes: Int = 0
@@ -33,6 +34,8 @@ struct ProfileFeature {
         case cachedUserLoaded(CachedUserDTO?)
         case statsLoaded(totalMinutes: Int, totalSessions: Int, bestStreak: Int)
         case profileRefreshed(Result<APIUser, APIClientError>)
+        case editProfileTapped
+        case editProfile(PresentationAction<EditProfileFeature.Action>)
         case signOutTapped
         case signOutCompleted
 
@@ -135,6 +138,29 @@ struct ProfileFeature {
                 // Other errors: silently use cached data
                 return .none
 
+            case .editProfileTapped:
+                let user = state.user
+                var editState = EditProfileFeature.State()
+                editState.name = user?.name ?? ""
+                editState.imageUrl = user?.imageUrl
+                if let bd = user?.birthDate, !bd.isEmpty {
+                    editState.birthDate = ISO8601DateFormatter().date(from: bd)
+                }
+                state.editProfile = editState
+                return .none
+
+            case .editProfile(.presented(.delegate(.profileUpdated(let user)))):
+                state.user = user
+                state.editProfile = nil
+                return .none
+
+            case .editProfile(.presented(.delegate(.dismissed))):
+                state.editProfile = nil
+                return .none
+
+            case .editProfile:
+                return .none
+
             case .signOutTapped:
                 state.isLoading = true
                 return .run { send in
@@ -154,6 +180,9 @@ struct ProfileFeature {
             case .delegate:
                 return .none
             }
+        }
+        .ifLet(\.$editProfile, action: \.editProfile) {
+            EditProfileFeature()
         }
     }
 }

@@ -76,6 +76,10 @@ public struct RefreshResponse: Codable, Sendable, Equatable {
     public let tokens: APITokens
 }
 
+public struct ImageUploadResponse: Codable, Sendable, Equatable {
+    public let imageUrl: String
+}
+
 // MARK: - Error
 
 struct APIErrorBody: Codable, Sendable {

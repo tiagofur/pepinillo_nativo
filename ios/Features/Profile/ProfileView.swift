@@ -42,6 +42,11 @@ struct ProfileView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
+        .sheet(item: $store.scope(state: \.editProfile, action: \.editProfile)) { editStore in
+            NavigationStack {
+                EditProfileView(store: editStore)
+            }
+        }
     }
 
     // MARK: - User Card
@@ -49,18 +54,36 @@ struct ProfileView: View {
     @ViewBuilder
     private var userCard: some View {
         HStack(spacing: 16) {
-            Circle()
-                .fill(.secondary.opacity(0.2))
-                .frame(width: 72, height: 72)
-                .overlay {
-                    Image(systemName: "person.fill")
-                        .font(.title)
-                        .foregroundStyle(.secondary)
+            if let imageUrl = store.user?.imageUrl, let url = URL(string: imageUrl) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Image(systemName: "person.fill").font(.title).foregroundStyle(.secondary)
                 }
+                .frame(width: 72, height: 72)
+                .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(.secondary.opacity(0.2))
+                    .frame(width: 72, height: 72)
+                    .overlay {
+                        Image(systemName: "person.fill").font(.title).foregroundStyle(.secondary)
+                    }
+            }
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(store.user?.name ?? "Guest User")
-                    .font(.title3.weight(.semibold))
+                HStack(spacing: 8) {
+                    Text(store.user?.name ?? "Guest User")
+                        .font(.title3.weight(.semibold))
+
+                    if store.user != nil {
+                        Button { store.send(.editProfileTapped) } label: {
+                            Image(systemName: "pencil")
+                                .font(.body)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
 
                 Text(store.user?.email ?? "Sign in to sync your data")
                     .font(.subheadline)

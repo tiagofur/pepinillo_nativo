@@ -18,6 +18,7 @@ public struct APIClient: Sendable {
     public var logout: @Sendable (LogoutRequest) async throws -> Void
     public var getMe: @Sendable () async throws -> APIUser
     public var updateMe: @Sendable (UpdateProfileRequest) async throws -> APIUser
+    public var uploadProfileImage: @Sendable (_ imageData: Data, _ mimeType: String) async throws -> ImageUploadResponse
 }
 
 // MARK: - Live implementation
@@ -33,7 +34,15 @@ extension APIClient: DependencyKey {
             refreshTokens: { try await helper.post("auth/refresh", body: $0) },
             logout: { try await helper.postVoid("auth/logout", body: $0) },
             getMe: { try await helper.authenticatedGet("users/me") },
-            updateMe: { try await helper.authenticatedPut("users/me", body: $0) }
+            updateMe: { try await helper.authenticatedPut("users/me", body: $0) },
+            uploadProfileImage: { imageData, mimeType in
+                try await helper.authenticatedMultipartUpload(
+                    "users/me/image",
+                    fieldName: "image",
+                    fileData: imageData,
+                    mimeType: mimeType
+                )
+            }
         )
     }
 
@@ -112,6 +121,31 @@ private struct APIHelper: Sendable {
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try encoder.encode(body)
+
+        return try await performAuthenticated(request)
+    }
+
+    // MARK: - Authenticated multipart upload
+
+    func authenticatedMultipartUpload<Res: Decodable & Sendable>(
+        _ path: String,
+        fieldName: String,
+        fileData: Data,
+        mimeType: String
+    ) async throws -> Res {
+        let boundary = "Boundary-\(UUID().uuidString)"
+        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        request.httpMethod = "POST"
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        var body = Data()
+        let fileExtension = mimeType == "image/png" ? "png" : "jpeg"
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"\(fieldName)\"; filename=\"image.\(fileExtension)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(mimeType)\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body
 
         return try await performAuthenticated(request)
     }
