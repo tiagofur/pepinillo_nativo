@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
@@ -164,7 +165,12 @@ func makeAuthApp() *fiber.App {
 	)
 	handler := NewAuthHandler(authService)
 
-	app := fiber.New(fiber.Config{ErrorHandler: ErrorHandler})
+	app := fiber.New(fiber.Config{
+		ErrorHandler:  ErrorHandler,
+		ReadTimeout:   10 * time.Second,
+		WriteTimeout:  10 * time.Second,
+		IdleTimeout:   10 * time.Second,
+	})
 	auth := app.Group("/api/v1/auth")
 	loginRegisterLimiter := limiter.New(limiter.Config{Max: 5})
 	auth.Post("/register", loginRegisterLimiter, handler.Register)
