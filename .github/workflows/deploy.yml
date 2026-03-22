@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - '.github/workflows/deploy.yml'
 
 jobs:
   test:
@@ -92,15 +93,15 @@ jobs:
           ssh deploy "cd ${APP_DIR} && docker compose -f docker-compose.prod.yml images --quiet api" > /tmp/old_image 2>/dev/null || echo "no-previous-image" > /tmp/old_image
 
           # Deploy: pull latest code, build, and start services
-          ssh deploy << 'DEPLOY_SCRIPT'
+          ssh deploy << DEPLOY_SCRIPT
           set -e
           cd ${APP_DIR}
 
           # Pull latest changes
           git pull origin main
 
-          # Build the API image
-          docker compose -f docker-compose.prod.yml build api
+          # Build the API image (no cache to ensure fresh binary)
+          docker compose -f docker-compose.prod.yml build --no-cache api
 
           # Start services (will recreate api container with new image)
           docker compose -f docker-compose.prod.yml up -d
