@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,7 +38,7 @@ type googleTokenInfo struct {
 	Sub           string `json:"sub"`
 	Azp           string `json:"azp"`
 	Email         string `json:"email"`
-	EmailVerified bool   `json:"email_verified"`
+	EmailVerified string `json:"email_verified"`
 	Name          string `json:"name"`
 	Picture       string `json:"picture"`
 	Exp           int64  `json:"exp"`
@@ -120,12 +121,13 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 		return existing, tokens, nil
 	}
 
+	emailVerified, _ := strconv.ParseBool(tokenInfo.EmailVerified)
 	user = &domain.User{
 		ID:               uuid.NewString(),
 		Email:            tokenInfo.Email,
 		Name:             tokenInfo.Name,
 		ImageURL:         &tokenInfo.Picture,
-		EmailVerified:    tokenInfo.EmailVerified,
+		EmailVerified:    emailVerified,
 		EmailVerifiedAt:  &[]time.Time{time.Now().UTC()}[0],
 		SubscriptionTier: "free",
 		GoogleID:         &tokenInfo.Sub,
