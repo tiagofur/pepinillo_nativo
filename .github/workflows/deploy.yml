@@ -89,9 +89,6 @@ jobs:
             UserKnownHostsFile ~/.ssh/known_hosts
           EOF
 
-          # Store the last running image tag for rollback
-          ssh deploy "cd ${APP_DIR}/backend && docker compose -f docker-compose.prod.yml images --quiet api" > /tmp/old_image 2>/dev/null || echo "no-previous-image" > /tmp/old_image
-
           # Deploy: pull latest code, build, and start services
           ssh deploy << DEPLOY_SCRIPT
           set -e
@@ -117,8 +114,8 @@ jobs:
           sleep 10
           DEPLOY_SCRIPT
 
-          # Health check: verify the API is responding
-          HEALTH_CHECK_URL="http://${SSH_HOST}/api/v1/health"
+          # Health check: verify the API is responding on port 8090
+          HEALTH_CHECK_URL="http://${SSH_HOST}:8090/api/v1/health"
           MAX_RETRIES=30
           RETRY_COUNT=0
 
@@ -134,11 +131,8 @@ jobs:
 
           echo "Health check failed after $MAX_RETRIES attempts"
 
-          # Rollback on health check failure
-          echo "Attempting rollback..."
-          OLD_IMAGE=$(cat /tmp/old_image)
-          if [ "$OLD_IMAGE" != "no-previous-image" ]; then
-            ssh deploy "cd ${APP_DIR}/backend && docker compose -f docker-compose.prod.yml down && docker run --name pepinillo-api-rollback -d $OLD_IMAGE" || true
-          fi
+          # On health check failure, log container status for debugging (no rollback to avoid making things worse)
+          echo "Checking container status..."
+          ssh deploy "cd ${APP_DIR}/backend && docker compose -f docker-compose.prod.yml ps && docker compose -f docker-compose.prod.yml logs --tail=50 api" || true
 
           exit 1
