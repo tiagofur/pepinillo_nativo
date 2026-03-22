@@ -50,6 +50,33 @@ class FocusEngine @Inject constructor(
     private var interruptionCount: Int = 0
     private var pomodoroNumber: Int = 1
 
+    init {
+        // Observe preference changes and update the active timer's totalMillis in real-time.
+        // This ensures that when the user changes Pomodoro/Block duration in Settings while
+        // a timer is running or paused, the displayed remaining time updates immediately.
+        scope.launch {
+            prefsRepo.preferences.collect { prefs ->
+                cachedPrefs = prefs
+                val s = _state.value
+                if (s.status != TimerStatus.Running && s.status != TimerStatus.Paused) return@collect
+                val newTotalMillis = when {
+                    s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.Work ->
+                        prefs.pomodoroMinutes * 60 * 1000L
+                    s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.ShortBreak ->
+                        prefs.shortBreakMinutes * 60 * 1000L
+                    s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.LongBreak ->
+                        prefs.longBreakMinutes * 60 * 1000L
+                    s.mode == FocusMode.Blocks ->
+                        prefs.timeBlockMinutes * 60 * 1000L
+                    else -> return@collect
+                }
+                if (newTotalMillis != s.totalMillis) {
+                    _state.update { it.copy(totalMillis = newTotalMillis) }
+                }
+            }
+        }
+    }
+
     suspend fun selectMode(mode: FocusMode) {
         if (_state.value.status != TimerStatus.Idle) return
         val prefs = prefsRepo.preferences.first()
