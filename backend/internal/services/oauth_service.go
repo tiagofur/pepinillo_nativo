@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -41,7 +42,7 @@ type googleTokenInfo struct {
 	EmailVerified string `json:"email_verified"`
 	Name          string `json:"name"`
 	Picture       string `json:"picture"`
-	Exp           int64  `json:"exp"`
+	Exp           string `json:"exp"`
 }
 
 type appleTokenInfo struct {
@@ -85,15 +86,18 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 
 	user, err := s.users.GetByGoogleID(ctx, tokenInfo.Sub)
 	if err != nil {
+		log.Printf("ERROR LoginWithGoogle: failed to get user by google id %s: %v", tokenInfo.Sub, err)
 		return nil, nil, err
 	}
 
 	if user != nil {
 		tokens, err := s.generateTokens(user)
 		if err != nil {
+			log.Printf("ERROR LoginWithGoogle: failed to generate tokens for user %s: %v", user.ID, err)
 			return nil, nil, err
 		}
 		if err := s.authStore.StoreRefreshToken(ctx, user.ID, tokens.RefreshToken, s.refreshTTL); err != nil {
+			log.Printf("ERROR LoginWithGoogle: failed to store refresh token for user %s: %v", user.ID, err)
 			return nil, nil, err
 		}
 		return user, tokens, nil
@@ -101,6 +105,7 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 
 	existing, err := s.users.GetByEmail(ctx, tokenInfo.Email)
 	if err != nil {
+		log.Printf("ERROR LoginWithGoogle: failed to get user by email %s: %v", tokenInfo.Email, err)
 		return nil, nil, err
 	}
 
@@ -109,13 +114,16 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 			return nil, nil, ErrAccountAlreadyLinked
 		}
 		if err := s.users.LinkGoogleAccount(ctx, existing.ID, tokenInfo.Sub, tokenInfo.Email, tokenInfo.Name, tokenInfo.Picture); err != nil {
+			log.Printf("ERROR LoginWithGoogle: failed to link google account to user %s: %v", existing.ID, err)
 			return nil, nil, err
 		}
 		tokens, err := s.generateTokens(existing)
 		if err != nil {
+			log.Printf("ERROR LoginWithGoogle: failed to generate tokens for existing user %s: %v", existing.ID, err)
 			return nil, nil, err
 		}
 		if err := s.authStore.StoreRefreshToken(ctx, existing.ID, tokens.RefreshToken, s.refreshTTL); err != nil {
+			log.Printf("ERROR LoginWithGoogle: failed to store refresh token for existing user %s: %v", existing.ID, err)
 			return nil, nil, err
 		}
 		return existing, tokens, nil
@@ -137,14 +145,17 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 	}
 
 	if err := s.users.Create(ctx, user); err != nil {
+		log.Printf("ERROR LoginWithGoogle: failed to create new user with email %s: %v", tokenInfo.Email, err)
 		return nil, nil, err
 	}
 
 	tokens, err := s.generateTokens(user)
 	if err != nil {
+		log.Printf("ERROR LoginWithGoogle: failed to generate tokens for new user %s: %v", user.ID, err)
 		return nil, nil, err
 	}
 	if err := s.authStore.StoreRefreshToken(ctx, user.ID, tokens.RefreshToken, s.refreshTTL); err != nil {
+		log.Printf("ERROR LoginWithGoogle: failed to store refresh token for new user %s: %v", user.ID, err)
 		return nil, nil, err
 	}
 
@@ -384,25 +395,35 @@ func (s *OAuthService) GetLinkedProviders(ctx context.Context, userID string) (*
 func (s *OAuthService) verifyGoogleToken(ctx context.Context, idToken string) (*googleTokenInfo, error) {
 	resp, err := s.googleClient.Get("https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken)
 	if err != nil {
+		log.Printf("ERROR verifyGoogleToken: failed to get token info from google: %v", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("ERROR verifyGoogleToken: google returned status %s", resp.Status)
 		return nil, fmt.Errorf("google token verification failed: %s", resp.Status)
 	}
 
 	var tokenInfo googleTokenInfo
 	if err := json.NewDecoder(resp.Body).Decode(&tokenInfo); err != nil {
+		log.Printf("ERROR verifyGoogleToken: failed to decode token info response: %v", err)
 		return nil, err
 	}
 
 	if !s.isValidGoogleAudience(tokenInfo.Aud) {
+		log.Printf("ERROR verifyGoogleToken: invalid audience %s", tokenInfo.Aud)
 		return nil, errors.New("invalid google token audience")
 	}
 
+	expInt, err := strconv.ParseInt(tokenInfo.Exp, 10, 64)
+	if err != nil {
+		log.Printf("ERROR verifyGoogleToken: failed to parse exp %q: %v", tokenInfo.Exp, err)
+		return nil, fmt.Errorf("invalid token expiration: %w", err)
+	}
 	now := time.Now().Unix()
-	if tokenInfo.Exp < now {
+	if expInt < now {
+		log.Printf("ERROR verifyGoogleToken: token expired at %d, current time %d", expInt, now)
 		return nil, errors.New("google token expired")
 	}
 
