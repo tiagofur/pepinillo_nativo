@@ -57,11 +57,16 @@ class ProfileViewModel @Inject constructor(
         // Observe auth state
         viewModelScope.launch {
             authStore.isLoggedIn.collect { loggedIn ->
-                _uiState.update { it.copy(isLoggedIn = loggedIn) }
+                _uiState.update {
+                    it.copy(
+                        isLoggedIn = loggedIn,
+                        isLoading = loggedIn, // show loading until user data arrives
+                    )
+                }
                 if (loggedIn) {
                     loadProfile()
                 } else {
-                    _uiState.update { it.copy(user = null) }
+                    _uiState.update { it.copy(user = null, isLoading = false) }
                 }
             }
         }
@@ -73,7 +78,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             // Observe cached user from Room
             userRepository.observeCachedUser().collect { user ->
-                _uiState.update { it.copy(user = user) }
+                _uiState.update { it.copy(user = user, isLoading = false) }
             }
         }
         // Best-effort refresh from network

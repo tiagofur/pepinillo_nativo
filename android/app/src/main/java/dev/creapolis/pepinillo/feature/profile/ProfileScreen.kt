@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -101,7 +102,16 @@ fun ProfileScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        if (uiState.isLoggedIn) {
+        if (uiState.isLoggedIn && uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (uiState.isLoggedIn) {
             ProfileCard {
                 Row(
                     modifier = Modifier
