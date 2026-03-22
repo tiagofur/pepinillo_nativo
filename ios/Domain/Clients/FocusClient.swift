@@ -23,6 +23,8 @@ public struct FocusClient: Sendable {
     public var recordInterruption: @Sendable () async -> Void
     /// Skip to next phase.
     public var skipPhase: @Sendable () async -> Void
+    /// Update the focus configuration while a session is active (real-time settings sync).
+    public var updateConfig: @Sendable (FocusConfig) async -> Void
     /// Observe engine events as an AsyncStream (no-op on watchOS).
     public var events: @Sendable () async -> AsyncStream<FocusEngineEvent> = { .finished }
     /// Get current state snapshot.
@@ -59,6 +61,9 @@ extension FocusClient: DependencyKey {
             },
             skipPhase: {
                 await engine.skipToNextPhase()
+            },
+            updateConfig: { newConfig in
+                await engine.updateConfig(newConfig)
             },
             events: {
                 await engine.events ?? AsyncStream { $0.finish() }

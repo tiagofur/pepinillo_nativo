@@ -690,6 +690,29 @@ struct AppFeature {
                 state.focus.showPaywall = false
                 return .none
 
+            // MARK: - Settings: propagate config changes to active focus session
+
+            case .settings(.settingsSaved):
+                // Build a FocusConfig from current settings state and push it to the
+                // FocusFeature so any active Pomodoro/TimeBlock timer updates in real-time.
+                let s = state.settings
+                let updatedConfig = FocusConfig(
+                    pomodoroDuration: TimeInterval(s.pomodoroDurationMinutes * 60),
+                    shortBreakDuration: TimeInterval(s.shortBreakMinutes * 60),
+                    longBreakDuration: TimeInterval(s.longBreakMinutes * 60),
+                    pomodorosPerCycle: s.pomodorosPerCycle,
+                    autoStartBreaks: s.autoStartBreaks,
+                    autoStartWork: s.autoStartWork,
+                    defaultBlockDuration: TimeInterval(s.blockDurationMinutes * 60),
+                    blockMidpointCheckIn: s.blockMidpointCheckIn,
+                    flowtimeMinSessionMinutes: s.flowtimeMinMinutes,
+                    flowtimeShowBreakSuggestion: true,
+                    soundEnabled: s.soundEnabled,
+                    hapticEnabled: s.hapticEnabled,
+                    keepScreenOn: s.keepScreenOn
+                )
+                return .send(.focus(.configUpdated(updatedConfig)))
+
             // MARK: - Settings: daily reminder sync
 
             case .settings(.dailyReminderToggled), .settings(.dailyReminderTimeChanged):
