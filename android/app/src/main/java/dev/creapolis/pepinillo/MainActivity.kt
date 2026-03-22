@@ -36,6 +36,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dev.creapolis.pepinillo.feature.auth.ForgotPasswordScreen
 import dev.creapolis.pepinillo.feature.auth.LoginScreen
 import dev.creapolis.pepinillo.feature.auth.RegisterScreen
 import dev.creapolis.pepinillo.feature.onboarding.OnboardingScreen
@@ -252,6 +253,7 @@ fun PepinilloApp() {
             composable("login") {
                 LoginScreen(
                     onNavigateToRegister = { navController.navigate("register") },
+                    onNavigateToForgotPassword = { navController.navigate("forgot-password") },
                     onAuthenticated = {
                         navController.navigate(TopLevelDestination.Focus.route) {
                             popUpTo("login") { inclusive = true }
@@ -265,6 +267,16 @@ fun PepinilloApp() {
                     onAuthenticated = {
                         navController.navigate(TopLevelDestination.Focus.route) {
                             popUpTo("login") { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable("forgot-password") {
+                ForgotPasswordScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onResetSuccess = {
+                        navController.navigate("login") {
+                            popUpTo("forgot-password") { inclusive = true }
                         }
                     },
                 )
