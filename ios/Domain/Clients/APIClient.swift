@@ -16,6 +16,8 @@ public struct APIClient: Sendable {
     public var loginWithApple: @Sendable (AppleLoginRequest) async throws -> AuthResponse
     public var refreshTokens: @Sendable (RefreshRequest) async throws -> RefreshResponse
     public var logout: @Sendable (LogoutRequest) async throws -> Void
+    public var forgotPassword: @Sendable (ForgotPasswordRequest) async throws -> Void
+    public var resetPassword: @Sendable (ResetPasswordRequest) async throws -> Void
     public var getMe: @Sendable () async throws -> APIUser
     public var updateMe: @Sendable (UpdateProfileRequest) async throws -> APIUser
     public var uploadProfileImage: @Sendable (_ imageData: Data, _ mimeType: String) async throws -> ImageUploadResponse
@@ -34,6 +36,8 @@ extension APIClient: DependencyKey {
             loginWithApple: { try await helper.post("auth/apple", body: $0) },
             refreshTokens: { try await helper.post("auth/refresh", body: $0) },
             logout: { try await helper.postVoid("auth/logout", body: $0) },
+            forgotPassword: { try await helper.postVoid("auth/forgot-password", body: $0) },
+            resetPassword: { try await helper.postVoid("auth/reset-password", body: $0) },
             getMe: { try await helper.authenticatedGet("users/me") },
             updateMe: { try await helper.authenticatedPut("users/me", body: $0) },
             uploadProfileImage: { imageData, mimeType in

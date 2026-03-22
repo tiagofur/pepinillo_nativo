@@ -31,6 +31,16 @@ public struct AppleLoginRequest: Codable, Sendable, Equatable {
     public let idToken: String
 }
 
+public struct ForgotPasswordRequest: Codable, Sendable, Equatable {
+    public let email: String
+}
+
+public struct ResetPasswordRequest: Codable, Sendable, Equatable {
+    public let email: String
+    public let code: String
+    public let newPassword: String
+}
+
 public struct UpdateProfileRequest: Codable, Sendable, Equatable {
     public let name: String?
     public let imageUrl: String?
@@ -205,6 +215,8 @@ public enum APIClientError: Error, Equatable, Sendable {
     case networkError
     case serverError(Int)
     case unknown(String)
+    case invalidResetCode
+    case resetCodeExpired
 
     public var userMessage: String {
         switch self {
@@ -217,6 +229,8 @@ public enum APIClientError: Error, Equatable, Sendable {
         case .networkError: return "No internet connection. You can still use the app offline."
         case .serverError: return "Server error. Please try again later."
         case .unknown(let msg): return msg
+        case .invalidResetCode: return "Invalid reset code. Please check and try again."
+        case .resetCodeExpired: return "Reset code has expired. Please request a new one."
         }
     }
 
@@ -228,6 +242,8 @@ public enum APIClientError: Error, Equatable, Sendable {
         case "invalid_email": return .invalidEmail
         case "missing_required_fields": return .missingRequiredFields
         case "invalid_refresh_token": return .invalidRefreshToken
+        case "invalid_reset_code": return .invalidResetCode
+        case "reset_code_expired": return .resetCodeExpired
         default: return .unknown(errorCode)
         }
     }

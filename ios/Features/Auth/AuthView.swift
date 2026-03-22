@@ -132,6 +132,16 @@ struct AuthView: View {
             .disabled(store.isLoading)
             .padding(.horizontal, 24)
 
+            // MARK: Forgot Password (login mode only)
+            if store.mode == .login {
+                Button("Forgot your password?") {
+                    store.send(.forgotPasswordTapped)
+                }
+                .foregroundStyle(.secondary)
+                .font(.footnote)
+                .padding(.top, 8)
+            }
+
             // MARK: Switch Mode
             Button {
                 store.send(.switchMode(store.mode == .login ? .register : .login))
@@ -156,5 +166,8 @@ struct AuthView: View {
             Spacer()
         }
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $store.scope(state: \.forgotPassword, action: \.forgotPassword)) { forgotPasswordStore in
+            ForgotPasswordView(store: forgotPasswordStore)
+        }
     }
 }

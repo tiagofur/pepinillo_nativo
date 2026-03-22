@@ -23,6 +23,7 @@ struct AuthFeature {
         var isLoading = false
         var errorMessage: String? = nil
         var isPasswordVisible = false
+        @Presents var forgotPassword: ForgotPasswordFeature.State?
     }
 
     enum AuthMode: Equatable {
@@ -42,8 +43,10 @@ struct AuthFeature {
         case loginTapped
         case registerTapped
         case continueAsGuestTapped
+        case forgotPasswordTapped
 
         case authResponse(Result<AuthResponse, APIClientError>)
+        case forgotPassword(PresentationAction<ForgotPasswordFeature.Action>)
 
         case delegate(Delegate)
         enum Delegate: Equatable {
@@ -163,9 +166,27 @@ struct AuthFeature {
             case .continueAsGuestTapped:
                 return .send(.delegate(.guestModeSelected))
 
+            case .forgotPasswordTapped:
+                state.forgotPassword = ForgotPasswordFeature.State(email: state.email)
+                return .none
+
+            case .forgotPassword(.presented(.delegate(.resetSuccess))):
+                state.forgotPassword = nil
+                return .none
+
+            case .forgotPassword(.presented(.delegate(.dismiss))):
+                state.forgotPassword = nil
+                return .none
+
+            case .forgotPassword:
+                return .none
+
             case .delegate:
                 return .none
             }
+        }
+        .ifLet(\.$forgotPassword, action: \.forgotPassword) {
+            ForgotPasswordFeature()
         }
     }
 
