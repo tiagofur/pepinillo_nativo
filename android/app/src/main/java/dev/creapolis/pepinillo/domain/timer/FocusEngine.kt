@@ -45,6 +45,31 @@ class FocusEngine @Inject constructor(
     // Cached preferences for use in the tick loop (avoids reading DataStore every 100ms)
     private var cachedPrefs: UserPreferences = UserPreferences()
 
+    init {
+        // Observe preference changes while idle so the displayed time
+        // reflects the latest settings without waiting for play to be pressed.
+        startIdlePrefsObserver()
+    }
+
+    /**
+     * Keeps totalMillis in sync with user preferences while the timer is idle.
+     * This runs for the entire lifetime of the singleton and only acts when
+     * the timer is NOT running/paused (the active-session observer handles those states).
+     */
+    private fun startIdlePrefsObserver() {
+        scope.launch {
+            prefsRepo.preferences.collect { newPrefs ->
+                val s = _state.value
+                if (s.status != TimerStatus.Idle && s.status != TimerStatus.WaitingForNext) return@collect
+
+                val newTotalMillis = getTotalMillis(s.mode, newPrefs)
+                if (newTotalMillis != s.totalMillis) {
+                    _state.update { it.copy(totalMillis = newTotalMillis) }
+                }
+            }
+        }
+    }
+
     // Pause / interruption tracking (internal, not exposed in FocusTimerState)
     private var pauseCount: Int = 0
     private var pauseStartTime: Long = 0L
