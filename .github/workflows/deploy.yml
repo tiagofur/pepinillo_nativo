@@ -90,7 +90,7 @@ jobs:
           EOF
 
           # Store the last running image tag for rollback
-          ssh deploy "cd ${APP_DIR} && docker compose -f docker-compose.prod.yml images --quiet api" > /tmp/old_image 2>/dev/null || echo "no-previous-image" > /tmp/old_image
+          ssh deploy "cd ${APP_DIR}/backend && docker compose -f docker-compose.prod.yml images --quiet api" > /tmp/old_image 2>/dev/null || echo "no-previous-image" > /tmp/old_image
 
           # Deploy: pull latest code, build, and start services
           ssh deploy << DEPLOY_SCRIPT
@@ -99,6 +99,9 @@ jobs:
 
           # Pull latest changes
           git pull origin main
+
+          # Move into backend where docker-compose.prod.yml lives
+          cd backend
 
           # Build the API image (no cache to ensure fresh binary)
           docker compose -f docker-compose.prod.yml build --no-cache api
@@ -135,7 +138,7 @@ jobs:
           echo "Attempting rollback..."
           OLD_IMAGE=$(cat /tmp/old_image)
           if [ "$OLD_IMAGE" != "no-previous-image" ]; then
-            ssh deploy "cd ${APP_DIR} && docker compose -f docker-compose.prod.yml down && docker run --name pepinillo-api-rollback -d $OLD_IMAGE" || true
+            ssh deploy "cd ${APP_DIR}/backend && docker compose -f docker-compose.prod.yml down && docker run --name pepinillo-api-rollback -d $OLD_IMAGE" || true
           fi
 
           exit 1
