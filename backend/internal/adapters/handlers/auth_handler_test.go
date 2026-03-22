@@ -175,6 +175,10 @@ func makeAuthApp() *fiber.App {
 	return app
 }
 
+// testTimeout is the timeout in ms for app.Test() calls.
+// Fiber defaults to 1000ms which is too short for CI environments.
+const testTimeout = 10000
+
 func TestAuthRegisterAndLoginHTTP(t *testing.T) {
 	app := makeAuthApp()
 
@@ -186,7 +190,7 @@ func TestAuthRegisterAndLoginHTTP(t *testing.T) {
 	body, _ := json.Marshal(registerPayload)
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, testTimeout)
 	if err != nil {
 		t.Fatalf("register request failed: %v", err)
 	}
@@ -201,7 +205,7 @@ func TestAuthRegisterAndLoginHTTP(t *testing.T) {
 	body, _ = json.Marshal(loginPayload)
 	req = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err = app.Test(req)
+	resp, err = app.Test(req, testTimeout)
 	if err != nil {
 		t.Fatalf("login request failed: %v", err)
 	}
@@ -222,7 +226,7 @@ func TestAuthLoginRateLimitHTTP(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(body))
 		req.Header.Set("Content-Type", "application/json")
-		_, err := app.Test(req)
+		_, err := app.Test(req, testTimeout)
 		if err != nil {
 			t.Fatalf("login request %d failed: %v", i+1, err)
 		}
@@ -230,7 +234,7 @@ func TestAuthLoginRateLimitHTTP(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", bytes.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := app.Test(req)
+	resp, err := app.Test(req, testTimeout)
 	if err != nil {
 		t.Fatalf("limited login request failed: %v", err)
 	}
