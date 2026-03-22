@@ -46,22 +46,46 @@
 -keep class okhttp3.** { *; }
 -keep class okio.** { *; }
 
-# ── Kotlinx Serialization ──
+# ── Kotlinx Serialization (comprehensive rules) ──
 -keepattributes *Annotation*, InnerClasses
+-keepattributes RuntimeVisibleAnnotations, RuntimeInvisibleAnnotations
 -dontnote kotlinx.serialization.AnnotationsKt
--keepclassmembers class kotlinx.serialization.json.** {
-    *** Companion;
+
+# Keep kotlinx.serialization core
+-keep class kotlinx.serialization.** { *; }
+-keepclassmembers class kotlinx.serialization.** { *; }
+-dontwarn kotlinx.serialization.**
+
+# Keep all @Serializable classes and their generated serializers
+-if @kotlinx.serialization.Serializable class **
+-keep class <1> { *; }
+
+-if @kotlinx.serialization.Serializable class **
+-keepclassmembers class <1> {
+    static <1>$Companion Companion;
 }
--keepclasseswithmembers class kotlinx.serialization.json.** {
+
+-if @kotlinx.serialization.Serializable class ** {
+    static **$* *;
+}
+-keepclassmembers class <2>$<3> {
     kotlinx.serialization.KSerializer serializer(...);
 }
+
+# Keep generated $$serializer classes
 -keep,includedescriptorclasses class dev.creapolis.pepinillo.**$$serializer { *; }
+
+# Keep Companion objects with serializer()
 -keepclassmembers class dev.creapolis.pepinillo.** {
     *** Companion;
 }
 -keepclasseswithmembers class dev.creapolis.pepinillo.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
+
+# Keep all network model classes explicitly
+-keep class dev.creapolis.pepinillo.core.network.** { *; }
+-keepclassmembers class dev.creapolis.pepinillo.core.network.** { *; }
 
 # ── Kotlin Coroutines ──
 -dontwarn kotlinx.coroutines.**

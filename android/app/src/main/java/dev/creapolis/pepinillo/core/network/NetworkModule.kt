@@ -44,6 +44,8 @@ object NetworkModule {
         json: Json,
         authStore: AuthStore,
     ): HttpClient = HttpClient(OkHttp) {
+        expectSuccess = true
+
         install(ContentNegotiation) { json(json) }
 
         install(Logging) { level = LogLevel.BODY }
