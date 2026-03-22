@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,6 +40,7 @@ class FocusEngine @Inject constructor(
     val workSessionCompleted: SharedFlow<String> = _workSessionCompleted.asSharedFlow()
 
     private var timerJob: Job? = null
+    private var prefsObserverJob: Job? = null
 
     // Cached preferences for use in the tick loop (avoids reading DataStore every 100ms)
     private var cachedPrefs: UserPreferences = UserPreferences()
@@ -158,6 +160,49 @@ class FocusEngine @Inject constructor(
     }
 
     /**
+     * Starts observing preference changes during an active timer session.
+     * Updates cachedPrefs and recalculates remaining time if necessary.
+     */
+    private fun startPrefsObserver() {
+        prefsObserverJob?.cancel()
+        prefsObserverJob = scope.launch {
+            prefsRepo.preferences.collect { newPrefs ->
+                val oldPrefs = cachedPrefs
+                cachedPrefs = newPrefs
+
+                val s = _state.value
+                if (s.status != TimerStatus.Running) return@collect
+
+                // If we're in a timed mode (not Flow/Chrono) and the relevant duration changed,
+                // recalculate the total time and check if timer should complete
+                if (s.mode != FocusMode.Flow && s.mode != FocusMode.Chrono) {
+                    val newTotalMillis = getTotalMillis(s.mode, newPrefs)
+
+                    // Only update if the total actually changed
+                    if (newTotalMillis != s.totalMillis) {
+                        _state.update { it.copy(totalMillis = newTotalMillis) }
+
+                        // If elapsed time already exceeds new duration, complete the phase immediately
+                        if (s.elapsedMillis >= newTotalMillis) {
+                            onPhaseComplete()
+                        }
+                    }
+                }
+
+                // Also handle Flow mode min minutes changes
+                if (s.mode == FocusMode.Flow) {
+                    val oldMinMillis = oldPrefs.flowtimeMinMinutes * 60 * 1000L
+                    val newMinMillis = newPrefs.flowtimeMinMinutes * 60 * 1000L
+                    if (oldMinMillis != newMinMillis && !s.breakSuggested && s.elapsedMillis >= newMinMillis) {
+                        _state.update { it.copy(breakSuggested = true) }
+                        feedbackManager.onFeedbackPulse()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Creates a new timer tick loop. Called by start() for user actions, and directly
      * by onPhaseComplete()/restoreState() to bypass the Running guard in start().
      *
@@ -170,6 +215,9 @@ class FocusEngine @Inject constructor(
         timerJob = scope.launch {
             // Cache prefs at session start
             cachedPrefs = prefsRepo.preferences.first()
+
+            // Start observing preference changes during the active session
+            startPrefsObserver()
 
             val tickInterval = 100L
             // Use wall-clock anchoring to avoid drift from delay() imprecision
@@ -214,6 +262,7 @@ class FocusEngine @Inject constructor(
 
     fun pause() {
         timerJob?.cancel()
+        prefsObserverJob?.cancel()
         pauseCount++
         pauseStartTime = System.currentTimeMillis()
         _state.update { it.copy(status = TimerStatus.Paused) }
@@ -231,6 +280,7 @@ class FocusEngine @Inject constructor(
 
     fun stop() {
         timerJob?.cancel()
+        prefsObserverJob?.cancel()
         // If paused at the time of stop, accumulate remaining pause duration
         if (pauseStartTime > 0L) {
             totalPauseMillis += System.currentTimeMillis() - pauseStartTime
