@@ -469,12 +469,43 @@ The following issues were identified during a production readiness audit and hav
 
 ---
 
-## 8. Resumen de Brechas Criticas
+## 8. Sync Engine Fixes (2026-03-22)
+
+Sync implementation enhancements to improve cross-platform reliability and data completeness.
+
+### Android SyncEngine Fixes
+
+| Fix | Details |
+|-----|---------|
+| Subtasks in sync DTOs | Subtasks now included in task sync payloads (previously omitted, breaking subtask sync) |
+| PomodoroSessionDto userId | Now populates `userId` from AuthStore (previously empty/null) |
+| PomodoroSessionDto taskId | Now resolves `linkedTaskId` → `serverId` before sending (previously empty/null) |
+| Task soft-delete for sync | Changed `deleteTaskById` (hard-delete) to `softDelete` in TaskRepository for sync compatibility |
+
+### iOS SyncClient Fixes
+
+| Fix | Details |
+|-----|---------|
+| Subtasks in sync DTOs | Subtask inclusion fixed for cross-platform parity with Android |
+| userId population | Session sync now properly populates `userId` field |
+
+### Remaining Sync Gaps
+
+| Gap | Platform(s) | Impact | Priority |
+|-----|-----------|--------|----------|
+| Session sync stub | iOS | Session data not synced to backend | P1 |
+| Focus config sync | Both | Focus configs (`GET/PUT /pomodoro/config`) not implemented | P2 |
+| Daily stats sync | Both | No sync fields defined on DailyStats entity | P2 |
+
+---
+
+## 9. Resumen de Brechas Criticas
 
 ### Ambas Plataformas
 
 | Brecha | iOS | Android | Impacto |
 |--------|-----|---------|---------|
+| Sync engine gaps | ⚠️ Parcial | ⚠️ Parcial | Subtasks/sessions/configs sync now fixed; daily stats sync still pending |
 | Feature gating no enforced | ⚠️ | ⚠️ Partial | Android: subtasks/recurrence gated. iOS + other Android features still need gating |
 | Backend endpoints faltantes | Bajo (usa CloudKit) | Alto (depende del backend) | Stats y billing verification |
 
