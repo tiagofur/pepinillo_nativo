@@ -82,6 +82,7 @@ class TaskRepository @Inject constructor(
                     isCompleted = !entity.isCompleted,
                     completedAt = if (!entity.isCompleted) System.currentTimeMillis() else null,
                     updatedAt = System.currentTimeMillis(),
+                    isDirty = true,
                 ),
             )
         }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }

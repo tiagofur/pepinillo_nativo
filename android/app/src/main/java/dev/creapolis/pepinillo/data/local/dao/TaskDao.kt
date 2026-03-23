@@ -45,7 +45,7 @@ interface TaskDao {
     @Query("DELETE FROM tasks WHERE id = :taskId")
     suspend fun deleteTaskById(taskId: String)
 
-    @Query("UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1, updated_at = :now WHERE id = :taskId")
+    @Query("UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1, updated_at = :now, is_dirty = 1 WHERE id = :taskId")
     suspend fun incrementPomodoros(taskId: String, now: Long = System.currentTimeMillis())
 
     @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 0 AND is_deleted = 0")
