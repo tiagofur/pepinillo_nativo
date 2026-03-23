@@ -2,6 +2,7 @@ package dev.creapolis.pepinillo.core.auth
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -17,6 +18,7 @@ class AuthStore @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     private companion object {
+        const val TAG = "AuthStore"
         const val PREFS_NAME = "pepinillo_auth"
         const val KEY_ACCESS_TOKEN = "access_token"
         const val KEY_REFRESH_TOKEN = "refresh_token"
@@ -29,21 +31,34 @@ class AuthStore @Inject constructor(
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-        EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
+        try {
+            EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "EncryptedSharedPreferences corrupted, clearing", e)
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
+            context.deleteSharedPreferences(PREFS_NAME)
+            EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+        }
     }
 
     private val _isLoggedIn = MutableStateFlow(getAccessToken() != null)
     val isLoggedIn: Flow<Boolean> = _isLoggedIn.asStateFlow()
 
-    fun getAccessToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
+    fun getAccessToken(): String? = safeRead { prefs.getString(KEY_ACCESS_TOKEN, null) }
 
-    fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
+    fun getRefreshToken(): String? = safeRead { prefs.getString(KEY_REFRESH_TOKEN, null) }
 
     fun getBearerTokens(): BearerTokens? {
         val access = getAccessToken() ?: return null
@@ -67,12 +82,22 @@ class AuthStore @Inject constructor(
             .apply()
     }
 
-    fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
-    fun getUserName(): String? = prefs.getString(KEY_USER_NAME, null)
-    fun getUserEmail(): String? = prefs.getString(KEY_USER_EMAIL, null)
+    fun getUserId(): String? = safeRead { prefs.getString(KEY_USER_ID, null) }
+    fun getUserName(): String? = safeRead { prefs.getString(KEY_USER_NAME, null) }
+    fun getUserEmail(): String? = safeRead { prefs.getString(KEY_USER_EMAIL, null) }
 
     fun clearAll() {
         prefs.edit().clear().apply()
         _isLoggedIn.value = false
+    }
+
+    private fun <T> safeRead(block: () -> T): T? {
+        return try {
+            block()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read encrypted pref, clearing corrupted data", e)
+            clearAll()
+            null
+        }
     }
 }

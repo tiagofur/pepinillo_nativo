@@ -4,10 +4,13 @@ import android.util.Log
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
+import dev.creapolis.pepinillo.core.network.SubTaskDto
 import dev.creapolis.pepinillo.core.network.TaskDto
 import dev.creapolis.pepinillo.core.network.TaskSyncRequest
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
+import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import javax.inject.Inject
@@ -24,25 +27,37 @@ sealed class SyncResult {
 @Singleton
 class SyncEngine @Inject constructor(
     private val taskDao: TaskDao,
+    private val subtaskDao: SubtaskDao,
     private val sessionDao: FocusSessionDao,
     private val apiClient: PepinilloApiClient,
     private val authStore: AuthStore,
 ) {
     suspend fun syncAll(): SyncResult {
-        if (authStore.getAccessToken() == null) return SyncResult.NotAuthenticated
+        if (authStore.getAccessToken() == null) {
+            println("[$TAG]syncAll: NOT AUTHENTICATED")
+            return SyncResult.NotAuthenticated
+        }
         return try {
+            println("[$TAG]syncAll: STARTING")
             syncTasks()
             syncSessions()
+            println("[$TAG]syncAll: SUCCESS")
             SyncResult.Success
         } catch (e: Exception) {
-            Log.e(TAG, "Sync failed", e)
+            println("[$TAG]syncAll: FAILED - ${e::class.simpleName}: ${e.message}")
+            e.printStackTrace()
             SyncResult.Error(e)
         }
     }
 
     private suspend fun syncTasks() {
         val dirtyTasks = taskDao.getDirtyTasks()
-        if (dirtyTasks.isEmpty()) return
+
+        if (dirtyTasks.isEmpty()) {
+            // Fresh install or no local changes — pull all tasks from server
+            pullAllTasks()
+            return
+        }
 
         val deletedSyncIds = dirtyTasks
             .filter { it.isDeleted }
@@ -50,7 +65,10 @@ class SyncEngine @Inject constructor(
 
         val tasksToSync = dirtyTasks
             .filter { !it.isDeleted }
-            .map { it.toDto() }
+            .map { task ->
+                val subtasks = subtaskDao.getSubtasksForTaskSync(task.id)
+                task.toDto(subtasks)
+            }
 
         val request = TaskSyncRequest(
             tasks = tasksToSync,
@@ -61,8 +79,8 @@ class SyncEngine @Inject constructor(
             is NetworkResult.Success -> {
                 val response = result.data
                 val now = System.currentTimeMillis()
+                println("[$TAG]syncTasks: server returned ${response.tasks.size} tasks")
 
-                // Mark pushed tasks as synced
                 for (task in dirtyTasks) {
                     if (task.isDeleted) continue
                     val serverTask = response.tasks.find { it.syncId == task.id }
@@ -70,33 +88,14 @@ class SyncEngine @Inject constructor(
                     taskDao.markSynced(task.id, now, serverId)
                 }
 
-                // Merge server tasks into local DB (last-write-wins)
-                for (serverTask in response.tasks) {
-                    val localBySyncId = serverTask.syncId.takeIf { it.isNotEmpty() }
-                        ?.let { taskDao.getTaskById(it) }
-                    val local = localBySyncId
-                        ?: taskDao.getTaskByServerId(serverTask.id)
-                    if (local == null) {
-                        // New task from server
-                        taskDao.insertTask(serverTask.toEntity())
-                    } else if (!local.isDirty && serverTask.updatedAt > local.updatedAt) {
-                        // Server version is newer and local isn't dirty
-                        taskDao.updateTask(serverTask.toEntity().copy(
-                            id = local.id,
-                            isDirty = false,
-                            syncedAt = now,
-                            serverId = serverTask.id,
-                        ))
-                    }
-                }
-
-                // Purge soft-deleted tasks that were successfully synced
+                mergeServerTasks(response.tasks)
                 taskDao.purgeDeletedSynced()
-
-                Log.d(TAG, "Tasks synced: ${response.tasks.size} received")
             }
-            is NetworkResult.Error -> Log.e(TAG, "Task sync error: ${result.code} ${result.message}")
-            is NetworkResult.NetworkError -> throw result.exception
+            is NetworkResult.Error -> println("[$TAG]syncTasks ERROR: ${result.code} ${result.message}")
+            is NetworkResult.NetworkError -> {
+                println("[$TAG]syncTasks NETWORK ERROR: ${result.exception::class.simpleName}: ${result.exception.message}")
+                throw result.exception
+            }
         }
     }
 
@@ -104,10 +103,17 @@ class SyncEngine @Inject constructor(
         val dirtySessions = sessionDao.getDirtySessions()
         if (dirtySessions.isEmpty()) return
 
+        val userId = authStore.getUserId() ?: ""
         val now = System.currentTimeMillis()
         for (session in dirtySessions) {
+            // Resolve server-side taskId from linked local task
+            val serverTaskId = session.linkedTaskId?.let { localId ->
+                taskDao.getTaskById(localId)?.serverId
+            }
             val dto = PomodoroSessionDto(
                 id = session.id,
+                userId = userId,
+                taskId = serverTaskId,
                 startedAt = session.startTime,
                 endedAt = session.endTime,
                 phase = session.phase ?: "work",
@@ -132,7 +138,47 @@ class SyncEngine @Inject constructor(
         Log.d(TAG, "Sessions synced: ${dirtySessions.size}")
     }
 
-    private fun TaskEntity.toDto() = TaskDto(
+    private suspend fun pullAllTasks() {
+        when (val result = apiClient.getTasks()) {
+            is NetworkResult.Success -> {
+                val tasks = result.data
+                println("[$TAG]pullAllTasks: server returned ${tasks.size} tasks")
+                mergeServerTasks(tasks)
+            }
+            is NetworkResult.Error -> println("[$TAG]pullAllTasks ERROR: ${result.code} ${result.message}")
+            is NetworkResult.NetworkError -> {
+                println("[$TAG]pullAllTasks NETWORK ERROR: ${result.exception::class.simpleName}")
+                throw result.exception
+            }
+        }
+    }
+
+    private suspend fun mergeServerTasks(serverTasks: List<TaskDto>) {
+        val now = System.currentTimeMillis()
+        var inserted = 0
+        var updated = 0
+        for (serverTask in serverTasks) {
+            val localBySyncId = serverTask.syncId.takeIf { it.isNotEmpty() }
+                ?.let { taskDao.getTaskById(it) }
+            val local = localBySyncId
+                ?: taskDao.getTaskByServerId(serverTask.id)
+            if (local == null) {
+                taskDao.insertTask(serverTask.toEntity())
+                inserted++
+            } else if (!local.isDirty && serverTask.updatedAt > local.updatedAt) {
+                taskDao.updateTask(serverTask.toEntity().copy(
+                    id = local.id,
+                    isDirty = false,
+                    syncedAt = now,
+                    serverId = serverTask.id,
+                ))
+                updated++
+            }
+        }
+        println("[$TAG]mergeServerTasks: inserted=$inserted, updated=$updated")
+    }
+
+    private fun TaskEntity.toDto(subtasks: List<SubtaskEntity> = emptyList()) = TaskDto(
         id = serverId ?: 0,
         syncId = id,
         title = title,
@@ -147,6 +193,14 @@ class SyncEngine @Inject constructor(
         updatedAt = updatedAt,
         createdDate = createdAt,
         finishDate = completedAt,
+        subTasks = subtasks.map { it.toDto(serverId ?: 0) },
+    )
+
+    private fun SubtaskEntity.toDto(serverTaskId: Int) = SubTaskDto(
+        id = 0,
+        taskId = serverTaskId,
+        title = title,
+        isFinished = isCompleted,
     )
 
     private fun TaskDto.toEntity() = TaskEntity(

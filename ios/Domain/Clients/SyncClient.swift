@@ -15,6 +15,7 @@ import ComposableArchitecture
 public struct SyncClient: Sendable {
     public var syncAll: @Sendable () async throws -> Void
     public var syncTasks: @Sendable () async throws -> Void
+    public var syncSessions: @Sendable () async throws -> Void
 }
 
 // MARK: - Live implementation
@@ -30,6 +31,7 @@ extension SyncClient: DependencyKey {
                 guard await keychain.hasTokens() else { return }
                 @Dependency(\.syncClient) var syncClient
                 try await syncClient.syncTasks()
+                try await syncClient.syncSessions()
             },
             syncTasks: {
                 guard await keychain.hasTokens() else { return }
@@ -48,10 +50,24 @@ extension SyncClient: DependencyKey {
 
                 // 3. Convert to API DTOs
                 let iso = ISO8601DateFormatter()
-                let taskDTOs: [TaskSyncDTO] = tasksToSync.map { task in
-                    TaskSyncDTO(
+                let cachedUser = try await persistence.fetchCachedUser()
+                let userId = cachedUser?.id
+
+                var taskDTOs: [TaskSyncDTO] = []
+                for task in tasksToSync {
+                    // Fetch subtasks for this task
+                    let subtasks = try await persistence.fetchSubtasks(task.id)
+                    let subTaskDTOs = subtasks.map { SubTaskSyncDTO(
+                        id: $0.serverId,
+                        taskId: task.serverId,
+                        title: $0.title,
+                        isFinished: $0.isCompleted
+                    ) }
+
+                    let dto = TaskSyncDTO(
                         id: task.serverId,
                         syncId: task.syncId,
+                        userId: userId,
                         title: task.title,
                         description: task.notes,
                         energyLevel: task.energyLevel.rawValue.lowercased(),
@@ -64,9 +80,10 @@ extension SyncClient: DependencyKey {
                         estimatedPomodoros: task.estimatedPomodoros,
                         completedPomodoros: task.completedPomodoros,
                         isDeleted: false,
-                        subTasks: nil,
+                        subTasks: subTaskDTOs.isEmpty ? nil : subTaskDTOs,
                         updatedAt: iso.string(from: task.updatedAt)
                     )
+                    taskDTOs.append(dto)
                 }
 
                 // 4. Build request
@@ -102,6 +119,22 @@ extension SyncClient: DependencyKey {
 
                 // 9. Save sync timestamp
                 try await persistence.saveLastSyncTimestamp(response.syncTimestamp)
+            },
+            syncSessions: {
+                guard await keychain.hasTokens() else { return }
+
+                // Get cached user ID for syncing
+                let cachedUser = try await persistence.fetchCachedUser()
+                let userId = cachedUser?.id ?? ""
+
+                // For now: placeholder implementation
+                // In a full implementation, this would:
+                // 1. Fetch dirty sessions from persistence
+                // 2. Convert to API DTOs
+                // 3. POST to /pomodoro/sessions
+                // 4. Mark sessions as synced
+                // NOTE: Requires fetchDirtySessions method on PersistenceClient
+                // and createSession method on APIClient
             }
         )
     }
