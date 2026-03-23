@@ -13,6 +13,9 @@ import dev.creapolis.pepinillo.data.local.dao.TaskDao
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,6 +38,20 @@ class SyncEngine @Inject constructor(
     private val apiClient: PepinilloApiClient,
     private val authStore: AuthStore,
 ) {
+    private fun Long.toRfc3339(): String {
+        val instant = Instant.ofEpochMilli(this)
+        return instant.atZone(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+    }
+
+    private fun parseRfc3339(dateString: String): Long {
+        return try {
+            val instant = Instant.parse(dateString)
+            instant.toEpochMilli()
+        } catch (e: Exception) {
+            0L
+        }
+    }
+
     suspend fun syncAll(): SyncResult {
         if (authStore.getAccessToken() == null) {
             println("[$TAG]syncAll: NOT AUTHENTICATED")
@@ -79,6 +96,7 @@ class SyncEngine @Inject constructor(
         val request = TaskSyncRequest(
             tasks = tasksToSync,
             deletedSyncIds = deletedSyncIds,
+            lastSyncAt = null,
         )
 
         when (val result = apiClient.syncTasks(request)) {
@@ -124,8 +142,8 @@ class SyncEngine @Inject constructor(
                 id = session.id,
                 userId = userId,
                 taskId = serverTaskId,
-                startedAt = session.startTime,
-                endedAt = session.endTime,
+                startedAt = session.startTime.toRfc3339(),
+                endedAt = session.endTime?.let { if (it > 0L) it.toRfc3339() else null },
                 phase = session.phase ?: "work",
                 durationSeconds = (session.durationMillis / 1000).toInt(),
                 elapsedSeconds = (session.durationMillis / 1000).toInt(),
@@ -136,6 +154,8 @@ class SyncEngine @Inject constructor(
                 pomodoroNumber = session.pomodoroNumber,
                 satisfactionRating = session.satisfactionRating,
                 journalNote = session.journalNote,
+                createdAt = (session.createdAt ?: session.startTime).toRfc3339(),
+                updatedAt = (session.createdAt ?: session.startTime).toRfc3339(),
             )
             when (val result = apiClient.createSession(dto)) {
                 is NetworkResult.Success -> {
@@ -183,7 +203,7 @@ class SyncEngine @Inject constructor(
             if (local == null) {
                 taskDao.insertTask(serverTask.toEntity())
                 inserted++
-            } else if (!local.isDirty && serverTask.updatedAt > local.updatedAt) {
+            } else if (!local.isDirty && parseRfc3339(serverTask.updatedAt) > local.updatedAt) {
                 taskDao.updateTask(serverTask.toEntity().copy(
                     id = local.id,
                     isDirty = false,
@@ -208,9 +228,17 @@ class SyncEngine @Inject constructor(
         },
         estimatedPomodoros = estimatedPomodoros,
         completedPomodoros = completedPomodoros,
-        updatedAt = updatedAt,
-        createdDate = createdAt,
-        finishDate = completedAt,
+        updatedAt = updatedAt.toRfc3339(),
+        createdDate = createdAt.toRfc3339(),
+        finishDate = completedAt?.toRfc3339(),
+        trackingMode = "pomodoro",
+        completedFlowtimeSessions = 0,
+        completedTimeblockSessions = 0,
+        completedStopwatchSeconds = 0,
+        focusedSecondsPomodoro = 0,
+        focusedSecondsFlowtime = 0,
+        focusedSecondsTimeblock = 0,
+        focusedSecondsStopwatch = 0,
         subTasks = subtasks.map { it.toDto(serverId ?: 0) },
     )
 
@@ -234,9 +262,9 @@ class SyncEngine @Inject constructor(
         },
         estimatedPomodoros = estimatedPomodoros,
         completedPomodoros = completedPomodoros,
-        createdAt = createdDate ?: System.currentTimeMillis(),
-        updatedAt = updatedAt,
-        completedAt = finishDate,
+        createdAt = if (createdDate != null) parseRfc3339(createdDate) else System.currentTimeMillis(),
+        updatedAt = parseRfc3339(updatedAt),
+        completedAt = if (finishDate != null) parseRfc3339(finishDate) else null,
         serverId = id,
         isDirty = false,
         isDeleted = isDeleted,

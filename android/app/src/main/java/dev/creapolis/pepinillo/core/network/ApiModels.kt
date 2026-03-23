@@ -77,8 +77,8 @@ data class TaskDto(
     val energyLevel: String? = null,
     val recurrenceRule: String? = null,
     val recurringTemplateId: String? = null,
-    val createdDate: Long? = null,
-    val finishDate: Long? = null,
+    val createdDate: String? = null,
+    val finishDate: String? = null,
     val isFinished: Boolean = false,
     val priority: Int = 0,
     val category: String? = null,
@@ -87,7 +87,15 @@ data class TaskDto(
     val focusedSeconds: Int = 0,
     val activeSessionId: String? = null,
     val isDeleted: Boolean = false,
-    val updatedAt: Long = 0,
+    val updatedAt: String = "",
+    val trackingMode: String = "pomodoro",
+    val completedFlowtimeSessions: Int = 0,
+    val completedTimeblockSessions: Int = 0,
+    val completedStopwatchSeconds: Int = 0,
+    val focusedSecondsPomodoro: Int = 0,
+    val focusedSecondsFlowtime: Int = 0,
+    val focusedSecondsTimeblock: Int = 0,
+    val focusedSecondsStopwatch: Int = 0,
     val subTasks: List<SubTaskDto> = emptyList(),
 )
 
@@ -105,7 +113,7 @@ data class SubTaskDto(
 data class TaskSyncRequest(
     val tasks: List<TaskDto>,
     val deletedSyncIds: List<String> = emptyList(),
-    val lastSyncAt: Long? = null,
+    val lastSyncAt: String? = null,
 )
 
 @Serializable
@@ -122,8 +130,8 @@ data class PomodoroSessionDto(
     val id: String = "",
     val userId: String = "",
     val taskId: Int? = null,
-    val startedAt: Long = 0,
-    val endedAt: Long? = null,
+    val startedAt: String = "",
+    val endedAt: String? = null,
     val phase: String = "",
     val durationSeconds: Int = 0,
     val elapsedSeconds: Int = 0,
@@ -135,8 +143,8 @@ data class PomodoroSessionDto(
     val satisfactionRating: Int? = null,
     val journalNote: String? = null,
     val sharedWithTaskIds: String? = null,
-    val createdAt: Long = 0,
-    val updatedAt: Long = 0,
+    val createdAt: String = "",
+    val updatedAt: String = "",
 )
 
 // ── Billing ──
