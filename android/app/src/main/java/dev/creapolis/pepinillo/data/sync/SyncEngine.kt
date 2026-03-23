@@ -24,6 +24,9 @@ sealed class SyncResult {
     data class Error(val exception: Throwable) : SyncResult()
 }
 
+class AuthenticationException(message: String) : Exception(message)
+class SyncException(message: String) : Exception(message)
+
 @Singleton
 class SyncEngine @Inject constructor(
     private val taskDao: TaskDao,
@@ -43,6 +46,9 @@ class SyncEngine @Inject constructor(
             syncSessions()
             println("[$TAG]syncAll: SUCCESS")
             SyncResult.Success
+        } catch (e: AuthenticationException) {
+            println("[$TAG]syncAll: NOT AUTHENTICATED - ${e.message}")
+            SyncResult.NotAuthenticated
         } catch (e: Exception) {
             println("[$TAG]syncAll: FAILED - ${e::class.simpleName}: ${e.message}")
             e.printStackTrace()
@@ -91,7 +97,11 @@ class SyncEngine @Inject constructor(
                 mergeServerTasks(response.tasks)
                 taskDao.purgeDeletedSynced()
             }
-            is NetworkResult.Error -> println("[$TAG]syncTasks ERROR: ${result.code} ${result.message}")
+            is NetworkResult.Error -> {
+                println("[$TAG]syncTasks ERROR: ${result.code} ${result.message}")
+                if (result.code == 401) throw AuthenticationException("syncTasks: 401 Unauthorized")
+                throw SyncException("syncTasks failed: ${result.code} ${result.message}")
+            }
             is NetworkResult.NetworkError -> {
                 println("[$TAG]syncTasks NETWORK ERROR: ${result.exception::class.simpleName}: ${result.exception.message}")
                 throw result.exception
@@ -131,7 +141,11 @@ class SyncEngine @Inject constructor(
                 is NetworkResult.Success -> {
                     sessionDao.markSynced(session.id, now)
                 }
-                is NetworkResult.Error -> Log.e(TAG, "Session sync error: ${result.code}")
+                is NetworkResult.Error -> {
+                    Log.e(TAG, "Session sync error: ${result.code}")
+                    if (result.code == 401) throw AuthenticationException("syncSessions: 401 Unauthorized")
+                    throw SyncException("syncSessions failed: ${result.code} ${result.message}")
+                }
                 is NetworkResult.NetworkError -> throw result.exception
             }
         }
@@ -145,7 +159,11 @@ class SyncEngine @Inject constructor(
                 println("[$TAG]pullAllTasks: server returned ${tasks.size} tasks")
                 mergeServerTasks(tasks)
             }
-            is NetworkResult.Error -> println("[$TAG]pullAllTasks ERROR: ${result.code} ${result.message}")
+            is NetworkResult.Error -> {
+                println("[$TAG]pullAllTasks ERROR: ${result.code} ${result.message}")
+                if (result.code == 401) throw AuthenticationException("pullAllTasks: 401 Unauthorized")
+                throw SyncException("pullAllTasks failed: ${result.code} ${result.message}")
+            }
             is NetworkResult.NetworkError -> {
                 println("[$TAG]pullAllTasks NETWORK ERROR: ${result.exception::class.simpleName}")
                 throw result.exception
