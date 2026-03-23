@@ -64,6 +64,40 @@ extension SyncClient: DependencyKey {
                         isFinished: $0.isCompleted
                     ) }
 
+                    // Calculate tracking metrics from sessions
+                    let completedSessions = task.sessions.filter(\.wasCompleted)
+                    var completedFlowtimeSessions = 0
+                    var completedTimeblockSessions = 0
+                    var completedStopwatchSeconds = 0
+                    var focusedSecondsPomodoro = 0
+                    var focusedSecondsFlowtime = 0
+                    var focusedSecondsTimeblock = 0
+                    var focusedSecondsStopwatch = 0
+                    var trackingMode = "pomodoro"
+
+                    for session in completedSessions {
+                        let focusSeconds = Int(session.actualDuration)
+                        switch session.mode {
+                        case "pomodoro":
+                            focusedSecondsPomodoro += focusSeconds
+                            trackingMode = "pomodoro"
+                        case "flowtime":
+                            focusedSecondsFlowtime += focusSeconds
+                            completedFlowtimeSessions += 1
+                            trackingMode = "flowtime"
+                        case "timeBlock":
+                            focusedSecondsTimeblock += focusSeconds
+                            completedTimeblockSessions += 1
+                            trackingMode = "timeBlock"
+                        case "stopwatch":
+                            focusedSecondsStopwatch += focusSeconds
+                            completedStopwatchSeconds = focusedSecondsStopwatch
+                            trackingMode = "stopwatch"
+                        default:
+                            break
+                        }
+                    }
+
                     let dto = TaskSyncDTO(
                         id: task.serverId,
                         syncId: task.syncId,
@@ -77,8 +111,16 @@ extension SyncClient: DependencyKey {
                         finishDate: task.dueDate.map { iso.string(from: $0) },
                         isFinished: task.isCompleted,
                         priority: task.priority.rawValue,
+                        category: nil,
+                        trackingMode: trackingMode,
                         estimatedPomodoros: task.estimatedPomodoros,
                         completedPomodoros: task.completedPomodoros,
+                        focusedSeconds: Int(completedSessions.reduce(0) { $0 + $1.actualDuration }),
+                        focusedSecondsPomodoro: focusedSecondsPomodoro,
+                        focusedSecondsFlowtime: focusedSecondsFlowtime,
+                        focusedSecondsTimeblock: focusedSecondsTimeblock,
+                        focusedSecondsStopwatch: focusedSecondsStopwatch,
+                        activeSessionId: nil,
                         isDeleted: false,
                         subTasks: subTaskDTOs.isEmpty ? nil : subTaskDTOs,
                         updatedAt: iso.string(from: task.updatedAt)
