@@ -62,7 +62,7 @@ class FocusEngine @Inject constructor(
                 val s = _state.value
                 if (s.status != TimerStatus.Idle && s.status != TimerStatus.WaitingForNext) return@collect
 
-                val newTotalMillis = getTotalMillis(s.mode, newPrefs)
+                val newTotalMillis = getTotalMillis(s.mode, s.phase, newPrefs)
                 if (newTotalMillis != s.totalMillis) {
                     _state.update { it.copy(totalMillis = newTotalMillis) }
                 }
@@ -82,7 +82,7 @@ class FocusEngine @Inject constructor(
         val prefs = prefsRepo.preferences.first()
         _state.value = FocusTimerState(
             mode = mode,
-            totalMillis = getTotalMillis(mode, prefs),
+            totalMillis = getTotalMillis(mode, FocusPhase.Work, prefs),
             linkedTaskId = _state.value.linkedTaskId,
         )
     }
@@ -99,7 +99,7 @@ class FocusEngine @Inject constructor(
     ) {
         val prefs = prefsRepo.preferences.first()
         cachedPrefs = prefs
-        val resolvedTotal = if (totalMillis > 0L) totalMillis else getTotalMillis(mode, prefs)
+        val resolvedTotal = if (totalMillis > 0L) totalMillis else getTotalMillis(mode, phase, prefs)
 
         // Restore WaitingForNext without starting timer loop
         if (status == TimerStatus.WaitingForNext) {
@@ -201,7 +201,7 @@ class FocusEngine @Inject constructor(
                 // If we're in a timed mode (not Flow/Chrono) and the relevant duration changed,
                 // recalculate the total time and check if timer should complete
                 if (s.mode != FocusMode.Flow && s.mode != FocusMode.Chrono) {
-                    val newTotalMillis = getTotalMillis(s.mode, newPrefs)
+                    val newTotalMillis = getTotalMillis(s.mode, s.phase, newPrefs)
 
                     // Only update if the total actually changed
                     if (newTotalMillis != s.totalMillis) {
@@ -319,7 +319,7 @@ class FocusEngine @Inject constructor(
             val prefs = prefsRepo.preferences.first()
             _state.value = FocusTimerState(
                 mode = snapshot.mode,
-                totalMillis = getTotalMillis(snapshot.mode, prefs),
+                totalMillis = getTotalMillis(snapshot.mode, FocusPhase.Work, prefs),
                 linkedTaskId = snapshot.linkedTaskId,
                 completedSessions = snapshot.completedSessions, // preserve count for display + next start
             )
@@ -387,7 +387,7 @@ class FocusEngine @Inject constructor(
             s.mode == FocusMode.Blocks -> {
                 _state.value = FocusTimerState(
                     mode = FocusMode.Blocks,
-                    totalMillis = getTotalMillis(FocusMode.Blocks, prefs),
+                    totalMillis = getTotalMillis(FocusMode.Blocks, FocusPhase.Work, prefs),
                     completedSessions = s.completedSessions + 1,
                     linkedTaskId = s.linkedTaskId,
                 )
@@ -396,7 +396,7 @@ class FocusEngine @Inject constructor(
             else -> {
                 _state.value = FocusTimerState(
                     mode = s.mode,
-                    totalMillis = getTotalMillis(s.mode, prefs),
+                    totalMillis = getTotalMillis(s.mode, FocusPhase.Work, prefs),
                     linkedTaskId = s.linkedTaskId,
                 )
             }
@@ -434,9 +434,11 @@ class FocusEngine @Inject constructor(
         }
     }
 
-    private fun getTotalMillis(mode: FocusMode, prefs: UserPreferences): Long = when (mode) {
-        FocusMode.Pomodoro -> prefs.pomodoroMinutes * 60 * 1000L
-        FocusMode.Blocks -> prefs.timeBlockMinutes * 60 * 1000L
-        FocusMode.Flow, FocusMode.Chrono -> 0L
+    private fun getTotalMillis(mode: FocusMode, phase: FocusPhase, prefs: UserPreferences): Long = when {
+        mode == FocusMode.Pomodoro && phase == FocusPhase.Work -> prefs.pomodoroMinutes * 60 * 1000L
+        mode == FocusMode.Pomodoro && phase == FocusPhase.ShortBreak -> prefs.shortBreakMinutes * 60 * 1000L
+        mode == FocusMode.Pomodoro && phase == FocusPhase.LongBreak -> prefs.longBreakMinutes * 60 * 1000L
+        mode == FocusMode.Blocks -> prefs.timeBlockMinutes * 60 * 1000L
+        else -> 0L
     }
 }
