@@ -17,9 +17,7 @@ import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.data.repository.UserRepository
 import dev.creapolis.pepinillo.data.sync.SyncEngine
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,7 +64,7 @@ class AuthViewModel @Inject constructor(
                         result.data.user.email,
                     )
                     userRepository.cacheUserFromDto(result.data.user)
-                    CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { syncEngine.syncAll() }
+                    viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
                     _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
                 }
                 is NetworkResult.Error -> {
@@ -110,7 +108,7 @@ class AuthViewModel @Inject constructor(
                         result.data.user.email,
                     )
                     userRepository.cacheUserFromDto(result.data.user)
-                    CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { syncEngine.syncAll() }
+                    viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
                     _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
                 }
                 is NetworkResult.Error -> {
@@ -163,7 +161,7 @@ class AuthViewModel @Inject constructor(
                             apiResult.data.user.email,
                         )
                         userRepository.cacheUserFromDto(apiResult.data.user)
-                        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch { syncEngine.syncAll() }
+                        viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
                         _uiState.value = _uiState.value.copy(googleSignInLoading = false, isAuthenticated = true)
                     }
                     is NetworkResult.Error -> {
