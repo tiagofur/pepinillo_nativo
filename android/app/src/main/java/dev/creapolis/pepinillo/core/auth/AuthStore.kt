@@ -10,6 +10,7 @@ import io.ktor.client.plugins.auth.providers.BearerTokens
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.security.GeneralSecurityException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -94,9 +95,16 @@ class AuthStore @Inject constructor(
     private fun <T> safeRead(block: () -> T): T? {
         return try {
             block()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to read encrypted pref, clearing corrupted data", e)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Security error reading encrypted pref, clearing corrupted data", e)
             clearAll()
+            null
+        } catch (e: GeneralSecurityException) {
+            Log.e(TAG, "Crypto error reading encrypted pref, clearing corrupted data", e)
+            clearAll()
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to read encrypted pref, keeping auth", e)
             null
         }
     }

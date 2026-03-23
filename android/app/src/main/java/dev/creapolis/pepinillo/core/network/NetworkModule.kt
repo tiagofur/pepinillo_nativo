@@ -12,15 +12,19 @@ import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import android.util.Log
 import dev.creapolis.pepinillo.BuildConfig
+import java.io.IOException
 import kotlinx.serialization.json.Json
 import javax.inject.Singleton
 
@@ -68,8 +72,20 @@ object NetworkModule {
                             response.tokens.refreshToken,
                         )
                         BearerTokens(response.tokens.accessToken, response.tokens.refreshToken)
-                    } catch (_: Exception) {
-                        authStore.clearAll()
+                    } catch (e: ClientRequestException) {
+                        val status = e.response.status
+                        if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
+                            Log.w("NetworkModule", "Refresh token rejected ($status), clearing auth", e)
+                            authStore.clearAll()
+                        } else {
+                            Log.w("NetworkModule", "HTTP error during token refresh ($status), keeping auth", e)
+                        }
+                        null
+                    } catch (e: IOException) {
+                        Log.w("NetworkModule", "Network error during token refresh, keeping auth", e)
+                        null
+                    } catch (e: Exception) {
+                        Log.w("NetworkModule", "Unexpected error during token refresh, keeping auth", e)
                         null
                     }
                 }
