@@ -62,11 +62,7 @@ extension APIClient: DependencyKey {
 private struct APIHelper: Sendable {
     let keychain: KeychainClient
 
-    #if DEBUG
-    private static let baseURL = "http://localhost:8080/api/v1"
-    #else
     private static let baseURL = "https://api.ppn.creapolis.dev/api/v1"
-    #endif
 
     private var encoder: JSONEncoder {
         let encoder = JSONEncoder()
@@ -206,10 +202,19 @@ private struct APIHelper: Sendable {
         let refreshResponse: RefreshResponse
         do {
             refreshResponse = try await post("auth/refresh", body: refreshBody)
+        } catch let apiError as APIClientError {
+            // Only clear tokens on definitive rejection (401/403), not transient errors
+            switch apiError {
+            case .sessionExpired, .serverError(401), .serverError(403):
+                try? await keychain.deleteTokens()
+                throw APIClientError.sessionExpired
+            default:
+                // Transient error (network, 5xx, etc.) — don't clear tokens
+                throw apiError
+            }
         } catch {
-            // Refresh failed — session is expired
-            try? await keychain.deleteTokens()
-            throw APIClientError.sessionExpired
+            // Network-level error — don't clear tokens, just propagate
+            throw APIClientError.networkError
         }
 
         // Save new tokens
