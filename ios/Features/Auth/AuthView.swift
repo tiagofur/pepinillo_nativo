@@ -169,5 +169,32 @@ struct AuthView: View {
         .sheet(item: $store.scope(state: \.forgotPassword, action: \.forgotPassword)) { forgotPasswordStore in
             ForgotPasswordView(store: forgotPasswordStore)
         }
+        .sheet(isPresented: Binding(
+            get: { store.showMergeDialog },
+            set: { _ in store.send(.dismissMergeDialog) }
+        )) {
+            DataMergeView(
+                onMerge: { store.send(.mergeTapped) },
+                onUseAccountOnly: { store.send(.useAccountOnlyTapped) }
+            )
+            .presentationDetents([.medium])
+        }
+        .overlay {
+            if store.isSyncing {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("Syncing your data...")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(32)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
+            }
+        }
     }
 }

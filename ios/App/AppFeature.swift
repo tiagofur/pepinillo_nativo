@@ -74,6 +74,7 @@ struct AppFeature {
         case onboardingCompletedWithMode(FocusMode)
         case appLaunched
         case appBecameActive
+        case appWentToBackground
 
         // Subscription
         case subscriptionStateLoaded(SubscriptionState)
@@ -130,12 +131,14 @@ struct AppFeature {
     @Dependency(\.apiClient) var apiClient
     @Dependency(\.keychainClient) var keychain
     @Dependency(\.syncClient) var syncClient
+    @Dependency(\.webSocketClient) var webSocketClient
 
     private enum CancelID {
         case transactionListener
         case watchCommandListener
         case notificationActionListener
         case externalCommandObserver
+        case webSocket
     }
 
     var body: some ReducerOf<Self> {
@@ -246,6 +249,12 @@ struct AppFeature {
                         // Sync tasks after profile refresh
                         try? await syncClient.syncAll()
                     },
+                    // Connect WebSocket if authenticated
+                    .run { [keychain, webSocketClient] _ in
+                        guard await keychain.hasTokens() else { return }
+                        await webSocketClient.connect()
+                    }
+                    .cancellable(id: CancelID.webSocket),
                     // Watch: listen for commands from the Watch
                     .run { [watchClient] send in
                         guard watchClient.isSupported() else { return }
@@ -295,6 +304,15 @@ struct AppFeature {
                     }
                 }
                 AppGroupDefaults.clearExternalCommands()
+                // Reconnect WebSocket if authenticated
+                return .run { [keychain, webSocketClient] _ in
+                    guard await keychain.hasTokens() else { return }
+                    await webSocketClient.connect()
+                }
+                .cancellable(id: CancelID.webSocket)
+
+            case .appWentToBackground:
+                webSocketClient.disconnect()
                 return .none
 
             case .subscriptionStateLoaded(let sub):
@@ -386,9 +404,10 @@ struct AppFeature {
                 state.displayName = user.name
                 state.userEmail = user.email
                 state.auth = nil  // dismiss auth sheet
-                // Sync tasks after successful email login
-                return .run { [syncClient] _ in
+                // Sync tasks and connect WebSocket after successful email login
+                return .run { [syncClient, webSocketClient] _ in
                     try? await syncClient.syncAll()
+                    await webSocketClient.connect()
                 }
 
             case .auth(.presented(.delegate(.guestModeSelected))):
@@ -404,6 +423,7 @@ struct AppFeature {
                 state.displayName = nil
                 state.userEmail = nil
                 state.profile = nil  // dismiss profile sheet
+                webSocketClient.disconnect()
                 return .run { send in
                     var prefs = try await persistence.fetchPreferences()
                     prefs.appleUserID = nil
@@ -420,6 +440,7 @@ struct AppFeature {
                 state.appleUserID = nil
                 state.displayName = nil
                 state.userEmail = nil
+                webSocketClient.disconnect()
                 return .none
 
             // MARK: - Sign in with Apple
@@ -469,7 +490,7 @@ struct AppFeature {
                     // Try to authenticate with backend if identity token available
                     {
                         if let idToken = info.identityToken {
-                            return .run { [apiClient, keychain, persistence, syncClient] send in
+                            return .run { [apiClient, keychain, persistence, syncClient, webSocketClient] send in
                                 do {
                                     let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken))
                                     try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
@@ -483,8 +504,9 @@ struct AppFeature {
                                     )
                                     try? await persistence.saveCachedUser(dto)
                                     await send(.cachedUserLoaded(dto))
-                                    // Sync tasks after successful Apple Sign-In
+                                    // Sync tasks and connect WebSocket after successful Apple Sign-In
                                     try? await syncClient.syncAll()
+                                    await webSocketClient.connect()
                                 } catch {
                                     // Backend auth failed — continue with local-only Apple ID (existing behavior)
                                 }
@@ -503,6 +525,7 @@ struct AppFeature {
                 state.displayName = nil
                 state.userEmail = nil
                 state.cachedUser = nil
+                webSocketClient.disconnect()
                 return .run { [keychain, apiClient, persistence] send in
                     if let refreshToken = await keychain.loadRefreshToken() {
                         try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))

@@ -23,6 +23,8 @@ struct AuthFeature {
         var isLoading = false
         var errorMessage: String? = nil
         var isPasswordVisible = false
+        var showMergeDialog = false
+        var isSyncing = false
         @Presents var forgotPassword: ForgotPasswordFeature.State?
     }
 
@@ -48,6 +50,13 @@ struct AuthFeature {
         case authResponse(Result<AuthResponse, APIClientError>)
         case forgotPassword(PresentationAction<ForgotPasswordFeature.Action>)
 
+        case authSucceeded(CachedUserDTO)
+        case initialSyncCompleted(CachedUserDTO)
+        case initialSyncFailed(String)
+        case mergeTapped
+        case useAccountOnlyTapped
+        case dismissMergeDialog
+
         case delegate(Delegate)
         enum Delegate: Equatable {
             case authenticated(CachedUserDTO)
@@ -60,6 +69,7 @@ struct AuthFeature {
     @Dependency(\.apiClient) var apiClient
     @Dependency(\.keychainClient) var keychain
     @Dependency(\.persistenceClient) var persistence
+    @Dependency(\.syncClient) var syncClient
 
     // MARK: - Reducer
 
@@ -155,7 +165,7 @@ struct AuthFeature {
                 return .run { send in
                     try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
                     try await persistence.saveCachedUser(userDTO)
-                    await send(.delegate(.authenticated(userDTO)))
+                    await send(.authSucceeded(userDTO))
                 }
 
             case .authResponse(.failure(let error)):
@@ -165,6 +175,80 @@ struct AuthFeature {
 
             case .continueAsGuestTapped:
                 return .send(.delegate(.guestModeSelected))
+
+            // MARK: - Post-auth sync flow
+
+            case .authSucceeded(let userDTO):
+                state.isSyncing = true
+                return .run { [persistence, syncClient] send in
+                    // Check if there's local data to merge
+                    let tasks = try await persistence.fetchTasks()
+                    let sessions = try await persistence.fetchSessions(Date.distantPast, Date.now)
+                    let hasLocalData = !tasks.isEmpty || !sessions.isEmpty
+
+                    if hasLocalData {
+                        do {
+                            let hasExistingData = try await syncClient.initialUpload()
+                            if hasExistingData {
+                                // Server has data too — ask user what to do
+                                await send(.initialSyncCompleted(userDTO))
+                            } else {
+                                // No server data — local data uploaded successfully
+                                await send(.delegate(.authenticated(userDTO)))
+                            }
+                        } catch {
+                            await send(.initialSyncFailed(error.localizedDescription))
+                        }
+                    } else {
+                        // No local data — pull everything from server
+                        do {
+                            try await syncClient.performInitialSync()
+                            await send(.delegate(.authenticated(userDTO)))
+                        } catch {
+                            // Sync failed but auth succeeded — continue anyway
+                            await send(.delegate(.authenticated(userDTO)))
+                        }
+                    }
+                }
+
+            case .initialSyncCompleted:
+                state.isSyncing = false
+                state.showMergeDialog = true
+                // User will choose merge or account-only via dialog
+                // userDTO is already cached in persistence
+                return .none
+
+            case .initialSyncFailed(let message):
+                state.isSyncing = false
+                state.errorMessage = "Sync failed: \(message)"
+                return .none
+
+            case .mergeTapped:
+                state.showMergeDialog = false
+                // Data was already uploaded via initialUpload — just continue
+                return .run { [persistence] send in
+                    if let user = try await persistence.fetchCachedUser() {
+                        await send(.delegate(.authenticated(user)))
+                    }
+                }
+
+            case .useAccountOnlyTapped:
+                state.showMergeDialog = false
+                state.isSyncing = true
+                return .run { [syncClient, persistence] send in
+                    do {
+                        try await syncClient.wipeAndSync()
+                    } catch {
+                        // Best-effort wipe — continue regardless
+                    }
+                    if let user = try await persistence.fetchCachedUser() {
+                        await send(.delegate(.authenticated(user)))
+                    }
+                }
+
+            case .dismissMergeDialog:
+                state.showMergeDialog = false
+                return .none
 
             case .forgotPasswordTapped:
                 state.forgotPassword = ForgotPasswordFeature.State(email: state.email)

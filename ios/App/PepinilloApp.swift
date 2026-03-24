@@ -61,8 +61,13 @@ struct PepinilloApp: App {
             AppView(store: store)
                 .modelContainer(modelContainer)
                 .onChange(of: scenePhase) { _, newPhase in
-                    if newPhase == .active {
+                    switch newPhase {
+                    case .active:
                         store.send(.appBecameActive)
+                    case .background:
+                        store.send(.appWentToBackground)
+                    default:
+                        break
                     }
                 }
         }
