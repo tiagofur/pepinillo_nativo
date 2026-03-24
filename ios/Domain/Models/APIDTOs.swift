@@ -198,6 +198,52 @@ public struct TaskSyncResponse: Codable, Sendable, Equatable {
     }
 }
 
+// MARK: - Focus Session Sync DTO
+
+public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
+    public let id: String
+    public let userId: String?
+    public let taskId: Int?
+    public let startedAt: String
+    public let endedAt: String?
+    public let mode: String
+    public let phase: String
+    public let durationSeconds: Int
+    public let elapsedSeconds: Int
+    public let pauseCount: Int
+    public let totalPauseSeconds: Int
+    public let wasCompleted: Bool
+    public let sharedWithTaskIds: String?
+    public let createdAt: String
+    public let updatedAt: String
+
+    public init(
+        id: String, userId: String? = nil, taskId: Int? = nil,
+        startedAt: String, endedAt: String? = nil,
+        mode: String, phase: String,
+        durationSeconds: Int, elapsedSeconds: Int,
+        pauseCount: Int = 0, totalPauseSeconds: Int = 0,
+        wasCompleted: Bool = false, sharedWithTaskIds: String? = nil,
+        createdAt: String, updatedAt: String
+    ) {
+        self.id = id
+        self.userId = userId
+        self.taskId = taskId
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.mode = mode
+        self.phase = phase
+        self.durationSeconds = durationSeconds
+        self.elapsedSeconds = elapsedSeconds
+        self.pauseCount = pauseCount
+        self.totalPauseSeconds = totalPauseSeconds
+        self.wasCompleted = wasCompleted
+        self.sharedWithTaskIds = sharedWithTaskIds
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
 // MARK: - Error
 
 struct APIErrorBody: Codable, Sendable {

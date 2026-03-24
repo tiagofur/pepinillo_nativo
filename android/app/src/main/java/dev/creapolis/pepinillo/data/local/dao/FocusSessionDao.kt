@@ -2,6 +2,7 @@ package dev.creapolis.pepinillo.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import kotlinx.coroutines.flow.Flow
@@ -39,4 +40,10 @@ interface FocusSessionDao {
 
     @Query("SELECT * FROM focus_sessions WHERE created_at >= :startTime AND created_at < :endTime ORDER BY created_at DESC")
     suspend fun getSessionsInRangeSync(startTime: Long, endTime: Long): List<FocusSessionEntity>
+
+    @Query("SELECT * FROM focus_sessions WHERE id = :sessionId")
+    suspend fun getSessionById(sessionId: String): FocusSessionEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfNotExists(session: FocusSessionEntity)
 }

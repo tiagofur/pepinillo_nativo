@@ -41,4 +41,10 @@ interface SubtaskDao {
 
     @Query("UPDATE subtasks SET is_dirty = 0 WHERE task_id = :taskId")
     suspend fun markSubtasksSynced(taskId: String)
+
+    @Query("DELETE FROM subtasks WHERE task_id = :taskId")
+    suspend fun deleteSubtasksForTask(taskId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(subtasks: List<SubtaskEntity>)
 }
