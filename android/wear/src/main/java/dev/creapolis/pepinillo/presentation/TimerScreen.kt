@@ -12,6 +12,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +44,7 @@ import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.CircularProgressIndicator
 import androidx.wear.compose.material.CompactChip
+import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import dev.creapolis.pepinillo.data.WearStatsState
@@ -198,7 +207,7 @@ private fun TimerActiveLayout(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Stop (40x40)
+                // Stop (44x44) — Material You tonal style
                 Button(
                     onClick = {
                         if (showStopConfirm) {
@@ -208,49 +217,49 @@ private fun TimerActiveLayout(
                             showStopConfirm = true
                         }
                     },
-                    modifier = Modifier.size(40.dp),
+                    modifier = Modifier.size(44.dp),
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = if (showStopConfirm) Color(0xFFB71C1C) else Color.White.copy(alpha = 0.12f),
-                        contentColor = if (showStopConfirm) Color.White else Color.White.copy(alpha = 0.8f),
+                        backgroundColor = if (showStopConfirm) Color(0xFFB71C1C) else MaterialTheme.colors.surface,
+                        contentColor = if (showStopConfirm) Color.White else MaterialTheme.colors.onSurface,
                     ),
                 ) {
-                    Text(
-                        text = if (showStopConfirm) "✓" else "⏹",
-                        fontSize = 16.sp,
-                        textAlign = TextAlign.Center,
+                    Icon(
+                        imageVector = if (showStopConfirm) Icons.Filled.Check else Icons.Filled.Stop,
+                        contentDescription = if (showStopConfirm) "Confirm stop" else "Stop",
+                        modifier = Modifier.size(20.dp),
                     )
                 }
 
-                // Pause / Resume (48x48, primary action — biggest)
+                // Pause / Resume (52x52, primary action — biggest)
                 Button(
                     onClick = if (state.status == "Running") onPause else onResume,
-                    modifier = Modifier.size(48.dp),
+                    modifier = Modifier.size(52.dp),
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = modeColor,
                         contentColor = Color.White,
                     ),
                 ) {
-                    Text(
-                        text = if (state.status == "Running") "⏸" else "▶",
-                        fontSize = 20.sp,
-                        textAlign = TextAlign.Center,
+                    Icon(
+                        imageVector = if (state.status == "Running") Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (state.status == "Running") "Pause" else "Resume",
+                        modifier = Modifier.size(24.dp),
                     )
                 }
 
-                // Skip (40x40) — only during break phases
+                // Skip (44x44) — only during break phases, tonal style
                 if (isBreakPhase) {
                     Button(
                         onClick = onSkip,
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(44.dp),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = Color.White.copy(alpha = 0.12f),
-                            contentColor = Color.White.copy(alpha = 0.8f),
+                            backgroundColor = MaterialTheme.colors.surface,
+                            contentColor = MaterialTheme.colors.onSurface,
                         ),
                     ) {
-                        Text(
-                            text = "⏭",
-                            fontSize = 16.sp,
-                            textAlign = TextAlign.Center,
+                        Icon(
+                            imageVector = Icons.Filled.SkipNext,
+                            contentDescription = "Skip",
+                            modifier = Modifier.size(20.dp),
                         )
                     }
                 }
@@ -579,15 +588,17 @@ private fun ModeButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(36.dp),
+        modifier = modifier.height(40.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = color.copy(alpha = 0.2f),
+            backgroundColor = color.copy(alpha = 0.15f),
             contentColor = color,
         ),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.caption2,
+            fontWeight = FontWeight.Medium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
