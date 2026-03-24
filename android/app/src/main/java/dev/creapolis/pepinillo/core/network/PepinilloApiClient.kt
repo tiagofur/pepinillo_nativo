@@ -118,6 +118,9 @@ class PepinilloApiClient @Inject constructor(
             }.body()
         }
 
+    suspend fun getAllSessions(): NetworkResult<List<PomodoroSessionDto>> =
+        safeCall { httpClient.get("focus/sessions/all").body() }
+
     // ── Pomodoro Config ──
 
     suspend fun getConfig(): NetworkResult<PomodoroConfigDto> =
@@ -125,6 +128,27 @@ class PepinilloApiClient @Inject constructor(
 
     suspend fun updateConfig(config: PomodoroConfigDto): NetworkResult<PomodoroConfigDto> =
         safeCall { httpClient.put("pomodoro/config") { jsonBody(config) }.body() }
+
+    // ── Focus Config (multi-mode) ──
+
+    suspend fun getFocusConfig(): NetworkResult<FocusConfigDto> =
+        safeCall { httpClient.get("focus/config").body() }
+
+    suspend fun updateFocusConfig(config: FocusConfigDto): NetworkResult<FocusConfigDto> =
+        safeCall { httpClient.put("focus/config") { jsonBody(config) }.body() }
+
+    // ── Focus Stats ──
+
+    suspend fun getStats(from: String, to: String): NetworkResult<List<FocusStatsDto>> =
+        safeCall {
+            httpClient.get("focus/stats") {
+                parameter("from", from)
+                parameter("to", to)
+            }.body()
+        }
+
+    suspend fun upsertStats(stats: FocusStatsDto): NetworkResult<FocusStatsDto> =
+        safeCall { httpClient.post("focus/stats") { jsonBody(stats) }.body() }
 
     // ── Billing ──
 

@@ -155,6 +155,8 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
     public let taskID: UUID?
     public let journalNote: String?
     public let satisfactionRating: Int?
+    public let isDirty: Bool
+    public let syncedAt: Date?
 
     public init(
         id: UUID,
@@ -171,7 +173,9 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
         pomodoroNumber: Int? = nil,
         taskID: UUID?,
         journalNote: String? = nil,
-        satisfactionRating: Int? = nil
+        satisfactionRating: Int? = nil,
+        isDirty: Bool = true,
+        syncedAt: Date? = nil
     ) {
         self.id = id
         self.startedAt = startedAt
@@ -188,6 +192,8 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
         self.taskID = taskID
         self.journalNote = journalNote
         self.satisfactionRating = satisfactionRating
+        self.isDirty = isDirty
+        self.syncedAt = syncedAt
     }
 
     init(from record: FocusSessionRecord) {
@@ -206,7 +212,9 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
             pomodoroNumber: record.pomodoroNumber,
             taskID: record.task?.id,
             journalNote: record.journalNote,
-            satisfactionRating: record.satisfactionRating
+            satisfactionRating: record.satisfactionRating,
+            isDirty: record.isDirty,
+            syncedAt: record.syncedAt
         )
     }
 }
@@ -512,6 +520,12 @@ public struct PersistenceClient: Sendable {
     public var purgeTaskBySyncId: @Sendable (String) async throws -> Void
     public var getLastSyncTimestamp: @Sendable () async throws -> String? = { nil }
     public var saveLastSyncTimestamp: @Sendable (String) async throws -> Void
+
+    // Session Sync Operations
+    public var fetchDirtySessions: @Sendable () async throws -> [SessionRecordDTO] = { [] }
+    public var markSessionsSynced: @Sendable ([UUID]) async throws -> Void
+    public var upsertSessionFromServer: @Sendable (FocusSessionSyncDTO) async throws -> Void
+    public var sessionExists: @Sendable (String) async throws -> Bool = { _ in false }
 }
 
 extension PersistenceClient: DependencyKey {
@@ -731,6 +745,27 @@ extension PersistenceClient: DependencyKey {
             saveLastSyncTimestamp: { timestamp in
                 try await MainActor.run {
                     service.saveLastSyncTimestamp(timestamp)
+                }
+            },
+            fetchDirtySessions: {
+                try await MainActor.run {
+                    let records = try service.fetchDirtySessions()
+                    return records.map { SessionRecordDTO(from: $0) }
+                }
+            },
+            markSessionsSynced: { sessionIDs in
+                try await MainActor.run {
+                    try service.markSessionsSynced(ids: sessionIDs)
+                }
+            },
+            upsertSessionFromServer: { dto in
+                try await MainActor.run {
+                    try service.upsertSessionFromServer(dto)
+                }
+            },
+            sessionExists: { sessionId in
+                try await MainActor.run {
+                    try service.sessionExists(id: sessionId)
                 }
             }
         )

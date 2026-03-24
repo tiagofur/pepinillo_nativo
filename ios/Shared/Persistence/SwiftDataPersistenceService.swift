@@ -552,4 +552,67 @@ public final class SwiftDataPersistenceService {
         }
         stats.recordSession(result)
     }
+
+    // MARK: - Session Sync
+
+    public func fetchDirtySessions() throws -> [FocusSessionRecord] {
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.isDirty == true }
+        )
+        return try context.fetch(descriptor)
+    }
+
+    public func markSessionsSynced(ids: [UUID]) throws {
+        let descriptor = FetchDescriptor<FocusSessionRecord>()
+        let allRecords = try context.fetch(descriptor)
+        for record in allRecords where ids.contains(record.id) {
+            record.isDirty = false
+            record.syncedAt = Date.now
+        }
+        try context.save()
+    }
+
+    public func upsertSessionFromServer(_ dto: FocusSessionSyncDTO) throws {
+        // Check if session already exists by ID
+        guard let sessionUUID = UUID(uuidString: dto.id) else { return }
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.id == sessionUUID }
+        )
+        if try context.fetch(descriptor).first != nil {
+            // Already exists locally, don't overwrite
+            return
+        }
+
+        // Create new record from server data
+        let iso = ISO8601DateFormatter()
+        let startedAt = iso.date(from: dto.startedAt) ?? Date.now
+        let endedAt = dto.endedAt.flatMap { iso.date(from: $0) }
+
+        let record = FocusSessionRecord(
+            mode: dto.mode,
+            phase: dto.phase,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            actualDuration: TimeInterval(dto.elapsedSeconds),
+            targetDuration: nil,
+            wasCompleted: dto.wasCompleted,
+            interruptions: 0,
+            pauseCount: dto.pauseCount,
+            totalPauseDuration: TimeInterval(dto.totalPauseSeconds)
+        )
+        record.id = sessionUUID
+        record.isDirty = false
+        record.syncedAt = Date.now
+
+        context.insert(record)
+        try context.save()
+    }
+
+    public func sessionExists(id: String) throws -> Bool {
+        guard let uuid = UUID(uuidString: id) else { return false }
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.id == uuid }
+        )
+        return try !context.fetch(descriptor).isEmpty
+    }
 }

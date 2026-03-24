@@ -165,18 +165,54 @@ extension SyncClient: DependencyKey {
             syncSessions: {
                 guard await keychain.hasTokens() else { return }
 
-                // Get cached user ID for syncing
-                let cachedUser = try await persistence.fetchCachedUser()
-                let userId = cachedUser?.id ?? ""
+                let iso = ISO8601DateFormatter()
 
-                // For now: placeholder implementation
-                // In a full implementation, this would:
-                // 1. Fetch dirty sessions from persistence
-                // 2. Convert to API DTOs
-                // 3. POST to /pomodoro/sessions
-                // 4. Mark sessions as synced
-                // NOTE: Requires fetchDirtySessions method on PersistenceClient
-                // and createSession method on APIClient
+                // 1. Push dirty sessions to server
+                let dirtySessions = try await persistence.fetchDirtySessions()
+                var syncedIDs: [UUID] = []
+
+                for session in dirtySessions {
+                    let dto = FocusSessionSyncDTO(
+                        id: session.id.uuidString,
+                        taskId: nil, // Task linking handled separately
+                        startedAt: iso.string(from: session.startedAt),
+                        endedAt: session.endedAt.map { iso.string(from: $0) },
+                        mode: session.mode.lowercased(),
+                        phase: session.phase,
+                        durationSeconds: Int(session.actualDuration),
+                        elapsedSeconds: Int(session.actualDuration),
+                        pauseCount: session.pauseCount,
+                        totalPauseSeconds: Int(session.totalPauseDuration),
+                        wasCompleted: session.wasCompleted,
+                        createdAt: iso.string(from: session.startedAt),
+                        updatedAt: iso.string(from: session.startedAt)
+                    )
+                    do {
+                        _ = try await apiClient.createSession(dto)
+                        syncedIDs.append(session.id)
+                    } catch {
+                        // Log but continue with other sessions
+                        print("[SyncClient] Failed to sync session \(session.id): \(error)")
+                    }
+                }
+
+                if !syncedIDs.isEmpty {
+                    try await persistence.markSessionsSynced(syncedIDs)
+                }
+
+                // 2. Pull all sessions from server
+                do {
+                    let serverSessions = try await apiClient.getAllSessions()
+                    for serverSession in serverSessions {
+                        let exists = try await persistence.sessionExists(serverSession.id)
+                        if !exists {
+                            try await persistence.upsertSessionFromServer(serverSession)
+                        }
+                    }
+                } catch {
+                    // Non-fatal: log but don't throw for pull failures
+                    print("[SyncClient] Failed to pull sessions: \(error)")
+                }
             }
         )
     }

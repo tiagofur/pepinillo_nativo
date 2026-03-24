@@ -132,6 +132,7 @@ data class PomodoroSessionDto(
     val taskId: Int? = null,
     val startedAt: String = "",
     val endedAt: String? = null,
+    val mode: String = "pomodoro",
     val phase: String = "",
     val durationSeconds: Int = 0,
     val elapsedSeconds: Int = 0,
@@ -143,6 +144,53 @@ data class PomodoroSessionDto(
     val satisfactionRating: Int? = null,
     val journalNote: String? = null,
     val sharedWithTaskIds: String? = null,
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)
+
+// ── Focus Stats ──
+
+@Serializable
+data class FocusStatsDto(
+    val id: Int = 0,
+    val userId: String = "",
+    val date: String = "",
+    val pomodoros: Int = 0,
+    val pomodoroDuration: Int = 0,
+    val breaks: Int = 0,
+    val breakDuration: Int = 0,
+    val rests: Int = 0,
+    val restDuration: Int = 0,
+    val flowtimeSeconds: Int = 0,
+    val timeblockSeconds: Int = 0,
+    val stopwatchSeconds: Int = 0,
+    val flowtimeCount: Int = 0,
+    val timeblockCount: Int = 0,
+    val stopwatchCount: Int = 0,
+    val dailyGoal: Int = 0,
+    val dailyCompleted: Boolean = false,
+    val count: Int = 0,
+    val createdAt: String = "",
+    val updatedAt: String = "",
+)
+
+// ── Focus Config ──
+
+@Serializable
+data class FocusConfigDto(
+    val userId: String = "",
+    val defaultMode: String = "pomodoro",
+    val pomodoroMinutes: Int = 25,
+    val shortBreakMinutes: Int = 5,
+    val longBreakMinutes: Int = 15,
+    val pomodorosUntilLong: Int = 4,
+    val flowtimeCheckInMinutes: Int = 25,
+    val timeblockMinutes: Int = 60,
+    val dailyGoal: Int = 8,
+    val notifications: Boolean = false,
+    val autoStart: Boolean = false,
+    val autoBreak: Boolean = false,
+    val lastUpdate: String? = null,
     val createdAt: String = "",
     val updatedAt: String = "",
 )

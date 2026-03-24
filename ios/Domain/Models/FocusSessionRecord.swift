@@ -37,6 +37,10 @@ public final class FocusSessionRecord {
     public var journalNote: String?
     public var satisfactionRating: Int?       // 1-5 scale (emoji-based)
 
+    // Sync metadata
+    public var isDirty: Bool = true
+    public var syncedAt: Date?
+
     // Task relationship
     public var task: TaskItem?
 
@@ -53,6 +57,32 @@ public final class FocusSessionRecord {
         self.pauseCount = result.pauseCount
         self.totalPauseDuration = result.totalPauseDuration
         self.pomodoroNumber = result.pomodoroNumber
+    }
+
+    /// Convenience initializer for creating from server sync data.
+    public init(
+        mode: String,
+        phase: String,
+        startedAt: Date,
+        endedAt: Date?,
+        actualDuration: TimeInterval,
+        targetDuration: TimeInterval?,
+        wasCompleted: Bool,
+        interruptions: Int,
+        pauseCount: Int,
+        totalPauseDuration: TimeInterval
+    ) {
+        self.id = UUID()
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.mode = mode
+        self.phase = phase
+        self.targetDuration = targetDuration
+        self.actualDuration = actualDuration
+        self.wasCompleted = wasCompleted
+        self.interruptions = interruptions
+        self.pauseCount = pauseCount
+        self.totalPauseDuration = totalPauseDuration
     }
 
     // MARK: - Helpers

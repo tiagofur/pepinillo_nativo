@@ -22,6 +22,8 @@ public struct APIClient: Sendable {
     public var updateMe: @Sendable (UpdateProfileRequest) async throws -> APIUser
     public var uploadProfileImage: @Sendable (_ imageData: Data, _ mimeType: String) async throws -> ImageUploadResponse
     public var syncTasks: @Sendable (TaskSyncRequest) async throws -> TaskSyncResponse
+    public var createSession: @Sendable (FocusSessionSyncDTO) async throws -> FocusSessionSyncDTO
+    public var getAllSessions: @Sendable () async throws -> [FocusSessionSyncDTO]
 }
 
 // MARK: - Live implementation
@@ -50,6 +52,12 @@ extension APIClient: DependencyKey {
             },
             syncTasks: { request in
                 try await helper.authenticatedPost("tasks/sync", body: request)
+            },
+            createSession: { session in
+                try await helper.authenticatedPost("focus/sessions", body: session)
+            },
+            getAllSessions: {
+                try await helper.authenticatedGet("focus/sessions/all")
             }
         )
     }

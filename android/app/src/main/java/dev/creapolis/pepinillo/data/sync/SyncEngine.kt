@@ -7,13 +7,18 @@ import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.core.network.SubTaskDto
 import dev.creapolis.pepinillo.core.network.TaskDto
 import dev.creapolis.pepinillo.core.network.TaskSyncRequest
+import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
+import dev.creapolis.pepinillo.core.network.FocusStatsDto
+import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
+import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
-import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -35,6 +40,7 @@ class SyncEngine @Inject constructor(
     private val taskDao: TaskDao,
     private val subtaskDao: SubtaskDao,
     private val sessionDao: FocusSessionDao,
+    private val dailyStatsDao: DailyStatsDao,
     private val apiClient: PepinilloApiClient,
     private val authStore: AuthStore,
 ) {
@@ -61,6 +67,7 @@ class SyncEngine @Inject constructor(
             println("[$TAG]syncAll: STARTING")
             syncTasks()
             syncSessions()
+            syncDailyStats()
             println("[$TAG]syncAll: SUCCESS")
             SyncResult.Success
         } catch (e: AuthenticationException) {
@@ -72,6 +79,8 @@ class SyncEngine @Inject constructor(
             SyncResult.Error(e)
         }
     }
+
+    // ── Task Sync ──
 
     private suspend fun syncTasks() {
         val dirtyTasks = taskDao.getDirtyTasks()
@@ -127,51 +136,6 @@ class SyncEngine @Inject constructor(
         }
     }
 
-    private suspend fun syncSessions() {
-        val dirtySessions = sessionDao.getDirtySessions()
-        if (dirtySessions.isEmpty()) return
-
-        val userId = authStore.getUserId() ?: ""
-        val now = System.currentTimeMillis()
-        for (session in dirtySessions) {
-            // Resolve server-side taskId from linked local task
-            val serverTaskId = session.linkedTaskId?.let { localId ->
-                taskDao.getTaskById(localId)?.serverId
-            }
-            val dto = PomodoroSessionDto(
-                id = session.id,
-                userId = userId,
-                taskId = serverTaskId,
-                startedAt = session.startTime.toRfc3339(),
-                endedAt = session.endTime?.let { if (it > 0L) it.toRfc3339() else null },
-                phase = session.phase ?: "work",
-                durationSeconds = (session.durationMillis / 1000).toInt(),
-                elapsedSeconds = (session.durationMillis / 1000).toInt(),
-                wasCompleted = session.wasCompleted,
-                interruptions = session.interruptions,
-                pauseCount = session.pauseCount,
-                totalPauseSeconds = (session.totalPauseMillis / 1000).toInt(),
-                pomodoroNumber = session.pomodoroNumber,
-                satisfactionRating = session.satisfactionRating,
-                journalNote = session.journalNote,
-                createdAt = (session.createdAt ?: session.startTime).toRfc3339(),
-                updatedAt = (session.createdAt ?: session.startTime).toRfc3339(),
-            )
-            when (val result = apiClient.createSession(dto)) {
-                is NetworkResult.Success -> {
-                    sessionDao.markSynced(session.id, now)
-                }
-                is NetworkResult.Error -> {
-                    Log.e(TAG, "Session sync error: ${result.code}")
-                    if (result.code == 401) throw AuthenticationException("syncSessions: 401 Unauthorized")
-                    throw SyncException("syncSessions failed: ${result.code} ${result.message}")
-                }
-                is NetworkResult.NetworkError -> throw result.exception
-            }
-        }
-        Log.d(TAG, "Sessions synced: ${dirtySessions.size}")
-    }
-
     private suspend fun pullAllTasks() {
         when (val result = apiClient.getTasks()) {
             is NetworkResult.Success -> {
@@ -201,7 +165,9 @@ class SyncEngine @Inject constructor(
             val local = localBySyncId
                 ?: taskDao.getTaskByServerId(serverTask.id)
             if (local == null) {
-                taskDao.insertTask(serverTask.toEntity())
+                val entity = serverTask.toEntity()
+                taskDao.insertTask(entity)
+                mergeServerSubtasks(entity.id, serverTask.subTasks)
                 inserted++
             } else if (!local.isDirty && parseRfc3339(serverTask.updatedAt) > local.updatedAt) {
                 taskDao.updateTask(serverTask.toEntity().copy(
@@ -210,11 +176,243 @@ class SyncEngine @Inject constructor(
                     syncedAt = now,
                     serverId = serverTask.id,
                 ))
+                mergeServerSubtasks(local.id, serverTask.subTasks)
                 updated++
             }
         }
         println("[$TAG]mergeServerTasks: inserted=$inserted, updated=$updated")
     }
+
+    private suspend fun mergeServerSubtasks(localTaskId: String, serverSubtasks: List<SubTaskDto>) {
+        if (serverSubtasks.isEmpty()) return
+        // Replace local subtasks with server subtasks for this task
+        subtaskDao.deleteSubtasksForTask(localTaskId)
+        val entities = serverSubtasks.mapIndexed { index, dto ->
+            SubtaskEntity(
+                taskId = localTaskId,
+                title = dto.title ?: "",
+                isCompleted = dto.isFinished,
+                sortOrder = index,
+                isDirty = false,
+            )
+        }
+        subtaskDao.insertAll(entities)
+    }
+
+    // ── Session Sync ──
+
+    private suspend fun syncSessions() {
+        val dirtySessions = sessionDao.getDirtySessions()
+
+        if (dirtySessions.isEmpty()) {
+            // Fresh install or no local changes — pull all sessions from server
+            pullAllSessions()
+            return
+        }
+
+        // Push dirty sessions to server
+        val userId = authStore.getUserId() ?: ""
+        val now = System.currentTimeMillis()
+        for (session in dirtySessions) {
+            // Resolve server-side taskId from linked local task
+            val serverTaskId = session.linkedTaskId?.let { localId ->
+                taskDao.getTaskById(localId)?.serverId
+            }
+            val dto = session.toDto(userId, serverTaskId)
+            when (val result = apiClient.createSession(dto)) {
+                is NetworkResult.Success -> {
+                    sessionDao.markSynced(session.id, now)
+                }
+                is NetworkResult.Error -> {
+                    Log.e(TAG, "Session sync error: ${result.code}")
+                    if (result.code == 401) throw AuthenticationException("syncSessions: 401 Unauthorized")
+                    throw SyncException("syncSessions failed: ${result.code} ${result.message}")
+                }
+                is NetworkResult.NetworkError -> throw result.exception
+            }
+        }
+        Log.d(TAG, "Sessions synced: ${dirtySessions.size}")
+
+        // After pushing dirty, also pull any server sessions we don't have
+        pullAllSessions()
+    }
+
+    private suspend fun pullAllSessions() {
+        when (val result = apiClient.getAllSessions()) {
+            is NetworkResult.Success -> {
+                val sessions = result.data
+                println("[$TAG]pullAllSessions: server returned ${sessions.size} sessions")
+                mergeServerSessions(sessions)
+            }
+            is NetworkResult.Error -> {
+                println("[$TAG]pullAllSessions ERROR: ${result.code} ${result.message}")
+                if (result.code == 401) throw AuthenticationException("pullAllSessions: 401 Unauthorized")
+                // Non-fatal: log but don't throw for session pull failures
+                Log.w(TAG, "pullAllSessions failed: ${result.code} ${result.message}")
+            }
+            is NetworkResult.NetworkError -> {
+                println("[$TAG]pullAllSessions NETWORK ERROR: ${result.exception::class.simpleName}")
+                throw result.exception
+            }
+        }
+    }
+
+    private suspend fun mergeServerSessions(serverSessions: List<PomodoroSessionDto>) {
+        var inserted = 0
+        val now = System.currentTimeMillis()
+        for (dto in serverSessions) {
+            if (dto.id.isEmpty()) continue
+            val existing = sessionDao.getSessionById(dto.id)
+            if (existing == null) {
+                val entity = dto.toEntity()
+                sessionDao.insertIfNotExists(entity)
+                inserted++
+            }
+            // If exists locally, keep local version (don't overwrite)
+        }
+        println("[$TAG]mergeServerSessions: inserted=$inserted")
+    }
+
+    // ── Daily Stats Sync ──
+
+    private suspend fun syncDailyStats() {
+        try {
+            // Pull all stats from server for the last 365 days
+            val to = LocalDate.now(ZoneOffset.UTC)
+            val from = to.minusDays(365)
+            val fromStr = from.format(DateTimeFormatter.ISO_LOCAL_DATE)
+            val toStr = to.format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+            when (val result = apiClient.getStats(fromStr, toStr)) {
+                is NetworkResult.Success -> {
+                    val serverStats = result.data
+                    println("[$TAG]syncDailyStats: server returned ${serverStats.size} stats")
+                    mergeServerStats(serverStats)
+                }
+                is NetworkResult.Error -> {
+                    println("[$TAG]syncDailyStats ERROR: ${result.code} ${result.message}")
+                    if (result.code == 401) throw AuthenticationException("syncDailyStats: 401 Unauthorized")
+                    // Non-fatal for stats
+                    Log.w(TAG, "syncDailyStats failed: ${result.code} ${result.message}")
+                }
+                is NetworkResult.NetworkError -> {
+                    Log.w(TAG, "syncDailyStats network error: ${result.exception.message}")
+                }
+            }
+        } catch (e: AuthenticationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "syncDailyStats failed: ${e.message}")
+        }
+    }
+
+    private suspend fun mergeServerStats(serverStats: List<FocusStatsDto>) {
+        var upserted = 0
+        for (dto in serverStats) {
+            if (dto.date.isEmpty()) continue
+            val date = try {
+                LocalDate.parse(dto.date.substringBefore("T"), DateTimeFormatter.ISO_LOCAL_DATE)
+            } catch (e: Exception) {
+                Log.w(TAG, "Could not parse stats date: ${dto.date}")
+                continue
+            }
+            val startOfDayMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+
+            val existing = dailyStatsDao.getStatsForDate(startOfDayMillis)
+            if (existing == null || existing.sessionsCompleted == 0) {
+                // Only upsert if we don't have local data for this date
+                val pomodoroMinutes = dto.pomodoroDuration / 60
+                val flowtimeMinutes = dto.flowtimeSeconds / 60
+                val timeblockMinutes = dto.timeblockSeconds / 60
+                val stopwatchMinutes = dto.stopwatchSeconds / 60
+                val totalMinutes = pomodoroMinutes + flowtimeMinutes + timeblockMinutes + stopwatchMinutes
+
+                dailyStatsDao.upsert(DailyStatsEntity(
+                    date = startOfDayMillis,
+                    totalMinutes = totalMinutes,
+                    sessionsCompleted = dto.count,
+                    tasksCompleted = 0, // Not tracked by backend stats
+                    longestSessionMinutes = 0, // Not tracked by backend stats
+                    pomodoroMinutes = pomodoroMinutes,
+                    flowMinutes = flowtimeMinutes,
+                    blocksMinutes = timeblockMinutes,
+                    stopwatchMinutes = stopwatchMinutes,
+                ))
+                upserted++
+            }
+        }
+        println("[$TAG]mergeServerStats: upserted=$upserted")
+    }
+
+    // ── DTO Converters ──
+
+    private fun FocusSessionEntity.toDto(userId: String, serverTaskId: Int?) = PomodoroSessionDto(
+        id = id,
+        userId = userId,
+        taskId = serverTaskId,
+        startedAt = startTime.toRfc3339(),
+        endedAt = endTime.let { if (it > 0L) it.toRfc3339() else null },
+        mode = mapMode(mode),
+        phase = phase ?: "work",
+        durationSeconds = (durationMillis / 1000).toInt(),
+        elapsedSeconds = (durationMillis / 1000).toInt(),
+        wasCompleted = wasCompleted,
+        interruptions = interruptions,
+        pauseCount = pauseCount,
+        totalPauseSeconds = (totalPauseMillis / 1000).toInt(),
+        pomodoroNumber = pomodoroNumber,
+        satisfactionRating = satisfactionRating,
+        journalNote = journalNote,
+        createdAt = (createdAt ?: startTime).toRfc3339(),
+        updatedAt = (createdAt ?: startTime).toRfc3339(),
+    )
+
+    private fun mapMode(localMode: String): String = when (localMode.lowercase()) {
+        "pomodoro" -> "pomodoro"
+        "flowtime", "flow" -> "flowtime"
+        "timeblock", "time block", "timeblocking" -> "timeblock"
+        "stopwatch" -> "stopwatch"
+        else -> "pomodoro"
+    }
+
+    private fun mapPhase(serverPhase: String): String = when (serverPhase.lowercase()) {
+        "work" -> "Work"
+        "short_break" -> "Short Break"
+        "long_break" -> "Long Break"
+        "flow" -> "Flow"
+        "break" -> "Break"
+        "check_in" -> "Check In"
+        "freeform" -> "Freeform"
+        else -> serverPhase
+    }
+
+    private fun mapModeFromServer(serverMode: String): String = when (serverMode.lowercase()) {
+        "pomodoro" -> "Pomodoro"
+        "flowtime" -> "Flowtime"
+        "timeblock" -> "TimeBlock"
+        "stopwatch" -> "Stopwatch"
+        else -> "Pomodoro"
+    }
+
+    private fun PomodoroSessionDto.toEntity() = FocusSessionEntity(
+        id = id,
+        mode = mapModeFromServer(mode),
+        startTime = parseRfc3339(startedAt),
+        endTime = if (endedAt != null) parseRfc3339(endedAt) else parseRfc3339(startedAt) + (durationSeconds * 1000L),
+        durationMillis = durationSeconds * 1000L,
+        linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
+        phase = mapPhase(phase),
+        createdAt = parseRfc3339(createdAt),
+        wasCompleted = wasCompleted,
+        interruptions = 0,
+        pauseCount = pauseCount,
+        totalPauseMillis = totalPauseSeconds * 1000L,
+        pomodoroNumber = pomodoroNumber,
+        journalNote = journalNote,
+        satisfactionRating = satisfactionRating,
+        isDirty = false,
+        syncedAt = System.currentTimeMillis(),
+    )
 
     private fun TaskEntity.toDto(subtasks: List<SubtaskEntity> = emptyList()) = TaskDto(
         id = serverId ?: 0,
