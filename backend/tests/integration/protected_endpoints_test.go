@@ -18,6 +18,7 @@ import (
 	"pepinillo/backend/internal/adapters/handlers"
 	"pepinillo/backend/internal/adapters/middleware"
 	"pepinillo/backend/internal/domain"
+	"pepinillo/backend/internal/ports"
 	"pepinillo/backend/internal/services"
 )
 
@@ -66,6 +67,9 @@ func (r *integrationTaskRepo) IncrementFocusTime(_ context.Context, _ int, _ str
 }
 func (r *integrationTaskRepo) SetActiveSession(_ context.Context, _ int, _ *string) error {
 	return nil
+}
+func (r *integrationTaskRepo) ListByUserPaginated(_ context.Context, _ string, _ *ports.PaginationCursor, _ int) ([]domain.Task, error) {
+	return nil, nil
 }
 
 func makeAccessToken(t *testing.T, userID, email string) string {
