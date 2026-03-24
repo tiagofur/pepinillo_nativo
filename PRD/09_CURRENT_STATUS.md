@@ -1,133 +1,137 @@
-# Estado Actual del Proyecto — Pepinillo
+# Pepinillo — Current Implementation Status
 
-**Fecha:** Marzo 2026
-**Versión:** 1.0
-
----
-
-## 1. Estado General
-
-| Plataforma | Estado | Archivos | Lineas aprox | Build |
-|------------|--------|----------|-------------|-------|
-| iOS (iPhone) | Fases 1-3 completas (todos los P0 + P1) | ~143 Swift | ~30K | Requiere setup Xcode |
-| watchOS | Implementado (timer, tasks, dashboard, enhanced Smart Stack widgets) | Incluido en iOS | Incluido | Requiere setup Xcode |
-| Android (phone) | Sprints 1-4 completos (Foundation + Ecosystem + Polish) | ~97 Kotlin | ~20K | BUILD SUCCESSFUL |
-| Wear OS | Implementado (timer, tasks, stats, tile, complication) | ~18 Kotlin | ~5K | BUILD SUCCESSFUL |
-| Backend (Go) | API REST completa (no desplegado) | ~50 Go | ~8K | Funcional local |
+**Date:** 2026-03-24  
+**Version:** 1.0  
+**Status:** Active Development  
+**Last Updated:** 2026-03-24  
+**Update Cadence:** Per-sprint
 
 ---
 
-## 2. iOS — Implementado
+## 1. General Status
 
-### Motor de Enfoque ✅
-- **FocusEngine** (Swift Actor) con 4 estrategias: Pomodoro, Flowtime, TimeBlock, Stopwatch
-- Strategy pattern via `FocusModeProtocol` — los 4 modos comparten ~80% del codigo
-- Session journaling (registro detallado de cada sesion)
-- Task linking (vincular tarea activa a sesion de enfoque)
-- Soundscape picker integrado en la vista de enfoque
-- Mode Intelligence banner (sugiere modo optimo basado en historial)
-- Breaks ADHD-friendly (configurable por modo)
+| Platform | Status | Files | Lines Approx | Build |
+|----------|--------|-------|-------------|-------|
+| iOS (iPhone) | Phases 1-3 complete (all P0 + P1) | ~143 Swift | ~30K | Requires Xcode setup |
+| watchOS | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included | Requires Xcode setup |
+| Android (phone) | Sprints 1-4 complete (Foundation + Ecosystem + Polish) | ~97 Kotlin | ~20K | BUILD SUCCESSFUL |
+| Wear OS | Implemented (timer, tasks, stats, tile, complication) | ~18 Kotlin | ~5K | BUILD SUCCESSFUL |
+| Backend (Go) | Complete REST API (not deployed) | ~50 Go | ~8K | Functional locally |
 
-### Tareas ✅
-- CRUD completo con drag-to-reorder
-- Subtasks (sub-tareas dentro de cada tarea)
-- Prioridad + energy levels (deep/shallow/admin)
-- Tareas recurrentes (formato iCalendar RRULE: diaria, semanal, mensual, personalizada)
-- Pomodoros estimados y completados por tarea
-- Import desde Apple Reminders (one-way, via EventKit)
+---
+
+## 2. iOS — Implemented
+
+### Focus Engine ✅
+- **FocusEngine** (Swift Actor) with 4 strategies: Pomodoro, Flowtime, TimeBlock, Stopwatch
+- Strategy pattern via `FocusModeProtocol` — all 4 modes share ~80% of code
+- Session journaling (detailed record per session)
+- Task linking (link active task to focus session)
+- Soundscape picker integrated in focus view
+- Mode Intelligence banner (suggests optimal mode based on history)
+- ADHD-friendly breaks (configurable per mode)
+
+### Tasks ✅
+- Full CRUD with drag-to-reorder
+- Subtasks (nested tasks)
+- Priority + energy levels (deep/shallow/admin)
+- Recurring tasks (iCalendar RRULE format: daily, weekly, monthly, custom)
+- Estimated and completed pomodoros per task
+- Import from Apple Reminders (one-way, via EventKit)
 
 ### Analytics ✅
-- Vistas de 7 dias, 30 dias y 1 anio
-- Breakdown por modo de enfoque
-- Achievements / logros (6 tipos)
-- Weekly Review (comparativa semana actual vs anterior, tendencias, modo dominante)
-- Monthly Review (revision mensual con metricas agregadas)
-- AI Reports (Apple Foundation Models + fallback a template cuando el modelo no esta disponible)
-- Drill-down de analytics por tarea individual
+- 7-day, 30-day, and 1-year views
+- Breakdown by focus mode
+- Achievements (6 types)
+- Weekly Review (current week vs. previous week comparison, trends, dominant mode)
+- Monthly Review (monthly review with aggregated metrics)
+- AI Reports (Apple Foundation Models + template fallback when model unavailable)
+- Per-task analytics drill-down
 
-### Ecosistema Apple ✅
-- **watchOS app:** timer con 4 modos, lista de tareas, dashboard, enhanced Smart Stack widgets (rectangular with live countdown + phase + linked task, circular with actual progress, corner with live countdown), smart relevance scoring (100 active / 10 idle), 5-min refresh when active, Tasks complication (accessoryRectangular, accessoryCircular, accessoryCorner)
-- **Watch-Phone connectivity:** sync bidireccional de estado via WatchConnectivity
-- **Widgets:** Home Screen (S/M/L) + Lock Screen, todos mode-aware
-- **Live Activity + Dynamic Island:** 4 UIs distintas segun el modo activo
-- **Siri / App Intents:** comandos multi-modo en 3 idiomas (EN, ES, PT)
-- **Control Center widget:** toggle rapido de sesion (iOS 18+)
-- **Spotlight indexing:** tareas indexadas para busqueda del sistema
+### Apple Ecosystem ✅
+- **watchOS app:** timer with 4 modes, task list, dashboard, enhanced Smart Stack widgets (rectangular with live countdown + phase + linked task, circular with actual progress, corner with live countdown), smart relevance scoring (100 active / 10 idle), 5-min refresh when active, Tasks complication (accessoryRectangular, accessoryCircular, accessoryCorner)
+- **Watch-Phone connectivity:** bidirectional state sync via WatchConnectivity
+- **Widgets:** Home Screen (S/M/L) + Lock Screen, all mode-aware
+- **Live Activity + Dynamic Island:** 4 distinct UIs per active mode
+- **Siri / App Intents:** multi-mode commands in 3 languages (EN, ES, PT)
+- **Control Center widget:** quick toggle for session (iOS 18+)
+- **Spotlight indexing:** tasks indexed for system search
 
-### Integraciones ✅
-- **Apple Health:** Mindful Minutes (registra sesiones como `HKCategorySample.mindfulSession`)
-- **Apple Focus Modes:** `FocusFilterIntent` para activar/desactivar DND automaticamente
-- **Apple Reminders import:** importacion one-way via EventKit
-- **Sign in with Apple:** autenticacion nativa
-- **CloudKit sync:** sincronizacion transparente via iCloud
+### Integrations ✅
+- **Apple Health:** Mindful Minutes (logs sessions as `HKCategorySample.mindfulSession`)
+- **Apple Focus Modes:** `FocusFilterIntent` to auto-activate/deactivate DND
+- **Apple Reminders import:** one-way import via EventKit
+- **Sign in with Apple:** native authentication
+- **CloudKit sync:** transparent sync via iCloud
 
-### Diseno ✅
-- 4 temas nombrados (Classic, Forest, Ocean, Sunset) + Liquid Glass
-- **Theme picker:** horizontal scroll cards con preview
+### Design ✅
+- 4 named themes (Classic, Forest, Ocean, Sunset) + Liquid Glass
+- **Theme picker:** horizontal scroll cards with preview
 - **Appearance selector:** Light / Dark / System
-- **Focus mode colors:** colores consistentes por modo (Pomodoro=rojo, TimeBlock=morado, Chrono=verde)
-- **PRO gating:** Forest, Ocean, Sunset requieren suscripcion PRO
-- Glassmorphism en componentes clave
-- Haptic feedback contextual
-- Soporte Reduce Motion (accesibilidad)
-- 3 idiomas: Ingles, Espanol, Portugues
+- **Focus mode colors:** consistent colors per mode (Pomodoro=red, TimeBlock=purple, Chrono=green)
+- **PRO gating:** Forest, Ocean, Sunset require PRO subscription
+- Glassmorphism in key components
+- Contextual haptic feedback
+- Reduce Motion support (accessibility)
+- 3 languages: English, Spanish, Portuguese
 
 ### Billing ✅
 - **RevenueCat iOS:** Fully configured
-  - SDK v5+ (wrapping StoreKit 2) con 3 productos (monthly, annual, lifetime)
+  - SDK v5+ (wrapping StoreKit 2) with 3 products (monthly, annual, lifetime)
   - iOS Public API Key: `appl_xnChlVXXtUFhusIfJyNrNDcMGLj` (configured in code)
   - Entitlement: `pro` via RevenueCat Offerings/Packages
   - User identification integrated with Sign in with Apple flow
   - Grace period support via RevenueCat entitlements
-  - Paywall implementado
-- **RevenueCat Backend:** Secret API key created
+  - Paywall implemented
+### RevenueCat Backend:** Secret API key configured
   - Secret API Key (V2): `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (label: "Pepinillo Backend")
-  - Environment variable: `REVENUECAT_SECRET_KEY` (loaded in `backend/internal/config/config.go`)
-  - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented)
-  - Webhook URL pending deployment: `https://{YOUR_DOMAIN}/api/v1/webhooks/revenuecat`
+  - Environment variable: `REVENUECAT_SECRET_KEY` (loaded via `backend/internal/config/config.go`)
+  - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented and tested)
+  - Webhook URL (pending deployment): `https://{YOUR_DOMAIN}/api/v1/webhooks/revenuecat`
+  - **Authoritative Billing Endpoint:** `POST /api/v1/billing/verify` (use instead of legacy `POST /billing/verify-receipt`)
 - **RevenueCat Dashboard:** Products and entitlements
   - iOS products imported (monthly, annual, lifetime)
   - Entitlements linked (premium/pro)
   - S2S notifications configured
 
-### Pendiente iOS
+### Pending iOS
 
-| Item | Prioridad | Notas |
-|------|-----------|-------|
-| Feature gating enforcement | P0 | Analytics, sync, widgets, themes no estan realmente bloqueados para usuarios free |
-| Actualizacion de precios | P1 | Cambiar de $2.99/$14.99/$29.99 a $3.99/$24.99/$49.99 |
-| Setup Xcode (no-codigo) | P0 | App Group, CloudKit container, StoreKit config, targets, SPM, Info.plist, audio assets, localizacion |
-| macOS target | P2 | Contemplado en roadmap pero no implementado |
+| Item | Priority | Notes |
+|------|----------|-------|
+| Feature gating enforcement | P0 | Analytics, sync, widgets, themes are NOT actually blocked for free users |
+| Price update to $3.99/$24.99/$49.99 | P0 | Update via RevenueCat Offerings (PRIORITY) |
+| Xcode setup (non-code) | P0 | App Group, CloudKit container, StoreKit config, targets, SPM, Info.plist, audio assets, localization |
+| macOS target | P2 | Contemplated in roadmap but not implemented |
 | iPad layouts | P2 | NavigationSplitView, Stage Manager, keyboard shortcuts |
 
 ---
 
-## 3. Android — Implementado
+## 3. Android — Implemented
 
-### Motor de Enfoque ✅
-- **FocusEngine** (`@Singleton`, basado en coroutines + StateFlow)
-- 4 modos con estrategias: Pomodoro, Flowtime, TimeBlock, Stopwatch
+### Focus Engine ✅
+- **FocusEngine** (`@Singleton`, based on coroutines + StateFlow)
+- 4 modes with strategies: Pomodoro, Flowtime, TimeBlock, Stopwatch
 - Foreground Service (`START_STICKY`, `FOREGROUND_SERVICE_SPECIAL_USE`)
-- Notificacion persistente con acciones (Pause/Resume/Stop)
-- Session journaling y task linking
+- Persistent notification with actions (Pause/Resume/Stop)
+- Session journaling and task linking
 
-### Tareas ✅
-- CRUD completo con subtasks
-- Prioridad + energy levels (deep/shallow/admin)
-- Energy batching UI (agrupacion visual por nivel de energia + sugerencias por hora del dia)
-- Tareas recurrentes (generacion automatica de proxima instancia al completar)
+### Tasks ✅
+- Full CRUD with subtasks
+- Priority + energy levels (deep/shallow/admin)
+- Energy batching UI (visual grouping by energy level + hourly suggestions)
+- Recurring tasks (auto-generate next instance on completion)
 - Google Tasks import (OAuth + REST via play-services-auth)
 
 ### Analytics ✅
-- Dashboard con charts (Vico library)
-- Mode breakdown (desglose por modo de enfoque)
+- Dashboard with charts (Vico library)
+- Mode breakdown (breakdown by focus mode)
 - AI Reports (on-device + template fallback)
-- Weekly Review (comparativa semanal)
-- Monthly Review (revision mensual)
-- Achievements / logros con progreso visual
+- Weekly Review (weekly comparison)
+- Monthly Review (monthly review)
+- Achievements with visual progress
 
-### Ecosistema Android ✅
-- **Wear OS app:** timer, lista de tareas, stats, diagnosticos
+### Android Ecosystem ✅
+- **Wear OS app:** timer, task list, stats, diagnostics
 - **Wear Focus Timer Tile:** Enhanced `FocusTileService` with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1.
 - **Wear Tasks Tile:** New `TasksTileService` showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header.
 - **WearSnapshotStore extended:** Now persists linkedTaskId, linkedTaskName, completedSessions, and theme colors for tile access.
@@ -173,25 +177,25 @@
 - **Cross-platform parity:** iOS y Android ahora ambas usan RevenueCat (LOGRADO)
   - iOS utiliza RevenueCat SDK v5+ (wrapping StoreKit 2)
   - Android utiliza RevenueCat Purchases SDK v8.10.0
-  - Mismo entitlement `premium` en ambas plataformas
-- **RevenueCat Backend:** Secret API key existente
+  - Same `premium` entitlement on both platforms
+- **RevenueCat Backend:** Secret API key configured
   - Secret API Key (V2): `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (label: "Pepinillo Backend")
-  - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implementado)
+  - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented)
 - Feature gating for subtasks & recurrence implemented (PRO badges, disabled inputs for free users)
 
-### Pendiente Android
+### Pending Android
 
-| Item | Prioridad | Notas |
-|------|-----------|-------|
-| Feature gating enforcement | P0 | Subtasks & recurrence gated; other features still need gating |
-| Paywall UI completa | P0 | Pantalla de suscripcion funcional |
-| Firebase Analytics/Crashlytics | P1 | Plugins comentados, falta `google-services.json` |
+| Item | Priority | Notes |
+|------|----------|-------|
+| Feature gating enforcement | P0 | Subtasks & recurrence gated; analytics, widgets, themes still need gating |
+| Complete paywall UI | P0 | Functional subscription screen |
+| Firebase Analytics/Crashlytics | P1 | Plugins commented out, missing `google-services.json` |
 | CI/CD pipeline | P1 | GitHub Actions (build + lint + tests) |
-| Play Store listing | P1 | Screenshots, ASO, descripcion |
-| Test coverage | P1 | Solo 3 archivos de test, ~20 tests |
+| Play Store listing | P1 | Screenshots, ASO, description |
+| Test coverage | P1 | Only 3 test files, ~20 tests total |
 | Performance optimization | P2 | R8/ProGuard tuning |
 | OEM testing | P2 | Samsung, Pixel, Xiaomi, OnePlus |
-| Release keystore | P1 | Generar y guardar en vault seguro |
+| Release keystore | P1 | Generate and store in secure vault |
 
 ---
 

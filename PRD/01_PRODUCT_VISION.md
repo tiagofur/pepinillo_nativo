@@ -1,54 +1,55 @@
-# PRD Unificado: Pepinillo — Plataforma de Trabajo Profundo Multi-Plataforma
+# Pepinillo — Unified Product Document: Deep Work Platform for Multi-Platform
 
-**Version:** 1.0
-**Fecha:** 2026-03-20
-**Autor:** Tiago David + Claude Code
-**Estado:** Draft
-**Plataformas:** iOS, Android, watchOS, Wear OS
-
----
-
-## 1. Problema
-
-Los knowledge workers, estudiantes y creativos pierden un promedio de **2.1 horas por día** en cambio de contexto e interrupciones. La respuesta del mercado ha sido fragmentada:
-
-- **Timers Pomodoro** (Forest, Focus Keeper, Brain Focus) ofrecen una sola técnica rígida
-- **Gestores de tareas** (Things 3, Todoist) no integran tiempo de enfoque
-- **Apps de time-blocking** (Structured) carecen de métodos flexibles de temporizador
-
-**Ninguna app combina múltiples técnicas de enfoque + gestión de tareas + analítica profunda en una sola experiencia.** El mercado compite en precio ($2-5) con apps de una sola técnica. No existe una solución premium que ofrezca:
-
-1. **4 técnicas de enfoque** en una sola app
-2. **Task management integrado** con niveles de energía y recurrencia
-3. **Ecosistema completo** en ambas plataformas (Apple: widgets, Dynamic Island, watchOS, Siri; Android: widgets, Wear OS, Quick Settings, Google Assistant)
-4. **Analítica de modos** para descubrir qué técnica funciona mejor
-5. **Precios LATAM-first** accesibles
-
-Pepinillo comenzó como una app Flutter de Pomodoro. Si bien funcional, tenía dos limitaciones críticas: (1) estaba atada a la técnica Pomodoro como único método de enfoque, y (2) la abstracción de Flutter bloqueaba el acceso a las APIs nativas de cada plataforma que son esenciales para una experiencia premium.
-
-**La oportunidad:** Reposicionar Pepinillo de "otro timer Pomodoro más" (mercado saturado, techo de precio bajo) a **"la plataforma de trabajo profundo multi-plataforma"** — una herramienta de productividad premium que ofrece múltiples técnicas de enfoque, gestión de tareas integrada, y la integración más profunda posible con los ecosistemas Apple y Android. Esto nos mueve de competir con apps de $3.99 a competir en el tier premium de $30-60/año.
+**Version:** 1.0  
+**Last Updated:** 2026-03-24  
+**Author:** Tiago David + Claude Code  
+**Status:** Active  
+**Platforms:** iOS, Android, watchOS, Wear OS  
+**Update Cadence:** Per-feature
 
 ---
 
-## 2. Visión
+## 1. Problem
 
-> **"Pepinillo es el centro de comando para el trabajo profundo."**
+Knowledge workers, students, and creatives lose an average of **2.1 hours per day** to context switching and interruptions. The market's response has been fragmented:
+
+- **Pomodoro timers** (Forest, Focus Keeper, Brain Focus) offer a single rigid technique.
+- **Task managers** (Things 3, Todoist) don't integrate focus time.
+- **Time-blocking apps** (Structured) lack flexible timer methods.
+
+**No app combines multiple focus techniques + task management + deep analytics in one experience.** The market competes on price ($2-5) with single-technique apps. There is no premium solution that offers:
+
+1. **4 focus techniques** in one app
+2. **Integrated task management** with energy levels and recurrence
+3. **Complete ecosystem** on both platforms (Apple: widgets, Dynamic Island, watchOS, Siri; Android: widgets, Wear OS, Quick Settings, Google Assistant)
+4. **Mode-specific analytics** to discover which technique works best
+5. **LATAM-first pricing** that's accessible
+
+Pepinillo started as a Flutter Pomodoro app. While functional, it had two critical limitations: (1) it was locked to Pomodoro as the only focus method, and (2) Flutter's abstraction blocked access to native platform APIs that are essential for a premium experience.
+
+**The opportunity:** Reposition Pepinillo from "another Pomodoro timer" (saturated market, low price ceiling) to **"the multi-platform deep work platform"** — a premium productivity tool that offers multiple focus techniques, integrated task management, and the deepest possible integration with Apple and Android ecosystems. This moves us from competing with $3.99 apps to the premium tier of $30-60/year.
+
+---
+
+## 2. Vision
+
+> **"Pepinillo is your command center for deep work."**
 >
-> Una app donde planificas en qué trabajar, eliges cómo enfocarte, rastreas tu progreso y construyes hábitos de productividad duraderos — todo integrado de forma nativa en tus dispositivos Apple y Android.
+> An app where you plan what to work on, choose how to focus, track your progress, and build lasting productivity habits — all integrated natively into your Apple and Android devices.
 
-El nombre "Pepinillo" (pickle/gherkin) es un contraste juguetón con la seriedad del trabajo profundo — memorable, accesible y distintivo en un mercado lleno de nombres genéricos como "Focus Timer Pro" y "Session."
+The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness of deep work — memorable, accessible, and distinctive in a market full of generic names like "Focus Timer Pro" and "Session."
 
-### Disponibilidad
+### Platform Availability
 
-| Plataforma | Stack Nativo | Estado |
-|------------|-------------|--------|
-| **iOS (iPhone)** | Swift + TCA + SwiftData | En desarrollo |
-| **Android (Phone)** | Kotlin + MVI (Circuit) + Room | En desarrollo |
-| **watchOS** | SwiftUI nativo | En desarrollo |
-| **Wear OS** | Jetpack Compose | En desarrollo |
-| **iPad** | SwiftUI (NavigationSplitView) | Planificado |
-| **macOS** | SwiftUI nativo | Planificado |
-| **Tablets Android** | Jetpack Compose (adaptive layouts) | Planificado |
+| Platform | Native Stack | Status |
+|----------|------------|--------|
+| **iOS (iPhone)** | Swift + TCA + SwiftData | In Development |
+| **Android (Phone)** | Kotlin + MVI (Circuit) + Room | In Development |
+| **watchOS** | SwiftUI native | In Development |
+| **Wear OS** | Jetpack Compose | In Development |
+| **iPad** | SwiftUI (NavigationSplitView) | Planned |
+| **macOS** | SwiftUI native | Planned |
+| **Android Tablets** | Jetpack Compose (adaptive layouts) | Planned |
 
 ---
 

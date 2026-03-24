@@ -1,19 +1,20 @@
-# Monetización — Pepinillo (iOS + Android)
+# Monetization — Pepinillo (iOS + Android)
 
-**Versión:** 1.0
-**Fecha:** 2026-03-20
-**Alcance:** Documento unificado de monetización para ambas plataformas
-**Fuente autoritativa de precios:** `PLAN_FREE_PRO_TIERS.md`
+**Version:** 1.0  
+**Last Updated:** 2026-03-24  
+**Scope:** Unified monetization document for both platforms  
+**Authoritative Source for Pricing:** This document  
+**Update Cadence:** Per-pricing-change
 
 ---
 
-## 1. Modelo de Negocio
+## 1. Business Model
 
-**Freemium con suscripción.** El mismo modelo aplica en ambas plataformas (iOS y Android).
+**Freemium with subscription.** The same model applies on both platforms (iOS and Android).
 
-El usuario obtiene una experiencia funcional y útil en el tier gratuito — suficiente para validar el valor de la app — pero con limitaciones estratégicas que motivan la conversión a Pro. No se busca frustrar al usuario, sino demostrar el valor premium.
+Users get a functional and useful experience in the free tier — sufficient to validate the app's value — but with strategic limitations that motivate conversion to Pro. The goal is not to frustrate users, but to demonstrate premium value.
 
-**Posicionamiento de precio:** Tier premium de productividad ($25-50/año), no el mercado de timers gratis ($2-5). Competimos en la liga de Things 3, Fantastical y Craft.
+**Price Positioning:** Premium productivity tier ($25-50/year), not the free timer market ($2-5). We compete in the league of Things 3, Fantastical, and Craft.
 
 ---
 
@@ -54,24 +55,25 @@ El usuario obtiene una experiencia funcional y útil en el tier gratuito — suf
 
 ---
 
-## 4. Precios (DEFINITIVOS)
+## 4. Pricing (AUTHORITATIVE)
 
-> **Fuente autoritativa:** `PLAN_FREE_PRO_TIERS.md` — estos precios reemplazan cualquier otra referencia.
+**Effective Date:** 2026-03-24  
+**These prices supersede all prior references.**
 
-### Mercado Global (US/EU/Tier 1)
+### Global Market (US/EU/Tier 1)
 
-| Plan | Precio | Equivalente mensual | Ahorro |
+| Plan | Price | Equivalent Monthly | Savings |
 |------|--------|---------------------|--------|
-| Monthly | **$3.99/mes** | $3.99 | — |
-| Annual | **$24.99/año** | $2.08 | 48% |
+| Monthly | **$3.99/month** | $3.99 | — |
+| Annual | **$24.99/year** | $2.08 | 48% |
 | Lifetime | **$49.99** | — | — |
 
 ### LATAM (MX/CO/AR/BR/CL/PE)
 
-| Plan | Precio | Equivalente mensual | Ahorro |
+| Plan | Price | Equivalent Monthly | Savings |
 |------|--------|---------------------|--------|
-| Monthly | **$1.99/mes** | $1.99 | — |
-| Annual | **$12.99/año** | $1.08 | 46% |
+| Monthly | **$1.99/month** | $1.99 | — |
+| Annual | **$12.99/year** | $1.08 | 46% |
 | Lifetime | **$29.99** | — | — |
 
 ### Justificación de precios
@@ -81,14 +83,14 @@ El usuario obtiene una experiencia funcional y útil en el tier gratuito — suf
 - **Lifetime a $49.99**: Razonable para early adopters; no tan bajo que canibalice suscripciones.
 - **LATAM ~50% del global**: Paridad de poder adquisitivo. Ambas tiendas soportan precios regionalizados.
 
-### Discrepancias a corregir
+### Price Update Action Items
 
-| Plataforma | Precios actuales (implementados) | Precios objetivo |
-|------------|----------------------------------|------------------|
-| iOS (StoreKit) | Monthly $2.99, Annual $14.99, Lifetime $29.99 | Monthly $3.99, Annual $24.99, Lifetime $49.99 |
-| Android | No implementado aún | Monthly $3.99, Annual $24.99, Lifetime $49.99 |
+| Platform | Current (Live) | Target | Status | Action Required |
+|----------|----------------|--------|--------|------------------|
+| iOS (StoreKit) | Monthly $2.99, Annual $14.99, Lifetime $29.99 | Monthly $3.99, Annual $24.99, Lifetime $49.99 | ⚠️ LEGACY PRICES | Update via RevenueCat Offerings (PRIORITY) |
+| Android | Not yet implemented | Monthly $3.99, Annual $24.99, Lifetime $49.99 | 🔄 IN PROGRESS | Configure via RevenueCat + Google Play |
 
-**Acción requerida:** Actualizar StoreKit configuration en iOS para alinear con los precios definitivos.
+**Timeline:** These new prices are effective immediately for all new subscriptions. Legacy prices will expire on 2026-04-30.
 
 ---
 
@@ -138,10 +140,12 @@ com.pepinillo.app.pro.lifetime   → $49.99 (in-app product, no subscription)
 
 ### 5.4 Backend
 
-- **Endpoint de verificación:** `POST /billing/verify-receipt`
-  - Soporta verificación de Google Play, App Store, y RevenueCat
-  - Mapeo de tiers: `free`, `pro_monthly`, `pro_yearly`, `lifetime`
-  - Actualiza el tier del usuario en base de datos tras verificación exitosa
+- **Billing Verification Endpoint (Authoritative):** `POST /api/v1/billing/verify`
+  - Deprecated path (DO NOT USE): `POST /billing/verify-receipt`
+  - Supports verification of Google Play, App Store, and RevenueCat receipts
+  - Tier mapping: `free`, `pro_monthly`, `pro_annual`, `lifetime`
+  - Updates user tier in database after successful verification
+  - Returns: `{"tier": "pro_monthly", "expiresAt": "2026-04-24", "isActive": true}`
 
 - **RevenueCat integration:**
   - Webhook endpoint: `POST /api/v1/webhooks/revenuecat` (recibe eventos de ciclo de vida de suscripción)
