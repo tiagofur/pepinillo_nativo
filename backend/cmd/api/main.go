@@ -248,7 +248,7 @@ func main() {
 	preferenceRepo := postgres.NewPreferenceRepository(db)
 	preferenceService := services.NewPreferenceService(preferenceRepo, wsManager)
 
-	syncService := services.NewSyncService(focusRepo, wsManager)
+	syncService := services.NewSyncService(focusRepo, taskRepo, preferenceRepo, wsManager)
 
 	analyticsRepo := postgres.NewAnalyticsRepository(db)
 	analyticsService := services.NewAnalyticsService(analyticsRepo)

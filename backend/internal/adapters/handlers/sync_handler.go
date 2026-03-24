@@ -35,3 +35,28 @@ func (h *SyncHandler) SyncSessions(c *fiber.Ctx) error {
 		"serverTimestamp": result.ServerTimestamp,
 	})
 }
+
+func (h *SyncHandler) InitialUpload(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
+	}
+
+	var req services.InitialUploadRequest
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
+	}
+
+	result, err := h.sync.InitialUpload(c.Context(), userID, &req)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"tasks":           result.Tasks,
+		"sessions":        result.Sessions,
+		"settings":        result.Settings,
+		"serverTimestamp": result.ServerTimestamp,
+		"hasExistingData": result.HasExistingData,
+	})
+}

@@ -153,6 +153,7 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	sync := protected.Group("/sync")
 	sync.Post("/sessions", deps.Sync.SyncSessions)
+	sync.Post("/initial-upload", deps.Sync.InitialUpload)
 
 	// WebSocket endpoint: JWT validated via query param before upgrade
 	api.Use("/ws", deps.WebSocket.WebSocketUpgrade)
