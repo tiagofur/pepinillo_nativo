@@ -166,6 +166,21 @@ class PepinilloApiClient @Inject constructor(
     suspend fun initialUpload(request: InitialUploadRequest): NetworkResult<InitialUploadResponse> =
         safeCall { httpClient.post("sync/initial-upload") { jsonBody(request) }.body() }
 
+    // ── Full Sync (cursor-paginated pull) ──
+
+    suspend fun getFullSync(
+        taskCursor: String? = null,
+        sessionCursor: String? = null,
+        limit: Int = 100,
+    ): NetworkResult<FullSyncResponse> =
+        safeCall {
+            httpClient.get("sync/full") {
+                taskCursor?.let { parameter("taskCursor", it) }
+                sessionCursor?.let { parameter("sessionCursor", it) }
+                parameter("limit", limit.toString())
+            }.body()
+        }
+
     // ── Billing ──
 
     suspend fun verifyReceipt(request: VerifyReceiptRequest): NetworkResult<VerifyReceiptResponse> =

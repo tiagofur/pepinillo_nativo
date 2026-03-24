@@ -59,4 +59,7 @@ interface FocusSessionDao {
 
     @Query("SELECT COUNT(*) FROM focus_sessions")
     suspend fun getSessionCount(): Int
+
+    @Query("DELETE FROM focus_sessions")
+    suspend fun deleteAll()
 }

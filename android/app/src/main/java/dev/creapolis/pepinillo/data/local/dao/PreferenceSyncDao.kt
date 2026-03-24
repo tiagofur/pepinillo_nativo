@@ -25,4 +25,7 @@ interface PreferenceSyncDao {
 
     @Query("SELECT * FROM preference_sync_metadata WHERE key = :key")
     suspend fun getByKey(key: String): PreferenceSyncEntity?
+
+    @Query("DELETE FROM preference_sync_metadata")
+    suspend fun deleteAll()
 }

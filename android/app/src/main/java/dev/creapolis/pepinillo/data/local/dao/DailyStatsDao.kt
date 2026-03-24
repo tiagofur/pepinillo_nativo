@@ -23,4 +23,7 @@ interface DailyStatsDao {
 
     @Query("SELECT * FROM daily_stats WHERE sessions_completed > 0 ORDER BY date DESC")
     fun getAllDaysWithSessions(): Flow<List<DailyStatsEntity>>
+
+    @Query("DELETE FROM daily_stats")
+    suspend fun deleteAll()
 }

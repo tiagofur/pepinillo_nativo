@@ -18,6 +18,7 @@ import dev.creapolis.pepinillo.core.network.AuthResponse
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.data.repository.UserRepository
+import dev.creapolis.pepinillo.data.sync.InitialSyncManager
 import dev.creapolis.pepinillo.data.sync.InitialUploadResult
 import dev.creapolis.pepinillo.data.sync.SyncEngine
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +43,7 @@ class AuthViewModel @Inject constructor(
     private val authStore: AuthStore,
     private val userRepository: UserRepository,
     private val syncEngine: SyncEngine,
+    private val initialSyncManager: InitialSyncManager,
     private val identityManager: IdentityManager,
 ) : ViewModel() {
 
@@ -189,10 +191,31 @@ class AuthViewModel @Inject constructor(
     }
 
     fun onUseAccountOnly() {
-        // TODO: Phase 4 — wipe local Room data then pull from server via InitialSyncManager
-        // For now, dismiss the dialog and proceed as normal
-        _uiState.value = _uiState.value.copy(showMergeDialog = false, isAuthenticated = true)
-        viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
+        viewModelScope.launch(Dispatchers.IO) {
+            _uiState.value = _uiState.value.copy(showMergeDialog = false, isLoading = true)
+            when (val result = initialSyncManager.wipeAndSync()) {
+                is InitialSyncManager.InitialSyncResult.Success -> {
+                    Log.d(TAG, "wipeAndSync succeeded, navigating to main")
+                    _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
+                }
+                is InitialSyncManager.InitialSyncResult.NotAuthenticated -> {
+                    Log.w(TAG, "wipeAndSync returned NotAuthenticated")
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Session expired. Please log in again.",
+                    )
+                }
+                is InitialSyncManager.InitialSyncResult.Error -> {
+                    Log.e(TAG, "wipeAndSync failed", result.exception)
+                    // Non-fatal: proceed authenticated — next sync will retry
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        isAuthenticated = true,
+                        error = "Could not download account data. It will sync automatically.",
+                    )
+                }
+            }
+        }
     }
 
     fun dismissMergeDialog() {
@@ -252,7 +275,23 @@ class AuthViewModel @Inject constructor(
             }
         }
 
-        // No local data or upload succeeded without conflicts — start normal sync
+        if (!hasLocal) {
+            // Empty Room — pull everything from server first, then normal sync
+            Log.d(TAG, "No local data, running initial sync from server")
+            when (val syncResult = initialSyncManager.performInitialSync()) {
+                is InitialSyncManager.InitialSyncResult.Success -> {
+                    Log.d(TAG, "Initial sync from server succeeded")
+                }
+                is InitialSyncManager.InitialSyncResult.NotAuthenticated -> {
+                    Log.w(TAG, "Initial sync returned NotAuthenticated")
+                }
+                is InitialSyncManager.InitialSyncResult.Error -> {
+                    Log.e(TAG, "Initial sync failed, will retry on next sync", syncResult.exception)
+                }
+            }
+        }
+
+        // Start normal incremental sync
         viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
         _uiState.value = _uiState.value.copy(
             isLoading = false,

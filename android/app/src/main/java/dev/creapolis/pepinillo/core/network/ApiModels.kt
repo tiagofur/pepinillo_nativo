@@ -283,6 +283,30 @@ data class InitialUploadResponse(
     val hasExistingData: Boolean,
 )
 
+// ── Full Sync (cursor-paginated) ──
+
+@Serializable
+data class PaginatedTaskPage(
+    val items: List<TaskDto>,
+    val nextCursor: String? = null,
+    val hasMore: Boolean = false,
+)
+
+@Serializable
+data class PaginatedSessionPage(
+    val items: List<PomodoroSessionDto>,
+    val nextCursor: String? = null,
+    val hasMore: Boolean = false,
+)
+
+@Serializable
+data class FullSyncResponse(
+    val tasks: PaginatedTaskPage,
+    val sessions: PaginatedSessionPage,
+    val settings: List<PreferenceSyncItem> = emptyList(),
+    val serverTimestamp: String,
+)
+
 // ── AI Report ──
 
 @Serializable
