@@ -118,8 +118,9 @@ func (h *PomodoroHandler) InsertSession(c *fiber.Ctx) error {
 	if err := c.BodyParser(&session); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
-	// Always generate session ID server-side to prevent client from overwriting other users' sessions.
-	session.ID = uuid.NewString()
+	if session.ID == "" {
+		session.ID = uuid.NewString()
+	}
 	session.UserID = userID
 	if err := h.pomodoro.InsertSession(c.Context(), &session); err != nil {
 		return err

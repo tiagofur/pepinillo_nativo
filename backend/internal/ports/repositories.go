@@ -97,3 +97,8 @@ type AnalyticsRepository interface {
 	GetCompletionRate(ctx context.Context, userID string, periodStart, periodEnd time.Time) (*domain.CompletionRateStats, error)
 	GetStreakStats(ctx context.Context, userID string) (*domain.StreakStats, error)
 }
+
+type PreferenceRepository interface {
+	GetByUser(ctx context.Context, userID string) ([]domain.UserPreference, error)
+	UpsertBatch(ctx context.Context, prefs []domain.UserPreference) ([]domain.UserPreference, error)
+}

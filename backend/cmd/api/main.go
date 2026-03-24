@@ -245,6 +245,9 @@ func main() {
 	aiService := services.NewAIService(aiRepo, taskRepo, pomodoroRepo, llmProvider, cfg.MLServiceURL)
 	startRecurringTaskGenerator(taskService, pushService)
 
+	preferenceRepo := postgres.NewPreferenceRepository(db)
+	preferenceService := services.NewPreferenceService(preferenceRepo, wsManager)
+
 	analyticsRepo := postgres.NewAnalyticsRepository(db)
 	analyticsService := services.NewAnalyticsService(analyticsRepo)
 
@@ -261,7 +264,8 @@ func main() {
 		RevenueCat: handlers.NewRevenueCatHandler(revenuecatService),
 		Push:       handlers.NewPushHandler(pushService),
 		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret),
-		Analytics:  handlers.NewAnalyticsHandler(analyticsService),
+		Analytics:   handlers.NewAnalyticsHandler(analyticsService),
+		Preferences: handlers.NewPreferenceHandler(preferenceService),
 		JWTSecret:  cfg.JWTSecret,
 		HealthChecks: handlers.DependencyChecksFrom(
 			func(ctx context.Context) error {

@@ -29,6 +29,11 @@ type FocusStats struct {
 	DailyGoal      int       `json:"dailyGoal" gorm:"default:0;not null"`
 	DailyCompleted bool      `json:"dailyCompleted" gorm:"default:false;not null"`
 	Count          int       `json:"count" gorm:"default:0;not null"`
-	CreatedAt      time.Time `json:"createdAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
+
+	// Sync enhancement fields
+	TasksCompleted        int `json:"tasksCompleted" gorm:"default:0"`
+	LongestSessionSeconds int `json:"longestSessionSeconds" gorm:"default:0"`
+
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
