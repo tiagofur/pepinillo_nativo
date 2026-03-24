@@ -22,4 +22,9 @@ enum WatchStatsKeys {
     static let pomodoroNumber = "watch.pomodoroNumber"
     static let phaseStartDate = "watch.phaseStartDate"
     static let phaseEndDate = "watch.phaseEndDate"
+
+    // Task complication keys
+    static let tasksJSON = "watch.tasksJSON"
+    static let tasksCompletedCount = "watch.tasksCompletedCount"
+    static let tasksTotalCount = "watch.tasksTotalCount"
 }

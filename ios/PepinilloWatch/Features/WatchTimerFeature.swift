@@ -227,10 +227,10 @@ struct WatchTimerFeature {
         }
 
         // Derive phase start/end dates from displayTime and progress for live countdown
-        if isActive, let progress, progress > 0 {
+        if isActive, let progress, progress >= 0 {
             let remainingSeconds = Self.parseDisplayTime(displayTime)
             if remainingSeconds > 0 {
-                let elapsed = (remainingSeconds / (1.0 - progress)) * progress
+                let elapsed = progress > 0 ? (remainingSeconds / (1.0 - progress)) * progress : 0
                 let phaseStart = Date().addingTimeInterval(-elapsed)
                 let phaseEnd = Date().addingTimeInterval(remainingSeconds)
                 defaults.set(phaseStart.timeIntervalSince1970, forKey: WatchStatsKeys.phaseStartDate)

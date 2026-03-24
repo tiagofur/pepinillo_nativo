@@ -26,6 +26,8 @@ object WearSnapshotStore {
     private const val KEY_TIMEBLOCK_COLOR = "timeblock_color"
     private const val KEY_STOPWATCH_COLOR = "stopwatch_color"
     private const val KEY_STREAK_COLOR = "streak_color"
+    private const val KEY_PHASE_END_EPOCH_MS = "phase_end_epoch_ms"
+    private const val KEY_TOTAL_DURATION_MS = "total_duration_ms"
 
     fun bootstrap(context: Context) {
         WearDataStore.updateTimer(readTimerState(context))
@@ -48,6 +50,8 @@ object WearSnapshotStore {
             .putString(KEY_LINKED_TASK_ID, state.linkedTaskId)
             .putString(KEY_LINKED_TASK_NAME, state.linkedTaskName)
             .putInt(KEY_COMPLETED_SESSIONS, state.completedSessions)
+            .putLong(KEY_PHASE_END_EPOCH_MS, state.phaseEndEpochMs)
+            .putLong(KEY_TOTAL_DURATION_MS, state.totalDurationMs)
             .apply()
     }
 
@@ -90,6 +94,8 @@ object WearSnapshotStore {
             linkedTaskId = prefs.getString(KEY_LINKED_TASK_ID, null),
             linkedTaskName = prefs.getString(KEY_LINKED_TASK_NAME, null),
             completedSessions = prefs.getInt(KEY_COMPLETED_SESSIONS, 0),
+            phaseEndEpochMs = prefs.getLong(KEY_PHASE_END_EPOCH_MS, 0L),
+            totalDurationMs = prefs.getLong(KEY_TOTAL_DURATION_MS, 0L),
         )
     }
 

@@ -24,7 +24,8 @@ class FocusTileService : TileService() {
 
     companion object {
         private const val RESOURCES_VERSION = "1"
-        private const val REFRESH_MS = 60_000L
+        private const val REFRESH_IDLE_MS = 60_000L
+        private const val REFRESH_ACTIVE_MS = 1_000L
     }
 
     override fun onTileRequest(
@@ -52,15 +53,37 @@ class FocusTileService : TileService() {
         val stats = WearSnapshotStore.readStats(this)
         val colors = WearSnapshotStore.readThemeColors(this)
 
-        val root = when (state.status) {
-            "Running" -> buildRunningLayout(state, colors)
-            "Paused" -> buildPausedLayout(state, colors)
-            else -> buildIdleLayout(state, stats, colors)
+        // When running, recalculate displayTime and progress from the end epoch
+        val liveState = if (state.status == "Running" && state.phaseEndEpochMs > 0 && state.totalDurationMs > 0) {
+            val now = System.currentTimeMillis()
+            val remainingMs = (state.phaseEndEpochMs - now).coerceAtLeast(0L)
+            val totalSec = (remainingMs + 999) / 1000 // ceiling so we don't show 0:00 prematurely
+            val mins = totalSec / 60
+            val secs = totalSec % 60
+            val liveDisplayTime = "%02d:%02d".format(mins, secs)
+            val elapsedMs = (state.totalDurationMs - remainingMs).coerceAtLeast(0L)
+            val liveProgress = if (state.totalDurationMs > 0) {
+                (elapsedMs.toFloat() / state.totalDurationMs.toFloat()).coerceIn(0f, 1f)
+            } else {
+                state.progress
+            }
+            state.copy(displayTime = liveDisplayTime, progress = liveProgress)
+        } else {
+            state
+        }
+
+        val isActive = liveState.status == "Running"
+        val refreshMs = if (isActive) REFRESH_ACTIVE_MS else REFRESH_IDLE_MS
+
+        val root = when (liveState.status) {
+            "Running" -> buildRunningLayout(liveState, colors)
+            "Paused" -> buildPausedLayout(liveState, colors)
+            else -> buildIdleLayout(liveState, stats, colors)
         }
 
         return TileBuilders.Tile.Builder()
             .setResourcesVersion(RESOURCES_VERSION)
-            .setFreshnessIntervalMillis(REFRESH_MS)
+            .setFreshnessIntervalMillis(refreshMs)
             .setTileTimeline(
                 TimelineBuilders.Timeline.Builder()
                     .addTimelineEntry(
