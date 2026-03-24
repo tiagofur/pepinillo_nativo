@@ -53,4 +53,10 @@ interface FocusSessionDao {
 
     @Upsert
     suspend fun upsertSessions(sessions: List<FocusSessionEntity>)
+
+    @Query("SELECT * FROM focus_sessions ORDER BY created_at DESC")
+    suspend fun getAllSessionsSync(): List<FocusSessionEntity>
+
+    @Query("SELECT COUNT(*) FROM focus_sessions")
+    suspend fun getSessionCount(): Int
 }

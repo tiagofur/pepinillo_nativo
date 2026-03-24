@@ -264,6 +264,25 @@ data class PreferenceSyncResponse(
     val serverTimestamp: String, // RFC3339
 )
 
+// ── Initial Upload ──
+
+@Serializable
+data class InitialUploadRequest(
+    val deviceId: String,
+    val tasks: List<TaskDto>,
+    val sessions: List<PomodoroSessionDto>,
+    val settings: List<PreferenceSyncItem>,
+)
+
+@Serializable
+data class InitialUploadResponse(
+    val tasks: List<TaskDto>,
+    val sessions: List<PomodoroSessionDto>,
+    val settings: List<PreferenceSyncItem>,
+    val serverTimestamp: String,
+    val hasExistingData: Boolean,
+)
+
 // ── AI Report ──
 
 @Serializable

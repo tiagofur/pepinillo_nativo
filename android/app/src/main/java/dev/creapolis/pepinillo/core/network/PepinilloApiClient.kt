@@ -161,6 +161,11 @@ class PepinilloApiClient @Inject constructor(
     suspend fun upsertPreferences(request: PreferenceSyncRequest): NetworkResult<PreferenceSyncResponse> =
         safeCall { httpClient.put("preferences") { jsonBody(request) }.body() }
 
+    // ── Initial Upload ──
+
+    suspend fun initialUpload(request: InitialUploadRequest): NetworkResult<InitialUploadResponse> =
+        safeCall { httpClient.post("sync/initial-upload") { jsonBody(request) }.body() }
+
     // ── Billing ──
 
     suspend fun verifyReceipt(request: VerifyReceiptRequest): NetworkResult<VerifyReceiptResponse> =

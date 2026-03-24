@@ -10,6 +10,8 @@ import dev.creapolis.pepinillo.core.network.TaskSyncRequest
 import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import dev.creapolis.pepinillo.core.network.SessionSyncRequest
 import dev.creapolis.pepinillo.core.network.FocusStatsDto
+import dev.creapolis.pepinillo.core.network.InitialUploadRequest
+import dev.creapolis.pepinillo.core.network.PreferenceSyncItem
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
@@ -18,6 +20,9 @@ import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
+import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -33,6 +38,12 @@ sealed class SyncResult {
     data class Error(val exception: Throwable) : SyncResult()
 }
 
+sealed class InitialUploadResult {
+    data class Success(val hasExistingData: Boolean) : InitialUploadResult()
+    data object NotAuthenticated : InitialUploadResult()
+    data class Error(val exception: Exception) : InitialUploadResult()
+}
+
 class AuthenticationException(message: String) : Exception(message)
 class SyncException(message: String) : Exception(message)
 
@@ -42,6 +53,8 @@ class SyncEngine @Inject constructor(
     private val subtaskDao: SubtaskDao,
     private val sessionDao: FocusSessionDao,
     private val dailyStatsDao: DailyStatsDao,
+    private val preferenceSyncDao: PreferenceSyncDao,
+    private val userPreferencesRepository: UserPreferencesRepository,
     private val apiClient: PepinilloApiClient,
     private val authStore: AuthStore,
     private val settingsSyncEngine: SettingsSyncEngine,
@@ -87,6 +100,142 @@ class SyncEngine @Inject constructor(
             e.printStackTrace()
             SyncResult.Error(e)
         }
+    }
+
+    // ── Local Data Check ──
+
+    suspend fun hasLocalData(): Boolean {
+        val taskCount = taskDao.getTaskCount()
+        val sessionCount = sessionDao.getSessionCount()
+        return taskCount > 0 || sessionCount > 0
+    }
+
+    // ── Initial Upload ──
+
+    suspend fun initialUpload(): InitialUploadResult {
+        if (authStore.getAccessToken() == null) {
+            println("[$TAG]initialUpload: NOT AUTHENTICATED")
+            return InitialUploadResult.NotAuthenticated
+        }
+        return try {
+            println("[$TAG]initialUpload: STARTING")
+            val deviceId = authStore.getOrCreateDeviceId()
+            val userId = authStore.getUserId() ?: ""
+
+            // 1. Collect ALL local data
+            val allTasks = taskDao.getAllTasksSync()
+            val allSessions = sessionDao.getAllSessionsSync()
+            val dirtyPrefs = preferenceSyncDao.getDirtyPreferences()
+            val currentPrefs = userPreferencesRepository.preferences.first()
+
+            // 2. Convert to DTOs
+            val taskDtos = allTasks.map { task ->
+                val subtasks = subtaskDao.getSubtasksForTaskSync(task.id)
+                task.toDto(subtasks)
+            }
+            val sessionDtos = allSessions.map { session ->
+                val serverTaskId = session.linkedTaskId?.let { localId ->
+                    taskDao.getTaskById(localId)?.serverId
+                }
+                session.toDto(userId, serverTaskId)
+            }
+            val settingItems = dirtyPrefs.mapNotNull { entity ->
+                val value = readCurrentPreferenceValue(entity.key, currentPrefs) ?: return@mapNotNull null
+                PreferenceSyncItem(
+                    key = entity.key,
+                    value = value,
+                    updatedAt = entity.updatedAt.toRfc3339(),
+                )
+            }
+
+            println("[$TAG]initialUpload: sending ${taskDtos.size} tasks, ${sessionDtos.size} sessions, ${settingItems.size} settings")
+
+            // 3. POST to /sync/initial-upload
+            val request = InitialUploadRequest(
+                deviceId = deviceId,
+                tasks = taskDtos,
+                sessions = sessionDtos,
+                settings = settingItems,
+            )
+
+            when (val result = apiClient.initialUpload(request)) {
+                is NetworkResult.Success -> {
+                    val response = result.data
+                    val now = System.currentTimeMillis()
+                    println("[$TAG]initialUpload: server returned ${response.tasks.size} tasks, ${response.sessions.size} sessions, hasExisting=${response.hasExistingData}")
+
+                    // 4. Process response — upsert returned data
+                    mergeServerTasks(response.tasks)
+                    for (task in allTasks) {
+                        val serverTask = response.tasks.find { it.syncId == task.id }
+                        val serverId = serverTask?.id ?: (task.serverId ?: 0)
+                        taskDao.markSynced(task.id, now, serverId)
+                    }
+
+                    val sessionEntities = response.sessions
+                        .filter { it.id.isNotEmpty() }
+                        .map { it.toEntity() }
+                    if (sessionEntities.isNotEmpty()) {
+                        sessionDao.upsertSessions(sessionEntities)
+                    }
+                    for (session in allSessions) {
+                        sessionDao.markSynced(session.id, now)
+                    }
+
+                    // Apply returned settings
+                    settingsSyncEngine.applyServerPreferences(response.settings)
+                    preferenceSyncDao.markAllSynced()
+
+                    // Store server timestamp for future incremental sync
+                    syncMetadataStore.lastSessionSyncAt = response.serverTimestamp
+
+                    println("[$TAG]initialUpload: SUCCESS, hasExistingData=${response.hasExistingData}")
+                    InitialUploadResult.Success(hasExistingData = response.hasExistingData)
+                }
+                is NetworkResult.Error -> {
+                    println("[$TAG]initialUpload ERROR: ${result.code} ${result.message}")
+                    if (result.code == 401) return InitialUploadResult.NotAuthenticated
+                    InitialUploadResult.Error(SyncException("initialUpload failed: ${result.code} ${result.message}"))
+                }
+                is NetworkResult.NetworkError -> {
+                    println("[$TAG]initialUpload NETWORK ERROR: ${result.exception::class.simpleName}: ${result.exception.message}")
+                    InitialUploadResult.Error(Exception(result.exception))
+                }
+            }
+        } catch (e: Exception) {
+            println("[$TAG]initialUpload: FAILED - ${e::class.simpleName}: ${e.message}")
+            e.printStackTrace()
+            InitialUploadResult.Error(e)
+        }
+    }
+
+    /**
+     * Read a single preference value from the current [UserPreferences] snapshot.
+     * Mirrors [SettingsSyncEngine.readPreferenceValue] so we can build [PreferenceSyncItem]
+     * DTOs without duplicating too much code.
+     */
+    private fun readCurrentPreferenceValue(
+        key: String,
+        prefs: dev.creapolis.pepinillo.data.local.preferences.UserPreferences,
+    ): String? = when (key) {
+        "pomodoro_minutes" -> prefs.pomodoroMinutes.toString()
+        "short_break_minutes" -> prefs.shortBreakMinutes.toString()
+        "long_break_minutes" -> prefs.longBreakMinutes.toString()
+        "sessions_before_long_break" -> prefs.sessionsBeforeLongBreak.toString()
+        "time_block_minutes" -> prefs.timeBlockMinutes.toString()
+        "auto_start_breaks" -> prefs.autoStartBreaks.toString()
+        "auto_start_next_pomodoro" -> prefs.autoStartNextPomodoro.toString()
+        "sound_enabled" -> prefs.soundEnabled.toString()
+        "vibration_enabled" -> prefs.vibrationEnabled.toString()
+        "theme_mode" -> prefs.themeMode.name
+        "dynamic_color" -> prefs.dynamicColor.toString()
+        "selected_theme" -> prefs.selectedTheme
+        "keep_screen_on" -> prefs.keepScreenOn.toString()
+        "default_mode" -> prefs.defaultMode
+        "show_journal_after_session" -> prefs.showJournalAfterSession.toString()
+        "flowtime_min_minutes" -> prefs.flowtimeMinMinutes.toString()
+        "midpoint_check_in" -> prefs.midpointCheckIn.toString()
+        else -> null
     }
 
     // ── Task Sync ──

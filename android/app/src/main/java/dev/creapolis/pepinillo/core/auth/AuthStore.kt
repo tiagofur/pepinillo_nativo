@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.security.GeneralSecurityException
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -26,6 +27,7 @@ class AuthStore @Inject constructor(
         const val KEY_USER_ID = "user_id"
         const val KEY_USER_NAME = "user_name"
         const val KEY_USER_EMAIL = "user_email"
+        const val KEY_DEVICE_ID = "device_id"
     }
 
     private val prefs: SharedPreferences by lazy {
@@ -87,8 +89,21 @@ class AuthStore @Inject constructor(
     fun getUserName(): String? = safeRead { prefs.getString(KEY_USER_NAME, null) }
     fun getUserEmail(): String? = safeRead { prefs.getString(KEY_USER_EMAIL, null) }
 
+    fun getOrCreateDeviceId(): String {
+        val existing = prefs.getString(KEY_DEVICE_ID, null)
+        if (existing != null) return existing
+        val newId = UUID.randomUUID().toString()
+        prefs.edit().putString(KEY_DEVICE_ID, newId).apply()
+        return newId
+    }
+
     fun clearAll() {
+        // Preserve deviceId across logouts — it identifies this install, not this account
+        val deviceId = prefs.getString(KEY_DEVICE_ID, null)
         prefs.edit().clear().apply()
+        if (deviceId != null) {
+            prefs.edit().putString(KEY_DEVICE_ID, deviceId).apply()
+        }
         _isLoggedIn.value = false
     }
 

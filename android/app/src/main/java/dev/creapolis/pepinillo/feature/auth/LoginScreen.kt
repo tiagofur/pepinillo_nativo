@@ -43,6 +43,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.feature.auth.components.DataMergeDialog
 
 @Composable
 fun LoginScreen(
@@ -59,6 +60,14 @@ fun LoginScreen(
 
     LaunchedEffect(uiState.isAuthenticated, uiState.isGuestMode) {
         if (uiState.isAuthenticated || uiState.isGuestMode) onAuthenticated()
+    }
+
+    if (uiState.showMergeDialog) {
+        DataMergeDialog(
+            onMerge = viewModel::onMergeData,
+            onUseAccountOnly = viewModel::onUseAccountOnly,
+            onDismiss = viewModel::dismissMergeDialog,
+        )
     }
 
     Column(
