@@ -23,6 +23,7 @@ type RouteHandlers struct {
 	WebSocket    *WebSocketHandler
 	Analytics    *AnalyticsHandler
 	Preferences  *PreferenceHandler
+	Sync         *SyncHandler
 	JWTSecret    string
 	HealthChecks DependencyChecks
 }
@@ -149,6 +150,9 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	preferences := protected.Group("/preferences")
 	preferences.Get("/", deps.Preferences.List)
 	preferences.Put("/", deps.Preferences.Upsert)
+
+	sync := protected.Group("/sync")
+	sync.Post("/sessions", deps.Sync.SyncSessions)
 
 	// WebSocket endpoint: JWT validated via query param before upgrade
 	api.Use("/ws", deps.WebSocket.WebSocketUpgrade)

@@ -248,6 +248,8 @@ func main() {
 	preferenceRepo := postgres.NewPreferenceRepository(db)
 	preferenceService := services.NewPreferenceService(preferenceRepo, wsManager)
 
+	syncService := services.NewSyncService(focusRepo, wsManager)
+
 	analyticsRepo := postgres.NewAnalyticsRepository(db)
 	analyticsService := services.NewAnalyticsService(analyticsRepo)
 
@@ -266,6 +268,7 @@ func main() {
 		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret),
 		Analytics:   handlers.NewAnalyticsHandler(analyticsService),
 		Preferences: handlers.NewPreferenceHandler(preferenceService),
+		Sync:        handlers.NewSyncHandler(syncService),
 		JWTSecret:  cfg.JWTSecret,
 		HealthChecks: handlers.DependencyChecksFrom(
 			func(ctx context.Context) error {

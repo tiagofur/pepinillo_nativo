@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"pepinillo/backend/internal/domain"
 )
@@ -138,4 +139,121 @@ func (r *FocusRepository) GetTaskStats(ctx context.Context, userID string, taskI
 		return nil, err
 	}
 	return &result, nil
+}
+
+func (r *FocusRepository) UpsertSessionBatch(ctx context.Context, sessions []domain.FocusSession) error {
+	if len(sessions) == 0 {
+		return nil
+	}
+	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "id"}},
+		DoUpdates: clause.AssignmentColumns([]string{
+			"ended_at", "duration_seconds", "elapsed_seconds",
+			"was_completed", "pause_count", "total_pause_seconds",
+			"interruptions", "pomodoro_number", "satisfaction_rating",
+			"journal_note", "updated_at",
+		}),
+	}).Create(&sessions).Error
+}
+
+func (r *FocusRepository) ListSessionsUpdatedSince(ctx context.Context, userID string, since time.Time) ([]domain.FocusSession, error) {
+	var sessions []domain.FocusSession
+	err := r.db.WithContext(ctx).
+		Where("user_id = ? AND updated_at > ?", userID, since).
+		Order("updated_at ASC").
+		Find(&sessions).Error
+	if err != nil {
+		return nil, err
+	}
+	return sessions, nil
+}
+
+func (r *FocusRepository) RecomputeStatsForDates(ctx context.Context, userID string, dates []time.Time) error {
+	if len(dates) == 0 {
+		return nil
+	}
+
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		for _, date := range dates {
+			dateStr := date.Format("2006-01-02")
+
+			var result struct {
+				Count                 int
+				Pomodoros             int
+				PomodoroDuration      int
+				Breaks                int
+				BreakDuration         int
+				Rests                 int
+				RestDuration          int
+				FlowtimeSeconds       int
+				TimeblockSeconds      int
+				StopwatchSeconds      int
+				FlowtimeCount         int
+				TimeblockCount        int
+				StopwatchCount        int
+				LongestSessionSeconds int
+			}
+
+			err := tx.Raw(`
+				SELECT
+					COUNT(*) AS count,
+					COUNT(*) FILTER (WHERE mode = 'pomodoro' AND phase = 'work') AS pomodoros,
+					COALESCE(SUM(elapsed_seconds) FILTER (WHERE mode = 'pomodoro' AND phase = 'work'), 0) AS pomodoro_duration,
+					COUNT(*) FILTER (WHERE mode = 'pomodoro' AND phase IN ('short_break', 'break')) AS breaks,
+					COALESCE(SUM(elapsed_seconds) FILTER (WHERE mode = 'pomodoro' AND phase IN ('short_break', 'break')), 0) AS break_duration,
+					COUNT(*) FILTER (WHERE mode = 'pomodoro' AND phase = 'long_break') AS rests,
+					COALESCE(SUM(elapsed_seconds) FILTER (WHERE mode = 'pomodoro' AND phase = 'long_break'), 0) AS rest_duration,
+					COALESCE(SUM(elapsed_seconds) FILTER (WHERE mode = 'flowtime'), 0) AS flowtime_seconds,
+					COALESCE(SUM(elapsed_seconds) FILTER (WHERE mode = 'timeblock'), 0) AS timeblock_seconds,
+					COALESCE(SUM(elapsed_seconds) FILTER (WHERE mode = 'stopwatch'), 0) AS stopwatch_seconds,
+					COUNT(*) FILTER (WHERE mode = 'flowtime') AS flowtime_count,
+					COUNT(*) FILTER (WHERE mode = 'timeblock') AS timeblock_count,
+					COUNT(*) FILTER (WHERE mode = 'stopwatch') AS stopwatch_count,
+					COALESCE(MAX(elapsed_seconds), 0) AS longest_session_seconds
+				FROM focus_sessions
+				WHERE user_id = ? AND DATE(started_at) = ?
+			`, userID, dateStr).Scan(&result).Error
+			if err != nil {
+				return err
+			}
+
+			// Find existing stats row for this date or create new
+			var existing domain.FocusStats
+			err = tx.Where("user_id = ? AND date = ?", userID, dateStr).First(&existing).Error
+			if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+
+			stats := domain.FocusStats{
+				UserID:                userID,
+				Date:                  date,
+				Count:                 result.Count,
+				Pomodoros:             result.Pomodoros,
+				PomodoroDuration:      result.PomodoroDuration,
+				Breaks:                result.Breaks,
+				BreakDuration:         result.BreakDuration,
+				Rests:                 result.Rests,
+				RestDuration:          result.RestDuration,
+				FlowtimeSeconds:       result.FlowtimeSeconds,
+				TimeblockSeconds:      result.TimeblockSeconds,
+				StopwatchSeconds:      result.StopwatchSeconds,
+				FlowtimeCount:         result.FlowtimeCount,
+				TimeblockCount:        result.TimeblockCount,
+				StopwatchCount:        result.StopwatchCount,
+				LongestSessionSeconds: result.LongestSessionSeconds,
+			}
+
+			if existing.ID != 0 {
+				stats.ID = existing.ID
+				stats.DailyGoal = existing.DailyGoal
+				stats.DailyCompleted = existing.DailyCompleted
+				stats.TasksCompleted = existing.TasksCompleted
+			}
+
+			if err := tx.Save(&stats).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

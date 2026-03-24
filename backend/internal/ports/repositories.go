@@ -89,6 +89,11 @@ type FocusRepository interface {
 	ListSessionsByTask(ctx context.Context, userID string, taskID int) ([]domain.FocusSession, error)
 	ListSessionsByRange(ctx context.Context, userID string, from, to time.Time) ([]domain.FocusSession, error)
 	GetTaskStats(ctx context.Context, userID string, taskID int) (*domain.TaskFocusStats, error)
+
+	// Sync methods
+	UpsertSessionBatch(ctx context.Context, sessions []domain.FocusSession) error
+	ListSessionsUpdatedSince(ctx context.Context, userID string, since time.Time) ([]domain.FocusSession, error)
+	RecomputeStatsForDates(ctx context.Context, userID string, dates []time.Time) error
 }
 
 type AnalyticsRepository interface {
