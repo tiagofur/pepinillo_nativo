@@ -10,13 +10,13 @@
 
 ## Label Conventions
 
-| Label | Meaning |
-|-------|---------|
-| **[All]** | Supported on all platforms |
-| **[iOS]** | Exclusive to iOS (iPhone, iPad, Mac) |
+| Label         | Meaning                                        |
+| ------------- | ---------------------------------------------- |
+| **[All]**     | Supported on all platforms                     |
+| **[iOS]**     | Exclusive to iOS (iPhone, iPad, Mac)           |
 | **[Android]** | Exclusive to Android (Phone, Tablet, Foldable) |
-| **[watchOS]** | Exclusive to Apple Watch |
-| **[Wear OS]** | Exclusive to Wear OS |
+| **[watchOS]** | Exclusive to Apple Watch                       |
+| **[Wear OS]** | Exclusive to Wear OS                           |
 
 ---
 
@@ -28,12 +28,12 @@ Pepinillo's primary differentiator: 4 focus techniques in one app, implemented w
 
 #### Available Modes
 
-| Mode | Description | Tier |
-|------|-------------|------|
-| **Pomodoro** | Classic 25/5/15 intervals. Automatic work-break-work cycles. Tracks pomodoro count (e.g., "3 of 4"). Customizable durations. | FREE |
-| **Flowtime** | Open-ended session without fixed intervals. When fatigue hits, user takes a break. App suggests break duration based on focused time (10 min → 2 min break, 50 min → 10 min break). Ideal for creative work. | PRO |
-| **Time Block** | Fixed time block (e.g., "2 hours of writing"). Continuous countdown with optional mid-point check-ins. Tracks completed blocks per day. | PRO |
-| **Stopwatch (Chrono)** | Ascending timer without pressure. No goals or structure. Just tracks how long you work. Pause and stop. Ideal for casual/flexible segment. | FREE |
+| Mode                   | Description                                                                                                                                                                                                  | Tier |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
+| **Pomodoro**           | Classic 25/5/15 intervals. Automatic work-break-work cycles. Tracks pomodoro count (e.g., "3 of 4"). Customizable durations.                                                                                 | FREE |
+| **Flowtime**           | Open-ended session without fixed intervals. When fatigue hits, user takes a break. App suggests break duration based on focused time (10 min → 2 min break, 50 min → 10 min break). Ideal for creative work. | PRO  |
+| **Time Block**         | Fixed time block (e.g., "2 hours of writing"). Continuous countdown with optional mid-point check-ins. Tracks completed blocks per day.                                                                      | PRO  |
+| **Stopwatch (Chrono)** | Ascending timer without pressure. No goals or structure. Just tracks how long you work. Pause and stop. Ideal for casual/flexible segment.                                                                   | FREE |
 
 #### Engine Architecture
 
@@ -53,17 +53,17 @@ Integrated task system with the focus engine. Not a generic task manager: design
 
 #### Core Functionality
 
-| Feature | Tier | Details |
-|---------|------|---------|
-| Task CRUD | FREE | Create, edit, delete tasks with title and description |
-| Drag-to-reorder | FREE | Reorder tasks by priority via drag |
-| Subtasks | PRO | Nested subtasks (up to 20 per task) with individual checkboxes |
-| Priority | FREE | None / Low / Medium / High — visual indicator |
-| Energy Levels | FREE | Deep Work / Shallow Work / Admin — group similar tasks |
-| Est./Completed Pomodoros | FREE | Assign pomodoro estimate to task, track completed |
-| Link Task to Focus Session | FREE | Any focus mode can link to active task. Session records: task, mode used, duration, completion status |
-| Recurring Tasks | PRO | 5 presets: daily, weekdays, weekly, biweekly, monthly |
-| Task Limit | FREE: 3 active / PRO: unlimited | Natural upgrade motivation |
+| Feature                    | Tier                            | Details                                                                                               |
+| -------------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Task CRUD                  | FREE                            | Create, edit, delete tasks with title and description                                                 |
+| Drag-to-reorder            | FREE                            | Reorder tasks by priority via drag                                                                    |
+| Subtasks                   | PRO                             | Nested subtasks (up to 20 per task) with individual checkboxes                                        |
+| Priority                   | FREE                            | None / Low / Medium / High — visual indicator                                                         |
+| Energy Levels              | FREE                            | Deep Work / Shallow Work / Admin — group similar tasks                                                |
+| Est./Completed Pomodoros   | FREE                            | Assign pomodoro estimate to task, track completed                                                     |
+| Link Task to Focus Session | FREE                            | Any focus mode can link to active task. Session records: task, mode used, duration, completion status |
+| Recurring Tasks            | PRO                             | 5 presets: daily, weekdays, weekly, biweekly, monthly                                                 |
+| Task Limit                 | FREE: 3 active / PRO: unlimited | Natural upgrade motivation                                                                            |
 
 ---
 
@@ -73,24 +73,24 @@ Analytic dashboard with mode-specific breakdown — not just "total hours" but h
 
 #### Time Views
 
-| View | Tier |
-|------|------|
+| View                | Tier |
+| ------------------- | ---- |
 | Today + Last 7 Days | FREE |
-| 30 Days | PRO |
-| 1 Year | PRO |
+| 30 Days             | PRO  |
+| 1 Year              | PRO  |
 
 #### Dashboard Components
 
-| Component | Tier | Details |
-|-----------|------|---------|
-| Daily Summary | FREE | Focus hours, completed sessions, finished tasks |
-| Mode Breakdown | PRO | Charts showing time distribution across Pomodoro/Flowtime/TimeBlock/Chrono |
-| Most Productive Hours | PRO | Analysis by hour of day and day of week |
-| Completion Rate by Mode | PRO | Help user discover which technique works best |
-| Achievements | FREE | 6 badge types: First Session, Weekly Streak, Pomodoro Master, Deep Diver, Century Club, Early Bird |
-| Weekly Review | PRO | Weekly comparison: focus hours, mode distribution, tasks, streaks. Trend arrows vs. previous week |
-| Monthly Review | PRO | Monthly review with long-term trends and productivity patterns |
-| AI Productivity Reports | PRO | On-device AI-generated reports, no cloud data send |
+| Component               | Tier | Details                                                                                            |
+| ----------------------- | ---- | -------------------------------------------------------------------------------------------------- |
+| Daily Summary           | FREE | Focus hours, completed sessions, finished tasks                                                    |
+| Mode Breakdown          | PRO  | Charts showing time distribution across Pomodoro/Flowtime/TimeBlock/Chrono                         |
+| Most Productive Hours   | PRO  | Analysis by hour of day and day of week                                                            |
+| Completion Rate by Mode | PRO  | Help user discover which technique works best                                                      |
+| Achievements            | FREE | 6 badge types: First Session, Weekly Streak, Pomodoro Master, Deep Diver, Century Club, Early Bird |
+| Weekly Review           | PRO  | Weekly comparison: focus hours, mode distribution, tasks, streaks. Trend arrows vs. previous week  |
+| Monthly Review          | PRO  | Monthly review with long-term trends and productivity patterns                                     |
+| AI Productivity Reports | PRO  | On-device AI-generated reports, no cloud data send                                                 |
 
 #### AI Reports Implementation by Platform
 
@@ -105,13 +105,14 @@ Multiples widgets para interactuar con Pepinillo sin abrir la app.
 
 #### Widgets de Home Screen
 
-| Tamano | Contenido | Tier |
-|--------|-----------|------|
-| Small (S) | Timer activo o progreso diario | FREE |
-| Medium (M) | Timer + top 3 tareas del dia | PRO |
-| Large (L) | Timer + tareas + stats diarios por modo | PRO |
+| Tamano     | Contenido                               | Tier |
+| ---------- | --------------------------------------- | ---- |
+| Small (S)  | Timer activo o progreso diario          | FREE |
+| Medium (M) | Timer + top 3 tareas del dia            | PRO  |
+| Large (L)  | Timer + tareas + stats diarios por modo | PRO  |
 
 **Implementacion:**
+
 - **[iOS]**: WidgetKit con Timeline Provider. Soporte para interactividad (iOS 17+).
 - **[Android]**: Glance Compose (Jetpack). No RemoteViews legacy.
 
@@ -126,14 +127,15 @@ Multiples widgets para interactuar con Pepinillo sin abrir la app.
 
 ### Notificaciones [Todas]
 
-| Tipo | Detalle | Tier |
-|------|---------|------|
-| Transicion de fase | Alerta cuando termina work/break en Pomodoro, cuando se sugiere break en Flowtime | FREE |
-| Recordatorio diario | Notificacion configurable para recordar iniciar una sesion | FREE |
-| Sesion completada | Celebracion y resumen al terminar una sesion | FREE |
-| Acciones desde notificacion | Pausar/Reanudar/Detener directamente desde la notificacion sin abrir la app | FREE |
+| Tipo                        | Detalle                                                                           | Tier |
+| --------------------------- | --------------------------------------------------------------------------------- | ---- |
+| Transicion de fase          | Alerta cuando termina work/break en Pomodoro, cuando se sugiere break en Flowtime | FREE |
+| Recordatorio diario         | Notificacion configurable para recordar iniciar una sesion                        | FREE |
+| Sesion completada           | Celebracion y resumen al terminar una sesion                                      | FREE |
+| Acciones desde notificacion | Pausar/Reanudar/Detener directamente desde la notificacion sin abrir la app       | FREE |
 
 **Implementacion de acciones:**
+
 - **[Android]**: Botones de accion en la notificacion del Foreground Service (pause, skip, stop)
 - **[iOS]**: `UNNotificationAction` con categorias registradas. Acciones procesadas via `UNUserNotificationCenterDelegate`.
 
@@ -169,31 +171,31 @@ Indicador visual permanente del timer activo fuera de la app.
 
 App completa e independiente para Apple Watch:
 
-| Feature | Detalle | Tier |
-|---------|---------|------|
-| Timer | Iniciar cualquier modo de enfoque desde el reloj | PRO |
-| Seleccion de modo | Elegir entre los 4 modos de enfoque | PRO |
-| Lista de tareas | Ver tareas del dia, marcar como completadas | PRO |
-| Dashboard | Stats del dia: horas de focus, sesiones, racha | PRO |
-| Haptics | Feedback haptico al terminar sesion, transiciones de fase | PRO |
-| Complications | Enhanced: circular uses actual progress, corner uses live countdown, rectangular shows live countdown + phase + linked task. Smart Stack relevance (score 100 active, 10 idle). 5-min refresh when active (15-min idle). Live countdown works even when progress=0 (timer just started). | PRO |
-| Tasks Complication | accessoryRectangular (top tasks list), accessoryCircular (completed count), accessoryCorner (task count badge). | PRO |
-| Sync | Comunicacion bidireccional con iPhone via WatchConnectivity | PRO |
+| Feature            | Detalle                                                                                                                                                                                                                                                                                  | Tier |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| Timer              | Iniciar cualquier modo de enfoque desde el reloj                                                                                                                                                                                                                                         | PRO  |
+| Seleccion de modo  | Elegir entre los 4 modos de enfoque                                                                                                                                                                                                                                                      | PRO  |
+| Lista de tareas    | Ver tareas del dia, marcar como completadas                                                                                                                                                                                                                                              | PRO  |
+| Dashboard          | Stats del dia: horas de focus, sesiones, racha                                                                                                                                                                                                                                           | PRO  |
+| Haptics            | Feedback haptico al terminar sesion, transiciones de fase                                                                                                                                                                                                                                | PRO  |
+| Complications      | Enhanced: circular uses actual progress, corner uses live countdown, rectangular shows live countdown + phase + linked task. Smart Stack relevance (score 100 active, 10 idle). 5-min refresh when active (15-min idle). Live countdown works even when progress=0 (timer just started). | PRO  |
+| Tasks Complication | accessoryRectangular (top tasks list), accessoryCircular (completed count), accessoryCorner (task count badge).                                                                                                                                                                          | PRO  |
+| Sync               | Comunicacion bidireccional con iPhone via WatchConnectivity                                                                                                                                                                                                                              | PRO  |
 
 #### [Wear OS] — Wear OS Companion App
 
 App completa para Wear OS:
 
-| Feature | Detalle | Tier |
-|---------|---------|------|
-| Timer | Iniciar/pausar/detener sesiones de enfoque | PRO |
-| Seleccion de modo | Los 4 modos de enfoque disponibles | PRO |
-| Lista de tareas | Tareas del dia con mark-complete | PRO |
-| Stats | Resumen diario de focus time y sesiones | PRO |
-| Focus Timer Tile | Enhanced tile with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1. | PRO |
-| Tasks Tile | Second tile showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header. | PRO |
-| Complication | Datos de focus en watch face | PRO |
-| Sync | DataLayer API para comunicacion con phone | PRO |
+| Feature           | Detalle                                                                                                                                                                                                     | Tier |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| Timer             | Iniciar/pausar/detener sesiones de enfoque                                                                                                                                                                  | PRO  |
+| Seleccion de modo | Los 4 modos de enfoque disponibles                                                                                                                                                                          | PRO  |
+| Lista de tareas   | Tareas del dia con mark-complete                                                                                                                                                                            | PRO  |
+| Stats             | Resumen diario de focus time y sesiones                                                                                                                                                                     | PRO  |
+| Focus Timer Tile  | Enhanced tile with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1. | PRO  |
+| Tasks Tile        | Second tile showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header.                                                                                          | PRO  |
+| Complication      | Datos de focus en watch face                                                                                                                                                                                | PRO  |
+| Sync              | DataLayer API para comunicacion con phone                                                                                                                                                                   | PRO  |
 
 ---
 
@@ -249,12 +251,12 @@ App completa para Wear OS:
 
 #### Temas disponibles [Todas]
 
-| Tema | Tier |
-|------|------|
+| Tema              | Tier |
+| ----------------- | ---- |
 | Classic (Default) | FREE |
-| Forest | PRO |
-| Ocean | PRO |
-| Sunset | PRO |
+| Forest            | PRO  |
+| Ocean             | PRO  |
+| Sunset            | PRO  |
 
 #### Theme Picker [Todas]
 
@@ -282,13 +284,14 @@ App completa para Wear OS:
 
 3 idiomas completos en todas las plataformas:
 
-| Idioma | Codigo |
-|--------|--------|
-| Ingles | EN |
-| Espanol | ES |
-| Portugues | PT |
+| Idioma    | Codigo |
+| --------- | ------ |
+| Ingles    | EN     |
+| Espanol   | ES     |
+| Portugues | PT     |
 
 **Implementacion:**
+
 - **[iOS]**: `.xcstrings` (String Catalogs de Xcode). Frases de Siri localizadas.
 - **[Android]**: `strings.xml` con directorios `values/`, `values-es/`, `values-pt/`. App Actions localizadas.
 
@@ -300,13 +303,13 @@ App completa para Wear OS:
 
 Flujo de primera ejecucion para introducir al usuario a Pepinillo.
 
-| Pantalla | Contenido |
-|----------|-----------|
-| 1. Bienvenida | Branding, propuesta de valor |
-| 2. Modos de enfoque | Explicacion visual de los 4 modos |
-| 3. Seleccion de modo por defecto | El usuario elige su modo preferido |
-| 4. Configuracion | Duraciones, permisos (notificaciones, Health) |
-| 5. Inicio | Listo para empezar |
+| Pantalla                         | Contenido                                     |
+| -------------------------------- | --------------------------------------------- |
+| 1. Bienvenida                    | Branding, propuesta de valor                  |
+| 2. Modos de enfoque              | Explicacion visual de los 4 modos             |
+| 3. Seleccion de modo por defecto | El usuario elige su modo preferido            |
+| 4. Configuracion                 | Duraciones, permisos (notificaciones, Health) |
+| 5. Inicio                        | Listo para empezar                            |
 
 - **[Android]**: 5 pantallas con onboarding interactivo
 - **[iOS]**: 3-4 pantallas con setup de permisos incluido
@@ -337,20 +340,21 @@ Sonidos de fondo durante sesiones de enfoque. Se reproducen automaticamente al i
 
 #### Catalogo de sonidos
 
-| Soundscape | Tier |
-|------------|------|
-| Rain (Lluvia) | FREE |
-| Forest (Bosque) | FREE |
-| Cafe | FREE |
+| Soundscape                 | Tier |
+| -------------------------- | ---- |
+| Rain (Lluvia)              | FREE |
+| Forest (Bosque)            | FREE |
+| Cafe                       | FREE |
 | White Noise (Ruido Blanco) | FREE |
-| Binaural Beats | PRO |
-| Lo-fi | PRO |
-| Ocean (Oceano) | PRO |
-| Fireplace (Chimenea) | PRO |
+| Binaural Beats             | PRO  |
+| Lo-fi                      | PRO  |
+| Ocean (Oceano)             | PRO  |
+| Fireplace (Chimenea)       | PRO  |
 
 **Total:** 4 gratis, 8 con PRO.
 
 **Implementacion:**
+
 - **[iOS]**: `AVAudioEngine` con actor pattern para thread-safety. Crossfade entre reproduccion y pausa.
 - **[Android]**: Media3 / ExoPlayer para reproduccion eficiente. Audio focus management.
 
@@ -380,13 +384,13 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 
 #### Logros (Achievements)
 
-| Logro | Criterio |
-|-------|----------|
-| Primera Sesion | Completar la primera sesion de focus |
-| Racha Semanal | 7 dias consecutivos |
-| Maestro Pomodoro | 100 sesiones Pomodoro completadas |
-| Deep Diver | 10 horas acumuladas en Flowtime |
-| Club del Centenario | 100 sesiones totales |
+| Logro                   | Criterio                                |
+| ----------------------- | --------------------------------------- |
+| Primera Sesion          | Completar la primera sesion de focus    |
+| Racha Semanal           | 7 dias consecutivos                     |
+| Maestro Pomodoro        | 100 sesiones Pomodoro completadas       |
+| Deep Diver              | 10 horas acumuladas en Flowtime         |
+| Club del Centenario     | 100 sesiones totales                    |
 | Madrugador (Early Bird) | 10 sesiones iniciadas antes de las 7 AM |
 
 - Scroll horizontal en la vista de Analytics
@@ -513,11 +517,11 @@ Analisis historico de sesiones para sugerir el mejor modo de enfoque por tipo de
 
 #### Precios
 
-| Plan | Global (US/EU) | LATAM (MX/CO/AR/BR/CL/PE) |
-|------|----------------|----------------------------|
-| Monthly | $3.99/mes | $1.99/mes |
-| Annual | $24.99/ano (~$2.08/mes, 48% ahorro) | $12.99/ano (~$1.08/mes) |
-| Lifetime | $49.99 | $29.99 |
+| Plan     | Global (US/EU)                      | LATAM (MX/CO/AR/BR/CL/PE) |
+| -------- | ----------------------------------- | ------------------------- |
+| Monthly  | $3.99/mes                           | $1.99/mes                 |
+| Annual   | $24.99/ano (~$2.08/mes, 48% ahorro) | $12.99/ano (~$1.08/mes)   |
+| Lifetime | $49.99                              | $29.99                    |
 
 ---
 
@@ -527,25 +531,26 @@ Pantalla de perfil con informacion de cuenta y estadisticas de productividad.
 
 #### Informacion de cuenta
 
-| Campo | Detalle | Tier |
-|-------|---------|------|
-| Avatar | Foto de perfil del usuario (de Google/Apple o personalizada) | FREE |
-| Nombre y email | Datos basicos de la cuenta | FREE |
-| Tipo de cuenta | Free o Pro (con tier: mensual/anual/lifetime + fecha de expiracion) | FREE |
-| Cuentas vinculadas | Proveedores conectados (Google, Apple, email/password) | FREE |
+| Campo              | Detalle                                                             | Tier |
+| ------------------ | ------------------------------------------------------------------- | ---- |
+| Avatar             | Foto de perfil del usuario (de Google/Apple o personalizada)        | FREE |
+| Nombre y email     | Datos basicos de la cuenta                                          | FREE |
+| Tipo de cuenta     | Free o Pro (con tier: mensual/anual/lifetime + fecha de expiracion) | FREE |
+| Cuentas vinculadas | Proveedores conectados (Google, Apple, email/password)              | FREE |
 
 #### Estadisticas del perfil
 
-| Estadistica | Detalle | Tier |
-|-------------|---------|------|
-| Racha actual | Dias consecutivos con al menos 1 sesion | FREE |
-| Racha mas larga | Record historico de dias consecutivos | FREE |
-| Horas totales de enfoque | Suma acumulada de todas las sesiones | FREE |
-| Sesiones totales | Numero total de sesiones completadas | FREE |
-| Tareas completadas | Numero total de tareas marcadas como completadas | FREE |
-| Miembro desde | Fecha de registro de la cuenta | FREE |
+| Estadistica              | Detalle                                          | Tier |
+| ------------------------ | ------------------------------------------------ | ---- |
+| Racha actual             | Dias consecutivos con al menos 1 sesion          | FREE |
+| Racha mas larga          | Record historico de dias consecutivos            | FREE |
+| Horas totales de enfoque | Suma acumulada de todas las sesiones             | FREE |
+| Sesiones totales         | Numero total de sesiones completadas             | FREE |
+| Tareas completadas       | Numero total de tareas marcadas como completadas | FREE |
+| Miembro desde            | Fecha de registro de la cuenta                   | FREE |
 
 **Implementacion:**
+
 - **[iOS]**: Pantalla SwiftUI con datos de perfil del backend + estadisticas locales/sincronizadas
 - **[Android]**: Pantalla Compose con Circuit presenter, datos del backend via Ktor
 
@@ -557,11 +562,11 @@ Autenticacion con proveedores sociales ademas de email/password.
 
 #### Proveedores
 
-| Proveedor | Plataforma | Implementacion | Tier |
-|-----------|-----------|----------------|------|
-| Google Sign-In | **[Android]** | Credential Manager API (reemplaza play-services-auth legacy) | FREE |
-| Sign In with Apple | **[iOS]** | AuthenticationServices framework (nativo) | FREE |
-| Email / Password | **[Todas]** | JWT via backend Go (ya implementado) | FREE |
+| Proveedor          | Plataforma    | Implementacion                                               | Tier |
+| ------------------ | ------------- | ------------------------------------------------------------ | ---- |
+| Google Sign-In     | **[Android]** | Credential Manager API (reemplaza play-services-auth legacy) | FREE |
+| Sign In with Apple | **[iOS]**     | AuthenticationServices framework (nativo)                    | FREE |
+| Email / Password   | **[Todas]**   | JWT via backend Go (ya implementado)                         | FREE |
 
 #### Account Linking
 
@@ -578,20 +583,20 @@ Sincronizacion bidireccional de datos entre dispositivos via backend Go.
 
 #### Datos sincronizados
 
-| Entidad | Direccion | Resolucion de conflictos |
-|---------|-----------|--------------------------|
-| Tareas | Bidireccional | last-write-wins por `updatedAt` |
+| Entidad             | Direccion     | Resolucion de conflictos        |
+| ------------------- | ------------- | ------------------------------- |
+| Tareas              | Bidireccional | last-write-wins por `updatedAt` |
 | Sesiones de enfoque | Bidireccional | last-write-wins por `updatedAt` |
-| Estadisticas | Bidireccional | Merge aditivo |
-| Preferencias | Bidireccional | last-write-wins por `updatedAt` |
+| Estadisticas        | Bidireccional | Merge aditivo                   |
+| Preferencias        | Bidireccional | last-write-wins por `updatedAt` |
 
 #### Mecanismos de sync
 
-| Mecanismo | Uso | Detalle |
-|-----------|-----|---------|
-| WebSocket | Real-time | Notificacion instantanea de cambios entre dispositivos conectados |
-| REST API periodico | Fallback | WorkManager (Android) / BackgroundTasks (iOS) cada 15 min |
-| Dirty flags | Offline | Cambios locales se marcan como pendientes y se envian al reconectar |
+| Mecanismo          | Uso       | Detalle                                                             |
+| ------------------ | --------- | ------------------------------------------------------------------- |
+| WebSocket          | Real-time | Notificacion instantanea de cambios entre dispositivos conectados   |
+| REST API periodico | Fallback  | WorkManager (Android) / BackgroundTasks (iOS) cada 15 min           |
+| Dirty flags        | Offline   | Cambios locales se marcan como pendientes y se envian al reconectar |
 
 #### Multi-dispositivo
 
@@ -600,6 +605,7 @@ Sincronizacion bidireccional de datos entre dispositivos via backend Go.
 - Offline-first: cada dispositivo funciona independientemente, sync al reconectar
 
 **Implementacion:**
+
 - **[Android]**: SyncEngine + Room dirty flags + WorkManager (ya existe, necesita mejoras WebSocket)
 - **[iOS]**: Nuevo API client Ktor/URLSession, reemplaza CloudKit como fuente de sync principal
 
@@ -621,13 +627,13 @@ Pagar en cualquier tienda (App Store o Google Play) y obtener PRO en todas las p
 
 #### Arquitectura
 
-| Componente | Detalle |
-|------------|---------|
-| Fuente de verdad | Backend Go (no el dispositivo local) |
-| Verificacion Apple | App Store Server API v2 (server-to-server) |
-| Verificacion Google | Google Play Developer API (server-to-server) |
-| Grace period | 3 dias antes de revocar acceso tras fallo de renovacion |
-| Polling | El cliente consulta estado de suscripcion al iniciar app y periodicamente |
+| Componente          | Detalle                                                                   |
+| ------------------- | ------------------------------------------------------------------------- |
+| Fuente de verdad    | Backend Go (no el dispositivo local)                                      |
+| Verificacion Apple  | App Store Server API v2 (server-to-server)                                |
+| Verificacion Google | Google Play Developer API (server-to-server)                              |
+| Grace period        | 3 dias antes de revocar acceso tras fallo de renovacion                   |
+| Polling             | El cliente consulta estado de suscripcion al iniciar app y periodicamente |
 
 **Tier:** — (infraestructura de billing)
 
@@ -635,17 +641,17 @@ Pagar en cualquier tienda (App Store o Google Play) y obtener PRO en todas las p
 
 ## P2 — Futuro
 
-| Feature | Plataforma | Descripcion |
-|---------|-----------|-------------|
-| AI Insights Avanzados | [Todas] | Predecir ventanas productivas, sugerir programacion de tareas, detectar patrones de burnout |
-| Social Accountability | [Todas] | Sesiones de focus compartidas con un partner. CloudKit shared zones (iOS) / Backend (Android) |
-| Export CSV/PDF | [Todas] | Exportar datos de productividad en formatos estandar |
-| Apple Vision Pro | [iOS] | Entorno inmersivo de focus con SwiftUI multiplatform |
-| Handoff entre dispositivos | [iOS] | `NSUserActivity` para continuar sesion entre iPhone/iPad/Mac sin interrupciones |
-| Shortcuts Automation | [iOS] | Workflows complejos: "Cuando llegue a la biblioteca, iniciar Pomodoro" via Shortcuts |
-| Cross-platform Sync | [Todas] | Sincronizacion iOS <-> Android via backend Go compartido |
-| Pomodoro -> Flowtime auto-switch | [Todas] | Si el usuario consistentemente salta breaks de Pomodoro, sugerir cambiar a Flowtime |
-| Tablet optimizado | [Android] | Samsung tablets, split-screen productivity, layouts adaptativos para foldables |
+| Feature                          | Plataforma | Descripcion                                                                                   |
+| -------------------------------- | ---------- | --------------------------------------------------------------------------------------------- |
+| AI Insights Avanzados            | [Todas]    | Predecir ventanas productivas, sugerir programacion de tareas, detectar patrones de burnout   |
+| Social Accountability            | [Todas]    | Sesiones de focus compartidas con un partner. CloudKit shared zones (iOS) / Backend (Android) |
+| Export CSV/PDF                   | [Todas]    | Exportar datos de productividad en formatos estandar                                          |
+| Apple Vision Pro                 | [iOS]      | Entorno inmersivo de focus con SwiftUI multiplatform                                          |
+| Handoff entre dispositivos       | [iOS]      | `NSUserActivity` para continuar sesion entre iPhone/iPad/Mac sin interrupciones               |
+| Shortcuts Automation             | [iOS]      | Workflows complejos: "Cuando llegue a la biblioteca, iniciar Pomodoro" via Shortcuts          |
+| Cross-platform Sync              | [Todas]    | Sincronizacion iOS <-> Android via backend Go compartido                                      |
+| Pomodoro -> Flowtime auto-switch | [Todas]    | Si el usuario consistentemente salta breaks de Pomodoro, sugerir cambiar a Flowtime           |
+| Tablet optimizado                | [Android]  | Samsung tablets, split-screen productivity, layouts adaptativos para foldables                |
 
 ---
 
@@ -653,160 +659,160 @@ Pagar en cualquier tienda (App Store o Google Play) y obtener PRO en todas las p
 
 ### Leyenda
 
-| Simbolo | Significado |
-|---------|-------------|
-| ✅ | Implementado |
-| 🔄 | En progreso |
-| ⬜ | Pendiente |
-| ➖ | No aplica (N/A) |
+| Simbolo | Significado     |
+| ------- | --------------- |
+| ✅      | Implementado    |
+| 🔄      | En progreso     |
+| ⬜      | Pendiente       |
+| ➖      | No aplica (N/A) |
 
 ### P0 — Must-Have
 
-| Feature | iOS | Android | watchOS | Wear OS | Tier |
-|---------|-----|---------|---------|---------|------|
-| **Motor de Enfoque** | | | | | |
-| Pomodoro mode | ✅ | ✅ | ⬜ | ✅ | FREE |
-| Flowtime mode | ✅ | ✅ | ⬜ | ✅ | PRO |
-| Time Block mode | ✅ | ✅ | ⬜ | ✅ | PRO |
-| Stopwatch/Chrono mode | ✅ | ✅ | ⬜ | ✅ | FREE |
-| Strategy pattern engine | ✅ | ✅ | ⬜ | ✅ | — |
-| Background timer survival | ✅ | ✅ | ⬜ | ⬜ | FREE |
-| Pause/Resume tracking | ✅ | ✅ | ⬜ | ✅ | FREE |
-| Session journaling | ✅ | ✅ | ➖ | ➖ | FREE |
-| **Gestion de Tareas** | | | | | |
-| CRUD de tareas | ✅ | ✅ | ⬜ | ✅ | FREE |
-| Drag-to-reorder | ✅ | ✅ | ➖ | ➖ | FREE |
-| Subtareas | ✅ | ✅ | ➖ | ➖ | PRO |
-| Prioridad (none/low/med/high) | ✅ | ✅ | ➖ | ➖ | FREE |
-| Niveles de energia | ✅ | ✅ | ➖ | ➖ | FREE |
-| Pomodoros estimados/completados | ✅ | ✅ | ➖ | ➖ | FREE |
-| Vincular tarea a sesion | ✅ | ✅ | ⬜ | ⬜ | FREE |
-| Tareas recurrentes | ✅ | ✅ | ➖ | ➖ | PRO |
-| **Analytics y Dashboard** | | | | | |
-| Resumen diario (7 dias) | ✅ | ✅ | ⬜ | ✅ | FREE |
-| Vista 30 dias | ✅ | ✅ | ➖ | ➖ | PRO |
-| Vista 1 ano | ✅ | ✅ | ➖ | ➖ | PRO |
-| Desglose por modo (charts) | ✅ | ✅ | ➖ | ➖ | PRO |
-| Achievements (6 tipos) | ✅ | ✅ | ➖ | ➖ | FREE |
-| Weekly Review | ✅ | ✅ | ➖ | ➖ | PRO |
-| Monthly Review | ✅ | ✅ | ➖ | ➖ | PRO |
-| AI Productivity Reports | 🔄 | 🔄 | ➖ | ➖ | PRO |
-| **Widgets** | | | | | |
-| Home Screen — Small | ✅ | ⬜ | ➖ | ➖ | FREE |
-| Home Screen — Medium | ✅ | ⬜ | ➖ | ➖ | PRO |
-| Home Screen — Large | ✅ | ⬜ | ➖ | ➖ | PRO |
-| Lock Screen widget | ✅ | ⬜ | ➖ | ➖ | FREE |
-| **Notificaciones** | | | | | |
-| Transicion de fase | ✅ | ✅ | ✅ | ✅ | FREE |
-| Recordatorio diario | ✅ | ✅ | ➖ | ➖ | FREE |
-| Sesion completada | ✅ | ✅ | ✅ | ✅ | FREE |
-| Acciones desde notificacion | ✅ | ✅ | ➖ | ➖ | FREE |
-| **Live Activity / Notif. Persistente** | | | | | |
-| Dynamic Island + Live Activity | ✅ | ➖ | ➖ | ➖ | FREE |
-| Foreground notification con progreso | ➖ | ✅ | ➖ | ➖ | FREE |
-| **Reloj Inteligente** | | | | | |
-| Timer en reloj | ⬜ | ➖ | ⬜ | ✅ | PRO |
-| Seleccion de modo | ⬜ | ➖ | ⬜ | ✅ | PRO |
-| Lista de tareas en reloj | ⬜ | ➖ | ⬜ | ✅ | PRO |
-| Dashboard/Stats en reloj | ⬜ | ➖ | ⬜ | ✅ | PRO |
-| Complications (enhanced) | ⬜ | ➖ | ✅ | ✅ | PRO |
-| Focus Timer Tile (enhanced) | ➖ | ➖ | ➖ | ✅ | PRO |
-| Tasks Tile | ➖ | ➖ | ✅ | ✅ | PRO |
-| Haptics en reloj | ⬜ | ➖ | ⬜ | ⬜ | PRO |
-| **Asistente de Voz** | | | | | |
-| Siri Shortcuts + App Intents | ✅ | ➖ | ➖ | ➖ | FREE |
-| Google Assistant App Actions | ➖ | ⬜ | ➖ | ➖ | FREE |
-| **Sincronizacion** | | | | | |
-| CloudKit sync | ✅ | ➖ | ✅ | ➖ | PRO |
-| Backend REST API + Room sync | ➖ | 🔄 | ➖ | 🔄 | PRO |
-| **Temas y Diseno** | | | | | |
-| Classic theme | ✅ | ✅ | ✅ | ✅ | FREE |
-| Forest / Ocean / Sunset | ✅ | ✅ | ⬜ | ✅ | PRO |
-| Theme picker (horizontal scroll cards) | ✅ | ✅ | ➖ | ➖ | FREE |
-| Liquid Glass (iOS 26) | ⬜ | ➖ | ⬜ | ➖ | PRO |
-| Material You dynamic colors | ➖ | ✅ | ➖ | ✅ | FREE |
-| Light/Dark/System appearance selector | ✅ | ✅ | ✅ | ✅ | FREE |
-| Focus mode colors (red/purple/green) | ✅ | ✅ | ✅ | ✅ | FREE |
-| Theme sync phone -> watch | ➖ | ➖ | ✅ | ✅ | FREE |
-| Glassmorphism effects | ✅ | ✅ | ➖ | ➖ | FREE |
-| **Localizacion** | | | | | |
-| Ingles (EN) | ✅ | ✅ | ⬜ | ⬜ | FREE |
-| Espanol (ES) | ✅ | ✅ | ⬜ | ⬜ | FREE |
-| Portugues (PT) | ✅ | ✅ | ⬜ | ⬜ | FREE |
-| **Onboarding** | | | | | |
-| Flujo de primera ejecucion | ✅ | ✅ | ➖ | ➖ | FREE |
-| Seleccion de modo por defecto | ✅ | ✅ | ➖ | ➖ | FREE |
-| Solicitud de permisos | ✅ | ✅ | ➖ | ➖ | FREE |
-| **Soporte Offline** | | | | | |
-| Offline-first architecture | ✅ | ✅ | ⬜ | ✅ | FREE |
+| Feature                                | iOS | Android | watchOS | Wear OS | Tier |
+| -------------------------------------- | --- | ------- | ------- | ------- | ---- |
+| **Motor de Enfoque**                   |     |         |         |         |      |
+| Pomodoro mode                          | ✅  | ✅      | ⬜      | ✅      | FREE |
+| Flowtime mode                          | ✅  | ✅      | ⬜      | ✅      | PRO  |
+| Time Block mode                        | ✅  | ✅      | ⬜      | ✅      | PRO  |
+| Stopwatch/Chrono mode                  | ✅  | ✅      | ⬜      | ✅      | FREE |
+| Strategy pattern engine                | ✅  | ✅      | ⬜      | ✅      | —    |
+| Background timer survival              | ✅  | ✅      | ⬜      | ⬜      | FREE |
+| Pause/Resume tracking                  | ✅  | ✅      | ⬜      | ✅      | FREE |
+| Session journaling                     | ✅  | ✅      | ➖      | ➖      | FREE |
+| **Gestion de Tareas**                  |     |         |         |         |      |
+| CRUD de tareas                         | ✅  | ✅      | ⬜      | ✅      | FREE |
+| Drag-to-reorder                        | ✅  | ✅      | ➖      | ➖      | FREE |
+| Subtareas                              | ✅  | ✅      | ➖      | ➖      | PRO  |
+| Prioridad (none/low/med/high)          | ✅  | ✅      | ➖      | ➖      | FREE |
+| Niveles de energia                     | ✅  | ✅      | ➖      | ➖      | FREE |
+| Pomodoros estimados/completados        | ✅  | ✅      | ➖      | ➖      | FREE |
+| Vincular tarea a sesion                | ✅  | ✅      | ⬜      | ⬜      | FREE |
+| Tareas recurrentes                     | ✅  | ✅      | ➖      | ➖      | PRO  |
+| **Analytics y Dashboard**              |     |         |         |         |      |
+| Resumen diario (7 dias)                | ✅  | ✅      | ⬜      | ✅      | FREE |
+| Vista 30 dias                          | ✅  | ✅      | ➖      | ➖      | PRO  |
+| Vista 1 ano                            | ✅  | ✅      | ➖      | ➖      | PRO  |
+| Desglose por modo (charts)             | ✅  | ✅      | ➖      | ➖      | PRO  |
+| Achievements (6 tipos)                 | ✅  | ✅      | ➖      | ➖      | FREE |
+| Weekly Review                          | ✅  | ✅      | ➖      | ➖      | PRO  |
+| Monthly Review                         | ✅  | ✅      | ➖      | ➖      | PRO  |
+| AI Productivity Reports                | 🔄  | 🔄      | ➖      | ➖      | PRO  |
+| **Widgets**                            |     |         |         |         |      |
+| Home Screen — Small                    | ✅  | ⬜      | ➖      | ➖      | FREE |
+| Home Screen — Medium                   | ✅  | ⬜      | ➖      | ➖      | PRO  |
+| Home Screen — Large                    | ✅  | ⬜      | ➖      | ➖      | PRO  |
+| Lock Screen widget                     | ✅  | ⬜      | ➖      | ➖      | FREE |
+| **Notificaciones**                     |     |         |         |         |      |
+| Transicion de fase                     | ✅  | ✅      | ✅      | ✅      | FREE |
+| Recordatorio diario                    | ✅  | ✅      | ➖      | ➖      | FREE |
+| Sesion completada                      | ✅  | ✅      | ✅      | ✅      | FREE |
+| Acciones desde notificacion            | ✅  | ✅      | ➖      | ➖      | FREE |
+| **Live Activity / Notif. Persistente** |     |         |         |         |      |
+| Dynamic Island + Live Activity         | ✅  | ➖      | ➖      | ➖      | FREE |
+| Foreground notification con progreso   | ➖  | ✅      | ➖      | ➖      | FREE |
+| **Reloj Inteligente**                  |     |         |         |         |      |
+| Timer en reloj                         | ⬜  | ➖      | ⬜      | ✅      | PRO  |
+| Seleccion de modo                      | ⬜  | ➖      | ⬜      | ✅      | PRO  |
+| Lista de tareas en reloj               | ⬜  | ➖      | ⬜      | ✅      | PRO  |
+| Dashboard/Stats en reloj               | ⬜  | ➖      | ⬜      | ✅      | PRO  |
+| Complications (enhanced)               | ⬜  | ➖      | ✅      | ✅      | PRO  |
+| Focus Timer Tile (enhanced)            | ➖  | ➖      | ➖      | ✅      | PRO  |
+| Tasks Tile                             | ➖  | ➖      | ✅      | ✅      | PRO  |
+| Haptics en reloj                       | ⬜  | ➖      | ⬜      | ⬜      | PRO  |
+| **Asistente de Voz**                   |     |         |         |         |      |
+| Siri Shortcuts + App Intents           | ✅  | ➖      | ➖      | ➖      | FREE |
+| Google Assistant App Actions           | ➖  | ⬜      | ➖      | ➖      | FREE |
+| **Sincronizacion**                     |     |         |         |         |      |
+| CloudKit sync                          | ✅  | ➖      | ✅      | ➖      | PRO  |
+| Backend REST API + Room sync           | ➖  | 🔄      | ➖      | 🔄      | PRO  |
+| **Temas y Diseno**                     |     |         |         |         |      |
+| Classic theme                          | ✅  | ✅      | ✅      | ✅      | FREE |
+| Forest / Ocean / Sunset                | ✅  | ✅      | ⬜      | ✅      | PRO  |
+| Theme picker (horizontal scroll cards) | ✅  | ✅      | ➖      | ➖      | FREE |
+| Liquid Glass (iOS 26)                  | ⬜  | ➖      | ⬜      | ➖      | PRO  |
+| Material You dynamic colors            | ➖  | ✅      | ➖      | ✅      | FREE |
+| Light/Dark/System appearance selector  | ✅  | ✅      | ✅      | ✅      | FREE |
+| Focus mode colors (red/purple/green)   | ✅  | ✅      | ✅      | ✅      | FREE |
+| Theme sync phone -> watch              | ➖  | ➖      | ✅      | ✅      | FREE |
+| Glassmorphism effects                  | ✅  | ✅      | ➖      | ➖      | FREE |
+| **Localizacion**                       |     |         |         |         |      |
+| Ingles (EN)                            | ✅  | ✅      | ⬜      | ⬜      | FREE |
+| Espanol (ES)                           | ✅  | ✅      | ⬜      | ⬜      | FREE |
+| Portugues (PT)                         | ✅  | ✅      | ⬜      | ⬜      | FREE |
+| **Onboarding**                         |     |         |         |         |      |
+| Flujo de primera ejecucion             | ✅  | ✅      | ➖      | ➖      | FREE |
+| Seleccion de modo por defecto          | ✅  | ✅      | ➖      | ➖      | FREE |
+| Solicitud de permisos                  | ✅  | ✅      | ➖      | ➖      | FREE |
+| **Soporte Offline**                    |     |         |         |         |      |
+| Offline-first architecture             | ✅  | ✅      | ⬜      | ✅      | FREE |
 
 ### P1 — Nice-to-Have
 
-| Feature | iOS | Android | watchOS | Wear OS | Tier |
-|---------|-----|---------|---------|---------|------|
-| Soundscapes (4 basicos) | ✅ | ⬜ | ➖ | ➖ | FREE |
-| Soundscapes (8 total) | ✅ | ⬜ | ➖ | ➖ | PRO |
-| Mode Intelligence | ✅ | ⬜ | ➖ | ➖ | PRO |
-| Streaks (rachas) | ✅ | ✅ | ⬜ | ⬜ | FREE |
-| Streak Protection (1 skip/semana) | ⬜ | ⬜ | ➖ | ➖ | PRO |
-| Apple Health (Mindful Minutes) | ⬜ | ➖ | ➖ | ➖ | PRO |
-| Health Connect (Mindful Minutes) | ➖ | ⬜ | ➖ | ➖ | PRO |
-| Control Center widget (iOS 18+) | ✅ | ➖ | ➖ | ➖ | FREE |
-| Quick Settings Tile | ➖ | ⬜ | ➖ | ➖ | FREE |
-| Apple Reminders import | ⬜ | ➖ | ➖ | ➖ | PRO |
-| Google Tasks import | ➖ | ⬜ | ➖ | ➖ | PRO |
-| Apple Calendar integration | ✅ | ➖ | ➖ | ➖ | PRO |
-| Google Calendar integration | ➖ | ✅ | ➖ | ➖ | PRO |
-| Focus Modes (FocusFilterIntent) | ⬜ | ➖ | ➖ | ➖ | PRO |
-| DND / Focus Mode API | ➖ | ⬜ | ➖ | ➖ | PRO |
-| StoreKit 2 subscriptions | ✅ | ➖ | ➖ | ➖ | — |
-| Google Play Billing 7 | ➖ | 🔄 | ➖ | ➖ | — |
+| Feature                           | iOS | Android | watchOS | Wear OS | Tier |
+| --------------------------------- | --- | ------- | ------- | ------- | ---- |
+| Soundscapes (4 basicos)           | ✅  | ⬜      | ➖      | ➖      | FREE |
+| Soundscapes (8 total)             | ✅  | ⬜      | ➖      | ➖      | PRO  |
+| Mode Intelligence                 | ✅  | ⬜      | ➖      | ➖      | PRO  |
+| Streaks (rachas)                  | ✅  | ✅      | ⬜      | ⬜      | FREE |
+| Streak Protection (1 skip/semana) | ⬜  | ⬜      | ➖      | ➖      | PRO  |
+| Apple Health (Mindful Minutes)    | ⬜  | ➖      | ➖      | ➖      | PRO  |
+| Health Connect (Mindful Minutes)  | ➖  | ⬜      | ➖      | ➖      | PRO  |
+| Control Center widget (iOS 18+)   | ✅  | ➖      | ➖      | ➖      | FREE |
+| Quick Settings Tile               | ➖  | ⬜      | ➖      | ➖      | FREE |
+| Apple Reminders import            | ⬜  | ➖      | ➖      | ➖      | PRO  |
+| Google Tasks import               | ➖  | ⬜      | ➖      | ➖      | PRO  |
+| Apple Calendar integration        | ✅  | ➖      | ➖      | ➖      | PRO  |
+| Google Calendar integration       | ➖  | ✅      | ➖      | ➖      | PRO  |
+| Focus Modes (FocusFilterIntent)   | ⬜  | ➖      | ➖      | ➖      | PRO  |
+| DND / Focus Mode API              | ➖  | ⬜      | ➖      | ➖      | PRO  |
+| StoreKit 2 subscriptions          | ✅  | ➖      | ➖      | ➖      | —    |
+| Google Play Billing 7             | ➖  | 🔄      | ➖      | ➖      | —    |
 
 ### P2 — Futuro
 
-| Feature | iOS | Android | watchOS | Wear OS | Tier |
-|---------|-----|---------|---------|---------|------|
-| AI Insights avanzados | ⬜ | ⬜ | ➖ | ➖ | PRO |
-| Social Accountability | ⬜ | ⬜ | ➖ | ➖ | PRO |
-| Export CSV/PDF | ⬜ | ⬜ | ➖ | ➖ | PRO |
-| Apple Vision Pro | ⬜ | ➖ | ➖ | ➖ | PRO |
-| Handoff entre dispositivos | ⬜ | ➖ | ⬜ | ➖ | PRO |
-| Shortcuts automation | ⬜ | ➖ | ➖ | ➖ | PRO |
-| Cross-platform sync (iOS <-> Android) | ⬜ | ⬜ | ⬜ | ⬜ | PRO |
-| Pomodoro -> Flowtime auto-switch | ⬜ | ⬜ | ➖ | ➖ | PRO |
-| Tablet/Foldable optimizado | ➖ | ⬜ | ➖ | ➖ | FREE |
+| Feature                               | iOS | Android | watchOS | Wear OS | Tier |
+| ------------------------------------- | --- | ------- | ------- | ------- | ---- |
+| AI Insights avanzados                 | ⬜  | ⬜      | ➖      | ➖      | PRO  |
+| Social Accountability                 | ⬜  | ⬜      | ➖      | ➖      | PRO  |
+| Export CSV/PDF                        | ⬜  | ⬜      | ➖      | ➖      | PRO  |
+| Apple Vision Pro                      | ⬜  | ➖      | ➖      | ➖      | PRO  |
+| Handoff entre dispositivos            | ⬜  | ➖      | ⬜      | ➖      | PRO  |
+| Shortcuts automation                  | ⬜  | ➖      | ➖      | ➖      | PRO  |
+| Cross-platform sync (iOS <-> Android) | ⬜  | ⬜      | ⬜      | ⬜      | PRO  |
+| Pomodoro -> Flowtime auto-switch      | ⬜  | ⬜      | ➖      | ➖      | PRO  |
+| Tablet/Foldable optimizado            | ➖  | ⬜      | ➖      | ➖      | FREE |
 
 ### Planificadas — Backend y Cuentas
 
-| Feature | iOS | Android | watchOS | Wear OS | Tier |
-|---------|-----|---------|---------|---------|------|
-| **Perfil de Usuario** | | | | | |
-| Pantalla de perfil (avatar, nombre, tipo cuenta) | ⬜ | ⬜ | ➖ | ➖ | FREE |
-| Estadisticas del perfil (streak, horas, sesiones) | ⬜ | ⬜ | ➖ | ➖ | FREE |
-| Cuentas vinculadas (Google/Apple/email) | ⬜ | ⬜ | ➖ | ➖ | FREE |
-| **Login Social** | | | | | |
-| Google Sign-In (Credential Manager) | ➖ | ⬜ | ➖ | ➖ | FREE |
-| Sign In with Apple | ⬜ | ➖ | ➖ | ➖ | FREE |
-| Account linking (multiples proveedores) | ⬜ | ⬜ | ➖ | ➖ | FREE |
-| **Cloud Sync y Multi-Dispositivo** | | | | | |
-| Sync bidireccional via backend Go | ⬜ | 🔄 | ⬜ | 🔄 | PRO |
-| WebSocket real-time sync | ⬜ | ⬜ | ⬜ | ⬜ | PRO |
-| Multi-device coordination | ⬜ | ⬜ | ⬜ | ⬜ | PRO |
-| **Suscripciones Cross-Platform** | | | | | |
-| Verificacion server-side de recibos | ⬜ | ⬜ | ➖ | ➖ | — |
-| PRO status compartido entre tiendas | ⬜ | ⬜ | ⬜ | ⬜ | — |
+| Feature                                           | iOS | Android | watchOS | Wear OS | Tier |
+| ------------------------------------------------- | --- | ------- | ------- | ------- | ---- |
+| **Perfil de Usuario**                             |     |         |         |         |      |
+| Pantalla de perfil (avatar, nombre, tipo cuenta)  | ⬜  | ⬜      | ➖      | ➖      | FREE |
+| Estadisticas del perfil (streak, horas, sesiones) | ⬜  | ⬜      | ➖      | ➖      | FREE |
+| Cuentas vinculadas (Google/Apple/email)           | ⬜  | ⬜      | ➖      | ➖      | FREE |
+| **Login Social**                                  |     |         |         |         |      |
+| Google Sign-In (Credential Manager)               | ➖  | ⬜      | ➖      | ➖      | FREE |
+| Sign In with Apple                                | ⬜  | ➖      | ➖      | ➖      | FREE |
+| Account linking (multiples proveedores)           | ⬜  | ⬜      | ➖      | ➖      | FREE |
+| **Cloud Sync y Multi-Dispositivo**                |     |         |         |         |      |
+| Sync bidireccional via backend Go                 | ⬜  | 🔄      | ⬜      | 🔄      | PRO  |
+| WebSocket real-time sync                          | ⬜  | ⬜      | ⬜      | ⬜      | PRO  |
+| Multi-device coordination                         | ⬜  | ⬜      | ⬜      | ⬜      | PRO  |
+| **Suscripciones Cross-Platform**                  |     |         |         |         |      |
+| Verificacion server-side de recibos               | ⬜  | ⬜      | ➖      | ➖      | —    |
+| PRO status compartido entre tiendas               | ⬜  | ⬜      | ⬜      | ⬜      | —    |
 
 ---
 
 ## Resumen de Conteo de Features
 
-| Categoria | Total | Implementadas (al menos 1 plataforma) | Pendientes |
-|-----------|-------|----------------------------------------|------------|
-| P0 — Must-Have | 52 | 38 | 14 |
-| P1 — Nice-to-Have | 17 | 8 | 9 |
-| Planificadas — Backend y Cuentas | 12 | 0 | 12 |
-| P2 — Futuro | 9 | 0 | 9 |
-| **Total** | **90** | **46** | **44** |
+| Categoria                        | Total  | Implementadas (al menos 1 plataforma) | Pendientes |
+| -------------------------------- | ------ | ------------------------------------- | ---------- |
+| P0 — Must-Have                   | 52     | 38                                    | 14         |
+| P1 — Nice-to-Have                | 17     | 8                                     | 9          |
+| Planificadas — Backend y Cuentas | 12     | 0                                     | 12         |
+| P2 — Futuro                      | 9      | 0                                     | 9          |
+| **Total**                        | **90** | **46**                                | **44**     |
 
 ---
 
@@ -820,9 +826,9 @@ Pagar en cualquier tienda (App Store o Google Play) y obtener PRO en todas las p
 
 4. **Feature gating inconsistente en iOS**: Segun el analisis del PLAN_FREE_PRO_TIERS, varias features anunciadas como PRO en el paywall de iOS no estan realmente gateadas (analytics >7 dias, sync, widgets, temas, subtareas, recurrencia). Requiere alineacion.
 
-6. **Theme parity achieved**: Ambas plataformas (Android + iOS) tienen 4 temas nombrados (Classic, Forest, Ocean, Sunset) con theme picker de horizontal scroll cards, colores de modo de enfoque consistentes (Pomodoro=rojo, TimeBlock=morado, Chrono=verde), y PRO gating para Forest/Ocean/Sunset. Android ademas ofrece Material You como opcion. iOS tiene selector Light/Dark/System. Wear OS sincroniza el tema seleccionado desde el telefono Android.
+5. **Theme parity achieved**: Ambas plataformas (Android + iOS) tienen 4 temas nombrados (Classic, Forest, Ocean, Sunset) con theme picker de horizontal scroll cards, colores de modo de enfoque consistentes (Pomodoro=rojo, TimeBlock=morado, Chrono=verde), y PRO gating para Forest/Ocean/Sunset. Android ademas ofrece Material You como opcion. iOS tiene selector Light/Dark/System. Wear OS sincroniza el tema seleccionado desde el telefono Android.
 
-5. **Session Journaling promovido a P0**: Originalmente P2 en iOS PRD, ahora implementado en ambas plataformas phone como parte del motor de enfoque.
+6. **Session Journaling promovido a P0**: Originalmente P2 en iOS PRD, ahora implementado en ambas plataformas phone como parte del motor de enfoque.
 
 7. **Backend Go existente pero no desplegado**: El backend en `backend/` implementa API REST completa (auth, tasks, sessions, stats, billing verify, push notifications, WebSocket, AI insights) pero aun no esta en produccion. Necesita hosting (Railway/Fly.io/VPS) + PostgreSQL + Redis.
 
