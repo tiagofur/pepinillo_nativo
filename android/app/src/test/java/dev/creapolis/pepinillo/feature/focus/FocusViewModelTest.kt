@@ -12,6 +12,7 @@ import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
+import dev.creapolis.pepinillo.domain.soundscape.SoundscapeManager
 import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
 import io.mockk.coEvery
 import io.mockk.every
@@ -76,6 +77,7 @@ class FocusViewModelTest {
     private lateinit var feedbackManager: FeedbackManager
     private lateinit var subscriptionManager: SubscriptionManager
     private lateinit var featureGate: FeatureGate
+    private lateinit var soundscapeManager: SoundscapeManager
 
     private val prefsFlow = MutableStateFlow(UserPreferences())
 
@@ -107,6 +109,9 @@ class FocusViewModelTest {
         // Feedback manager
         feedbackManager = mockk(relaxed = true)
 
+        // Soundscape manager
+        soundscapeManager = mockk(relaxed = true)
+
         // Subscription / FeatureGate -- default: FREE
         subscriptionStateFlow = MutableStateFlow(SubscriptionState(tier = SubscriptionTier.FREE))
         subscriptionManager = mockk {
@@ -131,6 +136,7 @@ class FocusViewModelTest {
             taskRepository = taskRepository,
             prefsRepo = prefsRepo,
             featureGate = featureGate,
+            soundscapeManager = soundscapeManager,
         )
     }
 
