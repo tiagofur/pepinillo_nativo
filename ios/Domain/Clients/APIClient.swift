@@ -24,6 +24,11 @@ public struct APIClient: Sendable {
     public var syncTasks: @Sendable (TaskSyncRequest) async throws -> TaskSyncResponse
     public var createSession: @Sendable (FocusSessionSyncDTO) async throws -> FocusSessionSyncDTO
     public var getAllSessions: @Sendable () async throws -> [FocusSessionSyncDTO]
+    public var getPreferences: @Sendable () async throws -> PreferenceSyncResponse
+    public var upsertPreferences: @Sendable (PreferenceSyncRequest) async throws -> PreferenceSyncResponse
+    public var syncSessions: @Sendable (SessionSyncRequest) async throws -> SessionSyncResponse
+    public var initialUpload: @Sendable (InitialUploadRequest) async throws -> InitialUploadResponse
+    public var getFullSync: @Sendable (_ taskCursor: String?, _ sessionCursor: String?, _ limit: Int) async throws -> FullSyncResponse
 }
 
 // MARK: - Live implementation
@@ -58,6 +63,24 @@ extension APIClient: DependencyKey {
             },
             getAllSessions: {
                 try await helper.authenticatedGet("focus/sessions/all")
+            },
+            getPreferences: {
+                try await helper.authenticatedGet("preferences")
+            },
+            upsertPreferences: { request in
+                try await helper.authenticatedPut("preferences", body: request)
+            },
+            syncSessions: { request in
+                try await helper.authenticatedPost("sync/sessions", body: request)
+            },
+            initialUpload: { request in
+                try await helper.authenticatedPost("sync/initial-upload", body: request)
+            },
+            getFullSync: { taskCursor, sessionCursor, limit in
+                var path = "sync/full?limit=\(limit)"
+                if let tc = taskCursor { path += "&taskCursor=\(tc)" }
+                if let sc = sessionCursor { path += "&sessionCursor=\(sc)" }
+                return try await helper.authenticatedGet(path)
             }
         )
     }

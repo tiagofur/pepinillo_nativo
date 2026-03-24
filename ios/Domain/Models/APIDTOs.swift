@@ -244,6 +244,132 @@ public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
     }
 }
 
+// MARK: - Preference Sync
+
+public struct PreferenceSyncItem: Codable, Sendable, Equatable {
+    public let key: String
+    public let value: String
+    public let updatedAt: String  // RFC3339
+
+    public init(key: String, value: String, updatedAt: String) {
+        self.key = key
+        self.value = value
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct PreferenceSyncRequest: Codable, Sendable, Equatable {
+    public let preferences: [PreferenceSyncItem]
+
+    public init(preferences: [PreferenceSyncItem]) {
+        self.preferences = preferences
+    }
+}
+
+public struct PreferenceSyncResponse: Codable, Sendable, Equatable {
+    public let preferences: [PreferenceSyncItem]
+    public let serverTimestamp: String
+
+    public init(preferences: [PreferenceSyncItem], serverTimestamp: String) {
+        self.preferences = preferences
+        self.serverTimestamp = serverTimestamp
+    }
+}
+
+// MARK: - Session Batch Sync
+
+public struct SessionSyncRequest: Codable, Sendable, Equatable {
+    public let sessions: [FocusSessionSyncDTO]
+    public let lastSyncAt: String?
+
+    public init(sessions: [FocusSessionSyncDTO], lastSyncAt: String? = nil) {
+        self.sessions = sessions
+        self.lastSyncAt = lastSyncAt
+    }
+}
+
+public struct SessionSyncResponse: Codable, Sendable, Equatable {
+    public let sessions: [FocusSessionSyncDTO]
+    public let serverTimestamp: String
+
+    public init(sessions: [FocusSessionSyncDTO], serverTimestamp: String) {
+        self.sessions = sessions
+        self.serverTimestamp = serverTimestamp
+    }
+}
+
+// MARK: - Initial Upload
+
+public struct InitialUploadRequest: Codable, Sendable, Equatable {
+    public let deviceId: String
+    public let tasks: [TaskSyncDTO]
+    public let sessions: [FocusSessionSyncDTO]
+    public let settings: [PreferenceSyncItem]
+
+    public init(deviceId: String, tasks: [TaskSyncDTO], sessions: [FocusSessionSyncDTO], settings: [PreferenceSyncItem]) {
+        self.deviceId = deviceId
+        self.tasks = tasks
+        self.sessions = sessions
+        self.settings = settings
+    }
+}
+
+public struct InitialUploadResponse: Codable, Sendable, Equatable {
+    public let tasks: [TaskSyncDTO]
+    public let sessions: [FocusSessionSyncDTO]
+    public let settings: [PreferenceSyncItem]
+    public let serverTimestamp: String
+    public let hasExistingData: Bool
+
+    public init(tasks: [TaskSyncDTO], sessions: [FocusSessionSyncDTO], settings: [PreferenceSyncItem], serverTimestamp: String, hasExistingData: Bool) {
+        self.tasks = tasks
+        self.sessions = sessions
+        self.settings = settings
+        self.serverTimestamp = serverTimestamp
+        self.hasExistingData = hasExistingData
+    }
+}
+
+// MARK: - Full Sync (Paginated)
+
+public struct PaginatedTaskPage: Codable, Sendable, Equatable {
+    public let items: [TaskSyncDTO]
+    public let nextCursor: String?
+    public let hasMore: Bool
+
+    public init(items: [TaskSyncDTO], nextCursor: String? = nil, hasMore: Bool = false) {
+        self.items = items
+        self.nextCursor = nextCursor
+        self.hasMore = hasMore
+    }
+}
+
+public struct PaginatedSessionPage: Codable, Sendable, Equatable {
+    public let items: [FocusSessionSyncDTO]
+    public let nextCursor: String?
+    public let hasMore: Bool
+
+    public init(items: [FocusSessionSyncDTO], nextCursor: String? = nil, hasMore: Bool = false) {
+        self.items = items
+        self.nextCursor = nextCursor
+        self.hasMore = hasMore
+    }
+}
+
+public struct FullSyncResponse: Codable, Sendable, Equatable {
+    public let tasks: PaginatedTaskPage
+    public let sessions: PaginatedSessionPage
+    public let settings: [PreferenceSyncItem]
+    public let serverTimestamp: String
+
+    public init(tasks: PaginatedTaskPage, sessions: PaginatedSessionPage, settings: [PreferenceSyncItem], serverTimestamp: String) {
+        self.tasks = tasks
+        self.sessions = sessions
+        self.settings = settings
+        self.serverTimestamp = serverTimestamp
+    }
+}
+
 // MARK: - Error
 
 struct APIErrorBody: Codable, Sendable {

@@ -9,6 +9,43 @@
 import Foundation
 import ComposableArchitecture
 
+// MARK: - Dirty Preference Tracking
+
+/// Tracks which preference keys have been modified since last sync.
+/// Uses UserDefaults for simplicity since this is just a Set<String>.
+public enum PreferenceDirtyTracker {
+    private static let dirtyPreferencesKey = "dirtyPreferenceKeys"
+
+    public static func markDirty(_ key: String) {
+        var dirty = getDirtyKeys()
+        dirty.insert(key)
+        UserDefaults.standard.set(Array(dirty), forKey: dirtyPreferencesKey)
+    }
+
+    public static func markDirtyKeys(_ keys: [String]) {
+        var dirty = getDirtyKeys()
+        keys.forEach { dirty.insert($0) }
+        UserDefaults.standard.set(Array(dirty), forKey: dirtyPreferencesKey)
+    }
+
+    public static func getDirtyKeys() -> Set<String> {
+        let array = UserDefaults.standard.stringArray(forKey: dirtyPreferencesKey) ?? []
+        return Set(array)
+    }
+
+    public static func clearAll() {
+        UserDefaults.standard.removeObject(forKey: dirtyPreferencesKey)
+    }
+
+    /// All syncable preference keys.
+    public static let syncableKeys: Set<String> = [
+        "pomodoroMinutes", "shortBreakMinutes", "longBreakMinutes", "sessionsBeforeLongBreak",
+        "autoStartBreaks", "autoStartNextPomodoro", "soundEnabled", "hapticEnabled",
+        "keepScreenOn", "defaultMode", "themeName", "followSystemAppearance", "appearanceMode",
+        "flowtimeMinMinutes", "timeBlockMinutes", "midpointCheckIn", "showJournalAfterSession"
+    ]
+}
+
 // MARK: - Client
 
 @DependencyClient
@@ -16,6 +53,17 @@ public struct SyncClient: Sendable {
     public var syncAll: @Sendable () async throws -> Void
     public var syncTasks: @Sendable () async throws -> Void
     public var syncSessions: @Sendable () async throws -> Void
+    public var syncSettings: @Sendable () async throws -> Void
+    public var initialUpload: @Sendable () async throws -> Bool  // returns hasExistingData
+    public var performInitialSync: @Sendable () async throws -> Void
+    public var wipeAndSync: @Sendable () async throws -> Void
+    public var hasLocalData: @Sendable () async -> Bool = { false }
+}
+
+// MARK: - Sync Error
+
+enum SyncError: Error {
+    case notAuthenticated
 }
 
 // MARK: - Live implementation
@@ -30,6 +78,7 @@ extension SyncClient: DependencyKey {
             syncAll: {
                 guard await keychain.hasTokens() else { return }
                 @Dependency(\.syncClient) var syncClient
+                try await syncClient.syncSettings()
                 try await syncClient.syncTasks()
                 try await syncClient.syncSessions()
             },
@@ -38,7 +87,6 @@ extension SyncClient: DependencyKey {
 
                 // 1. Get dirty tasks from local DB
                 let dirtyTasks = try await persistence.fetchDirtyTasks()
-                // If no dirty tasks and no last sync, still sync to pull server data
                 let lastSyncAt = try await persistence.getLastSyncTimestamp()
                 if dirtyTasks.isEmpty && lastSyncAt != nil {
                     // Nothing dirty and we've synced before — still do a pull
@@ -55,7 +103,6 @@ extension SyncClient: DependencyKey {
 
                 var taskDTOs: [TaskSyncDTO] = []
                 for task in tasksToSync {
-                    // Fetch subtasks for this task
                     let subtasks = try await persistence.fetchSubtasks(task.id)
                     let subTaskDTOs = subtasks.map { SubTaskSyncDTO(
                         id: $0.serverId,
@@ -64,11 +111,7 @@ extension SyncClient: DependencyKey {
                         isFinished: $0.isCompleted
                     ) }
 
-                    // Calculate tracking metrics from sessions
                     let completedSessions = task.sessions.filter(\.wasCompleted)
-                    var completedFlowtimeSessions = 0
-                    var completedTimeblockSessions = 0
-                    var completedStopwatchSeconds = 0
                     var focusedSecondsPomodoro = 0
                     var focusedSecondsFlowtime = 0
                     var focusedSecondsTimeblock = 0
@@ -83,15 +126,12 @@ extension SyncClient: DependencyKey {
                             trackingMode = "pomodoro"
                         case "flowtime":
                             focusedSecondsFlowtime += focusSeconds
-                            completedFlowtimeSessions += 1
                             trackingMode = "flowtime"
                         case "timeBlock":
                             focusedSecondsTimeblock += focusSeconds
-                            completedTimeblockSessions += 1
                             trackingMode = "timeBlock"
                         case "stopwatch":
                             focusedSecondsStopwatch += focusSeconds
-                            completedStopwatchSeconds = focusedSecondsStopwatch
                             trackingMode = "stopwatch"
                         default:
                             break
@@ -153,8 +193,6 @@ extension SyncClient: DependencyKey {
                 if !syncedIds.isEmpty {
                     try await persistence.markTasksSynced(syncedIds, response.syncTimestamp)
                 }
-
-                // Also mark deleted tasks' syncIds as synced so they get purged
                 if !deletedSyncIds.isEmpty {
                     try await persistence.markTasksSynced(deletedSyncIds, response.syncTimestamp)
                 }
@@ -167,14 +205,12 @@ extension SyncClient: DependencyKey {
 
                 let iso = ISO8601DateFormatter()
 
-                // 1. Push dirty sessions to server
+                // 1. Get dirty sessions and convert to DTOs
                 let dirtySessions = try await persistence.fetchDirtySessions()
-                var syncedIDs: [UUID] = []
-
-                for session in dirtySessions {
-                    let dto = FocusSessionSyncDTO(
+                let sessionDTOs = dirtySessions.map { session in
+                    FocusSessionSyncDTO(
                         id: session.id.uuidString,
-                        taskId: nil, // Task linking handled separately
+                        taskId: nil,
                         startedAt: iso.string(from: session.startedAt),
                         endedAt: session.endedAt.map { iso.string(from: $0) },
                         mode: session.mode.lowercased(),
@@ -187,32 +223,252 @@ extension SyncClient: DependencyKey {
                         createdAt: iso.string(from: session.startedAt),
                         updatedAt: iso.string(from: session.startedAt)
                     )
-                    do {
-                        _ = try await apiClient.createSession(dto)
-                        syncedIDs.append(session.id)
-                    } catch {
-                        // Log but continue with other sessions
-                        print("[SyncClient] Failed to sync session \(session.id): \(error)")
+                }
+
+                // 2. Get last session sync timestamp
+                let lastSyncAt = await persistence.getLastSessionSyncTimestamp()
+
+                // 3. Batch sync via POST /sync/sessions
+                let request = SessionSyncRequest(
+                    sessions: sessionDTOs,
+                    lastSyncAt: lastSyncAt
+                )
+
+                let response = try await apiClient.syncSessions(request)
+
+                // 4. Process response: upsert returned sessions locally
+                for serverSession in response.sessions {
+                    let exists = try await persistence.sessionExists(serverSession.id)
+                    if !exists {
+                        try await persistence.upsertSessionFromServer(serverSession)
                     }
                 }
 
-                if !syncedIDs.isEmpty {
+                // 5. Mark dirty sessions as synced
+                if !dirtySessions.isEmpty {
+                    let syncedIDs = dirtySessions.map(\.id)
                     try await persistence.markSessionsSynced(syncedIDs)
                 }
 
-                // 2. Pull all sessions from server
-                do {
-                    let serverSessions = try await apiClient.getAllSessions()
-                    for serverSession in serverSessions {
+                // 6. Store server timestamp
+                await persistence.saveLastSessionSyncTimestamp(response.serverTimestamp)
+            },
+            syncSettings: {
+                guard await keychain.hasTokens() else { return }
+
+                let iso = ISO8601DateFormatter()
+
+                // 1. Get dirty preference keys
+                let dirtyKeys = PreferenceDirtyTracker.getDirtyKeys()
+
+                // 2. Read all current preference values
+                let allPrefs = await persistence.getAllPreferencesAsKeyValue()
+
+                // 3. Build request with only dirty preferences
+                let dirtyItems: [PreferenceSyncItem]
+                if dirtyKeys.isEmpty {
+                    dirtyItems = []
+                } else {
+                    dirtyItems = allPrefs
+                        .filter { dirtyKeys.contains($0.key) }
+                        .map { pref in
+                            PreferenceSyncItem(
+                                key: pref.key,
+                                value: pref.value,
+                                updatedAt: iso.string(from: pref.updatedAt)
+                            )
+                        }
+                }
+
+                let request = PreferenceSyncRequest(preferences: dirtyItems)
+
+                // 4. PUT /preferences
+                let response = try await apiClient.upsertPreferences(request)
+
+                // 5. Apply server response (newer keys win — server handles LWW)
+                for serverPref in response.preferences {
+                    let serverDate = iso.date(from: serverPref.updatedAt) ?? Date.now
+                    await persistence.applyServerPreference(serverPref.key, serverPref.value, serverDate)
+                }
+
+                // 6. Clear dirty keys
+                PreferenceDirtyTracker.clearAll()
+            },
+            initialUpload: {
+                guard await keychain.hasTokens() else {
+                    throw SyncError.notAuthenticated
+                }
+
+                let iso = ISO8601DateFormatter()
+                let deviceId = keychain.getOrCreateDeviceId()
+
+                // Collect all local tasks
+                let allTasks = try await persistence.fetchTasks()
+                let cachedUser = try await persistence.fetchCachedUser()
+                let userId = cachedUser?.id
+
+                var taskDTOs: [TaskSyncDTO] = []
+                for task in allTasks where !task.isDeleted {
+                    let subtasks = try await persistence.fetchSubtasks(task.id)
+                    let subTaskDTOs = subtasks.map { SubTaskSyncDTO(
+                        id: $0.serverId,
+                        taskId: task.serverId,
+                        title: $0.title,
+                        isFinished: $0.isCompleted
+                    ) }
+
+                    taskDTOs.append(TaskSyncDTO(
+                        id: task.serverId,
+                        syncId: task.syncId,
+                        userId: userId,
+                        title: task.title,
+                        description: task.notes,
+                        energyLevel: task.energyLevel.rawValue.lowercased(),
+                        recurrenceRule: task.recurrenceRule,
+                        createdDate: iso.string(from: task.createdAt),
+                        finishDate: task.dueDate.map { iso.string(from: $0) },
+                        isFinished: task.isCompleted,
+                        priority: task.priority.rawValue,
+                        estimatedPomodoros: task.estimatedPomodoros,
+                        completedPomodoros: task.completedPomodoros,
+                        subTasks: subTaskDTOs.isEmpty ? nil : subTaskDTOs,
+                        updatedAt: iso.string(from: task.updatedAt)
+                    ))
+                }
+
+                // Collect all local sessions
+                let startOfTime = Date.distantPast
+                let sessions = try await persistence.fetchSessions(startOfTime, Date.now)
+                let sessionDTOs = sessions.map { session in
+                    FocusSessionSyncDTO(
+                        id: session.id.uuidString,
+                        taskId: nil,
+                        startedAt: iso.string(from: session.startedAt),
+                        endedAt: session.endedAt.map { iso.string(from: $0) },
+                        mode: session.mode.lowercased(),
+                        phase: session.phase,
+                        durationSeconds: Int(session.actualDuration),
+                        elapsedSeconds: Int(session.actualDuration),
+                        pauseCount: session.pauseCount,
+                        totalPauseSeconds: Int(session.totalPauseDuration),
+                        wasCompleted: session.wasCompleted,
+                        createdAt: iso.string(from: session.startedAt),
+                        updatedAt: iso.string(from: session.startedAt)
+                    )
+                }
+
+                // Collect all local settings
+                let allPrefs = await persistence.getAllPreferencesAsKeyValue()
+                let settingItems = allPrefs.map { pref in
+                    PreferenceSyncItem(
+                        key: pref.key,
+                        value: pref.value,
+                        updatedAt: iso.string(from: pref.updatedAt)
+                    )
+                }
+
+                // POST /sync/initial-upload
+                let request = InitialUploadRequest(
+                    deviceId: deviceId,
+                    tasks: taskDTOs,
+                    sessions: sessionDTOs,
+                    settings: settingItems
+                )
+
+                let response = try await apiClient.initialUpload(request)
+
+                // Process response
+                for serverTask in response.tasks {
+                    try await persistence.upsertTaskFromServer(serverTask)
+                }
+                for serverSession in response.sessions {
+                    let exists = try await persistence.sessionExists(serverSession.id)
+                    if !exists {
+                        try await persistence.upsertSessionFromServer(serverSession)
+                    }
+                }
+                for serverPref in response.settings {
+                    let serverDate = iso.date(from: serverPref.updatedAt) ?? Date.now
+                    await persistence.applyServerPreference(serverPref.key, serverPref.value, serverDate)
+                }
+
+                // Mark all as synced
+                try await persistence.saveLastSyncTimestamp(response.serverTimestamp)
+                await persistence.saveLastSessionSyncTimestamp(response.serverTimestamp)
+                PreferenceDirtyTracker.clearAll()
+
+                return response.hasExistingData
+            },
+            performInitialSync: {
+                guard await keychain.hasTokens() else {
+                    throw SyncError.notAuthenticated
+                }
+
+                let iso = ISO8601DateFormatter()
+                var taskCursor: String? = nil
+                var sessionCursor: String? = nil
+                let pageLimit = 100
+
+                // Paginated fetch loop
+                var hasMoreData = true
+                while hasMoreData {
+                    let response = try await apiClient.getFullSync(taskCursor, sessionCursor, pageLimit)
+
+                    // Process tasks
+                    for serverTask in response.tasks.items {
+                        try await persistence.upsertTaskFromServer(serverTask)
+                    }
+
+                    // Process sessions
+                    for serverSession in response.sessions.items {
                         let exists = try await persistence.sessionExists(serverSession.id)
                         if !exists {
                             try await persistence.upsertSessionFromServer(serverSession)
                         }
                     }
-                } catch {
-                    // Non-fatal: log but don't throw for pull failures
-                    print("[SyncClient] Failed to pull sessions: \(error)")
+
+                    // Process settings (only on first page)
+                    if taskCursor == nil && sessionCursor == nil {
+                        for serverPref in response.settings {
+                            let serverDate = iso.date(from: serverPref.updatedAt) ?? Date.now
+                            await persistence.applyServerPreference(serverPref.key, serverPref.value, serverDate)
+                        }
+                    }
+
+                    // Update cursors
+                    taskCursor = response.tasks.nextCursor
+                    sessionCursor = response.sessions.nextCursor
+                    hasMoreData = response.tasks.hasMore || response.sessions.hasMore
+
+                    // Save timestamp
+                    try await persistence.saveLastSyncTimestamp(response.serverTimestamp)
+                    await persistence.saveLastSessionSyncTimestamp(response.serverTimestamp)
                 }
+
+                PreferenceDirtyTracker.clearAll()
+            },
+            wipeAndSync: {
+                guard await keychain.hasTokens() else {
+                    throw SyncError.notAuthenticated
+                }
+
+                // Delete all local data
+                await persistence.deleteAllTasks()
+                await persistence.deleteAllSessions()
+                await persistence.deleteAllStats()
+
+                // Clear sync timestamps
+                try await persistence.saveLastSyncTimestamp("")
+                await persistence.saveLastSessionSyncTimestamp("")
+
+                // Perform full download
+                @Dependency(\.syncClient) var syncClient
+                try await syncClient.performInitialSync()
+            },
+            hasLocalData: {
+                let taskCount = await persistence.getTaskCount()
+                let sessionCount = await persistence.getSessionCount()
+                return taskCount > 0 || sessionCount > 0
             }
         )
     }

@@ -526,6 +526,23 @@ public struct PersistenceClient: Sendable {
     public var markSessionsSynced: @Sendable ([UUID]) async throws -> Void
     public var upsertSessionFromServer: @Sendable (FocusSessionSyncDTO) async throws -> Void
     public var sessionExists: @Sendable (String) async throws -> Bool = { _ in false }
+
+    // Settings Sync
+    public var getAllPreferencesAsKeyValue: @Sendable () async -> [(key: String, value: String, updatedAt: Date)] = { [] }
+    public var applyServerPreference: @Sendable (_ key: String, _ value: String, _ updatedAt: Date) async -> Void
+
+    // Wipe and Sync
+    public var deleteAllTasks: @Sendable () async -> Void
+    public var deleteAllSessions: @Sendable () async -> Void
+    public var deleteAllStats: @Sendable () async -> Void
+
+    // Counts
+    public var getTaskCount: @Sendable () async -> Int = { 0 }
+    public var getSessionCount: @Sendable () async -> Int = { 0 }
+
+    // Session Sync Timestamp
+    public var getLastSessionSyncTimestamp: @Sendable () async -> String? = { nil }
+    public var saveLastSessionSyncTimestamp: @Sendable (String) async -> Void
 }
 
 extension PersistenceClient: DependencyKey {
@@ -766,6 +783,51 @@ extension PersistenceClient: DependencyKey {
             sessionExists: { sessionId in
                 try await MainActor.run {
                     try service.sessionExists(id: sessionId)
+                }
+            },
+            getAllPreferencesAsKeyValue: {
+                await MainActor.run {
+                    (try? service.getAllPreferencesAsKeyValue()) ?? []
+                }
+            },
+            applyServerPreference: { key, value, updatedAt in
+                await MainActor.run {
+                    try? service.applyServerPreference(key: key, value: value, updatedAt: updatedAt)
+                }
+            },
+            deleteAllTasks: {
+                await MainActor.run {
+                    try? service.deleteAllTasks()
+                }
+            },
+            deleteAllSessions: {
+                await MainActor.run {
+                    try? service.deleteAllSessions()
+                }
+            },
+            deleteAllStats: {
+                await MainActor.run {
+                    try? service.deleteAllStats()
+                }
+            },
+            getTaskCount: {
+                await MainActor.run {
+                    (try? service.getTaskCount()) ?? 0
+                }
+            },
+            getSessionCount: {
+                await MainActor.run {
+                    (try? service.getSessionCount()) ?? 0
+                }
+            },
+            getLastSessionSyncTimestamp: {
+                await MainActor.run {
+                    service.getLastSessionSyncTimestamp()
+                }
+            },
+            saveLastSessionSyncTimestamp: { timestamp in
+                await MainActor.run {
+                    service.saveLastSessionSyncTimestamp(timestamp)
                 }
             }
         )

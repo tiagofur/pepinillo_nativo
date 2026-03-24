@@ -16,6 +16,7 @@ public struct KeychainClient: Sendable {
     public var loadRefreshToken: @Sendable () async -> String?
     public var deleteTokens: @Sendable () async throws -> Void
     public var hasTokens: @Sendable () async -> Bool = { false }
+    public var getOrCreateDeviceId: @Sendable () -> String = { UUID().uuidString }
 }
 
 // MARK: - Live implementation
@@ -42,6 +43,15 @@ extension KeychainClient: DependencyKey {
         },
         hasTokens: {
             load(account: accessTokenAccount) != nil
+        },
+        getOrCreateDeviceId: {
+            let key = "com.pepinillo.deviceId"
+            if let existing = UserDefaults.standard.string(forKey: key) {
+                return existing
+            }
+            let newId = UUID().uuidString
+            UserDefaults.standard.set(newId, forKey: key)
+            return newId
         }
     )
 
