@@ -36,6 +36,26 @@ func (h *SyncHandler) SyncSessions(c *fiber.Ctx) error {
 	})
 }
 
+func (h *SyncHandler) FullSync(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
+	}
+
+	req := services.FullSyncRequest{
+		TaskCursor:    c.Query("taskCursor", ""),
+		SessionCursor: c.Query("sessionCursor", ""),
+		Limit:         c.QueryInt("limit", 100),
+	}
+
+	result, err := h.sync.FullSync(c.Context(), userID, req)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(result)
+}
+
 func (h *SyncHandler) InitialUpload(c *fiber.Ctx) error {
 	userID, ok := c.Locals("userID").(string)
 	if !ok || userID == "" {

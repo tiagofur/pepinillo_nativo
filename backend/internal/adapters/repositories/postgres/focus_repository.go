@@ -3,12 +3,14 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"pepinillo/backend/internal/domain"
+	"pepinillo/backend/internal/ports"
 )
 
 type FocusRepository struct {
@@ -104,6 +106,28 @@ func (r *FocusRepository) ListAllSessions(ctx context.Context, userID string) ([
 		Find(&sessions).Error
 	if err != nil {
 		return nil, err
+	}
+	return sessions, nil
+}
+
+func (r *FocusRepository) ListSessionsByUserPaginated(ctx context.Context, userID string, cursor *ports.PaginationCursor, limit int) ([]domain.FocusSession, error) {
+	sessions := make([]domain.FocusSession, 0)
+	query := r.db.WithContext(ctx).
+		Where("user_id = ?", userID)
+
+	if cursor != nil {
+		query = query.Where(
+			"(updated_at > ? OR (updated_at = ? AND id > ?))",
+			cursor.UpdatedAt, cursor.UpdatedAt, cursor.ID,
+		)
+	}
+
+	err := query.
+		Order("updated_at ASC, id ASC").
+		Limit(limit).
+		Find(&sessions).Error
+	if err != nil {
+		return nil, fmt.Errorf("list sessions paginated: %w", err)
 	}
 	return sessions, nil
 }

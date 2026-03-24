@@ -152,6 +152,7 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	preferences.Put("/", deps.Preferences.Upsert)
 
 	sync := protected.Group("/sync")
+	sync.Get("/full", deps.Sync.FullSync)
 	sync.Post("/sessions", deps.Sync.SyncSessions)
 	sync.Post("/initial-upload", deps.Sync.InitialUpload)
 

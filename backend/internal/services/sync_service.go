@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"pepinillo/backend/internal/domain"
@@ -29,6 +30,28 @@ func NewSyncService(
 		prefRepo:  prefRepo,
 		wsManager: wsManager,
 	}
+}
+
+// FullSyncRequest holds query parameters for paginated full sync.
+type FullSyncRequest struct {
+	TaskCursor    string `query:"taskCursor"`
+	SessionCursor string `query:"sessionCursor"`
+	Limit         int    `query:"limit"`
+}
+
+// PaginatedPage represents a single page of cursor-paginated results.
+type PaginatedPage[T any] struct {
+	Items      []T    `json:"items"`
+	NextCursor string `json:"nextCursor,omitempty"`
+	HasMore    bool   `json:"hasMore"`
+}
+
+// FullSyncResponse is the response for GET /sync/full.
+type FullSyncResponse struct {
+	Tasks           PaginatedPage[domain.Task]         `json:"tasks"`
+	Sessions        PaginatedPage[domain.FocusSession] `json:"sessions"`
+	Settings        []domain.UserPreference            `json:"settings"`
+	ServerTimestamp time.Time                          `json:"serverTimestamp"`
 }
 
 type SessionSyncRequest struct {
@@ -203,6 +226,114 @@ func (s *SyncService) sendInitialUploadNotification(userID string) {
 	}
 
 	_ = s.wsManager.SendToUser(userID, msgBytes)
+}
+
+// FullSync returns paginated tasks, sessions, and all settings for a user.
+func (s *SyncService) FullSync(ctx context.Context, userID string, req FullSyncRequest) (*FullSyncResponse, error) {
+	// Clamp limit
+	limit := req.Limit
+	if limit <= 0 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+
+	// --- Tasks ---
+	var taskCursor *ports.PaginationCursor
+	if req.TaskCursor != "" {
+		c, err := decodeCursor(req.TaskCursor)
+		if err != nil {
+			return nil, fmt.Errorf("invalid taskCursor: %w", err)
+		}
+		taskCursor = c
+	}
+
+	tasks, err := s.taskRepo.ListByUserPaginated(ctx, userID, taskCursor, limit+1)
+	if err != nil {
+		return nil, fmt.Errorf("list tasks: %w", err)
+	}
+
+	taskPage := buildPage(tasks, limit, func(t domain.Task) string {
+		return encodeCursor(t.UpdatedAt, fmt.Sprintf("%d", t.ID))
+	})
+
+	// --- Sessions ---
+	var sessionCursor *ports.PaginationCursor
+	if req.SessionCursor != "" {
+		c, err := decodeCursor(req.SessionCursor)
+		if err != nil {
+			return nil, fmt.Errorf("invalid sessionCursor: %w", err)
+		}
+		sessionCursor = c
+	}
+
+	sessions, err := s.focusRepo.ListSessionsByUserPaginated(ctx, userID, sessionCursor, limit+1)
+	if err != nil {
+		return nil, fmt.Errorf("list sessions: %w", err)
+	}
+
+	sessionPage := buildPage(sessions, limit, func(s domain.FocusSession) string {
+		return encodeCursor(s.UpdatedAt, s.ID)
+	})
+
+	// --- Settings ---
+	settings, err := s.prefRepo.GetByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list settings: %w", err)
+	}
+	if settings == nil {
+		settings = []domain.UserPreference{}
+	}
+
+	return &FullSyncResponse{
+		Tasks:           taskPage,
+		Sessions:        sessionPage,
+		Settings:        settings,
+		ServerTimestamp: time.Now().UTC(),
+	}, nil
+}
+
+// encodeCursor encodes an updated_at timestamp and ID into a cursor string.
+func encodeCursor(updatedAt time.Time, id string) string {
+	return updatedAt.UTC().Format(time.RFC3339Nano) + "|" + id
+}
+
+// decodeCursor decodes a cursor string into a PaginationCursor.
+func decodeCursor(cursor string) (*ports.PaginationCursor, error) {
+	parts := strings.SplitN(cursor, "|", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("cursor must be in format 'updatedAt|id'")
+	}
+
+	t, err := time.Parse(time.RFC3339Nano, parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid cursor timestamp: %w", err)
+	}
+
+	return &ports.PaginationCursor{
+		UpdatedAt: t,
+		ID:        parts[1],
+	}, nil
+}
+
+// buildPage constructs a PaginatedPage from items fetched with limit+1 strategy.
+func buildPage[T any](items []T, limit int, cursorFn func(T) string) PaginatedPage[T] {
+	hasMore := len(items) > limit
+	if hasMore {
+		items = items[:limit]
+	}
+
+	var nextCursor string
+	if hasMore && len(items) > 0 {
+		nextCursor = cursorFn(items[len(items)-1])
+	}
+
+	return PaginatedPage[T]{
+		Items:      items,
+		NextCursor: nextCursor,
+		HasMore:    hasMore,
+	}
 }
 
 func (s *SyncService) sendSyncNotification(userID string, sessionCount int) {

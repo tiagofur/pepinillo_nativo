@@ -7,6 +7,12 @@ import (
 	"pepinillo/backend/internal/domain"
 )
 
+// PaginationCursor represents a cursor for keyset-based pagination.
+type PaginationCursor struct {
+	UpdatedAt time.Time
+	ID        string
+}
+
 type UserRepository interface {
 	Create(ctx context.Context, user *domain.User) error
 	GetByID(ctx context.Context, userID string) (*domain.User, error)
@@ -37,6 +43,9 @@ type TaskRepository interface {
 	Upsert(ctx context.Context, task *domain.Task) error
 	Delete(ctx context.Context, userID string, taskID int) error
 	Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) ([]domain.Task, []string, time.Time, error)
+
+	// Paginated listing for full sync
+	ListByUserPaginated(ctx context.Context, userID string, cursor *PaginationCursor, limit int) ([]domain.Task, error)
 
 	// Mode-specific tracking methods
 	UpdateTrackingMode(ctx context.Context, taskID int, mode string) error
@@ -89,6 +98,9 @@ type FocusRepository interface {
 	ListSessionsByTask(ctx context.Context, userID string, taskID int) ([]domain.FocusSession, error)
 	ListSessionsByRange(ctx context.Context, userID string, from, to time.Time) ([]domain.FocusSession, error)
 	GetTaskStats(ctx context.Context, userID string, taskID int) (*domain.TaskFocusStats, error)
+
+	// Paginated listing for full sync
+	ListSessionsByUserPaginated(ctx context.Context, userID string, cursor *PaginationCursor, limit int) ([]domain.FocusSession, error)
 
 	// Sync methods
 	UpsertSessionBatch(ctx context.Context, sessions []domain.FocusSession) error
