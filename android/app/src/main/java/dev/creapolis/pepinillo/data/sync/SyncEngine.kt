@@ -43,6 +43,7 @@ class SyncEngine @Inject constructor(
     private val dailyStatsDao: DailyStatsDao,
     private val apiClient: PepinilloApiClient,
     private val authStore: AuthStore,
+    private val settingsSyncEngine: SettingsSyncEngine,
 ) {
     private fun Long.toRfc3339(): String {
         val instant = Instant.ofEpochMilli(this)
@@ -65,6 +66,12 @@ class SyncEngine @Inject constructor(
         }
         return try {
             println("[$TAG]syncAll: STARTING")
+            // Phase 1: Sync settings/preferences first
+            settingsSyncEngine.syncSettings().onFailure { e ->
+                println("[$TAG]syncSettings: FAILED - ${e::class.simpleName}: ${e.message}")
+                if (e is AuthenticationException) throw e
+                // Non-fatal: log but continue with other sync phases
+            }
             syncTasks()
             syncSessions()
             syncDailyStats()

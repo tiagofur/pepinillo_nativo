@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.core.network
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 // ── Auth ──
@@ -227,6 +228,26 @@ data class ImageUploadResponse(
 @Serializable
 data class ErrorResponse(
     val error: String = "",
+)
+
+// ── Preference Sync ──
+
+@Serializable
+data class PreferenceSyncItem(
+    val key: String,
+    val value: String,
+    @SerialName("updatedAt") val updatedAt: String, // RFC3339
+)
+
+@Serializable
+data class PreferenceSyncRequest(
+    val preferences: List<PreferenceSyncItem>,
+)
+
+@Serializable
+data class PreferenceSyncResponse(
+    val preferences: List<PreferenceSyncItem>,
+    val serverTimestamp: String, // RFC3339
 )
 
 // ── AI Report ──

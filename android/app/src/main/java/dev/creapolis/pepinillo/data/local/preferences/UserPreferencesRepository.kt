@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
+import dev.creapolis.pepinillo.data.local.entity.PreferenceSyncEntity
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -46,6 +48,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 @Singleton
 class UserPreferencesRepository @Inject constructor(
     private val context: Context,
+    private val preferenceSyncDao: PreferenceSyncDao,
 ) {
     private object Keys {
         val POMODORO_MINUTES = intPreferencesKey("pomodoro_minutes")
@@ -101,32 +104,50 @@ class UserPreferencesRepository @Inject constructor(
         )
     }
 
-    suspend fun updatePomodoroMinutes(value: Int) = update { it[Keys.POMODORO_MINUTES] = value }
-    suspend fun updateShortBreakMinutes(value: Int) = update { it[Keys.SHORT_BREAK_MINUTES] = value }
-    suspend fun updateLongBreakMinutes(value: Int) = update { it[Keys.LONG_BREAK_MINUTES] = value }
-    suspend fun updateSessionsBeforeLongBreak(value: Int) = update { it[Keys.SESSIONS_BEFORE_LONG_BREAK] = value }
-    suspend fun updateTimeBlockMinutes(value: Int) = update { it[Keys.TIME_BLOCK_MINUTES] = value }
-    suspend fun updateAutoStartBreaks(value: Boolean) = update { it[Keys.AUTO_START_BREAKS] = value }
-    suspend fun updateAutoStartNextPomodoro(value: Boolean) = update { it[Keys.AUTO_START_NEXT_POMODORO] = value }
-    suspend fun updateSoundEnabled(value: Boolean) = update { it[Keys.SOUND_ENABLED] = value }
-    suspend fun updateVibrationEnabled(value: Boolean) = update { it[Keys.VIBRATION_ENABLED] = value }
-    suspend fun updateThemeMode(mode: ThemeMode) = update { it[Keys.THEME_MODE] = mode.name }
-    suspend fun updateDynamicColor(value: Boolean) = update { it[Keys.DYNAMIC_COLOR] = value }
-    suspend fun updateSelectedTheme(value: String) = update { it[Keys.SELECTED_THEME] = value }
+    // ── Syncable preference updaters (mark dirty for sync) ──
+
+    suspend fun updatePomodoroMinutes(value: Int) = updateAndMarkDirty("pomodoro_minutes") { it[Keys.POMODORO_MINUTES] = value }
+    suspend fun updateShortBreakMinutes(value: Int) = updateAndMarkDirty("short_break_minutes") { it[Keys.SHORT_BREAK_MINUTES] = value }
+    suspend fun updateLongBreakMinutes(value: Int) = updateAndMarkDirty("long_break_minutes") { it[Keys.LONG_BREAK_MINUTES] = value }
+    suspend fun updateSessionsBeforeLongBreak(value: Int) = updateAndMarkDirty("sessions_before_long_break") { it[Keys.SESSIONS_BEFORE_LONG_BREAK] = value }
+    suspend fun updateTimeBlockMinutes(value: Int) = updateAndMarkDirty("time_block_minutes") { it[Keys.TIME_BLOCK_MINUTES] = value }
+    suspend fun updateAutoStartBreaks(value: Boolean) = updateAndMarkDirty("auto_start_breaks") { it[Keys.AUTO_START_BREAKS] = value }
+    suspend fun updateAutoStartNextPomodoro(value: Boolean) = updateAndMarkDirty("auto_start_next_pomodoro") { it[Keys.AUTO_START_NEXT_POMODORO] = value }
+    suspend fun updateSoundEnabled(value: Boolean) = updateAndMarkDirty("sound_enabled") { it[Keys.SOUND_ENABLED] = value }
+    suspend fun updateVibrationEnabled(value: Boolean) = updateAndMarkDirty("vibration_enabled") { it[Keys.VIBRATION_ENABLED] = value }
+    suspend fun updateThemeMode(mode: ThemeMode) = updateAndMarkDirty("theme_mode") { it[Keys.THEME_MODE] = mode.name }
+    suspend fun updateDynamicColor(value: Boolean) = updateAndMarkDirty("dynamic_color") { it[Keys.DYNAMIC_COLOR] = value }
+    suspend fun updateSelectedTheme(value: String) = updateAndMarkDirty("selected_theme") { it[Keys.SELECTED_THEME] = value }
+    suspend fun updateFlowtimeMinMinutes(value: Int) = updateAndMarkDirty("flowtime_min_minutes") { it[Keys.FLOWTIME_MIN_MINUTES] = value }
+    suspend fun updateDefaultMode(value: String) = updateAndMarkDirty("default_mode") { it[Keys.DEFAULT_MODE] = value }
+    suspend fun updateKeepScreenOn(value: Boolean) = updateAndMarkDirty("keep_screen_on") { it[Keys.KEEP_SCREEN_ON] = value }
+    suspend fun updateMidpointCheckIn(value: Boolean) = updateAndMarkDirty("midpoint_check_in") { it[Keys.MIDPOINT_CHECK_IN] = value }
+    suspend fun updateShowJournalAfterSession(value: Boolean) = updateAndMarkDirty("show_journal_after_session") { it[Keys.SHOW_JOURNAL_AFTER_SESSION] = value }
+
+    // ── Device-specific preference updaters (NOT synced) ──
+
     suspend fun completeOnboarding() = update {
         it[Keys.ONBOARDING_COMPLETED] = true
         it[Keys.ONBOARDING_PAGE] = 0
     }
     suspend fun updateOnboardingPage(page: Int) = update { it[Keys.ONBOARDING_PAGE] = page }
-    suspend fun updateFlowtimeMinMinutes(value: Int) = update { it[Keys.FLOWTIME_MIN_MINUTES] = value }
-    suspend fun updateDefaultMode(value: String) = update { it[Keys.DEFAULT_MODE] = value }
-    suspend fun updateKeepScreenOn(value: Boolean) = update { it[Keys.KEEP_SCREEN_ON] = value }
     suspend fun updateDailyReminderEnabled(value: Boolean) = update { it[Keys.DAILY_REMINDER_ENABLED] = value }
     suspend fun updateDailyReminderHour(value: Int) = update { it[Keys.DAILY_REMINDER_HOUR] = value }
     suspend fun updateDailyReminderMinute(value: Int) = update { it[Keys.DAILY_REMINDER_MINUTE] = value }
-    suspend fun updateMidpointCheckIn(value: Boolean) = update { it[Keys.MIDPOINT_CHECK_IN] = value }
     suspend fun updateTimerNotificationsEnabled(value: Boolean) = update { it[Keys.TIMER_NOTIFICATIONS_ENABLED] = value }
-    suspend fun updateShowJournalAfterSession(value: Boolean) = update { it[Keys.SHOW_JOURNAL_AFTER_SESSION] = value }
+
+    // ── Helpers ──
+
+    private suspend fun updateAndMarkDirty(syncKey: String, block: (MutablePreferences) -> Unit) {
+        context.dataStore.edit { prefs -> block(prefs) }
+        preferenceSyncDao.upsert(
+            PreferenceSyncEntity(
+                key = syncKey,
+                updatedAt = System.currentTimeMillis(),
+                isDirty = true,
+            )
+        )
+    }
 
     private suspend fun update(block: (MutablePreferences) -> Unit) {
         context.dataStore.edit { prefs -> block(prefs) }

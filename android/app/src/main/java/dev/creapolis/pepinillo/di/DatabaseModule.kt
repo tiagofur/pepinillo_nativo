@@ -10,6 +10,7 @@ import dagger.hilt.components.SingletonComponent
 import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
+import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
 import dev.creapolis.pepinillo.data.local.dao.ProductivityReportDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
@@ -34,6 +35,7 @@ object DatabaseModule {
                 PepinilloDatabase.MIGRATION_3_4,
                 PepinilloDatabase.MIGRATION_4_5,
                 PepinilloDatabase.MIGRATION_5_6,
+                PepinilloDatabase.MIGRATION_6_7,
             )
             .build()
     }
@@ -55,4 +57,7 @@ object DatabaseModule {
 
     @Provides
     fun provideUserDao(db: PepinilloDatabase): UserDao = db.userDao()
+
+    @Provides
+    fun providePreferenceSyncDao(db: PepinilloDatabase): PreferenceSyncDao = db.preferenceSyncDao()
 }

@@ -150,6 +150,14 @@ class PepinilloApiClient @Inject constructor(
     suspend fun upsertStats(stats: FocusStatsDto): NetworkResult<FocusStatsDto> =
         safeCall { httpClient.post("focus/stats") { jsonBody(stats) }.body() }
 
+    // ── Preferences ──
+
+    suspend fun getPreferences(): NetworkResult<PreferenceSyncResponse> =
+        safeCall { httpClient.get("preferences").body() }
+
+    suspend fun upsertPreferences(request: PreferenceSyncRequest): NetworkResult<PreferenceSyncResponse> =
+        safeCall { httpClient.put("preferences") { jsonBody(request) }.body() }
+
     // ── Billing ──
 
     suspend fun verifyReceipt(request: VerifyReceiptRequest): NetworkResult<VerifyReceiptResponse> =

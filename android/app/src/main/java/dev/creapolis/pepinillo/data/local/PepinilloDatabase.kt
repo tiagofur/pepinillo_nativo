@@ -6,14 +6,16 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
+import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
 import dev.creapolis.pepinillo.data.local.dao.ProductivityReportDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.local.dao.UserDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
+import dev.creapolis.pepinillo.data.local.entity.PreferenceSyncEntity
 import dev.creapolis.pepinillo.data.local.entity.ProductivityReportEntity
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
-import dev.creapolis.pepinillo.data.local.dao.UserDao
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.data.local.entity.UserEntity
 
@@ -25,8 +27,9 @@ import dev.creapolis.pepinillo.data.local.entity.UserEntity
         SubtaskEntity::class,
         ProductivityReportEntity::class,
         UserEntity::class,
+        PreferenceSyncEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 abstract class PepinilloDatabase : RoomDatabase() {
@@ -36,6 +39,7 @@ abstract class PepinilloDatabase : RoomDatabase() {
     abstract fun subtaskDao(): SubtaskDao
     abstract fun productivityReportDao(): ProductivityReportDao
     abstract fun userDao(): UserDao
+    abstract fun preferenceSyncDao(): PreferenceSyncDao
 
     companion object {
         val MIGRATION_5_6 = object : Migration(5, 6) {
@@ -55,6 +59,20 @@ abstract class PepinilloDatabase : RoomDatabase() {
                         cachedAt INTEGER NOT NULL DEFAULT 0
                     )
                 """.trimIndent())
+            }
+        }
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS preference_sync_metadata (
+                        key TEXT NOT NULL PRIMARY KEY,
+                        updated_at INTEGER NOT NULL,
+                        is_dirty INTEGER NOT NULL DEFAULT 1
+                    )
+                """.trimIndent())
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN is_dirty INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE daily_stats ADD COLUMN synced_at INTEGER")
             }
         }
 
