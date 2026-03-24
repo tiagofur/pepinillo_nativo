@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -46,4 +47,10 @@ interface FocusSessionDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIfNotExists(session: FocusSessionEntity)
+
+    @Upsert
+    suspend fun upsertSession(session: FocusSessionEntity)
+
+    @Upsert
+    suspend fun upsertSessions(sessions: List<FocusSessionEntity>)
 }

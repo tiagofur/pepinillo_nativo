@@ -121,6 +121,9 @@ class PepinilloApiClient @Inject constructor(
     suspend fun getAllSessions(): NetworkResult<List<PomodoroSessionDto>> =
         safeCall { httpClient.get("focus/sessions/all").body() }
 
+    suspend fun syncSessions(request: SessionSyncRequest): NetworkResult<SessionSyncResponse> =
+        safeCall { httpClient.post("sync/sessions") { jsonBody(request) }.body() }
+
     // ── Pomodoro Config ──
 
     suspend fun getConfig(): NetworkResult<PomodoroConfigDto> =

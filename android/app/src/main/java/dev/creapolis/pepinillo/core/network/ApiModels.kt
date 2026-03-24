@@ -149,6 +149,20 @@ data class PomodoroSessionDto(
     val updatedAt: String = "",
 )
 
+// ── Session Sync ──
+
+@Serializable
+data class SessionSyncRequest(
+    val sessions: List<PomodoroSessionDto>,
+    val lastSyncAt: String? = null,
+)
+
+@Serializable
+data class SessionSyncResponse(
+    val sessions: List<PomodoroSessionDto>,
+    val serverTimestamp: String,
+)
+
 // ── Focus Stats ──
 
 @Serializable
