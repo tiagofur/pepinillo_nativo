@@ -1,10 +1,12 @@
 package dev.creapolis.pepinillo.core.network
 
 import android.util.Log
+import dev.creapolis.pepinillo.core.auth.AuthStore
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -26,6 +28,7 @@ private const val TAG = "PepinilloApi"
 class PepinilloApiClient @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
+    private val authStore: AuthStore,
 ) {
     // ── Auth ──
 
@@ -89,7 +92,7 @@ class PepinilloApiClient @Inject constructor(
         safeCall { httpClient.delete("tasks/$id").body() }
 
     suspend fun syncTasks(request: TaskSyncRequest): NetworkResult<TaskSyncResponse> =
-        safeCall { httpClient.post("tasks/sync") { jsonBody(request) }.body() }
+        safeCall { httpClient.post("tasks/sync") { jsonBody(request); withDeviceId() }.body() }
 
     // ── Subtasks ──
 
@@ -122,7 +125,7 @@ class PepinilloApiClient @Inject constructor(
         safeCall { httpClient.get("focus/sessions/all").body() }
 
     suspend fun syncSessions(request: SessionSyncRequest): NetworkResult<SessionSyncResponse> =
-        safeCall { httpClient.post("sync/sessions") { jsonBody(request) }.body() }
+        safeCall { httpClient.post("sync/sessions") { jsonBody(request); withDeviceId() }.body() }
 
     // ── Pomodoro Config ──
 
@@ -159,12 +162,12 @@ class PepinilloApiClient @Inject constructor(
         safeCall { httpClient.get("preferences").body() }
 
     suspend fun upsertPreferences(request: PreferenceSyncRequest): NetworkResult<PreferenceSyncResponse> =
-        safeCall { httpClient.put("preferences") { jsonBody(request) }.body() }
+        safeCall { httpClient.put("preferences") { jsonBody(request); withDeviceId() }.body() }
 
     // ── Initial Upload ──
 
     suspend fun initialUpload(request: InitialUploadRequest): NetworkResult<InitialUploadResponse> =
-        safeCall { httpClient.post("sync/initial-upload") { jsonBody(request) }.body() }
+        safeCall { httpClient.post("sync/initial-upload") { jsonBody(request); withDeviceId() }.body() }
 
     // ── Full Sync (cursor-paginated pull) ──
 
@@ -178,6 +181,7 @@ class PepinilloApiClient @Inject constructor(
                 taskCursor?.let { parameter("taskCursor", it) }
                 sessionCursor?.let { parameter("sessionCursor", it) }
                 parameter("limit", limit.toString())
+                withDeviceId()
             }.body()
         }
 
@@ -234,5 +238,9 @@ class PepinilloApiClient @Inject constructor(
     private fun io.ktor.client.request.HttpRequestBuilder.jsonBody(body: Any) {
         contentType(ContentType.Application.Json)
         setBody(body)
+    }
+
+    private fun io.ktor.client.request.HttpRequestBuilder.withDeviceId() {
+        header("X-Device-ID", authStore.getOrCreateDeviceId())
     }
 }

@@ -240,7 +240,7 @@ class SyncEngine @Inject constructor(
 
     // ── Task Sync ──
 
-    private suspend fun syncTasks() {
+    internal suspend fun syncTasks() {
         val dirtyTasks = taskDao.getDirtyTasks()
 
         if (dirtyTasks.isEmpty()) {
@@ -359,7 +359,7 @@ class SyncEngine @Inject constructor(
 
     // ── Session Sync ──
 
-    private suspend fun syncSessions() {
+    internal suspend fun syncSessions() {
         val dirtySessions = sessionDao.getDirtySessions()
         val userId = authStore.getUserId() ?: ""
 
@@ -416,7 +416,7 @@ class SyncEngine @Inject constructor(
 
     // ── Daily Stats Sync ──
 
-    private suspend fun syncDailyStats() {
+    internal suspend fun syncDailyStats() {
         try {
             // Pull all stats from server for the last 365 days
             val to = LocalDate.now(ZoneOffset.UTC)

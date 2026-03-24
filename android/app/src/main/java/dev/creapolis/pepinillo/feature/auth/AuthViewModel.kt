@@ -21,6 +21,7 @@ import dev.creapolis.pepinillo.data.repository.UserRepository
 import dev.creapolis.pepinillo.data.sync.InitialSyncManager
 import dev.creapolis.pepinillo.data.sync.InitialUploadResult
 import dev.creapolis.pepinillo.data.sync.SyncEngine
+import dev.creapolis.pepinillo.data.sync.SyncWebSocketClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +46,7 @@ class AuthViewModel @Inject constructor(
     private val syncEngine: SyncEngine,
     private val initialSyncManager: InitialSyncManager,
     private val identityManager: IdentityManager,
+    private val syncWebSocketClient: SyncWebSocketClient,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState(
@@ -165,6 +167,7 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
+            syncWebSocketClient.disconnect()
             val refreshToken = authStore.getRefreshToken()
             apiClient.logout(refreshToken)
             userRepository.clearCache()
@@ -291,8 +294,9 @@ class AuthViewModel @Inject constructor(
             }
         }
 
-        // Start normal incremental sync
+        // Start normal incremental sync and connect WebSocket
         viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
+        syncWebSocketClient.connect()
         _uiState.value = _uiState.value.copy(
             isLoading = false,
             googleSignInLoading = false,
