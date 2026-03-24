@@ -17,11 +17,29 @@ class FocusComplicationDataSource : SuspendingComplicationDataSourceService() {
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
         val state = WearSnapshotStore.readTimerState(this)
+
+        // When running, recalculate from the stored end epoch for a live countdown
+        val (liveDisplayTime, liveProgress) = if (
+            state.status == "Running" && state.phaseEndEpochMs > 0 && state.totalDurationMs > 0
+        ) {
+            val now = System.currentTimeMillis()
+            val remainingMs = (state.phaseEndEpochMs - now).coerceAtLeast(0L)
+            val totalSec = (remainingMs + 999) / 1000
+            val mins = totalSec / 60
+            val secs = totalSec % 60
+            val display = "%02d:%02d".format(mins, secs)
+            val elapsed = (state.totalDurationMs - remainingMs).coerceAtLeast(0L)
+            val prog = (elapsed.toFloat() / state.totalDurationMs.toFloat()).coerceIn(0f, 1f)
+            display to prog
+        } else {
+            state.displayTime to state.progress.coerceIn(0f, 1f)
+        }
+
         return buildData(
             type = request.complicationType,
-            displayTime = state.displayTime,
+            displayTime = liveDisplayTime,
             mode = state.mode,
-            progress = state.progress.coerceIn(0f, 1f),
+            progress = liveProgress,
         )
     }
 

@@ -117,6 +117,10 @@ data class WearTimerState(
     val linkedTaskId: String? = null,
     val linkedTaskName: String? = null,
     val completedSessions: Int = 0,
+    /** Epoch millis when the current phase ends (only meaningful when status == Running). */
+    val phaseEndEpochMs: Long = 0L,
+    /** Total duration of the current phase in milliseconds. */
+    val totalDurationMs: Long = 0L,
 )
 
 data class WearTask(

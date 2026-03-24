@@ -133,10 +133,21 @@ class WearSyncListenerService : WearableListenerService() {
             when (path) {
                 WearDataPaths.PATH_TIMER -> {
                     val linkedId = dataMap.getString("linkedTaskId", "")
+                    val status = dataMap.getString("status", "Idle")
+                    val elapsedMillis = dataMap.getLong("elapsedMillis")
+                    val totalMillis = dataMap.getLong("totalMillis")
+                    val timestamp = dataMap.getLong("timestamp")
+                    // Compute the epoch time when the phase ends so the watch can
+                    // independently count down without waiting for the next sync.
+                    val phaseEndEpochMs = if (status == "Running" && totalMillis > 0) {
+                        timestamp + (totalMillis - elapsedMillis)
+                    } else {
+                        0L
+                    }
                     val timerState = WearTimerState(
                         mode = dataMap.getString("mode", "Pomodoro"),
                         phase = dataMap.getString("phase", "Work"),
-                        status = dataMap.getString("status", "Idle"),
+                        status = status,
                         displayTime = dataMap.getString("displayTime", "00:00"),
                         phaseLabel = dataMap.getString("phaseLabel", "Focus"),
                         progress = dataMap.getFloat("progress", 0f),
@@ -144,6 +155,8 @@ class WearSyncListenerService : WearableListenerService() {
                         linkedTaskId = linkedId.ifEmpty { null },
                         linkedTaskName = dataMap.getString("linkedTaskName", "").ifEmpty { null },
                         completedSessions = dataMap.getInt("completedSessions", 0),
+                        phaseEndEpochMs = phaseEndEpochMs,
+                        totalDurationMs = totalMillis,
                     )
                     processor.onTimerData(timerState)
                 }
