@@ -20,12 +20,14 @@ func (h *SyncHandler) SyncSessions(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
 	}
 
+	deviceID := c.Get("X-Device-ID", "")
+
 	var req services.SessionSyncRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
-	result, err := h.sync.SyncSessions(c.Context(), userID, req.Sessions, req.LastSyncAt)
+	result, err := h.sync.SyncSessions(c.Context(), userID, deviceID, req.Sessions, req.LastSyncAt)
 	if err != nil {
 		return err
 	}
@@ -62,12 +64,14 @@ func (h *SyncHandler) InitialUpload(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
 	}
 
+	deviceID := c.Get("X-Device-ID", "")
+
 	var req services.InitialUploadRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
-	result, err := h.sync.InitialUpload(c.Context(), userID, &req)
+	result, err := h.sync.InitialUpload(c.Context(), userID, deviceID, &req)
 	if err != nil {
 		return err
 	}

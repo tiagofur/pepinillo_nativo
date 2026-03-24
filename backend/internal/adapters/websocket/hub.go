@@ -116,6 +116,29 @@ func (h *Hub) SendToUser(userID string, message []byte) {
 	}
 }
 
+// SendToUserExcluding broadcasts a message to all of a user's connections
+// EXCEPT the one with the given deviceID (prevents echo to the originating device).
+func (h *Hub) SendToUserExcluding(userID, excludeDeviceID string, message []byte) {
+	h.mu.RLock()
+	var stale []*Client
+	if clients, ok := h.clients[userID]; ok {
+		for _, client := range clients {
+			if client.DeviceID != excludeDeviceID {
+				select {
+				case client.Send <- message:
+				default:
+					stale = append(stale, client)
+				}
+			}
+		}
+	}
+	h.mu.RUnlock()
+
+	for _, client := range stale {
+		h.unregister <- client
+	}
+}
+
 func (h *Hub) BroadcastToUsers(userIDs []string, message []byte) {
 	h.mu.RLock()
 	var stale []*Client

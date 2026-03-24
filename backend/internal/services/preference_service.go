@@ -23,7 +23,7 @@ func (s *PreferenceService) GetPreferences(ctx context.Context, userID string) (
 	return s.repo.GetByUser(ctx, userID)
 }
 
-func (s *PreferenceService) UpsertPreferences(ctx context.Context, userID string, prefs []domain.UserPreference) ([]domain.UserPreference, error) {
+func (s *PreferenceService) UpsertPreferences(ctx context.Context, userID, deviceID string, prefs []domain.UserPreference) ([]domain.UserPreference, error) {
 	now := time.Now().UTC()
 	for i := range prefs {
 		prefs[i].UserID = userID
@@ -37,11 +37,11 @@ func (s *PreferenceService) UpsertPreferences(ctx context.Context, userID string
 		return nil, err
 	}
 
-	s.sendSettingsUpdatedNotification(userID)
+	s.sendSettingsUpdatedNotification(userID, deviceID)
 	return merged, nil
 }
 
-func (s *PreferenceService) sendSettingsUpdatedNotification(userID string) {
+func (s *PreferenceService) sendSettingsUpdatedNotification(userID, excludeDeviceID string) {
 	if s.wsManager == nil {
 		return
 	}
@@ -57,5 +57,5 @@ func (s *PreferenceService) sendSettingsUpdatedNotification(userID string) {
 		return
 	}
 
-	_ = s.wsManager.SendToUser(userID, msgBytes)
+	_ = s.wsManager.SendToUserExcluding(userID, excludeDeviceID, msgBytes)
 }

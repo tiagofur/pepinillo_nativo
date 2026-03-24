@@ -64,7 +64,7 @@ type SessionSyncResponse struct {
 	ServerTimestamp time.Time             `json:"serverTimestamp"`
 }
 
-func (s *SyncService) SyncSessions(ctx context.Context, userID string, sessions []domain.FocusSession, lastSyncAt *time.Time) (*SessionSyncResponse, error) {
+func (s *SyncService) SyncSessions(ctx context.Context, userID, deviceID string, sessions []domain.FocusSession, lastSyncAt *time.Time) (*SessionSyncResponse, error) {
 	now := time.Now().UTC()
 
 	// Stamp all incoming sessions with the user ID and current time
@@ -94,8 +94,8 @@ func (s *SyncService) SyncSessions(ctx context.Context, userID string, sessions 
 		}
 	}
 
-	// 4. Broadcast WS notification to other devices
-	s.sendSyncNotification(userID, len(sessions))
+	// 4. Broadcast WS notification to other devices (exclude originating device)
+	s.sendSyncNotification(userID, deviceID, len(sessions))
 
 	return &SessionSyncResponse{
 		Sessions:        updatedSessions,
@@ -141,7 +141,7 @@ type InitialUploadResponse struct {
 // InitialUpload atomically upserts all client data (tasks, sessions, settings)
 // and returns the full merged server state. This is idempotent — sending the
 // same request twice produces the same result (upsert, not insert).
-func (s *SyncService) InitialUpload(ctx context.Context, userID string, req *InitialUploadRequest) (*InitialUploadResponse, error) {
+func (s *SyncService) InitialUpload(ctx context.Context, userID, deviceID string, req *InitialUploadRequest) (*InitialUploadResponse, error) {
 	now := time.Now().UTC()
 
 	// 1. Check if user already has data on the server
@@ -197,8 +197,8 @@ func (s *SyncService) InitialUpload(ctx context.Context, userID string, req *Ini
 		return nil, fmt.Errorf("fetch sessions: %w", err)
 	}
 
-	// 7. Broadcast WS notification
-	s.sendInitialUploadNotification(userID)
+	// 7. Broadcast WS notification (exclude originating device)
+	s.sendInitialUploadNotification(userID, deviceID)
 
 	return &InitialUploadResponse{
 		Tasks:           mergedTasks,
@@ -209,7 +209,7 @@ func (s *SyncService) InitialUpload(ctx context.Context, userID string, req *Ini
 	}, nil
 }
 
-func (s *SyncService) sendInitialUploadNotification(userID string) {
+func (s *SyncService) sendInitialUploadNotification(userID, excludeDeviceID string) {
 	if s.wsManager == nil {
 		return
 	}
@@ -225,7 +225,7 @@ func (s *SyncService) sendInitialUploadNotification(userID string) {
 		return
 	}
 
-	_ = s.wsManager.SendToUser(userID, msgBytes)
+	_ = s.wsManager.SendToUserExcluding(userID, excludeDeviceID, msgBytes)
 }
 
 // FullSync returns paginated tasks, sessions, and all settings for a user.
@@ -336,7 +336,7 @@ func buildPage[T any](items []T, limit int, cursorFn func(T) string) PaginatedPa
 	}
 }
 
-func (s *SyncService) sendSyncNotification(userID string, sessionCount int) {
+func (s *SyncService) sendSyncNotification(userID, excludeDeviceID string, sessionCount int) {
 	if s.wsManager == nil {
 		return
 	}
@@ -354,5 +354,5 @@ func (s *SyncService) sendSyncNotification(userID string, sessionCount int) {
 		return
 	}
 
-	_ = s.wsManager.SendToUser(userID, msgBytes)
+	_ = s.wsManager.SendToUserExcluding(userID, excludeDeviceID, msgBytes)
 }

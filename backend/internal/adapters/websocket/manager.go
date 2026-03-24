@@ -62,12 +62,13 @@ func (m *Manager) HandleConnection(ctx context.Context, userID string, conn inte
 }
 
 // HandleFiberConn registers a WebSocket client from a gofiber/contrib/websocket handler.
-func (m *Manager) HandleFiberConn(conn *fiberws.Conn, userID string) {
+func (m *Manager) HandleFiberConn(conn *fiberws.Conn, userID, deviceID string) {
 	client := &Client{
-		Hub:    m.hub,
-		UserID: userID,
-		ID:     m.hub.GenerateClientID(),
-		Send:   make(chan []byte, 256),
+		Hub:      m.hub,
+		UserID:   userID,
+		ID:       m.hub.GenerateClientID(),
+		DeviceID: deviceID,
+		Send:     make(chan []byte, 256),
 	}
 
 	m.hub.register <- client
@@ -78,6 +79,15 @@ func (m *Manager) HandleFiberConn(conn *fiberws.Conn, userID string) {
 
 func (m *Manager) SendToUser(userID string, message []byte) error {
 	m.hub.SendToUser(userID, message)
+	return nil
+}
+
+func (m *Manager) SendToUserExcluding(userID, excludeDeviceID string, message []byte) error {
+	if excludeDeviceID == "" {
+		m.hub.SendToUser(userID, message)
+	} else {
+		m.hub.SendToUserExcluding(userID, excludeDeviceID, message)
+	}
 	return nil
 }
 

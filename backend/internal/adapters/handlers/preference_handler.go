@@ -39,12 +39,14 @@ func (h *PreferenceHandler) Upsert(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
 	}
 
+	deviceID := c.Get("X-Device-ID", "")
+
 	var req upsertPreferencesRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
-	merged, err := h.preferences.UpsertPreferences(c.Context(), userID, req.Preferences)
+	merged, err := h.preferences.UpsertPreferences(c.Context(), userID, deviceID, req.Preferences)
 	if err != nil {
 		return err
 	}
