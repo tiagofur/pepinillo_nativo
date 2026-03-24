@@ -1,101 +1,101 @@
-# Pepinillo — Documento Unificado de Features
+# Pepinillo — Unified Features Document
 
-**Version:** 1.0
-**Fecha:** 2026-03-20
-**Plataformas:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS
-**Autor:** Tiago David + Claude Code
-**Estado:** Borrador
-
----
-
-## Convenciones de Etiquetas
-
-| Etiqueta | Significado |
-|----------|-------------|
-| **[Todas]** | Feature compartida en todas las plataformas |
-| **[iOS]** | Exclusiva de iOS (iPhone, iPad, Mac) |
-| **[Android]** | Exclusiva de Android (Phone, Tablet, Foldable) |
-| **[watchOS]** | Exclusiva de Apple Watch |
-| **[Wear OS]** | Exclusiva de Wear OS |
+**Version:** 1.0  
+**Last Updated:** 2026-03-24  
+**Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS  
+**Author:** Tiago David + Claude Code  
+**Status:** Active
 
 ---
 
-## P0 — Must-Have (Obligatorio)
+## Label Conventions
 
-### Motor de Enfoque Multi-Modo [Todas]
+| Label | Meaning |
+|-------|---------|
+| **[All]** | Supported on all platforms |
+| **[iOS]** | Exclusive to iOS (iPhone, iPad, Mac) |
+| **[Android]** | Exclusive to Android (Phone, Tablet, Foldable) |
+| **[watchOS]** | Exclusive to Apple Watch |
+| **[Wear OS]** | Exclusive to Wear OS |
 
-El diferenciador principal de Pepinillo: 4 modos de enfoque en una sola app, implementados con **Strategy pattern** para compartir el 80% del motor de timer entre modos.
+---
 
-#### Modos disponibles
+## P0 — Must-Have (Mandatory)
 
-| Modo | Descripcion | Tier |
+### Multi-Modal Focus Engine [All]
+
+Pepinillo's primary differentiator: 4 focus techniques in one app, implemented with **Strategy pattern** to share 80% of timer logic across modes.
+
+#### Available Modes
+
+| Mode | Description | Tier |
 |------|-------------|------|
-| **Pomodoro** | Intervalos clasicos 25/5/15. Ciclos automaticos work-break-work. Seguimiento de numero de pomodoro (ej. "3 de 4"). Duraciones personalizables. | FREE |
-| **Flowtime** | Sesion abierta sin intervalos fijos. Al sentir fatiga, el usuario toma un break. La app sugiere duracion de break segun tiempo enfocado (10 min -> 2 min break, 50 min -> 10 min break). Ideal para trabajo creativo. | PRO |
-| **Time Block** | Bloque fijo de tiempo (ej. "2 horas de escritura"). Un countdown continuo con check-ins opcionales a mitad de bloque. Seguimiento de bloques completados por dia. | PRO |
-| **Stopwatch (Chrono)** | Timer ascendente sin presion. Sin metas ni estructura. Solo rastrea cuanto tiempo trabajas. Pausa y stop. Ideal para el segmento casual/flexible. | FREE |
+| **Pomodoro** | Classic 25/5/15 intervals. Automatic work-break-work cycles. Tracks pomodoro count (e.g., "3 of 4"). Customizable durations. | FREE |
+| **Flowtime** | Open-ended session without fixed intervals. When fatigue hits, user takes a break. App suggests break duration based on focused time (10 min → 2 min break, 50 min → 10 min break). Ideal for creative work. | PRO |
+| **Time Block** | Fixed time block (e.g., "2 hours of writing"). Continuous countdown with optional mid-point check-ins. Tracks completed blocks per day. | PRO |
+| **Stopwatch (Chrono)** | Ascending timer without pressure. No goals or structure. Just tracks how long you work. Pause and stop. Ideal for casual/flexible segment. | FREE |
 
-#### Arquitectura del motor
+#### Engine Architecture
 
-- **Strategy pattern** unificado: una interfaz comun (`FocusModeStrategy` / `FocusModeProtocol`) con implementaciones especificas por modo
-- **Estado compartido**: timer, pause/resume, interruption tracking, session linking
-- **Supervision en background**: el timer debe sobrevivir minimizacion, cambio de app y lock de pantalla
-  - **[iOS]**: Live Activity + aritmetica de `Date` para recalcular al volver al foreground. No depende de timers en background.
-  - **[Android]**: Foreground Service (`START_STICKY`) con notificacion persistente. Survive process death.
-- **Pause/Resume**: tracking preciso de tiempo pausado y numero de interrupciones por sesion
-- **Session Journaling**: reflexion post-sesion con nota de texto libre ("Que logre?") + rating de satisfaccion 1-5 estrellas
+- **Unified Strategy pattern:** one common interface (`FocusModeStrategy` / `FocusModeProtocol`) with mode-specific implementations
+- **Shared state:** timer, pause/resume, interruption tracking, session linking
+- **Background supervision:** timer must survive app minimization, app switching, and screen lock
+  - **[iOS]**: Live Activity + `Date` arithmetic to recalculate on foreground return. No background timers.
+  - **[Android]**: Foreground Service (`START_STICKY`) with persistent notification. Survives process death.
+- **Pause/Resume:** precise tracking of paused time and interruption count per session
+- **Session Journaling:** post-session reflection with free-text note ("What did I accomplish?") + 1-5 star satisfaction rating
 
 ---
 
-### Gestion de Tareas [Todas]
+### Task Management [All]
 
-Sistema de tareas integrado con el motor de enfoque. No es un task manager generico: esta disenado para planificar y ejecutar sesiones de deep work.
+Integrated task system with the focus engine. Not a generic task manager: designed to plan and execute deep work sessions.
 
-#### Funcionalidades core
+#### Core Functionality
 
-| Feature | Tier | Detalle |
+| Feature | Tier | Details |
 |---------|------|---------|
-| CRUD de tareas | FREE | Crear, editar, eliminar tareas con titulo, descripcion |
-| Drag-to-reorder | FREE | Reordenar tareas por prioridad arrastrando |
-| Subtareas | PRO | Subtareas anidadas (hasta 20 por tarea) con checkbox individual |
-| Prioridad | FREE | Ninguna / Baja / Media / Alta — indicador visual |
-| Niveles de energia | FREE | Deep Work / Shallow Work / Admin — para agrupar tareas similares |
-| Pomodoros estimados/completados | FREE | Asignar estimacion de pomodoros a una tarea, trackear los completados |
-| Vincular tarea a sesion de enfoque | FREE | Cualquier modo de enfoque puede vincularse a una tarea activa. La sesion registra: tarea, modo usado, duracion, estado de completitud |
-| Tareas recurrentes | PRO | 5 presets: diario, dias de semana, semanal, bisemanal, mensual |
-| Limite de tareas | FREE: 3 activas / PRO: ilimitadas | Motiva upgrade natural |
+| Task CRUD | FREE | Create, edit, delete tasks with title and description |
+| Drag-to-reorder | FREE | Reorder tasks by priority via drag |
+| Subtasks | PRO | Nested subtasks (up to 20 per task) with individual checkboxes |
+| Priority | FREE | None / Low / Medium / High — visual indicator |
+| Energy Levels | FREE | Deep Work / Shallow Work / Admin — group similar tasks |
+| Est./Completed Pomodoros | FREE | Assign pomodoro estimate to task, track completed |
+| Link Task to Focus Session | FREE | Any focus mode can link to active task. Session records: task, mode used, duration, completion status |
+| Recurring Tasks | PRO | 5 presets: daily, weekdays, weekly, biweekly, monthly |
+| Task Limit | FREE: 3 active / PRO: unlimited | Natural upgrade motivation |
 
 ---
 
-### Analytics y Dashboard [Todas]
+### Analytics & Dashboard [All]
 
-Panel analitico con desglose por modo de enfoque — no solo "horas totales" sino como rinde cada tecnica para el usuario.
+Analytic dashboard with mode-specific breakdown — not just "total hours" but how each technique performs for the user.
 
-#### Vistas temporales
+#### Time Views
 
-| Vista | Tier |
-|-------|------|
-| Hoy + ultimos 7 dias | FREE |
-| 30 dias | PRO |
-| 1 ano | PRO |
+| View | Tier |
+|------|------|
+| Today + Last 7 Days | FREE |
+| 30 Days | PRO |
+| 1 Year | PRO |
 
-#### Componentes del dashboard
+#### Dashboard Components
 
-| Componente | Tier | Detalle |
-|------------|------|---------|
-| Resumen diario | FREE | Horas de focus, sesiones completadas, tareas terminadas |
-| Desglose por modo | PRO | Graficas que muestran distribucion de tiempo entre Pomodoro/Flowtime/TimeBlock/Chrono |
-| Horas mas productivas | PRO | Analisis por hora del dia y dia de la semana |
-| Tasa de completitud por modo | PRO | Para que el usuario descubra cual tecnica le funciona mejor |
-| Logros (Achievements) | FREE | 6 tipos de insignia: Primera Sesion, Racha Semanal, Maestro Pomodoro, Deep Diver, Club del Centenario, Madrugador |
-| Weekly Review | PRO | Comparacion semanal: horas de focus, distribucion de modos, tareas, streaks. Flechas de tendencia vs semana anterior |
-| Monthly Review | PRO | Revision mensual con tendencias a largo plazo y patrones de productividad |
-| AI Productivity Reports | PRO | Reportes generados por IA on-device, sin enviar datos a la nube |
+| Component | Tier | Details |
+|-----------|------|---------|
+| Daily Summary | FREE | Focus hours, completed sessions, finished tasks |
+| Mode Breakdown | PRO | Charts showing time distribution across Pomodoro/Flowtime/TimeBlock/Chrono |
+| Most Productive Hours | PRO | Analysis by hour of day and day of week |
+| Completion Rate by Mode | PRO | Help user discover which technique works best |
+| Achievements | FREE | 6 badge types: First Session, Weekly Streak, Pomodoro Master, Deep Diver, Century Club, Early Bird |
+| Weekly Review | PRO | Weekly comparison: focus hours, mode distribution, tasks, streaks. Trend arrows vs. previous week |
+| Monthly Review | PRO | Monthly review with long-term trends and productivity patterns |
+| AI Productivity Reports | PRO | On-device AI-generated reports, no cloud data send |
 
-#### Implementacion de AI Reports por plataforma
+#### AI Reports Implementation by Platform
 
-- **[iOS]**: Apple Foundation Models (iOS 26+). Si el dispositivo no soporta Foundation Models, fallback a plantillas predefinidas con datos interpolados.
-- **[Android]**: ML on-device (Gemini Nano / plantillas inteligentes). Fallback a plantillas con datos interpolados si ML no esta disponible.
+- **[iOS]**: Apple Foundation Models (iOS 18+). Fallback to predefined templates with interpolated data if device doesn't support Foundation Models.
+- **[Android]**: On-device ML (Gemini Nano / smart templates). Fallback to templates with interpolated data if ML unavailable.
 
 ---
 
