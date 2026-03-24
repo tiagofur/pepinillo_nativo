@@ -46,7 +46,7 @@
 - Drill-down de analytics por tarea individual
 
 ### Ecosistema Apple ✅
-- **watchOS app:** timer con 4 modos, lista de tareas, dashboard, enhanced Smart Stack widgets (rectangular with live countdown + phase + linked task, circular with actual progress, corner with live countdown), smart relevance scoring (100 active / 10 idle), 5-min refresh when active
+- **watchOS app:** timer con 4 modos, lista de tareas, dashboard, enhanced Smart Stack widgets (rectangular with live countdown + phase + linked task, circular with actual progress, corner with live countdown), smart relevance scoring (100 active / 10 idle), 5-min refresh when active, Tasks complication (accessoryRectangular, accessoryCircular, accessoryCorner)
 - **Watch-Phone connectivity:** sync bidireccional de estado via WatchConnectivity
 - **Widgets:** Home Screen (S/M/L) + Lock Screen, todos mode-aware
 - **Live Activity + Dynamic Island:** 4 UIs distintas segun el modo activo
@@ -250,6 +250,7 @@
 | Watch/Wear complications (enhanced) | ✅ Enhanced (live countdown, progress, relevance) | ✅ | Both platforms have rich complications |
 | Wear Focus Timer Tile (enhanced) | N/A | ✅ | Progress arc, phase label, session counter, linked task |
 | Wear Tasks Tile | N/A | ✅ | Top 4 tasks with energy emoji + pomodoro progress |
+| watchOS Tasks Complication | ✅ | N/A | accessoryRectangular, accessoryCircular, accessoryCorner |
 | watchOS Smart Stack widgets | ✅ Enhanced (live countdown, relevance scoring) | N/A | Rectangular, circular, corner complications |
 | Watch-Phone sync | ✅ WatchConnectivity | ✅ Data Layer | |
 | Home Screen widgets | ✅ | ✅ Glance | |
@@ -499,7 +500,28 @@ Sync implementation enhancements to improve cross-platform reliability and data 
 
 ---
 
-## 9. Resumen de Brechas Criticas
+## 9. Watch Complication Fixes & Tasks Parity (2026-03-24)
+
+### Pomodoro Live Countdown Fixes
+
+| Fix | Platform | Details |
+|-----|----------|---------|
+| Tile countdown updates live | Wear OS | Pomodoro timer tile was stuck/static; now updates countdown in real time |
+| Complication countdown at progress=0 | watchOS | Pomodoro complication now shows live countdown even when progress=0 (timer just started) |
+
+### watchOS Tasks Complication (New)
+
+| Complication Family | Content |
+|---------------------|---------|
+| accessoryRectangular | Top tasks list with completion status |
+| accessoryCircular | Completed tasks count |
+| accessoryCorner | Task count badge |
+
+**Cross-platform parity:** Tasks complication/tile now available on BOTH Wear OS (TasksTileService) and watchOS (TasksComplication). Pomodoro live countdown verified working on both platforms.
+
+---
+
+## 10. Resumen de Brechas Criticas
 
 ### Ambas Plataformas
 

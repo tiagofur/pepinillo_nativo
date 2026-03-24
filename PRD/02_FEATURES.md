@@ -176,7 +176,8 @@ App completa e independiente para Apple Watch:
 | Lista de tareas | Ver tareas del dia, marcar como completadas | PRO |
 | Dashboard | Stats del dia: horas de focus, sesiones, racha | PRO |
 | Haptics | Feedback haptico al terminar sesion, transiciones de fase | PRO |
-| Complications | Enhanced: circular uses actual progress, corner uses live countdown, rectangular shows live countdown + phase + linked task. Smart Stack relevance (score 100 active, 10 idle). 5-min refresh when active (15-min idle). | PRO |
+| Complications | Enhanced: circular uses actual progress, corner uses live countdown, rectangular shows live countdown + phase + linked task. Smart Stack relevance (score 100 active, 10 idle). 5-min refresh when active (15-min idle). Live countdown works even when progress=0 (timer just started). | PRO |
+| Tasks Complication | accessoryRectangular (top tasks list), accessoryCircular (completed count), accessoryCorner (task count badge). | PRO |
 | Sync | Comunicacion bidireccional con iPhone via WatchConnectivity | PRO |
 
 #### [Wear OS] — Wear OS Companion App
@@ -710,7 +711,7 @@ Pagar en cualquier tienda (App Store o Google Play) y obtener PRO en todas las p
 | Dashboard/Stats en reloj | ⬜ | ➖ | ⬜ | ✅ | PRO |
 | Complications (enhanced) | ⬜ | ➖ | ✅ | ✅ | PRO |
 | Focus Timer Tile (enhanced) | ➖ | ➖ | ➖ | ✅ | PRO |
-| Tasks Tile | ➖ | ➖ | ➖ | ✅ | PRO |
+| Tasks Tile | ➖ | ➖ | ✅ | ✅ | PRO |
 | Haptics en reloj | ⬜ | ➖ | ⬜ | ⬜ | PRO |
 | **Asistente de Voz** | | | | | |
 | Siri Shortcuts + App Intents | ✅ | ➖ | ➖ | ➖ | FREE |
@@ -811,7 +812,7 @@ Pagar en cualquier tienda (App Store o Google Play) y obtener PRO en todas las p
 
 ## Notas de Paridad Cross-Platform
 
-1. **Wear OS y watchOS tiles/widgets enhanced**: Wear OS now has two rich tiles (Focus Timer with progress arc + Tasks with top 4 tasks) and enhanced complications. watchOS Smart Stack widgets redesigned with live countdowns, phase info, linked task names, and smart relevance scoring. Both platforms persist extended snapshot data (linked task, session count, theme colors, phase dates) for tile/widget access.
+1. **Wear OS y watchOS tiles/widgets enhanced**: Wear OS now has two rich tiles (Focus Timer with progress arc + Tasks with top 4 tasks) and enhanced complications with live countdown. watchOS Smart Stack widgets redesigned with live countdowns, phase info, linked task names, and smart relevance scoring. watchOS now also has a Tasks complication (accessoryRectangular, accessoryCircular, accessoryCorner). Both platforms persist extended snapshot data (linked task, session count, theme colors, phase dates) for tile/widget access. Pomodoro live countdown verified working on both platforms (Wear OS tile updates live; watchOS complication shows countdown even at progress=0).
 
 2. **iOS esta adelantado en ecosistema**: Widgets, Live Activity, Siri, Calendar, Control Center, Mode Intelligence, y Soundscapes ya estan implementados en iOS. Android tiene pendientes en widgets, Quick Settings, Assistant, y Soundscapes.
 
