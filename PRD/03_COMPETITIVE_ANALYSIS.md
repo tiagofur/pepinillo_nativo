@@ -214,8 +214,8 @@ Four focus techniques. Integrated tasks. Every Apple and Android device. Choose 
 
 ### Taglines by language:
 
-| Idioma | Tagline Principal                | Alternativa                        |
-| ------ | -------------------------------- | ---------------------------------- |
+| Language | Primary Tagline                  | Alternative                        |
+| -------- | -------------------------------- | ---------------------------------- |
 | **EN** | "Focus your way."                | "Deep work, your way."             |
 | **ES** | "Trabaja profundo. A tu manera." | "Enfoca a tu manera."              |
 | **PT** | "Foco do seu jeito."             | "Trabalho profundo, do seu jeito." |
@@ -261,7 +261,7 @@ Four focus techniques. Integrated tasks. Every Apple and Android device. Choose 
 
 Pepinillo is the **only deep-work app that covers all 4 devices** (iPhone, Apple Watch, Android phone, Wear OS) with native experiences on each one. No competitor does this:
 
-| Competidor    |  iPhone   |   Watch   |  Android  |  Wear OS  |
+| Competitor    |  iPhone   |   Watch   |  Android  |  Wear OS  |
 | ------------- | :-------: | :-------: | :-------: | :-------: |
 | **Pepinillo** | ✅ native | ✅ native | ✅ native | ✅ native |
 | Structured    |    ✅     |    ✅     |    ❌     |    ❌     |

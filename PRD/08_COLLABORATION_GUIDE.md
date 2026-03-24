@@ -163,14 +163,12 @@ At the start of any session, load these files for context:
 
 ### iOS
 
-- `PRD_IOS/01_PRD_PEPINILLO_NATIVE.md` -- iOS-specific PRD.
-- `PRD_IOS/03_TECHNICAL_ARCHITECTURE.md` -- iOS technical architecture (TCA, SwiftData, etc.).
+- `PRD/05_TECHNICAL_ARCHITECTURE_IOS.md` -- iOS technical architecture (TCA, SwiftData, sync, etc.).
 - The specific feature files in `ios/`.
 
 ### Android
 
-- `PRD_ANDROID/01_PRD_ANDROID.md` -- Android-specific PRD.
-- `PRD_ANDROID/03_TECHNICAL_ARCHITECTURE.md` -- Android technical architecture (Circuit, Room, etc.).
+- `PRD/06_TECHNICAL_ARCHITECTURE_ANDROID.md` -- Android technical architecture (MVVM, Room, sync, etc.).
 - The specific feature files in `android/`.
 
 ---

@@ -299,14 +299,14 @@
 | Feature                   | iOS                   | Android                                           | Notes                                                  |
 | ------------------------- | --------------------- | ------------------------------------------------- | ------------------------------------------------------ |
 | Auth                      | ✅ Sign in with Apple | ✅ JWT + Go backend                              |                                                        |
-| Anonymous user support    | ⬜                    | ✅ IdentityManager state machine                 | Android: full offline use without account              |
-| Sync                      | ✅ CloudKit           | ✅ Room + SyncEngine + WorkManager + WebSocket   | Android: full backend sync architecture                |
-| Settings sync             | ✅ CloudKit (auto)    | ✅ SettingsSyncEngine (17 keys, per-key LWW)     | Android: bidirectional via user_preferences table      |
-| Batch session sync        | ⬜                    | ✅ POST /sync/sessions                            | Replaces individual POSTs                              |
-| Initial upload            | ⬜                    | ✅ POST /sync/initial-upload                      | Atomic upload on anonymous-to-registered transition    |
-| New device full sync      | ✅ CloudKit (auto)    | ✅ GET /sync/full (cursor pagination)             |                                                        |
-| Real-time WebSocket sync  | ⬜                    | ✅ SyncWebSocketClient + SyncLifecycleObserver    | Notification-only, triggers HTTP sync                  |
-| Data merge dialog         | ⬜                    | ✅ DataMergeDialog composable                     | Upload local vs download cloud choice                  |
+| Anonymous user support    | ✅ IdentityClient     | ✅ IdentityManager state machine                 | Both: full offline use without account                 |
+| Sync                      | ✅ CloudKit + Backend | ✅ Room + SyncEngine + WorkManager + WebSocket   | Both: full backend sync architecture                   |
+| Settings sync             | ✅ PreferenceDirtyTracker (17 keys, per-key LWW) | ✅ SettingsSyncEngine (17 keys, per-key LWW)     | Both: bidirectional via user_preferences table |
+| Batch session sync        | ✅ SyncClient.syncSessions() | ✅ POST /sync/sessions                       | Both: replaces individual POSTs                        |
+| Initial upload            | ✅ SyncClient.initialUpload() | ✅ POST /sync/initial-upload                    | Both: atomic upload on anonymous-to-registered         |
+| New device full sync      | ✅ SyncClient.performInitialSync() (cursor) | ✅ GET /sync/full (cursor pagination)  | Both: cursor-based pagination                          |
+| Real-time WebSocket sync  | ✅ WebSocketClient (URLSessionWebSocketTask) | ✅ SyncWebSocketClient + SyncLifecycleObserver | Both: notification-only, triggers HTTP sync        |
+| Data merge dialog         | ✅ DataMergeView (SwiftUI sheet) | ✅ DataMergeDialog composable            | Both: upload local vs download cloud choice            |
 | Offline support           | ✅                    | ✅ dirty-flag + last-write-wins                   |                                                        |
 
 ### Billing
@@ -432,9 +432,9 @@
 | Platform | Status         | Detail                                                             |
 | -------- | -------------- | ------------------------------------------------------------------ |
 | Android  | 🔄 Partial     | Auth client + SyncEngine exist and connect to backend endpoints    |
-| iOS      | ❌ Not started | iOS currently uses CloudKit only; needs a new API client           |
+| iOS      | ✅ Implemented | SyncClient + IdentityClient + WebSocketClient + APIClient (TCA)   |
 | Wear OS  | 🔄 Partial     | Inherits Android phone sync via Data Layer                         |
-| watchOS  | ❌ Not started | Inherits iOS phone state via WatchConnectivity                     |
+| watchOS  | 🔄 Partial     | Inherits iOS phone state via WatchConnectivity (sync via phone)    |
 
 ### Applied Migrations
 
@@ -452,7 +452,7 @@
 | 1   | Deploy backend to cloud hosting                                       | P0       | None               | 4-8h     |
 | 2   | Add OAuth providers (Google + Apple) to backend                       | P0       | #1 (deployment)    | 8-12h    |
 | 3   | Android: add Google Sign-In via Credential Manager                    | P0       | #2 (OAuth backend) | 6-8h     |
-| 4   | iOS: create API client, connect auth + sync to backend                | P0       | #2 (OAuth backend) | 16-24h   |
+| 4   | ~~iOS: create API client, connect auth + sync to backend~~            | ✅ DONE  | #2 (OAuth backend) | Done     |
 | 5   | Improve sync engine (WebSocket real-time, bidirectional multi-device) | P1       | #1 (deployment)    | 12-16h   |
 | 6   | Cross-platform subscription verification                              | P1       | #1, #4             | 8-12h    |
 | 7   | User profile screen (both platforms)                                  | P1       | #2, #3, #4         | 8-12h    |
@@ -521,7 +521,7 @@ Sync implementation enhancements to improve cross-platform reliability and data 
 
 | Gap               | Platform(s) | Impact                                                      | Priority |
 | ----------------- | ----------- | ----------------------------------------------------------- | -------- |
-| Session sync stub | iOS         | Session data not synced to backend                          | P1       |
+| ~~Session sync stub~~ | ~~iOS~~ | ~~Session data not synced to backend~~ (FIXED: SyncClient.syncSessions) | ✅ Done  |
 | Focus config sync | Both        | Focus configs (`GET/PUT /pomodoro/config`) not implemented | P2       |
 | Daily stats sync  | Both        | No sync fields defined on DailyStats entity                 | P2       |
 
@@ -554,7 +554,7 @@ Sync implementation enhancements to improve cross-platform reliability and data 
 
 | Gap                          | iOS                 | Android                    | Impact                                                                               |
 | ---------------------------- | ------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
-| Sync engine gaps             | ⚠️ Partial          | ⚠️ Partial                 | Subtasks/sessions/config sync improved; daily stats sync is still pending           |
+| Sync engine gaps             | ✅ Full sync impl   | ⚠️ Partial                 | iOS: full sync architecture implemented; Android: subtasks/sessions improved; daily stats sync still pending on both |
 | Feature gating not enforced  | ⚠️                  | ⚠️ Partial                 | Android: subtasks/recurrence gated. iOS + other Android features still need gating |
 | Missing backend endpoints    | Low (uses CloudKit) | High (depends on backend)  | Stats and billing verification                                                       |
 

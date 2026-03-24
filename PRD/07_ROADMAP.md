@@ -12,7 +12,7 @@
 - **Hours/week:** 20-30 hours
 - **iOS started first**, Android second
 - **Estimated reuse:** ~40% of design and business logic translates directly from iOS to Android (Strategy pattern, domain models, UX flows)
-- **Go backend:** shared across both platforms; iOS uses CloudKit for local sync, Android uses a custom sync engine against the backend
+- **Go backend:** shared across both platforms; both iOS and Android now use the Go backend for sync (iOS retains CloudKit as secondary layer for Apple-to-Apple sync)
 
 ---
 

@@ -42,45 +42,45 @@
 
 ### Why TCA
 
-TCA fue elegido sobre MVVM, VIPER y Clean Architecture por las siguientes razones:
+TCA was chosen over MVVM, VIPER, and Clean Architecture for the following reasons:
 
-1. **Flujo de datos unidireccional** -- Status predecible, ideal para una app de temporizador con estados complejos (ejecutando, pausado, descanso, interrupcion, transicion de fase).
-2. **Gestion de efectos secundarios integrada** -- perfecto para ticks del temporizador, notificaciones, Synchronization CloudKit, conectividad Watch y Live Activities.
-3. **Testabilidad** -- cada reducer es una funcion pura; cada efecto es inyectable y testeable con `TestStore`.
-4. **Composabilidad** -- los features se componen en features padres, reflejando la estructura modular de Pepinillo.
-5. **Mantenimiento activo** -- Point-Free lo mantiene activamente, documentacion extensa, compatible con Swift 6.
+1. **Unidirectional data flow** -- Predictable state, ideal for a timer app with complex states (running, paused, break, interruption, phase transition).
+2. **Integrated side-effect management** -- perfect for timer ticks, notifications, CloudKit sync, Watch connectivity, and Live Activities.
+3. **Testability** -- every reducer is a pure function; every effect is injectable and testable with `TestStore`.
+4. **Composability** -- features compose into parent features, mirroring Pepinillo's modular structure.
+5. **Active maintenance** -- Point-Free actively maintains it, extensive documentation, compatible with Swift 6.
 
-### Patron fundamental
+### Fundamental Pattern
 
 ```
-Vista (SwiftUI) --[envia Action]--> Reducer --[produce State + Effect]--> Vista (re-render)
+View (SwiftUI) --[sends Action]--> Reducer --[produces State + Effect]--> View (re-render)
                                        |
                                        v
-                                   Effect --[operacion asincrona]--> Reducer (recibe Action de respuesta)
+                                   Effect --[async operation]--> Reducer (receives response Action)
 ```
 
-Cada feature sigue este patron:
+Each feature follows this pattern:
 
 ```swift
 @Reducer
-struct MiFeature {
+struct MyFeature {
     @ObservableState
-    struct State: Equatable { /* Status observable */ }
+    struct State: Equatable { /* Observable state */ }
 
-    enum Action: Equatable { /* acciones del user + respuestas del sistema */ }
+    enum Action: Equatable { /* user actions + system responses */ }
 
-    @Dependency(\.miClient) var miClient  // dependencias inyectables
+    @Dependency(\.myClient) var myClient  // injectable dependencies
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            case .botonTapped:
+            case .buttonTapped:
                 state.isLoading = true
                 return .run { send in
-                    let resultado = await miClient.operacion()
-                    await send(.resultadoRecibido(resultado))
+                    let result = await myClient.operation()
+                    await send(.resultReceived(result))
                 }
-            case .resultadoRecibido(let data):
+            case .resultReceived(let data):
                 state.isLoading = false
                 state.data = data
                 return .none
@@ -90,157 +90,171 @@ struct MiFeature {
 }
 ```
 
-Las vistas usan `@Bindable var store: StoreOf<MiFeature>` y envian acciones al store. Nunca mutan Status directamente.
+Views use `@Bindable var store: StoreOf<MyFeature>` and send actions to the store. They never mutate state directly.
 
 ---
 
-## 3. Estructura del Proyecto
+## 3. Project Structure
 
 ```
 ios/
 ├── App/
-│   ├── PepinilloApp.swift              # @main, creacion del Store raiz, ModelContainer
-│   ├── AppFeature.swift                # Reducer raiz: coordina tabs, Watch listener, auth
-│   ├── AppView.swift                   # Vista raiz con TabView / NavigationSplitView
-│   ├── DrawerView.swift                # Drawer lateral (iPad/Mac)
-│   ├── iPadSplitView.swift             # Layout adaptativo iPad Split View + Stage Manager
-│   ├── MacCommands.swift               # Comandos de menu para Mac (Catalyst)
-│   └── DemoDataSeeder.swift            # Datos de demo para previews y testing
+│   ├── PepinilloApp.swift              # @main, root Store creation, ModelContainer
+│   ├── AppFeature.swift                # Root reducer: coordinates tabs, Watch listener, auth, WebSocket lifecycle
+│   ├── AppView.swift                   # Root view with TabView / NavigationSplitView
+│   ├── DrawerView.swift                # Side drawer (iPad/Mac)
+│   ├── iPadSplitView.swift             # Adaptive iPad Split View + Stage Manager layout
+│   ├── MacCommands.swift               # Menu commands for Mac (Catalyst)
+│   └── DemoDataSeeder.swift            # Demo data for previews and testing
 │
 ├── Domain/
-│   ├── Models/                         # Clases SwiftData @Model
-│   │   ├── TaskItem.swift              # Task del user (ver seccion 4)
-│   │   ├── FocusSessionRecord.swift    # Registro de Session completada/abandonada
-│   │   ├── DailyStats.swift            # Estadisticas diarias agregadas
-│   │   ├── ProductivityReport.swift    # Reporte IA cacheado (weekly/monthly)
-│   │   ├── UserPreferences.swift       # Preferencias del user
-│   │   ├── Achievement.swift           # Logros / badges con progreso
-│   │   └── SubTask.swift               # Subtareas de una TaskItem
+│   ├── Models/                         # SwiftData @Model classes
+│   │   ├── TaskItem.swift              # User task (see section 4)
+│   │   ├── FocusSessionRecord.swift    # Completed/abandoned session record
+│   │   ├── DailyStats.swift            # Aggregated daily statistics
+│   │   ├── ProductivityReport.swift    # Cached AI report (weekly/monthly)
+│   │   ├── UserPreferences.swift       # User preferences
+│   │   ├── Achievement.swift           # Achievements / badges with progress
+│   │   ├── SubTask.swift               # Subtasks of a TaskItem
+│   │   └── APIDTOs.swift               # 9 API DTOs for sync (NEW)
 │   │
-│   ├── Clients/                        # TCA @DependencyClient (ver seccion 6)
-│   │   ├── PersistenceClient.swift     # CRUD SwiftData con DTOs Sendable
-│   │   ├── FocusClient.swift           # Puente TCA <-> FocusEngine actor
-│   │   ├── WatchConnectivityClient.swift  # WCSession bidireccional
-│   │   ├── AIReportClient.swift        # Generacion de reportes IA
+│   ├── Clients/                        # TCA @DependencyClient (see section 6)
+│   │   ├── PersistenceClient.swift     # SwiftData CRUD with Sendable DTOs
+│   │   ├── FocusClient.swift           # TCA <-> FocusEngine actor bridge
+│   │   ├── WatchConnectivityClient.swift  # Bidirectional WCSession
+│   │   ├── AIReportClient.swift        # AI report generation
 │   │   ├── NotificationClient.swift    # UNUserNotificationCenter
 │   │   ├── SubscriptionClient.swift    # RevenueCat SDK v5+ (wrapping StoreKit 2)
-│   │   ├── SoundscapeClient.swift      # Reproduccion de sonidos ambiente
-│   │   ├── CalendarClient.swift        # EventKit (lectura de calendario)
+│   │   ├── SoundscapeClient.swift      # Ambient sound playback
+│   │   ├── CalendarClient.swift        # EventKit (calendar reading)
 │   │   ├── HealthClient.swift          # HealthKit Mindful Minutes
-│   │   ├── SignInWithAppleClient.swift  # Authentication Apple
+│   │   ├── SignInWithAppleClient.swift  # Apple authentication
 │   │   ├── SpotlightClient.swift       # CoreSpotlight indexing
-│   │   └── LiveActivityClient.swift    # ActivityKit (Dynamic Island)
+│   │   ├── LiveActivityClient.swift    # ActivityKit (Dynamic Island)
+│   │   ├── APIClient.swift             # URLSession REST client with JWT auth (NEW)
+│   │   ├── SyncClient.swift            # Sync orchestration: syncSettings, syncSessions, initialUpload, performInitialSync, wipeAndSync (NEW)
+│   │   ├── IdentityClient.swift        # Identity state machine: ANONYMOUS/REGISTERED/VERIFIED (NEW)
+│   │   ├── WebSocketClient.swift       # URLSessionWebSocketTask with exponential backoff (NEW)
+│   │   └── KeychainClient.swift        # Keychain access + getOrCreateDeviceId (ENHANCED)
 │   │
-│   └── Services/                       # Logica de negocio pura (ver seccion 7)
-│       ├── ModeIntelligenceService.swift     # Sugerencia de modo basada en historial
-│       ├── InsightsService.swift             # Calculo de insights y tendencias
+│   └── Services/                       # Pure business logic (see section 7)
+│       ├── ModeIntelligenceService.swift     # History-based mode suggestion
+│       ├── InsightsService.swift             # Insights and trend calculation
 │       ├── OnDeviceReportGenerator.swift     # Apple Foundation Models (iOS 26+)
-│       ├── TemplateReportGenerator.swift     # Fallback basado en plantillas
-│       ├── ReportDataBuilder.swift           # Construccion del payload para reportes
-│       ├── WeeklyReportService.swift         # Orquestacion de reportes semanales
-│       └── RemindersImportService.swift      # Importacion desde Apple Reminders
+│       ├── TemplateReportGenerator.swift     # Template-based fallback
+│       ├── ReportDataBuilder.swift           # Report payload construction
+│       ├── WeeklyReportService.swift         # Weekly report orchestration
+│       └── RemindersImportService.swift      # Apple Reminders import
 │
 ├── Features/
 │   ├── Focus/
-│   │   ├── FocusFeature.swift          # Reducer: orquesta los 4 modos
-│   │   ├── FocusView.swift             # Vista principal con selector de modo
-│   │   ├── FocusEngine.swift           # Actor: temporizador unificado (ver seccion 5)
+│   │   ├── FocusFeature.swift          # Reducer: orchestrates all 4 modes
+│   │   ├── FocusView.swift             # Main view with mode selector
+│   │   ├── FocusEngine.swift           # Actor: unified timer (see section 5)
 │   │   ├── FocusModels.swift           # FocusMode, FocusPhase, FocusConfig, etc.
-│   │   ├── FocusModeProtocol.swift     # Protocolo Strategy
-│   │   ├── TaskPickerView.swift        # Picker de Task para vincular a Session
-│   │   ├── SessionJournalFeature.swift # Diario post-Session (Note + satisfaccion)
-│   │   ├── SessionJournalView.swift    # Vista del diario
-│   │   ├── ModeIntelligenceBanner.swift # Banner de sugerencia de modo
-│   │   ├── SoundscapePickerView.swift  # Selector de sonido ambiente
-│   │   ├── ADHDBreakView.swift         # Vista de descanso ADHD-friendly
+│   │   ├── FocusModeProtocol.swift     # Strategy protocol
+│   │   ├── TaskPickerView.swift        # Task picker to link to session
+│   │   ├── SessionJournalFeature.swift # Post-session journal (note + satisfaction)
+│   │   ├── SessionJournalView.swift    # Journal view
+│   │   ├── ModeIntelligenceBanner.swift # Mode suggestion banner
+│   │   ├── SoundscapePickerView.swift  # Ambient sound selector
+│   │   ├── ADHDBreakView.swift         # ADHD-friendly break view
 │   │   └── Modes/
-│   │       ├── PomodoroStrategy.swift  # 25/5/15 con ciclos configurables
-│   │       ├── FlowtimeStrategy.swift  # Abierto + calculo dinamico de descanso
-│   │       ├── TimeBlockStrategy.swift # Bloque fijo con check-in opcional
-│   │       └── StopwatchStrategy.swift # Conteo ascendente sin Objective
+│   │       ├── PomodoroStrategy.swift  # 25/5/15 with configurable cycles
+│   │       ├── FlowtimeStrategy.swift  # Open-ended + dynamic break calculation
+│   │       ├── TimeBlockStrategy.swift # Fixed block with optional check-in
+│   │       └── StopwatchStrategy.swift # Ascending count with no target
 │   │
 │   ├── Tasks/
-│   │   ├── TaskListFeature.swift       # Reducer: CRUD, filtros, ordenamiento, Recurrence
-│   │   ├── TaskListView.swift          # Lista de Tasks con filtros de energia
-│   │   ├── TaskDetailFeature.swift     # Reducer: edicion de Task individual
-│   │   └── TaskDetailView.swift        # Vista de detalle/edicion
+│   │   ├── TaskListFeature.swift       # Reducer: CRUD, filters, ordering, recurrence
+│   │   ├── TaskListView.swift          # Task list with energy filters
+│   │   ├── TaskDetailFeature.swift     # Reducer: individual task editing
+│   │   └── TaskDetailView.swift        # Detail/edit view
 │   │
 │   ├── Analytics/
-│   │   ├── AnalyticsFeature.swift      # Reducer: dashboard de productividad
-│   │   ├── AnalyticsView.swift         # Graficos por modo, tendencias
-│   │   ├── WeeklyReviewFeature.swift   # Reducer: revision weekly Comparison
-│   │   ├── WeeklyReviewView.swift      # Comparison semana vs semana
-│   │   ├── MonthlyReviewFeature.swift  # Reducer: revision monthly
-│   │   ├── MonthlyReviewView.swift     # Vista de revision monthly
-│   │   ├── AIReportFeature.swift       # Reducer: generacion de reportes IA
-│   │   ├── AIReportView.swift          # Vista del reporte IA
-│   │   ├── TaskAnalyticsFeature.swift  # Reducer: analytics por Task
-│   │   ├── TaskAnalyticsView.swift     # Tiempo de foco por Task
-│   │   └── AchievementsView.swift      # Vista de logros/badges
+│   │   ├── AnalyticsFeature.swift      # Reducer: productivity dashboard
+│   │   ├── AnalyticsView.swift         # Charts by mode, trends
+│   │   ├── WeeklyReviewFeature.swift   # Reducer: weekly review comparison
+│   │   ├── WeeklyReviewView.swift      # Week-over-week comparison
+│   │   ├── MonthlyReviewFeature.swift  # Reducer: monthly review
+│   │   ├── MonthlyReviewView.swift     # Monthly review view
+│   │   ├── AIReportFeature.swift       # Reducer: AI report generation
+│   │   ├── AIReportView.swift          # AI report view
+│   │   ├── TaskAnalyticsFeature.swift  # Reducer: per-task analytics
+│   │   ├── TaskAnalyticsView.swift     # Focus time per task
+│   │   └── AchievementsView.swift      # Achievements/badges view
 │   │
 │   ├── Calendar/
 │   │   ├── CalendarFeature.swift       # Reducer: calendar integration
-│   │   └── CalendarView.swift          # Vista de calendario con Sessions
+│   │   └── CalendarView.swift          # Calendar view with sessions
+│   │
+│   ├── Auth/
+│   │   ├── AuthFeature.swift           # Reducer: auth flow, initial upload, merge dialog, initial sync (NEW)
+│   │   ├── AuthView.swift              # Auth view with merge dialog sheet (NEW)
+│   │   └── DataMergeView.swift         # SwiftUI merge dialog: upload local vs download cloud (NEW)
 │   │
 │   ├── Settings/
-│   │   ├── SettingsFeature.swift       # Reducer: configuracion global
-│   │   ├── SettingsView.swift          # Vista de ajustes
-│   │   ├── AboutFeature.swift          # Reducer: acerca de / legal
-│   │   └── AboutView.swift             # Vista acerca de
+│   │   ├── SettingsFeature.swift       # Reducer: global configuration + dirty tracking per preference key (ENHANCED)
+│   │   ├── SettingsView.swift          # Settings view
+│   │   ├── AboutFeature.swift          # Reducer: about / legal
+│   │   └── AboutView.swift             # About view
 │   │
 │   ├── Paywall/
-│   │   ├── PaywallFeature.swift        # Reducer: suscripcion con RevenueCat
-│   │   └── PaywallView.swift           # Vista del paywall
+│   │   ├── PaywallFeature.swift        # Reducer: subscription with RevenueCat
+│   │   └── PaywallView.swift           # Paywall view
 │   │
 │   └── Onboarding/
-│       └── OnboardingView.swift        # Flujo de onboarding
+│       └── OnboardingView.swift        # Onboarding flow
 │
 ├── Shared/
 │   ├── Design/
-│   │   ├── AppTheme.swift              # 4 temas: Classic, Forest, Ocean, Sunset
-│   │   ├── ModeColors.swift            # Colores de acento por modo de foco
-│   │   ├── GlassModifier.swift         # Efectos glassmorphism
-│   │   ├── HapticManager.swift         # Retroalimentacion haptica
-│   │   ├── CelebrationView.swift       # Animaciones de celebracion
-│   │   └── iPadSheetModifier.swift     # Modificador de sheets para iPad
+│   │   ├── AppTheme.swift              # 4 themes: Classic, Forest, Ocean, Sunset
+│   │   ├── ModeColors.swift            # Accent colors per focus mode
+│   │   ├── GlassModifier.swift         # Glassmorphism effects
+│   │   ├── HapticManager.swift         # Haptic feedback
+│   │   ├── CelebrationView.swift       # Celebration animations
+│   │   └── iPadSheetModifier.swift     # iPad sheet modifier
 │   │
 │   ├── Extensions/
-│   │   ├── Date+Extensions.swift       # Extensiones de Date
-│   │   ├── Duration+Formatting.swift   # Formateo de duracion (mm:ss, hh:mm)
-│   │   ├── ConditionalAnimation.swift  # Animaciones condicionales (Reduce Motion)
-│   │   └── PressableButtonStyle.swift  # Estilo de boton con feedback tactil
+│   │   ├── Date+Extensions.swift       # Date extensions
+│   │   ├── Duration+Formatting.swift   # Duration formatting (mm:ss, hh:mm)
+│   │   ├── ConditionalAnimation.swift  # Conditional animations (Reduce Motion)
+│   │   └── PressableButtonStyle.swift  # Button style with tactile feedback
+│   │
+│   ├── Persistence/
+│   │   └── SwiftDataPersistenceService.swift  # Preference key-value mapper, batch deletes (ENHANCED)
 │   │
 │   ├── Sounds/
-│   │   └── SoundscapeManager.swift     # Actor: AVAudioEngine para sonidos ambiente
+│   │   └── SoundscapeManager.swift     # Actor: AVAudioEngine for ambient sounds
 │   │
-│   ├── HandoffActivity.swift           # Soporte Handoff entre dispositivos
+│   ├── HandoffActivity.swift           # Device handoff support
 │   └── NotificationDelegate.swift      # UNUserNotificationCenterDelegate
 │
 ├── PepinilloWatch/                     # watchOS companion app
 │   ├── PepinilloWatchApp.swift         # @main entry point watchOS
 │   ├── Features/
-│   │   └── WatchDashboardFeature.swift # TCA: timer + Tasks + dashboard
+│   │   └── WatchDashboardFeature.swift # TCA: timer + tasks + dashboard
 │   └── Views/
-│       └── WatchDashboardView.swift    # Vista principal del Watch
+│       └── WatchDashboardView.swift    # Watch main view
 │
 ├── PepinilloWidget/                    # WidgetKit (home + lock screen)
-│   ├── FocusWidget.swift               # Widget de Session de foco activa
-│   ├── FocusWidgetProvider.swift       # TimelineProvider para foco
-│   ├── FocusWidgetViews.swift          # Vistas small/medium/large
-│   ├── FocusWidgetModels.swift         # Modelos del widget
-│   ├── TasksWidget.swift              # Widget de lista de Tasks
-│   ├── TasksWidgetProvider.swift       # TimelineProvider para Tasks
-│   ├── TasksWidgetViews.swift          # Vistas de Tasks
-│   ├── DashboardWidget.swift          # Widget de dashboard diario
-│   ├── DashboardWidgetProvider.swift   # TimelineProvider para dashboard
-│   ├── DashboardWidgetViews.swift      # Vistas de dashboard
-│   └── WidgetIntents.swift             # Configuracion interactiva de widgets
+│   ├── FocusWidget.swift               # Active focus session widget
+│   ├── FocusWidgetProvider.swift       # Focus TimelineProvider
+│   ├── FocusWidgetViews.swift          # Small/medium/large views
+│   ├── FocusWidgetModels.swift         # Widget models
+│   ├── TasksWidget.swift              # Task list widget
+│   ├── TasksWidgetProvider.swift       # Tasks TimelineProvider
+│   ├── TasksWidgetViews.swift          # Task views
+│   ├── DashboardWidget.swift          # Daily dashboard widget
+│   ├── DashboardWidgetProvider.swift   # Dashboard TimelineProvider
+│   ├── DashboardWidgetViews.swift      # Dashboard views
+│   └── WidgetIntents.swift             # Interactive widget configuration
 │
 ├── PepinilloLiveActivity/             # Dynamic Island + Live Activity
-│   ├── FocusLiveActivityWidget.swift   # Widget de Live Activity
-│   ├── FocusLiveActivityView.swift     # Vistas del Dynamic Island
-│   ├── FocusActivityAttributes.swift   # Atributos de la actividad
-│   └── LiveActivityManager.swift       # Gestion del ciclo de vida
+│   ├── FocusLiveActivityWidget.swift   # Live Activity widget
+│   ├── FocusLiveActivityView.swift     # Dynamic Island views
+│   ├── FocusActivityAttributes.swift   # Activity attributes
+│   └── LiveActivityManager.swift       # Lifecycle management
 │
 ├── PepinilloIntents/                   # App Intents (Siri)
 │   ├── StartFocusIntent.swift          # "Start deep work in Pepinillo"
@@ -249,99 +263,99 @@ ios/
 │   ├── GetInsightsIntent.swift         # "Show my productivity insights"
 │   ├── GetModeSuggestionIntent.swift   # "Which mode should I use?"
 │   ├── GetWeeklyReportIntent.swift     # "Show my weekly report"
-│   └── FocusFilterIntent.swift         # Integracion con Focus Modes del sistema
+│   └── FocusFilterIntent.swift         # System Focus Modes integration
 │
 ├── ControlCenterExtension/            # iOS 18+ Control Center widget
-│   └── PepinilloControlCenter.swift    # ControlWidgetToggle: iniciar/detener Session
+│   └── PepinilloControlCenter.swift    # ControlWidgetToggle: start/stop session
 │
 ├── Tests/
 │   ├── FocusFeatureTests/
-│   │   ├── FocusFeatureReducerTests.swift    # Tests del reducer de foco
-│   │   ├── FocusModeStrategyTests.swift      # Tests de las 4 estrategias
-│   │   └── SessionJournalFeatureTests.swift  # Tests del diario post-Session
+│   │   ├── FocusFeatureReducerTests.swift    # Focus reducer tests
+│   │   ├── FocusModeStrategyTests.swift      # 4 strategy tests
+│   │   └── SessionJournalFeatureTests.swift  # Post-session journal tests
 │   ├── TaskFeatureTests/
-│   │   └── TaskListFeatureTests.swift        # Tests CRUD de Tasks
+│   │   └── TaskListFeatureTests.swift        # Task CRUD tests
 │   ├── AnalyticsFeatureTests/
-│   │   ├── AnalyticsFeatureTests.swift       # Tests de analytics
-│   │   └── InsightsServiceTests.swift        # Tests del servicio de insights
+│   │   ├── AnalyticsFeatureTests.swift       # Analytics tests
+│   │   └── InsightsServiceTests.swift        # Insights service tests
 │   ├── PaywallFeatureTests/
-│   │   └── PaywallFeatureTests.swift         # Tests del paywall
+│   │   └── PaywallFeatureTests.swift         # Paywall tests
 │   ├── ModeIntelligenceTests/
-│   │   └── ModeIntelligenceTests.swift       # Tests de sugerencia de modo
+│   │   └── ModeIntelligenceTests.swift       # Mode suggestion tests
 │   ├── SiriIntentsTests/
-│   │   └── SiriIntentsTests.swift            # Tests de intents
+│   │   └── SiriIntentsTests.swift            # Intents tests
 │   ├── WidgetTests/
-│   │   └── FocusWidgetProviderTests.swift    # Tests del timeline provider
+│   │   └── FocusWidgetProviderTests.swift    # Timeline provider tests
 │   ├── WatchFeatureTests/
-│   │   └── WatchTimerFeatureTests.swift      # Tests del Watch
+│   │   └── WatchTimerFeatureTests.swift      # Watch tests
 │   └── IntegrationTests/
-│       └── AppFeatureIntegrationTests.swift  # Tests de integracion
+│       └── AppFeatureIntegrationTests.swift  # Integration tests
 │
-└── Package.swift                       # Dependencias SPM
+└── Package.swift                       # SPM dependencies
 ```
 
 ---
 
-## 4. Modelos de Datos (SwiftData)
+## 4. Data Models (SwiftData)
 
-Todos los modelos usan el macro `@Model` de SwiftData y se sincronizan automaticamente via CloudKit (base de datos privada). El contenedor compartido via App Group (`group.com.pepinillo.app`) permite acceso desde widgets, intents y la app del Watch.
+All models use the `@Model` macro from SwiftData and sync automatically via CloudKit (private database). The shared container via App Group (`group.com.pepinillo.app`) allows access from widgets, intents, and the Watch app.
 
 ### 4.1 TaskItem
 
-Task del user. Soporta Recurrence, niveles de energia, vinculacion con Sessions de foco y subtareas.
+User task. Supports recurrence, energy levels, linking with focus sessions, and subtasks.
 
 ```swift
 @Model
 public final class TaskItem {
-    // Identificacion
+    // Identification
     public var id: UUID
     public var createdAt: Date
     public var updatedAt: Date
 
-    // Contenido
+    // Content
     public var title: String
     public var notes: String?
     public var isCompleted: Bool
     public var completedAt: Date?
 
-    // Organizacion
+    // Organization
     public var priority: TaskPriority        // .none(0), .low(1), .medium(2), .high(3)
     public var sortOrder: Int
     public var energyLevel: EnergyLevel      // .deep, .shallow, .admin
     public var dueDate: Date?
     public var scheduledForToday: Bool
 
-    // Integracion con foco
+    // Focus integration
     public var estimatedPomodoros: Int
     public var completedPomodoros: Int
-    public var preferredMode: String?        // FocusMode.rawValue sugerido por ModeIntelligence
+    public var preferredMode: String?        // FocusMode.rawValue suggested by ModeIntelligence
 
     // Recurrence (iCalendar RRULE)
-    public var recurrenceRule: String?        // ej: "FREQ=DAILY", "FREQ=WEEKLY;BYDAY=MO,WE,FR"
+    public var recurrenceRule: String?        // e.g.: "FREQ=DAILY", "FREQ=WEEKLY;BYDAY=MO,WE,FR"
     public var nextOccurrence: Date?
     public var isRecurringTemplate: Bool
-    public var recurringTemplateID: UUID?     // para instancias generadas
+    public var recurringTemplateID: UUID?     // for generated instances
 
-    // Relaciones
+    // Relationships
     @Relationship(deleteRule: .cascade) var subtasks: [SubTask]
     @Relationship(inverse: \FocusSessionRecord.task) var sessions: [FocusSessionRecord]
 
     // Computed
-    var totalFocusTime: TimeInterval         // suma de Sessions completadas
+    var totalFocusTime: TimeInterval         // sum of completed sessions
     var completionPercentage: Double          // completedPomodoros / estimatedPomodoros
     var subtaskProgress: (completed: Int, total: Int)
 }
 ```
 
-**Enums de soporte:**
+**Supporting enums:**
 
 - `TaskPriority`: `.none(0)`, `.low(1)`, `.medium(2)`, `.high(3)` -- `Codable, Comparable`
-- `EnergyLevel`: `.deep`, `.shallow`, `.admin` -- clasificacion de trabajo profundo (Cal Newport)
-- `RecurrencePreset`: `.daily`, `.weekdays`, `.weekly`, `.biweekly`, `.monthly` -- presets de Recurrence con calculo de siguiente Date
+- `EnergyLevel`: `.deep`, `.shallow`, `.admin` -- deep work classification (Cal Newport)
+- `RecurrencePreset`: `.daily`, `.weekdays`, `.weekly`, `.biweekly`, `.monthly` -- recurrence presets with next date calculation
 
 ### 4.2 FocusSessionRecord
 
-Registro persistido de una Session de foco completada o abandonada. Un registro por cada Session.
+Persisted record of a completed or abandoned focus session. One record per session.
 
 ```swift
 @Model
@@ -350,37 +364,37 @@ public final class FocusSessionRecord {
     public var startedAt: Date
     public var endedAt: Date?
 
-    // Modo y fase
+    // Mode and phase
     public var mode: String                  // "pomodoro", "flowtime", "timeBlock", "stopwatch"
     public var phase: String                 // "work", "shortBreak", "longBreak", "flow", "block", "freeform"
 
-    // Duracion
-    public var targetDuration: TimeInterval? // nil para Flowtime/Stopwatch
-    public var actualDuration: TimeInterval  // tiempo real de foco
+    // Duration
+    public var targetDuration: TimeInterval? // nil for Flowtime/Stopwatch
+    public var actualDuration: TimeInterval  // actual focus time
 
-    // Completitud
-    public var wasCompleted: Bool            // complete naturalmente vs abandonado
+    // Completion
+    public var wasCompleted: Bool            // completed naturally vs abandoned
     public var interruptions: Int
 
-    // Pausas
+    // Pauses
     public var pauseCount: Int
     public var totalPauseDuration: TimeInterval
 
-    // Pomodoro-especifico
-    public var pomodoroNumber: Int?          // ej: 3 (de 4)
+    // Pomodoro-specific
+    public var pomodoroNumber: Int?          // e.g.: 3 (of 4)
 
-    // Diario post-Session
+    // Post-session journal
     public var journalNote: String?
     public var satisfactionRating: Int?      // 1-5 (emoji-based)
 
-    // Relacion
+    // Relationship
     public var task: TaskItem?
 }
 ```
 
 ### 4.3 DailyStats
 
-Estadisticas diarias agregadas. Un registro por dia. Incluye desglose por modo para analytics unicos.
+Aggregated daily statistics. One record per day. Includes per-mode breakdown for unique analytics.
 
 ```swift
 @Model
@@ -388,13 +402,13 @@ public final class DailyStats {
     public var id: UUID
     public var date: Date                    // normalizado a medianoche
 
-    // Totales
+    // Totals
     public var totalFocusSeconds: Int
     public var sessionsCompleted: Int
     public var tasksCompleted: Int
     public var longestStreak: Int            // Sessions consecutivas sin interrupcion
 
-    // Desglose por modo (segundos + conteo)
+    // Per-mode breakdown (seconds + count)
     public var pomodoroSeconds: Int
     public var flowtimeSeconds: Int
     public var timeBlockSeconds: Int
@@ -404,20 +418,20 @@ public final class DailyStats {
     public var timeBlockCount: Int
     public var stopwatchCount: Int
 
-    // Racha
-    public var hadFocusSession: Bool         // se enfoco al menos una vez hoy
+    // Streak
+    public var hadFocusSession: Bool         // focused at least once today
 
     // Computed
     var totalFocusMinutes: Int
     var totalFocusHours: Double
-    var dominantMode: FocusMode?             // modo con mas segundos
-    var modeDistribution: [FocusMode: Double] // porcentajes
+    var dominantMode: FocusMode?             // mode with most seconds
+    var modeDistribution: [FocusMode: Double] // percentages
 }
 ```
 
 ### 4.4 ProductivityReport
 
-Reporte de productividad generado por IA (o plantilla fallback), cacheado en SwiftData.
+AI-generated productivity report (or template fallback), cached in SwiftData.
 
 ```swift
 @Model
@@ -435,22 +449,22 @@ public final class ProductivityReport {
 }
 ```
 
-**Tipos de soporte:**
+**Supporting types:**
 
 - `ReportInsight`: `{ category: "pattern"|"improvement"|"achievement", text: String }`
-- `AIReportResponse`: DTO para la respuesta del generador de reportes
-- `ProductivityReportDTO`: struct `Sendable` para cruzar fronteras de concurrencia
+- `AIReportResponse`: DTO for the report generator response
+- `ProductivityReportDTO`: `Sendable` struct for crossing concurrency boundaries
 
 ### 4.5 UserPreferences
 
-Preferencias del user sincronizadas via CloudKit. Un unico registro por user.
+User preferences synced via CloudKit. A single record per user.
 
 ```swift
 @Model
 public final class UserPreferences {
     public var id: UUID
 
-    // Configuracion de Pomodoro
+    // Pomodoro configuration
     public var pomodoroDuration: TimeInterval       // default: 25 min
     public var shortBreakDuration: TimeInterval      // default: 5 min
     public var longBreakDuration: TimeInterval       // default: 15 min
@@ -458,11 +472,11 @@ public final class UserPreferences {
     public var autoStartBreaks: Bool                  // default: true
     public var autoStartWork: Bool                    // default: false
 
-    // Configuracion de Time Block
+    // Time Block configuration
     public var defaultBlockDuration: TimeInterval    // default: 60 min
     public var blockMidpointCheckIn: Bool             // default: false
 
-    // Configuracion de Flowtime
+    // Flowtime configuration
     public var flowtimeMinSessionMinutes: Int         // default: 5
     public var flowtimeShowBreakSuggestion: Bool      // default: true
 
@@ -472,11 +486,11 @@ public final class UserPreferences {
     public var keepScreenOn: Bool
     public var defaultMode: String                   // FocusMode.rawValue
 
-    // Tema
+    // Theme
     public var themeName: String                     // "default", "forest", "ocean", "sunset"
     public var followSystemAppearance: Bool
 
-    // Notificaciones
+    // Notifications
     public var dailyReminderEnabled: Bool
     public var dailyReminderHour: Int                // 0-23
     public var dailyReminderMinute: Int              // 0-59
@@ -484,7 +498,7 @@ public final class UserPreferences {
     // Onboarding
     public var hasCompletedOnboarding: Bool
 
-    // Racha
+    // Streak
     public var currentStreakDays: Int
     public var longestStreakDays: Int
     public var lastFocusDate: Date?
@@ -492,14 +506,14 @@ public final class UserPreferences {
     // Apple Health
     public var healthLoggingEnabled: Bool
 
-    // Suscripcion (cache local -- fuente de verdad es StoreKit)
+    // Subscription (local cache -- source of truth is StoreKit)
     public var isProUser: Bool
     public var subscriptionExpiresAt: Date?
 
-    // Modo ADHD-friendly
+    // ADHD-friendly mode
     public var adhdFriendlyEnabled: Bool
 
-    // Calendario
+    // Calendar
     public var calendarIntegrationEnabled: Bool
 
     // Sign in with Apple
@@ -508,28 +522,28 @@ public final class UserPreferences {
     public var userEmail: String?
 
     // Computed
-    var focusConfig: FocusConfig                     // convierte a value type para el FocusEngine
+    var focusConfig: FocusConfig                     // converts to value type for FocusEngine
 }
 ```
 
 ### 4.6 Achievement
 
-Logros predefinidos con seguimiento de progreso. Enum sin persistencia SwiftData -- el progreso se calcula en tiempo real a partir de `FocusSessionRecord` y `DailyStats`.
+Predefined achievements with progress tracking. Enum without SwiftData persistence -- progress is calculated in real time from `FocusSessionRecord` and `DailyStats`.
 
 ```swift
 enum Achievement: String, CaseIterable {
-    case firstSession      // "First Focus" -- 1 Session completada
-    case weekStreak        // "Week Warrior" -- racha de 7 days
+    case firstSession      // "First Focus" -- 1 completed session
+    case weekStreak        // "Week Warrior" -- 7-day streak
     case pomodoroMaster    // "Pomodoro Master" -- 100 pomodoros
-    case deepDiver         // "Deep Diver" -- 10 Sessions de deep work
-    case centuryClub       // "Century Club" -- 100 Sessions totales
-    case earlyBird         // "Early Bird" -- 10 Sessions antes de las 8am
+    case deepDiver         // "Deep Diver" -- 10 deep work sessions
+    case centuryClub       // "Century Club" -- 100 total sessions
+    case earlyBird         // "Early Bird" -- 10 sessions before 8am
 }
 ```
 
 ### 4.7 SubTask
 
-Subtarea dentro de una TaskItem.
+Subtask within a TaskItem.
 
 ```swift
 @Model
@@ -545,17 +559,17 @@ public final class SubTask {
 
 ---
 
-## 5. Motor de Enfoque (FocusEngine)
+## 5. Focus Engine (FocusEngine)
 
-El FocusEngine es el componente mas critico de la aplicacion. Es un **Swift Actor** que maneja de forma segura (thread-safe) el temporizador unificado para los 4 modos de foco.
+The FocusEngine is the most critical component of the application. It is a **Swift Actor** that safely (thread-safe) manages the unified timer for all 4 focus modes.
 
 ### Architecture
 
 ```
 ┌───────────────────────────────────────────────────────┐
 │                    FocusFeature (TCA)                  │
-│     Consume AsyncStream<FocusEngineEvent>              │
-│     Traduce eventos a State + despacha Effects         │
+│     Consumes AsyncStream<FocusEngineEvent>              │
+│     Translates events to State + dispatches Effects     │
 └─────────────────────┬─────────────────────────────────┘
                       │ start / pause / resume / stop
                       v
@@ -567,7 +581,7 @@ El FocusEngine es el componente mas critico de la aplicacion. Es un **Swift Acto
 │  │ (protocol)   │    │ Date.now - phaseStart   │      │
 │  │              │    │ - totalPausedDuration    │      │
 │  │ Pomodoro     │    │                         │      │
-│  │ Flowtime     │    │ Emite: tick, phase,     │      │
+│  │ Flowtime     │    │ Emits: tick, phase,     │      │
 │  │ TimeBlock    │    │ completed, interrupted  │      │
 │  │ Stopwatch    │    └─────────────────────────┘      │
 │  └──────────────┘                                     │
@@ -576,7 +590,7 @@ El FocusEngine es el componente mas critico de la aplicacion. Es un **Swift Acto
 
 ### Strategy Pattern (FocusModeStrategy)
 
-Protocolo que los 4 modos implementan. El engine delega toda la logica especifica de modo a la estrategia activa.
+Protocol that all 4 modes implement. The engine delegates all mode-specific logic to the active strategy.
 
 ```swift
 protocol FocusModeStrategy: Sendable {
@@ -592,131 +606,136 @@ protocol FocusModeStrategy: Sendable {
 }
 ```
 
-### Las 4 estrategias
+### The 4 Strategies
 
-| Estrategia            | Direccion | Target            | Auto-avance | Fases                                                   |
-| --------------------- | --------- | ----------------- | ----------- | ------------------------------------------------------- |
-| **PomodoroStrategy**  | countDown | Si (25 min)       | Si          | work(n/total) -> shortBreak -> work -> ... -> longBreak |
-| **FlowtimeStrategy**  | countUp   | No                | No          | flow (abierto, con sugerencia de descanso dinamica)     |
-| **TimeBlockStrategy** | countDown | Si (configurable) | No          | block (bloque continuo, check-in opcional a mitad)      |
-| **StopwatchStrategy** | countUp   | No                | No          | freeform (only cuenta)                                  |
+| Strategy              | Direction | Target            | Auto-advance | Phases                                                   |
+| --------------------- | --------- | ----------------- | ------------ | -------------------------------------------------------- |
+| **PomodoroStrategy**  | countDown | Yes (25 min)      | Yes          | work(n/total) -> shortBreak -> work -> ... -> longBreak  |
+| **FlowtimeStrategy**  | countUp   | No                | No           | flow (open-ended, with dynamic break suggestion)         |
+| **TimeBlockStrategy** | countDown | Yes (configurable)| No           | block (continuous block, optional mid-point check-in)    |
+| **StopwatchStrategy** | countUp   | No                | No           | freeform (just counts)                                   |
 
-**Formula de descanso Flowtime:**
+**Flowtime break formula:**
 
-- < 25 min de foco -> 5 min de descanso
+- < 25 min focus -> 5 min break
 - < 50 min -> 8 min
 - < 90 min -> 10 min
-- > = 90 min -> 15 min
+- >= 90 min -> 15 min
 
-### Timing basado en Date (libre de drift)
+### Date-Based Timing (drift-free)
 
-El motor usa **aritmetica de fechas** (`Date.now - phaseStartDate - totalPausedDuration`) en lugar de `Timer.scheduledTimer`. Esto elimina la desviacion (drift) acumulada que ocurre con timers basados en intervalos, especialmente cuando la app sale y regresa del background.
+The engine uses **date arithmetic** (`Date.now - phaseStartDate - totalPausedDuration`) instead of `Timer.scheduledTimer`. This eliminates the cumulative drift that occurs with interval-based timers, especially when the app goes to and returns from background.
 
-### Eventos del engine
+### Engine Events
 
 ```swift
 public enum FocusEngineEvent: Sendable {
-    case tick(FocusSessionState)              // cada 100ms: Status actualizado
-    case phaseCompleted(FocusPhase)           // fase completada (ej: work -> break)
-    case sessionCompleted(FocusSessionResult) // Session terminada
-    case breakSuggested(duration: TimeInterval) // Flowtime: sugerencia de descanso
-    case midpointReached                      // TimeBlock: mitad del bloque
-    case interrupted                          // interrupcion registrada
+    case tick(FocusSessionState)              // every 100ms: updated state
+    case phaseCompleted(FocusPhase)           // phase completed (e.g.: work -> break)
+    case sessionCompleted(FocusSessionResult) // session finished
+    case breakSuggested(duration: TimeInterval) // Flowtime: break suggestion
+    case midpointReached                      // TimeBlock: block midpoint
+    case interrupted                          // interruption recorded
 }
 ```
 
-El reducer `FocusFeature` consume estos eventos via `AsyncStream` y actualiza el Status de la UI, notificaciones, Live Activity y Watch de forma reactiva.
+The `FocusFeature` reducer consumes these events via `AsyncStream` and reactively updates UI state, notifications, Live Activity, and Watch.
 
-### Gestion de pausas
+### Pause Management
 
-El engine rastrea las pausas preservando la fase exacta que estaba activa antes de pausar (`phaseBeforePause`). Al reanudar, restaura la fase correcta y ajusta `totalPausedDuration` para que el calculo de tiempo transcurrido sea preciso.
+The engine tracks pauses by preserving the exact phase that was active before pausing (`phaseBeforePause`). On resume, it restores the correct phase and adjusts `totalPausedDuration` so the elapsed time calculation remains accurate.
 
-### Estrategia de background
+### Background Strategy
 
-1. La app entra en background -> se programa `UNNotificationRequest` al tiempo final (modos countdown) o como recordatorio periodico (modos count-up).
-2. Live Activity continua mostrando countdown/count-up (gestionado por el sistema).
-3. La app regresa a foreground -> recalcula el tiempo transcurrido desde `phaseStartDate`.
-4. watchOS -> `ExtendedRuntimeSession` para mantener el timer activo.
+1. App enters background -> schedules `UNNotificationRequest` for the end time (countdown modes) or as a periodic reminder (count-up modes).
+2. Live Activity continues showing countdown/count-up (managed by the system).
+3. App returns to foreground -> recalculates elapsed time from `phaseStartDate`.
+4. watchOS -> `ExtendedRuntimeSession` to keep the timer active.
 
-### Extensibilidad
+### Extensibility
 
-Agregar un 5to modo (ej: tecnica 52/17) Requires only un nuevo struct conformando `FocusModeStrategy`. Cero cambios al engine, Live Activity, Widget o Watch.
+Adding a 5th mode (e.g.: 52/17 technique) requires only a new struct conforming to `FocusModeStrategy`. Zero changes to the engine, Live Activity, Widget, or Watch.
 
 ---
 
-## 6. Clients TCA (@DependencyClient)
+## 6. TCA Clients (@DependencyClient)
 
-Todos los clientes siguen el patron `@DependencyClient` de TCA. Son structs `Sendable` con closures que abstrae la implementacion real, permitiendo inyectar mocks en tests.
+All clients follow the TCA `@DependencyClient` pattern. They are `Sendable` structs with closures that abstract the real implementation, allowing mock injection in tests.
 
-### Puente SwiftData <-> TCA
+### SwiftData <-> TCA Bridge
 
-Las clases `@Model` de SwiftData no son `Sendable` y estan vinculadas al `@MainActor`. El `PersistenceClient` resuelve esto con DTOs (Data Transfer Objects):
+SwiftData `@Model` classes are not `Sendable` and are bound to `@MainActor`. The `PersistenceClient` resolves this with DTOs (Data Transfer Objects):
 
 ```
 @Model (SwiftData, @MainActor) --> MainActor.run { } --> DTO (Sendable, value type) --> TCA Effect
 ```
 
-### Lista de clientes
+### Client List
 
-| #   | Cliente                     | Responsabilidad                                                                                                                                                                               |
+| #   | Client                      | Responsibility                                                                                                                                                                                |
 | --- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **PersistenceClient**       | CRUD SwiftData: Tasks, Sessions, stats, preferencias. Todas las operaciones via `MainActor.run {}` devolviendo DTOs `Sendable`.                                                              |
-| 2   | **FocusClient**             | Puente entre TCA y el actor `FocusEngine`. Inicia/pausa/reanuda/detiene Sessions. Expone `AsyncStream<FocusEngineEvent>` para el reducer.                                                     |
-| 3   | **WatchConnectivityClient** | Comunicacion bidireccional `WCSession`. iOS envia: `WatchSessionState` (cada tick), stats, Tasks. Watch envia: `WatchCommand`.                                                               |
-| 4   | **AIReportClient**          | Genera reportes de productividad. Intenta primero con `OnDeviceReportGenerator` (Foundation Models, iOS 26+), fallback a `TemplateReportGenerator`.                                           |
-| 5   | **NotificationClient**      | Wrapper de `UNUserNotificationCenter`. Programa notificaciones de fin de Session, recordatorios diarios, sugerencias de descanso.                                                              |
-| 6   | **SubscriptionClient**      | RevenueCat SDK v5+. Consulta offerings/packages, realiza compras via StoreKit 2, restaura transacciones, verifica entitlements. Soporta configure/logIn/logOut flow para user identification. |
-| 7   | **SoundscapeClient**        | Reproduccion de sonidos ambiente durante Sessions de foco. Actor `SoundscapeManager` con `AVAudioEngine`. 8 soundscapes incluidos.                                                            |
-| 8   | **CalendarClient**          | Lectura de eventos de `EventKit`. Muestra eventos del calendario junto a Sessions de foco programadas.                                                                                        |
-| 9   | **HealthClient**            | Escribe `HKCategorySample` de tipo `.mindfulSession` a Apple Health al completar una Session. Solicita autorizacion de forma explicita.                                                        |
-| 10  | **SignInWithAppleClient**   | Flujo de Authentication con `ASAuthorizationAppleIDProvider`. Almacena `appleUserID`, nombre y email en `UserPreferences`.                                                                     |
-| 11  | **SpotlightClient**         | Indexa Tasks en CoreSpotlight para busqueda del sistema. Actualiza el indice al crear/editar/eliminar Tasks.                                                                                |
-| 12  | **LiveActivityClient**      | Gestiona Live Activities via `ActivityKit`. Inicia, actualiza y termina actividades. Adapta la presentacion del Dynamic Island segun el modo de foco.                                         |
+| 1   | **PersistenceClient**       | SwiftData CRUD: Tasks, Sessions, stats, preferences. All operations via `MainActor.run {}` returning `Sendable` DTOs. Enhanced with settings sync, deleteAll, and counts.                    |
+| 2   | **FocusClient**             | Bridge between TCA and the `FocusEngine` actor. Starts/pauses/resumes/stops sessions. Exposes `AsyncStream<FocusEngineEvent>` for the reducer.                                               |
+| 3   | **WatchConnectivityClient** | Bidirectional `WCSession` communication. iOS sends: `WatchSessionState` (each tick), stats, tasks. Watch sends: `WatchCommand`.                                                              |
+| 4   | **AIReportClient**          | Generates productivity reports. Tries first with `OnDeviceReportGenerator` (Foundation Models, iOS 26+), fallback to `TemplateReportGenerator`.                                               |
+| 5   | **NotificationClient**      | `UNUserNotificationCenter` wrapper. Schedules session-end notifications, daily reminders, break suggestions.                                                                                  |
+| 6   | **SubscriptionClient**      | RevenueCat SDK v5+. Queries offerings/packages, makes purchases via StoreKit 2, restores transactions, verifies entitlements. Supports configure/logIn/logOut flow for user identification.   |
+| 7   | **SoundscapeClient**        | Ambient sound playback during focus sessions. `SoundscapeManager` actor with `AVAudioEngine`. 8 soundscapes included.                                                                        |
+| 8   | **CalendarClient**          | EventKit event reading. Shows calendar events alongside scheduled focus sessions.                                                                                                             |
+| 9   | **HealthClient**            | Writes `HKCategorySample` of type `.mindfulSession` to Apple Health on session completion. Requests authorization explicitly.                                                                  |
+| 10  | **SignInWithAppleClient**   | Authentication flow with `ASAuthorizationAppleIDProvider`. Stores `appleUserID`, name, and email in `UserPreferences`.                                                                        |
+| 11  | **SpotlightClient**         | Indexes tasks in CoreSpotlight for system search. Updates the index on task create/edit/delete.                                                                                               |
+| 12  | **LiveActivityClient**      | Manages Live Activities via `ActivityKit`. Starts, updates, and ends activities. Adapts Dynamic Island presentation per focus mode.                                                            |
+| 13  | **APIClient** (NEW)         | URLSession-based REST client with JWT authentication, 5 new endpoints (preferences, sync/sessions, sync/initial-upload, sync/full). Auto-refresh on 401.                                      |
+| 14  | **SyncClient** (NEW)        | Sync orchestration: syncSettings(), batch syncSessions(), initialUpload(), performInitialSync() (cursor pagination), wipeAndSync(), hasLocalData().                                           |
+| 15  | **IdentityClient** (NEW)    | Identity state machine managing ANONYMOUS/REGISTERED/VERIFIED transitions. Coordinates auth flow with sync operations.                                                                         |
+| 16  | **WebSocketClient** (NEW)   | URLSessionWebSocketTask with exponential backoff (1s, 2s, 4s, 8s, max 30s). Receives notification-only messages that trigger HTTP sync. Connect/disconnect on foreground/background.          |
+| 17  | **KeychainClient** (ENHANCED) | Keychain access with getOrCreateDeviceId for X-Device-ID header on all sync requests.                                                                                                       |
 
 ---
 
-## 7. Servicios
+## 7. Services
 
-Los servicios contienen logica de negocio pura, sin dependencia de TCA ni de frameworks UI.
+Services contain pure business logic, with no dependency on TCA or UI frameworks.
 
-| Servicio                    | Responsabilidad                                                                                                                                                                                                               |
+| Service                     | Responsibility                                                                                                                                                                                                                |
 | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ModeIntelligenceService** | Analiza `FocusSessionRecord` historico por Task. Calcula `completionRateByMode` y `averageDurationByMode`. Devuelve `SuggestedMode` con nivel de confianza (>70% para mostrar sugerencia).                                   |
-| **InsightsService**         | Calcula tendencias, patrones, hours pico de productividad, mejor dia de la semana, y comparativas semana-sobre-semana a partir de `DailyStats`.                                                                               |
-| **OnDeviceReportGenerator** | Genera reportes de productividad usando Apple Foundation Models (`FoundationModels` framework, iOS 26+). Envia un prompt con datos agregados y parsea la respuesta JSON. Falla graciosamente si el modelo no esta disponible. |
-| **TemplateReportGenerator** | Fallback cuando Foundation Models no esta disponible. Genera reportes basados en plantillas con logica condicional (ej: "Tu tasa de completitud subio un 15%").                                                               |
-| **ReportDataBuilder**       | Construye el payload `ReportPayload` agregando datos de `DailyStats`, `FocusSessionRecord` y `TaskItem` para el periodo solicitado (weekly/monthly).                                                                         |
-| **WeeklyReportService**     | Orquesta la generacion de reportes semanales: construye payload via `ReportDataBuilder`, intenta `OnDeviceReportGenerator`, fallback a `TemplateReportGenerator`, persiste en `ProductivityReport`.                           |
-| **RemindersImportService**  | Importa Tasks desde Apple Reminders via `EventKit.EKEventStore`. Import unidireccional (no Synchronization continua). Solicita acceso de forma explicita.                                                                     |
+| **ModeIntelligenceService** | Analyzes historical `FocusSessionRecord` per task. Calculates `completionRateByMode` and `averageDurationByMode`. Returns `SuggestedMode` with confidence level (>70% to show suggestion).                                    |
+| **InsightsService**         | Calculates trends, patterns, peak productivity hours, best day of the week, and week-over-week comparisons from `DailyStats`.                                                                                                 |
+| **OnDeviceReportGenerator** | Generates productivity reports using Apple Foundation Models (`FoundationModels` framework, iOS 26+). Sends a prompt with aggregated data and parses the JSON response. Fails gracefully if the model is unavailable.          |
+| **TemplateReportGenerator** | Fallback when Foundation Models is unavailable. Generates template-based reports with conditional logic (e.g.: "Your completion rate went up 15%").                                                                            |
+| **ReportDataBuilder**       | Builds the `ReportPayload` by aggregating data from `DailyStats`, `FocusSessionRecord`, and `TaskItem` for the requested period (weekly/monthly).                                                                             |
+| **WeeklyReportService**     | Orchestrates weekly report generation: builds payload via `ReportDataBuilder`, tries `OnDeviceReportGenerator`, fallback to `TemplateReportGenerator`, persists in `ProductivityReport`.                                       |
+| **RemindersImportService**  | Imports tasks from Apple Reminders via `EventKit.EKEventStore`. One-way import (no continuous sync). Requests access explicitly.                                                                                               |
 
 ---
 
 ## 8. watchOS
 
-### Architecture de comunicacion
+### Communication Architecture
 
-La app del Watch se comunica con iOS via `WCSession` (WatchConnectivity framework). El mismo archivo `WatchConnectivityClient.swift` compila en ambos targets (iOS y watchOS), usando `#if os(iOS)` para metodos requeridos only en un lado.
+The Watch app communicates with iOS via `WCSession` (WatchConnectivity framework). The same file `WatchConnectivityClient.swift` compiles in both targets (iOS and watchOS), using `#if os(iOS)` for methods required only on one side.
 
-### Flujo de datos iOS -> Watch
+### Data Flow iOS -> Watch
 
 ```
 iOS (FocusFeature)
-  |-- cada tick: sendSessionState(WatchSessionState)
+  |-- each tick: sendSessionState(WatchSessionState)
   |     isActive, isPaused, modeID, displayTime, phaseLabel,
   |     progress, pomodoroNumber, linkedTaskTitle, isPhaseTransition
   |
-  |-- al completar Session: sendStats(todayMinutes, sessions, streak)
+  |-- on session completion: sendStats(todayMinutes, sessions, streak)
   |
-  |-- al lanzar app / cambio de Tasks: sendTasks([WatchTaskItem])
+  |-- on app launch / task change: sendTasks([WatchTaskItem])
   |     id, title, isCompleted, priority, estimatedPomodoros, completedPomodoros
   |
-  |-- bajo demanda: sendDashboardStats(WatchDashboardStats)
+  |-- on demand: sendDashboardStats(WatchDashboardStats)
         todayMinutes, sessionsCompleted, tasksCompleted, tasksTotal,
         streakDays, pomodoroMinutes, flowtimeMinutes, timeBlockMinutes,
         stopwatchMinutes, longestSessionMinutes
 ```
 
-### Flujo de datos Watch -> iOS
+### Data Flow Watch -> iOS
 
 ```
 Watch (WatchDashboardFeature)
@@ -733,31 +752,31 @@ Watch (WatchDashboardFeature)
   |     .requestDashboard
 ```
 
-### Protocolo de transporte
+### Transport Protocol
 
-- **`sendMessage`** para comunicacion en tiempo real (ambos dispositivos activos, Watch reachable).
-- **`updateApplicationContext`** para Synchronization en background (Status persistente).
-- **`transferCurrentComplicationUserInfo`** para actualizaciones de complications.
-- Todos los mensajes usan `[String: Any]` con un campo `"type"` como discriminador.
+- **`sendMessage`** for real-time communication (both devices active, Watch reachable).
+- **`updateApplicationContext`** for background sync (persistent state).
+- **`transferCurrentComplicationUserInfo`** for complication updates.
+- All messages use `[String: Any]` with a `"type"` field as discriminator.
 
-### Fuente de verdad
+### Source of Truth
 
-Cuando ambos dispositivos estan activos, **iOS es la fuente de verdad**. El Watch muestra el Status recibido y envia comandos; no mantiene su propio timer independiente mientras iOS esta conectado.
+When both devices are active, **iOS is the source of truth**. The Watch displays the received state and sends commands; it does not maintain its own independent timer while iOS is connected.
 
-### Features independientes del Watch
+### Independent Watch Features
 
-- **Timer remoto:** muestra countdown/count-up recibido de iOS.
-- **Dashboard:** estadisticas diarias, desglose por modo, racha.
-- **Lista de Tasks:** Tasks activas con toggle de completitud.
-- **Selector de modo:** iniciar Session en cualquiera de los 4 modos.
+- **Remote timer:** shows countdown/count-up received from iOS.
+- **Dashboard:** daily statistics, per-mode breakdown, streak.
+- **Task list:** active tasks with completion toggle.
+- **Mode selector:** start a session in any of the 4 modes.
 
 ### Complications
 
-| Tipo        | Contenido                                          |
+| Type        | Content                                            |
 | ----------- | -------------------------------------------------- |
-| Circular    | Countdown de Session activa o tiempo de foco diario |
-| Rectangular | Timer + nombre de Task vinculada                  |
-| Corner      | Conteo de Sessions: "3/4"                          |
+| Circular    | Active session countdown or daily focus time        |
+| Rectangular | Timer + linked task name                           |
+| Corner      | Session count: "3/4"                               |
 
 ---
 
@@ -765,17 +784,17 @@ Cuando ambos dispositivos estan activos, **iOS es la fuente de verdad**. El Watc
 
 ### 9.1 WidgetKit (Home Screen + Lock Screen)
 
-Tres familias de widgets:
+Three widget families:
 
-| Widget              | Tamanos              | Contenido                                              |
-| ------------------- | -------------------- | ------------------------------------------------------ |
-| **FocusWidget**     | small, medium, large | Session activa (modo, tiempo, progreso) o "Start Focus" |
-| **TasksWidget**     | small, medium        | Tasks Pending de hoy con prioridad                 |
-| **DashboardWidget** | small, medium, large | Estadisticas diarias: tiempo, Sessions, racha          |
+| Widget              | Sizes                | Content                                                 |
+| ------------------- | -------------------- | ------------------------------------------------------- |
+| **FocusWidget**     | small, medium, large | Active session (mode, time, progress) or "Start Focus"  |
+| **TasksWidget**     | small, medium        | Today's pending tasks with priority                     |
+| **DashboardWidget** | small, medium, large | Daily statistics: time, sessions, streak                |
 
-- Lock screen widgets: versiones compactas circular e inline.
-- Configuracion interactiva via `WidgetIntents.swift`.
-- Datos compartidos via App Group container.
+- Lock screen widgets: compact circular and inline versions.
+- Interactive configuration via `WidgetIntents.swift`.
+- Shared data via App Group container.
 
 ### 9.2 ActivityKit (Dynamic Island + Live Activity)
 
@@ -797,22 +816,22 @@ struct FocusActivityAttributes: ActivityAttributes {
 }
 ```
 
-**Adaptacion por modo en Dynamic Island:**
+**Per-mode adaptation in Dynamic Island:**
 
-| Modo       | Icono     | Visualizacion                             |
-| ---------- | --------- | ----------------------------------------- |
-| Pomodoro   | Timer     | Countdown + "3 of 4" + anillo de progreso |
-| Flowtime   | Wind      | Count-up + sugerencia "Take a break"      |
-| Time Block | Rectangle | Countdown + barra de progreso lineal      |
-| Stopwatch  | Stopwatch | Count-up + cromo minimo                   |
+| Mode       | Icon      | Display                                    |
+| ---------- | --------- | ------------------------------------------ |
+| Pomodoro   | Timer     | Countdown + "3 of 4" + progress ring       |
+| Flowtime   | Wind      | Count-up + "Take a break" suggestion       |
+| Time Block | Rectangle | Countdown + linear progress bar            |
+| Stopwatch  | Stopwatch | Count-up + minimal chrome                  |
 
-Todos los modos: tap para abrir la app, long-press para pausa/stop.
+All modes: tap to open the app, long-press for pause/stop.
 
 ### 9.3 App Intents (Siri Shortcuts)
 
-7 intents disponibles en 3 idiomas (EN, ES, PT):
+7 intents available in 3 languages (EN, ES, PT):
 
-| Intent                    | Frases ejemplo                                     |
+| Intent                    | Example Phrases                                    |
 | ------------------------- | -------------------------------------------------- |
 | `StartFocusIntent`        | "Start deep work in Pepinillo", "Start a Pomodoro" |
 | `PauseFocusIntent`        | "Pause my focus session"                           |
@@ -820,48 +839,166 @@ Todos los modos: tap para abrir la app, long-press para pausa/stop.
 | `GetInsightsIntent`       | "Show my productivity insights"                    |
 | `GetModeSuggestionIntent` | "Which focus mode should I use?"                   |
 | `GetWeeklyReportIntent`   | "Show my weekly report"                            |
-| `FocusFilterIntent`       | Integracion con Focus Modes del sistema iOS        |
+| `FocusFilterIntent`       | System Focus Modes integration (iOS)               |
 
-El `FocusFilterIntent` permite que los Focus Modes del sistema (ej: "Do Not Disturb", "Work") activen/desactiven automaticamente Sessions en Pepinillo.
+The `FocusFilterIntent` allows system Focus Modes (e.g.: "Do Not Disturb", "Work") to automatically activate/deactivate sessions in Pepinillo.
 
-Las entidades de Tasks (`TaskEntityQuery`) consultan el App Group ModelContainer para sugerir Tasks reales del user.
+Task entities (`TaskEntityQuery`) query the App Group ModelContainer to suggest real user tasks.
 
 ### 9.4 Control Center (iOS 18+)
 
-`ControlWidgetToggle` que permite iniciar/detener la Session de foco activa directamente desde el Control Center sin abrir la app.
+`ControlWidgetToggle` that allows starting/stopping the active focus session directly from the Control Center without opening the app.
 
 ### 9.5 Handoff
 
-Soporte para continuar Sessions en otro dispositivo Apple via `NSUserActivity`. Si el user esta enfocado en iPhone, puede continuar en iPad o Mac.
+Support for continuing sessions on another Apple device via `NSUserActivity`. If the user is focused on iPhone, they can continue on iPad or Mac.
 
 ### 9.6 Spotlight
 
-CoreSpotlight indexa todas las Tasks para busqueda del sistema. El indice se actualiza al crear, editar o eliminar Tasks.
+CoreSpotlight indexes all tasks for system search. The index is updated on task create, edit, or delete.
 
 ---
 
 ## 10. Synchronization
 
-### CloudKit (NSPersistentCloudKitContainer)
+### Sync Architecture (Implemented 2026-03-24)
 
-- **Base de datos:** Privada (only datos del user, encriptados en reposo por Apple).
-- **Sync automatico:** SwiftData configurado con `cloudKitContainerIdentifier: "iCloud.com.pepinillo.app"`. Sin codigo de Synchronization manual.
-- **Operacion offline:** Todas las operaciones escriben al store local de SwiftData primero (instantaneo). CloudKit sincroniza oportunisticamente cuando hay red.
-- **Cambios Pending:** Se encolan en `CKOperationGroup` hasta que la red este disponible.
+The iOS sync system is built with TCA dependency clients and follows an **offline-first** design where SwiftData is always the source of truth. The Go backend provides cross-platform sync while CloudKit is retained as a secondary layer for Apple-to-Apple device sync.
 
-### Resolucion de conflictos
+#### Core Design Principles
 
-| Tipo de dato                      | Estrategia                                                         |
-| --------------------------------- | ------------------------------------------------------------------ |
-| Campos escalares (titulo, Status) | Last-write-wins                                                    |
-| Colecciones (subtareas)           | Merge aditivo (nunca eliminar remotamente)                         |
-| Automatico                        | SwiftData/CloudKit maneja la mayoria via `CKRecord` merge policies |
+- **Source of Truth**: SwiftData (local)
+- **Sync Pattern**: TCA-based clients with PreferenceDirtyTracker (UserDefaults-based)
+- **Conflict Resolution**: Record-level Last-Write-Wins (LWW) with detection
+- **Transport**: HTTPS (URLSession) + WebSocket (URLSessionWebSocketTask) notifications
+- **Protocol Order**: Settings -> Tasks -> Sessions (batch) -> Stats (pull)
+
+#### New TCA Sync Clients
+
+| Client              | File                         | Responsibility                                                                           |
+| ------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- |
+| **SyncClient**      | `SyncClient.swift`           | Orchestrates all sync: syncSettings(), syncSessions() (batch), initialUpload(), performInitialSync() (cursor pagination), wipeAndSync(), hasLocalData() |
+| **IdentityClient**  | `IdentityClient.swift`       | State machine managing ANONYMOUS/REGISTERED/VERIFIED transitions                          |
+| **WebSocketClient** | `WebSocketClient.swift`      | URLSessionWebSocketTask with exponential backoff (1s, 2s, 4s, 8s, max 30s)               |
+| **APIClient**       | `APIClient.swift`            | URLSession REST client with JWT auth; 5 new endpoints for sync                            |
+| **KeychainClient**  | `KeychainClient.swift`       | Enhanced with getOrCreateDeviceId for X-Device-ID header                                  |
+
+#### Settings Sync with PreferenceDirtyTracker
+
+- **SettingsFeature** enhanced with dirty tracking per preference key
+- **PreferenceDirtyTracker**: UserDefaults-based tracker that marks individual preference keys as dirty when changed
+- **17 syncable keys**: pomodoro duration, break durations, auto-advance, theme, language, sound settings, etc.
+- **5 device-specific keys excluded**: notification permissions, calendar sync toggle, DND toggle, onboarding completed, device-specific UI preferences
+- **Per-key LWW**: each preference key has its own `updatedAt` timestamp; conflicts resolved at key level, not bulk
+
+#### Batch Session Sync
+
+Sessions use batch upload instead of individual POSTs for efficiency:
+
+- `POST /sync/sessions` accepts an array of dirty sessions
+- Backend recomputes `focus_stats` after batch insert
+- Client UUIDs are preserved (server no longer overwrites session IDs)
+- FocusSessionRecord includes full fields: `interruptions`, `pomodoroNumber`, `satisfactionRating`, `journalNote`
+
+#### Anonymous User Flow
+
+1. User installs app; `IdentityClient.state = ANONYMOUS`
+2. All data stored locally in SwiftData (no backend calls)
+3. App is fully functional (timer, tasks, analytics)
+4. User decides to register; `POST /auth/register` via AuthFeature
+5. `SyncClient.initialUpload()` triggered: `POST /sync/initial-upload` (atomic, all local data)
+6. `IdentityClient.state = REGISTERED`
+7. Normal sync resumes (periodic + real-time)
+
+#### Initial Upload on Registration
+
+When an anonymous user registers, `SyncClient.initialUpload()` performs an atomic upload:
+
+- `POST /sync/initial-upload` sends all local tasks, sessions, stats, and preferences in one request
+- Backend processes atomically (all-or-nothing)
+- On success, all local entities are marked synced
+
+#### New Device Full Sync
+
+When a registered user logs in on a new device:
+
+- `SyncClient.performInitialSync()` calls `GET /sync/full` with cursor-based pagination
+- Downloads all user data page by page
+- `SyncClient.wipeAndSync()` clears local SwiftData, then pages through all data
+- Cursor pagination avoids memory issues with large datasets
+- After completion, normal sync resumes
+
+#### Data Merge Dialog (Anonymous to Existing Account)
+
+When an anonymous user logs into an account that already has data, `DataMergeView` (SwiftUI) presents two options:
+
+- **Upload Local**: keep anonymous data and push it to the cloud via `SyncClient.initialUpload()`
+- **Download Cloud**: replace local data with cloud data via `SyncClient.wipeAndSync()`
+- Triggered in `AuthFeature` when login detects both local anonymous data and existing cloud data
+- AuthView presents DataMergeView as a sheet
+
+#### Real-Time Sync via WebSocket
+
+- `WebSocketClient` uses `URLSessionWebSocketTask` (no third-party dependencies)
+- Connects on app foreground, disconnects on background (managed by `AppFeature` scene phase handling in `PepinilloApp.swift`)
+- Receives **notification-only** messages (e.g., `{ "type": "sync", "entity": "tasks" }`)
+- WebSocket does NOT carry data payloads, only signals that trigger HTTP sync
+- **X-Device-ID**: every sync HTTP request includes `X-Device-ID` header from `KeychainClient.getOrCreateDeviceId`; the backend WebSocket hub uses `SendToUserExcluding(userId, excludeDeviceId, msg)` to avoid notifying the device that originated the change
+- **Reconnect strategy**: exponential backoff (1s, 2s, 4s, 8s, max 30s)
+
+#### Auth Flow Integration
+
+- **AuthFeature**: coordinates initial upload, merge dialog presentation, and initial sync wiring
+- **AuthView**: presents merge dialog sheet via `DataMergeView`
+- **AppFeature**: manages WebSocket lifecycle (connect on foreground, disconnect on background)
+- **PepinilloApp**: background scene phase handling for WebSocket connect/disconnect
+
+#### API Endpoints (iOS-Specific)
+
+| Method | Endpoint                      | Description                                               |
+| ------ | ----------------------------- | --------------------------------------------------------- |
+| GET    | `/api/v1/preferences`         | Get user preferences (per-key LWW merge)                  |
+| PUT    | `/api/v1/preferences`         | Update user preferences                                   |
+| POST   | `/api/v1/sync/sessions`       | Batch session sync (replaces individual POSTs)            |
+| POST   | `/api/v1/sync/initial-upload` | Atomic upload for anonymous-to-registered transition      |
+| GET    | `/api/v1/sync/full`           | Cursor-based paginated full download for new device login |
+
+#### API DTOs (9 New DTOs in APIDTOs.swift)
+
+New DTOs added to support sync communication with the Go backend, including preference sync DTOs, session batch DTOs, initial upload DTOs, and full sync pagination DTOs.
+
+#### Conflict Resolution
+
+| Version          | Strategy          | Granularity  | Status      |
+| ---------------- | ----------------- | ------------ | ----------- |
+| **V1 (current)** | Last-Write-Wins   | Record-level | Implemented |
+| **V2 (planned)** | Field-level merge | Field-level  | Planned     |
+
+- V1: entire record is replaced by whichever version has the latest `updatedAt`
+- V2 (future): individual fields compared and merged independently, reducing data loss on concurrent edits
+
+### CloudKit (Secondary Sync Layer)
+
+CloudKit is retained as a secondary sync layer for Apple-to-Apple device sync:
+
+- **Private database**: only user data, encrypted at rest by Apple.
+- **Automatic sync**: SwiftData configured with `cloudKitContainerIdentifier: "iCloud.com.pepinillo.app"`. No manual sync code.
+- **Offline operation**: All operations write to the local SwiftData store first (instant). CloudKit syncs opportunistically when network is available.
+- **Pending changes**: queued in `CKOperationGroup` until network is available.
+
+### CloudKit Conflict Resolution
+
+| Data type                       | Strategy                                                            |
+| ------------------------------- | ------------------------------------------------------------------- |
+| Scalar fields (title, status)   | Last-write-wins                                                     |
+| Collections (subtasks)          | Additive merge (never delete remotely)                              |
+| Automatic                       | SwiftData/CloudKit handles most via `CKRecord` merge policies       |
 
 ### App Group
 
-Container compartido `group.com.pepinillo.app` accesible desde:
+Shared container `group.com.pepinillo.app` accessible from:
 
-- App principal (iPhone/iPad/Mac)
+- Main app (iPhone/iPad/Mac)
 - PepinilloWidget
 - PepinilloLiveActivity
 - PepinilloIntents
@@ -870,17 +1007,17 @@ Container compartido `group.com.pepinillo.app` accesible desde:
 
 ---
 
-## 11. IA On-Device
+## 11. On-Device AI
 
 ### Apple Foundation Models (iOS 26+)
 
-El generador de reportes `OnDeviceReportGenerator` usa el framework `FoundationModels` de Apple para generar reportes de productividad completamente on-device, sin enviar datos a servidores externos.
+The `OnDeviceReportGenerator` uses Apple's `FoundationModels` framework to generate productivity reports entirely on-device, without sending data to external servers.
 
-**Flujo:**
+**Flow:**
 
 ```
 ReportDataBuilder          OnDeviceReportGenerator         TemplateReportGenerator
-(agrega datos)  -------->  (Foundation Models)  -----X---> (fallback plantillas)
+(aggregates data) -------->  (Foundation Models)  -----X---> (template fallback)
                                |                               |
                                v                               v
                         AIReportResponse                AIReportResponse
@@ -888,80 +1025,80 @@ ReportDataBuilder          OnDeviceReportGenerator         TemplateReportGenerat
                                └───────────> ProductivityReport (SwiftData)
 ```
 
-**Verificacion de disponibilidad:**
+**Availability check:**
 
 ```swift
 func isAvailable() -> Bool {
-    // only iOS 26+, only cuando el modelo esta descargado y listo
+    // only iOS 26+, only when the model is downloaded and ready
     SystemLanguageModel.default.availability == .available
 }
 ```
 
-**Casos de uso:**
+**Use cases:**
 
-- Reportes de productividad semanales y mensuales
-- Analysis de patrones de foco
-- Recomendaciones personalizadas
+- Weekly and monthly productivity reports
+- Focus pattern analysis
+- Personalized recommendations
 
-**Privacidad:** Todo el procesamiento ocurre on-device. Los datos del user nunca salen del dispositivo.
+**Privacy:** All processing occurs on-device. User data never leaves the device.
 
 ### Fallback: TemplateReportGenerator
 
-Cuando Foundation Models no esta disponible (iOS < 26, modelo no descargado, dispositivo no soportado), el sistema usa plantillas con logica condicional para generar reportes basados en datos estadisticos puros.
+When Foundation Models is unavailable (iOS < 26, model not downloaded, unsupported device), the system uses templates with conditional logic to generate reports based on pure statistical data.
 
 ---
 
 ## 12. Design
 
-### Temas
+### Themes
 
-4 temas integrados, gestionados via `AppTheme` environment key:
+4 built-in themes, managed via `AppTheme` environment key:
 
-| Tema                  | Paleta                          | Uso                   |
+| Theme                 | Palette                         | Use                   |
 | --------------------- | ------------------------------- | --------------------- |
-| **Classic** (default) | Tonos neutros + verde pepinillo | Tema base             |
-| **Forest**            | Verdes oscuros, marrones        | Deep work, naturaleza |
-| **Ocean**             | Azules, turquesas               | Calma, fluidez        |
-| **Sunset**            | Naranjas, rosados               | Energia, calidez      |
+| **Classic** (default) | Neutral tones + pickle green    | Base theme            |
+| **Forest**            | Dark greens, browns             | Deep work, nature     |
+| **Ocean**             | Blues, turquoises               | Calm, fluidity        |
+| **Sunset**            | Oranges, pinks                  | Energy, warmth        |
 
-### Colores de acento por modo
+### Accent Colors per Mode
 
-Cada modo de foco tiene un color de acento unico (definido en `ModeColors.swift`):
+Each focus mode has a unique accent color (defined in `ModeColors.swift`):
 
-- Pomodoro: rojo tomate
-- Flowtime: azul oceano
-- Time Block: violeta
-- Stopwatch: verde
+- Pomodoro: tomato red
+- Flowtime: ocean blue
+- Time Block: violet
+- Stopwatch: green
 
-### Efectos visuales
+### Visual Effects
 
-- **Glassmorphism:** Modificadores de vidrio esmerilado (`GlassModifier.swift`) para cards y superficies.
-- **Liquid Glass (iOS 26):** Materiales adaptativos de Apple para la nueva estetica de iOS 26.
-- **Animaciones de celebracion:** Particulas y confetti al completar Sessions/logros (`CelebrationView.swift`).
+- **Glassmorphism:** Frosted glass modifiers (`GlassModifier.swift`) for cards and surfaces.
+- **Liquid Glass (iOS 26):** Apple's adaptive materials for the new iOS 26 aesthetic.
+- **Celebration animations:** Particles and confetti on session/achievement completion (`CelebrationView.swift`).
 
-### Retroalimentacion haptica
+### Haptic Feedback
 
-`HapticManager` centraliza toda la retroalimentacion haptica:
+`HapticManager` centralizes all haptic feedback:
 
-- Inicio/fin de Session
-- Transicion de fase (work -> break)
-- Completar Task
-- Alcanzar logro
-- Interacciones de botones
+- Session start/end
+- Phase transition (work -> break)
+- Task completion
+- Achievement reached
+- Button interactions
 
 ### Reduce Motion
 
-Todas las animaciones respetan `UIAccessibility.isReduceMotionEnabled`. Las animaciones se reemplazan por transiciones instantaneas via `ConditionalAnimation.swift`.
+All animations respect `UIAccessibility.isReduceMotionEnabled`. Animations are replaced by instant transitions via `ConditionalAnimation.swift`.
 
-### Localizacion
+### Localization
 
-3 idiomas via `Localizable.xcstrings`:
+3 languages via `Localizable.xcstrings`:
 
-- Ingles (EN) -- idioma base
-- Espanol (ES)
-- Portugues (PT)
+- English (EN) -- base language
+- Spanish (ES)
+- Portuguese (PT)
 
-Todas las cadenas usan `String(localized:)` para soporte native de localizacion.
+All strings use `String(localized:)` for native localization support.
 
 ---
 
@@ -971,7 +1108,7 @@ Todas las cadenas usan `String(localized:)` para soporte native de localizacion.
 
 Swift Testing (`@Test` macro) para todos los tests. Compatible con Xcode 16+.
 
-### Patron de tests TCA
+### TCA Test Pattern
 
 ```swift
 @Test func pomodoroIniciaCuentaRegresiva() async {
@@ -988,197 +1125,199 @@ Swift Testing (`@Test` macro) para todos los tests. Compatible con Xcode 16+.
 }
 ```
 
-### 10 suites de tests
+### 10 Test Suites
 
-| Suite                      | Archivo                            | Cobertura                                                  |
+| Suite                      | File                               | Coverage                                                   |
 | -------------------------- | ---------------------------------- | ---------------------------------------------------------- |
-| FocusFeatureReducerTests   | `FocusFeatureReducerTests.swift`   | Reducer de foco: todos los modos, pausa, reanudacion, stop |
-| FocusModeStrategyTests     | `FocusModeStrategyTests.swift`     | Las 4 estrategias: fases, duraciones, auto-avance          |
-| SessionJournalFeatureTests | `SessionJournalFeatureTests.swift` | Diario post-Session                                         |
-| TaskListFeatureTests       | `TaskListFeatureTests.swift`       | CRUD Tasks, filtros, Recurrence                          |
-| AnalyticsFeatureTests      | `AnalyticsFeatureTests.swift`      | Dashboard, tendencias                                      |
-| InsightsServiceTests       | `InsightsServiceTests.swift`       | Servicio de insights                                       |
+| FocusFeatureReducerTests   | `FocusFeatureReducerTests.swift`   | Focus reducer: all modes, pause, resume, stop              |
+| FocusModeStrategyTests     | `FocusModeStrategyTests.swift`     | 4 strategies: phases, durations, auto-advance              |
+| SessionJournalFeatureTests | `SessionJournalFeatureTests.swift` | Post-session journal                                        |
+| TaskListFeatureTests       | `TaskListFeatureTests.swift`       | Task CRUD, filters, recurrence                             |
+| AnalyticsFeatureTests      | `AnalyticsFeatureTests.swift`      | Dashboard, trends                                          |
+| InsightsServiceTests       | `InsightsServiceTests.swift`       | Insights service                                           |
 | PaywallFeatureTests        | `PaywallFeatureTests.swift`        | Paywall, RevenueCat mock                                   |
-| ModeIntelligenceTests      | `ModeIntelligenceTests.swift`      | Sugerencia de modo                                         |
+| ModeIntelligenceTests      | `ModeIntelligenceTests.swift`      | Mode suggestion                                            |
 | SiriIntentsTests           | `SiriIntentsTests.swift`           | App Intents                                                |
 | FocusWidgetProviderTests   | `FocusWidgetProviderTests.swift`   | Timeline provider                                          |
-| WatchTimerFeatureTests     | `WatchTimerFeatureTests.swift`     | Feature del Watch                                          |
-| AppFeatureIntegrationTests | `AppFeatureIntegrationTests.swift` | Integracion del reducer raiz                               |
+| WatchTimerFeatureTests     | `WatchTimerFeatureTests.swift`     | Watch feature                                              |
+| AppFeatureIntegrationTests | `AppFeatureIntegrationTests.swift` | Root reducer integration                                   |
 
-### Criterios de rendimiento
+### Performance Criteria
 
-| Metrica                 | Objective                             |
+| Metric                  | Target                               |
 | ----------------------- | ------------------------------------ |
-| Precision del timer     | <= 100ms de desviacion en 25 minutos |
-| Arranque en frio        | < 1s en iPhone 14+                   |
-| Synchronization CloudKit | < 10s para 100 Tasks (Wi-Fi)        |
+| Timer precision         | <= 100ms drift in 25 minutes         |
+| Cold start              | < 1s on iPhone 14+                   |
+| CloudKit sync           | < 10s for 100 tasks (Wi-Fi)          |
 
 ---
 
-## 14. Dependencias
+## 14. Dependencies
 
-Filosofia: **dependencias minimas**. Usar frameworks de Apple para todo lo posible.
+Philosophy: **minimal dependencies**. Use Apple frameworks for everything possible.
 
-| Dependencia                     | Version           | Proposito                        | Por que externa                                                          |
+| Dependency                      | Version           | Purpose                          | Why external                                                             |
 | ------------------------------- | ----------------- | -------------------------------- | ------------------------------------------------------------------------ |
-| `swift-composable-architecture` | 1.17+             | Gestion de Status y Architecture | Core de la Architecture, extensamente testeado, mantenido por Point-Free |
-| `swift-dependencies`            | (incluido en TCA) | Inyeccion de dependencias        | Requerido por TCA                                                        |
-| `swift-snapshot-testing`        | 1.17+             | Tests de snapshot UI             | Ecosistema de testing de Point-Free (only test target)                   |
+| `swift-composable-architecture` | 1.17+             | State management and architecture | Core architecture, extensively tested, maintained by Point-Free          |
+| `swift-dependencies`            | (included in TCA) | Dependency injection             | Required by TCA                                                          |
+| `swift-snapshot-testing`        | 1.17+             | UI snapshot tests                | Point-Free testing ecosystem (test target only)                          |
 
-**Lo que NO usamos (y por que):**
+**What we do NOT use (and why):**
 
-- **RevenueCat SDK v5+:** Implemented para centralizar manejo de subscriptions, entitlements, webhooks, y user identification (via Sign in with Apple).
-- **Firebase:** CloudKit privado para datos, TelemetryDeck para analytics, Sign in with Apple para auth.
-- **Alamofire/Moya:** No hay networking custom -- todo es CloudKit automatico.
-- **Realm/GRDB:** SwiftData es el framework recomendado de Apple con integracion CloudKit nativa.
+- **RevenueCat SDK v5+:** Implemented to centralize subscription, entitlement, webhook, and user identification handling (via Sign in with Apple).
+- **Firebase:** Private CloudKit for data, TelemetryDeck for analytics, Sign in with Apple for auth.
+- **Alamofire/Moya:** URLSession is used directly for backend sync; CloudKit handles Apple-to-Apple sync automatically.
+- **Realm/GRDB:** SwiftData is Apple's recommended framework with native CloudKit integration.
 
 ---
 
-## 15. Seguridad y Privacidad
+## 15. Security and Privacy
 
 ### Authentication
 
-- **Sign in with Apple** exclusivamente. Sin email/password, sin Firebase Auth.
-- El `appleUserID` se almacena en `UserPreferences` (CloudKit privado, encriptado).
+- **Sign in with Apple** as primary method, with email/password as alternative.
+- The `appleUserID` is stored in `UserPreferences` (private CloudKit, encrypted).
+- JWT tokens stored in **Keychain** (hardware-encrypted, protected by Secure Enclave).
 
-### Almacenamiento de datos
+### Data Storage
 
-- **CloudKit private database:** Todos los datos del user encriptados en reposo por Apple.
-- **SwiftData local:** Data Protection a nivel de archivo (encriptacion del sistema).
-- **App Group container:** Compartido only entre targets de la misma app (sandbox).
+- **CloudKit private database:** All user data encrypted at rest by Apple.
+- **SwiftData local:** File-level Data Protection (system encryption).
+- **App Group container:** Shared only between targets of the same app (sandboxed).
+- **Keychain:** JWT access/refresh tokens and device ID stored securely.
 
 ### Analytics
 
-- **TelemetryDeck:** Analytics respetuosos de la privacidad. No recopila PII (informacion personal identificable).
-- **Sin tracking:** No se usan frameworks de tracking de terceros.
+- **TelemetryDeck:** Privacy-respecting analytics. No PII (personally identifiable information) collected.
+- **No tracking:** No third-party tracking frameworks used.
 
-### Permisos
+### Permissions
 
-only se solicitan cuando el user opta explicitamente:
+Only requested when the user explicitly opts in:
 
-- **Notificaciones:** Para alertas de fin de Session y recordatorios
-- **HealthKit:** Para registrar Mindful Minutes (opt-in en Settings)
-- **EventKit:** Para importar recordatorios (accion explicita del user)
+- **Notifications:** For session-end alerts and reminders
+- **HealthKit:** For logging Mindful Minutes (opt-in in Settings)
+- **EventKit:** For importing reminders (explicit user action)
 
-**No se solicitan:** Camara, microfono, ubicacion, contactos, fotos.
+**Not requested:** Camera, microphone, location, contacts, photos.
 
 ### App Transport Security
 
-Aplicado (only HTTPS). No hay endpoints HTTP custom.
+Enforced (HTTPS only). No custom HTTP endpoints.
 
 ### Privacy Nutrition Label
 
-Recopilacion minima de datos para el listing de App Store.
+Minimal data collection for the App Store listing.
 
 ---
 
-## 16. Accesibilidad
+## 16. Accessibility
 
 ### VoiceOver
 
-- Soporte complete en todas las Platforms (iOS, iPadOS, macOS, watchOS).
-- Labels de accesibilidad personalizados para el circulo del timer, indicadores de progreso, y controles de Session.
-- Traits de accesibilidad correctos (`.button`, `.header`, `.updatesFrequently` para el timer).
+- Complete support on all platforms (iOS, iPadOS, macOS, watchOS).
+- Custom accessibility labels for the timer circle, progress indicators, and session controls.
+- Correct accessibility traits (`.button`, `.header`, `.updatesFrequently` for the timer).
 
 ### Dynamic Type
 
-- Todo el texto escala con el tamano de texto del sistema.
-- Adaptive layouts que se ajustan a tamanos de texto grandes y extra-grandes.
+- All text scales with the system text size.
+- Adaptive layouts that adjust to large and extra-large text sizes.
 
 ### Reduce Motion
 
-- Todas las animaciones respetan `UIAccessibility.isReduceMotionEnabled`.
-- Las animaciones se reemplazan por transiciones instantaneas.
-- Celebraciones (confetti, particulas) se desactivan.
+- All animations respect `UIAccessibility.isReduceMotionEnabled`.
+- Animations are replaced by instant transitions.
+- Celebrations (confetti, particles) are disabled.
 
-### Contraste
+### Contrast
 
-- Ratio minimo de contraste de **4.5:1** para todo el texto.
-- Soporte de modo de alto contraste.
-- Los colores de acento por modo mantienen el ratio en ambos temas claro y oscuro.
+- Minimum contrast ratio of **4.5:1** for all text.
+- High contrast mode support.
+- Per-mode accent colors maintain the ratio in both light and dark themes.
 
-### Retroalimentacion haptica
+### Haptic Feedback
 
-- Alternativa a indicadores puramente visuales.
-- Haptics diferenciados por tipo de evento (inicio, pausa, completitud, logro).
-- Se puede desactivar globalmente en `UserPreferences.hapticEnabled`.
+- Alternative to purely visual indicators.
+- Differentiated haptics by event type (start, pause, completion, achievement).
+- Can be globally disabled in `UserPreferences.hapticEnabled`.
 
 ---
 
-## 17. Targets y Platforms
+## 17. Targets and Platforms
 
-### Distribucion de targets
+### Target Distribution
 
-| Target                     | Plataforma        | UI Framework       | Notes                                                    |
-| -------------------------- | ----------------- | ------------------ | -------------------------------------------------------- |
-| **Pepinillo** (principal)  | iPhone, iPad, Mac | SwiftUI            | Target principal de desarrollo                           |
-| **PepinilloWatch**         | Apple Watch       | SwiftUI (WatchKit) | App companion: timer remoto, Tasks, dashboard           |
-| **PepinilloWidget**        | iPhone, iPad      | WidgetKit          | 3 familias: Focus, Tasks, Dashboard (home + lock screen) |
-| **PepinilloLiveActivity**  | iPhone            | ActivityKit        | Dynamic Island + banner de Live Activity                 |
-| **PepinilloIntents**       | iPhone, iPad, Mac | App Intents        | 7 intents Siri en 3 idiomas                              |
-| **ControlCenterExtension** | iPhone            | ControlWidget      | Toggle para iniciar/detener Session (iOS 18+)             |
+| Target                     | Platform          | UI Framework       | Notes                                                     |
+| -------------------------- | ----------------- | ------------------ | --------------------------------------------------------- |
+| **Pepinillo** (main)       | iPhone, iPad, Mac | SwiftUI            | Main development target                                   |
+| **PepinilloWatch**         | Apple Watch       | SwiftUI (WatchKit) | Companion app: remote timer, tasks, dashboard             |
+| **PepinilloWidget**        | iPhone, iPad      | WidgetKit          | 3 families: Focus, Tasks, Dashboard (home + lock screen)  |
+| **PepinilloLiveActivity**  | iPhone            | ActivityKit        | Dynamic Island + Live Activity banner                     |
+| **PepinilloIntents**       | iPhone, iPad, Mac | App Intents        | 7 Siri intents in 3 languages                             |
+| **ControlCenterExtension** | iPhone            | ControlWidget      | Toggle to start/stop session (iOS 18+)                    |
 
-### Adaptaciones por plataforma
+### Per-Platform Adaptations
 
-| Plataforma         | Adaptacion                                                                                                                                            |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **iPhone**         | Target principal. Todas las features disponibles.                                                                                                     |
-| **iPad**           | Split View (`iPadSplitView.swift`), Stage Manager, layouts adaptativos, teclado fisico shortcuts. Sheets con tamano adaptativo (`iPadSheetModifier`). |
-| **Mac (Catalyst)** | Menu bar commands (`MacCommands.swift`), ventana complete, sandbox entitlement. `#if os(macOS)` para especificos de plataforma.                       |
-| **watchOS**        | Feature set simplificado: timer, Tasks, dashboard, complications. Comunicacion via WCSession. `ExtendedRuntimeSession` para haptics de alarma.       |
+| Platform           | Adaptation                                                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **iPhone**         | Main target. All features available.                                                                                                                    |
+| **iPad**           | Split View (`iPadSplitView.swift`), Stage Manager, adaptive layouts, physical keyboard shortcuts. Adaptive-size sheets (`iPadSheetModifier`).           |
+| **Mac (Catalyst)** | Menu bar commands (`MacCommands.swift`), full window, sandbox entitlement. `#if os(macOS)` for platform-specific code.                                  |
+| **watchOS**        | Simplified feature set: timer, tasks, dashboard, complications. Communication via WCSession. `ExtendedRuntimeSession` for alarm haptics.                |
 
-### Codigo compartido
+### Shared Code
 
-Los modelos de dominio (`Domain/`), features TCA (`Features/`), servicios y clientes se comparten entre todas las Platforms. only las vistas y las integraciones especificas de plataforma difieren por target.
+Domain models (`Domain/`), TCA features (`Features/`), services, and clients are shared across all platforms. Only views and platform-specific integrations differ by target.
 
-### Identificadores
+### Identifiers
 
-| Recurso            | Identificador              |
+| Resource           | Identifier                 |
 | ------------------ | -------------------------- |
 | Bundle ID          | `com.pepinillo.app`        |
 | App Group          | `group.com.pepinillo.app`  |
 | CloudKit Container | `iCloud.com.pepinillo.app` |
 
-### Generacion del proyecto
+### Project Generation
 
-El proyecto Xcode se genera desde `project.yml` via XcodeGen:
+The Xcode project is generated from `project.yml` via XcodeGen:
 
 ```bash
-xcodegen generate  # regenerar despues de cambios en project.yml
+xcodegen generate  # regenerate after changes to project.yml
 ```
 
 ---
 
-## 18. Backend e Integracion con Servidor
+## 18. Backend and Server Integration
 
-### 18.1 Vision General del Backend Go
+### 18.1 Go Backend Overview
 
-El backend de Pepinillo es una API REST escrita en **Go** con Architecture hexagonal. Aun **no esta desplegado** en produccion — se encuentra in development activo en `backend/`.
+Pepinillo's backend is a REST API written in **Go** with hexagonal architecture. It is **not yet deployed** to production and is under active development in `backend/`.
 
-| Aspecto            | Tecnologia                        |
+| Aspect             | Technology                        |
 | ------------------ | --------------------------------- |
-| **Lenguaje**       | Go                                |
-| **Framework HTTP** | Fiber                             |
-| **Base de datos**  | PostgreSQL                        |
-| **Authentication**  | JWT (access + refresh tokens)     |
-| **Architecture**   | Hexagonal (puertos y adaptadores) |
-| **Status**         | in development, not deployed      |
+| **Language**       | Go                                |
+| **HTTP Framework** | Fiber                             |
+| **Database**       | PostgreSQL                        |
+| **Authentication** | JWT (access + refresh tokens)     |
+| **Architecture**   | Hexagonal (ports and adapters)    |
+| **Status**         | In development, not deployed      |
 
-#### Grupos de Endpoints
+#### Endpoint Groups
 
-| Grupo         | Endpoints                                                                          | Description                                                  |
+| Group         | Endpoints                                                                          | Description                                                  |
 | ------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Auth**      | `POST /auth/login`, `POST /auth/register`, `POST /auth/google`, `POST /auth/apple` | Authentication por email/password + OAuth (Google/Apple)      |
-| **Tasks**     | `GET/POST/PUT/DELETE /api/v1/tasks`                                                | CRUD de Tasks                                               |
-| **Sessions**  | `GET/POST /api/v1/pomodoro-sessions`                                               | Registro y consulta de Sessions de enfoque                   |
-| **Stats**     | `GET /api/v1/stats/daily`, `GET /api/v1/stats/weekly`                              | Estadisticas agregadas (Pending)                           |
-| **Billing**   | `POST /api/v1/billing/verify-receipt`                                              | Verificacion server-side de recibos (App Store y Play Store) |
-| **Push**      | `POST /api/v1/push/register`                                                       | Registro de tokens APNs para notificaciones push             |
-| **WebSocket** | `WS /api/v1/ws`                                                                    | Canal de Synchronization en tiempo real                       |
-| **AI**        | `POST /api/v1/ai/report`                                                           | Generacion de reportes de productividad                      |
-| **Users**     | `GET /api/v1/users/me`, `PUT /api/v1/users/me`                                     | Perfil del user                                           |
+| **Auth**      | `POST /auth/login`, `POST /auth/register`, `POST /auth/google`, `POST /auth/apple` | Email/password authentication + OAuth (Google/Apple)          |
+| **Tasks**     | `GET/POST/PUT/DELETE /api/v1/tasks`                                                | Task CRUD                                                    |
+| **Sessions**  | `GET/POST /api/v1/pomodoro-sessions`                                               | Register and query focus sessions                            |
+| **Stats**     | `GET /api/v1/stats/daily`, `GET /api/v1/stats/weekly`                              | Aggregated statistics (pending)                              |
+| **Billing**   | `POST /api/v1/billing/verify`                                                      | Server-side receipt verification (App Store and Play Store)  |
+| **Push**      | `POST /api/v1/push/register`                                                       | APNs token registration for push notifications               |
+| **WebSocket** | `WS /api/v1/ws`                                                                    | Real-time sync channel                                       |
+| **AI**        | `POST /api/v1/ai/report`                                                           | Productivity report generation                               |
+| **Users**     | `GET /api/v1/users/me`, `PUT /api/v1/users/me`                                     | User profile                                                 |
 
-#### Modelo de user en Backend
+#### Backend User Model
 
 ```go
 type User struct {
@@ -1195,102 +1334,102 @@ type User struct {
 }
 ```
 
-### 18.2 Flujo de Authentication
+### 18.2 Authentication Flow
 
-iOS utiliza **Sign In with Apple** como metodo principal de Authentication, con email/password como alternativa.
+iOS uses **Sign In with Apple** as the primary authentication method, with email/password as an alternative.
 
-#### Sign In with Apple (metodo principal)
+#### Sign In with Apple (primary method)
 
 ```
 ┌──────────────┐     ┌──────────────────┐     ┌──────────────┐
 │   iOS App    │     │  Apple Identity   │     │  Backend Go  │
 │              │     │  Services         │     │              │
 │              │     │                   │     │              │
-│ 1. ASAutho-  │────►│ 2. Authentication  │     │              │
-│    rization  │     │    biometrica     │     │              │
+│ 1. ASAutho-  │────►│ 2. Biometric       │     │              │
+│    rization  │     │    authentication │     │              │
 │    Controller│◄────│ 3. identityToken  │     │              │
 │              │     │    + authCode     │     │              │
 │              │     │                   │     │              │
-│ 4. POST      │────────────────────────────►│ 5. Verifica   │
+│ 4. POST      │────────────────────────────►│ 5. Verifies   │
 │    /auth/    │     │                   │     │    identity  │
-│    apple     │     │                   │     │    Token con │
+│    apple     │     │                   │     │    Token with│
 │              │     │                   │     │    Apple     │
 │              │◄────────────────────────────│ 6. JWT access │
 │              │     │                   │     │    + refresh  │
-│ 7. Almacena  │     │                   │     │              │
-│    en        │     │                   │     │              │
+│ 7. Stores    │     │                   │     │              │
+│    in        │     │                   │     │              │
 │    Keychain  │     │                   │     │              │
 └──────────────┘     └──────────────────┘     └──────────────┘
 ```
 
-**Pasos detallados:**
+**Detailed steps:**
 
-1. El user toca "Continuar con Apple" → se presenta `ASAuthorizationAppleIDProvider` via `SignInWithAppleClient`
-2. Apple autentica con Face ID / Touch ID / password del dispositivo
-3. Apple retorna un `identityToken` (JWT firmado por Apple) y un `authorizationCode`
-4. La app envia `POST /auth/apple` con el `identityToken` en el body
-5. El backend valida el token contra los servidores de Apple (verifica firma, audience, issuer)
-6. Si el user no existe, lo crea; retorna JWT (access + refresh token) de Pepinillo
-7. Los tokens se almacenan en **Keychain** (cifrado por hardware, protegido por Secure Enclave)
+1. The user taps "Continue with Apple" -> `ASAuthorizationAppleIDProvider` is presented via `SignInWithAppleClient`
+2. Apple authenticates with Face ID / Touch ID / device password
+3. Apple returns an `identityToken` (JWT signed by Apple) and an `authorizationCode`
+4. The app sends `POST /auth/apple` with the `identityToken` in the body
+5. The backend validates the token against Apple servers (verifies signature, audience, issuer)
+6. If the user does not exist, it creates one; returns Pepinillo JWT (access + refresh token)
+7. Tokens are stored in **Keychain** (hardware-encrypted, protected by Secure Enclave)
 
-> **Note:** Apple only envia el nombre y email del user en la **primera** autorizacion. El backend los persiste en ese momento. En autorizaciones subsecuentes, only se recibe el `identityToken`.
+> **Note:** Apple only sends the user's name and email on the **first** authorization. The backend persists them at that point. On subsequent authorizations, only the `identityToken` is received.
 
-#### Email/Password (alternativa)
+#### Email/Password (alternative)
 
-- `POST /auth/register` → crea cuenta con email + password
-- `POST /auth/login` → retorna JWT access + refresh tokens
-- Tokens almacenados en Keychain igual que con Sign In with Apple
+- `POST /auth/register` -> creates account with email + password
+- `POST /auth/login` -> returns JWT access + refresh tokens
+- Tokens stored in Keychain same as with Sign In with Apple
 
-#### Gestion de Tokens
+#### Token Management
 
-| Token             | Almacenamiento | Duracion          | Renovacion                   |
-| ----------------- | -------------- | ----------------- | ---------------------------- |
-| **Access Token**  | Keychain       | Corta (15-30 min) | Automatica via refresh token |
-| **Refresh Token** | Keychain       | Larga (30 days)   | Requires re-login al expirar |
+| Token             | Storage  | Duration          | Renewal                      |
+| ----------------- | -------- | ----------------- | ---------------------------- |
+| **Access Token**  | Keychain | Short (15-30 min) | Automatic via refresh token  |
+| **Refresh Token** | Keychain | Long (30 days)    | Requires re-login on expiry  |
 
-El cliente API (basado en `URLSession`) incluye logica de renovacion automatica:
+The API client (based on `URLSession`) includes automatic renewal logic:
 
-- Adjunta el access token como `Authorization: Bearer <token>` en cada request
-- Detecta respuestas `401 Unauthorized`
-- Intenta renovar el access token usando el refresh token
-- Si la renovacion falla, emite una accion TCA que redirige al flujo de login
+- Attaches the access token as `Authorization: Bearer <token>` on each request
+- Detects `401 Unauthorized` responses
+- Attempts to renew the access token using the refresh token
+- If renewal fails, emits a TCA action that redirects to the login flow
 
-#### Transicion desde Sign In with Apple Standalone
+#### Transition from Standalone Sign In with Apple
 
-Actualmente, `SignInWithAppleClient` almacena `appleUserID` en `UserPreferences` (CloudKit). Con el backend:
+Currently, `SignInWithAppleClient` stores `appleUserID` in `UserPreferences` (CloudKit). With the backend:
 
-1. `SignInWithAppleClient` continua obteniendo el `identityToken` de Apple
-2. En lugar de only guardar el `appleUserID` localmente, ahora tambien envia el token al backend
-3. El backend se convierte en la fuente de verdad para la identidad del user
-4. `UserPreferences.appleUserID` se mantiene como cache local para verificacion rapida
+1. `SignInWithAppleClient` continues obtaining the `identityToken` from Apple
+2. Instead of only storing the `appleUserID` locally, it now also sends the token to the backend
+3. The backend becomes the source of truth for user identity
+4. `UserPreferences.appleUserID` is kept as a local cache for quick verification
 
-### 18.3 Estrategia de Synchronization Dual
+### 18.3 Dual Sync Strategy
 
-iOS mantiene **dos capas de Synchronization** en paralelo durante la transicion al backend:
+iOS maintains **two sync layers** in parallel during the transition to the backend:
 
-#### Capa 1: SwiftData + CloudKit (Synchronization Apple)
+#### Layer 1: SwiftData + CloudKit (Apple Sync)
 
-La Synchronization existente via `NSPersistentCloudKitContainer` **se mantiene** intacta:
+The existing sync via `NSPersistentCloudKitContainer` **is kept** intact:
 
-- Sync automatico entre dispositivos Apple del mismo user (iPhone, iPad, Mac, Watch)
-- Sin codigo de sync manual — CloudKit lo gestiona
-- Baja latencia entre dispositivos Apple (~1-5 segundos)
-- Funciona sin backend (modo offline complete)
+- Automatic sync between Apple devices of the same user (iPhone, iPad, Mac, Watch)
+- No manual sync code — CloudKit manages it
+- Low latency between Apple devices (~1-5 seconds)
+- Works without backend (full offline mode)
 
-#### Capa 2: Backend Sync (Synchronization cross-platform)
+#### Layer 2: Backend Sync (Cross-Platform Sync)
 
-Nueva capa de Synchronization con el backend Go para compartir datos con Android:
+New sync layer with the Go backend to share data with Android:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        iOS App                               │
 │                                                              │
 │  SwiftData ◄──► CloudKit       SwiftData ◄──► BackendSync  │
-│  (Apple sync,   (automatico)   (mismos datos)  (API REST    │
-│   sin cambios)                                  + WebSocket) │
+│  (Apple sync,   (automatic)    (same data)     (REST API    │
+│   unchanged)                                    + WebSocket) │
 │                                                              │
-│  Prioridad: CloudKit para sync Apple-Apple                   │
-│             Backend para sync cross-platform                 │
+│  Priority: CloudKit for Apple-to-Apple sync                  │
+│            Backend for cross-platform sync                   │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -1300,122 +1439,122 @@ Nueva capa de Synchronization con el backend Go para compartir datos con Android
                     └──────────────┘
 ```
 
-#### Estrategia de Migration para users Existentes de CloudKit
+#### Migration Strategy for Existing CloudKit Users
 
-Los users que ya tienen datos en CloudKit necesitan una Migration al backend:
+Users who already have data in CloudKit need a migration to the backend:
 
-| Paso | Accion                     | Detalle                                                                    |
+| Step | Action                     | Detail                                                                     |
 | ---- | -------------------------- | -------------------------------------------------------------------------- |
-| 1    | Login con backend          | El user se autentica (Apple/email) por primera vez                      |
-| 2    | Deteccion de datos locales | La app detecta que existen datos en SwiftData/CloudKit                     |
-| 3    | Upload inicial             | Se suben todas las Tasks, Sessions y stats al backend via batch API       |
-| 4    | Mapeo de IDs               | Se guardan los `serverId` retornados por el backend en los modelos locales |
-| 5    | Sync activo                | A partir de este punto, los cambios se sincronizan bidireccionalmente      |
+| 1    | Login with backend         | The user authenticates (Apple/email) for the first time                    |
+| 2    | Local data detection       | The app detects that data exists in SwiftData/CloudKit                     |
+| 3    | Initial upload             | All tasks, sessions, and stats are uploaded to the backend via batch API   |
+| 4    | ID mapping                 | The `serverId` values returned by the backend are saved in local models    |
+| 5    | Active sync                | From this point on, changes are synchronized bidirectionally               |
 
-> **Importante:** CloudKit sigue siendo la capa primaria para sync Apple-Apple. El backend es un "mirror" adicional para cross-platform. No se elimina CloudKit.
+> **Important:** CloudKit remains the primary layer for Apple-to-Apple sync. The backend is an additional "mirror" for cross-platform. CloudKit is not removed.
 
-#### WebSocket (Synchronization en Tiempo Real)
+#### WebSocket (Real-Time Sync)
 
-El backend expone `WS /api/v1/ws` para notificar cambios remotos:
+The backend exposes `WS /api/v1/ws` to notify about remote changes:
 
-- Al conectar, el cliente envia su JWT para autenticarse
-- El backend emite eventos cuando otro dispositivo (ej: Android) del mismo user modifica datos
-- El cliente iOS recibe el evento y ejecuta un pull selectivo
-- Reconexion automatica con backoff exponencial
+- On connection, the client sends its JWT for authentication
+- The backend emits events when another device (e.g.: Android) of the same user modifies data
+- The iOS client receives the event and performs a selective pull
+- Automatic reconnection with exponential backoff
 
 #### BackgroundTasks (Fallback)
 
-Cuando el WebSocket no esta disponible, se usa `BGAppRefreshTask` como fallback:
+When WebSocket is unavailable, `BGAppRefreshTask` is used as a fallback:
 
-- Registrado con `BGTaskScheduler` para ejecucion periodica (~15 minutos)
-- Ejecuta `BackendSyncClient.syncAll()` para push/pull de cambios Pending
-- Constraint: Requires conexion a internet
+- Registered with `BGTaskScheduler` for periodic execution (~15 minutes)
+- Executes `SyncClient.syncAll()` for push/pull of pending changes
+- Constraint: requires internet connection
 
-### 18.4 subscriptions Cross-Platform
+### 18.4 Cross-Platform Subscriptions
 
-Las subscriptions se verifican **server-side** para garantizar paridad entre Platforms. Un user que compra PRO en iOS puede usar PRO en Android y viceversa.
+Subscriptions are verified **server-side** to guarantee parity across platforms. A user who purchases PRO on iOS can use PRO on Android and vice versa.
 
-#### Flujo de Verificacion
+#### Verification Flow
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
 │   iOS App    │     │  Backend Go  │     │  App Store   │
 │              │     │              │     │  Server API  │
-│ 1. user   │     │              │     │              │
-│    compra    │     │              │     │              │
-│    con       │     │              │     │              │
+│ 1. user      │     │              │     │              │
+│    purchases │     │              │     │              │
+│    with      │     │              │     │              │
 │    StoreKit 2│     │              │     │              │
 │              │     │              │     │              │
-│ 2. POST      │────►│ 3. Valida    │────►│ 4. Verifica  │
-│    /billing/ │     │    recibo    │     │    con App   │
-│    verify-   │     │    con App   │◄────│    Store     │
-│    receipt   │     │    Store API │     │    Server    │
+│ 2. POST      │────►│ 3. Validates │────►│ 4. Verifies  │
+│    /billing/ │     │    receipt   │     │    with App  │
+│    verify    │     │    with App  │◄────│    Store     │
+│              │     │    Store API │     │    Server    │
 │              │     │              │     │    Notif. V2 │
-│              │◄────│ 5. Actualiza │     │              │
+│              │◄────│ 5. Updates   │     │              │
 │              │     │    user.sub  │     │              │
-│ 6. Cachea    │     │    tier=pro  │     │              │
+│ 6. Caches    │     │    tier=pro  │     │              │
 │    PRO local │     │              │     │              │
 └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
-**Pasos detallados:**
+**Detailed steps:**
 
-1. El user complete la compra via `SubscriptionClient` (RevenueCat SDK v5+, wrapping StoreKit 2)
-2. La app envia `POST /api/v1/billing/verify-receipt` con el `originalTransactionID` y el `signedPayload` (JWS)
-3. El backend valida el recibo contra la App Store Server API (verifica firma JWS, Subscription status)
-4. App Store confirma que la compra es legitima y activa
-5. El backend actualiza `User.SubscriptionTier = "pro"` en PostgreSQL
-6. La app cachea el Status PRO localmente; todas las verificaciones futuras consultan `GET /api/v1/users/me`
+1. The user completes the purchase via `SubscriptionClient` (RevenueCat SDK v5+, wrapping StoreKit 2)
+2. The app sends `POST /api/v1/billing/verify` with the `originalTransactionID` and the `signedPayload` (JWS)
+3. The backend validates the receipt against the App Store Server API (verifies JWS signature, subscription status)
+4. App Store confirms the purchase is legitimate and active
+5. The backend updates `User.SubscriptionTier = "pro"` in PostgreSQL
+6. The app caches PRO status locally; all future checks query `GET /api/v1/users/me`
 
-**Fuentes de verdad:**
+**Sources of truth:**
 
-| Contexto           | Fuente                                                                                                   |
-| ------------------ | -------------------------------------------------------------------------------------------------------- |
-| **Cross-platform** | Backend (`User.SubscriptionTier`) — consultado via `/users/me`                                           |
-| **only Apple**     | RevenueCat entitlements local (`RevenueCat.shared.entitlements`) — funciona offline con cache            |
-| **Jerarquia**      | Backend > RevenueCat entitlements. Si el backend dice PRO (compra en Android), la app iOS desbloquea PRO |
+| Context            | Source                                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------- |
+| **Cross-platform** | Backend (`User.SubscriptionTier`) — queried via `/users/me`                                               |
+| **Apple only**     | RevenueCat local entitlements (`RevenueCat.shared.entitlements`) — works offline with cache                |
+| **Hierarchy**      | Backend > RevenueCat entitlements. If backend says PRO (purchase on Android), the iOS app unlocks PRO     |
 
-**Paridad cross-platform:** Un user que compra PRO en Android (Play Store) vera su Status PRO reflejado en iOS al consultar `/users/me`, porque el backend centraliza el tier. RevenueCat sincroniza entitlements cross-platform.
+**Cross-platform parity:** A user who purchases PRO on Android (Play Store) will see their PRO status reflected on iOS when querying `/users/me`, because the backend centralizes the tier. RevenueCat syncs entitlements cross-platform.
 
-**RevenueCat como cache local:**
+**RevenueCat as local cache:**
 
-El `SubscriptionClient` ahora usa RevenueCat SDK v5+:
+The `SubscriptionClient` now uses RevenueCat SDK v5+:
 
-- `RevenueCat.shared.entitlements` para verificacion rapida offline
-- `configure()` y `logIn(userId)` para user identification (integrado con Sign in with Apple)
-- Grace period: automatically manejado por RevenueCat according to configuración en App Store Connect
-- Se sincroniza con el backend para paridad cross-platform y entitlements verificados por servidor
+- `RevenueCat.shared.entitlements` for quick offline verification
+- `configure()` and `logIn(userId)` for user identification (integrated with Sign in with Apple)
+- Grace period: automatically handled by RevenueCat according to App Store Connect configuration
+- Syncs with the backend for cross-platform parity and server-verified entitlements
 
-### 18.5 Perfil de user
+### 18.5 User Profile
 
-El perfil de user combina datos de Authentication, estadisticas y suscripcion.
+The user profile combines authentication data, statistics, and subscription state.
 
-#### Modelo de Datos del Perfil
+#### Profile Data Model
 
-| Campo                   | Origen                            | Description                                    |
+| Field                   | Source                            | Description                                    |
 | ----------------------- | --------------------------------- | ---------------------------------------------- |
-| `name`                  | Backend (`User.Name`)             | Nombre para mostrar (de Apple/Google o manual) |
-| `email`                 | Backend (`User.Email`)            | Email de la cuenta                             |
-| `avatarUrl`             | Backend (`User.ImageURL`)         | Foto de perfil (URL de Apple/Google)           |
-| `subscriptionTier`      | Backend (`User.SubscriptionTier`) | `"free"` o `"pro"`                             |
-| `subscriptionExpiresAt` | Backend                           | Date de vencimiento de suscripcion PRO        |
-| `linkedAccounts`        | Backend                           | Proveedores vinculados: Apple, Google, email   |
-| `emailVerified`         | Backend (`User.EmailVerified`)    | Si el email esta verificado                    |
-| `memberSince`           | Backend (`User.CreatedAt`)        | Date de registro                              |
+| `name`                  | Backend (`User.Name`)             | Display name (from Apple/Google or manual)     |
+| `email`                 | Backend (`User.Email`)            | Account email                                  |
+| `avatarUrl`             | Backend (`User.ImageURL`)         | Profile photo (Apple/Google URL)               |
+| `subscriptionTier`      | Backend (`User.SubscriptionTier`) | `"free"` or `"pro"`                            |
+| `subscriptionExpiresAt` | Backend                           | PRO subscription expiration date               |
+| `linkedAccounts`        | Backend                           | Linked providers: Apple, Google, email         |
+| `emailVerified`         | Backend (`User.EmailVerified`)    | Whether the email is verified                  |
+| `memberSince`           | Backend (`User.CreatedAt`)        | Registration date                              |
 
-#### Estadisticas del Perfil (calculadas)
+#### Profile Statistics (calculated)
 
-| Estadistica                  | Calculo                                               | Fuente                                             |
-| ---------------------------- | ----------------------------------------------------- | -------------------------------------------------- |
-| **Racha actual**             | days consecutivos con al menos una Session             | `PersistenceClient` → `DailyStats.hadFocusSession` |
-| **hours totales de enfoque** | Suma de `totalFocusSeconds` de todos los `DailyStats` | SwiftData local                                    |
-| **Sessions completadas**     | Suma de `sessionsCompleted` de todos los `DailyStats` | SwiftData local                                    |
-| **Tasks completadas**       | Conteo de `TaskItem` con `isCompleted = true`         | SwiftData local                                    |
-| **Modo dominante**           | Modo con mas segundos totales                         | Calculo sobre `DailyStats`                         |
+| Statistic                | Calculation                                            | Source                                              |
+| ------------------------ | ------------------------------------------------------ | --------------------------------------------------- |
+| **Current streak**       | Consecutive days with at least one session              | `PersistenceClient` -> `DailyStats.hadFocusSession` |
+| **Total focus hours**    | Sum of `totalFocusSeconds` across all `DailyStats`     | Local SwiftData                                     |
+| **Sessions completed**   | Sum of `sessionsCompleted` across all `DailyStats`     | Local SwiftData                                     |
+| **Tasks completed**      | Count of `TaskItem` with `isCompleted = true`          | Local SwiftData                                     |
+| **Dominant mode**        | Mode with the most total seconds                       | Computed from `DailyStats`                          |
 
-#### Implementacion con TCA
+#### TCA Implementation
 
-El perfil se implementa como un feature TCA:
+The profile is implemented as a TCA feature:
 
 ```swift
 @Reducer
@@ -1446,15 +1585,15 @@ struct ProfileFeature {
 }
 ```
 
-#### Pantalla de Perfil
+#### Profile Screen
 
-La `ProfileView` (SwiftUI) muestra:
+The `ProfileView` (SwiftUI) shows:
 
-- **Header:** Avatar, nombre, email, badge PRO/FREE
-- **Estadisticas:** Racha, hours totales, Sessions, Tasks completadas, miembro desde
-- **Cuenta:** Cuentas vinculadas (Apple, Google, email), opcion de vincular/desvincular
-- **Suscripcion:** Status actual, Date de vencimiento, boton de gestionar/upgrade
-- **Acciones:** Cerrar Session, eliminar cuenta
+- **Header:** Avatar, name, email, PRO/FREE badge
+- **Statistics:** Streak, total hours, sessions, completed tasks, member since
+- **Account:** Linked accounts (Apple, Google, email), option to link/unlink
+- **Subscription:** Current status, expiration date, manage/upgrade button
+- **Actions:** Sign out, delete account
 
 
 

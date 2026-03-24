@@ -228,12 +228,26 @@ Complete Wear OS app:
 
 ### Synchronization
 
-#### [iOS] — CloudKit
+#### [iOS] — Backend REST API + SwiftData + WebSocket
 
-- **CloudKit private database** for automatic synchronization across iPhone, iPad, Mac
-- Merge strategy: **last-write-wins** with timestamps
-- Offline-first: all data saved locally first (SwiftData), sync is opportunistic
-- Synced entities: tasks, focus sessions, preferences, streaks, achievements
+- **Go backend** with REST API + WebSocket for data sync (replacing CloudKit as primary sync)
+- **SwiftData** as local database with TCA dependency clients
+- **SyncClient** (TCA `@DependencyClient`): syncSettings(), batch syncSessions(), initialUpload(), performInitialSync() (cursor pagination), wipeAndSync(), hasLocalData()
+- **IdentityClient** (TCA `@DependencyClient`): manages ANONYMOUS/REGISTERED/VERIFIED state transitions
+- **WebSocketClient** (TCA `@DependencyClient`): URLSessionWebSocketTask, exponential backoff (1s, 2s, 4s, 8s, max 30s), message dispatch
+- **SettingsFeature**: dirty tracking per preference key with PreferenceDirtyTracker (UserDefaults-based)
+- **Settings sync**: per-key LWW for 17 syncable keys (5 device-specific excluded)
+- **Batch session sync**: `POST /sync/sessions` replaces individual POSTs
+- **Initial upload**: `POST /sync/initial-upload` atomic upload when anonymous user registers
+- **New device sync**: `GET /sync/full` with cursor-based pagination
+- **DataMergeView**: SwiftUI merge dialog for anonymous-to-existing-account choice (upload local vs download cloud)
+- **Auth flow integration**: AuthFeature + AppFeature coordinate initial upload, merge dialog, and initial sync wiring
+- **App lifecycle**: WebSocket connects/disconnects on foreground/background via AppFeature scene phase handling
+- **Conflict resolution**: Record-level Last-Write-Wins with detection
+- **X-Device-ID**: KeychainClient.getOrCreateDeviceId provides device identification for sync requests
+- Offline-first: SwiftData is source of truth, sync occurs when reconnected
+- Synced entities: Tasks, Sessions, Stats, Preferences
+- **CloudKit**: retained as secondary sync layer for Apple-to-Apple device sync
 - **Tier:** PRO
 
 #### [Android] — Backend REST API + Room + WebSocket
@@ -614,8 +628,8 @@ Bidirectional data synchronization between devices via Go backend.
 
 **Implementation:**
 
-- **[Android]**: SyncEngine + Room dirty flags + WorkManager (already exists, needs WebSocket improvements)
-- **[iOS]**: New API client Ktor/URLSession, replacing CloudKit as the primary sync source
+- **[Android]**: SyncEngine + Room dirty flags + WorkManager + SyncWebSocketClient (OkHttp)
+- **[iOS]**: SyncClient + IdentityClient + WebSocketClient (TCA dependencies) + URLSession API client, with CloudKit retained as secondary sync layer
 
 **Tier:** PRO
 
@@ -731,8 +745,8 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 | Siri Shortcuts + App Intents           | ✅  | ➖      | ➖      | ➖      | FREE |
 | Google Assistant App Actions           | ➖  | ⬜      | ➖      | ➖      | FREE |
 | **Synchronization**                    |     |         |         |         |      |
-| CloudKit sync                          | ✅  | ➖      | ✅      | ➖      | PRO  |
-| Backend REST API + Room sync           | ➖  | 🔄      | ➖      | 🔄      | PRO  |
+| CloudKit sync (Apple-to-Apple)         | ✅  | ➖      | ✅      | ➖      | PRO  |
+| Backend REST API sync                  | ✅  | ✅      | ➖      | 🔄      | PRO  |
 | **Themes and Design**                  |     |         |         |         |      |
 | Classic theme                          | ✅  | ✅      | ✅      | ✅      | FREE |
 | Forest / Ocean / Sunset                | ✅  | ✅      | ⬜      | ✅      | PRO  |
@@ -803,9 +817,9 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 | Sign In with Apple                             | ⬜  | ➖      | ➖      | ➖      | FREE |
 | Account linking (multiple providers)          | ⬜  | ⬜      | ➖      | ➖      | FREE |
 | **Cloud Sync and Multi-Device**               |     |         |         |         |      |
-| Bidirectional sync via Go backend             | ⬜  | 🔄      | ⬜      | 🔄      | PRO  |
-| WebSocket real-time sync                      | ⬜  | ⬜      | ⬜      | ⬜      | PRO  |
-| Multi-device coordination                     | ⬜  | ⬜      | ⬜      | ⬜      | PRO  |
+| Bidirectional sync via Go backend             | ✅  | 🔄      | ⬜      | 🔄      | PRO  |
+| WebSocket real-time sync                      | ✅  | ✅      | ⬜      | ⬜      | PRO  |
+| Multi-device coordination                     | ✅  | ✅      | ⬜      | ⬜      | PRO  |
 | **Cross-Platform Subscriptions**              |     |         |         |         |      |
 | Server-side receipt verification              | ⬜  | ⬜      | ➖      | ➖      | —    |
 | Shared PRO status across stores               | ⬜  | ⬜      | ⬜      | ⬜      | —    |
@@ -842,4 +856,4 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 
 8. **Social login planned**: Google Sign-In (Android via Credential Manager) and Sign In with Apple (iOS via AuthenticationServices) are planned. Backend must add OAuth providers. Account linking will allow multiple providers per account.
 
-9. **Unified cloud sync planned**: iOS currently uses CloudKit and Android uses Go backend. The plan is to migrate both platforms to Go-backend sync to enable cross-platform sync and shared subscriptions.
+9. **Unified cloud sync achieved**: Both iOS and Android now have full sync architecture via Go backend. iOS uses TCA-based sync clients (SyncClient, IdentityClient, WebSocketClient) with URLSession. Android uses SyncEngine + Room dirty flags + SyncWebSocketClient (OkHttp). Both platforms support: settings sync (per-key LWW), batch session sync, initial upload on registration, cursor-paginated full sync for new devices, WebSocket real-time notifications, and data merge dialogs for anonymous-to-existing-account transitions. iOS retains CloudKit as a secondary sync layer for Apple-to-Apple device sync.

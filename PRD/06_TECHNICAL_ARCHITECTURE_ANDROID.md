@@ -74,7 +74,7 @@ The project uses **MVVM (Model-View-ViewModel)** with layered Clean Architecture
 
 ### Principles
 
-- **Un One ViewModel per screen**: each screen has its own Hilt-injected ViewModel
+- **One ViewModel per screen**: each screen has its own Hilt-injected ViewModel
 - **StateFlow for reactivity**: the ViewModel exposes StateFlow<UiState> that the UI collects
 - **Hilt for DI**: `@HiltViewModel`, `@Inject constructor`, modules in `core/di/`
 - **Circuit legacy**: some original Presenters remain manually registered in `AppModule.provideCircuit()` (without `@CircuitInject` KSP due to warnings)
@@ -441,10 +441,10 @@ class FocusEngine @Inject constructor(
         notificationManager.startForegroundTimer(mode, target)
     }
 
-    fun pause() { /* Cancela timerJob, guarda elapsed, emite Paused */ }
-    fun resume() { /* Re-crea timerJob from elapsed guardado */ }
+    fun pause() { /* Cancels timerJob, saves elapsed, emits Paused */ }
+    fun resume() { /* Re-creates timerJob from saved elapsed */ }
     fun stop() { /* Cancels timerJob, persists session, emits Idle */ }
-    fun skipPhase() { /* Avanza a nextPhase del strategy */ }
+    fun skipPhase() { /* Advances to nextPhase of the strategy */ }
 }
 ```
 
@@ -453,7 +453,7 @@ class FocusEngine @Inject constructor(
 ```kotlin
 class FocusForegroundService : Service() {
     // FOREGROUND_SERVICE_SPECIAL_USE (TYPE_SPECIAL_USE)
-    // START_STICKY — se reinicia si el sistema lo mata
+    // START_STICKY — restarts if the system kills it
     //
     // Persistent notification with:
     //   - Mode icon + name
@@ -463,8 +463,8 @@ class FocusForegroundService : Service() {
     //   - Updated every second via coroutine
     //
     // State survives process death:
-    //   - FocusEngine es @Singleton
-    //   - El servicio se re-vincula al reiniciar
+    //   - FocusEngine is @Singleton
+    //   - The service re-binds on restart
 }
 ```
 
@@ -946,14 +946,14 @@ Configured in `actions.xml` with 3 Built-In Intents (BIIs):
 
 ## 12. Design
 
-### Sistema Visual
+### Visual System
 
 | Aspect             | Implementation                                          |
 | ------------------ | ------------------------------------------------------- |
 | **Design System**  | Material 3 + Material You dynamic colors                |
 | **Themes**         | 4+ themes (light, dark, dynamic light, dynamic dark)    |
 | **Colors by mode** | `FocusModeColors` — each focus mode has its own palette |
-| **Loading States** | Shimmer loading placeholders (esqueletos animados)      |
+| **Loading States** | Shimmer loading placeholders (animated skeletons)       |
 | **Typography**     | Material 3 Type Scale                                   |
 | **Icons**          | Material Symbols                                        |
 
@@ -971,7 +971,7 @@ Implemented with `WindowSizeClass` from Material 3:
 
 | Screen              | Compact                     | Expanded (≥600dp)                                    |
 | ------------------- | --------------------------- | ---------------------------------------------------- |
-| **FocusScreen**     | Layout original             | Two-pane: timer 320dp (60%) + controles (40%)        |
+| **FocusScreen**     | Original layout             | Two-pane: timer 320dp (60%) + controls (40%)         |
 | **TaskListScreen**  | List with detail navigation | Master-detail: list (40%) + detail (60%)             |
 | **DashboardScreen** | Single-column               | WeeklyChart (60%) + ModeBreakdown (40%) side-by-side |
 | **SettingsScreen**  | Single-column               | Two-column: focus config + sound/calendar/import     |
@@ -1058,7 +1058,7 @@ class BillingManager @Inject constructor(
 
 | Layer                     | Tool                       | Coverage Target     | Current status          |
 | ------------------------- | -------------------------- | ------------------- | ----------------------- |
-| **Domain logic**          | JUnit 5                    | 90%+                | ~20 tests implementados |
+| **Domain logic**          | JUnit 5                    | 90%+                | ~20 tests implemented   |
 | **ViewModels/Presenters** | Turbine + Presenter.test{} | 80%+                | Pending (Sprint 5)      |
 | **Room DAOs**             | Robolectric + in-memory DB | 80%+                | Pending                 |
 | **Sync engine**           | JUnit 5 + MockK            | 70%+                | Pending                 |
@@ -1121,7 +1121,7 @@ Production → Play Console: 10% → 50% → 100%
 
 ## 17. Non-Functional Requirements
 
-### Compatibilidad
+### Compatibility
 
 | Requirement         | Value                     |
 | ------------------- | ------------------------- |
@@ -1135,7 +1135,7 @@ Production → Play Console: 10% → 50% → 100%
 | --------------- | --------------------------------- |
 | **Cold start**  | < 1.5 seconds                     |
 | **Timer drift** | < 100ms cumulative deviation      |
-| **Frame rate**  | 60 FPS consistente en animaciones |
+| **Frame rate**  | 60 FPS consistent in animations   |
 | **Memory**      | < 150MB in normal use             |
 
 ### Size
@@ -1342,7 +1342,7 @@ Android uses **Google Sign-In** as the primary authentication method, with email
 6. If the user does not exist, it creates one and returns Pepinillo JWT tokens (access + refresh)
 7. Tokens are stored in `AuthStore` (based on `EncryptedSharedPreferences`, AES-256 encryption)
 
-#### Email/Password (alternativa)
+#### Email/Password (alternative)
 
 - `POST /auth/register` → creates an account with email + password
 - `POST /auth/login` → returns JWT access + refresh tokens

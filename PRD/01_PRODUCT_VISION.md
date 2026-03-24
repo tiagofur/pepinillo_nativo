@@ -269,7 +269,7 @@ Cross-platform parity is **MANDATORY** in this project. This means:
 | **UI Framework**    | SwiftUI                        | Jetpack Compose                                |
 | **Architecture**    | TCA (Composable Architecture)  | MVI (Circuit/Orbit)                            |
 | **Local database**  | SwiftData                      | Room                                           |
-| **Sync**            | CloudKit                       | Backend Go (REST API)                          |
+| **Sync**            | CloudKit + Backend Go (REST)   | Backend Go (REST API)                          |
 | **Widgets**         | WidgetKit                      | Glance (Jetpack Compose)                       |
 | **Live activity**   | Live Activity + Dynamic Island | Rich Ongoing Notification (Foreground Service) |
 | **Watch**           | watchOS (SwiftUI native)       | Wear OS (Compose)                              |
@@ -291,7 +291,7 @@ Cross-platform parity is **MANDATORY** in this project. This means:
 The only acceptable differences are those **imposed by the platform**:
 
 - Dynamic Island (only iOS) vs. Ongoing Notification (only Android)
-- CloudKit sync (iOS) vs. Backend REST sync (Android)
+- CloudKit as secondary sync layer (iOS only) alongside shared Backend REST sync
 - Material You dynamic theming (only Android) vs. Liquid Glass (only iOS)
 - Apple Reminders import (iOS) vs. Google Tasks import (Android)
 - Siri (iOS) vs. Google Assistant (Android)
