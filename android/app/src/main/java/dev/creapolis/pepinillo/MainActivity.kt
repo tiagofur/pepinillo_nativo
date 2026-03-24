@@ -77,6 +77,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var syncEngine: SyncEngine
     @Inject lateinit var authStore: AuthStore
+    @Inject lateinit var prefsRepository: UserPreferencesRepository
 
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -122,7 +123,7 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = dynamicColor,
                 selectedThemeId = selectedTheme,
             ) {
-                PepinilloApp()
+                PepinilloApp(prefsRepository = prefsRepository)
             }
         }
     }
@@ -146,7 +147,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun PepinilloApp() {
+fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -331,9 +332,7 @@ fun PepinilloApp() {
             }
 
             composable("onboarding") {
-                val prefsRepo = remember {
-                    UserPreferencesRepository(navController.context)
-                }
+                val prefsRepo = remember { prefsRepository }
                 val prefs by prefsRepo.preferences.collectAsState(initial = null)
                 val onboardingScope = rememberCoroutineScope()
 
