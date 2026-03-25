@@ -77,6 +77,26 @@ class FocusEngine @Inject constructor(
     private var interruptionCount: Int = 0
     private var pomodoroNumber: Int = 1
 
+    // Day-change tracking for mid-session midnight crossing
+    @Volatile private var currentDayStartMillis: Long = SessionRepository.startOfDay(System.currentTimeMillis())
+    @Volatile private var nextDayStartMillis: Long = currentDayStartMillis + 86_400_000L
+
+    /**
+     * Resets daily counters when the calendar day changes.
+     * Safe to call from the main thread (BroadcastReceiver) or from the timer coroutine.
+     * Does NOT interrupt an in-progress session — the current session completes normally
+     * and is counted as #1 of the new day.
+     */
+    fun onDayChanged() {
+        val newDayStart = SessionRepository.startOfDay(System.currentTimeMillis())
+        if (newDayStart == currentDayStartMillis) return
+        currentDayStartMillis = newDayStart
+        nextDayStartMillis = newDayStart + 86_400_000L
+        _state.update { it.copy(completedSessions = 0) }
+        pomodoroNumber = 1
+        sessionRepository.notifyDayChanged()
+    }
+
     suspend fun selectMode(mode: FocusMode) {
         if (_state.value.status != TimerStatus.Idle) return
         val prefs = prefsRepo.preferences.first()
@@ -96,7 +116,20 @@ class FocusEngine @Inject constructor(
         completedSessions: Int,
         sessionStartTime: Long,
         status: TimerStatus = TimerStatus.Running,
+        savedDayStart: Long = 0L,
     ) {
+        // If the day changed since the last save, reset the cycle counter
+        val effectiveCompletedSessions = if (savedDayStart != 0L) {
+            val currentDay = SessionRepository.startOfDay(System.currentTimeMillis())
+            if (savedDayStart != currentDay) {
+                currentDayStartMillis = currentDay
+                nextDayStartMillis = currentDay + 86_400_000L
+                pomodoroNumber = 1
+                sessionRepository.notifyDayChanged()
+                0
+            } else completedSessions
+        } else completedSessions
+
         val prefs = prefsRepo.preferences.first()
         cachedPrefs = prefs
         val resolvedTotal = if (totalMillis > 0L) totalMillis else getTotalMillis(mode, phase, prefs)
@@ -108,7 +141,7 @@ class FocusEngine @Inject constructor(
                 phase = phase,
                 status = TimerStatus.WaitingForNext,
                 totalMillis = resolvedTotal,
-                completedSessions = completedSessions,
+                completedSessions = effectiveCompletedSessions,
             )
             return
         }
@@ -121,7 +154,7 @@ class FocusEngine @Inject constructor(
                 status = TimerStatus.Running,
                 elapsedMillis = resolvedTotal,
                 totalMillis = resolvedTotal,
-                completedSessions = completedSessions,
+                completedSessions = effectiveCompletedSessions,
                 sessionStartTime = sessionStartTime,
             )
             onPhaseComplete()
@@ -132,7 +165,7 @@ class FocusEngine @Inject constructor(
                 status = TimerStatus.Running,
                 elapsedMillis = elapsedMillis,
                 totalMillis = resolvedTotal,
-                completedSessions = completedSessions,
+                completedSessions = effectiveCompletedSessions,
                 sessionStartTime = sessionStartTime,
             )
             startTimerLoop()
@@ -256,6 +289,11 @@ class FocusEngine @Inject constructor(
 
                 val newElapsed = initialElapsed + (SystemClock.elapsedRealtime() - loopStartRealtime)
                 _state.update { it.copy(elapsedMillis = newElapsed) }
+
+                // Backstop: detect midnight crossing in case the broadcast was missed
+                if (System.currentTimeMillis() >= nextDayStartMillis) {
+                    onDayChanged()
+                }
 
                 // Flowtime: suggest break after minimum session time
                 if (s.mode == FocusMode.Flow && !s.breakSuggested) {
