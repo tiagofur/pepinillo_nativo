@@ -118,6 +118,9 @@ struct AppFeature {
         case signOutTapped
         case appleCredentialStateChecked(String, Bool)
 
+        // Day change
+        case dayChanged
+
         // Handoff
         case handoffFocusReceived(modeID: String, isRunning: Bool, taskTitle: String?)
         case handoffAnalyticsReceived
@@ -726,6 +729,11 @@ struct AppFeature {
                         await notificationClient.cancelAll()
                     }
                 }
+
+            // MARK: - Day Change
+
+            case .dayChanged:
+                return .send(.focus(.dayChanged))
 
             // MARK: - Handoff
 
