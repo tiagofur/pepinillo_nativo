@@ -190,6 +190,36 @@ class InitialSyncManager @Inject constructor(
         if (sessionEntities.isNotEmpty()) {
             sessionDao.upsertSessions(sessionEntities)
         }
+        // Resolve inbound task links: taskSyncId/taskId → local task UUID
+        resolveInboundTaskLinks(data.sessions.items)
+    }
+
+    /**
+     * For each inbound server session that carries a [PomodoroSessionDto.taskSyncId],
+     * look up the corresponding local task and update [FocusSessionEntity.linkedTaskId].
+     * Falls back to server-ID-based lookup when taskSyncId is absent but taskId is present.
+     */
+    private suspend fun resolveInboundTaskLinks(serverSessions: List<PomodoroSessionDto>) {
+        var resolved = 0
+        for (dto in serverSessions) {
+            if (dto.id.isEmpty()) continue
+            val localTaskId = when {
+                !dto.taskSyncId.isNullOrEmpty() -> {
+                    taskDao.getTaskById(dto.taskSyncId)?.id
+                }
+                dto.taskId != null -> {
+                    taskDao.getTaskByServerId(dto.taskId)?.id
+                }
+                else -> null
+            }
+            if (localTaskId != null) {
+                sessionDao.updateLinkedTaskId(dto.id, localTaskId)
+                resolved++
+            }
+        }
+        if (resolved > 0) {
+            Log.d(TAG, "resolveInboundTaskLinks: resolved $resolved session→task links")
+        }
     }
 
     private suspend fun mergeSubtasks(localTaskId: String, serverSubtasks: List<SubTaskDto>) {

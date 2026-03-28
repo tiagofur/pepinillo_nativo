@@ -131,6 +131,7 @@ data class PomodoroSessionDto(
     val id: String = "",
     val userId: String = "",
     val taskId: Int? = null,
+    val taskSyncId: String? = null,
     val startedAt: String = "",
     val endedAt: String? = null,
     val mode: String = "pomodoro",

@@ -107,8 +107,10 @@ class SyncEngine @Inject constructor(
                 if (e is AuthenticationException) throw e
                 // Non-fatal: log but continue with other sync phases
             }
+            // Pre-compute task ID mapping before syncTasks purges soft-deleted rows
+            val taskIdMap = buildTaskIdMap()
             syncTasks()
-            syncSessions()
+            syncSessions(taskIdMap)
             syncDailyStats()
             println("[$TAG]syncAll: SUCCESS")
             SyncResult.Success
@@ -154,14 +156,17 @@ class SyncEngine @Inject constructor(
             val dirtyPrefs = preferenceSyncDao.getDirtyPreferences()
             val currentPrefs = userPreferencesRepository.preferences.first()
 
-            // 2. Convert to DTOs
+            // 2. Convert to DTOs — build task ID map for session resolution
             val taskDtos = allTasks.map { task ->
                 val subtasks = subtaskDao.getSubtasksForTaskSync(task.id)
                 task.toDto(subtasks)
             }
+            val taskIdMap = allTasks
+                .filter { it.serverId != null }
+                .associate { it.id to it.serverId!! }
             val sessionDtos = allSessions.map { session ->
                 val serverTaskId = session.linkedTaskId?.let { localId ->
-                    taskDao.getTaskById(localId)?.serverId
+                    taskIdMap[localId] ?: taskDao.getTaskById(localId)?.serverId
                 }
                 session.toDto(userId, serverTaskId)
             }
@@ -204,6 +209,8 @@ class SyncEngine @Inject constructor(
                     if (sessionEntities.isNotEmpty()) {
                         sessionDao.upsertSessions(sessionEntities)
                     }
+                    // Resolve inbound task links for server sessions
+                    resolveInboundTaskLinks(response.sessions)
                     for (session in allSessions) {
                         sessionDao.markSynced(session.id, now)
                     }
@@ -381,16 +388,36 @@ class SyncEngine @Inject constructor(
         subtaskDao.insertAll(entities)
     }
 
+    // ── Task ID Mapping ──
+
+    /**
+     * Build a snapshot map of local task UUID → server ID for ALL tasks (including
+     * soft-deleted ones). Called BEFORE [syncTasks] so that the mapping survives
+     * the physical purge that happens at the end of task sync.
+     */
+    private suspend fun buildTaskIdMap(): Map<String, Int> {
+        val allTasks = taskDao.getAllTasksSync() // includes soft-deleted rows
+        return allTasks
+            .filter { it.serverId != null }
+            .associate { it.id to it.serverId!! }
+    }
+
     // ── Session Sync ──
 
-    internal suspend fun syncSessions() {
+    /**
+     * @param precomputedTaskIdMap local task UUID → server ID, built before task
+     *   sync purges soft-deleted rows. When null the map is built on-the-fly
+     *   (safe for callers that don't run task sync first, e.g. initialUpload).
+     */
+    internal suspend fun syncSessions(precomputedTaskIdMap: Map<String, Int>? = null) {
         val dirtySessions = sessionDao.getDirtySessions()
         val userId = authStore.getUserId() ?: ""
+        val taskIdMap = precomputedTaskIdMap ?: buildTaskIdMap()
 
-        // Convert dirty sessions to DTOs
+        // Convert dirty sessions to DTOs, using the pre-computed map for task ID
         val dirtyDtos = dirtySessions.map { session ->
             val serverTaskId = session.linkedTaskId?.let { localId ->
-                taskDao.getTaskById(localId)?.serverId
+                taskIdMap[localId] ?: taskDao.getTaskById(localId)?.serverId
             }
             session.toDto(userId, serverTaskId)
         }
@@ -415,6 +442,10 @@ class SyncEngine @Inject constructor(
                 if (entities.isNotEmpty()) {
                     sessionDao.upsertSessions(entities)
                 }
+
+                // Resolve inbound taskSyncId → local task UUID for each server session
+                resolveInboundTaskLinks(response.sessions)
+
                 println("[$TAG]syncSessions: upserted ${entities.size} sessions from server")
 
                 // Mark local dirty sessions as synced
@@ -434,6 +465,36 @@ class SyncEngine @Inject constructor(
                 println("[$TAG]syncSessions NETWORK ERROR: ${result.exception::class.simpleName}: ${result.exception.message}")
                 throw TransientSyncException("syncSessions network error: ${result.exception.message}")
             }
+        }
+    }
+
+    /**
+     * For each inbound server session that carries a [PomodoroSessionDto.taskSyncId],
+     * look up the corresponding local task and update [FocusSessionEntity.linkedTaskId].
+     * Falls back to server-ID-based lookup when taskSyncId is absent but taskId is present.
+     */
+    private suspend fun resolveInboundTaskLinks(serverSessions: List<PomodoroSessionDto>) {
+        var resolved = 0
+        for (dto in serverSessions) {
+            if (dto.id.isEmpty()) continue
+            val localTaskId = when {
+                !dto.taskSyncId.isNullOrEmpty() -> {
+                    // Preferred: direct UUID match
+                    taskDao.getTaskById(dto.taskSyncId)?.id
+                }
+                dto.taskId != null -> {
+                    // Fallback: lookup by server integer ID
+                    taskDao.getTaskByServerId(dto.taskId)?.id
+                }
+                else -> null
+            }
+            if (localTaskId != null) {
+                sessionDao.updateLinkedTaskId(dto.id, localTaskId)
+                resolved++
+            }
+        }
+        if (resolved > 0) {
+            println("[$TAG]resolveInboundTaskLinks: resolved $resolved session→task links")
         }
     }
 

@@ -210,7 +210,7 @@ extension SyncClient: DependencyKey {
                 let sessionDTOs = dirtySessions.map { session in
                     FocusSessionSyncDTO(
                         id: session.id.uuidString,
-                        taskId: nil,
+                        taskId: session.taskServerId,
                         startedAt: iso.string(from: session.startedAt),
                         endedAt: session.endedAt.map { iso.string(from: $0) },
                         mode: session.mode.lowercased(),
@@ -241,6 +241,20 @@ extension SyncClient: DependencyKey {
                     let exists = try await persistence.sessionExists(serverSession.id)
                     if !exists {
                         try await persistence.upsertSessionFromServer(serverSession)
+                    }
+                }
+
+                // 4b. Resolve inbound task links (taskSyncId → local task)
+                for serverSession in response.sessions {
+                    guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
+                    if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
+                        if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
+                            try await persistence.linkSessionToTask(sessionUUID, task.id)
+                        }
+                    } else if let taskId = serverSession.taskId {
+                        if let task = try await persistence.fetchTaskByServerId(taskId) {
+                            try await persistence.linkSessionToTask(sessionUUID, task.id)
+                        }
                     }
                 }
 
@@ -342,7 +356,7 @@ extension SyncClient: DependencyKey {
                 let sessionDTOs = sessions.map { session in
                     FocusSessionSyncDTO(
                         id: session.id.uuidString,
-                        taskId: nil,
+                        taskId: session.taskServerId,
                         startedAt: iso.string(from: session.startedAt),
                         endedAt: session.endedAt.map { iso.string(from: $0) },
                         mode: session.mode.lowercased(),
@@ -387,6 +401,19 @@ extension SyncClient: DependencyKey {
                         try await persistence.upsertSessionFromServer(serverSession)
                     }
                 }
+                // Resolve inbound task links for server sessions
+                for serverSession in response.sessions {
+                    guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
+                    if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
+                        if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
+                            try await persistence.linkSessionToTask(sessionUUID, task.id)
+                        }
+                    } else if let taskId = serverSession.taskId {
+                        if let task = try await persistence.fetchTaskByServerId(taskId) {
+                            try await persistence.linkSessionToTask(sessionUUID, task.id)
+                        }
+                    }
+                }
                 for serverPref in response.settings {
                     let serverDate = iso.date(from: serverPref.updatedAt) ?? Date.now
                     await persistence.applyServerPreference(serverPref.key, serverPref.value, serverDate)
@@ -424,6 +451,19 @@ extension SyncClient: DependencyKey {
                         let exists = try await persistence.sessionExists(serverSession.id)
                         if !exists {
                             try await persistence.upsertSessionFromServer(serverSession)
+                        }
+                    }
+                    // Resolve inbound task links for server sessions
+                    for serverSession in response.sessions.items {
+                        guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
+                        if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
+                            if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
+                                try await persistence.linkSessionToTask(sessionUUID, task.id)
+                            }
+                        } else if let taskId = serverSession.taskId {
+                            if let task = try await persistence.fetchTaskByServerId(taskId) {
+                                try await persistence.linkSessionToTask(sessionUUID, task.id)
+                            }
                         }
                     }
 

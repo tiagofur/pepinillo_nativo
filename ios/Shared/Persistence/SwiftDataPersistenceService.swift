@@ -616,6 +616,40 @@ public final class SwiftDataPersistenceService {
         return try !context.fetch(descriptor).isEmpty
     }
 
+    // MARK: - Task-Session Link Resolution
+
+    /// Find a task by its sync UUID string.
+    public func fetchTaskBySyncId(_ syncId: String) throws -> TaskItem? {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.syncId == syncId }
+        )
+        return try context.fetch(descriptor).first
+    }
+
+    /// Find a task by its server integer ID.
+    public func fetchTaskByServerId(_ serverId: Int) throws -> TaskItem? {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.serverId == serverId }
+        )
+        return try context.fetch(descriptor).first
+    }
+
+    /// Link a focus session to a task by setting its SwiftData relationship.
+    public func linkSessionToTask(sessionId: UUID, taskId: UUID) throws {
+        let sessionDescriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.id == sessionId }
+        )
+        guard let session = try context.fetch(sessionDescriptor).first else { return }
+
+        let taskDescriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == taskId }
+        )
+        guard let task = try context.fetch(taskDescriptor).first else { return }
+
+        session.task = task
+        try context.save()
+    }
+
     // MARK: - Settings Sync
 
     /// Syncable preference keys and their mapping to UserPreferences properties.

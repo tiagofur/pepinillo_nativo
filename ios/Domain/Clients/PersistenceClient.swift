@@ -153,6 +153,7 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
     public let totalPauseDuration: TimeInterval
     public let pomodoroNumber: Int?
     public let taskID: UUID?
+    public let taskServerId: Int?
     public let journalNote: String?
     public let satisfactionRating: Int?
     public let isDirty: Bool
@@ -172,6 +173,7 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
         totalPauseDuration: TimeInterval = 0,
         pomodoroNumber: Int? = nil,
         taskID: UUID?,
+        taskServerId: Int? = nil,
         journalNote: String? = nil,
         satisfactionRating: Int? = nil,
         isDirty: Bool = true,
@@ -190,6 +192,7 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
         self.totalPauseDuration = totalPauseDuration
         self.pomodoroNumber = pomodoroNumber
         self.taskID = taskID
+        self.taskServerId = taskServerId
         self.journalNote = journalNote
         self.satisfactionRating = satisfactionRating
         self.isDirty = isDirty
@@ -211,6 +214,7 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
             totalPauseDuration: record.totalPauseDuration,
             pomodoroNumber: record.pomodoroNumber,
             taskID: record.task?.id,
+            taskServerId: record.task?.serverId,
             journalNote: record.journalNote,
             satisfactionRating: record.satisfactionRating,
             isDirty: record.isDirty,
@@ -527,6 +531,11 @@ public struct PersistenceClient: Sendable {
     public var upsertSessionFromServer: @Sendable (FocusSessionSyncDTO) async throws -> Void
     public var sessionExists: @Sendable (String) async throws -> Bool = { _ in false }
 
+    // Task-Session Link Resolution
+    public var fetchTaskBySyncId: @Sendable (String) async throws -> TaskItemDTO? = { _ in nil }
+    public var fetchTaskByServerId: @Sendable (Int) async throws -> TaskItemDTO? = { _ in nil }
+    public var linkSessionToTask: @Sendable (_ sessionId: UUID, _ taskId: UUID) async throws -> Void
+
     // Settings Sync
     public var getAllPreferencesAsKeyValue: @Sendable () async -> [(key: String, value: String, updatedAt: Date)] = { [] }
     public var applyServerPreference: @Sendable (_ key: String, _ value: String, _ updatedAt: Date) async -> Void
@@ -783,6 +792,21 @@ extension PersistenceClient: DependencyKey {
             sessionExists: { sessionId in
                 try await MainActor.run {
                     try service.sessionExists(id: sessionId)
+                }
+            },
+            fetchTaskBySyncId: { syncId in
+                try await MainActor.run {
+                    try service.fetchTaskBySyncId(syncId).map { TaskItemDTO(from: $0) }
+                }
+            },
+            fetchTaskByServerId: { serverId in
+                try await MainActor.run {
+                    try service.fetchTaskByServerId(serverId).map { TaskItemDTO(from: $0) }
+                }
+            },
+            linkSessionToTask: { sessionId, taskId in
+                try await MainActor.run {
+                    try service.linkSessionToTask(sessionId: sessionId, taskId: taskId)
                 }
             },
             getAllPreferencesAsKeyValue: {

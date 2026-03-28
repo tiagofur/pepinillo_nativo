@@ -6,6 +6,7 @@ type FocusSession struct {
 	ID                 string     `json:"id" gorm:"primaryKey"`
 	UserID             string     `json:"userId" gorm:"type:uuid;index;not null"`
 	TaskID             *int       `json:"taskId" gorm:"index"`
+	TaskSyncID         *string    `json:"taskSyncId,omitempty" gorm:"-"`
 	StartedAt          time.Time  `json:"startedAt" gorm:"index;not null"`
 	EndedAt            *time.Time `json:"endedAt"`
 	Mode               string     `json:"mode" gorm:"type:varchar(50);index;not null"`

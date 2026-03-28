@@ -107,6 +107,57 @@ func (r *FocusRepository) ListAllSessions(ctx context.Context, userID string) ([
 	if err != nil {
 		return nil, err
 	}
+	return r.enrichWithTaskSyncIDs(ctx, sessions)
+}
+
+// enrichWithTaskSyncIDs looks up the sync_id for each session's task_id and
+// populates the transient TaskSyncID field so clients can resolve task links
+// by UUID instead of server integer ID.
+func (r *FocusRepository) enrichWithTaskSyncIDs(ctx context.Context, sessions []domain.FocusSession) ([]domain.FocusSession, error) {
+	// Collect unique task IDs
+	taskIDs := make(map[int]struct{})
+	for _, s := range sessions {
+		if s.TaskID != nil {
+			taskIDs[*s.TaskID] = struct{}{}
+		}
+	}
+	if len(taskIDs) == 0 {
+		return sessions, nil
+	}
+
+	ids := make([]int, 0, len(taskIDs))
+	for id := range taskIDs {
+		ids = append(ids, id)
+	}
+
+	// Batch-fetch task sync IDs
+	type taskSyncRow struct {
+		ID     int
+		SyncID string
+	}
+	var rows []taskSyncRow
+	err := r.db.WithContext(ctx).
+		Table("tasks").
+		Select("id, sync_id").
+		Where("id IN ?", ids).
+		Find(&rows).Error
+	if err != nil {
+		return nil, fmt.Errorf("fetch task sync IDs: %w", err)
+	}
+
+	syncMap := make(map[int]string, len(rows))
+	for _, row := range rows {
+		syncMap[row.ID] = row.SyncID
+	}
+
+	// Populate TaskSyncID on each session
+	for i := range sessions {
+		if sessions[i].TaskID != nil {
+			if syncID, ok := syncMap[*sessions[i].TaskID]; ok {
+				sessions[i].TaskSyncID = &syncID
+			}
+		}
+	}
 	return sessions, nil
 }
 
@@ -129,7 +180,7 @@ func (r *FocusRepository) ListSessionsByUserPaginated(ctx context.Context, userI
 	if err != nil {
 		return nil, fmt.Errorf("list sessions paginated: %w", err)
 	}
-	return sessions, nil
+	return r.enrichWithTaskSyncIDs(ctx, sessions)
 }
 
 func (r *FocusRepository) GetStatsByDate(ctx context.Context, userID string, date time.Time) (*domain.FocusStats, error) {
@@ -189,7 +240,7 @@ func (r *FocusRepository) ListSessionsUpdatedSince(ctx context.Context, userID s
 	if err != nil {
 		return nil, err
 	}
-	return sessions, nil
+	return r.enrichWithTaskSyncIDs(ctx, sessions)
 }
 
 func (r *FocusRepository) RecomputeStatsForDates(ctx context.Context, userID string, dates []time.Time) error {

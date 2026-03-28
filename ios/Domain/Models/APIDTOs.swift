@@ -204,6 +204,7 @@ public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
     public let id: String
     public let userId: String?
     public let taskId: Int?
+    public let taskSyncId: String?
     public let startedAt: String
     public let endedAt: String?
     public let mode: String
@@ -219,6 +220,7 @@ public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
 
     public init(
         id: String, userId: String? = nil, taskId: Int? = nil,
+        taskSyncId: String? = nil,
         startedAt: String, endedAt: String? = nil,
         mode: String, phase: String,
         durationSeconds: Int, elapsedSeconds: Int,
@@ -229,6 +231,7 @@ public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
         self.id = id
         self.userId = userId
         self.taskId = taskId
+        self.taskSyncId = taskSyncId
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.mode = mode

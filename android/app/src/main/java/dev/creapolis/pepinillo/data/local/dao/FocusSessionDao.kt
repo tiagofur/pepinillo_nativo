@@ -60,6 +60,9 @@ interface FocusSessionDao {
     @Query("SELECT COUNT(*) FROM focus_sessions")
     suspend fun getSessionCount(): Int
 
+    @Query("UPDATE focus_sessions SET linked_task_id = :taskId WHERE id = :sessionId")
+    suspend fun updateLinkedTaskId(sessionId: String, taskId: String)
+
     @Query("DELETE FROM focus_sessions")
     suspend fun deleteAll()
 }
