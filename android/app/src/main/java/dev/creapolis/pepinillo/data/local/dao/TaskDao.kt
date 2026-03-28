@@ -84,4 +84,7 @@ interface TaskDao {
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE is_dirty = 1")
+    fun getDirtyTaskCount(): Flow<Int>
 }

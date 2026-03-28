@@ -79,6 +79,7 @@ class SyncEngine @Inject constructor(
     private val authStore: AuthStore,
     private val settingsSyncEngine: SettingsSyncEngine,
     private val syncMetadataStore: SyncMetadataStore,
+    private val syncStatusManager: SyncStatusManager,
 ) {
     private fun Long.toRfc3339(): String {
         val instant = Instant.ofEpochMilli(this)
@@ -99,6 +100,7 @@ class SyncEngine @Inject constructor(
             println("[$TAG]syncAll: NOT AUTHENTICATED")
             return SyncResult.NotAuthenticated
         }
+        syncStatusManager.onSyncStarted()
         return try {
             println("[$TAG]syncAll: STARTING")
             // Phase 1: Sync settings/preferences first
@@ -113,19 +115,24 @@ class SyncEngine @Inject constructor(
             syncSessions(taskIdMap)
             syncDailyStats()
             println("[$TAG]syncAll: SUCCESS")
+            syncStatusManager.onSyncSuccess()
             SyncResult.Success
         } catch (e: AuthenticationException) {
             println("[$TAG]syncAll: NOT AUTHENTICATED - ${e.message}")
+            syncStatusManager.onSyncError("Not authenticated")
             SyncResult.NotAuthenticated
         } catch (e: PermanentSyncException) {
             println("[$TAG]syncAll: PERMANENT ERROR - ${e.message}")
+            syncStatusManager.onSyncError(e.message ?: "Permanent sync error")
             SyncResult.PermanentError(e)
         } catch (e: TransientSyncException) {
             println("[$TAG]syncAll: TRANSIENT ERROR - ${e.message}")
+            syncStatusManager.onSyncError(e.message ?: "Sync error, will retry")
             SyncResult.TransientError(e)
         } catch (e: Exception) {
             println("[$TAG]syncAll: FAILED (transient) - ${e::class.simpleName}: ${e.message}")
             e.printStackTrace()
+            syncStatusManager.onSyncError(e.message ?: "Unknown sync error")
             SyncResult.TransientError(e)
         }
     }

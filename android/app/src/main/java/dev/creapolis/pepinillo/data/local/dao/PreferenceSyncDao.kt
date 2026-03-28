@@ -28,4 +28,7 @@ interface PreferenceSyncDao {
 
     @Query("DELETE FROM preference_sync_metadata")
     suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM preference_sync_metadata WHERE is_dirty = 1")
+    fun getDirtyPreferenceCount(): Flow<Int>
 }

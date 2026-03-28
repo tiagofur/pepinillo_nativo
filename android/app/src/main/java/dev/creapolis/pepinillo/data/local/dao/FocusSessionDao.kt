@@ -65,4 +65,7 @@ interface FocusSessionDao {
 
     @Query("DELETE FROM focus_sessions")
     suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM focus_sessions WHERE is_dirty = 1")
+    fun getDirtySessionCount(): Flow<Int>
 }
