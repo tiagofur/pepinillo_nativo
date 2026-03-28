@@ -381,18 +381,33 @@ class SyncEngine @Inject constructor(
 
     private suspend fun mergeServerSubtasks(localTaskId: String, serverSubtasks: List<SubTaskDto>) {
         if (serverSubtasks.isEmpty()) return
-        // Replace local subtasks with server subtasks for this task
-        subtaskDao.deleteSubtasksForTask(localTaskId)
-        val entities = serverSubtasks.mapIndexed { index, dto ->
-            SubtaskEntity(
-                taskId = localTaskId,
-                title = dto.title ?: "",
-                isCompleted = dto.isFinished,
-                sortOrder = index,
-                isDirty = false,
-            )
+
+        // 1. Get dirty local subtasks (created/modified locally, not yet synced)
+        val dirtyLocal = subtaskDao.getDirtySubtasksForTask(localTaskId)
+        val dirtyTitles = dirtyLocal.map { it.title.lowercase() }.toSet()
+
+        // 2. Delete only non-dirty local subtasks (safe to replace with server data)
+        subtaskDao.deleteNonDirtySubtasksForTask(localTaskId)
+
+        // 3. Insert server subtasks, but skip if a dirty local version exists (by title match)
+        val maxDirtyOrder = dirtyLocal.maxOfOrNull { it.sortOrder } ?: -1
+        val toInsert = serverSubtasks.mapIndexedNotNull { index, dto ->
+            val title = dto.title ?: ""
+            if (title.lowercase() in dirtyTitles) {
+                null // local dirty version takes precedence
+            } else {
+                SubtaskEntity(
+                    taskId = localTaskId,
+                    title = title,
+                    isCompleted = dto.isFinished,
+                    sortOrder = maxDirtyOrder + 1 + index,
+                    isDirty = false,
+                )
+            }
         }
-        subtaskDao.insertAll(entities)
+        if (toInsert.isNotEmpty()) {
+            subtaskDao.insertAll(toInsert)
+        }
     }
 
     // ── Task ID Mapping ──

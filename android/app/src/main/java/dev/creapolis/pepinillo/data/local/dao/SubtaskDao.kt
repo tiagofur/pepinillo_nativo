@@ -45,8 +45,14 @@ interface SubtaskDao {
     @Query("DELETE FROM subtasks WHERE task_id = :taskId")
     suspend fun deleteSubtasksForTask(taskId: String)
 
+    @Query("DELETE FROM subtasks WHERE task_id = :taskId AND is_dirty = 0")
+    suspend fun deleteNonDirtySubtasksForTask(taskId: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(subtasks: List<SubtaskEntity>)
+
+    @Query("SELECT * FROM subtasks WHERE task_id = :taskId AND is_dirty = 1 ORDER BY sort_order ASC")
+    suspend fun getDirtySubtasksForTask(taskId: String): List<SubtaskEntity>
 
     @Query("DELETE FROM subtasks")
     suspend fun deleteAll()
