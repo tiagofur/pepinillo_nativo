@@ -35,7 +35,8 @@ private const val TAG = "SyncEngine"
 sealed class SyncResult {
     data object Success : SyncResult()
     data object NotAuthenticated : SyncResult()
-    data class Error(val exception: Throwable) : SyncResult()
+    data class TransientError(val exception: Throwable) : SyncResult()
+    data class PermanentError(val exception: Throwable) : SyncResult()
 }
 
 sealed class InitialUploadResult {
@@ -46,6 +47,25 @@ sealed class InitialUploadResult {
 
 class AuthenticationException(message: String) : Exception(message)
 class SyncException(message: String) : Exception(message)
+class PermanentSyncException(message: String) : RuntimeException(message)
+class TransientSyncException(message: String) : RuntimeException(message)
+
+/**
+ * Classifies an HTTP error code and throws the appropriate exception type.
+ * - 401 → [AuthenticationException] (handled separately upstream)
+ * - 408, 429 → [TransientSyncException] (timeout / rate-limited, worth retrying)
+ * - Other 4xx → [PermanentSyncException] (bad request, won't fix itself on retry)
+ * - 5xx → [TransientSyncException] (server issue, likely transient)
+ * - Everything else → [TransientSyncException] (default to retry)
+ */
+fun classifyAndThrowHttpError(code: Int, message: String): Nothing {
+    when {
+        code == 401 -> throw AuthenticationException("HTTP 401: $message")
+        code == 408 || code == 429 -> throw TransientSyncException("HTTP $code: $message")
+        code in 400..499 -> throw PermanentSyncException("HTTP $code: $message")
+        else -> throw TransientSyncException("HTTP $code: $message")
+    }
+}
 
 @Singleton
 class SyncEngine @Inject constructor(
@@ -95,10 +115,16 @@ class SyncEngine @Inject constructor(
         } catch (e: AuthenticationException) {
             println("[$TAG]syncAll: NOT AUTHENTICATED - ${e.message}")
             SyncResult.NotAuthenticated
+        } catch (e: PermanentSyncException) {
+            println("[$TAG]syncAll: PERMANENT ERROR - ${e.message}")
+            SyncResult.PermanentError(e)
+        } catch (e: TransientSyncException) {
+            println("[$TAG]syncAll: TRANSIENT ERROR - ${e.message}")
+            SyncResult.TransientError(e)
         } catch (e: Exception) {
-            println("[$TAG]syncAll: FAILED - ${e::class.simpleName}: ${e.message}")
+            println("[$TAG]syncAll: FAILED (transient) - ${e::class.simpleName}: ${e.message}")
             e.printStackTrace()
-            SyncResult.Error(e)
+            SyncResult.TransientError(e)
         }
     }
 
@@ -284,12 +310,11 @@ class SyncEngine @Inject constructor(
             }
             is NetworkResult.Error -> {
                 println("[$TAG]syncTasks ERROR: ${result.code} ${result.message}")
-                if (result.code == 401) throw AuthenticationException("syncTasks: 401 Unauthorized")
-                throw SyncException("syncTasks failed: ${result.code} ${result.message}")
+                classifyAndThrowHttpError(result.code, "syncTasks: ${result.message}")
             }
             is NetworkResult.NetworkError -> {
                 println("[$TAG]syncTasks NETWORK ERROR: ${result.exception::class.simpleName}: ${result.exception.message}")
-                throw result.exception
+                throw TransientSyncException("syncTasks network error: ${result.exception.message}")
             }
         }
     }
@@ -303,12 +328,11 @@ class SyncEngine @Inject constructor(
             }
             is NetworkResult.Error -> {
                 println("[$TAG]pullAllTasks ERROR: ${result.code} ${result.message}")
-                if (result.code == 401) throw AuthenticationException("pullAllTasks: 401 Unauthorized")
-                throw SyncException("pullAllTasks failed: ${result.code} ${result.message}")
+                classifyAndThrowHttpError(result.code, "pullAllTasks: ${result.message}")
             }
             is NetworkResult.NetworkError -> {
                 println("[$TAG]pullAllTasks NETWORK ERROR: ${result.exception::class.simpleName}")
-                throw result.exception
+                throw TransientSyncException("pullAllTasks network error: ${result.exception.message}")
             }
         }
     }
@@ -404,12 +428,11 @@ class SyncEngine @Inject constructor(
             }
             is NetworkResult.Error -> {
                 println("[$TAG]syncSessions ERROR: ${result.code} ${result.message}")
-                if (result.code == 401) throw AuthenticationException("syncSessions: 401 Unauthorized")
-                throw SyncException("syncSessions failed: ${result.code} ${result.message}")
+                classifyAndThrowHttpError(result.code, "syncSessions: ${result.message}")
             }
             is NetworkResult.NetworkError -> {
                 println("[$TAG]syncSessions NETWORK ERROR: ${result.exception::class.simpleName}: ${result.exception.message}")
-                throw result.exception
+                throw TransientSyncException("syncSessions network error: ${result.exception.message}")
             }
         }
     }
@@ -432,15 +455,18 @@ class SyncEngine @Inject constructor(
                 }
                 is NetworkResult.Error -> {
                     println("[$TAG]syncDailyStats ERROR: ${result.code} ${result.message}")
-                    if (result.code == 401) throw AuthenticationException("syncDailyStats: 401 Unauthorized")
-                    // Non-fatal for stats
-                    Log.w(TAG, "syncDailyStats failed: ${result.code} ${result.message}")
+                    classifyAndThrowHttpError(result.code, "syncDailyStats: ${result.message}")
                 }
                 is NetworkResult.NetworkError -> {
                     Log.w(TAG, "syncDailyStats network error: ${result.exception.message}")
+                    throw TransientSyncException("syncDailyStats network error: ${result.exception.message}")
                 }
             }
         } catch (e: AuthenticationException) {
+            throw e
+        } catch (e: PermanentSyncException) {
+            throw e
+        } catch (e: TransientSyncException) {
             throw e
         } catch (e: Exception) {
             Log.w(TAG, "syncDailyStats failed: ${e.message}")
