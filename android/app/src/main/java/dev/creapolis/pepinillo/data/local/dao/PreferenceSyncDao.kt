@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
 import dev.creapolis.pepinillo.data.local.entity.PreferenceSyncEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PreferenceSyncDao {
