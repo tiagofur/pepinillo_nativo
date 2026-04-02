@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#F5F5F5" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+    <!-- Green accent header bar -->
+    <item
+        android:top="0dp"
+        android:left="0dp"
+        android:right="0dp"
+        android:bottom="80dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FF43A047" />
+            <corners
+                android:topLeftRadius="24dp"
+                android:topRightRadius="24dp"
+                android:bottomLeftRadius="0dp"
+                android:bottomRightRadius="0dp" />
+        </shape>
+    </item>
+    <!-- Stat indicator circles row -->
+    <item
+        android:gravity="center"
+        android:top="32dp">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    <!-- Stat block 1 -->
+    <item
+        android:left="12dp"
+        android:top="40dp"
+        android:width="52dp"
+        android:height="52dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    <!-- Stat block 2 -->
+    <item
+        android:left="72dp"
+        android:top="40dp"
+        android:width="52dp"
+        android:height="52dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    <!-- Stat block 3 -->
+    <item
+        android:left="132dp"
+        android:top="40dp"
+        android:width="52dp"
+        android:height="52dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+    <!-- Stat block 4 -->
+    <item
+        android:left="192dp"
+        android:top="40dp"
+        android:width="52dp"
+        android:height="52dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</layer-list>
