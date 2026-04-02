@@ -52,7 +52,9 @@ object NetworkModule {
 
         install(ContentNegotiation) { json(json) }
 
-        install(Logging) { level = LogLevel.BODY }
+        install(Logging) {
+            level = if (BuildConfig.DEBUG) LogLevel.BODY else LogLevel.NONE
+        }
 
         install(Auth) {
             bearer {

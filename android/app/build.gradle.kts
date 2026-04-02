@@ -46,6 +46,7 @@ android {
         debug {
             buildConfigField("String", "BASE_URL", "\"https://api.ppn.creapolis.dev/api/v1/\"")
             buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"254888961741-jhbnemtpraihlkb5ckjajmkqmijlr0tc.apps.googleusercontent.com\"")
+            buildConfigField("String", "REVENUECAT_API_KEY", "\"goog_ITPYSPEdubAzAeoNGxezZuZJELT\"")
         }
         release {
             isMinifyEnabled = true
@@ -55,6 +56,7 @@ android {
             )
             buildConfigField("String", "BASE_URL", "\"https://api.ppn.creapolis.dev/api/v1/\"")
             buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"254888961741-jhbnemtpraihlkb5ckjajmkqmijlr0tc.apps.googleusercontent.com\"")
+            buildConfigField("String", "REVENUECAT_API_KEY", "\"goog_ITPYSPEdubAzAeoNGxezZuZJELT\"")
             signingConfig = signingConfigs.getByName("release")
         }
     }

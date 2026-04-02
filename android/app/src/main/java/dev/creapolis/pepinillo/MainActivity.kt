@@ -52,7 +52,6 @@ import dev.creapolis.pepinillo.feature.auth.LoginScreen
 import dev.creapolis.pepinillo.feature.auth.RegisterScreen
 import dev.creapolis.pepinillo.feature.onboarding.OnboardingScreen
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.AIReportScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
