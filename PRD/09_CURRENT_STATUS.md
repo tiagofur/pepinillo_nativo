@@ -1,9 +1,9 @@
 # Pepinillo — Current Implementation Status
 
 **Date:** 2026-03-24  
-**Version:** 1.0  
+**Version:** 1.1  
 **Status:** Active Development  
-**Last Updated:** 2026-03-24  
+**Last Updated:** 2026-04-02  
 **Update Cadence:** Per sprint
 
 ---
@@ -199,6 +199,19 @@
   - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented)
 - Feature gating for subtasks and recurrence is implemented (PRO badges, disabled inputs for free users)
 
+### Production Hardening (Completed 2026-04-02)
+
+| Fix | Status | Details |
+| --- | ------ | ------- |
+| Ktor logging restricted in release | ✅ | `LogLevel.NONE` for release, `LogLevel.BODY` for debug only |
+| RevenueCat API key moved to BuildConfig | ✅ | Removed hardcoded constant, uses `BuildConfig.REVENUECAT_API_KEY` |
+| Wear OS R8 minification enabled | ✅ | `isMinifyEnabled = true` with dedicated ProGuard rules |
+| Network security config added | ✅ | Cleartext disabled, `api.ppn.creapolis.dev` domain pinned, debug overrides for user certs |
+| WebSocket heartbeat/ping | ✅ | 30s ping interval, 10s pong timeout, auto-reconnect on timeout |
+| Backup rules configured | ✅ | Encrypted prefs and Room DB excluded from cloud backup and device transfer |
+| Unused imports cleaned | ✅ | Removed `runBlocking` import from MainActivity |
+| Full sync pagination | ✅ | Already implemented in `InitialSyncManager` with cursor-based loops |
+
 ### Pending Android
 
 | Item                           | Priority | Notes                                                                        |
@@ -208,8 +221,7 @@
 | Firebase Analytics/Crashlytics | P1       | Plugins commented out; missing `google-services.json`                        |
 | CI/CD pipeline                 | P1       | GitHub Actions (build + lint + tests)                                        |
 | Play Store listing             | P1       | Screenshots, ASO, description                                                |
-| Test coverage                  | P1       | Only 3 test files, ~20 tests total                                           |
-| Performance optimization       | P2       | R8/ProGuard tuning                                                           |
+| Test coverage                  | P1       | 16 test files, ~200+ tests across phone and wear                            |
 | OEM testing                    | P2       | Samsung, Pixel, Xiaomi, OnePlus                                              |
 | Release keystore               | P1       | Generate and store in secure vault                                           |
 
