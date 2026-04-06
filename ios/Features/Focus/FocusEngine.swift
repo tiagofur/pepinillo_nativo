@@ -206,6 +206,43 @@ public actor FocusEngine {
         state
     }
 
+    /// Update the focus configuration while a session is active.
+    /// If the session is in a timed phase, adjusts targetDuration so
+    /// remaining = newTarget - elapsed (timer keeps running, no restart).
+    public func updateConfig(_ newConfig: FocusConfig) {
+        let oldConfig = config
+        config = newConfig
+
+        guard var current = state, strategy != nil else { return }
+
+        // Determine if the current phase is duration-sensitive (work phase uses pomodoroDuration).
+        let phaseTargetChanged: Bool
+        switch current.phase {
+        case .work:
+            phaseTargetChanged = oldConfig.pomodoroDuration != newConfig.pomodoroDuration
+        case .shortBreak:
+            phaseTargetChanged = oldConfig.shortBreakDuration != newConfig.shortBreakDuration
+        case .longBreak:
+            phaseTargetChanged = oldConfig.longBreakDuration != newConfig.longBreakDuration
+        case .block:
+            phaseTargetChanged = oldConfig.defaultBlockDuration != newConfig.defaultBlockDuration
+        default:
+            phaseTargetChanged = false
+        }
+
+        guard phaseTargetChanged, let strategy = strategy else { return }
+
+        // Recalculate target for current phase using new config.
+        guard let updatedTarget = strategy.targetDuration(config: newConfig, phase: current.phase) else { return }
+
+        let elapsed = current.elapsedSeconds
+        let newRemaining = max(0, updatedTarget - elapsed)
+
+        current.targetDuration = updatedTarget
+        current.remainingSeconds = newRemaining
+        current.progress = elapsed / updatedTarget
+
+        state = current
     /// Resets the Pomodoro cycle counter when the calendar day changes.
     /// The current session (if any) continues normally — it will count as #1 of the new day.
     public func resetForNewDay() {

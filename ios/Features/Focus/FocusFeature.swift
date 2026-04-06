@@ -368,7 +368,13 @@ struct FocusFeature {
 
             case .configUpdated(let config):
                 state.config = config
-                if !state.isRunning {
+                if state.isRunning {
+                    // Propagate new config to the engine so the active timer
+                    // reflects any duration changes made in Settings in real-time.
+                    return .run { [focusClient] _ in
+                        await focusClient.updateConfig(config)
+                    }
+                } else {
                     updateIdleDisplay(&state)
                 }
                 return .none
