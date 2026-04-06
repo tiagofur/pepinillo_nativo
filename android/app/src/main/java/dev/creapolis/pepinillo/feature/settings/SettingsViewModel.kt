@@ -10,9 +10,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.core.billing.SubscriptionTier
+import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.billing.SubscriptionState
+import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.data.sync.SyncState
+import dev.creapolis.pepinillo.data.sync.SyncStatusManager
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.service.DailyReminderWorker
 import dev.creapolis.pepinillo.ui.theme.AppTheme
@@ -54,6 +59,12 @@ data class SettingsUiState(
     val currentStreak: Int = 0,
     val isPro: Boolean = false,
     val subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
+    // Sync status
+    val isOnline: Boolean = true,
+    val syncState: SyncState = SyncState.Idle,
+    val lastSyncAt: Long? = null,
+    val pendingChangesCount: Int = 0,
+    val isLoggedIn: Boolean = false,
 )
 
 @HiltViewModel
@@ -62,17 +73,41 @@ class SettingsViewModel @Inject constructor(
     private val prefsRepo: UserPreferencesRepository,
     private val sessionRepository: SessionRepository,
     private val featureGate: FeatureGate,
+    private val syncStatusManager: SyncStatusManager,
+    private val authStore: AuthStore,
 ) : ViewModel() {
 
+    @Suppress("UNCHECKED_CAST")
     val uiState: StateFlow<SettingsUiState> = combine(
-        prefsRepo.preferences,
-        sessionRepository.getAllDaysWithSessions(),
-        featureGate.subscriptionState,
-    ) { prefs, allDays, subState ->
+        flows = arrayOf(
+            prefsRepo.preferences,
+            sessionRepository.getAllDaysWithSessions(),
+            featureGate.subscriptionState,
+            syncStatusManager.isOnline,
+            syncStatusManager.syncState,
+            syncStatusManager.lastSyncAt,
+            syncStatusManager.pendingChangesCount,
+            authStore.isLoggedIn,
+        ),
+    ) { values ->
+        val prefs = values[0] as UserPreferences
+        val allDays = values[1] as List<DailyStatsEntity>
+        val subState = values[2] as SubscriptionState
+        val isOnline = values[3] as Boolean
+        val syncState = values[4] as SyncState
+        val lastSyncAt = values[5] as Long?
+        val pendingChangesCount = values[6] as Int
+        val isLoggedIn = values[7] as Boolean
+
         prefs.toUiState(
             currentStreak = sessionRepository.calculateCurrentStreak(allDays),
             isPro = subState.isPro,
             subscriptionTier = subState.tier,
+            isOnline = isOnline,
+            syncState = syncState,
+            lastSyncAt = lastSyncAt,
+            pendingChangesCount = pendingChangesCount,
+            isLoggedIn = isLoggedIn,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -207,10 +242,19 @@ class SettingsViewModel @Inject constructor(
         WorkManager.getInstance(context).cancelUniqueWork("daily_reminder")
     }
 
+    fun requestSync() {
+        syncStatusManager.requestImmediateSync()
+    }
+
     private fun UserPreferences.toUiState(
         currentStreak: Int = 0,
         isPro: Boolean = false,
         subscriptionTier: SubscriptionTier = SubscriptionTier.FREE,
+        isOnline: Boolean = true,
+        syncState: SyncState = SyncState.Idle,
+        lastSyncAt: Long? = null,
+        pendingChangesCount: Int = 0,
+        isLoggedIn: Boolean = false,
     ) = SettingsUiState(
         pomodoroMinutes = pomodoroMinutes,
         shortBreakMinutes = shortBreakMinutes,
@@ -236,5 +280,10 @@ class SettingsViewModel @Inject constructor(
         currentStreak = currentStreak,
         isPro = isPro,
         subscriptionTier = subscriptionTier,
+        isOnline = isOnline,
+        syncState = syncState,
+        lastSyncAt = lastSyncAt,
+        pendingChangesCount = pendingChangesCount,
+        isLoggedIn = isLoggedIn,
     )
 }

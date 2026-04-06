@@ -1,10 +1,12 @@
 package dev.creapolis.pepinillo.core.network
 
 import android.util.Log
+import dev.creapolis.pepinillo.core.auth.AuthStore
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -26,6 +28,7 @@ private const val TAG = "PepinilloApi"
 class PepinilloApiClient @Inject constructor(
     private val httpClient: HttpClient,
     private val json: Json,
+    private val authStore: AuthStore,
 ) {
     // ── Auth ──
 
@@ -37,6 +40,12 @@ class PepinilloApiClient @Inject constructor(
 
     suspend fun loginWithGoogle(idToken: String): NetworkResult<AuthResponse> =
         safeAuthCall { httpClient.post("auth/google") { jsonBody(GoogleLoginRequest(idToken)) } }
+
+    suspend fun forgotPassword(email: String): NetworkResult<Unit> =
+        safeCall { httpClient.post("auth/forgot-password") { jsonBody(ForgotPasswordRequest(email)) }.body() }
+
+    suspend fun resetPassword(email: String, code: String, newPassword: String): NetworkResult<Unit> =
+        safeCall { httpClient.post("auth/reset-password") { jsonBody(ResetPasswordRequest(email, code, newPassword)) }.body() }
 
     suspend fun refreshToken(refreshToken: String): NetworkResult<RefreshResponse> =
         safeCall { httpClient.post("auth/refresh") { jsonBody(RefreshRequest(refreshToken)) }.body() }
@@ -83,7 +92,7 @@ class PepinilloApiClient @Inject constructor(
         safeCall { httpClient.delete("tasks/$id").body() }
 
     suspend fun syncTasks(request: TaskSyncRequest): NetworkResult<TaskSyncResponse> =
-        safeCall { httpClient.post("tasks/sync") { jsonBody(request) }.body() }
+        safeCall { httpClient.post("tasks/sync") { jsonBody(request); withDeviceId() }.body() }
 
     // ── Subtasks ──
 
@@ -112,6 +121,12 @@ class PepinilloApiClient @Inject constructor(
             }.body()
         }
 
+    suspend fun getAllSessions(): NetworkResult<List<PomodoroSessionDto>> =
+        safeCall { httpClient.get("focus/sessions/all").body() }
+
+    suspend fun syncSessions(request: SessionSyncRequest): NetworkResult<SessionSyncResponse> =
+        safeCall { httpClient.post("sync/sessions") { jsonBody(request); withDeviceId() }.body() }
+
     // ── Pomodoro Config ──
 
     suspend fun getConfig(): NetworkResult<PomodoroConfigDto> =
@@ -119,6 +134,56 @@ class PepinilloApiClient @Inject constructor(
 
     suspend fun updateConfig(config: PomodoroConfigDto): NetworkResult<PomodoroConfigDto> =
         safeCall { httpClient.put("pomodoro/config") { jsonBody(config) }.body() }
+
+    // ── Focus Config (multi-mode) ──
+
+    suspend fun getFocusConfig(): NetworkResult<FocusConfigDto> =
+        safeCall { httpClient.get("focus/config").body() }
+
+    suspend fun updateFocusConfig(config: FocusConfigDto): NetworkResult<FocusConfigDto> =
+        safeCall { httpClient.put("focus/config") { jsonBody(config) }.body() }
+
+    // ── Focus Stats ──
+
+    suspend fun getStats(from: String, to: String): NetworkResult<List<FocusStatsDto>> =
+        safeCall {
+            httpClient.get("focus/stats") {
+                parameter("from", from)
+                parameter("to", to)
+            }.body()
+        }
+
+    suspend fun upsertStats(stats: FocusStatsDto): NetworkResult<FocusStatsDto> =
+        safeCall { httpClient.post("focus/stats") { jsonBody(stats) }.body() }
+
+    // ── Preferences ──
+
+    suspend fun getPreferences(): NetworkResult<PreferenceSyncResponse> =
+        safeCall { httpClient.get("preferences").body() }
+
+    suspend fun upsertPreferences(request: PreferenceSyncRequest): NetworkResult<PreferenceSyncResponse> =
+        safeCall { httpClient.put("preferences") { jsonBody(request); withDeviceId() }.body() }
+
+    // ── Initial Upload ──
+
+    suspend fun initialUpload(request: InitialUploadRequest): NetworkResult<InitialUploadResponse> =
+        safeCall { httpClient.post("sync/initial-upload") { jsonBody(request); withDeviceId() }.body() }
+
+    // ── Full Sync (cursor-paginated pull) ──
+
+    suspend fun getFullSync(
+        taskCursor: String? = null,
+        sessionCursor: String? = null,
+        limit: Int = 100,
+    ): NetworkResult<FullSyncResponse> =
+        safeCall {
+            httpClient.get("sync/full") {
+                taskCursor?.let { parameter("taskCursor", it) }
+                sessionCursor?.let { parameter("sessionCursor", it) }
+                parameter("limit", limit.toString())
+                withDeviceId()
+            }.body()
+        }
 
     // ── Billing ──
 
@@ -173,5 +238,9 @@ class PepinilloApiClient @Inject constructor(
     private fun io.ktor.client.request.HttpRequestBuilder.jsonBody(body: Any) {
         contentType(ContentType.Application.Json)
         setBody(body)
+    }
+
+    private fun io.ktor.client.request.HttpRequestBuilder.withDeviceId() {
+        header("X-Device-ID", authStore.getOrCreateDeviceId())
     }
 }

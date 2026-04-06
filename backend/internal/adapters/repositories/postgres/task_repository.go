@@ -3,11 +3,13 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
 
 	"pepinillo/backend/internal/domain"
+	"pepinillo/backend/internal/ports"
 )
 
 type TaskRepository struct {
@@ -27,6 +29,29 @@ func (r *TaskRepository) ListByUser(ctx context.Context, userID string) ([]domai
 		Find(&tasks).Error
 	if err != nil {
 		return nil, err
+	}
+	return tasks, nil
+}
+
+func (r *TaskRepository) ListByUserPaginated(ctx context.Context, userID string, cursor *ports.PaginationCursor, limit int) ([]domain.Task, error) {
+	tasks := make([]domain.Task, 0)
+	query := r.db.WithContext(ctx).
+		Preload("SubTasks").
+		Where("user_id = ?", userID)
+
+	if cursor != nil {
+		query = query.Where(
+			"(updated_at > ? OR (updated_at = ? AND CAST(id AS TEXT) > ?))",
+			cursor.UpdatedAt, cursor.UpdatedAt, cursor.ID,
+		)
+	}
+
+	err := query.
+		Order("updated_at ASC, id ASC").
+		Limit(limit).
+		Find(&tasks).Error
+	if err != nil {
+		return nil, fmt.Errorf("list tasks paginated: %w", err)
 	}
 	return tasks, nil
 }

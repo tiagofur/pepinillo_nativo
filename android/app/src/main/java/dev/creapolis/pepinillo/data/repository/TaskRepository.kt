@@ -82,30 +82,38 @@ class TaskRepository @Inject constructor(
                     isCompleted = !entity.isCompleted,
                     completedAt = if (!entity.isCompleted) System.currentTimeMillis() else null,
                     updatedAt = System.currentTimeMillis(),
+                    isDirty = true,
                 ),
             )
         }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }
             .onSuccess { refreshWearData() }
 
     suspend fun deleteTask(taskId: String): Result<Unit> =
-        runCatching { taskDao.deleteTaskById(taskId) }
+        runCatching { taskDao.softDelete(taskId) }
             .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }
             .onSuccess { refreshWearData() }
 
-    /** Soft-delete: returns the task entity before deleting so it can be restored. */
+    /** Soft-delete: marks task as deleted and returns it so it can be restored via undo. */
     suspend fun deleteTaskWithUndo(taskId: String): Result<Task?> =
         runCatching {
             val entity = taskDao.getTaskById(taskId)
             val task = entity?.toDomain()
-            if (entity != null) taskDao.deleteTaskById(taskId)
+            if (entity != null) taskDao.softDelete(taskId)
             task
         }
             .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }
             .onSuccess { refreshWearData() }
 
-    /** Restore a previously deleted task. */
+    /** Restore a previously soft-deleted task. */
     suspend fun restoreTask(task: Task): Result<Unit> =
-        runCatching { taskDao.insertTask(task.toEntity()) }
+        runCatching {
+            val entity = task.toEntity().copy(
+                isDeleted = false,
+                isDirty = true,
+                updatedAt = System.currentTimeMillis(),
+            )
+            taskDao.insertTask(entity)
+        }
             .onFailure { Log.e(TAG, "Error restoring task ${task.id}", it) }
             .onSuccess { refreshWearData() }
 

@@ -6,6 +6,7 @@ type Client struct {
 	Hub       *Hub
 	UserID    string
 	ID        string
+	DeviceID  string
 	Send      chan []byte
 	closeOnce sync.Once
 }
@@ -19,7 +20,11 @@ const (
 	MessageTypePomodoroConfigUpdated MessageType = "pomodoro_config_updated"
 	MessageTypePomodoroSessionCreated MessageType = "pomodoro_session_created"
 	MessageTypePomodoroSessionUpdated MessageType = "pomodoro_session_updated"
-	MessageTypePong                 MessageType = "pong"
+	MessageTypePong                  MessageType = "pong"
+	MessageTypeSettingsUpdated       MessageType = "settings_updated"
+	MessageTypeSyncRequired          MessageType = "sync_required"
+	MessageTypeStatsUpdated          MessageType = "stats_updated"
+	MessageTypeSessionsSynced        MessageType = "sessions_synced"
 )
 
 type WSMessage struct {

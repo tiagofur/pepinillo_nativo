@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,9 +40,35 @@ class FocusEngine @Inject constructor(
     val workSessionCompleted: SharedFlow<String> = _workSessionCompleted.asSharedFlow()
 
     private var timerJob: Job? = null
+    private var prefsObserverJob: Job? = null
 
     // Cached preferences for use in the tick loop (avoids reading DataStore every 100ms)
     private var cachedPrefs: UserPreferences = UserPreferences()
+
+    init {
+        // Observe preference changes while idle so the displayed time
+        // reflects the latest settings without waiting for play to be pressed.
+        startIdlePrefsObserver()
+    }
+
+    /**
+     * Keeps totalMillis in sync with user preferences while the timer is idle.
+     * This runs for the entire lifetime of the singleton and only acts when
+     * the timer is NOT running/paused (the active-session observer handles those states).
+     */
+    private fun startIdlePrefsObserver() {
+        scope.launch {
+            prefsRepo.preferences.collect { newPrefs ->
+                val s = _state.value
+                if (s.status != TimerStatus.Idle && s.status != TimerStatus.WaitingForNext) return@collect
+
+                val newTotalMillis = getTotalMillis(s.mode, s.phase, newPrefs)
+                if (newTotalMillis != s.totalMillis) {
+                    _state.update { it.copy(totalMillis = newTotalMillis) }
+                }
+            }
+        }
+    }
 
     // Pause / interruption tracking (internal, not exposed in FocusTimerState)
     private var pauseCount: Int = 0
@@ -75,6 +102,24 @@ class FocusEngine @Inject constructor(
                 }
             }
         }
+    // Day-change tracking for mid-session midnight crossing
+    @Volatile private var currentDayStartMillis: Long = SessionRepository.startOfDay(System.currentTimeMillis())
+    @Volatile private var nextDayStartMillis: Long = currentDayStartMillis + 86_400_000L
+
+    /**
+     * Resets daily counters when the calendar day changes.
+     * Safe to call from the main thread (BroadcastReceiver) or from the timer coroutine.
+     * Does NOT interrupt an in-progress session — the current session completes normally
+     * and is counted as #1 of the new day.
+     */
+    fun onDayChanged() {
+        val newDayStart = SessionRepository.startOfDay(System.currentTimeMillis())
+        if (newDayStart == currentDayStartMillis) return
+        currentDayStartMillis = newDayStart
+        nextDayStartMillis = newDayStart + 86_400_000L
+        _state.update { it.copy(completedSessions = 0) }
+        pomodoroNumber = 1
+        sessionRepository.notifyDayChanged()
     }
 
     suspend fun selectMode(mode: FocusMode) {
@@ -82,7 +127,7 @@ class FocusEngine @Inject constructor(
         val prefs = prefsRepo.preferences.first()
         _state.value = FocusTimerState(
             mode = mode,
-            totalMillis = getTotalMillis(mode, prefs),
+            totalMillis = getTotalMillis(mode, FocusPhase.Work, prefs),
             linkedTaskId = _state.value.linkedTaskId,
         )
     }
@@ -96,10 +141,23 @@ class FocusEngine @Inject constructor(
         completedSessions: Int,
         sessionStartTime: Long,
         status: TimerStatus = TimerStatus.Running,
+        savedDayStart: Long = 0L,
     ) {
+        // If the day changed since the last save, reset the cycle counter
+        val effectiveCompletedSessions = if (savedDayStart != 0L) {
+            val currentDay = SessionRepository.startOfDay(System.currentTimeMillis())
+            if (savedDayStart != currentDay) {
+                currentDayStartMillis = currentDay
+                nextDayStartMillis = currentDay + 86_400_000L
+                pomodoroNumber = 1
+                sessionRepository.notifyDayChanged()
+                0
+            } else completedSessions
+        } else completedSessions
+
         val prefs = prefsRepo.preferences.first()
         cachedPrefs = prefs
-        val resolvedTotal = if (totalMillis > 0L) totalMillis else getTotalMillis(mode, prefs)
+        val resolvedTotal = if (totalMillis > 0L) totalMillis else getTotalMillis(mode, phase, prefs)
 
         // Restore WaitingForNext without starting timer loop
         if (status == TimerStatus.WaitingForNext) {
@@ -108,7 +166,7 @@ class FocusEngine @Inject constructor(
                 phase = phase,
                 status = TimerStatus.WaitingForNext,
                 totalMillis = resolvedTotal,
-                completedSessions = completedSessions,
+                completedSessions = effectiveCompletedSessions,
             )
             return
         }
@@ -121,7 +179,7 @@ class FocusEngine @Inject constructor(
                 status = TimerStatus.Running,
                 elapsedMillis = resolvedTotal,
                 totalMillis = resolvedTotal,
-                completedSessions = completedSessions,
+                completedSessions = effectiveCompletedSessions,
                 sessionStartTime = sessionStartTime,
             )
             onPhaseComplete()
@@ -132,7 +190,7 @@ class FocusEngine @Inject constructor(
                 status = TimerStatus.Running,
                 elapsedMillis = elapsedMillis,
                 totalMillis = resolvedTotal,
-                completedSessions = completedSessions,
+                completedSessions = effectiveCompletedSessions,
                 sessionStartTime = sessionStartTime,
             )
             startTimerLoop()
@@ -185,6 +243,49 @@ class FocusEngine @Inject constructor(
     }
 
     /**
+     * Starts observing preference changes during an active timer session.
+     * Updates cachedPrefs and recalculates remaining time if necessary.
+     */
+    private fun startPrefsObserver() {
+        prefsObserverJob?.cancel()
+        prefsObserverJob = scope.launch {
+            prefsRepo.preferences.collect { newPrefs ->
+                val oldPrefs = cachedPrefs
+                cachedPrefs = newPrefs
+
+                val s = _state.value
+                if (s.status != TimerStatus.Running) return@collect
+
+                // If we're in a timed mode (not Flow/Chrono) and the relevant duration changed,
+                // recalculate the total time and check if timer should complete
+                if (s.mode != FocusMode.Flow && s.mode != FocusMode.Chrono) {
+                    val newTotalMillis = getTotalMillis(s.mode, s.phase, newPrefs)
+
+                    // Only update if the total actually changed
+                    if (newTotalMillis != s.totalMillis) {
+                        _state.update { it.copy(totalMillis = newTotalMillis) }
+
+                        // If elapsed time already exceeds new duration, complete the phase immediately
+                        if (s.elapsedMillis >= newTotalMillis) {
+                            onPhaseComplete()
+                        }
+                    }
+                }
+
+                // Also handle Flow mode min minutes changes
+                if (s.mode == FocusMode.Flow) {
+                    val oldMinMillis = oldPrefs.flowtimeMinMinutes * 60 * 1000L
+                    val newMinMillis = newPrefs.flowtimeMinMinutes * 60 * 1000L
+                    if (oldMinMillis != newMinMillis && !s.breakSuggested && s.elapsedMillis >= newMinMillis) {
+                        _state.update { it.copy(breakSuggested = true) }
+                        feedbackManager.onFeedbackPulse()
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Creates a new timer tick loop. Called by start() for user actions, and directly
      * by onPhaseComplete()/restoreState() to bypass the Running guard in start().
      *
@@ -198,6 +299,9 @@ class FocusEngine @Inject constructor(
             // Cache prefs at session start
             cachedPrefs = prefsRepo.preferences.first()
 
+            // Start observing preference changes during the active session
+            startPrefsObserver()
+
             val tickInterval = 100L
             // Use wall-clock anchoring to avoid drift from delay() imprecision
             val loopStartRealtime = SystemClock.elapsedRealtime()
@@ -210,6 +314,11 @@ class FocusEngine @Inject constructor(
 
                 val newElapsed = initialElapsed + (SystemClock.elapsedRealtime() - loopStartRealtime)
                 _state.update { it.copy(elapsedMillis = newElapsed) }
+
+                // Backstop: detect midnight crossing in case the broadcast was missed
+                if (System.currentTimeMillis() >= nextDayStartMillis) {
+                    onDayChanged()
+                }
 
                 // Flowtime: suggest break after minimum session time
                 if (s.mode == FocusMode.Flow && !s.breakSuggested) {
@@ -241,6 +350,7 @@ class FocusEngine @Inject constructor(
 
     fun pause() {
         timerJob?.cancel()
+        prefsObserverJob?.cancel()
         pauseCount++
         pauseStartTime = System.currentTimeMillis()
         _state.update { it.copy(status = TimerStatus.Paused) }
@@ -258,6 +368,7 @@ class FocusEngine @Inject constructor(
 
     fun stop() {
         timerJob?.cancel()
+        prefsObserverJob?.cancel()
         // If paused at the time of stop, accumulate remaining pause duration
         if (pauseStartTime > 0L) {
             totalPauseMillis += System.currentTimeMillis() - pauseStartTime
@@ -271,7 +382,7 @@ class FocusEngine @Inject constructor(
             val prefs = prefsRepo.preferences.first()
             _state.value = FocusTimerState(
                 mode = snapshot.mode,
-                totalMillis = getTotalMillis(snapshot.mode, prefs),
+                totalMillis = getTotalMillis(snapshot.mode, FocusPhase.Work, prefs),
                 linkedTaskId = snapshot.linkedTaskId,
                 completedSessions = snapshot.completedSessions, // preserve count for display + next start
             )
@@ -339,7 +450,7 @@ class FocusEngine @Inject constructor(
             s.mode == FocusMode.Blocks -> {
                 _state.value = FocusTimerState(
                     mode = FocusMode.Blocks,
-                    totalMillis = getTotalMillis(FocusMode.Blocks, prefs),
+                    totalMillis = getTotalMillis(FocusMode.Blocks, FocusPhase.Work, prefs),
                     completedSessions = s.completedSessions + 1,
                     linkedTaskId = s.linkedTaskId,
                 )
@@ -348,7 +459,7 @@ class FocusEngine @Inject constructor(
             else -> {
                 _state.value = FocusTimerState(
                     mode = s.mode,
-                    totalMillis = getTotalMillis(s.mode, prefs),
+                    totalMillis = getTotalMillis(s.mode, FocusPhase.Work, prefs),
                     linkedTaskId = s.linkedTaskId,
                 )
             }
@@ -386,9 +497,11 @@ class FocusEngine @Inject constructor(
         }
     }
 
-    private fun getTotalMillis(mode: FocusMode, prefs: UserPreferences): Long = when (mode) {
-        FocusMode.Pomodoro -> prefs.pomodoroMinutes * 60 * 1000L
-        FocusMode.Blocks -> prefs.timeBlockMinutes * 60 * 1000L
-        FocusMode.Flow, FocusMode.Chrono -> 0L
+    private fun getTotalMillis(mode: FocusMode, phase: FocusPhase, prefs: UserPreferences): Long = when {
+        mode == FocusMode.Pomodoro && phase == FocusPhase.Work -> prefs.pomodoroMinutes * 60 * 1000L
+        mode == FocusMode.Pomodoro && phase == FocusPhase.ShortBreak -> prefs.shortBreakMinutes * 60 * 1000L
+        mode == FocusMode.Pomodoro && phase == FocusPhase.LongBreak -> prefs.longBreakMinutes * 60 * 1000L
+        mode == FocusMode.Blocks -> prefs.timeBlockMinutes * 60 * 1000L
+        else -> 0L
     }
 }

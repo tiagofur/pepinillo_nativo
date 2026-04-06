@@ -11,6 +11,7 @@ import (
 
 	"pepinillo/backend/internal/adapters/behavior"
 	"pepinillo/backend/internal/domain"
+	"pepinillo/backend/internal/ports"
 	"pepinillo/backend/internal/services"
 )
 
@@ -126,6 +127,9 @@ func (r *lwwIntegrationTaskRepo) IncrementFocusTime(_ context.Context, _ int, _ 
 func (r *lwwIntegrationTaskRepo) SetActiveSession(_ context.Context, _ int, _ *string) error {
 	return nil
 }
+func (r *lwwIntegrationTaskRepo) ListByUserPaginated(_ context.Context, _ string, _ *ports.PaginationCursor, _ int) ([]domain.Task, error) {
+	return nil, nil
+}
 
 type recurrenceIntegrationTaskRepo struct {
 	items []domain.Task
@@ -186,6 +190,9 @@ func (r *recurrenceIntegrationTaskRepo) IncrementFocusTime(_ context.Context, _ 
 }
 func (r *recurrenceIntegrationTaskRepo) SetActiveSession(_ context.Context, _ int, _ *string) error {
 	return nil
+}
+func (r *recurrenceIntegrationTaskRepo) ListByUserPaginated(_ context.Context, _ string, _ *ports.PaginationCursor, _ int) ([]domain.Task, error) {
+	return nil, nil
 }
 
 func TestCritical_TaskSyncLWW_Integration(t *testing.T) {

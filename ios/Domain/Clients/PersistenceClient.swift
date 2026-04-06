@@ -153,8 +153,11 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
     public let totalPauseDuration: TimeInterval
     public let pomodoroNumber: Int?
     public let taskID: UUID?
+    public let taskServerId: Int?
     public let journalNote: String?
     public let satisfactionRating: Int?
+    public let isDirty: Bool
+    public let syncedAt: Date?
 
     public init(
         id: UUID,
@@ -170,8 +173,11 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
         totalPauseDuration: TimeInterval = 0,
         pomodoroNumber: Int? = nil,
         taskID: UUID?,
+        taskServerId: Int? = nil,
         journalNote: String? = nil,
-        satisfactionRating: Int? = nil
+        satisfactionRating: Int? = nil,
+        isDirty: Bool = true,
+        syncedAt: Date? = nil
     ) {
         self.id = id
         self.startedAt = startedAt
@@ -186,8 +192,11 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
         self.totalPauseDuration = totalPauseDuration
         self.pomodoroNumber = pomodoroNumber
         self.taskID = taskID
+        self.taskServerId = taskServerId
         self.journalNote = journalNote
         self.satisfactionRating = satisfactionRating
+        self.isDirty = isDirty
+        self.syncedAt = syncedAt
     }
 
     init(from record: FocusSessionRecord) {
@@ -205,8 +214,11 @@ public struct SessionRecordDTO: Sendable, Equatable, Identifiable {
             totalPauseDuration: record.totalPauseDuration,
             pomodoroNumber: record.pomodoroNumber,
             taskID: record.task?.id,
+            taskServerId: record.task?.serverId,
             journalNote: record.journalNote,
-            satisfactionRating: record.satisfactionRating
+            satisfactionRating: record.satisfactionRating,
+            isDirty: record.isDirty,
+            syncedAt: record.syncedAt
         )
     }
 }
@@ -512,6 +524,34 @@ public struct PersistenceClient: Sendable {
     public var purgeTaskBySyncId: @Sendable (String) async throws -> Void
     public var getLastSyncTimestamp: @Sendable () async throws -> String? = { nil }
     public var saveLastSyncTimestamp: @Sendable (String) async throws -> Void
+
+    // Session Sync Operations
+    public var fetchDirtySessions: @Sendable () async throws -> [SessionRecordDTO] = { [] }
+    public var markSessionsSynced: @Sendable ([UUID]) async throws -> Void
+    public var upsertSessionFromServer: @Sendable (FocusSessionSyncDTO) async throws -> Void
+    public var sessionExists: @Sendable (String) async throws -> Bool = { _ in false }
+
+    // Task-Session Link Resolution
+    public var fetchTaskBySyncId: @Sendable (String) async throws -> TaskItemDTO? = { _ in nil }
+    public var fetchTaskByServerId: @Sendable (Int) async throws -> TaskItemDTO? = { _ in nil }
+    public var linkSessionToTask: @Sendable (_ sessionId: UUID, _ taskId: UUID) async throws -> Void
+
+    // Settings Sync
+    public var getAllPreferencesAsKeyValue: @Sendable () async -> [(key: String, value: String, updatedAt: Date)] = { [] }
+    public var applyServerPreference: @Sendable (_ key: String, _ value: String, _ updatedAt: Date) async -> Void
+
+    // Wipe and Sync
+    public var deleteAllTasks: @Sendable () async -> Void
+    public var deleteAllSessions: @Sendable () async -> Void
+    public var deleteAllStats: @Sendable () async -> Void
+
+    // Counts
+    public var getTaskCount: @Sendable () async -> Int = { 0 }
+    public var getSessionCount: @Sendable () async -> Int = { 0 }
+
+    // Session Sync Timestamp
+    public var getLastSessionSyncTimestamp: @Sendable () async -> String? = { nil }
+    public var saveLastSessionSyncTimestamp: @Sendable (String) async -> Void
 }
 
 extension PersistenceClient: DependencyKey {
@@ -731,6 +771,87 @@ extension PersistenceClient: DependencyKey {
             saveLastSyncTimestamp: { timestamp in
                 try await MainActor.run {
                     service.saveLastSyncTimestamp(timestamp)
+                }
+            },
+            fetchDirtySessions: {
+                try await MainActor.run {
+                    let records = try service.fetchDirtySessions()
+                    return records.map { SessionRecordDTO(from: $0) }
+                }
+            },
+            markSessionsSynced: { sessionIDs in
+                try await MainActor.run {
+                    try service.markSessionsSynced(ids: sessionIDs)
+                }
+            },
+            upsertSessionFromServer: { dto in
+                try await MainActor.run {
+                    try service.upsertSessionFromServer(dto)
+                }
+            },
+            sessionExists: { sessionId in
+                try await MainActor.run {
+                    try service.sessionExists(id: sessionId)
+                }
+            },
+            fetchTaskBySyncId: { syncId in
+                try await MainActor.run {
+                    try service.fetchTaskBySyncId(syncId).map { TaskItemDTO(from: $0) }
+                }
+            },
+            fetchTaskByServerId: { serverId in
+                try await MainActor.run {
+                    try service.fetchTaskByServerId(serverId).map { TaskItemDTO(from: $0) }
+                }
+            },
+            linkSessionToTask: { sessionId, taskId in
+                try await MainActor.run {
+                    try service.linkSessionToTask(sessionId: sessionId, taskId: taskId)
+                }
+            },
+            getAllPreferencesAsKeyValue: {
+                await MainActor.run {
+                    (try? service.getAllPreferencesAsKeyValue()) ?? []
+                }
+            },
+            applyServerPreference: { key, value, updatedAt in
+                await MainActor.run {
+                    try? service.applyServerPreference(key: key, value: value, updatedAt: updatedAt)
+                }
+            },
+            deleteAllTasks: {
+                await MainActor.run {
+                    try? service.deleteAllTasks()
+                }
+            },
+            deleteAllSessions: {
+                await MainActor.run {
+                    try? service.deleteAllSessions()
+                }
+            },
+            deleteAllStats: {
+                await MainActor.run {
+                    try? service.deleteAllStats()
+                }
+            },
+            getTaskCount: {
+                await MainActor.run {
+                    (try? service.getTaskCount()) ?? 0
+                }
+            },
+            getSessionCount: {
+                await MainActor.run {
+                    (try? service.getSessionCount()) ?? 0
+                }
+            },
+            getLastSessionSyncTimestamp: {
+                await MainActor.run {
+                    service.getLastSessionSyncTimestamp()
+                }
+            },
+            saveLastSessionSyncTimestamp: { timestamp in
+                await MainActor.run {
+                    service.saveLastSessionSyncTimestamp(timestamp)
                 }
             }
         )

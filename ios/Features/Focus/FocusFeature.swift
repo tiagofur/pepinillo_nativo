@@ -113,6 +113,9 @@ struct FocusFeature {
         case paywallTapped
         case paywallDismissed
 
+        // Day change
+        case dayChanged
+
         // Mode Intelligence
         case modeSuggested(ModeSuggestion?)
         case modeSuggestionAccepted
@@ -603,6 +606,13 @@ struct FocusFeature {
             case .paywallDismissed:
                 state.showPaywall = false
                 return .none
+
+            // MARK: Day Change
+
+            case .dayChanged:
+                // Reset stale cycle position — re-seeded from DB on next startTapped
+                state.pomodoroNumber = nil
+                return .run { _ in await focusClient.resetForNewDay() }
 
             // MARK: Mode Intelligence
 

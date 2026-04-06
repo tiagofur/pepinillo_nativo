@@ -25,8 +25,18 @@ private class FakeFocusSessionDao : FocusSessionDao {
     override fun getSessionCountForDay(startOfDay: Long): Flow<Int> = flowOf(0)
     override fun getSessionsInRange(startTime: Long, endTime: Long): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
     override fun getSessionsForTask(taskId: String): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
+    override suspend fun getTodayPomodoroWorkCount(startOfDay: Long): Int = 0
+    override suspend fun updateJournalEntry(sessionId: String, journalNote: String?, satisfactionRating: Int?) = Unit
     override suspend fun getDirtySessions(): List<FocusSessionEntity> = emptyList()
     override suspend fun markSynced(sessionId: String, syncedAt: Long) = Unit
+    override suspend fun getSessionsInRangeSync(startTime: Long, endTime: Long): List<FocusSessionEntity> = emptyList()
+    override suspend fun getSessionById(sessionId: String): FocusSessionEntity? = null
+    override suspend fun insertIfNotExists(session: FocusSessionEntity) = Unit
+    override suspend fun upsertSession(session: FocusSessionEntity) = Unit
+    override suspend fun upsertSessions(sessions: List<FocusSessionEntity>) = Unit
+    override suspend fun getAllSessionsSync(): List<FocusSessionEntity> = emptyList()
+    override suspend fun getSessionCount(): Int = 0
+    override suspend fun deleteAll() = Unit
 }
 
 private class FakeDailyStatsDao : DailyStatsDao {
@@ -35,6 +45,7 @@ private class FakeDailyStatsDao : DailyStatsDao {
     override fun observeStatsForDate(date: Long): Flow<DailyStatsEntity?> = flowOf(null)
     override fun getStatsInRange(startDate: Long, endDate: Long): Flow<List<DailyStatsEntity>> = flowOf(emptyList())
     override fun getAllDaysWithSessions(): Flow<List<DailyStatsEntity>> = flowOf(emptyList())
+    override suspend fun deleteAll() = Unit
 }
 
 class SessionRepositoryTest {

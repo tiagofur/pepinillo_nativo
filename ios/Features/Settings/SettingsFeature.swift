@@ -231,58 +231,72 @@ struct SettingsFeature {
 
             case .pomodoroDurationChanged(let v):
                 state.pomodoroDurationMinutes = max(1, min(120, v))
+                PreferenceDirtyTracker.markDirty("pomodoroMinutes")
                 return .send(.saveSettings)
 
             case .shortBreakChanged(let v):
                 state.shortBreakMinutes = max(1, min(60, v))
+                PreferenceDirtyTracker.markDirty("shortBreakMinutes")
                 return .send(.saveSettings)
 
             case .longBreakChanged(let v):
                 state.longBreakMinutes = max(5, min(120, v))
+                PreferenceDirtyTracker.markDirty("longBreakMinutes")
                 return .send(.saveSettings)
 
             case .pomodorosPerCycleChanged(let v):
                 state.pomodorosPerCycle = max(1, min(12, v))
+                PreferenceDirtyTracker.markDirty("sessionsBeforeLongBreak")
                 return .send(.saveSettings)
 
             case .autoStartBreaksToggled:
                 state.autoStartBreaks.toggle()
+                PreferenceDirtyTracker.markDirty("autoStartBreaks")
                 return .send(.saveSettings)
 
             case .autoStartWorkToggled:
                 state.autoStartWork.toggle()
+                PreferenceDirtyTracker.markDirty("autoStartNextPomodoro")
                 return .send(.saveSettings)
 
             case .blockDurationChanged(let v):
                 state.blockDurationMinutes = max(5, min(480, v))
+                PreferenceDirtyTracker.markDirty("timeBlockMinutes")
                 return .send(.saveSettings)
 
             case .blockMidpointToggled:
                 state.blockMidpointCheckIn.toggle()
+                PreferenceDirtyTracker.markDirty("midpointCheckIn")
                 return .send(.saveSettings)
 
             case .flowtimeMinMinutesChanged(let v):
                 state.flowtimeMinMinutes = max(1, min(60, v))
+                PreferenceDirtyTracker.markDirty("flowtimeMinMinutes")
                 return .send(.saveSettings)
 
             case .soundToggled:
                 state.soundEnabled.toggle()
+                PreferenceDirtyTracker.markDirty("soundEnabled")
                 return .send(.saveSettings)
 
             case .hapticToggled:
                 state.hapticEnabled.toggle()
+                PreferenceDirtyTracker.markDirty("hapticEnabled")
                 return .send(.saveSettings)
 
             case .keepScreenOnToggled:
                 state.keepScreenOn.toggle()
+                PreferenceDirtyTracker.markDirty("keepScreenOn")
                 return .send(.saveSettings)
 
             case .showJournalAfterSessionToggled:
                 state.showJournalAfterSession.toggle()
+                PreferenceDirtyTracker.markDirty("showJournalAfterSession")
                 return .send(.saveSettings)
 
             case .defaultModeChanged(let mode):
                 state.defaultMode = mode
+                PreferenceDirtyTracker.markDirty("defaultMode")
                 return .send(.saveSettings)
 
             case .themeChanged(let name):
@@ -291,10 +305,12 @@ struct SettingsFeature {
                     return .none
                 }
                 state.themeName = name
+                PreferenceDirtyTracker.markDirty("themeName")
                 return .send(.saveSettings)
 
             case .appearanceModeChanged(let mode):
                 state.appearanceMode = mode
+                PreferenceDirtyTracker.markDirty("appearanceMode")
                 return .send(.saveSettings)
 
             case .dailyReminderToggled:

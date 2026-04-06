@@ -31,4 +31,29 @@ interface SubtaskDao {
 
     @Query("UPDATE subtasks SET is_completed = NOT is_completed WHERE id = :subtaskId")
     suspend fun toggleCompletion(subtaskId: String)
+
+    // Sync queries
+    @Query("SELECT * FROM subtasks WHERE task_id = :taskId ORDER BY sort_order ASC")
+    suspend fun getSubtasksForTaskSync(taskId: String): List<SubtaskEntity>
+
+    @Query("SELECT * FROM subtasks WHERE is_dirty = 1")
+    suspend fun getDirtySubtasks(): List<SubtaskEntity>
+
+    @Query("UPDATE subtasks SET is_dirty = 0 WHERE task_id = :taskId")
+    suspend fun markSubtasksSynced(taskId: String)
+
+    @Query("DELETE FROM subtasks WHERE task_id = :taskId")
+    suspend fun deleteSubtasksForTask(taskId: String)
+
+    @Query("DELETE FROM subtasks WHERE task_id = :taskId AND is_dirty = 0")
+    suspend fun deleteNonDirtySubtasksForTask(taskId: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(subtasks: List<SubtaskEntity>)
+
+    @Query("SELECT * FROM subtasks WHERE task_id = :taskId AND is_dirty = 1 ORDER BY sort_order ASC")
+    suspend fun getDirtySubtasksForTask(taskId: String): List<SubtaskEntity>
+
+    @Query("DELETE FROM subtasks")
+    suspend fun deleteAll()
 }

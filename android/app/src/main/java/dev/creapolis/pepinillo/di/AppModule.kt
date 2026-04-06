@@ -7,6 +7,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -27,8 +28,9 @@ object AppModule {
     @Singleton
     fun provideUserPreferencesRepository(
         @ApplicationContext context: Context,
+        preferenceSyncDao: PreferenceSyncDao,
     ): UserPreferencesRepository {
-        return UserPreferencesRepository(context)
+        return UserPreferencesRepository(context, preferenceSyncDao)
     }
 
     @Provides

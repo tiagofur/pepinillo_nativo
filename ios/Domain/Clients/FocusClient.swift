@@ -29,6 +29,8 @@ public struct FocusClient: Sendable {
     public var events: @Sendable () async -> AsyncStream<FocusEngineEvent> = { .finished }
     /// Get current state snapshot.
     public var currentState: @Sendable () async -> FocusSessionState? = { nil }
+    /// Reset engine cycle counter for a new calendar day.
+    public var resetForNewDay: @Sendable () async -> Void = {}
 }
 
 // MARK: - Dependency Registration
@@ -70,6 +72,9 @@ extension FocusClient: DependencyKey {
             },
             currentState: {
                 await engine.currentState()
+            },
+            resetForNewDay: {
+                await engine.resetForNewDay()
             }
         )
         #else
@@ -82,7 +87,8 @@ extension FocusClient: DependencyKey {
             recordInterruption: {},
             skipPhase: {},
             events: { .finished },
-            currentState: { nil }
+            currentState: { nil },
+            resetForNewDay: {}
         )
         #endif
     }()

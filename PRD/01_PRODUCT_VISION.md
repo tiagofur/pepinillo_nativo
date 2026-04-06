@@ -1,302 +1,303 @@
-# PRD Unificado: Pepinillo — Plataforma de Trabajo Profundo Multi-Plataforma
+# Pepinillo — Unified Product Document: Deep Work Platform for Multi-Platform
 
-**Version:** 1.0
-**Fecha:** 2026-03-20
-**Autor:** Tiago David + Claude Code
-**Estado:** Draft
-**Plataformas:** iOS, Android, watchOS, Wear OS
-
----
-
-## 1. Problema
-
-Los knowledge workers, estudiantes y creativos pierden un promedio de **2.1 horas por día** en cambio de contexto e interrupciones. La respuesta del mercado ha sido fragmentada:
-
-- **Timers Pomodoro** (Forest, Focus Keeper, Brain Focus) ofrecen una sola técnica rígida
-- **Gestores de tareas** (Things 3, Todoist) no integran tiempo de enfoque
-- **Apps de time-blocking** (Structured) carecen de métodos flexibles de temporizador
-
-**Ninguna app combina múltiples técnicas de enfoque + gestión de tareas + analítica profunda en una sola experiencia.** El mercado compite en precio ($2-5) con apps de una sola técnica. No existe una solución premium que ofrezca:
-
-1. **4 técnicas de enfoque** en una sola app
-2. **Task management integrado** con niveles de energía y recurrencia
-3. **Ecosistema completo** en ambas plataformas (Apple: widgets, Dynamic Island, watchOS, Siri; Android: widgets, Wear OS, Quick Settings, Google Assistant)
-4. **Analítica de modos** para descubrir qué técnica funciona mejor
-5. **Precios LATAM-first** accesibles
-
-Pepinillo comenzó como una app Flutter de Pomodoro. Si bien funcional, tenía dos limitaciones críticas: (1) estaba atada a la técnica Pomodoro como único método de enfoque, y (2) la abstracción de Flutter bloqueaba el acceso a las APIs nativas de cada plataforma que son esenciales para una experiencia premium.
-
-**La oportunidad:** Reposicionar Pepinillo de "otro timer Pomodoro más" (mercado saturado, techo de precio bajo) a **"la plataforma de trabajo profundo multi-plataforma"** — una herramienta de productividad premium que ofrece múltiples técnicas de enfoque, gestión de tareas integrada, y la integración más profunda posible con los ecosistemas Apple y Android. Esto nos mueve de competir con apps de $3.99 a competir en el tier premium de $30-60/año.
+**Version:** 1.0  
+**Last Updated:** 2026-03-24  
+**Author:** Tiago David + Claude Code  
+**Status:** Active  
+**Platforms:** iOS, Android, watchOS, Wear OS  
+**Update Cadence:** Per-feature
 
 ---
 
-## 2. Visión
+## 1. Problem
 
-> **"Pepinillo es el centro de comando para el trabajo profundo."**
+Knowledge workers, students, and creatives lose an average of **2.1 hours per day** to context switching and interruptions. The market's response has been fragmented:
+
+- **Pomodoro timers** (Forest, Focus Keeper, Brain Focus) offer a single rigid technique.
+- **Task managers** (Things 3, Todoist) don't integrate focus time.
+- **Time-blocking apps** (Structured) lack flexible timer methods.
+
+**No app combines multiple focus techniques + task management + deep analytics in one experience.** The market competes on price ($2-5) with single-technique apps. There is no premium solution that offers:
+
+1. **4 focus techniques** in one app
+2. **Integrated task management** with energy levels and recurrence
+3. **Complete ecosystem** on both platforms (Apple: widgets, Dynamic Island, watchOS, Siri; Android: widgets, Wear OS, Quick Settings, Google Assistant)
+4. **Mode-specific analytics** to discover which technique works best
+5. **LATAM-first pricing** that's accessible
+
+Pepinillo started as a Flutter Pomodoro app. While functional, it had two critical limitations: (1) it was locked to Pomodoro as the only focus method, and (2) Flutter's abstraction blocked access to native platform APIs that are essential for a premium experience.
+
+**The opportunity:** Reposition Pepinillo from "another Pomodoro timer" (saturated market, low price ceiling) to **"the multi-platform deep work platform"** — a premium productivity tool that offers multiple focus techniques, integrated task management, and the deepest possible integration with Apple and Android ecosystems. This moves us from competing with $3.99 apps to the premium tier of $30-60/year.
+
+---
+
+## 2. Vision
+
+> **"Pepinillo is your command center for deep work."**
 >
-> Una app donde planificas en qué trabajar, eliges cómo enfocarte, rastreas tu progreso y construyes hábitos de productividad duraderos — todo integrado de forma nativa en tus dispositivos Apple y Android.
+> An app where you plan what to work on, choose how to focus, track your progress, and build lasting productivity habits — all integrated natively into your Apple and Android devices.
 
-El nombre "Pepinillo" (pickle/gherkin) es un contraste juguetón con la seriedad del trabajo profundo — memorable, accesible y distintivo en un mercado lleno de nombres genéricos como "Focus Timer Pro" y "Session."
+The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness of deep work — memorable, accessible, and distinctive in a market full of generic names like "Focus Timer Pro" and "Session."
 
-### Disponibilidad
+### Platform Availability
 
-| Plataforma | Stack Nativo | Estado |
-|------------|-------------|--------|
-| **iOS (iPhone)** | Swift + TCA + SwiftData | En desarrollo |
-| **Android (Phone)** | Kotlin + MVI (Circuit) + Room | En desarrollo |
-| **watchOS** | SwiftUI nativo | En desarrollo |
-| **Wear OS** | Jetpack Compose | En desarrollo |
-| **iPad** | SwiftUI (NavigationSplitView) | Planificado |
-| **macOS** | SwiftUI nativo | Planificado |
-| **Tablets Android** | Jetpack Compose (adaptive layouts) | Planificado |
-
----
-
-## 3. Objetivos
-
-| # | Objetivo | Métrica |
-|---|----------|---------|
-| **G1** | **Ser LA app de trabajo profundo** — Pepinillo debe sentirse como si la hubiera hecho Apple/Google respectivamente | App Store rating >= 4.7; Play Store rating >= 4.5; featured editorial en ambas tiendas dentro de 6 meses |
-| **G2** | **Enfoque multi-modo** — Los usuarios eligen la técnica que les funciona, no la que la app les impone | >= 3 modos usados en la base de usuarios; Pomodoro representa < 60% de las sesiones (probando que los usuarios quieren variedad) |
-| **G3** | **Conversión premium a través de valor innegable** — Los usuarios pagan porque el tier gratuito ya los impresionó | Conversión premium >= 8% (vs. industria avg 3-5% para timer apps); ARPU >= $3.50/mes |
-| **G4** | **Profundidad de ecosistema como moat competitivo** — Ningún competidor iguala nuestra amplitud de integración | >= 60% de sesiones de enfoque iniciadas fuera de la app principal (widgets, Watch/Wear, Siri/Assistant, Dynamic Island/Notification) |
-| **G5** | **Dominar el mercado LATAM** — Primera app de productividad premium con pricing y localización LATAM-first | Top 10 Productividad en Brasil y México dentro de 12 meses; 40%+ de la base de usuarios de LATAM |
-| **G6** | **Construir hábitos duraderos, no solo uso** — Los usuarios desarrollan mejora real de productividad | >= 40% retención D30; streak promedio >= 14 días entre usuarios retenidos |
-| **G7** | **Paridad cross-platform** — Mismas features, misma calidad, todas las plataformas | 100% de features P0 disponibles en iOS y Android simultáneamente; bugs corregidos en una plataforma verificados en la otra |
+| Platform            | Native Stack                       | Status         |
+| ------------------- | ---------------------------------- | -------------- |
+| **iOS (iPhone)**    | Swift + TCA + SwiftData            | In Development |
+| **Android (Phone)** | Kotlin + MVI (Circuit) + Room      | In Development |
+| **watchOS**         | SwiftUI native                     | In Development |
+| **Wear OS**         | Jetpack Compose                    | In Development |
+| **iPad**            | SwiftUI (NavigationSplitView)      | Planned        |
+| **macOS**           | SwiftUI native                     | Planned        |
+| **Android Tablets** | Jetpack Compose (adaptive layouts) | Planned        |
 
 ---
 
-## 4. No-Objetivos
+## 3. Objectives
 
-| # | No-Objetivo | Razón |
-|---|-------------|-------|
-| **NG1** | **Sin features de equipo/colaboración** | Trabajo profundo individual primero; B2B es una iniciativa separada |
-| **NG2** | **Sin toma de notas / editor de documentos** | Complementamos apps como Craft, Notion y Google Docs, no las reemplazamos |
-| **NG3** | **Sin desglose de tareas por IA** | La IA es solo para insights y análisis (Mode Intelligence, Weekly Review); el flujo de trabajo es human-driven |
-| **NG4** | **Sin creación de música ambiental / marketplace** | Soundscapes curados pre-incluidos son suficientes; no somos una app de música |
-| **NG5** | **Sin paridad de web app** | La web (Next.js) tiene su propio roadmap separado |
-| **NG6** | **Sin reemplazo de calendario** | Nos integramos con Apple Calendar y Google Calendar, no competimos con Fantastical ni Google Calendar |
-
-> **Nota:** El antiguo NG1 de iOS ("Android se queda en Flutter") es **obsoleto**. Android ahora es nativo Kotlin con paridad completa.
-
----
-
-## 5. Usuarios Objetivo
-
-### P0 — Core (Lanzamiento)
-
-| Segmento | Descripción | Plataformas |
-|----------|-------------|-------------|
-| **Power Users** | Usuarios Apple (iPhone/Watch) y Samsung/Pixel que buscan productividad premium | iOS, Android |
-| **Estudiantes LATAM** | Necesitan precio accesible, español/portugués, técnicas de estudio variadas | iOS, Android |
-| **Trabajadores Remotos** | Necesitan estructura diaria, Pomodoro + Time Blocks, tracking de productividad | iOS, Android |
-| **Knowledge Workers** | Profesionales que hacen trabajo profundo regularmente (escritores, analistas, investigadores) | iOS, Android |
-
-### P1 — Expansión
-
-| Segmento | Descripción | Plataformas |
-|----------|-------------|-------------|
-| **Comunidad ADHD** | Múltiples técnicas para diferentes estados mentales; la flexibilidad es clave | iOS, Android |
-| **Usuarios de reloj** | Quieren controlar el timer desde la muñeca sin sacar el teléfono | watchOS, Wear OS |
-| **Lectores de Cal Newport** | Ya convencidos del trabajo profundo; buscan la herramienta que lo implemente | iOS, Android |
-
-### P2 — Futuro
-
-| Segmento | Descripción | Plataformas |
-|----------|-------------|-------------|
-| **Usuarios de tablet** | Productividad en pantalla grande, split-screen, multitarea | iPad, Samsung Tablets |
-| **Desarrolladores / Creativos** | Sesiones largas de código o diseño; prefieren Flowtime | iOS, Android |
+| #      | Objective                                                                                                            | Metric                                                                                                                               |
+| ------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **G1** | **Be THE deep work app** — Pepinillo must feel as if it were built by Apple/Google for their ecosystems respectively | App Store rating >= 4.7; Play Store rating >= 4.5; featured editorial placement in both stores within 6 months                       |
+| **G2** | **Multi-mode focus** — Users choose the technique that works for them, not the one the app imposes                   | >= 3 modes used across the user base; Pomodoro accounts for < 60% of sessions (proving users want variety)                           |
+| **G3** | **Premium conversion through undeniable value** — Users pay because the FREE tier already impressed them             | Premium conversion >= 8% (vs. industry avg 3-5% for timer apps); ARPU >= $3.50/month                                                 |
+| **G4** | **Ecosystem depth as a competitive moat** — No competitor matches our integration breadth                            | >= 60% of focus sessions started outside the main app (widgets, Watch/Wear, Siri/Assistant, Dynamic Island/Notification)             |
+| **G5** | **Lead the LATAM market** — First premium productivity app with LATAM-first pricing and localization                 | Top 10 Productivity in Brazil and Mexico within 12 months; 40%+ of the user base in LATAM                                            |
+| **G6** | **Build lasting habits, not just usage** — Users develop real productivity improvements                              | >= 40% D30 retention; average streak >= 14 days among retained users                                                                 |
+| **G7** | **Cross-platform parity** — Same features, same quality, across all platforms                                        | 100% of P0 features available on iOS and Android simultaneously; bugs fixed on one platform verified and fixed on the other platform |
 
 ---
 
-## 6. Modos de Enfoque — El Diferenciador
+## 4. No-Objectives
 
-A diferencia de las apps puras de Pomodoro, Pepinillo ofrece **cuatro técnicas de enfoque** entre las que los usuarios pueden alternar libremente. Este es el mayor diferenciador frente a toda la competencia. **Los cuatro modos son idénticos en comportamiento y UX en todas las plataformas.**
+| #       | No-Objective                                | Reason                                                                                                      |
+| ------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **NG1** | **No team/collaboration features**          | Individual deep work comes first; B2B is a separate initiative                                              |
+| **NG2** | **No note-taking / document editor**        | We complement apps like Craft, Notion, and Google Docs; we do not replace them                              |
+| **NG3** | **No AI task breakdown**                    | AI is only for insights and analysis (Mode Intelligence, Weekly Review); the workflow remains human-driven  |
+| **NG4** | **No ambient music creation / marketplace** | Curated pre-included soundscapes are enough; we are not a music app                                         |
+| **NG5** | **No web app parity target**                | The web app (Next.js) has its own separate roadmap                                                          |
+| **NG6** | **No calendar replacement**                 | We integrate with Apple Calendar and Google Calendar; we do not compete with Fantastical or Google Calendar |
 
-### 6.1 Modo Pomodoro (GRATUITO)
+> **Note:** The former iOS NG1 ("Android remains on Flutter") is **obsolete**. Android is now native Kotlin with full parity.
 
-| Aspecto | Detalle |
-|---------|---------|
-| **Mecánica** | Ciclos clásicos 25/5/15 con personalización completa de duraciones |
-| **Comportamiento** | Auto-avance a través de ciclos trabajo -> descanso -> trabajo. Muestra número de Pomodoro actual (ej. "3 de 4") |
-| **Ideal para** | Estudio, tareas administrativas, cualquier trabajo que se beneficie de estructura rígida |
-| **Tier** | Gratuito |
+---
 
-### 6.2 Modo Flowtime (PRO)
+## 5. Target Users
 
-| Aspecto | Detalle |
-|---------|---------|
-| **Mecánica** | Sesión de enfoque abierta. Sin intervalos forzados. El usuario toca para tomar descanso cuando sienta que la concentración baja |
-| **Comportamiento** | La app sugiere duración de descanso basada en tiempo enfocado (10 min enfoque -> 2 min descanso, 50 min -> 10 min descanso) |
-| **Ideal para** | Trabajo creativo, escritura, programación — cualquier actividad donde interrumpir el flujo es contraproducente |
-| **Tier** | Pro |
+### P0 — Core (Launch)
 
-> **Por qué importa:** Muchos expertos en productividad (incluyendo Cal Newport) argumentan que los bloques forzados de 25 minutos interrumpen los estados de flujo. Flowtime captura la audiencia que probó Pomodoro y lo abandonó.
+| Segment               | Description                                                                      | Platforms    |
+| --------------------- | -------------------------------------------------------------------------------- | ------------ |
+| **Power Users**       | Apple users (iPhone/Watch) and Samsung/Pixel users seeking premium productivity  | iOS, Android |
+| **LATAM Students**    | Need affordable pricing, Spanish/Portuguese support, and varied study techniques | iOS, Android |
+| **Remote Workers**    | Need daily structure, Pomodoro + Time Blocks, and productivity tracking          | iOS, Android |
+| **Knowledge Workers** | Professionals who do deep work regularly (writers, analysts, researchers)        | iOS, Android |
 
-### 6.3 Modo Time-Block (PRO)
+### P1 — Expansion
 
-| Aspecto | Detalle |
-|---------|---------|
-| **Mecánica** | Bloque de enfoque fijo (ej. "2 horas de escritura"). Una cuenta regresiva continua con check-ins opcionales a la mitad |
-| **Comportamiento** | Rastrea cuántos bloques se completan por día. Se integra con Apple Calendar / Google Calendar para mostrar tiempo bloqueado |
-| **Ideal para** | Usuarios de la técnica de time-blocking; planificación de jornada completa |
-| **Tier** | Pro |
+| Segment                 | Description                                                               | Platforms        |
+| ----------------------- | ------------------------------------------------------------------------- | ---------------- |
+| **ADHD Community**      | Multiple techniques for different mental states; flexibility is essential | iOS, Android     |
+| **Watch Users**         | Want to control the timer from their wrist without taking out their phone | watchOS, Wear OS |
+| **Cal Newport Readers** | Already convinced by deep work; looking for the tool that implements it   | iOS, Android     |
 
-> **Por qué importa:** Time-blocking es la técnica #1 recomendada por Cal Newport en "Deep Work." Actualmente ninguna app importante la implementa como modo de timer de primera clase.
+### P2 — Future
 
-### 6.4 Modo Cronómetro / Stopwatch (GRATUITO)
+| Segment                    | Description                                               | Platforms             |
+| -------------------------- | --------------------------------------------------------- | --------------------- |
+| **Tablet Users**           | Productivity on large screens, split-screen, multitasking | iPad, Samsung Tablets |
+| **Developers / Creatives** | Long coding or design sessions; prefer Flowtime           | iOS, Android          |
 
-| Aspecto | Detalle |
-|---------|---------|
-| **Mecánica** | Timer abierto que cuenta hacia arriba. Sin presión, sin metas. Solo rastrea cuánto tiempo trabajas |
-| **Comportamiento** | Toca para pausar. Toca para detener. Sin notificaciones de interrupción |
-| **Ideal para** | Días donde solo quieres sentarte y trabajar sin que una técnica te diga cuándo parar; tracking casual |
-| **Tier** | Gratuito |
+---
+
+## 6. Focus Modes — The Differentiator
+
+Unlike pure Pomodoro apps, Pepinillo offers **four focus techniques** that users can switch between freely. This is the biggest differentiator versus the entire competitive set. **All four modes are identical in behavior and UX across all platforms.**
+
+### 6.1 Pomodoro Mode (FREE)
+
+| Aspect       | Detail                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------- |
+| **Mechanic** | Classic 25/5/15 cycles with full duration customization                                           |
+| **Behavior** | Auto-advances through work -> break -> work cycles. Shows current Pomodoro count (e.g., "3 of 4") |
+| **Best for** | Studying, administrative tasks, and any work that benefits from rigid structure                   |
+| **Tier**     | FREE                                                                                              |
+
+### 6.2 Flowtime Mode (PRO)
+
+| Aspect       | Detail                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| **Mechanic** | Open-ended focus session. No forced intervals. The user taps to take a break when concentration drops       |
+| **Behavior** | The app suggests break duration based on focused time (10 min focus -> 2 min break, 50 min -> 10 min break) |
+| **Best for** | Creative work, writing, programming — any activity where interrupting flow is counterproductive             |
+| **Tier**     | PRO                                                                                                         |
+
+> **Why this matters:** Many productivity experts (including Cal Newport) argue that forced 25-minute blocks interrupt flow states. Flowtime captures the audience that tried Pomodoro and abandoned it.
+
+### 6.3 Time-Block Mode (PRO)
+
+| Aspect       | Detail                                                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| **Mechanic** | Fixed focus block (e.g., "2 hours of writing"). A continuous countdown with optional midpoint check-ins                |
+| **Behavior** | Tracks how many blocks are completed per day. Integrates with Apple Calendar / Google Calendar to display blocked time |
+| **Best for** | Users of the time-blocking technique; full-day planning                                                                |
+| **Tier**     | PRO                                                                                                                    |
+
+> **Why this matters:** Time-blocking is the #1 technique recommended by Cal Newport in "Deep Work." Currently, no major app implements it as a first-class timer mode.
+
+### 6.4 Stopwatch Mode (FREE)
+
+| Aspect       | Detail                                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------------------- |
+| **Mechanic** | Open timer that counts up. No pressure, no targets. It only tracks how long you work                  |
+| **Behavior** | Tap to pause. Tap to stop. No interruption notifications                                              |
+| **Best for** | Days when you just want to sit and work without a technique telling you when to stop; casual tracking |
+| **Tier**     | FREE                                                                                                  |
 
 ### 6.5 Mode Intelligence (P1)
 
-Después de **2+ semanas de datos**, Pepinillo sugiere qué modo funciona mejor para diferentes tipos de tarea basándose en las tasas de completación y patrones de interrupción del usuario.
+After **2+ weeks of data**, Pepinillo suggests which mode works best for different task types based on completion rates and user interruption patterns.
 
-> *"Completas 80% más tareas de escritura con Flowtime. ¿Quieres probarlo para el blog post de hoy?"*
+> _"You complete 80% more writing tasks with Flowtime. Want to use it for today's blog post?"_
 
-**Disponible en:** iOS y Android (misma lógica, datos por plataforma).
-
----
-
-## 7. Historias de Usuario
-
-### 7.1 Experiencia de Sesión de Enfoque
-
-| ID | Historia | Plataforma |
-|----|----------|------------|
-| US-1 | Como desarrollador entrando a una sesión de código, quiero elegir modo Flowtime y empezar a enfocarme con un tap para que mi concentración no sea interrumpida artificialmente por intervalos rígidos. | [Todas] |
-| US-2 | Como estudiante preparando exámenes, quiero usar modo Pomodoro 25/5 desde mi widget de pantalla de bloqueo para comenzar a estudiar sin desbloquear mi teléfono. | [Todas] |
-| US-3a | Como escritor bloqueando 3 horas para su novela, quiero configurar un Time-Block y verlo en mi Dynamic Island para siempre saber cuánto de mi bloque queda. | [iOS] |
-| US-3b | Como escritor bloqueando 3 horas para su novela, quiero configurar un Time-Block y verlo en mi notificación persistente para siempre saber cuánto de mi bloque queda. | [Android] |
-| US-4a | Como trabajador remoto que solo quiere rastrear tiempo de enfoque, quiero iniciar un Cronómetro desde mi Apple Watch y olvidarme hasta que termine. | [iOS/watchOS] |
-| US-4b | Como trabajador remoto que solo quiere rastrear tiempo de enfoque, quiero iniciar un Cronómetro desde mi reloj Wear OS y olvidarme hasta que termine. | [Android/Wear OS] |
-| US-5a | Como usuario de Focus Modes de Apple, quiero que Pepinillo active automáticamente mi modo "Deep Work" cuando inicio cualquier sesión de enfoque. | [iOS] |
-| US-5b | Como usuario de Android, quiero que Pepinillo active el modo Focus / No Molestar cuando inicio cualquier sesión de enfoque. | [Android] |
-| US-6a | Como alguien que prefiere comandos de voz, quiero decir "Hey Siri, inicia un bloque de 2 horas de deep work en Pepinillo." | [iOS] |
-| US-6b | Como alguien que prefiere comandos de voz, quiero decir "Hey Google, inicia un bloque de 2 horas de deep work en Pepinillo." | [Android] |
-| US-7 | Como usuario que ha probado múltiples técnicas, quiero que Pepinillo me muestre qué modo de enfoque me da los mejores resultados para diferentes tipos de tarea. | [Todas] |
-
-### 7.2 Gestión de Tareas
-
-| ID | Historia | Plataforma |
-|----|----------|------------|
-| US-8 | Como freelancer con múltiples clientes, quiero crear tareas con subtareas y asignar tiempo estimado de enfoque a cada una para planificar mi día de forma realista. | [Todas] |
-| US-9 | Como power user, quiero etiquetar tareas con niveles de energía (deep work, shallow work, admin) para agrupar trabajo similar. | [Todas] |
-| US-10 | Como alguien con responsabilidades recurrentes, quiero tareas recurrentes que aparezcan automáticamente cada día/semana. | [Todas] |
-| US-11a | Como usuario de Apple Reminders, quiero importar tareas desde Reminders para tener una vista consolidada. | [iOS] |
-| US-11b | Como usuario de Google Tasks, quiero importar tareas desde Google Tasks para tener una vista consolidada. | [Android] |
-| US-12 | Como estudiante, quiero arrastrar tareas para reordenar por prioridad y ver el tiempo total estimado de enfoque para mi día. | [Todas] |
-
-### 7.3 Analítica y Crecimiento
-
-| ID | Historia | Plataforma |
-|----|----------|------------|
-| US-13 | Como alguien optimizando mi productividad, quiero ver qué modo de enfoque uso más, cuál me da la mejor tasa de completación, y cuándo soy más productivo (hora, día de la semana). | [Todas] |
-| US-14a | Como profesional consciente de la salud, quiero que mi tiempo de enfoque se registre en Apple Health como Mindful Minutes. | [iOS] |
-| US-14b | Como profesional consciente de la salud, quiero que mi tiempo de enfoque se registre en Google Health Connect como Mindful Minutes. | [Android] |
-| US-15 | Como usuario revisando mi semana, quiero un "Weekly Review" que compare mis horas de enfoque, tareas completadas y racha contra la semana pasada — con flechas de tendencia. | [Todas] |
-| US-16 | Como alguien motivado por la consistencia, quiero una racha de enfoque (días consecutivos con >= 1 sesión completada) con hitos a los 7, 30, 100 y 365 días. | [Todas] |
-
-### 7.4 Multi-Dispositivo y Sync
-
-| ID | Historia | Plataforma |
-|----|----------|------------|
-| US-17a | Como alguien que inicia tareas en Mac y continúa en iPhone, quiero sync CloudKit en segundos. | [iOS] |
-| US-17b | Como alguien que usa múltiples dispositivos Android, quiero sync via backend en segundos. | [Android] |
-| US-18a | Como usuario de Apple Watch, quiero ver mi lista de tareas, iniciar cualquier modo de enfoque y recibir feedback háptico cuando termine mi sesión. | [watchOS] |
-| US-18b | Como usuario de Wear OS, quiero ver mi lista de tareas, iniciar cualquier modo de enfoque y recibir feedback háptico cuando termine mi sesión. | [Wear OS] |
-| US-19a | Como usuario de iPad, quiero Pepinillo en Split View junto a mi app de escritura con atajos de teclado para control rápido del timer. | [iOS/iPad] |
-| US-19b | Como usuario de tablet Samsung, quiero Pepinillo en split-screen junto a mi app de trabajo. | [Android/Tablet] |
-
-### 7.5 Personalización
-
-| ID | Historia | Plataforma |
-|----|----------|------------|
-| US-20a | Como alguien que valora la estética, quiero múltiples temas incluyendo un tema Liquid Glass para iOS 26. | [iOS] |
-| US-20b | Como alguien que valora la estética, quiero theming Material You dinámico basado en mi wallpaper. | [Android] |
-| US-21 | Como usuario que trabaja de noche, quiero soundscapes ambientales (lluvia, café, ruido blanco) que suenen durante sesiones de enfoque y se detengan automáticamente durante descansos. | [Todas] |
-
-### 7.6 Ecosistema
-
-| ID | Historia | Plataforma |
-|----|----------|------------|
-| US-22a | Como power user de iOS, quiero iniciar sesiones rápidas desde el Quick Settings tile del Control Center. | [iOS] |
-| US-22b | Como power user de Android, quiero iniciar sesiones rápidas desde el Quick Settings tile del panel de notificaciones. | [Android] |
-| US-23a | Como usuario de calendario, quiero que mis Time-Blocks aparezcan en Apple Calendar. | [iOS] |
-| US-23b | Como usuario de calendario, quiero que mis Time-Blocks aparezcan en Google Calendar. | [Android] |
-
-### 7.7 Casos Edge
-
-| ID | Historia | Plataforma |
-|----|----------|------------|
-| US-24 | Como usuario que recibe una llamada a mitad de sesión, quiero que el timer maneje la interrupción de forma elegante (pausar o registrarla). | [Todas] |
-| US-25 | Como usuario que hace force-quit de la app, quiero que mi timer continúe y me alerte cuando se complete. | [Todas] |
-| US-26a | Como usuario cambiando de dispositivo, quiero que mi sesión activa en iPhone aparezca en mi Watch inmediatamente. | [iOS/watchOS] |
-| US-26b | Como usuario cambiando de dispositivo, quiero que mi sesión activa en mi teléfono Android aparezca en mi reloj Wear OS. | [Android/Wear OS] |
+**Available on:** iOS and Android (same logic, platform-specific data).
 
 ---
 
-## 8. Principio de Paridad Cross-Platform
+## 7. User Stories
 
-### Regla Obligatoria
+### 7.1 Focus Session Experience
 
-La paridad cross-platform es **MANDATORIA** en este proyecto. Esto significa:
+| ID    | Story                                                                                                                                                                            | Platform          |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| US-1  | As a developer starting a coding session, I want to choose Flowtime mode and begin focusing with one tap so my concentration is not artificially interrupted by rigid intervals. | [All]             |
+| US-2  | As a student preparing for exams, I want to use 25/5 Pomodoro mode from my lock screen widget so I can start studying without unlocking my phone.                                | [All]             |
+| US-3a | As a writer blocking 3 hours for a novel, I want to set up a Time-Block and see it in Dynamic Island so I always know how much of my block remains.                              | [iOS]             |
+| US-3b | As a writer blocking 3 hours for a novel, I want to set up a Time-Block and see it in my persistent notification so I always know how much of my block remains.                  | [Android]         |
+| US-4a | As a remote worker who only wants to track focus time, I want to start a Stopwatch from my Apple Watch and forget about it until I finish.                                       | [iOS/watchOS]     |
+| US-4b | As a remote worker who only wants to track focus time, I want to start a Stopwatch from my Wear OS watch and forget about it until I finish.                                     | [Android/Wear OS] |
+| US-5a | As an Apple Focus Modes user, I want Pepinillo to automatically activate my "Deep Work" mode when I start any focus session.                                                     | [iOS]             |
+| US-5b | As an Android user, I want Pepinillo to activate Focus Mode / Do Not Disturb when I start any focus session.                                                                     | [Android]         |
+| US-6a | As someone who prefers voice commands, I want to say "Hey Siri, start a 2-hour deep work block in Pepinillo."                                                                    | [iOS]             |
+| US-6b | As someone who prefers voice commands, I want to say "Hey Google, start a 2-hour deep work block in Pepinillo."                                                                  | [Android]         |
+| US-7  | As a user who has tried multiple techniques, I want Pepinillo to show which focus mode gives me the best results for different task types.                                       | [All]             |
 
-> **Cada feature construida en una plataforma DEBE ser construida en la otra. Cada bug corregido en una plataforma DEBE ser verificado y corregido en la otra.**
+### 7.2 Task Management
 
-### Matriz de Paridad
+| ID     | Story                                                                                                                                                       | Platform  |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| US-8   | As a freelancer with multiple clients, I want to create tasks with subtasks and assign estimated focus time to each one so I can plan my day realistically. | [All]     |
+| US-9   | As a power user, I want to tag tasks with energy levels (deep work, shallow work, admin) to group similar work.                                             | [All]     |
+| US-10  | As someone with recurring responsibilities, I want recurring tasks that appear automatically each day/week.                                                 | [All]     |
+| US-11a | As an Apple Reminders user, I want to import tasks from Reminders to have a consolidated view.                                                              | [iOS]     |
+| US-11b | As a Google Tasks user, I want to import tasks from Google Tasks to have a consolidated view.                                                               | [Android] |
+| US-12  | As a student, I want to drag tasks to reorder by priority and see the total estimated focus time for my day.                                                | [All]     |
 
-| Cambio en... | Debe verificarse y aplicarse en... |
-|--------------|-------------------------------------|
-| Android phone | iOS phone, Wear OS, watchOS |
-| iOS phone | Android phone, Wear OS, watchOS |
-| Wear OS | watchOS, Android phone, iOS phone |
-| watchOS | Wear OS, Android phone, iOS phone |
-| Android + Wear OS | iOS + watchOS |
-| iOS + watchOS | Android + Wear OS |
+### 7.3 Analytics and Growth
 
-### Implementación de la Paridad
+| ID     | Story                                                                                                                                                                         | Platform  |
+| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| US-13  | As someone optimizing my productivity, I want to see which focus mode I use most, which gives me the best completion rate, and when I am most productive (hour, day of week). | [All]     |
+| US-14a | As a health-conscious professional, I want my focus time logged in Apple Health as Mindful Minutes.                                                                           | [iOS]     |
+| US-14b | As a health-conscious professional, I want my focus time logged in Google Health Connect as Mindful Minutes.                                                                  | [Android] |
+| US-15  | As a user reviewing my week, I want a "Weekly Review" that compares my focus hours, completed tasks, and streak against last week, with trend arrows.                         | [All]     |
+| US-16  | As someone motivated by consistency, I want a focus streak (consecutive days with >= 1 completed session) with milestones at 7, 30, 100, and 365 days.                        | [All]     |
 
-| Aspecto | iOS / watchOS | Android / Wear OS |
-|---------|--------------|-------------------|
-| **Lenguaje** | Swift | Kotlin |
-| **UI Framework** | SwiftUI | Jetpack Compose |
-| **Arquitectura** | TCA (Composable Architecture) | MVI (Circuit/Orbit) |
-| **Base de datos local** | SwiftData | Room |
-| **Sync** | CloudKit | Backend Go (REST API) |
-| **Widgets** | WidgetKit | Glance (Jetpack Compose) |
-| **Actividad en vivo** | Live Activity + Dynamic Island | Rich Ongoing Notification (Foreground Service) |
-| **Reloj** | watchOS (SwiftUI nativo) | Wear OS (Compose) |
-| **Asistente de voz** | Siri Shortcuts (App Intents) | Google Assistant App Actions |
-| **Control rápido** | Control Center Widget | Quick Settings Tile |
-| **Salud** | Apple HealthKit | Google Health Connect |
-| **Pagos** | StoreKit 2 | Google Play Billing 7 |
-| **Modo enfoque del OS** | Apple Focus Filters | Android Focus Mode / DND |
-| **Theming** | Temas manuales + Liquid Glass | Material You (Dynamic Color) |
+### 7.4 Multi-Device and Sync
 
-### Proceso de Verificación
+| ID     | Story                                                                                                                       | Platform         |
+| ------ | --------------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| US-17a | As someone who starts tasks on Mac and continues on iPhone, I want CloudKit sync within seconds.                            | [iOS]            |
+| US-17b | As someone who uses multiple Android devices, I want backend sync within seconds.                                           | [Android]        |
+| US-18a | As an Apple Watch user, I want to see my task list, start any focus mode, and receive haptic feedback when my session ends. | [watchOS]        |
+| US-18b | As a Wear OS user, I want to see my task list, start any focus mode, and receive haptic feedback when my session ends.      | [Wear OS]        |
+| US-19a | As an iPad user, I want Pepinillo in Split View next to my writing app with keyboard shortcuts for quick timer control.     | [iOS/iPad]       |
+| US-19b | As a Samsung tablet user, I want Pepinillo in split-screen next to my work app.                                             | [Android/Tablet] |
 
-1. **Al corregir un bug:** Antes de cerrar el issue, verificar si el mismo bug puede existir en la otra plataforma. Si sí, corregirlo.
-2. **Al implementar una feature:** La feature no se considera completa hasta que exista en ambas plataformas con comportamiento equivalente.
-3. **En code review:** Siempre preguntar: "¿Tiene esto equivalente en la otra plataforma? ¿Está actualizado?"
+### 7.5 Personalization
 
-### Excepciones Aceptables
+| ID     | Story                                                                                                                                                  | Platform  |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| US-20a | As someone who values aesthetics, I want multiple themes including a Liquid Glass theme for iOS 26.                                                    | [iOS]     |
+| US-20b | As someone who values aesthetics, I want dynamic Material You theming based on my wallpaper.                                                           | [Android] |
+| US-21  | As a user who works at night, I want ambient soundscapes (rain, cafe, white noise) to play during focus sessions and stop automatically during breaks. | [All]     |
 
-Las únicas diferencias aceptables son las **impuestas por la plataforma**:
+### 7.6 Ecosystem
 
-- Dynamic Island (solo iOS) vs. Ongoing Notification (solo Android)
-- CloudKit sync (iOS) vs. Backend REST sync (Android)
-- Material You dynamic theming (solo Android) vs. Liquid Glass (solo iOS)
+| ID     | Story                                                                                                     | Platform  |
+| ------ | --------------------------------------------------------------------------------------------------------- | --------- |
+| US-22a | As an iOS power user, I want to start quick sessions from the Control Center Quick Settings tile.         | [iOS]     |
+| US-22b | As an Android power user, I want to start quick sessions from the notification panel Quick Settings tile. | [Android] |
+| US-23a | As a calendar user, I want my Time-Blocks to appear in Apple Calendar.                                    | [iOS]     |
+| US-23b | As a calendar user, I want my Time-Blocks to appear in Google Calendar.                                   | [Android] |
+
+### 7.7 Edge Cases
+
+| ID     | Story                                                                                                                | Platform          |
+| ------ | -------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| US-24  | As a user who receives a call mid-session, I want the timer to handle the interruption gracefully (pause or log it). | [All]             |
+| US-25  | As a user who force-quits the app, I want my timer to continue and alert me when it completes.                       | [All]             |
+| US-26a | As a user switching devices, I want my active iPhone session to appear on my Watch immediately.                      | [iOS/watchOS]     |
+| US-26b | As a user switching devices, I want my active Android phone session to appear on my Wear OS watch.                   | [Android/Wear OS] |
+
+---
+
+## 8. Cross-Platform Parity Principle
+
+### Mandatory Rule
+
+Cross-platform parity is **MANDATORY** in this project. This means:
+
+> **Every feature built on one platform MUST be built on the other. Every bug fixed on one platform MUST be verified and fixed on the other.**
+
+### Parity Matrix
+
+| Change in...      | Must be verified and applied in... |
+| ----------------- | ---------------------------------- |
+| Android phone     | iOS phone, Wear OS, watchOS        |
+| iOS phone         | Android phone, Wear OS, watchOS    |
+| Wear OS           | watchOS, Android phone, iOS phone  |
+| watchOS           | Wear OS, Android phone, iOS phone  |
+| Android + Wear OS | iOS + watchOS                      |
+| iOS + watchOS     | Android + Wear OS                  |
+
+### Parity Implementation
+
+| Aspect              | iOS / watchOS                  | Android / Wear OS                              |
+| ------------------- | ------------------------------ | ---------------------------------------------- |
+| **Language**        | Swift                          | Kotlin                                         |
+| **UI Framework**    | SwiftUI                        | Jetpack Compose                                |
+| **Architecture**    | TCA (Composable Architecture)  | MVI (Circuit/Orbit)                            |
+| **Local database**  | SwiftData                      | Room                                           |
+| **Sync**            | CloudKit + Backend Go (REST)   | Backend Go (REST API)                          |
+| **Widgets**         | WidgetKit                      | Glance (Jetpack Compose)                       |
+| **Live activity**   | Live Activity + Dynamic Island | Rich Ongoing Notification (Foreground Service) |
+| **Watch**           | watchOS (SwiftUI native)       | Wear OS (Compose)                              |
+| **Voice assistant** | Siri Shortcuts (App Intents)   | Google Assistant App Actions                   |
+| **Quick control**   | Control Center Widget          | Quick Settings Tile                            |
+| **Health**          | Apple HealthKit                | Google Health Connect                          |
+| **Payments**        | StoreKit 2                     | Google Play Billing 7                          |
+| **OS focus mode**   | Apple Focus Filters            | Android Focus Mode / DND                       |
+| **Theming**         | Manual themes + Liquid Glass   | Material You (Dynamic Color)                   |
+
+### Verification Process
+
+1. **When fixing a bug:** Before closing the issue, verify whether the same bug can exist on the other platform. If yes, fix it.
+2. **When implementing a feature:** The feature is not considered complete until it exists on both platforms with equivalent behavior.
+3. **In code review:** Always ask: "Does this have an equivalent on the other platform? Is it up to date?"
+
+### Acceptable Exceptions
+
+The only acceptable differences are those **imposed by the platform**:
+
+- Dynamic Island (only iOS) vs. Ongoing Notification (only Android)
+- CloudKit as secondary sync layer (iOS only) alongside shared Backend REST sync
+- Material You dynamic theming (only Android) vs. Liquid Glass (only iOS)
 - Apple Reminders import (iOS) vs. Google Tasks import (Android)
 - Siri (iOS) vs. Google Assistant (Android)
 
-En todos estos casos, la **funcionalidad equivalente** debe existir aunque la implementación técnica difiera.
+In all these cases, **equivalent functionality** must exist even if the technical implementation differs.
 
 ---
 
-*Este documento unifica y reemplaza los PRDs individuales de plataforma (`PRD_IOS/01_PRD_PEPINILLO_NATIVE.md` y `PRD_ANDROID/01_PRD_PEPINILLO_ANDROID.md`) como la fuente de verdad para la visión del producto.*
+_This document unifies and replaces the individual platform PRDs (`PRD_IOS/01_PRD_PEPINILLO_NATIVE.md` and `PRD_ANDROID/01_PRD_PEPINILLO_ANDROID.md`) as the source of truth for product vision._

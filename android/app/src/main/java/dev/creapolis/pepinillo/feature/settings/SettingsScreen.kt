@@ -44,8 +44,13 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material.icons.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.SyncDisabled
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.Warning
 import dev.creapolis.pepinillo.core.billing.SubscriptionTier
+import dev.creapolis.pepinillo.data.sync.SyncState
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -583,6 +588,166 @@ fun SettingsScreen(
             }
         }
 
+        // ── SYNC STATUS SECTION ──
+        if (uiState.isLoggedIn) {
+            Spacer(modifier = Modifier.height(28.dp))
+
+            SectionHeader(icon = Icons.Rounded.Sync, title = "Sync")
+            Spacer(modifier = Modifier.height(12.dp))
+
+            SettingsCard {
+                // Online status
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = if (uiState.isOnline) Icons.Rounded.CloudDone else Icons.Rounded.CloudOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = if (uiState.isOnline) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = if (uiState.isOnline) "Online" else "Offline",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                SettingsDivider()
+
+                // Last synced
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Last synced",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = formatLastSyncTime(uiState.lastSyncAt),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                // Pending changes
+                if (uiState.pendingChangesCount > 0) {
+                    SettingsDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Pending changes",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = "${uiState.pendingChangesCount}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                // Sync error
+                if (uiState.syncState is SyncState.Error) {
+                    SettingsDivider()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Warning,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = (uiState.syncState as SyncState.Error).message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                        )
+                    }
+                }
+
+                SettingsDivider()
+
+                // Sync Now button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            enabled = uiState.syncState !is SyncState.Syncing && uiState.isOnline,
+                            onClick = { viewModel.requestSync() },
+                        )
+                        .padding(vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
+                ) {
+                    if (uiState.syncState is SyncState.Syncing) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Syncing...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Rounded.Sync,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = if (uiState.isOnline) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            },
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Sync Now",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = if (uiState.isOnline) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── ABOUT SECTION ──
@@ -912,6 +1077,22 @@ private fun ReminderTimeRow(
     }
 }
 
+
+@Composable
+private fun formatLastSyncTime(lastSyncAt: Long?): String {
+    if (lastSyncAt == null) return "Never"
+    val now = System.currentTimeMillis()
+    val diffMs = now - lastSyncAt
+    val diffMinutes = diffMs / (1000 * 60)
+    val diffHours = diffMinutes / 60
+    val diffDays = diffHours / 24
+    return when {
+        diffMinutes < 1 -> "Just now"
+        diffMinutes < 60 -> "$diffMinutes min ago"
+        diffHours < 24 -> "$diffHours hr ago"
+        else -> "$diffDays days ago"
+    }
+}
 
 @Preview(showBackground = true)
 @Composable

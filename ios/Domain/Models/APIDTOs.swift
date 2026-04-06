@@ -31,6 +31,16 @@ public struct AppleLoginRequest: Codable, Sendable, Equatable {
     public let idToken: String
 }
 
+public struct ForgotPasswordRequest: Codable, Sendable, Equatable {
+    public let email: String
+}
+
+public struct ResetPasswordRequest: Codable, Sendable, Equatable {
+    public let email: String
+    public let code: String
+    public let newPassword: String
+}
+
 public struct UpdateProfileRequest: Codable, Sendable, Equatable {
     public let name: String?
     public let imageUrl: String?
@@ -188,6 +198,181 @@ public struct TaskSyncResponse: Codable, Sendable, Equatable {
     }
 }
 
+// MARK: - Focus Session Sync DTO
+
+public struct FocusSessionSyncDTO: Codable, Sendable, Equatable {
+    public let id: String
+    public let userId: String?
+    public let taskId: Int?
+    public let taskSyncId: String?
+    public let startedAt: String
+    public let endedAt: String?
+    public let mode: String
+    public let phase: String
+    public let durationSeconds: Int
+    public let elapsedSeconds: Int
+    public let pauseCount: Int
+    public let totalPauseSeconds: Int
+    public let wasCompleted: Bool
+    public let sharedWithTaskIds: String?
+    public let createdAt: String
+    public let updatedAt: String
+
+    public init(
+        id: String, userId: String? = nil, taskId: Int? = nil,
+        taskSyncId: String? = nil,
+        startedAt: String, endedAt: String? = nil,
+        mode: String, phase: String,
+        durationSeconds: Int, elapsedSeconds: Int,
+        pauseCount: Int = 0, totalPauseSeconds: Int = 0,
+        wasCompleted: Bool = false, sharedWithTaskIds: String? = nil,
+        createdAt: String, updatedAt: String
+    ) {
+        self.id = id
+        self.userId = userId
+        self.taskId = taskId
+        self.taskSyncId = taskSyncId
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.mode = mode
+        self.phase = phase
+        self.durationSeconds = durationSeconds
+        self.elapsedSeconds = elapsedSeconds
+        self.pauseCount = pauseCount
+        self.totalPauseSeconds = totalPauseSeconds
+        self.wasCompleted = wasCompleted
+        self.sharedWithTaskIds = sharedWithTaskIds
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+}
+
+// MARK: - Preference Sync
+
+public struct PreferenceSyncItem: Codable, Sendable, Equatable {
+    public let key: String
+    public let value: String
+    public let updatedAt: String  // RFC3339
+
+    public init(key: String, value: String, updatedAt: String) {
+        self.key = key
+        self.value = value
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct PreferenceSyncRequest: Codable, Sendable, Equatable {
+    public let preferences: [PreferenceSyncItem]
+
+    public init(preferences: [PreferenceSyncItem]) {
+        self.preferences = preferences
+    }
+}
+
+public struct PreferenceSyncResponse: Codable, Sendable, Equatable {
+    public let preferences: [PreferenceSyncItem]
+    public let serverTimestamp: String
+
+    public init(preferences: [PreferenceSyncItem], serverTimestamp: String) {
+        self.preferences = preferences
+        self.serverTimestamp = serverTimestamp
+    }
+}
+
+// MARK: - Session Batch Sync
+
+public struct SessionSyncRequest: Codable, Sendable, Equatable {
+    public let sessions: [FocusSessionSyncDTO]
+    public let lastSyncAt: String?
+
+    public init(sessions: [FocusSessionSyncDTO], lastSyncAt: String? = nil) {
+        self.sessions = sessions
+        self.lastSyncAt = lastSyncAt
+    }
+}
+
+public struct SessionSyncResponse: Codable, Sendable, Equatable {
+    public let sessions: [FocusSessionSyncDTO]
+    public let serverTimestamp: String
+
+    public init(sessions: [FocusSessionSyncDTO], serverTimestamp: String) {
+        self.sessions = sessions
+        self.serverTimestamp = serverTimestamp
+    }
+}
+
+// MARK: - Initial Upload
+
+public struct InitialUploadRequest: Codable, Sendable, Equatable {
+    public let deviceId: String
+    public let tasks: [TaskSyncDTO]
+    public let sessions: [FocusSessionSyncDTO]
+    public let settings: [PreferenceSyncItem]
+
+    public init(deviceId: String, tasks: [TaskSyncDTO], sessions: [FocusSessionSyncDTO], settings: [PreferenceSyncItem]) {
+        self.deviceId = deviceId
+        self.tasks = tasks
+        self.sessions = sessions
+        self.settings = settings
+    }
+}
+
+public struct InitialUploadResponse: Codable, Sendable, Equatable {
+    public let tasks: [TaskSyncDTO]
+    public let sessions: [FocusSessionSyncDTO]
+    public let settings: [PreferenceSyncItem]
+    public let serverTimestamp: String
+    public let hasExistingData: Bool
+
+    public init(tasks: [TaskSyncDTO], sessions: [FocusSessionSyncDTO], settings: [PreferenceSyncItem], serverTimestamp: String, hasExistingData: Bool) {
+        self.tasks = tasks
+        self.sessions = sessions
+        self.settings = settings
+        self.serverTimestamp = serverTimestamp
+        self.hasExistingData = hasExistingData
+    }
+}
+
+// MARK: - Full Sync (Paginated)
+
+public struct PaginatedTaskPage: Codable, Sendable, Equatable {
+    public let items: [TaskSyncDTO]
+    public let nextCursor: String?
+    public let hasMore: Bool
+
+    public init(items: [TaskSyncDTO], nextCursor: String? = nil, hasMore: Bool = false) {
+        self.items = items
+        self.nextCursor = nextCursor
+        self.hasMore = hasMore
+    }
+}
+
+public struct PaginatedSessionPage: Codable, Sendable, Equatable {
+    public let items: [FocusSessionSyncDTO]
+    public let nextCursor: String?
+    public let hasMore: Bool
+
+    public init(items: [FocusSessionSyncDTO], nextCursor: String? = nil, hasMore: Bool = false) {
+        self.items = items
+        self.nextCursor = nextCursor
+        self.hasMore = hasMore
+    }
+}
+
+public struct FullSyncResponse: Codable, Sendable, Equatable {
+    public let tasks: PaginatedTaskPage
+    public let sessions: PaginatedSessionPage
+    public let settings: [PreferenceSyncItem]
+    public let serverTimestamp: String
+
+    public init(tasks: PaginatedTaskPage, sessions: PaginatedSessionPage, settings: [PreferenceSyncItem], serverTimestamp: String) {
+        self.tasks = tasks
+        self.sessions = sessions
+        self.settings = settings
+        self.serverTimestamp = serverTimestamp
+    }
+}
+
 // MARK: - Error
 
 struct APIErrorBody: Codable, Sendable {
@@ -205,6 +390,8 @@ public enum APIClientError: Error, Equatable, Sendable {
     case networkError
     case serverError(Int)
     case unknown(String)
+    case invalidResetCode
+    case resetCodeExpired
 
     public var userMessage: String {
         switch self {
@@ -217,6 +404,8 @@ public enum APIClientError: Error, Equatable, Sendable {
         case .networkError: return "No internet connection. You can still use the app offline."
         case .serverError: return "Server error. Please try again later."
         case .unknown(let msg): return msg
+        case .invalidResetCode: return "Invalid reset code. Please check and try again."
+        case .resetCodeExpired: return "Reset code has expired. Please request a new one."
         }
     }
 
@@ -228,6 +417,8 @@ public enum APIClientError: Error, Equatable, Sendable {
         case "invalid_email": return .invalidEmail
         case "missing_required_fields": return .missingRequiredFields
         case "invalid_refresh_token": return .invalidRefreshToken
+        case "invalid_reset_code": return .invalidResetCode
+        case "reset_code_expired": return .resetCodeExpired
         default: return .unknown(errorCode)
         }
     }

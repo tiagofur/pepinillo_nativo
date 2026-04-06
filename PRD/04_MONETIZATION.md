@@ -1,128 +1,131 @@
-# Monetización — Pepinillo (iOS + Android)
+# Monetization — Pepinillo (iOS + Android)
 
-**Versión:** 1.0
-**Fecha:** 2026-03-20
-**Alcance:** Documento unificado de monetización para ambas plataformas
-**Fuente autoritativa de precios:** `PLAN_FREE_PRO_TIERS.md`
-
----
-
-## 1. Modelo de Negocio
-
-**Freemium con suscripción.** El mismo modelo aplica en ambas plataformas (iOS y Android).
-
-El usuario obtiene una experiencia funcional y útil en el tier gratuito — suficiente para validar el valor de la app — pero con limitaciones estratégicas que motivan la conversión a Pro. No se busca frustrar al usuario, sino demostrar el valor premium.
-
-**Posicionamiento de precio:** Tier premium de productividad ($25-50/año), no el mercado de timers gratis ($2-5). Competimos en la liga de Things 3, Fantastical y Craft.
+**Version:** 1.0  
+**Last Updated:** 2026-03-24  
+**Scope:** Unified monetization document for both platforms  
+**Authoritative Source for Pricing:** This document  
+**Update Cadence:** Per pricing change
 
 ---
 
-## 2. Tier FREE (Gratuito)
+## 1. Business Model
 
-| Feature | Límite Free | Justificación |
-|---------|-------------|---------------|
-| Modos de enfoque | Pomodoro + Chrono/Stopwatch (2 de 4) | Los 2 más básicos; cubren el caso de uso casual |
-| Tareas activas | 3 tareas máximo | Suficiente para probar, insuficiente para usuarios activos |
-| Subtareas | NO disponible | Alto valor percibido, bajo costo de desarrollo |
-| Tareas recurrentes | NO disponible | Solo Pro |
-| Soundscapes | 4 básicos: Rain, Forest, Café, White Noise | Suficiente para experimentar el valor |
-| Analytics | Solo hoy + últimos 7 días | Motiva upgrade para historial completo |
-| Widgets | 1 widget básico (timer) | Los demás son Pro |
-| Temas | Solo tema Default | Restricción estética que motiva upgrade |
-| Sesiones diarias | Ilimitadas | NO limitar sesiones — frustra sin convertir |
-| Historial | 7 días | Después se pierde; motiva Pro para retención de datos |
-| Sync/Cloud | NO disponible (solo local) | Sync como diferenciador Pro |
-| Watch/Wear OS | NO disponible | Diferenciador fuerte para power users |
-| Export de datos | NO disponible | Solo Pro |
+**Freemium with subscription.** The same model applies on both platforms (iOS and Android).
+
+Users get a functional and useful experience in the free tier — sufficient to validate the app's value — but with strategic limitations that motivate conversion to Pro. The goal is not to frustrate users, but to demonstrate premium value.
+
+**Price Positioning:** Premium productivity tier ($25-50/year), not the free timer market ($2-5). We compete in the league of Things 3, Fantastical, and Craft.
 
 ---
 
-## 3. Tier PRO
+## 2. FREE Tier (Free)
 
-| Feature | Pro |
-|---------|-----|
-| Modos de enfoque | Todos: Pomodoro, Flowtime, Time Block, Chrono/Stopwatch |
-| Tareas | Ilimitadas + subtareas + recurrencia |
-| Soundscapes | 8 total: Rain, Forest, Café, White Noise + Binaural Beats, Lo-fi, Ocean, Fireplace |
-| Analytics | Historial completo + Weekly Review + Monthly Review + AI Reports |
-| Widgets | Todos (Timer, Stats, Tasks, Lock Screen, Quick Settings) |
-| Temas | Todos los temas disponibles (incluido Liquid Glass en iOS 26, Material You en Android) |
-| Sync/Cloud | Sync completo entre dispositivos (CloudKit en iOS, Backend Go en Android) |
-| Watch/Wear OS | App completa en Apple Watch y Wear OS |
-| Export de datos | CSV y PDF |
-| Streak Protection | 1 skip gratuito por semana |
+| Feature            | Free limit                                | Justification                                              |
+| ------------------ | ----------------------------------------- | ---------------------------------------------------------- |
+| Focus modes        | Pomodoro + Chrono/Stopwatch (2 of 4)      | The 2 most basic modes; they cover casual use cases        |
+| Active tasks       | Maximum 3 tasks                            | Enough to test, not enough for active users                |
+| Subtasks           | NOT available                              | High perceived value, low development cost                 |
+| Recurring tasks    | NOT available                              | Pro only                                                   |
+| Soundscapes        | 4 basics: Rain, Forest, Cafe, White Noise | Enough to experience the value                             |
+| Analytics          | Today only + last 7 days                   | Motivates upgrade for full history                         |
+| Widgets            | 1 basic widget (timer)                     | All others are Pro                                         |
+| Themes             | Default theme only                         | Aesthetic limitation that motivates upgrade                |
+| Daily sessions     | Unlimited                                  | Do NOT limit sessions — frustrates without converting      |
+| History            | 7 days                                     | Data is lost afterward; motivates Pro for retention        |
+| Sync/Cloud         | NOT available (local only)                 | Sync as a Pro differentiator                               |
+| Watch/Wear OS      | NOT available                              | Strong differentiator for power users                      |
+| Data export        | NOT available                              | Pro only                                                   |
 
 ---
 
-## 4. Precios (DEFINITIVOS)
+## 3. PRO Tier
 
-> **Fuente autoritativa:** `PLAN_FREE_PRO_TIERS.md` — estos precios reemplazan cualquier otra referencia.
+| Feature           | Pro                                                                                 |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| Focus modes       | All modes: Pomodoro, Flowtime, Time Block, Chrono/Stopwatch                        |
+| Tasks             | Unlimited + subtasks + recurrence                                                   |
+| Soundscapes       | 8 total: Rain, Forest, Cafe, White Noise + Binaural Beats, Lo-fi, Ocean, Fireplace |
+| Analytics         | Full history + Weekly Review + Monthly Review + AI Reports                          |
+| Widgets           | All widgets (Timer, Stats, Tasks, Lock Screen, Quick Settings)                      |
+| Themes            | All available themes (including Liquid Glass on iOS 26, Material You on Android)    |
+| Sync/Cloud        | Full sync across devices (CloudKit on iOS, Go backend on Android)                   |
+| Watch/Wear OS     | Full app on Apple Watch and Wear OS                                                 |
+| Data export       | CSV and PDF                                                                          |
+| Streak Protection | 1 free skip per week                                                                 |
 
-### Mercado Global (US/EU/Tier 1)
+---
 
-| Plan | Precio | Equivalente mensual | Ahorro |
-|------|--------|---------------------|--------|
-| Monthly | **$3.99/mes** | $3.99 | — |
-| Annual | **$24.99/año** | $2.08 | 48% |
-| Lifetime | **$49.99** | — | — |
+## 4. Pricing (AUTHORITATIVE)
+
+**Effective Date:** 2026-03-24  
+**These prices supersede all prior references.**
+
+### Global Market (US/EU/Tier 1)
+
+| Plan     | Price           | Equivalent Monthly | Savings |
+| -------- | --------------- | ------------------ | ------- |
+| Monthly  | **$3.99/month** | $3.99              | —       |
+| Annual   | **$24.99/year** | $2.08              | 48%     |
+| Lifetime | **$49.99**      | —                  | —       |
 
 ### LATAM (MX/CO/AR/BR/CL/PE)
 
-| Plan | Precio | Equivalente mensual | Ahorro |
-|------|--------|---------------------|--------|
-| Monthly | **$1.99/mes** | $1.99 | — |
-| Annual | **$12.99/año** | $1.08 | 46% |
-| Lifetime | **$29.99** | — | — |
+| Plan     | Price           | Equivalent Monthly | Savings |
+| -------- | --------------- | ------------------ | ------- |
+| Monthly  | **$1.99/month** | $1.99              | —       |
+| Annual   | **$12.99/year** | $1.08              | 46%     |
+| Lifetime | **$29.99**      | —                  | —       |
 
-### Justificación de precios
+### Price justification
 
-- **$3.99 vs $4.99**: Barrera psicológica menor. $3.99 está en el sweet spot para apps de productividad.
-- **Annual a 48% descuento**: Fuerte incentivo para suscripción anual (mayor LTV).
-- **Lifetime a $49.99**: Razonable para early adopters; no tan bajo que canibalice suscripciones.
-- **LATAM ~50% del global**: Paridad de poder adquisitivo. Ambas tiendas soportan precios regionalizados.
+- **$3.99 vs $4.99**: Lower psychological barrier. $3.99 is in the sweet spot for productivity apps.
+- **Annual at a 48% discount**: Strong incentive for annual subscriptions (higher LTV).
+- **Lifetime at $49.99**: Reasonable for early adopters; not so low that it cannibalizes subscriptions.
+- **LATAM at ~50% of global**: Purchasing power parity. Both stores support regionalized pricing.
 
-### Discrepancias a corregir
+### Price Update Action Items
 
-| Plataforma | Precios actuales (implementados) | Precios objetivo |
-|------------|----------------------------------|------------------|
-| iOS (StoreKit) | Monthly $2.99, Annual $14.99, Lifetime $29.99 | Monthly $3.99, Annual $24.99, Lifetime $49.99 |
-| Android | No implementado aún | Monthly $3.99, Annual $24.99, Lifetime $49.99 |
+| Platform       | Current (Live)                                | Target                                        | Status           | Action Required                             |
+| -------------- | --------------------------------------------- | --------------------------------------------- | ---------------- | ------------------------------------------- |
+| iOS (StoreKit) | Monthly $2.99, Annual $14.99, Lifetime $29.99 | Monthly $3.99, Annual $24.99, Lifetime $49.99 | ⚠️ LEGACY PRICES | Update via RevenueCat Offerings (PRIORITY) |
+| Android        | Not yet implemented                           | Monthly $3.99, Annual $24.99, Lifetime $49.99 | 🔄 IN PROGRESS   | Configure via RevenueCat + Google Play      |
 
-**Acción requerida:** Actualizar StoreKit configuration en iOS para alinear con los precios definitivos.
+**Timeline:** These new prices are effective immediately for all new subscriptions. Legacy prices will expire on 2026-04-30.
 
 ---
 
-## 5. Implementación por Plataforma
+## 5. Implementation by Platform
 
 ### 5.1 iOS
 
-| Aspecto | Detalle |
-|---------|---------|
-| Framework | RevenueCat SDK v5+ (wrapping StoreKit 2 nativo) |
-| Productos | `monthly`, `annual`, `lifetime` via RevenueCat Offerings/Packages |
-| Entitlement | `pro` (unificado en RevenueCat) |
-| User ID | Integrado con Sign in with Apple flow via `logIn(userId)` |
-| Verificación | Server-side via Go backend (`POST /billing/verify-receipt` y RevenueCat REST API) |
-| Restore | RevenueCat `logIn()` + `entitlements` property |
-| Cache local | RevenueCat SDK cachea entitlements automáticamente |
-| Grace period | Automáticamente manejado por RevenueCat según configuración en App Store Connect |
-| Webhooks | Backend recibe eventos via `POST /api/v1/webhooks/revenuecat` |
+| Aspect       | Detail                                                                              |
+| ------------ | ----------------------------------------------------------------------------------- |
+| Framework    | RevenueCat SDK v5+ (wrapping native StoreKit 2)                                    |
+| Products     | `monthly`, `annual`, `lifetime` via RevenueCat Offerings/Packages                  |
+| Entitlement  | `pro` (unified in RevenueCat)                                                       |
+| User ID      | Integrated with Sign in with Apple flow via `logIn(userId)`                        |
+| Verification | Server-side via Go backend (`POST /api/v1/billing/verify` and RevenueCat REST API) |
+| Restore      | RevenueCat `logIn()` + `entitlements` property                                     |
+| Local cache  | RevenueCat SDK caches entitlements automatically                                    |
+| Grace period | Automatically handled by RevenueCat according to App Store Connect configuration    |
+| Webhooks     | Backend receives events via `POST /api/v1/webhooks/revenuecat`                     |
 
 ### 5.2 Android
 
-| Aspecto | Detalle |
-|---------|---------|
-| Framework | Google Play Billing Library 7 (BillingClient 7.x) |
-| Singleton | `SubscriptionManager` con retry logic |
-| Verificación | Server-side via Go backend (`POST /billing/verify-receipt`) |
-| Restore | `queryPurchases(BillingClient.ProductType.SUBS + INAPP)` |
-| Cache local | DataStore con `isPro`, `tier`, `expirationDate` (confiar en cache por 7 días sin internet) |
-| State | `StateFlow<SubscriptionState>` observable |
-| DI | Hilt module (`@Singleton` scope) |
+| Aspect       | Detail                                                                                   |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| Framework    | Google Play Billing Library 7 (BillingClient 7.x)                                       |
+| Singleton    | `SubscriptionManager` with retry logic                                                   |
+| Verification | Server-side via Go backend (`POST /api/v1/billing/verify`)                              |
+| Restore      | `queryPurchases(BillingClient.ProductType.SUBS + INAPP)`                                |
+| Local cache  | DataStore with `isPro`, `tier`, `expirationDate` (trust cache for 7 days offline)       |
+| State        | Observable `StateFlow<SubscriptionState>`                                                |
+| DI           | Hilt module (`@Singleton` scope)                                                         |
 
 ### 5.3 Product IDs
 
 **iOS (StoreKit):**
+
 ```
 com.pepinillo.app.pro.monthly
 com.pepinillo.app.pro.annual
@@ -130,191 +133,194 @@ com.pepinillo.app.pro.lifetime
 ```
 
 **Android (Google Play):**
+
 ```
-com.pepinillo.app.pro.monthly    → $3.99/mes
-com.pepinillo.app.pro.annual     → $24.99/año
+com.pepinillo.app.pro.monthly    → $3.99/month
+com.pepinillo.app.pro.annual     → $24.99/year
 com.pepinillo.app.pro.lifetime   → $49.99 (in-app product, no subscription)
 ```
 
 ### 5.4 Backend
 
-- **Endpoint de verificación:** `POST /billing/verify-receipt`
-  - Soporta verificación de Google Play, App Store, y RevenueCat
-  - Mapeo de tiers: `free`, `pro_monthly`, `pro_yearly`, `lifetime`
-  - Actualiza el tier del usuario en base de datos tras verificación exitosa
+- **Billing Verification Endpoint (Authoritative):** `POST /api/v1/billing/verify`
+  - Legacy paths are deprecated and must not be used
+  - Supports verification of Google Play, App Store, and RevenueCat receipts
+  - Tier mapping: `free`, `pro_monthly`, `pro_annual`, `lifetime`
+  - Updates user tier in the database after successful verification
+  - Returns: `{"tier": "pro_monthly", "expiresAt": "2026-04-24", "isActive": true}`
 
 - **RevenueCat integration:**
-  - Webhook endpoint: `POST /api/v1/webhooks/revenuecat` (recibe eventos de ciclo de vida de suscripción)
-  - REST API client: verifica entitlements via RevenueCat API
-  - Eventos soportados: purchase, renewal, cancellation, expiration, billing issues
+  - Webhook endpoint: `POST /api/v1/webhooks/revenuecat` (receives subscription lifecycle events)
+  - REST API client: verifies entitlements via the RevenueCat API
+  - Supported events: purchase, renewal, cancellation, expiration, billing issues
 
-- **Fallback:** Direct App Store/Google Play verification si RevenueCat no disponible
+- **Fallback:** Direct App Store/Google Play verification if RevenueCat is unavailable
 
 ---
 
 ## 6. Feature Gating (Enforcement)
 
-### 6.1 Mecanismos de gating
+### 6.1 Gating mechanisms
 
-| Mecanismo | Descripción |
-|-----------|-------------|
-| Lock icons | Icono de candado en features Pro (modos Flowtime/TimeBlock, soundscapes premium) |
-| Task counter | Contador visible "2/3 tareas" para usuarios Free; bloquear botón "+" al llegar a 3 |
-| Blur overlay | Datos de analytics >7 días con blur/overlay y CTA "Desbloquea historial completo" |
-| Upgrade prompts | Prompts contextuales en puntos naturales de fricción |
-| Free trial | 7 días de prueba gratuita de Pro |
+| Mechanism        | Description                                                                        |
+| ---------------- | ---------------------------------------------------------------------------------- |
+| Lock icons       | Lock icon on Pro features (Flowtime/Time Block modes, premium soundscapes)        |
+| Task counter     | Visible counter "2/3 Tasks" for Free users; lock "+" button at 3                |
+| Blur overlay     | Analytics data >7 days with blur/overlay and CTA "Unlock full history"           |
+| Upgrade prompts  | Contextual prompts at natural friction points                                      |
+| Free trial       | 7-day free Pro trial                                                               |
 
-### 6.2 Gating por pantalla
+### 6.2 Gating by screen
 
-| Pantalla | Restricción Free |
-|----------|-----------------|
-| Focus Screen | Lock en modos Flowtime y TimeBlock; lock en soundscapes premium |
-| Tasks Screen | Máximo 3 tareas; sin subtareas; sin recurrencia; upgrade prompt contextual |
-| Dashboard/Analytics | Solo últimos 7 días; blur en historial antiguo; Weekly/Monthly Review bloqueado |
-| Settings | Mostrar tier actual; botón "Upgrade to Pro"; bloquear temas extra |
-| Widgets | Solo widget de timer disponible; otros muestran "Upgrade to Pro" |
-| Watch/Wear OS | Mensaje de upgrade si usuario Free abre app en reloj |
+| Screen              | Free restriction                                                                 |
+| ------------------- | -------------------------------------------------------------------------------- |
+| Focus Screen        | Lock on Flowtime and Time Block modes; lock on premium soundscapes              |
+| Tasks Screen        | Maximum 3 tasks; no subtasks; no recurrence; contextual upgrade prompt           |
+| Dashboard/Analytics | Last 7 days only; blur on older history; Weekly/Monthly Review blocked           |
+| Settings            | Show current tier; "Upgrade to Pro" button; extra themes blocked                |
+| Widgets             | Only timer widget available; others show "Upgrade to Pro"                       |
+| Watch/Wear OS       | Upgrade message if a Free user opens the watch app                               |
 
-### 6.3 Problemas actuales de gating (a corregir)
+### 6.3 Current gating issues (to be fixed)
 
-**iOS — Features anunciadas como Pro pero NO gateadas:**
+**iOS — Features listed as Pro but NOT gated:**
 
-| Feature | Estado actual | Acción requerida |
-|---------|---------------|------------------|
-| Analytics >7 días | Accesible para todos | Agregar gate en `AnalyticsFeature` |
-| iCloud Sync | Funciona para todos | Agregar gate en sync logic |
-| Widgets adicionales | Accesibles sin restricción | Agregar gate en widget configuration |
-| Temas | Todos disponibles | Agregar gate en theme selector |
-| Subtareas | Accesibles para todos | Agregar gate en task creation |
-| Recurrencia | Accesible para todos | Agregar gate en task creation |
+| Feature             | Current status             | Required action                         |
+| ------------------- | -------------------------- | --------------------------------------- |
+| Analytics >7 days   | Accessible to everyone     | Add gate in `AnalyticsFeature`          |
+| iCloud Sync         | Works for everyone         | Add gate in sync logic                  |
+| Additional widgets  | Accessible without limits  | Add gate in widget configuration        |
+| Themes              | All available              | Add gate in theme selector              |
+| Subtasks            | Accessible to everyone     | Add gate in task creation               |
+| Recurrence          | Accessible to everyone     | Add gate in task creation               |
 
-**Android — Sin feature gating implementado:**
+**Android — No feature gating implemented:**
 
-| Componente | Estado |
-|------------|--------|
-| FeatureGate service | No existe |
-| Paywall screen | No existe |
-| SubscriptionManager | No existe |
-| UI locks/restrictions | No existen |
+| Component             | Status     |
+| --------------------- | ---------- |
+| FeatureGate service   | Does not exist |
+| Paywall screen        | Does not exist |
+| SubscriptionManager   | Does not exist |
+| UI locks/restrictions | Do not exist   |
 
 ---
 
-## 7. Flujos de Compra
+## 7. Purchase Flows
 
-### 7.1 Flujo de compra (aplica a ambas plataformas)
-
-```
- 1. Usuario toca feature Pro o botón "Upgrade"
- 2. Se muestra Paywall con lista de beneficios Pro
- 3. Paywall carga productos desde la tienda (StoreKit 2 / Google Play)
- 4. Usuario selecciona plan (Monthly / Annual / Lifetime)
- 5. Badge "MEJOR VALOR" destacado en plan Annual
- 6. Usuario confirma compra
- 7. Tienda muestra diálogo de pago nativo
- 8. App recibe confirmación de compra
- 9. App envía token/recibo al backend → POST /billing/verify-receipt
-10. Backend verifica con la API de la tienda correspondiente
-11. Feature se desbloquea inmediatamente; UI se actualiza
-```
-
-### 7.2 Flujo de restauración
+### 7.1 Purchase flow (applies to both platforms)
 
 ```
-1. Usuario toca "Restaurar Compras" en Paywall o Settings
-2. App consulta compras activas en la tienda
-3. Para cada compra activa → verificar con backend
-4. Actualizar estado de suscripción localmente
+ 1. User taps a Pro feature or the "Upgrade" button
+ 2. Paywall is shown with a list of Pro benefits
+ 3. Paywall loads products from the store (StoreKit 2 / Google Play)
+ 4. User selects a plan (Monthly / Annual / Lifetime)
+ 5. "BEST VALUE" badge is highlighted on the Annual plan
+ 6. User confirms purchase
+ 7. Store shows native payment dialog
+ 8. App receives purchase confirmation
+ 9. App sends token/receipt to backend → POST /api/v1/billing/verify
+10. Backend verifies with the corresponding store API
+11. Feature unlocks immediately; UI updates
 ```
 
-### 7.3 Flujo de expiración
+### 7.2 Restoration flow
 
 ```
-1. App inicia → consulta compras activas en la tienda
-2. Si no hay compras activas Y cache local dice isPro:
-3.   Verificar con backend
-4.   Si backend confirma expirado → downgrade a Free
-5.   Grace period: 3 días después de expiración antes de revocar acceso
+1. User taps "Restore Purchases" in Paywall or Settings
+2. App queries active purchases in the store
+3. For each active purchase → verify with backend
+4. Update local subscription status
 ```
 
-### 7.4 Elementos requeridos en Paywall
+### 7.3 Expiration flow
 
-- Lista de 6+ beneficios Pro
-- Selector de plan (Monthly / Annual / Lifetime)
-- Badge "MEJOR VALOR" en plan Annual
-- Botón de compra con loading state
-- Link "Restaurar Compras"
-- Links a Terms of Use y Privacy Policy (requerido por ambas tiendas)
+```
+1. App starts → query active purchases in the store
+2. If there are no active purchases AND local cache says isPro:
+3.   Verify with backend
+4.   If backend confirms expiration → downgrade to Free
+5.   Grace period: 3 days after expiration before revoking access
+```
+
+### 7.4 Required Paywall elements
+
+- List of 6+ Pro benefits
+- Plan selector (Monthly / Annual / Lifetime)
+- "BEST VALUE" badge on Annual plan
+- Purchase button with loading state
+- "Restore Purchases" link
+- Links to Terms of Use and Privacy Policy (required by both stores)
   - Terms: https://creapolis.dev/terms-of-use/
   - Privacy: https://creapolis.dev/privacy-policy/
 
 ---
 
-## 8. Hooks de Conversión
+## 8. Conversion Hooks
 
-Triggers psicológicos que motivan el upgrade de Free a Pro:
+Psychological triggers that motivate upgrades from Free to Pro:
 
-| Hook | Mecanismo | Impacto esperado |
-|------|-----------|------------------|
-| **Solo 2 de 4 modos gratis** | "Desbloquea Flowtime y Time Block" es el trigger principal de conversión | Alto — Flowtime atrae a usuarios que rebotaron de Pomodoro |
-| **Límite de 3 tareas** | Presión natural de upgrade para usuarios activos que necesitan más organización | Alto — crea fricción diaria |
-| **Stats básicas vs completas** | Ver solo 7 días crea FOMO del historial; blur en datos antiguos con CTA | Medio-alto — usuarios data-driven quieren ver tendencias |
-| **Watch/Wear OS como aspiración** | "Controla tu focus desde tu reloj" — feature aspiracional para power users | Medio — nichos pero alto intent de compra |
-| **Variedad de temas** | Un solo tema vs todos los temas (Liquid Glass, Material You, etc.) | Medio — motivación estética |
-| **Sin subtareas ni recurrencia** | Usuarios que organizan proyectos complejos necesitan estructura | Medio-alto — diferenciador funcional |
-| **Sin sync/cloud** | Riesgo de perder datos motiva backup; multi-device requiere sync | Medio — crece con el tiempo |
-| **Sin export** | Usuarios profesionales necesitan reportes CSV/PDF | Bajo-medio — nicho pero valioso |
+| Hook                              | Mechanism                                                                        | Expected impact                                           |
+| --------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Only 2 of 4 free modes**        | "Unlock Flowtime and Time Block" is the primary conversion trigger             | High — Flowtime attracts users who bounced from Pomodoro |
+| **3-task limit**                  | Natural upgrade pressure for active users who need more organization             | High — creates daily friction                             |
+| **Basic vs full stats**           | Seeing only 7 days creates FOMO; blur older data with CTA                        | Medium-high — data-driven users want trends              |
+| **Watch/Wear OS as aspiration**   | "Control your focus from your watch" — aspirational feature for power users    | Medium — niche audience but high purchase intent          |
+| **Theme variety**                 | One free theme vs all themes (Liquid Glass, Material You, etc.)                 | Medium — aesthetic motivation                             |
+| **No subtasks or recurrence**     | Users managing complex projects need structure                                  | Medium-high — functional differentiator                   |
+| **No sync/cloud**                 | Risk of losing data motivates backup; multi-device use requires sync            | Medium — grows over time                                  |
+| **No export**                     | Professional users need CSV/PDF reports                                         | Low-medium — niche but valuable                           |
 
-### Estrategia de prompts
+### Prompt strategy
 
-- **No intrusivos**: Mostrar upgrade solo cuando el usuario intenta usar una feature Pro
-- **Contextuales**: El prompt explica el beneficio específico que se desbloquea
-- **Frecuencia controlada**: Máximo 1 prompt por sesión (no spamear)
-- **Free trial**: Ofrecer 7 días gratis de Pro en el primer intento de upgrade
-
----
-
-## 9. Métricas de Monetización
-
-### 9.1 Objetivos de conversión
-
-| Métrica | Target (30 días) | Target (90 días) | Stretch |
-|---------|-------------------|-------------------|---------|
-| Conversión Free → Pro | >= 6% | >= 8% | >= 10% |
-| Trial-to-Paid | — | >= 40% | >= 50% |
-| Churn mensual | — | < 8% | < 5% |
-| ARPU (usuarios de pago) | >= $3.50/mes | >= $3.50/mes | >= $4.50/mes |
-
-### 9.2 Proyecciones de revenue (conservadoras)
-
-| Escenario | MAU | Conversión | ARPU | MRR |
-|-----------|-----|-----------|------|-----|
-| Base (Mes 6) | 8K | 6% | $3.50 | $1,680 |
-| Bueno (Mes 6) | 15K | 8% | $3.80 | $4,560 |
-| Stretch (Mes 12) | 30K | 10% | $4.00 | $12,000 |
-
-### 9.3 Métricas a trackear
-
-| Métrica | Herramienta |
-|---------|-------------|
-| Conversión por plan (monthly/annual/lifetime) | Backend analytics |
-| Revenue por región (Global vs LATAM) | App Store Connect / Google Play Console |
-| Paywall view-to-purchase rate | In-app analytics |
-| Feature más intentada por Free users (trigger de conversión) | In-app analytics |
-| Tiempo promedio Free → Pro | Backend analytics |
-| Churn por cohorte | Backend analytics |
-| LTV por plan | Calculado (ARPU / churn rate) |
+- **Non-intrusive**: Show upgrade prompts only when the user tries to use a Pro feature
+- **Contextual**: The prompt explains the specific benefit being unlocked
+- **Controlled frequency**: Maximum 1 prompt per session (no spam)
+- **Free trial**: Offer 7 free Pro days on the first upgrade attempt
 
 ---
 
-## Apéndice: Comparativa de Competidores
+## 9. Monetization Metrics
 
-| App | Monthly | Annual | Lifetime |
-|-----|---------|--------|----------|
-| Forest | — | $19.99/yr | $3.99 (one-time) |
-| Focus Bear | $4.99/mo | $29.99/yr | — |
-| Tide | $2.99/mo | $14.99/yr | $49.99 |
-| Be Focused Pro | — | — | $4.99 |
-| Session | $4.99/mo | $29.99/yr | $79.99 |
-| **Pepinillo** | **$3.99/mo** | **$24.99/yr** | **$49.99** |
+### 9.1 Conversion objectives
 
-Pepinillo se posiciona competitivamente: más barato que Session y Focus Bear, pero con más features que Tide y Forest. El pricing LATAM (~50% del global) es un diferenciador único en el mercado.
+| Metric                  | Target (30 days) | Target (90 days) | Stretch      |
+| ----------------------- | ---------------- | ---------------- | ------------ |
+| Free → Pro conversion   | >= 6%            | >= 8%            | >= 10%       |
+| Trial-to-Paid           | —                | >= 40%           | >= 50%       |
+| Monthly churn           | —                | < 8%             | < 5%         |
+| ARPU (paying users)     | >= $3.50/month   | >= $3.50/month   | >= $4.50/month |
+
+### 9.2 Revenue projections (conservative)
+
+| Scenario         | MAU | Conversion | ARPU  | MRR     |
+| ---------------- | --- | ---------- | ----- | ------- |
+| Base (Month 6)   | 8K  | 6%         | $3.50 | $1,680  |
+| Good (Month 6)   | 15K | 8%         | $3.80 | $4,560  |
+| Stretch (Month 12) | 30K | 10%      | $4.00 | $12,000 |
+
+### 9.3 Metrics to track
+
+| Metric                                                       | Tool                                    |
+| ------------------------------------------------------------ | --------------------------------------- |
+| Conversion by plan (monthly/annual/lifetime)                | Backend analytics                       |
+| Revenue by region (Global vs LATAM)                         | App Store Connect / Google Play Console |
+| Paywall view-to-purchase rate                               | In-app analytics                        |
+| Most attempted feature by Free users (conversion trigger)   | In-app analytics                        |
+| Average time Free → Pro                                     | Backend analytics                       |
+| Churn by cohort                                              | Backend analytics                       |
+| LTV by plan                                                  | Calculated (ARPU / churn rate)          |
+
+---
+
+## Appendix: Competitor Comparison
+
+| App            | Monthly      | Annual        | Lifetime         |
+| -------------- | ------------ | ------------- | ---------------- |
+| Forest         | —            | $19.99/yr     | $3.99 (one-time) |
+| Focus Bear     | $4.99/mo     | $29.99/yr     | —                |
+| Tide           | $2.99/mo     | $14.99/yr     | $49.99           |
+| Be Focused Pro | —            | —             | $4.99            |
+| Session        | $4.99/mo     | $29.99/yr     | $79.99           |
+| **Pepinillo**  | **$3.99/mo** | **$24.99/yr** | **$49.99**       |
+
+Pepinillo is competitively positioned: cheaper than Session and Focus Bear, while offering more features than Tide and Forest. LATAM pricing (~50% of global pricing) is a unique differentiator in the market.

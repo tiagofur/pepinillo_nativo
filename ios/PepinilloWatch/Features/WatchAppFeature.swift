@@ -6,6 +6,7 @@
 
 import Foundation
 import ComposableArchitecture
+import WidgetKit
 #if os(watchOS)
 import WatchKit
 #endif
@@ -110,7 +111,13 @@ struct WatchAppFeature {
                 )
 
             case .tasksReceived(let items):
-                return .send(.tasks(.tasksReceived(items)))
+                return .merge(
+                    .send(.tasks(.tasksReceived(items))),
+                    .run { _ in
+                        Self.persistTasksForComplication(items)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "PepinilloTasksComplication")
+                    }
+                )
 
             case .dashboardStatsReceived(let stats):
                 return .send(.dashboard(.dashboardStatsReceived(stats)))
@@ -151,6 +158,30 @@ struct WatchAppFeature {
             case .timer, .tasks, .dashboard:
                 return .none
             }
+        }
+    }
+
+    // MARK: - UserDefaults Persistence (for Tasks Complication)
+
+    private static func persistTasksForComplication(_ tasks: [WatchTaskItem]) {
+        let defaults = UserDefaults.standard
+        let completedCount = tasks.filter(\.isCompleted).count
+        defaults.set(completedCount, forKey: WatchStatsKeys.tasksCompletedCount)
+        defaults.set(tasks.count, forKey: WatchStatsKeys.tasksTotalCount)
+
+        // Encode tasks as JSON array for the complication to read
+        let encoded: [[String: Any]] = tasks.map { task in
+            [
+                "id": task.id.uuidString,
+                "title": task.title,
+                "isCompleted": task.isCompleted,
+                "priority": task.priority,
+                "estimatedPomodoros": task.estimatedPomodoros,
+                "completedPomodoros": task.completedPomodoros,
+            ]
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: encoded) {
+            defaults.set(data, forKey: WatchStatsKeys.tasksJSON)
         }
     }
 }

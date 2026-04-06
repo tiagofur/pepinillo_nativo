@@ -7,6 +7,12 @@ import (
 	"pepinillo/backend/internal/domain"
 )
 
+// PaginationCursor represents a cursor for keyset-based pagination.
+type PaginationCursor struct {
+	UpdatedAt time.Time
+	ID        string
+}
+
 type UserRepository interface {
 	Create(ctx context.Context, user *domain.User) error
 	GetByID(ctx context.Context, userID string) (*domain.User, error)
@@ -37,6 +43,9 @@ type TaskRepository interface {
 	Upsert(ctx context.Context, task *domain.Task) error
 	Delete(ctx context.Context, userID string, taskID int) error
 	Sync(ctx context.Context, userID string, tasks []domain.Task, deletedSyncIDs []string, since *time.Time) ([]domain.Task, []string, time.Time, error)
+
+	// Paginated listing for full sync
+	ListByUserPaginated(ctx context.Context, userID string, cursor *PaginationCursor, limit int) ([]domain.Task, error)
 
 	// Mode-specific tracking methods
 	UpdateTrackingMode(ctx context.Context, taskID int, mode string) error
@@ -89,6 +98,14 @@ type FocusRepository interface {
 	ListSessionsByTask(ctx context.Context, userID string, taskID int) ([]domain.FocusSession, error)
 	ListSessionsByRange(ctx context.Context, userID string, from, to time.Time) ([]domain.FocusSession, error)
 	GetTaskStats(ctx context.Context, userID string, taskID int) (*domain.TaskFocusStats, error)
+
+	// Paginated listing for full sync
+	ListSessionsByUserPaginated(ctx context.Context, userID string, cursor *PaginationCursor, limit int) ([]domain.FocusSession, error)
+
+	// Sync methods
+	UpsertSessionBatch(ctx context.Context, sessions []domain.FocusSession) error
+	ListSessionsUpdatedSince(ctx context.Context, userID string, since time.Time) ([]domain.FocusSession, error)
+	RecomputeStatsForDates(ctx context.Context, userID string, dates []time.Time) error
 }
 
 type AnalyticsRepository interface {
@@ -96,4 +113,9 @@ type AnalyticsRepository interface {
 	GenerateMonthlyReport(ctx context.Context, userID string, monthStart, monthEnd time.Time) (*domain.MonthlyReport, error)
 	GetCompletionRate(ctx context.Context, userID string, periodStart, periodEnd time.Time) (*domain.CompletionRateStats, error)
 	GetStreakStats(ctx context.Context, userID string) (*domain.StreakStats, error)
+}
+
+type PreferenceRepository interface {
+	GetByUser(ctx context.Context, userID string) ([]domain.UserPreference, error)
+	UpsertBatch(ctx context.Context, prefs []domain.UserPreference) ([]domain.UserPreference, error)
 }

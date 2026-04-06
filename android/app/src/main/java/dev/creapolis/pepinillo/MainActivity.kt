@@ -4,11 +4,23 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.ProcessLifecycleOwner
+import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.data.sync.SyncEngine
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -28,7 +40,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -36,11 +47,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dev.creapolis.pepinillo.feature.auth.ForgotPasswordScreen
 import dev.creapolis.pepinillo.feature.auth.LoginScreen
 import dev.creapolis.pepinillo.feature.auth.RegisterScreen
 import dev.creapolis.pepinillo.feature.onboarding.OnboardingScreen
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.AIReportScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
@@ -58,8 +69,33 @@ import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
 
+private const val SYNC_DEBOUNCE_MS = 30_000L
+
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject lateinit var syncEngine: SyncEngine
+    @Inject lateinit var authStore: AuthStore
+    @Inject lateinit var prefsRepository: UserPreferencesRepository
+
+    private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    @Volatile
+    private var lastSyncTime: Long = 0L
+
+    private val foregroundSyncObserver = LifecycleEventObserver { _, event ->
+        if (event == Lifecycle.Event.ON_RESUME) {
+            val now = System.currentTimeMillis()
+            if (now - lastSyncTime < SYNC_DEBOUNCE_MS) return@LifecycleEventObserver
+            if (authStore.getAccessToken() == null) return@LifecycleEventObserver
+
+            lastSyncTime = now
+            syncScope.launch {
+                Log.d("MainActivity", "Foreground sync triggered")
+                syncEngine.syncAll()
+            }
+        }
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -69,6 +105,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestNotificationPermissionIfNeeded()
+        ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
         setContent {
             val themeMode by ThemeController.themeMode.collectAsState()
             val dynamicColor by ThemeController.dynamicColor.collectAsState()
@@ -85,9 +122,15 @@ class MainActivity : ComponentActivity() {
                 dynamicColor = dynamicColor,
                 selectedThemeId = selectedTheme,
             ) {
-                PepinilloApp()
+                PepinilloApp(prefsRepository = prefsRepository)
             }
         }
+    }
+
+    override fun onDestroy() {
+        ProcessLifecycleOwner.get().lifecycle.removeObserver(foregroundSyncObserver)
+        syncScope.cancel()
+        super.onDestroy()
     }
 
     private fun requestNotificationPermissionIfNeeded() {
@@ -103,7 +146,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun PepinilloApp() {
+fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -252,6 +295,7 @@ fun PepinilloApp() {
             composable("login") {
                 LoginScreen(
                     onNavigateToRegister = { navController.navigate("register") },
+                    onNavigateToForgotPassword = { navController.navigate("forgot-password") },
                     onAuthenticated = {
                         navController.navigate(TopLevelDestination.Focus.route) {
                             popUpTo("login") { inclusive = true }
@@ -269,6 +313,16 @@ fun PepinilloApp() {
                     },
                 )
             }
+            composable("forgot-password") {
+                ForgotPasswordScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onResetSuccess = {
+                        navController.navigate("login") {
+                            popUpTo("forgot-password") { inclusive = true }
+                        }
+                    },
+                )
+            }
 
             composable("paywall") {
                 PaywallScreen(
@@ -277,9 +331,7 @@ fun PepinilloApp() {
             }
 
             composable("onboarding") {
-                val prefsRepo = remember {
-                    UserPreferencesRepository(navController.context)
-                }
+                val prefsRepo = remember { prefsRepository }
                 val prefs by prefsRepo.preferences.collectAsState(initial = null)
                 val onboardingScope = rememberCoroutineScope()
 

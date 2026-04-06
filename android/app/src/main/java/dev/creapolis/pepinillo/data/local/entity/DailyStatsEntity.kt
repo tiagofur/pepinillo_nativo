@@ -24,4 +24,9 @@ data class DailyStatsEntity(
     val blocksMinutes: Int = 0,
     @ColumnInfo(name = "stopwatch_minutes")
     val stopwatchMinutes: Int = 0,
+    // Sync fields
+    @ColumnInfo(name = "is_dirty", defaultValue = "0")
+    val isDirty: Boolean = false,
+    @ColumnInfo(name = "synced_at")
+    val syncedAt: Long? = null,
 )

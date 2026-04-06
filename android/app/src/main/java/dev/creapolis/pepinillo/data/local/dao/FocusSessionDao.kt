@@ -2,7 +2,9 @@ package dev.creapolis.pepinillo.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Upsert
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -39,4 +41,31 @@ interface FocusSessionDao {
 
     @Query("SELECT * FROM focus_sessions WHERE created_at >= :startTime AND created_at < :endTime ORDER BY created_at DESC")
     suspend fun getSessionsInRangeSync(startTime: Long, endTime: Long): List<FocusSessionEntity>
+
+    @Query("SELECT * FROM focus_sessions WHERE id = :sessionId")
+    suspend fun getSessionById(sessionId: String): FocusSessionEntity?
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfNotExists(session: FocusSessionEntity)
+
+    @Upsert
+    suspend fun upsertSession(session: FocusSessionEntity)
+
+    @Upsert
+    suspend fun upsertSessions(sessions: List<FocusSessionEntity>)
+
+    @Query("SELECT * FROM focus_sessions ORDER BY created_at DESC")
+    suspend fun getAllSessionsSync(): List<FocusSessionEntity>
+
+    @Query("SELECT COUNT(*) FROM focus_sessions")
+    suspend fun getSessionCount(): Int
+
+    @Query("UPDATE focus_sessions SET linked_task_id = :taskId WHERE id = :sessionId")
+    suspend fun updateLinkedTaskId(sessionId: String, taskId: String)
+
+    @Query("DELETE FROM focus_sessions")
+    suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM focus_sessions WHERE is_dirty = 1")
+    fun getDirtySessionCount(): Flow<Int>
 }

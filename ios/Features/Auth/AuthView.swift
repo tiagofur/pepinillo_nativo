@@ -132,6 +132,16 @@ struct AuthView: View {
             .disabled(store.isLoading)
             .padding(.horizontal, 24)
 
+            // MARK: Forgot Password (login mode only)
+            if store.mode == .login {
+                Button("Forgot your password?") {
+                    store.send(.forgotPasswordTapped)
+                }
+                .foregroundStyle(.secondary)
+                .font(.footnote)
+                .padding(.top, 8)
+            }
+
             // MARK: Switch Mode
             Button {
                 store.send(.switchMode(store.mode == .login ? .register : .login))
@@ -156,5 +166,35 @@ struct AuthView: View {
             Spacer()
         }
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(item: $store.scope(state: \.forgotPassword, action: \.forgotPassword)) { forgotPasswordStore in
+            ForgotPasswordView(store: forgotPasswordStore)
+        }
+        .sheet(isPresented: Binding(
+            get: { store.showMergeDialog },
+            set: { _ in store.send(.dismissMergeDialog) }
+        )) {
+            DataMergeView(
+                onMerge: { store.send(.mergeTapped) },
+                onUseAccountOnly: { store.send(.useAccountOnlyTapped) }
+            )
+            .presentationDetents([.medium])
+        }
+        .overlay {
+            if store.isSyncing {
+                ZStack {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.5)
+                        Text("Syncing your data...")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(32)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
+            }
+        }
     }
 }

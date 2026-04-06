@@ -25,7 +25,7 @@ class SyncWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        return when (syncEngine.syncAll()) {
+        return when (val syncResult = syncEngine.syncAll()) {
             is SyncResult.Success -> {
                 Log.d(TAG, "Sync completed successfully")
                 Result.success()
@@ -34,9 +34,13 @@ class SyncWorker @AssistedInject constructor(
                 Log.d(TAG, "Sync skipped: not authenticated")
                 Result.success()
             }
-            is SyncResult.Error -> {
-                Log.e(TAG, "Sync failed, will retry")
+            is SyncResult.TransientError -> {
+                Log.w(TAG, "Sync failed (transient), will retry: ${syncResult.exception.message}")
                 Result.retry()
+            }
+            is SyncResult.PermanentError -> {
+                Log.e(TAG, "Sync failed (permanent), will NOT retry: ${syncResult.exception.message}")
+                Result.success()
             }
         }
     }

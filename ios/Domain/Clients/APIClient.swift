@@ -16,10 +16,19 @@ public struct APIClient: Sendable {
     public var loginWithApple: @Sendable (AppleLoginRequest) async throws -> AuthResponse
     public var refreshTokens: @Sendable (RefreshRequest) async throws -> RefreshResponse
     public var logout: @Sendable (LogoutRequest) async throws -> Void
+    public var forgotPassword: @Sendable (ForgotPasswordRequest) async throws -> Void
+    public var resetPassword: @Sendable (ResetPasswordRequest) async throws -> Void
     public var getMe: @Sendable () async throws -> APIUser
     public var updateMe: @Sendable (UpdateProfileRequest) async throws -> APIUser
     public var uploadProfileImage: @Sendable (_ imageData: Data, _ mimeType: String) async throws -> ImageUploadResponse
     public var syncTasks: @Sendable (TaskSyncRequest) async throws -> TaskSyncResponse
+    public var createSession: @Sendable (FocusSessionSyncDTO) async throws -> FocusSessionSyncDTO
+    public var getAllSessions: @Sendable () async throws -> [FocusSessionSyncDTO]
+    public var getPreferences: @Sendable () async throws -> PreferenceSyncResponse
+    public var upsertPreferences: @Sendable (PreferenceSyncRequest) async throws -> PreferenceSyncResponse
+    public var syncSessions: @Sendable (SessionSyncRequest) async throws -> SessionSyncResponse
+    public var initialUpload: @Sendable (InitialUploadRequest) async throws -> InitialUploadResponse
+    public var getFullSync: @Sendable (_ taskCursor: String?, _ sessionCursor: String?, _ limit: Int) async throws -> FullSyncResponse
 }
 
 // MARK: - Live implementation
@@ -34,6 +43,8 @@ extension APIClient: DependencyKey {
             loginWithApple: { try await helper.post("auth/apple", body: $0) },
             refreshTokens: { try await helper.post("auth/refresh", body: $0) },
             logout: { try await helper.postVoid("auth/logout", body: $0) },
+            forgotPassword: { try await helper.postVoid("auth/forgot-password", body: $0) },
+            resetPassword: { try await helper.postVoid("auth/reset-password", body: $0) },
             getMe: { try await helper.authenticatedGet("users/me") },
             updateMe: { try await helper.authenticatedPut("users/me", body: $0) },
             uploadProfileImage: { imageData, mimeType in
@@ -46,6 +57,30 @@ extension APIClient: DependencyKey {
             },
             syncTasks: { request in
                 try await helper.authenticatedPost("tasks/sync", body: request)
+            },
+            createSession: { session in
+                try await helper.authenticatedPost("focus/sessions", body: session)
+            },
+            getAllSessions: {
+                try await helper.authenticatedGet("focus/sessions/all")
+            },
+            getPreferences: {
+                try await helper.authenticatedGet("preferences")
+            },
+            upsertPreferences: { request in
+                try await helper.authenticatedPut("preferences", body: request)
+            },
+            syncSessions: { request in
+                try await helper.authenticatedPost("sync/sessions", body: request)
+            },
+            initialUpload: { request in
+                try await helper.authenticatedPost("sync/initial-upload", body: request)
+            },
+            getFullSync: { taskCursor, sessionCursor, limit in
+                var path = "sync/full?limit=\(limit)"
+                if let tc = taskCursor { path += "&taskCursor=\(tc)" }
+                if let sc = sessionCursor { path += "&sessionCursor=\(sc)" }
+                return try await helper.authenticatedGet(path)
             }
         )
     }
@@ -58,11 +93,7 @@ extension APIClient: DependencyKey {
 private struct APIHelper: Sendable {
     let keychain: KeychainClient
 
-    #if DEBUG
-    private static let baseURL = "http://localhost:8080/api/v1"
-    #else
     private static let baseURL = "https://api.ppn.creapolis.dev/api/v1"
-    #endif
 
     private var encoder: JSONEncoder {
         let encoder = JSONEncoder()
@@ -202,10 +233,19 @@ private struct APIHelper: Sendable {
         let refreshResponse: RefreshResponse
         do {
             refreshResponse = try await post("auth/refresh", body: refreshBody)
+        } catch let apiError as APIClientError {
+            // Only clear tokens on definitive rejection (401/403), not transient errors
+            switch apiError {
+            case .sessionExpired, .serverError(401), .serverError(403):
+                try? await keychain.deleteTokens()
+                throw APIClientError.sessionExpired
+            default:
+                // Transient error (network, 5xx, etc.) — don't clear tokens
+                throw apiError
+            }
         } catch {
-            // Refresh failed — session is expired
-            try? await keychain.deleteTokens()
-            throw APIClientError.sessionExpired
+            // Network-level error — don't clear tokens, just propagate
+            throw APIClientError.networkError
         }
 
         // Save new tokens

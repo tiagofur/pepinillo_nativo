@@ -45,7 +45,7 @@ interface TaskDao {
     @Query("DELETE FROM tasks WHERE id = :taskId")
     suspend fun deleteTaskById(taskId: String)
 
-    @Query("UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1, updated_at = :now WHERE id = :taskId")
+    @Query("UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1, updated_at = :now, is_dirty = 1 WHERE id = :taskId")
     suspend fun incrementPomodoros(taskId: String, now: Long = System.currentTimeMillis())
 
     @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 0 AND is_deleted = 0")
@@ -75,4 +75,16 @@ interface TaskDao {
 
     @Query("UPDATE tasks SET sort_order = :sortOrder, updated_at = :now, is_dirty = 1 WHERE id = :taskId")
     suspend fun updateSortOrder(taskId: String, sortOrder: Int, now: Long = System.currentTimeMillis())
+
+    @Query("SELECT * FROM tasks ORDER BY created_at DESC")
+    suspend fun getAllTasksSync(): List<TaskEntity>
+
+    @Query("SELECT COUNT(*) FROM tasks")
+    suspend fun getTaskCount(): Int
+
+    @Query("DELETE FROM tasks")
+    suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM tasks WHERE is_dirty = 1")
+    fun getDirtyTaskCount(): Flow<Int>
 }

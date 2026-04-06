@@ -52,6 +52,7 @@ func (h *WebSocketHandler) WebSocketUpgrade(c *fiber.Ctx) error {
 	}
 
 	c.Locals("userID", claims.UserID)
+	c.Locals("deviceID", c.Query("deviceId", ""))
 	return c.Next()
 }
 
@@ -62,10 +63,12 @@ func (h *WebSocketHandler) HandleWebSocket(c *fiberws.Conn) {
 		return
 	}
 
+	deviceID, _ := c.Locals("deviceID").(string)
+
 	wsMgr, ok := h.wsManager.(*adapterws.Manager)
 	if !ok {
 		return
 	}
 
-	wsMgr.HandleFiberConn(c, userID)
+	wsMgr.HandleFiberConn(c, userID, deviceID)
 }

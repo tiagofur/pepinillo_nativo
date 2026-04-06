@@ -26,16 +26,20 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
+            storeFile = file(keystoreProperties["storeFile"]?.toString() ?: "release.keystore")
+            storePassword = keystoreProperties["storePassword"]?.toString() ?: ""
+            keyAlias = keystoreProperties["keyAlias"]?.toString() ?: ""
+            keyPassword = keystoreProperties["keyPassword"]?.toString() ?: ""
         }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.getByName("release")
         }
     }
@@ -62,6 +66,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.wear)
     implementation(libs.androidx.wear.compose.foundation)

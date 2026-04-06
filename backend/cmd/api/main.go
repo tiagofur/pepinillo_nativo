@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
@@ -63,6 +64,9 @@ func main() {
 	})
 
 	app.Use(helmet.New())
+	app.Use(compress.New(compress.Config{
+		Level: compress.LevelDefault,
+	}))
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: cfg.CORSAllowedOrigins,
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
@@ -245,6 +249,11 @@ func main() {
 	aiService := services.NewAIService(aiRepo, taskRepo, pomodoroRepo, llmProvider, cfg.MLServiceURL)
 	startRecurringTaskGenerator(taskService, pushService)
 
+	preferenceRepo := postgres.NewPreferenceRepository(db)
+	preferenceService := services.NewPreferenceService(preferenceRepo, wsManager)
+
+	syncService := services.NewSyncService(focusRepo, taskRepo, preferenceRepo, wsManager)
+
 	analyticsRepo := postgres.NewAnalyticsRepository(db)
 	analyticsService := services.NewAnalyticsService(analyticsRepo)
 
@@ -261,7 +270,9 @@ func main() {
 		RevenueCat: handlers.NewRevenueCatHandler(revenuecatService),
 		Push:       handlers.NewPushHandler(pushService),
 		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret),
-		Analytics:  handlers.NewAnalyticsHandler(analyticsService),
+		Analytics:   handlers.NewAnalyticsHandler(analyticsService),
+		Preferences: handlers.NewPreferenceHandler(preferenceService),
+		Sync:        handlers.NewSyncHandler(syncService),
 		JWTSecret:  cfg.JWTSecret,
 		HealthChecks: handlers.DependencyChecksFrom(
 			func(ctx context.Context) error {

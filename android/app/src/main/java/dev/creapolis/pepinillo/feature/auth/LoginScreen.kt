@@ -43,10 +43,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.feature.auth.components.DataMergeDialog
 
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
+    onNavigateToForgotPassword: () -> Unit,
     onAuthenticated: () -> Unit,
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
@@ -58,6 +60,14 @@ fun LoginScreen(
 
     LaunchedEffect(uiState.isAuthenticated, uiState.isGuestMode) {
         if (uiState.isAuthenticated || uiState.isGuestMode) onAuthenticated()
+    }
+
+    if (uiState.showMergeDialog) {
+        DataMergeDialog(
+            onMerge = viewModel::onMergeData,
+            onUseAccountOnly = viewModel::onUseAccountOnly,
+            onDismiss = viewModel::dismissMergeDialog,
+        )
     }
 
     Column(
@@ -143,7 +153,13 @@ fun LoginScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TextButton(onClick = onNavigateToForgotPassword) {
+            Text("Forgot your password?", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedButton(
             onClick = onNavigateToRegister,

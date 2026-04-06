@@ -552,4 +552,231 @@ public final class SwiftDataPersistenceService {
         }
         stats.recordSession(result)
     }
+
+    // MARK: - Session Sync
+
+    public func fetchDirtySessions() throws -> [FocusSessionRecord] {
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.isDirty == true }
+        )
+        return try context.fetch(descriptor)
+    }
+
+    public func markSessionsSynced(ids: [UUID]) throws {
+        let descriptor = FetchDescriptor<FocusSessionRecord>()
+        let allRecords = try context.fetch(descriptor)
+        for record in allRecords where ids.contains(record.id) {
+            record.isDirty = false
+            record.syncedAt = Date.now
+        }
+        try context.save()
+    }
+
+    public func upsertSessionFromServer(_ dto: FocusSessionSyncDTO) throws {
+        // Check if session already exists by ID
+        guard let sessionUUID = UUID(uuidString: dto.id) else { return }
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.id == sessionUUID }
+        )
+        if try context.fetch(descriptor).first != nil {
+            // Already exists locally, don't overwrite
+            return
+        }
+
+        // Create new record from server data
+        let iso = ISO8601DateFormatter()
+        let startedAt = iso.date(from: dto.startedAt) ?? Date.now
+        let endedAt = dto.endedAt.flatMap { iso.date(from: $0) }
+
+        let record = FocusSessionRecord(
+            mode: dto.mode,
+            phase: dto.phase,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            actualDuration: TimeInterval(dto.elapsedSeconds),
+            targetDuration: nil,
+            wasCompleted: dto.wasCompleted,
+            interruptions: 0,
+            pauseCount: dto.pauseCount,
+            totalPauseDuration: TimeInterval(dto.totalPauseSeconds)
+        )
+        record.id = sessionUUID
+        record.isDirty = false
+        record.syncedAt = Date.now
+
+        context.insert(record)
+        try context.save()
+    }
+
+    public func sessionExists(id: String) throws -> Bool {
+        guard let uuid = UUID(uuidString: id) else { return false }
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.id == uuid }
+        )
+        return try !context.fetch(descriptor).isEmpty
+    }
+
+    // MARK: - Task-Session Link Resolution
+
+    /// Find a task by its sync UUID string.
+    public func fetchTaskBySyncId(_ syncId: String) throws -> TaskItem? {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.syncId == syncId }
+        )
+        return try context.fetch(descriptor).first
+    }
+
+    /// Find a task by its server integer ID.
+    public func fetchTaskByServerId(_ serverId: Int) throws -> TaskItem? {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.serverId == serverId }
+        )
+        return try context.fetch(descriptor).first
+    }
+
+    /// Link a focus session to a task by setting its SwiftData relationship.
+    public func linkSessionToTask(sessionId: UUID, taskId: UUID) throws {
+        let sessionDescriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.id == sessionId }
+        )
+        guard let session = try context.fetch(sessionDescriptor).first else { return }
+
+        let taskDescriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == taskId }
+        )
+        guard let task = try context.fetch(taskDescriptor).first else { return }
+
+        session.task = task
+        try context.save()
+    }
+
+    // MARK: - Settings Sync
+
+    /// Syncable preference keys and their mapping to UserPreferences properties.
+    private static let syncableKeys: Set<String> = [
+        "pomodoroMinutes", "shortBreakMinutes", "longBreakMinutes", "sessionsBeforeLongBreak",
+        "autoStartBreaks", "autoStartNextPomodoro", "soundEnabled", "hapticEnabled",
+        "keepScreenOn", "defaultMode", "themeName", "followSystemAppearance", "appearanceMode",
+        "flowtimeMinMinutes", "timeBlockMinutes", "midpointCheckIn", "showJournalAfterSession"
+    ]
+
+    /// Reads all syncable preferences as key-value pairs with their update timestamps.
+    public func getAllPreferencesAsKeyValue() throws -> [(key: String, value: String, updatedAt: Date)] {
+        let prefs = try fetchPreferences()
+        let now = Date.now
+        var result: [(key: String, value: String, updatedAt: Date)] = []
+
+        result.append(("pomodoroMinutes", String(Int(prefs.pomodoroDuration / 60)), now))
+        result.append(("shortBreakMinutes", String(Int(prefs.shortBreakDuration / 60)), now))
+        result.append(("longBreakMinutes", String(Int(prefs.longBreakDuration / 60)), now))
+        result.append(("sessionsBeforeLongBreak", String(prefs.pomodorosPerCycle), now))
+        result.append(("autoStartBreaks", String(prefs.autoStartBreaks), now))
+        result.append(("autoStartNextPomodoro", String(prefs.autoStartWork), now))
+        result.append(("soundEnabled", String(prefs.soundEnabled), now))
+        result.append(("hapticEnabled", String(prefs.hapticEnabled), now))
+        result.append(("keepScreenOn", String(prefs.keepScreenOn), now))
+        result.append(("defaultMode", prefs.defaultMode, now))
+        result.append(("themeName", prefs.themeName, now))
+        result.append(("followSystemAppearance", String(prefs.followSystemAppearance), now))
+        result.append(("appearanceMode", prefs.appearanceMode, now))
+        result.append(("flowtimeMinMinutes", String(prefs.flowtimeMinSessionMinutes), now))
+        result.append(("timeBlockMinutes", String(Int(prefs.defaultBlockDuration / 60)), now))
+        result.append(("midpointCheckIn", String(prefs.blockMidpointCheckIn), now))
+        result.append(("showJournalAfterSession", String(prefs.showJournalAfterSession), now))
+
+        return result
+    }
+
+    /// Applies a single server preference by key.
+    public func applyServerPreference(key: String, value: String, updatedAt: Date) throws {
+        let prefs = try fetchPreferences()
+
+        switch key {
+        case "pomodoroMinutes":
+            if let v = Int(value) { prefs.pomodoroDuration = TimeInterval(v * 60) }
+        case "shortBreakMinutes":
+            if let v = Int(value) { prefs.shortBreakDuration = TimeInterval(v * 60) }
+        case "longBreakMinutes":
+            if let v = Int(value) { prefs.longBreakDuration = TimeInterval(v * 60) }
+        case "sessionsBeforeLongBreak":
+            if let v = Int(value) { prefs.pomodorosPerCycle = v }
+        case "autoStartBreaks":
+            prefs.autoStartBreaks = (value == "true")
+        case "autoStartNextPomodoro":
+            prefs.autoStartWork = (value == "true")
+        case "soundEnabled":
+            prefs.soundEnabled = (value == "true")
+        case "hapticEnabled":
+            prefs.hapticEnabled = (value == "true")
+        case "keepScreenOn":
+            prefs.keepScreenOn = (value == "true")
+        case "defaultMode":
+            prefs.defaultMode = value
+        case "themeName":
+            prefs.themeName = value
+        case "followSystemAppearance":
+            prefs.followSystemAppearance = (value == "true")
+        case "appearanceMode":
+            prefs.appearanceMode = value
+        case "flowtimeMinMinutes":
+            if let v = Int(value) { prefs.flowtimeMinSessionMinutes = v }
+        case "timeBlockMinutes":
+            if let v = Int(value) { prefs.defaultBlockDuration = TimeInterval(v * 60) }
+        case "midpointCheckIn":
+            prefs.blockMidpointCheckIn = (value == "true")
+        case "showJournalAfterSession":
+            prefs.showJournalAfterSession = (value == "true")
+        default:
+            break
+        }
+
+        try savePreferences(prefs)
+    }
+
+    // MARK: - Wipe Operations
+
+    public func deleteAllTasks() throws {
+        let descriptor = FetchDescriptor<TaskItem>()
+        let tasks = try context.fetch(descriptor)
+        for task in tasks { context.delete(task) }
+        try context.save()
+    }
+
+    public func deleteAllSessions() throws {
+        let descriptor = FetchDescriptor<FocusSessionRecord>()
+        let sessions = try context.fetch(descriptor)
+        for session in sessions { context.delete(session) }
+        try context.save()
+    }
+
+    public func deleteAllStats() throws {
+        let descriptor = FetchDescriptor<DailyStats>()
+        let stats = try context.fetch(descriptor)
+        for stat in stats { context.delete(stat) }
+        try context.save()
+    }
+
+    // MARK: - Count Operations
+
+    public func getTaskCount() throws -> Int {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.isDeleted == false }
+        )
+        return try context.fetchCount(descriptor)
+    }
+
+    public func getSessionCount() throws -> Int {
+        let descriptor = FetchDescriptor<FocusSessionRecord>()
+        return try context.fetchCount(descriptor)
+    }
+
+    // MARK: - Session Sync Timestamp
+
+    public func getLastSessionSyncTimestamp() -> String? {
+        UserDefaults.standard.string(forKey: "lastSessionSyncTimestamp")
+    }
+
+    public func saveLastSessionSyncTimestamp(_ timestamp: String) {
+        UserDefaults.standard.set(timestamp, forKey: "lastSessionSyncTimestamp")
+    }
 }

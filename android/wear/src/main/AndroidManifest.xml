@@ -38,7 +38,7 @@
             </intent-filter>
         </service>
 
-        <!-- Wear Tile -->
+        <!-- Wear Tile: Focus Timer -->
         <service
             android:name=".tile.FocusTileService"
             android:exported="true"
@@ -47,9 +47,12 @@
             <intent-filter>
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@drawable/tile_preview_focus" />
         </service>
 
-        <!-- Tasks Tile -->
+        <!-- Wear Tile: Tasks -->
         <service
             android:name=".tile.TasksTileService"
             android:exported="true"
@@ -58,6 +61,9 @@
             <intent-filter>
                 <action android:name="androidx.wear.tiles.action.BIND_TILE_PROVIDER" />
             </intent-filter>
+            <meta-data
+                android:name="androidx.wear.tiles.PREVIEW"
+                android:resource="@drawable/tile_preview_tasks" />
         </service>
 
         <!-- Wear Complication -->

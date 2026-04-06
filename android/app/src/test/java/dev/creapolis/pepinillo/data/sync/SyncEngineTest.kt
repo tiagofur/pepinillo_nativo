@@ -1,0 +1,316 @@
+package dev.creapolis.pepinillo.data.sync
+
+import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.network.NetworkResult
+import dev.creapolis.pepinillo.core.network.PepinilloApiClient
+import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
+import dev.creapolis.pepinillo.core.network.SessionSyncResponse
+import dev.creapolis.pepinillo.core.network.TaskDto
+import dev.creapolis.pepinillo.core.network.TaskSyncResponse
+import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
+import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
+import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
+import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
+import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
+import dev.creapolis.pepinillo.data.local.entity.TaskEntity
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+class SyncEngineTest {
+
+    private lateinit var taskDao: TaskDao
+    private lateinit var subtaskDao: SubtaskDao
+    private lateinit var sessionDao: FocusSessionDao
+    private lateinit var dailyStatsDao: DailyStatsDao
+    private lateinit var preferenceSyncDao: PreferenceSyncDao
+    private lateinit var userPreferencesRepository: UserPreferencesRepository
+    private lateinit var apiClient: PepinilloApiClient
+    private lateinit var authStore: AuthStore
+    private lateinit var settingsSyncEngine: SettingsSyncEngine
+    private lateinit var syncMetadataStore: SyncMetadataStore
+    private lateinit var syncEngine: SyncEngine
+
+    @Before
+    fun setUp() {
+        taskDao = mockk(relaxed = true)
+        subtaskDao = mockk(relaxed = true)
+        sessionDao = mockk(relaxed = true)
+        dailyStatsDao = mockk(relaxed = true)
+        preferenceSyncDao = mockk(relaxed = true)
+        userPreferencesRepository = mockk(relaxed = true)
+        apiClient = mockk(relaxed = true)
+        authStore = mockk(relaxed = true)
+        settingsSyncEngine = mockk(relaxed = true)
+        syncMetadataStore = mockk(relaxed = true)
+
+        every { userPreferencesRepository.preferences } returns flowOf(UserPreferences())
+        coEvery { settingsSyncEngine.syncSettings() } returns Result.success(Unit)
+
+        syncEngine = SyncEngine(
+            taskDao = taskDao,
+            subtaskDao = subtaskDao,
+            sessionDao = sessionDao,
+            dailyStatsDao = dailyStatsDao,
+            preferenceSyncDao = preferenceSyncDao,
+            userPreferencesRepository = userPreferencesRepository,
+            apiClient = apiClient,
+            authStore = authStore,
+            settingsSyncEngine = settingsSyncEngine,
+            syncMetadataStore = syncMetadataStore,
+        )
+    }
+
+    // -----------------------------------------------------------------------
+    // syncAll -- skip when anonymous
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncAll skips when anonymous (no token)`() = runTest {
+        every { authStore.getAccessToken() } returns null
+
+        val result = syncEngine.syncAll()
+        assertEquals(SyncResult.NotAuthenticated, result)
+
+        // No sync calls should have been made
+        coVerify(exactly = 0) { settingsSyncEngine.syncSettings() }
+    }
+
+    // -----------------------------------------------------------------------
+    // syncAll -- calls phases in correct order
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncAll calls phases in correct order (settings, tasks, sessions, stats)`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.getUserId() } returns "user-1"
+
+        // Setup task sync to return empty
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(emptyList())
+
+        // Setup session sync to return empty
+        coEvery { sessionDao.getDirtySessions() } returns emptyList()
+        coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(
+            SessionSyncResponse(sessions = emptyList(), serverTimestamp = "2025-01-01T00:00:00Z")
+        )
+
+        // Stats - return empty
+        coEvery { apiClient.getStats(any(), any()) } returns NetworkResult.Success(emptyList())
+
+        val result = syncEngine.syncAll()
+        assertEquals(SyncResult.Success, result)
+
+        // Verify all phases were called
+        coVerify { settingsSyncEngine.syncSettings() }
+        coVerify { taskDao.getDirtyTasks() }
+        coVerify { sessionDao.getDirtySessions() }
+        coVerify { apiClient.getStats(any(), any()) }
+    }
+
+    // -----------------------------------------------------------------------
+    // syncAll -- auth failure propagated
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncAll returns NotAuthenticated on auth failure`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        coEvery { settingsSyncEngine.syncSettings() } returns
+            Result.failure(AuthenticationException("401"))
+
+        val result = syncEngine.syncAll()
+        assertEquals(SyncResult.NotAuthenticated, result)
+    }
+
+    // -----------------------------------------------------------------------
+    // syncSessions -- sends dirty sessions and processes response
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncSessions sends dirty sessions and processes response`() = runTest {
+        every { authStore.getUserId() } returns "user-1"
+        every { syncMetadataStore.lastSessionSyncAt } returns null
+
+        val dirtySession = FocusSessionEntity(
+            id = "session-1",
+            mode = "Pomodoro",
+            startTime = 1000L,
+            endTime = 2000L,
+            durationMillis = 1000L,
+            isDirty = true,
+        )
+        coEvery { sessionDao.getDirtySessions() } returns listOf(dirtySession)
+        coEvery { taskDao.getTaskById(any()) } returns null
+
+        val serverSession = PomodoroSessionDto(
+            id = "server-session-1",
+            startedAt = "2025-01-01T00:00:00Z",
+            endedAt = "2025-01-01T00:25:00Z",
+            mode = "pomodoro",
+            phase = "work",
+            durationSeconds = 1500,
+            createdAt = "2025-01-01T00:00:00Z",
+        )
+        coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(
+            SessionSyncResponse(
+                sessions = listOf(serverSession),
+                serverTimestamp = "2025-06-15T12:00:00Z",
+            )
+        )
+
+        syncEngine.syncSessions()
+
+        // Verify sessions were upserted
+        coVerify { sessionDao.upsertSessions(any()) }
+        // Verify dirty sessions were marked synced
+        coVerify { sessionDao.markSynced("session-1", any()) }
+    }
+
+    // -----------------------------------------------------------------------
+    // syncSessions -- stores serverTimestamp
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncSessions stores serverTimestamp in SyncMetadataStore`() = runTest {
+        every { authStore.getUserId() } returns "user-1"
+        every { syncMetadataStore.lastSessionSyncAt } returns null
+
+        coEvery { sessionDao.getDirtySessions() } returns emptyList()
+        coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(
+            SessionSyncResponse(
+                sessions = emptyList(),
+                serverTimestamp = "2025-06-15T12:00:00Z",
+            )
+        )
+
+        syncEngine.syncSessions()
+
+        verify { syncMetadataStore.lastSessionSyncAt = "2025-06-15T12:00:00Z" }
+    }
+
+    // -----------------------------------------------------------------------
+    // initialUpload -- collects all local data
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `initialUpload collects all local data`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.getOrCreateDeviceId() } returns "device-1"
+        every { authStore.getUserId() } returns "user-1"
+
+        val task = TaskEntity(
+            id = "task-1",
+            title = "Test Task",
+            createdAt = 1000L,
+            updatedAt = 2000L,
+        )
+        coEvery { taskDao.getAllTasksSync() } returns listOf(task)
+        coEvery { subtaskDao.getSubtasksForTaskSync(any()) } returns emptyList()
+
+        val session = FocusSessionEntity(
+            id = "session-1",
+            mode = "Pomodoro",
+            startTime = 1000L,
+            endTime = 2000L,
+            durationMillis = 1000L,
+        )
+        coEvery { sessionDao.getAllSessionsSync() } returns listOf(session)
+        coEvery { preferenceSyncDao.getDirtyPreferences() } returns emptyList()
+
+        coEvery { apiClient.initialUpload(any()) } returns NetworkResult.Success(
+            dev.creapolis.pepinillo.core.network.InitialUploadResponse(
+                tasks = emptyList(),
+                sessions = emptyList(),
+                settings = emptyList(),
+                serverTimestamp = "2025-01-01T00:00:00Z",
+                hasExistingData = false,
+            )
+        )
+
+        val result = syncEngine.initialUpload()
+        assertTrue(result is InitialUploadResult.Success)
+        assertEquals(false, (result as InitialUploadResult.Success).hasExistingData)
+
+        // Verify all local data was collected
+        coVerify { taskDao.getAllTasksSync() }
+        coVerify { sessionDao.getAllSessionsSync() }
+        coVerify { preferenceSyncDao.getDirtyPreferences() }
+    }
+
+    // -----------------------------------------------------------------------
+    // initialUpload -- returns hasExistingData correctly
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `initialUpload returns hasExistingData correctly`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.getOrCreateDeviceId() } returns "device-1"
+        every { authStore.getUserId() } returns "user-1"
+
+        coEvery { taskDao.getAllTasksSync() } returns emptyList()
+        coEvery { sessionDao.getAllSessionsSync() } returns emptyList()
+        coEvery { preferenceSyncDao.getDirtyPreferences() } returns emptyList()
+
+        coEvery { apiClient.initialUpload(any()) } returns NetworkResult.Success(
+            dev.creapolis.pepinillo.core.network.InitialUploadResponse(
+                tasks = emptyList(),
+                sessions = emptyList(),
+                settings = emptyList(),
+                serverTimestamp = "2025-01-01T00:00:00Z",
+                hasExistingData = true,
+            )
+        )
+
+        val result = syncEngine.initialUpload()
+        assertTrue(result is InitialUploadResult.Success)
+        assertEquals(true, (result as InitialUploadResult.Success).hasExistingData)
+    }
+
+    // -----------------------------------------------------------------------
+    // initialUpload -- not authenticated
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `initialUpload returns NotAuthenticated when no token`() = runTest {
+        every { authStore.getAccessToken() } returns null
+
+        val result = syncEngine.initialUpload()
+        assertEquals(InitialUploadResult.NotAuthenticated, result)
+    }
+
+    // -----------------------------------------------------------------------
+    // syncTasks -- auth failure
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncTasks throws AuthenticationException on 401`() = runTest {
+        val dirtyTask = TaskEntity(
+            id = "task-1",
+            title = "Test",
+            createdAt = 1000L,
+            updatedAt = 2000L,
+            isDirty = true,
+        )
+        coEvery { taskDao.getDirtyTasks() } returns listOf(dirtyTask)
+        coEvery { subtaskDao.getSubtasksForTaskSync(any()) } returns emptyList()
+        coEvery { apiClient.syncTasks(any()) } returns NetworkResult.Error(401, "Unauthorized")
+
+        try {
+            syncEngine.syncTasks()
+            assertTrue("Should have thrown", false)
+        } catch (e: AuthenticationException) {
+            // Expected
+        }
+    }
+}

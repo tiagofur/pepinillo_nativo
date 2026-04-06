@@ -6,8 +6,10 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Build
@@ -53,6 +55,7 @@ class FocusTimerService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isCollecting = false
+    private var dayChangeReceiver: BroadcastReceiver? = null
 
     companion object {
         const val CHANNEL_ID = "focus_timer_channel"
@@ -72,6 +75,7 @@ class FocusTimerService : Service() {
         private const val KEY_R_COMPLETED = "r_completed"
         private const val KEY_R_ACTIVE = "r_active"
         private const val KEY_R_STATUS = "r_status"
+        private const val KEY_R_DAY_START = "r_day_start"
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, FocusTimerService::class.java))
@@ -90,6 +94,7 @@ class FocusTimerService : Service() {
                 .putInt(KEY_R_COMPLETED, state.completedSessions)
                 .putString(KEY_R_STATUS, state.status.name)
                 .putBoolean(KEY_R_ACTIVE, true)
+                .putLong(KEY_R_DAY_START, SessionRepository.startOfDay(System.currentTimeMillis()))
                 .apply()
         }
 
@@ -114,6 +119,7 @@ class FocusTimerService : Service() {
                 sessionStartTime = startTime,
                 totalMillis = prefs.getLong(KEY_R_TOTAL, 0L),
                 completedSessions = prefs.getInt(KEY_R_COMPLETED, 0),
+                savedDayStart = prefs.getLong(KEY_R_DAY_START, 0L),
             )
         }
     }
@@ -125,11 +131,27 @@ class FocusTimerService : Service() {
         val sessionStartTime: Long,
         val totalMillis: Long,
         val completedSessions: Int,
+        val savedDayStart: Long = 0L,
     )
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        registerDayChangeReceiver()
+    }
+
+    private fun registerDayChangeReceiver() {
+        dayChangeReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                focusEngine.onDayChanged()
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_DATE_CHANGED)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        }
+        registerReceiver(dayChangeReceiver, filter)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -149,6 +171,7 @@ class FocusTimerService : Service() {
                         completedSessions = recovery.completedSessions,
                         sessionStartTime = recovery.sessionStartTime,
                         status = recovery.status,
+                        savedDayStart = recovery.savedDayStart,
                     )
                 }
             } else {
@@ -319,6 +342,7 @@ class FocusTimerService : Service() {
     override fun onDestroy() {
         isCollecting = false
         serviceScope.cancel()
+        dayChangeReceiver?.let { unregisterReceiver(it) }
         super.onDestroy()
     }
 

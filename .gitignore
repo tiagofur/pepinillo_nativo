@@ -71,3 +71,4 @@ android/key.properties
 .gitignore
 .gitignore
 android/pepinillo.jks
+backend/api.exe

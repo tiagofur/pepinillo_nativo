@@ -6,7 +6,9 @@ import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -40,6 +42,13 @@ class SessionRepository @Inject constructor(
     private val sessionDao: FocusSessionDao,
     private val dailyStatsDao: DailyStatsDao,
 ) {
+    private val _currentDayStart = MutableStateFlow(startOfDay(System.currentTimeMillis()))
+
+    /** Called by FocusEngine when the calendar day changes — refreshes all "today" flows. */
+    fun notifyDayChanged() {
+        _currentDayStart.value = startOfDay(System.currentTimeMillis())
+    }
+
     suspend fun recordSession(
         mode: String,
         startTime: Long,
@@ -115,16 +124,22 @@ class SessionRepository @Inject constructor(
             .getOrDefault(0)
 
     fun getTodaySessions(): Flow<List<FocusSessionEntity>> =
-        sessionDao.getSessionsForDay(startOfDay(System.currentTimeMillis()))
-            .catch { e -> Log.e(TAG, "Error loading today sessions", e); emit(emptyList()) }
+        _currentDayStart.flatMapLatest { dayStart ->
+            sessionDao.getSessionsForDay(dayStart)
+                .catch { e -> Log.e(TAG, "Error loading today sessions", e); emit(emptyList()) }
+        }
 
     fun getTodaySessionCount(): Flow<Int> =
-        sessionDao.getSessionCountForDay(startOfDay(System.currentTimeMillis()))
-            .catch { e -> Log.e(TAG, "Error loading session count", e); emit(0) }
+        _currentDayStart.flatMapLatest { dayStart ->
+            sessionDao.getSessionCountForDay(dayStart)
+                .catch { e -> Log.e(TAG, "Error loading session count", e); emit(0) }
+        }
 
     fun getTodayStats(): Flow<DailyStatsEntity?> =
-        dailyStatsDao.observeStatsForDate(startOfDay(System.currentTimeMillis()))
-            .catch { e -> Log.e(TAG, "Error loading today stats", e); emit(null) }
+        _currentDayStart.flatMapLatest { dayStart ->
+            dailyStatsDao.observeStatsForDate(dayStart)
+                .catch { e -> Log.e(TAG, "Error loading today stats", e); emit(null) }
+        }
 
     fun getWeekStats(): Flow<List<DailyStatsEntity>> {
         val now = System.currentTimeMillis()

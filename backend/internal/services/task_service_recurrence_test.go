@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"pepinillo/backend/internal/domain"
+	"pepinillo/backend/internal/ports"
 )
 
 type fakeTaskRepository struct {
@@ -70,6 +71,9 @@ func (f *fakeTaskRepository) IncrementFocusTime(_ context.Context, _ int, _ stri
 }
 func (f *fakeTaskRepository) SetActiveSession(_ context.Context, _ int, _ *string) error {
 	return nil
+}
+func (f *fakeTaskRepository) ListByUserPaginated(_ context.Context, _ string, _ *ports.PaginationCursor, _ int) ([]domain.Task, error) {
+	return nil, nil
 }
 
 func TestTaskServiceListRecurrences(t *testing.T) {

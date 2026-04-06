@@ -23,16 +23,28 @@ object WearDataFetcher {
                     when (path) {
                         WearDataPaths.PATH_TIMER -> {
                             val lid = map.getString("linkedTaskId", "")
+                            val status = map.getString("status", "Idle")
+                            val elapsedMillis = map.getLong("elapsedMillis")
+                            val totalMillis = map.getLong("totalMillis")
+                            val timestamp = map.getLong("timestamp")
+                            val phaseEndEpochMs = if (status == "Running" && totalMillis > 0) {
+                                timestamp + (totalMillis - elapsedMillis)
+                            } else {
+                                0L
+                            }
                             val timerState = WearTimerState(
                                 mode = map.getString("mode", "Pomodoro"),
                                 phase = map.getString("phase", "Work"),
-                                status = map.getString("status", "Idle"),
+                                status = status,
                                 displayTime = map.getString("displayTime", "00:00"),
                                 phaseLabel = map.getString("phaseLabel", "Focus"),
                                 progress = map.getFloat("progress", 0f),
                                 isConnected = true,
                                 linkedTaskId = lid.ifEmpty { null },
                                 linkedTaskName = map.getString("linkedTaskName", "").ifEmpty { null },
+                                completedSessions = map.getInt("completedSessions", 0),
+                                phaseEndEpochMs = phaseEndEpochMs,
+                                totalDurationMs = totalMillis,
                             )
                             WearDataStore.updateTimer(timerState)
                             WearSnapshotStore.persistTimerState(context, timerState)

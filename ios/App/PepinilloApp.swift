@@ -61,9 +61,26 @@ struct PepinilloApp: App {
             AppView(store: store)
                 .modelContainer(modelContainer)
                 .onChange(of: scenePhase) { _, newPhase in
-                    if newPhase == .active {
+                    switch newPhase {
+                    case .active:
+                        // Detect day change while app was backgrounded overnight
+                        let today = Calendar.current.startOfDay(for: Date.now)
+                        let key = "pep_lastActiveDayStart"
+                        let lastTimestamp = UserDefaults.standard.double(forKey: key)
+                        UserDefaults.standard.set(today.timeIntervalSince1970, forKey: key)
+                        if lastTimestamp > 0 && Date(timeIntervalSince1970: lastTimestamp) < today {
+                            store.send(.dayChanged)
+                        }
                         store.send(.appBecameActive)
+                    case .background:
+                        store.send(.appWentToBackground)
+                    default:
+                        break
                     }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+                    // Fires at midnight — resets daily Pomodoro counters without interrupting active session
+                    store.send(.dayChanged)
                 }
         }
         .defaultSize(width: 1_100, height: 720)
