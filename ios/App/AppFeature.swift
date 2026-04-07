@@ -249,8 +249,10 @@ struct AppFeature {
                         } catch {
                             // Network error — use cached data silently
                         }
-                        // Sync tasks after profile refresh
-                        try? await syncClient.syncAll()
+                        // Sync tasks after profile refresh if Pro
+                        if state.subscriptionState.isPro {
+                            try? await syncClient.syncAll()
+                        }
                     },
                     // Connect WebSocket if authenticated
                     .run { [keychain, webSocketClient] _ in
@@ -323,6 +325,8 @@ struct AppFeature {
                 state.focus.isProUser = sub.isPro
                 state.settings.isProUser = sub.isPro
                 state.analytics.isProUser = sub.isPro
+                state.tasks.isProUser = sub.isPro
+                AppGroupDefaults.isProUser = sub.isPro
                 return .none
 
             case .subscriptionUpdated(let sub):
@@ -330,6 +334,8 @@ struct AppFeature {
                 state.focus.isProUser = sub.isPro
                 state.settings.isProUser = sub.isPro
                 state.analytics.isProUser = sub.isPro
+                state.tasks.isProUser = sub.isPro
+                AppGroupDefaults.isProUser = sub.isPro
                 if sub.isPro { state.focus.showPaywall = false }
                 return .none
 
@@ -362,7 +368,11 @@ struct AppFeature {
 
             case .weeklyReviewDrawerTapped:
                 state.isDrawerOpen = false
-                state.analytics.weeklyReview = WeeklyReviewFeature.State()
+                if state.subscriptionState.isPro {
+                    state.analytics.weeklyReview = WeeklyReviewFeature.State()
+                } else {
+                    state.focus.showPaywall = true
+                }
                 return .none
 
             case .upgradeDrawerTapped:
@@ -407,9 +417,11 @@ struct AppFeature {
                 state.displayName = user.name
                 state.userEmail = user.email
                 state.auth = nil  // dismiss auth sheet
-                // Sync tasks and connect WebSocket after successful email login
-                return .run { [syncClient, webSocketClient] _ in
-                    try? await syncClient.syncAll()
+                // Sync tasks and connect WebSocket after successful email login if Pro
+                return .run { [syncClient, webSocketClient, isPro = state.subscriptionState.isPro] _ in
+                    if isPro {
+                        try? await syncClient.syncAll()
+                    }
                     await webSocketClient.connect()
                 }
 
@@ -507,8 +519,10 @@ struct AppFeature {
                                     )
                                     try? await persistence.saveCachedUser(dto)
                                     await send(.cachedUserLoaded(dto))
-                                    // Sync tasks and connect WebSocket after successful Apple Sign-In
-                                    try? await syncClient.syncAll()
+                                    // Sync tasks and connect WebSocket after successful Apple Sign-In if Pro
+                                    if state.subscriptionState.isPro {
+                                        try? await syncClient.syncAll()
+                                    }
                                     await webSocketClient.connect()
                                 } catch {
                                     // Backend auth failed — continue with local-only Apple ID (existing behavior)

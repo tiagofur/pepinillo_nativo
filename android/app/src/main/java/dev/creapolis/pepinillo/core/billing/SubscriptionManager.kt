@@ -11,6 +11,7 @@ import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.purchaseWith
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.creapolis.pepinillo.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +25,7 @@ import javax.inject.Singleton
 import kotlin.coroutines.resume
 
 private const val TAG = "SubscriptionManager"
-private const val REVENUECAT_API_KEY = "goog_ITPYSPEdubAzAeoNGxezZuZJELT"
+private const val REVENUECAT_API_KEY = BuildConfig.REVENUECAT_API_KEY
 private const val ENTITLEMENT_ID = "premium"
 
 data class ProductInfo(

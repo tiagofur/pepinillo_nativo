@@ -291,15 +291,15 @@ private extension PepinilloProduct {
         switch self {
         case .monthly:
             return ProductInfo(id: rawValue, displayName: "Pro Monthly",
-                               description: "All features, billed monthly.", displayPrice: "$2.99",
+                               description: "All features, billed monthly.", displayPrice: "$3.99",
                                billingPeriod: "month")
         case .annual:
             return ProductInfo(id: rawValue, displayName: "Pro Annual",
-                               description: "Best value — save 50%.", displayPrice: "$14.99",
+                               description: "Best value — save 48%.", displayPrice: "$24.99",
                                billingPeriod: "year", isFeatured: true)
         case .lifetime:
             return ProductInfo(id: rawValue, displayName: "Pro Lifetime",
-                               description: "Pay once, own forever.", displayPrice: "$29.99",
+                               description: "Pay once, own forever.", displayPrice: "$49.99",
                                billingPeriod: "once")
         }
     }

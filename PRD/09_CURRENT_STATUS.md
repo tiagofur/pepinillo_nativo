@@ -12,7 +12,7 @@
 
 | Platform        | Status                                                              | Files           | Approx. Lines | Build                |
 | --------------- | ------------------------------------------------------------------- | --------------- | ------------- | -------------------- |
-| iOS (iPhone)    | Phases 1-3 complete (all P0 + P1)                                   | ~143 Swift      | ~30K          | Requires Xcode setup |
+| iOS (iPhone)    | App Store Ready (Audit P0-P3 fixes applied, ready for review)       | ~143 Swift      | ~30K          | Requires Xcode setup |
 | watchOS         | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included      | Requires Xcode setup |
 | Android (phone) | Sprints 1-4 complete (Foundation + Ecosystem + Polish)              | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL     |
 | Wear OS         | Implemented (timer, tasks, stats, tile, complication)               | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL     |

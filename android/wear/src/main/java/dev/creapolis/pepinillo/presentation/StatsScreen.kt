@@ -28,11 +28,18 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.WearStatsState
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.wear.compose.material.Icon
+
 @Composable
 fun StatsScreen(
     state: WearStatsState,
     syncStatusLabel: String? = null,
     isSyncStale: Boolean = false,
+    isPro: Boolean = false,
     isActive: Boolean = true,
 ) {
     val listState = rememberScalingLazyListState()
@@ -41,6 +48,33 @@ fun StatsScreen(
 
     LaunchedEffect(isActive) {
         if (isActive) focusRequester.requestFocus()
+    }
+
+    if (!isPro) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Locked",
+                    modifier = Modifier.size(24.dp),
+                    tint = MaterialTheme.colors.primary,
+                )
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Unlock detailed stats with Pepinillo Pro",
+                    style = MaterialTheme.typography.caption2,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colors.onSurface,
+                )
+            }
+        }
+        return
     }
 
     ScalingLazyColumn(

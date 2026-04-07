@@ -41,7 +41,7 @@ struct DrawerOverlayView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
-        .animation(.easeInOut(duration: 0.28), value: store.isDrawerOpen)
+        .conditionalAnimation(.easeInOut(duration: 0.28), value: store.isDrawerOpen)
     }
 }
 

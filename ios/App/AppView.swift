@@ -121,7 +121,7 @@ struct AppView: View {
                 .zIndex(100)
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: store.pendingCelebration)
+        .conditionalAnimation(.easeInOut(duration: 0.3), value: store.pendingCelebration)
         // MARK: - Handoff: Donate current activity
         .userActivity(HandoffActivity.focusSession) { activity in
             let modeID = (store.focus.activeMode ?? store.focus.selectedMode).rawValue

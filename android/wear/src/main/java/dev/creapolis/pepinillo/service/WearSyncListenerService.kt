@@ -176,6 +176,13 @@ class WearSyncListenerService : WearableListenerService() {
                     processor.onStatsData(statsState)
                 }
 
+                WearDataPaths.PATH_USER -> {
+                    val isPro = dataMap.getBoolean("isPro", false)
+                    Log.d(TAG, "User DataItem changed, isPro=$isPro")
+                    WearDataStore.updateIsPro(isPro)
+                    WearSnapshotStore.persistIsPro(this@WearSyncListenerService, isPro)
+                }
+
                 "/pepinillo/theme" -> {
                     val themeId = dataMap.getString("themeId") ?: "classic"
                     val colors = WearThemeColors(

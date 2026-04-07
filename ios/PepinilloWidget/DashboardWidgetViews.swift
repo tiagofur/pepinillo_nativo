@@ -8,6 +8,32 @@ import SwiftUI
 import Charts
 import WidgetKit
 
+// MARK: - Pro Lock Overlay
+
+struct ProWidgetOverlay: View {
+    let title: String
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "lock.fill")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.caption)
+                .fontWeight(.bold)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Text(String(localized: "Pepinillo Pro required"))
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+                .textCase(.uppercase)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground).opacity(0.8))
+        .containerBackground(.fill.tertiary, for: .widget)
+    }
+}
+
 // MARK: - Small Widget
 
 struct DashboardWidgetSmall: View {
@@ -69,6 +95,7 @@ struct DashboardWidgetSmall: View {
                     }
                 }
                 .padding(12)
+                .blur(radius: entry.isProUser ? 0 : 3)
             } else {
                 // StandBy mode
                 VStack(spacing: 8) {
@@ -85,6 +112,11 @@ struct DashboardWidgetSmall: View {
                         .font(.title3)
                     }
                 }
+                .blur(radius: entry.isProUser ? 0 : 5)
+            }
+
+            if !entry.isProUser {
+                ProWidgetOverlay(title: String(localized: "Weekly Stats"))
             }
         }
         .accessibilityElement(children: .combine)
@@ -157,6 +189,7 @@ struct DashboardWidgetMedium: View {
                     }
                 }
                 .padding(14)
+                .blur(radius: entry.isProUser ? 0 : 3)
             } else {
                 // StandBy
                 HStack(spacing: 20) {
@@ -179,6 +212,11 @@ struct DashboardWidgetMedium: View {
                         }
                     }
                 }
+                .blur(radius: entry.isProUser ? 0 : 5)
+            }
+
+            if !entry.isProUser {
+                ProWidgetOverlay(title: String(localized: "Productivity Insights"))
             }
         }
         .accessibilityElement(children: .combine)
@@ -292,6 +330,11 @@ struct DashboardWidgetLarge: View {
                 }
             }
             .padding(16)
+            .blur(radius: entry.isProUser ? 0 : 4)
+
+            if !entry.isProUser {
+                ProWidgetOverlay(title: String(localized: "Advanced Performance Analytics"))
+            }
         }
     }
 }

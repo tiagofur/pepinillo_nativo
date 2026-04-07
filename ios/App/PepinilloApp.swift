@@ -18,8 +18,8 @@ struct PepinilloApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
 
-    let modelContainer: ModelContainer
-    let store: StoreOf<AppFeature>
+    let modelContainer: ModelContainer?
+    let store: StoreOf<AppFeature>?
 
     @MainActor
     init() {
@@ -52,43 +52,63 @@ struct PepinilloApp: App {
                 // use their liveValue automatically via @DependencyKey
             }
         } catch {
-            fatalError("Failed to create shared ModelContainer: \(error)")
+            modelContainer = nil
+            store = nil
         }
     }
 
     var body: some Scene {
         WindowGroup {
-            AppView(store: store)
-                .modelContainer(modelContainer)
-                .onChange(of: scenePhase) { _, newPhase in
-                    switch newPhase {
-                    case .active:
-                        // Detect day change while app was backgrounded overnight
-                        let today = Calendar.current.startOfDay(for: Date.now)
-                        let key = "pep_lastActiveDayStart"
-                        let lastTimestamp = UserDefaults.standard.double(forKey: key)
-                        UserDefaults.standard.set(today.timeIntervalSince1970, forKey: key)
-                        if lastTimestamp > 0 && Date(timeIntervalSince1970: lastTimestamp) < today {
-                            store.send(.dayChanged)
+            if let store = store, let container = modelContainer {
+                AppView(store: store)
+                    .modelContainer(container)
+                    .onChange(of: scenePhase) { _, newPhase in
+                        switch newPhase {
+                        case .active:
+                            // Detect day change while app was backgrounded overnight
+                            let today = Calendar.current.startOfDay(for: Date.now)
+                            let key = "pep_lastActiveDayStart"
+                            let lastTimestamp = UserDefaults.standard.double(forKey: key)
+                            UserDefaults.standard.set(today.timeIntervalSince1970, forKey: key)
+                            if lastTimestamp > 0 && Date(timeIntervalSince1970: lastTimestamp) < today {
+                                store.send(.dayChanged)
+                            }
+                            store.send(.appBecameActive)
+                        case .background:
+                            store.send(.appWentToBackground)
+                        default:
+                            break
                         }
-                        store.send(.appBecameActive)
-                    case .background:
-                        store.send(.appWentToBackground)
-                    default:
-                        break
                     }
+                    .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+                        // Fires at midnight — resets daily Pomodoro counters without interrupting active session
+                        store.send(.dayChanged)
+                    }
+            } else {
+                VStack(spacing: 20) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.red)
+                    Text("Initialization Failed")
+                        .font(.title)
+                        .bold()
+                    Text("Pepinillo could not load your local data. Please check your available storage space or restart the app.")
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
                 }
-                .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
-                    // Fires at midnight — resets daily Pomodoro counters without interrupting active session
-                    store.send(.dayChanged)
-                }
+                .padding()
+            }
         }
         .defaultSize(width: 1_100, height: 720)
         #if os(macOS) || targetEnvironment(macCatalyst)
         .windowResizability(.contentMinSize)
         #endif
         .commands {
-            PepinilloCommands(store: store)
+            if let store = store {
+                PepinilloCommands(store: store)
+            } else {
+                EmptyCommands()
+            }
         }
     }
 }

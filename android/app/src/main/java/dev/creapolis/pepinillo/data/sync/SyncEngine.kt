@@ -1,7 +1,10 @@
 package dev.creapolis.pepinillo.data.sync
 
+import android.content.Context
 import android.util.Log
 import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
+import dev.creapolis.pepinillo.core.billing.SubscriptionTier
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.core.network.SubTaskDto
@@ -22,6 +25,7 @@ import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.LocalDate
@@ -69,6 +73,7 @@ fun classifyAndThrowHttpError(code: Int, message: String): Nothing {
 
 @Singleton
 class SyncEngine @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val taskDao: TaskDao,
     private val subtaskDao: SubtaskDao,
     private val sessionDao: FocusSessionDao,
@@ -80,6 +85,7 @@ class SyncEngine @Inject constructor(
     private val settingsSyncEngine: SettingsSyncEngine,
     private val syncMetadataStore: SyncMetadataStore,
     private val syncStatusManager: SyncStatusManager,
+    private val subscriptionManager: SubscriptionManager,
 ) {
     private fun Long.toRfc3339(): String {
         val instant = Instant.ofEpochMilli(this)
@@ -100,6 +106,13 @@ class SyncEngine @Inject constructor(
             println("[$TAG]syncAll: NOT AUTHENTICATED")
             return SyncResult.NotAuthenticated
         }
+
+        // Gate: Only PRO users can sync
+        if (!subscriptionManager.subscriptionState.value.isPro) {
+            println("[$TAG]syncAll: FREE TIER - SKIPPING CLOUD SYNC")
+            return SyncResult.Success
+        }
+
         syncStatusManager.onSyncStarted()
         return try {
             println("[$TAG]syncAll: STARTING")
@@ -128,6 +141,7 @@ class SyncEngine @Inject constructor(
         } catch (e: TransientSyncException) {
             println("[$TAG]syncAll: TRANSIENT ERROR - ${e.message}")
             syncStatusManager.onSyncError(e.message ?: "Sync error, will retry")
+            SyncWorker.scheduleOneTime(context)
             SyncResult.TransientError(e)
         } catch (e: Exception) {
             println("[$TAG]syncAll: FAILED (transient) - ${e::class.simpleName}: ${e.message}")
@@ -152,6 +166,13 @@ class SyncEngine @Inject constructor(
             println("[$TAG]initialUpload: NOT AUTHENTICATED")
             return InitialUploadResult.NotAuthenticated
         }
+
+        // Gate: Only PRO users can upload initial data
+        if (!subscriptionManager.subscriptionState.value.isPro) {
+            println("[$TAG]initialUpload: FREE TIER - SKIPPING INITIAL UPLOAD")
+            return InitialUploadResult.Success(hasExistingData = false)
+        }
+
         return try {
             println("[$TAG]initialUpload: STARTING")
             val deviceId = authStore.getOrCreateDeviceId()

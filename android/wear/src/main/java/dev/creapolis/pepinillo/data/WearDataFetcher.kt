@@ -70,6 +70,12 @@ object WearDataFetcher {
                             WearSnapshotStore.persistStats(context, statsState)
                         }
 
+                        WearDataPaths.PATH_USER -> {
+                            val isPro = map.getBoolean("isPro", false)
+                            Log.d(TAG, "User DataItem found, isPro=$isPro")
+                            WearDataStore.updateIsPro(isPro)
+                        }
+
                         "/pepinillo/theme" -> {
                             val themeId = map.getString("themeId") ?: "classic"
                             val colors = WearThemeColors(

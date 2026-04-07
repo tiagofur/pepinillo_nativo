@@ -1,0 +1,185 @@
+{
+  "version": "1.0.0",
+  "generated": "2026-04-07T18:13:14.005Z",
+  "stack": {
+    "primaryLanguage": "python",
+    "languages": [
+      "swift",
+      "python",
+      "go",
+      "kotlin"
+    ],
+    "frameworks": [],
+    "buildTools": [],
+    "testFrameworks": [],
+    "packageManager": null,
+    "isMonorepo": false,
+    "hasDocker": false,
+    "hasCI": true
+  },
+  "structure": {
+    "totalFiles": 659,
+    "rootPath": ".",
+    "topDirectories": [
+      {
+        "name": "android",
+        "fileCount": 256,
+        "description": "Module directory"
+      },
+      {
+        "name": "backend",
+        "fileCount": 150,
+        "description": "Module directory"
+      },
+      {
+        "name": "docs",
+        "fileCount": 3,
+        "description": "Documentation files"
+      },
+      {
+        "name": "ios",
+        "fileCount": 232,
+        "description": "Io definitions"
+      },
+      {
+        "name": "PRD",
+        "fileCount": 10,
+        "description": "Module directory"
+      },
+      {
+        "name": "scripts",
+        "fileCount": 2,
+        "description": "Build and utility scripts"
+      }
+    ],
+    "languageDistribution": [
+      {
+        "extension": ".swift",
+        "count": 162
+      },
+      {
+        "extension": ".kt",
+        "count": 158
+      },
+      {
+        "extension": ".go",
+        "count": 114
+      },
+      {
+        "extension": ".png",
+        "count": 54
+      },
+      {
+        "extension": ".xml",
+        "count": 45
+      },
+      {
+        "extension": ".md",
+        "count": 24
+      },
+      {
+        "extension": ".sql",
+        "count": 22
+      },
+      {
+        "extension": ".mp3",
+        "count": 16
+      },
+      {
+        "extension": ".log",
+        "count": 9
+      },
+      {
+        "extension": ".json",
+        "count": 6
+      }
+    ]
+  },
+  "architecture": {
+    "layers": [
+      {
+        "name": "Services",
+        "description": "Business logic and orchestration",
+        "directories": [
+          "backend\\ml_service"
+        ],
+        "symbolCount": 3,
+        "dependsOn": []
+      }
+    ],
+    "patterns": [],
+    "entryPoints": [],
+    "mainEntryPoints": [],
+    "moduleExports": []
+  },
+  "symbols": {
+    "classes": [
+      {
+        "name": "ProductivityPredictionRequest",
+        "kind": "class",
+        "file": "backend\\ml_service\\main.py",
+        "line": 8,
+        "exported": true
+      }
+    ],
+    "interfaces": [],
+    "functions": [
+      {
+        "name": "health",
+        "kind": "function",
+        "file": "backend\\ml_service\\main.py",
+        "line": 15,
+        "exported": true
+      },
+      {
+        "name": "predict_productivity",
+        "kind": "function",
+        "file": "backend\\ml_service\\main.py",
+        "line": 20,
+        "exported": true
+      }
+    ],
+    "types": [],
+    "enums": []
+  },
+  "publicAPI": [
+    {
+      "name": "health",
+      "kind": "function",
+      "file": "backend\\ml_service\\main.py",
+      "line": 15,
+      "exported": true
+    },
+    {
+      "name": "predict_productivity",
+      "kind": "function",
+      "file": "backend\\ml_service\\main.py",
+      "line": 20,
+      "exported": true
+    },
+    {
+      "name": "ProductivityPredictionRequest",
+      "kind": "class",
+      "file": "backend\\ml_service\\main.py",
+      "line": 8,
+      "exported": true
+    }
+  ],
+  "dependencies": {
+    "mostImported": []
+  },
+  "stats": {
+    "totalSymbols": 3,
+    "exportedSymbols": 3,
+    "analysisTimeMs": 240
+  },
+  "keyFiles": [],
+  "navigation": {
+    "tests": "src/**/*.test.ts",
+    "config": [],
+    "types": [],
+    "mainLogic": [
+      "src"
+    ]
+  }
+}

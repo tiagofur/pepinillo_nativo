@@ -78,10 +78,13 @@ fun PepinilloTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = true,
     selectedThemeId: String = "materialYou",
+    isPro: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val appTheme = AppTheme.named(selectedThemeId)
-    val useDynamicColor = dynamicColor && selectedThemeId == "materialYou"
+    // Force default theme if not PRO
+    val enforcedThemeId = if (isPro) selectedThemeId else "materialYou"
+    val appTheme = AppTheme.named(enforcedThemeId)
+    val useDynamicColor = dynamicColor && enforcedThemeId == "materialYou"
 
     val colorScheme = when {
         useDynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {

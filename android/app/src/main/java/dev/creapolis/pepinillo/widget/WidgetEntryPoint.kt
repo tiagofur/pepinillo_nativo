@@ -3,6 +3,7 @@ package dev.creapolis.pepinillo.widget
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 
@@ -11,4 +12,5 @@ import dev.creapolis.pepinillo.data.repository.TaskRepository
 interface WidgetEntryPoint {
     fun sessionRepository(): SessionRepository
     fun taskRepository(): TaskRepository
+    fun subscriptionManager(): SubscriptionManager
 }

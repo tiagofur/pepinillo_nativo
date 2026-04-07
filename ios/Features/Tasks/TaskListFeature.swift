@@ -24,6 +24,7 @@ struct TaskListFeature {
         var selectedTaskID: UUID?
         var recentlyDeletedTask: TaskItemState?
         var successMessage: String?
+        var isProUser: Bool = false
         @Presents var detail: TaskDetailFeature.State?
     }
 
@@ -258,7 +259,9 @@ struct TaskListFeature {
             case .taskTapped(let id):
                 guard let task = state.tasks[id: id] else { return .none }
                 state.selectedTaskID = id
-                state.detail = TaskDetailFeature.State(from: task)
+                var detailState = TaskDetailFeature.State(from: task)
+                detailState.isProUser = state.isProUser
+                state.detail = detailState
                 return .none
 
             case .taskCompleted(let id):

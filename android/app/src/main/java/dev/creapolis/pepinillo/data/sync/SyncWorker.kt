@@ -5,8 +5,8 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -46,6 +46,8 @@ class SyncWorker @AssistedInject constructor(
     }
 
     companion object {
+        private const val ONE_TIME_WORK_NAME = "pepinillo_sync_one_time"
+
         fun schedule(context: Context) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -58,7 +60,24 @@ class SyncWorker @AssistedInject constructor(
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(
                     WORK_NAME,
-                    ExistingPeriodicWorkPolicy.KEEP,
+                    androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                    request,
+                )
+        }
+
+        fun scheduleOneTime(context: Context) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val request = OneTimeWorkRequestBuilder<SyncWorker>()
+                .setConstraints(constraints)
+                .build()
+
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(
+                    ONE_TIME_WORK_NAME,
+                    ExistingWorkPolicy.REPLACE,
                     request,
                 )
         }

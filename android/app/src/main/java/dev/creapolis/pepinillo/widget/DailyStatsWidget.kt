@@ -33,10 +33,17 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import androidx.glance.layout.Box
+import androidx.glance.Image
+import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
+import androidx.glance.unit.ColorProvider
+import androidx.glance.color.ColorProvider
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dev.creapolis.pepinillo.MainActivity
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
@@ -46,6 +53,7 @@ val PREF_STATS_MINUTES = intPreferencesKey("stats_minutes")
 val PREF_STATS_SESSIONS = intPreferencesKey("stats_sessions")
 val PREF_STATS_STREAK = intPreferencesKey("stats_streak")
 val PREF_STATS_COMPLETED = intPreferencesKey("stats_completed_tasks")
+val PREF_IS_PRO = androidx.datastore.preferences.core.booleanPreferencesKey("is_pro")
 
 class DailyStatsWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
@@ -58,10 +66,13 @@ class DailyStatsWidget : GlanceAppWidget() {
             )
             val sessionRepo = entryPoint.sessionRepository()
             val taskRepo = entryPoint.taskRepository()
+            val subscriptionManager = entryPoint.subscriptionManager()
 
             val stats = runCatching { sessionRepo.getTodayStats().first() }.getOrNull()
             val allDays = runCatching { sessionRepo.getAllDaysWithSessions().first() }.getOrDefault(emptyList())
             val streak = runCatching { sessionRepo.calculateCurrentStreak(allDays) }.getOrDefault(0)
+            val isPro = subscriptionManager.subscriptionState.value.isPro
+            
             val startOfDay = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)
                 set(Calendar.MINUTE, 0)
@@ -76,6 +87,7 @@ class DailyStatsWidget : GlanceAppWidget() {
                     this[PREF_STATS_SESSIONS] = stats?.sessionsCompleted ?: 0
                     this[PREF_STATS_STREAK] = streak
                     this[PREF_STATS_COMPLETED] = completedToday
+                    this[PREF_IS_PRO] = isPro
                 }
             }
         } catch (e: Exception) {
@@ -93,6 +105,7 @@ class DailyStatsWidget : GlanceAppWidget() {
 @Composable
 private fun StatsContent() {
     val prefs = currentState<Preferences>()
+    val isPro = prefs[PREF_IS_PRO] ?: false
     val minutes = prefs[PREF_STATS_MINUTES] ?: 0
     val sessions = prefs[PREF_STATS_SESSIONS] ?: 0
     val streak = prefs[PREF_STATS_STREAK] ?: 0
@@ -102,38 +115,68 @@ private fun StatsContent() {
     val mins = minutes % 60
     val timeText = if (hours > 0) "${hours}h ${mins}m" else "${mins}m"
 
-    Column(
+    Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(GlanceTheme.colors.widgetBackground)
             .cornerRadius(24.dp)
-            .padding(16.dp)
             .clickable(actionStartActivity<MainActivity>()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalAlignment = Alignment.CenterVertically,
+        contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "Hoy",
-            style = TextStyle(
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                color = GlanceTheme.colors.primary,
-            ),
-        )
-
-        Spacer(modifier = GlanceModifier.height(12.dp))
-
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
+        Column(
+            modifier = GlanceModifier.fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            StatBlock(value = timeText, label = "Enfoque", emoji = "\u23F1")
-            Spacer(modifier = GlanceModifier.width(16.dp))
-            StatBlock(value = "$sessions", label = "Sesiones", emoji = "\u2705")
-            Spacer(modifier = GlanceModifier.width(16.dp))
-            StatBlock(value = "$streak", label = "Racha", emoji = "\uD83D\uDD25")
-            Spacer(modifier = GlanceModifier.width(16.dp))
-            StatBlock(value = "$completedTasks", label = "Tareas", emoji = "\uD83D\uDCCB")
+            Text(
+                text = "Hoy",
+                style = TextStyle(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = GlanceTheme.colors.primary,
+                ),
+            )
+
+            Spacer(modifier = GlanceModifier.height(12.dp))
+
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                StatBlock(value = timeText, label = "Enfoque", emoji = "\u23F1")
+                Spacer(modifier = GlanceModifier.width(16.dp))
+                StatBlock(value = "$sessions", label = "Sesiones", emoji = "\u2705")
+                Spacer(modifier = GlanceModifier.width(16.dp))
+                StatBlock(value = "$streak", label = "Racha", emoji = "\uD83D\uDD25")
+                Spacer(modifier = GlanceModifier.width(16.dp))
+                StatBlock(value = "$completedTasks", label = "Tareas", emoji = "\uD83D\uDCCB")
+            }
+        }
+
+        if (!isPro) {
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(GlanceTheme.colors.widgetBackground.getColor(LocalContext.current).copy(alpha = 0.9f))
+                    .cornerRadius(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "\uD83D\uDD12",
+                        style = TextStyle(fontSize = 24.sp),
+                    )
+                    Spacer(modifier = GlanceModifier.height(4.dp))
+                    Text(
+                        text = "PRO",
+                        style = TextStyle(
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GlanceTheme.colors.primary,
+                        ),
+                    )
+                }
+            }
         }
     }
 }

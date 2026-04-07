@@ -238,7 +238,10 @@ fun TasksScreen(
                         ) {
                         TaskItem(
                             task = task,
-                            onToggleCompletion = { viewModel.toggleTaskCompletion(task.id) },
+                            onToggleCompletion = {
+                                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.toggleTaskCompletion(task.id)
+                            },
                             onClick = { onTaskClick(task.id) },
                             showDragHandle = isCustomSort,
                             dragHandleModifier = if (isCustomSort) {

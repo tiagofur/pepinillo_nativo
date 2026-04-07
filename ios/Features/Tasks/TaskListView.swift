@@ -34,7 +34,7 @@ struct TaskListView: View {
                     .padding(.top, 8)
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: store.successMessage != nil)
+        .conditionalAnimation(.spring(response: 0.4, dampingFraction: 0.8), value: store.successMessage != nil)
         .navigationTitle(String(localized: "Tasks"))
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {

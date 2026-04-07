@@ -35,8 +35,10 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             let calendar = Calendar.current
 
             let today = calendar.startOfDay(for: Date.now)
-            let weekAgo = calendar.date(byAdding: .day, value: -6, to: today)!
-            let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+            guard let weekAgo = calendar.date(byAdding: .day, value: -6, to: today),
+                  let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else {
+                return .idle
+            }
 
             // Fetch last 7 days of stats
             let descriptor = FetchDescriptor<DailyStats>(
@@ -55,8 +57,8 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             var yesterdayMinutes = 0
 
             for offset in 0..<7 {
-                let dayDate = calendar.date(byAdding: .day, value: offset, to: weekAgo)!
-                let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayDate)!
+                guard let dayDate = calendar.date(byAdding: .day, value: offset, to: weekAgo),
+                      let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayDate) else { continue }
                 let isToday = calendar.isDate(dayDate, inSameDayAs: today)
                 let isYesterday = offset == 5 // 6th index (0-based) minus 1
 
@@ -64,6 +66,9 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
                 let abbrev = formatter.string(from: dayDate)
 
                 let stats = allStats.first { $0.date >= dayDate && $0.date < dayEnd }
+                if stats == nil {
+                    print("[DashboardWidget] No DailyStats found for \(abbrev) \(dayDate)")
+                }
 
                 let pomMin = (stats?.pomodoroSeconds ?? 0) / 60
                 let flowMin = (stats?.flowtimeSeconds ?? 0) / 60
@@ -99,8 +104,10 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             // Streak
             let streak = computeStreak(context: context, today: today, calendar: calendar)
 
+            let isPro = AppGroupDefaults.isProUser
             return DashboardWidgetEntry(
                 date: Date.now,
+                isProUser: isPro,
                 todayMinutes: todayMinutes,
                 todaySessions: todaySessions,
                 streakDays: streak,
@@ -122,7 +129,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
         var checkDate = today
 
         for _ in 0..<365 {
-            let start = calendar.date(byAdding: .day, value: -1, to: checkDate)!
+            guard let start = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
             let end = checkDate
 
             let descriptor = FetchDescriptor<DailyStats>(
@@ -137,4 +144,6 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
         }
         return streak
     }
+}
+   }
 }

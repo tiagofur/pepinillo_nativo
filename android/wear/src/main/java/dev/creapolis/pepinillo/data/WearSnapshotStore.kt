@@ -28,6 +28,7 @@ object WearSnapshotStore {
     private const val KEY_STREAK_COLOR = "streak_color"
     private const val KEY_PHASE_END_EPOCH_MS = "phase_end_epoch_ms"
     private const val KEY_TOTAL_DURATION_MS = "total_duration_ms"
+    private const val KEY_IS_PRO = "is_pro"
 
     fun bootstrap(context: Context) {
         WearDataStore.updateTimer(readTimerState(context))
@@ -35,6 +36,7 @@ object WearSnapshotStore {
         WearDataStore.updateStats(readStats(context))
         WearDataStore.updateLastSyncAtMillis(readLastSyncAtMillis(context))
         WearDataStore.updateThemeColors(readThemeColors(context))
+        WearDataStore.updateIsPro(readIsPro(context))
     }
 
     fun persistTimerState(context: Context, state: WearTimerState) {
@@ -147,4 +149,16 @@ object WearSnapshotStore {
             streakColor = prefs.getLong(KEY_STREAK_COLOR, 0xFFFF991A),
         )
     }
-}
+
+    fun persistIsPro(context: Context, isPro: Boolean) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_IS_PRO, isPro)
+            .apply()
+    }
+
+    fun readIsPro(context: Context): Boolean {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_IS_PRO, false)
+    }
+    }

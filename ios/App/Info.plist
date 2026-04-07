@@ -30,8 +30,8 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Pepinillo logs your focus sessions as Mindful Minutes in Apple Health to help you track your wellbeing alongside your productivity.
 </string>
-	<key>NSRemindersUsageDescription</key>
-	<string>Pepinillo can import tasks from Reminders so you can start focusing on them right away.
+	<key>NSCalendarsUsageDescription</key>
+	<string>Pepinillo creates calendar events for Time Block sessions to sync with your schedule.
 </string>
 	<key>NSSiriUsageDescription</key>
 	<string>Pepinillo uses Siri so you can start and stop focus sessions with your voice.
@@ -54,9 +54,10 @@
 		<dict/>
 	</dict>
 	<key>UILaunchScreen</key>
-	<dict/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
+	<dict>
+		<key>UIColorName</key>
+		<string>AccentColor</string>
+	</dict>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>armv7</string>

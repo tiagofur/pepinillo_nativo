@@ -51,6 +51,7 @@ struct DashboardWidgetEntryView: View {
 
 struct DashboardWidgetEntry: TimelineEntry {
     let date: Date
+    let isProUser: Bool
     let todayMinutes: Int
     let todaySessions: Int
     let streakDays: Int
@@ -76,6 +77,7 @@ struct DashboardWidgetEntry: TimelineEntry {
 
     static let placeholder = DashboardWidgetEntry(
         date: Date(),
+        isProUser: true,
         todayMinutes: 95,
         todaySessions: 4,
         streakDays: 7,
@@ -98,6 +100,7 @@ struct DashboardWidgetEntry: TimelineEntry {
 
     static let empty = DashboardWidgetEntry(
         date: Date(),
+        isProUser: false,
         todayMinutes: 0,
         todaySessions: 0,
         streakDays: 0,

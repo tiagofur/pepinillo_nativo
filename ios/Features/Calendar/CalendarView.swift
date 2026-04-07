@@ -29,7 +29,7 @@ struct CalendarView: View {
         .navigationTitle(String(localized: "Calendar"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
-        .animation(.easeInOut(duration: 0.25), value: store.selectedDate)
+        .conditionalAnimation(.easeInOut(duration: 0.25), value: store.selectedDate)
     }
 
     // MARK: - Month Header

@@ -9,6 +9,7 @@ object WearDataStore {
     private val _timerState = MutableStateFlow(WearTimerState())
     private val _tasks = MutableStateFlow(emptyList<WearTask>())
     private val _stats = MutableStateFlow(WearStatsState())
+    private val _isPro = MutableStateFlow(false)
 
     private val _themeColors = MutableStateFlow(WearThemeColors())
     val themeColors: StateFlow<WearThemeColors> = _themeColors
@@ -20,6 +21,7 @@ object WearDataStore {
     val timerState = _timerState.asStateFlow()
     val tasks = _tasks.asStateFlow()
     val stats = _stats.asStateFlow()
+    val isPro = _isPro.asStateFlow()
     val pendingCommandCount = _pendingCommandCount.asStateFlow()
     val lastSyncAtMillis = _lastSyncAtMillis.asStateFlow()
     val diagnostics = _diagnostics.asStateFlow()
@@ -103,6 +105,10 @@ object WearDataStore {
 
     fun updateThemeColors(colors: WearThemeColors) {
         _themeColors.value = colors
+    }
+
+    fun updateIsPro(isPro: Boolean) {
+        _isPro.value = isPro
     }
 }
 

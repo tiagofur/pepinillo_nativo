@@ -54,6 +54,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -84,6 +86,7 @@ fun FocusScreen(
     val uiState by viewModel.uiState.collectAsState()
     val activeTasks by viewModel.activeTasks.collectAsState()
     val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
+    val haptic = LocalHapticFeedback.current
 
     // Keep screen on during focus sessions
     val keepScreenActive = uiState.keepScreenOn && (uiState.isRunning || uiState.isPaused)
@@ -451,7 +454,10 @@ fun FocusScreen(
             // Stop button (only visible when running or paused)
             if (uiState.isRunning || uiState.isPaused || uiState.isWaitingForNext) {
                 Button(
-                    onClick = { viewModel.onStopClick() },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.onStopClick()
+                    },
                     modifier = Modifier.size(56.dp),
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
@@ -470,7 +476,14 @@ fun FocusScreen(
 
             // Start/Pause button
             Button(
-                onClick = { viewModel.onStartStopClick() },
+                onClick = {
+                    if (uiState.isRunning) {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove) // standard impact
+                    } else {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    }
+                    viewModel.onStartStopClick()
+                },
                 modifier = if (uiState.isRunning || uiState.isPaused) {
                     Modifier.size(56.dp)
                 } else {
@@ -515,7 +528,10 @@ fun FocusScreen(
             // Skip button (only during Pomodoro break phases)
             if (uiState.canSkip) {
                 Button(
-                    onClick = { viewModel.onSkipClick() },
+                    onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        viewModel.onSkipClick()
+                    },
                     modifier = Modifier.size(56.dp),
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(

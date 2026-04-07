@@ -50,7 +50,7 @@ struct GetModeSuggestionIntent: AppIntent {
         // If task provided, suggest for that task
         if let taskID = task?.id, let uuid = UUID(uuidString: taskID) {
             if let suggestion = service.suggestMode(forTaskID: uuid, sessions: sessions) {
-                return .result(dialog: "For \(task!.title), I'd suggest \(suggestion.suggestedMode.displayName). \(suggestion.reason)")
+                return .result(dialog: "For \(task?.title ?? "this task"), I'd suggest \(suggestion.suggestedMode.displayName). \(suggestion.reason)")
             }
         }
 

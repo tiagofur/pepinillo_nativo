@@ -11,6 +11,7 @@ import WidgetKit
 
 struct FocusWidgetEntry: TimelineEntry {
     let date: Date
+    let isProUser: Bool
 
     // Session state (nil if no active session)
     let isSessionActive: Bool
@@ -39,6 +40,7 @@ struct FocusWidgetEntry: TimelineEntry {
 
     static let placeholder = FocusWidgetEntry(
         date: Date(),
+        isProUser: true,
         isSessionActive: false,
         isPaused: false,
         focusMode: nil,
@@ -59,6 +61,7 @@ struct FocusWidgetEntry: TimelineEntry {
 
     static let idle = FocusWidgetEntry(
         date: Date(),
+        isProUser: false,
         isSessionActive: false,
         isPaused: false,
         focusMode: nil,

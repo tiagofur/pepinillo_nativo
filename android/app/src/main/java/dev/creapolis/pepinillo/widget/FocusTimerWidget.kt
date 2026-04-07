@@ -51,10 +51,29 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+import androidx.glance.appwidget.action.ToggleableStateKey
+import dagger.hilt.android.EntryPointAccessors
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
+
 class FocusTimerWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        // Fetch fresh subscription status
+        try {
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext, WidgetEntryPoint::class.java,
+            )
+            val isPro = entryPoint.subscriptionManager().subscriptionState.value.isPro
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    this[PREF_IS_PRO] = isPro
+                }
+            }
+        } catch (e: Exception) {
+            // Ignore
+        }
+
         provideContent {
             GlanceTheme {
                 val prefs = currentState<Preferences>()
@@ -72,20 +91,24 @@ data class TimerWidgetState(
     val mode: FocusMode = FocusMode.Pomodoro,
     val selectedMode: FocusMode? = null,
     val displayTime: String = "25:00",
+    val finishTimestamp: Long? = null,
     val phaseLabel: String = "Focus",
     val status: TimerStatus = TimerStatus.Idle,
     val progress: Float = 1f,
     val linkedTaskName: String? = null,
+    val isPro: Boolean = false,
 )
 
 // Glance DataStore preference keys
 private val PREF_MODE = stringPreferencesKey("widget_mode")
 private val PREF_SELECTED_MODE = stringPreferencesKey("widget_selected_mode")
 private val PREF_DISPLAY = stringPreferencesKey("widget_display")
+private val PREF_FINISH_TIMESTAMP = androidx.datastore.preferences.core.longPreferencesKey("widget_finish_timestamp")
 private val PREF_PHASE = stringPreferencesKey("widget_phase")
 private val PREF_STATUS = stringPreferencesKey("widget_status")
 private val PREF_PROGRESS = floatPreferencesKey("widget_progress")
 private val PREF_LINKED_TASK = stringPreferencesKey("widget_linked_task")
+private val PREF_IS_PRO = androidx.datastore.preferences.core.booleanPreferencesKey("is_pro")
 
 private fun prefsToTimerState(prefs: Preferences): TimerWidgetState {
     val modeName = prefs[PREF_MODE] ?: FocusMode.Pomodoro.name
@@ -99,10 +122,12 @@ private fun prefsToTimerState(prefs: Preferences): TimerWidgetState {
         mode = mode,
         selectedMode = selectedMode,
         displayTime = prefs[PREF_DISPLAY] ?: mode.defaultDisplayTime,
+        finishTimestamp = prefs[PREF_FINISH_TIMESTAMP],
         phaseLabel = prefs[PREF_PHASE] ?: mode.label,
         status = status,
         progress = prefs[PREF_PROGRESS] ?: 1f,
         linkedTaskName = prefs[PREF_LINKED_TASK],
+        isPro = prefs[PREF_IS_PRO] ?: false,
     )
 }
 
@@ -119,6 +144,11 @@ suspend fun updateWidgetState(context: Context, state: TimerWidgetState) {
                     remove(PREF_SELECTED_MODE)
                 }
                 this[PREF_DISPLAY] = state.displayTime
+                if (state.finishTimestamp != null) {
+                    this[PREF_FINISH_TIMESTAMP] = state.finishTimestamp
+                } else {
+                    remove(PREF_FINISH_TIMESTAMP)
+                }
                 this[PREF_PHASE] = state.phaseLabel
                 this[PREF_STATUS] = state.status.name
                 this[PREF_PROGRESS] = state.progress
@@ -162,7 +192,7 @@ private fun IdleWidget(context: Context, state: TimerWidgetState) {
             ),
         )
         Spacer(modifier = GlanceModifier.height(8.dp))
-        ModeSelectorRow(context, selectedMode = null)
+        ModeSelectorRow(context, selectedMode = null, isPro = state.isPro)
     }
 }
 
@@ -198,7 +228,7 @@ private fun ReadyWidget(context: Context, state: TimerWidgetState) {
             ),
         )
         Spacer(modifier = GlanceModifier.height(6.dp))
-        ModeSelectorRow(context, selectedMode = state.selectedMode)
+        ModeSelectorRow(context, selectedMode = state.selectedMode, isPro = state.isPro)
         Spacer(modifier = GlanceModifier.height(8.dp))
         Box(
             modifier = GlanceModifier
@@ -222,6 +252,9 @@ private fun ReadyWidget(context: Context, state: TimerWidgetState) {
         }
     }
 }
+
+import java.time.Instant
+import androidx.glance.text.TextRelativeTimeFormat
 
 @Composable
 private fun RunningWidget(context: Context, state: TimerWidgetState) {
@@ -248,15 +281,32 @@ private fun RunningWidget(context: Context, state: TimerWidgetState) {
             ),
         )
         Spacer(modifier = GlanceModifier.height(2.dp))
-        Text(
-            text = state.displayTime,
-            style = TextStyle(
-                fontWeight = FontWeight.Bold,
-                fontSize = 36.sp,
-                color = color,
-                textAlign = TextAlign.Center,
-            ),
-        )
+        
+        if (isRunning && state.finishTimestamp != null) {
+            // Native system-handled countdown (Battery efficient!)
+            Text(
+                text = Instant.ofEpochMilli(state.finishTimestamp),
+                format = TextRelativeTimeFormat.Countdown,
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 36.sp,
+                    color = color,
+                    textAlign = TextAlign.Center,
+                ),
+            )
+        } else {
+            // Static display when paused
+            Text(
+                text = state.displayTime,
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 36.sp,
+                    color = color,
+                    textAlign = TextAlign.Center,
+                ),
+            )
+        }
+
         // Show linked task name
         if (!state.linkedTaskName.isNullOrBlank()) {
             Text(
@@ -309,46 +359,59 @@ private fun RunningWidget(context: Context, state: TimerWidgetState) {
 }
 
 @Composable
-private fun ModeSelectorRow(context: Context, selectedMode: FocusMode?) {
+private fun ModeSelectorRow(context: Context, selectedMode: FocusMode?, isPro: Boolean) {
     Row(
         modifier = GlanceModifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ModeChip(context, FocusMode.Pomodoro, "Pomo", selectedMode)
+        ModeChip(context, FocusMode.Pomodoro, "Pomo", selectedMode, isPro)
         Spacer(modifier = GlanceModifier.width(4.dp))
-        ModeChip(context, FocusMode.Flow, "Flow", selectedMode)
+        ModeChip(context, FocusMode.Flow, "Flow", selectedMode, isPro)
         Spacer(modifier = GlanceModifier.width(4.dp))
-        ModeChip(context, FocusMode.Blocks, "Blocks", selectedMode)
+        ModeChip(context, FocusMode.Blocks, "Blocks", selectedMode, isPro)
         Spacer(modifier = GlanceModifier.width(4.dp))
-        ModeChip(context, FocusMode.Chrono, "Chrono", selectedMode)
+        ModeChip(context, FocusMode.Chrono, "Chrono", selectedMode, isPro)
     }
 }
 
 @Composable
-private fun ModeChip(context: Context, mode: FocusMode, label: String, selectedMode: FocusMode?) {
+private fun ModeChip(context: Context, mode: FocusMode, label: String, selectedMode: FocusMode?, isPro: Boolean) {
     val isSelected = mode == selectedMode
+    val isLocked = !mode.isFreeTier && !isPro
     val color = modeColor(mode)
-    val bgColor = if (isSelected) color else ColorProvider(R.color.widget_stop_bg)
+    val bgColor = when {
+        isSelected -> color
+        isLocked -> ColorProvider(R.color.widget_stop_bg).getColor(context).copy(alpha = 0.5f)
+        else -> ColorProvider(R.color.widget_stop_bg)
+    }
     val textColor = if (isSelected) ColorProvider(R.color.widget_white) else ColorProvider(R.color.widget_stop_text)
 
     Box(
         modifier = GlanceModifier
-            .background(bgColor)
+            .background(if (isSelected) color else ColorProvider(R.color.widget_stop_bg))
             .cornerRadius(14.dp)
-            .clickable(actionRunCallback<SelectModeAction>(
+            .clickable(if (isLocked) actionStartActivity<MainActivity>() else actionRunCallback<SelectModeAction>(
                 actionParametersOf(modeParam to mode.name),
             ))
             .padding(horizontal = 12.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label,
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = textColor,
-            ),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (isLocked) {
+                Text(
+                    text = "\uD83D\uDD12 ",
+                    style = TextStyle(fontSize = 10.sp),
+                )
+            }
+            Text(
+                text = label,
+                style = TextStyle(
+                    fontSize = 11.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    color = if (isLocked && !isSelected) textColor.getColor(context).copy(alpha = 0.5f) else textColor,
+                ),
+            )
+        }
     }
 }
 

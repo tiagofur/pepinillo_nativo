@@ -30,6 +30,7 @@ object WearDataLayerHelper {
     const val PATH_TASKS = "/pepinillo/tasks"
     const val PATH_STATS = "/pepinillo/stats"
     private const val PATH_THEME = "/pepinillo/theme"
+    private const val PATH_USER = "/pepinillo/user"
 
     const val CMD_TIMER_START = "/pepinillo/cmd/timer/start"
     const val CMD_TIMER_PAUSE = "/pepinillo/cmd/timer/pause"
@@ -156,6 +157,15 @@ object WearDataLayerHelper {
         } catch (e: Exception) {
             // Silently fail - watch will use defaults
         }
+    }
+
+    fun pushUserStatus(context: Context, isPro: Boolean) {
+        val request = PutDataMapRequest.create(PATH_USER).apply {
+            dataMap.putBoolean("isPro", isPro)
+            dataMap.putLong("timestamp", System.currentTimeMillis())
+        }.asPutDataRequest().setUrgent()
+
+        putWithRetry(context, request, "pushUserStatus($isPro)")
     }
 
     private fun putWithRetry(context: Context, request: PutDataRequest, tag: String, retries: Int = 2) {

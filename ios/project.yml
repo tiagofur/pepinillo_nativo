@@ -75,8 +75,8 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSRequiresIPhoneOS: true
-        UILaunchStoryboardName: LaunchScreen
-        UILaunchScreen: {}
+        UILaunchScreen:
+          UIColorName: "AccentColor"
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
           UISceneConfigurations: {}
@@ -97,9 +97,9 @@ targets:
         NSHealthShareUsageDescription: >
           Pepinillo reads your Mindful Minutes from Apple Health to show your
           focus history and keep your analytics accurate across devices.
-        NSRemindersUsageDescription: >
-          Pepinillo can import tasks from Reminders so you can start focusing
-          on them right away.
+        NSCalendarsUsageDescription: >
+          Pepinillo creates calendar events for Time Block sessions to sync
+          with your schedule.
         NSSiriUsageDescription: >
           Pepinillo uses Siri so you can start and stop focus sessions with
           your voice.

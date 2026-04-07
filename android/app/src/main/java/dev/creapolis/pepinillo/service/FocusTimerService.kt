@@ -273,15 +273,23 @@ class FocusTimerService : Service() {
                         }
                     }
 
-                    // Update widget max once per second to avoid battery drain
-                    // Bypass throttle on status/phase transitions so recovery and watch stay in sync
+                    // Update widget ONLY on state changes or every 30s as fallback (not every 1s!)
+                    // This fixes P0-1: Massive Battery Drain
                     val now = System.currentTimeMillis()
-                    if (now - lastWidgetUpdate >= 1000 || statusChanged || phaseChanged) {
+                    val shouldUpdateWidget = statusChanged || phaseChanged || (now - lastWidgetUpdate >= 30000)
+                    
+                    if (shouldUpdateWidget) {
                         lastWidgetUpdate = now
+                        
+                        val finishTimestamp = if (state.status == TimerStatus.Running) {
+                            System.currentTimeMillis() + (state.remainingSeconds * 1000L)
+                        } else null
+
                         val widgetState = TimerWidgetState(
                             mode = state.mode,
                             selectedMode = state.mode,
                             displayTime = state.displayTime,
+                            finishTimestamp = finishTimestamp,
                             phaseLabel = state.phaseLabel,
                             status = state.status,
                             progress = state.progress,
@@ -289,11 +297,12 @@ class FocusTimerService : Service() {
                         )
                         updateWidgetState(this@FocusTimerService, widgetState)
                         FocusTimerWidget().updateAll(context = this@FocusTimerService)
+                        
                         // Keep tasks widget in sync with linked task highlight
                         WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, state.linkedTaskId)
                         WearDataLayerHelper.pushTimer(this@FocusTimerService, state, cachedLinkedTaskName)
 
-                        // Persist recovery state while running/waiting so we can restore after process death
+                        // Persist recovery state
                         if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused || state.status == TimerStatus.WaitingForNext) {
                             saveRecoveryState(this@FocusTimerService, state)
                         } else if (state.status == TimerStatus.Idle) {

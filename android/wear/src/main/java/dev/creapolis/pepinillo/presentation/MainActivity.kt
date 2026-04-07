@@ -63,6 +63,7 @@ private fun WearApp(viewModel: WearViewModel) {
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
+    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val pendingCommandCount by viewModel.pendingCommandCount.collectAsStateWithLifecycle()
     val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
 
@@ -105,6 +106,7 @@ private fun WearApp(viewModel: WearViewModel) {
                         state = stats,
                         syncStatusLabel = syncStatus.label,
                         isSyncStale = syncStatus.isStale,
+                        isPro = isPro,
                         isActive = page == pagerState.settledPage,
                     )
                     1 -> TimerScreen(
@@ -113,6 +115,7 @@ private fun WearApp(viewModel: WearViewModel) {
                         pendingCommandCount = pendingCommandCount,
                         syncStatusLabel = syncStatus.label,
                         isSyncStale = syncStatus.isStale,
+                        isPro = isPro,
                         onStartMode = viewModel::startTimer,
                         onPause = viewModel::pauseTimer,
                         onResume = viewModel::resumeTimer,

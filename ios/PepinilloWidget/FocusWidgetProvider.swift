@@ -39,7 +39,9 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             let context = ModelContext(container)
 
             let today = Calendar.current.startOfDay(for: Date.now)
-            let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today)!
+            guard let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: today) else {
+                return .idle
+            }
 
             // Fetch today's DailyStats
             let todayDescriptor = FetchDescriptor<DailyStats>(
@@ -101,8 +103,10 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 timerText = nil
             }
 
-            return FocusWidgetEntry(
-                date: Date.now,
+            let isPro = AppGroupDefaults.isProUser
+            let entry = FocusWidgetEntry(
+                date: Date(),
+                isProUser: isPro,
                 isSessionActive: isActive,
                 isPaused: isPaused,
                 focusMode: activeMode,
@@ -134,7 +138,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
         var checkDate = today
 
         for _ in 0..<365 {
-            let start = Calendar.current.date(byAdding: .day, value: -1, to: checkDate)!
+            guard let start = Calendar.current.date(byAdding: .day, value: -1, to: checkDate) else { break }
             let end = checkDate
 
             let descriptor = FetchDescriptor<DailyStats>(
@@ -163,5 +167,8 @@ struct ConfigureFocusWidgetIntent: WidgetConfigurationIntent {
     var showStreak: Bool
 
     @Parameter(title: "Show Mode Breakdown", default: false)
+    var showModeBreakdown: Bool
+}
+
     var showModeBreakdown: Bool
 }

@@ -16,6 +16,7 @@ object WearDataPaths {
     const val PATH_TIMER = "/pepinillo/timer"
     const val PATH_TASKS = "/pepinillo/tasks"
     const val PATH_STATS = "/pepinillo/stats"
+    const val PATH_USER = "/pepinillo/user"
 
     const val CMD_TIMER_START = "/pepinillo/cmd/timer/start"
     const val CMD_TIMER_PAUSE = "/pepinillo/cmd/timer/pause"

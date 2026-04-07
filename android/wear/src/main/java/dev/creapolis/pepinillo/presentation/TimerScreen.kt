@@ -19,7 +19,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Lock
+import androidx.wear.compose.material.ChipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -57,6 +58,7 @@ fun TimerScreen(
     pendingCommandCount: Int = 0,
     syncStatusLabel: String? = null,
     isSyncStale: Boolean = false,
+    isPro: Boolean = false,
     onStartMode: (String) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -108,6 +110,7 @@ fun TimerScreen(
         else -> IdleLayout(
             stats = stats,
             linkedTaskName = state.linkedTaskName,
+            isPro = isPro,
             onStartMode = { mode ->
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 onStartMode(mode)
@@ -464,6 +467,7 @@ private fun DisconnectedLayout(
 private fun IdleLayout(
     stats: WearStatsState = WearStatsState(),
     linkedTaskName: String? = null,
+    isPro: Boolean = false,
     onStartMode: (String) -> Unit,
 ) {
     Box(
@@ -475,6 +479,7 @@ private fun IdleLayout(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
+            // ... (stats and linked task code remains the same)
             // Today's stats (compact row)
             if (stats.totalMinutes > 0 || stats.sessions > 0 || stats.streak > 0) {
                 Row(
@@ -544,6 +549,7 @@ private fun IdleLayout(
                     label = "Flow",
                     color = WearModeColors.Flow,
                     onClick = { onStartMode("Flow") },
+                    isLocked = !isPro,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -558,12 +564,14 @@ private fun IdleLayout(
                     label = "Blocks",
                     color = WearModeColors.Blocks,
                     onClick = { onStartMode("Blocks") },
+                    isLocked = !isPro,
                     modifier = Modifier.weight(1f),
                 )
                 ModeButton(
                     label = "Chrono",
                     color = WearModeColors.Chrono,
                     onClick = { onStartMode("Chrono") },
+                    isLocked = !isPro,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -584,23 +592,37 @@ private fun ModeButton(
     label: String,
     color: Color,
     onClick: () -> Unit,
+    isLocked: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Button(
-        onClick = onClick,
+        onClick = { if (!isLocked) onClick() },
         modifier = modifier.height(40.dp),
         shape = RoundedCornerShape(20.dp),
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = color.copy(alpha = 0.15f),
-            contentColor = color,
+            backgroundColor = if (isLocked) MaterialTheme.colors.surface.copy(alpha = 0.5f) else color.copy(alpha = 0.15f),
+            contentColor = if (isLocked) MaterialTheme.colors.onSurface.copy(alpha = 0.4f) else color,
         ),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.caption2,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            if (isLocked) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Locked",
+                    modifier = Modifier.size(12.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+            }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.caption2,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }

@@ -16,6 +16,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     val timerState = WearDataStore.timerState
     val tasks = WearDataStore.tasks
     val stats = WearDataStore.stats
+    val isPro = WearDataStore.isPro
     val pendingCommandCount = WearDataStore.pendingCommandCount
     val lastSyncAtMillis = WearDataStore.lastSyncAtMillis
     val diagnostics = WearDataStore.diagnostics

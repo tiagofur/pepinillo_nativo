@@ -29,9 +29,10 @@ enum AppGroup {
             forSecurityApplicationGroupIdentifier: id
         ) else {
             // Fallback to documents directory when App Group not configured (Simulator / CI)
-            return FileManager.default
-                .urls(for: .documentDirectory, in: .userDomainMask)
-                .first!
+            guard let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                return URL(fileURLWithPath: NSTemporaryDirectory())
+            }
+            return url
         }
         return url
     }
@@ -46,6 +47,12 @@ enum AppGroup {
 
 enum AppGroupDefaults {
     private static var defaults: UserDefaults? { UserDefaults(suiteName: AppGroup.id) }
+
+    /// Whether the user has an active Pro subscription (read by widgets, extensions).
+    static var isProUser: Bool {
+        get { defaults?.bool(forKey: "isProUser") ?? false }
+        set { defaults?.set(newValue, forKey: "isProUser") }
+    }
 
     /// Whether a focus session is currently active (read by widgets, Control Center, Siri).
     static var isSessionActive: Bool {

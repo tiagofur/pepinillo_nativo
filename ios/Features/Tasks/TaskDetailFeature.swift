@@ -233,6 +233,8 @@ struct TaskDetailFeature {
                 return .run { _ in try await persistence.deleteSubtask(id) }
 
             case .viewAnalyticsTapped:
+                // Task analytics are a Pro feature
+                guard state.isProUser else { return .none }
                 state.taskAnalytics = TaskAnalyticsFeature.State(
                     taskID: state.taskID,
                     taskTitle: state.title

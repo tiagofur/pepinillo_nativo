@@ -23,7 +23,17 @@ struct FocusView: View {
                     onSelect: { store.send(.modeSelected($0)) }
                 )
                 .padding(.top, 16)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
+            }
+
+            if let suggestion = store.modeSuggestion {
+                ModeIntelligenceBanner(
+                    suggestion: suggestion,
+                    onAccept: { store.send(.modeSuggestionAccepted) },
+                    onDismiss: { store.send(.modeSuggestionDismissed) }
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
             }
 
             Spacer()
@@ -214,11 +224,11 @@ struct FocusView: View {
             VStack(spacing: 4) {
                 // Mode icon
                 Text(store.modeIcon)
-                    .font(.system(size: 28))
+                    .font(.largeTitle)
 
                 // Time display
                 Text(store.displayTime)
-                    .font(.system(size: 64, weight: .light, design: .rounded))
+                    .font(.system(.largeTitle, design: .rounded).weight(.light))
                     .monospacedDigit()
                     .contentTransition(.numericText())
 

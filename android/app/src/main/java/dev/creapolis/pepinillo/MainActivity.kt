@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.data.sync.SyncEngine
 import kotlinx.coroutines.CoroutineScope
@@ -67,6 +68,7 @@ import dev.creapolis.pepinillo.navigation.TopLevelDestination
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
+import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dagger.hilt.android.AndroidEntryPoint
 
 private const val SYNC_DEBOUNCE_MS = 30_000L
@@ -77,6 +79,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var syncEngine: SyncEngine
     @Inject lateinit var authStore: AuthStore
     @Inject lateinit var prefsRepository: UserPreferencesRepository
+    @Inject lateinit var subscriptionManager: SubscriptionManager
 
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -102,11 +105,22 @@ class MainActivity : ComponentActivity() {
     ) { /* granted or not, we continue */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestNotificationPermissionIfNeeded()
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
+
+        // Observe subscription state and sync to Wear OS
+        syncScope.launch {
+            subscriptionManager.subscriptionState.collect { state ->
+                Log.d("MainActivity", "Subscription state changed: ${state.tier}, syncing to Wear OS")
+                WearDataLayerHelper.pushUserStatus(this@MainActivity, state.isPro)
+            }
+        }
+
         setContent {
+            val subscriptionState by subscriptionManager.subscriptionState.collectAsState()
             val themeMode by ThemeController.themeMode.collectAsState()
             val dynamicColor by ThemeController.dynamicColor.collectAsState()
             val selectedTheme by ThemeController.selectedTheme.collectAsState()
@@ -121,6 +135,7 @@ class MainActivity : ComponentActivity() {
                 darkTheme = darkTheme,
                 dynamicColor = dynamicColor,
                 selectedThemeId = selectedTheme,
+                isPro = subscriptionState.isPro,
             ) {
                 PepinilloApp(prefsRepository = prefsRepository)
             }
