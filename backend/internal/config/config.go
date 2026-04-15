@@ -23,6 +23,7 @@ type Config struct {
 	JWTAccessTTLSeconds                    int64
 	JWTRefreshTTLSeconds                   int64
 	RefreshTokenHashKey                    string
+	DeprecatedWSQueryAuth                  bool
 	MinIOEndpoint                          string
 	MinIOAccessKey                         string
 	MinIOSecretKey                         string
@@ -101,6 +102,7 @@ func Load() (*Config, error) {
 		JWTAccessTTLSeconds:                    getEnvInt64("JWT_ACCESS_TTL_SECONDS", 900),
 		JWTRefreshTTLSeconds:                   getEnvInt64("JWT_REFRESH_TTL_SECONDS", 2592000),
 		RefreshTokenHashKey:                    getEnv("REFRESH_TOKEN_HASH_KEY", ""),
+		DeprecatedWSQueryAuth:                  getEnvBool("DEPRECATED_WS_QUERY_AUTH", false),
 		MinIOEndpoint:                          getEnv("MINIO_ENDPOINT", ""),
 		MinIOAccessKey:                         getEnv("MINIO_ACCESS_KEY", ""),
 		MinIOSecretKey:                         getEnv("MINIO_SECRET_KEY", ""),

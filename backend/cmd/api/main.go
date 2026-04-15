@@ -291,7 +291,7 @@ func main() {
 		Billing:    handlers.NewBillingHandler(billingService),
 		RevenueCat: handlers.NewRevenueCatHandler(revenuecatService),
 		Push:       handlers.NewPushHandler(pushService),
-		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret),
+		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret, cfg.DeprecatedWSQueryAuth),
 		Analytics:   handlers.NewAnalyticsHandler(analyticsService),
 		Preferences: handlers.NewPreferenceHandler(preferenceService),
 		Sync:        handlers.NewSyncHandler(syncService),
