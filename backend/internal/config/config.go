@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -90,7 +91,7 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		Port:                                   getEnv("PORT", "8080"),
 		Environment:                            getEnv("APP_ENV", "development"),
-		CORSAllowedOrigins:                     getEnv("CORS_ALLOWED_ORIGINS", "*"),
+		CORSAllowedOrigins:                     getEnv("CORS_ALLOWED_ORIGINS", ""),
 		DatabaseURL:                            getEnv("DATABASE_URL", ""),
 		DBMaxOpenConns:                         getEnvInt64("DB_MAX_OPEN_CONNS", 25),
 		DBMaxIdleConns:                         getEnvInt64("DB_MAX_IDLE_CONNS", 5),
@@ -176,7 +177,35 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("REFRESH_TOKEN_HASH_KEY is required in production and must be at least 32 bytes")
 	}
 
+	// CORS whitelist must be explicit in production. "*" is rejected because
+	// it would allow any origin to call the API with credentials, bypassing
+	// the browser's same-origin protections for logged-in users.
+	if isProduction {
+		if cfg.CORSAllowedOrigins == "" {
+			return nil, fmt.Errorf("CORS_ALLOWED_ORIGINS is required in production and must list explicit origins (comma-separated); wildcards are rejected")
+		}
+		for _, origin := range splitAndTrim(cfg.CORSAllowedOrigins) {
+			if origin == "*" {
+				return nil, fmt.Errorf("CORS_ALLOWED_ORIGINS cannot contain \"*\" in production; list explicit origins instead")
+			}
+		}
+	}
+
 	return cfg, nil
+}
+
+func splitAndTrim(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
 }
 
 func getEnv(key, fallback string) string {

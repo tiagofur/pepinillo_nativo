@@ -68,8 +68,18 @@ func main() {
 	app.Use(compress.New(compress.Config{
 		Level: compress.LevelDefault,
 	}))
+	// CORS: config.Load() already rejects empty or "*" origins when APP_ENV=production.
+	// In development, warn loudly if the config allows any origin — devs sometimes
+	// copy those settings to prod, and the production guard is the last line of defense.
+	corsOrigins := cfg.CORSAllowedOrigins
+	if corsOrigins == "" {
+		log.Println("WARNING: CORS_ALLOWED_ORIGINS is empty; falling back to \"*\" (development only)")
+		corsOrigins = "*"
+	} else if strings.Contains(corsOrigins, "*") {
+		log.Println("WARNING: CORS_ALLOWED_ORIGINS contains \"*\" (development only — production boot rejects this)")
+	}
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: cfg.CORSAllowedOrigins,
+		AllowOrigins: corsOrigins,
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
 	}))
