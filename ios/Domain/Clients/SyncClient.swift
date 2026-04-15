@@ -64,6 +64,7 @@ public struct SyncClient: Sendable {
 
 enum SyncError: Error {
     case notAuthenticated
+    case notPro
 }
 
 // MARK: - Live implementation
@@ -77,6 +78,7 @@ extension SyncClient: DependencyKey {
         return SyncClient(
             syncAll: {
                 guard await keychain.hasTokens() else { return }
+                guard AppGroupDefaults.isProUser else { return }
                 @Dependency(\.syncClient) var syncClient
                 try await syncClient.syncSettings()
                 try await syncClient.syncTasks()
@@ -84,6 +86,7 @@ extension SyncClient: DependencyKey {
             },
             syncTasks: {
                 guard await keychain.hasTokens() else { return }
+                guard AppGroupDefaults.isProUser else { return }
 
                 // 1. Get dirty tasks from local DB
                 let dirtyTasks = try await persistence.fetchDirtyTasks()
@@ -202,6 +205,7 @@ extension SyncClient: DependencyKey {
             },
             syncSessions: {
                 guard await keychain.hasTokens() else { return }
+                guard AppGroupDefaults.isProUser else { return }
 
                 let iso = ISO8601DateFormatter()
 
@@ -269,6 +273,7 @@ extension SyncClient: DependencyKey {
             },
             syncSettings: {
                 guard await keychain.hasTokens() else { return }
+                guard AppGroupDefaults.isProUser else { return }
 
                 let iso = ISO8601DateFormatter()
 
@@ -312,6 +317,7 @@ extension SyncClient: DependencyKey {
                 guard await keychain.hasTokens() else {
                     throw SyncError.notAuthenticated
                 }
+                guard AppGroupDefaults.isProUser else { return false }
 
                 let iso = ISO8601DateFormatter()
                 let deviceId = keychain.getOrCreateDeviceId()
@@ -430,6 +436,7 @@ extension SyncClient: DependencyKey {
                 guard await keychain.hasTokens() else {
                     throw SyncError.notAuthenticated
                 }
+                guard AppGroupDefaults.isProUser else { return }
 
                 let iso = ISO8601DateFormatter()
                 var taskCursor: String? = nil
@@ -491,6 +498,7 @@ extension SyncClient: DependencyKey {
                 guard await keychain.hasTokens() else {
                     throw SyncError.notAuthenticated
                 }
+                guard AppGroupDefaults.isProUser else { return }
 
                 // Delete all local data
                 await persistence.deleteAllTasks()

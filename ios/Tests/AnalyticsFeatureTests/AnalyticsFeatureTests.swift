@@ -191,6 +191,111 @@ struct AnalyticsFeatureTests {
 
     // MARK: - Productivity Insights
 
+    // MARK: - PRO Gating
+
+    @Test func freeUserPeriodChangeToMonthRequestsPaywall() async {
+        let prefs = emptyPrefs()
+        var state = AnalyticsFeature.State()
+        state.isProUser = false
+        let store = TestStore(initialState: state) {
+            AnalyticsFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.fetchPreferences = { prefs }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.periodChanged(.month))
+        await store.receive(.paywallRequested)
+        #expect(store.state.period == .week)
+    }
+
+    @Test func freeUserPeriodChangeToYearRequestsPaywall() async {
+        let prefs = emptyPrefs()
+        var state = AnalyticsFeature.State()
+        state.isProUser = false
+        let store = TestStore(initialState: state) {
+            AnalyticsFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.fetchPreferences = { prefs }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.periodChanged(.year))
+        await store.receive(.paywallRequested)
+        #expect(store.state.period == .week)
+    }
+
+    @Test func proUserCanChangePeriodToMonth() async {
+        let prefs = emptyPrefs()
+        var state = AnalyticsFeature.State()
+        state.isProUser = true
+        let store = TestStore(initialState: state) {
+            AnalyticsFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.fetchPreferences = { prefs }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.periodChanged(.month)) {
+            $0.period = .month
+        }
+    }
+
+    @Test func freeUserWeeklyReviewTapRequestsPaywall() async {
+        var state = AnalyticsFeature.State()
+        state.isProUser = false
+        let store = TestStore(initialState: state) {
+            AnalyticsFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.weeklyReviewTapped)
+        await store.receive(.paywallRequested)
+        #expect(store.state.weeklyReview == nil)
+    }
+
+    @Test func freeUserMonthlyReviewTapRequestsPaywall() async {
+        var state = AnalyticsFeature.State()
+        state.isProUser = false
+        let store = TestStore(initialState: state) {
+            AnalyticsFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.monthlyReviewTapped)
+        await store.receive(.paywallRequested)
+        #expect(store.state.monthlyReview == nil)
+    }
+
+    @Test func freeUserAIReportTapRequestsPaywall() async {
+        var state = AnalyticsFeature.State()
+        state.isProUser = false
+        let store = TestStore(initialState: state) {
+            AnalyticsFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.aiReportTapped(.week))
+        await store.receive(.paywallRequested)
+        #expect(store.state.aiReport == nil)
+    }
+
+    @Test func proUserAIReportTapPresentsSheet() async {
+        var state = AnalyticsFeature.State()
+        state.isProUser = true
+        let store = TestStore(initialState: state) {
+            AnalyticsFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.aiReportTapped(.week)) {
+            $0.aiReport = AIReportFeature.State(period: .week)
+        }
+    }
+
     @Test func allDataLoadedSetsInsights() async {
         let insights = AnalyticsFeature.ProductivityInsights(
             peakHourRange: "9 AM–11 AM",

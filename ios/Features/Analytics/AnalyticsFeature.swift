@@ -102,6 +102,7 @@ struct AnalyticsFeature {
         case aiReportTapped(ReportPeriod)
         case aiReportDismissed
         case aiReport(PresentationAction<AIReportFeature.Action>)
+        case paywallRequested
     }
 
     /// Value-type snapshot for transferring daily aggregated data across concurrency boundaries.
@@ -147,9 +148,8 @@ struct AnalyticsFeature {
                 )
 
             case .periodChanged(let period):
-                // Free users can only view 7D
                 if !state.isProUser && period != .week {
-                    return .none
+                    return .send(.paywallRequested)
                 }
                 state.period = period
                 state.isLoading = true
@@ -221,7 +221,7 @@ struct AnalyticsFeature {
                 return .none
 
             case .weeklyReviewTapped:
-                guard state.isProUser else { return .none }
+                guard state.isProUser else { return .send(.paywallRequested) }
                 state.weeklyReview = WeeklyReviewFeature.State()
                 return .none
 
@@ -233,7 +233,7 @@ struct AnalyticsFeature {
                 return .none
 
             case .monthlyReviewTapped:
-                guard state.isProUser else { return .none }
+                guard state.isProUser else { return .send(.paywallRequested) }
                 state.monthlyReview = MonthlyReviewFeature.State()
                 return .none
 
@@ -245,7 +245,7 @@ struct AnalyticsFeature {
                 return .none
 
             case .aiReportTapped(let period):
-                guard state.isProUser else { return .none }
+                guard state.isProUser else { return .send(.paywallRequested) }
                 state.aiReport = AIReportFeature.State(period: period)
                 return .none
 
@@ -254,6 +254,9 @@ struct AnalyticsFeature {
                 return .none
 
             case .aiReport:
+                return .none
+
+            case .paywallRequested:
                 return .none
             }
         }

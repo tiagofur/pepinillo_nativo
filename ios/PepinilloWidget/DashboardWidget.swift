@@ -34,15 +34,19 @@ struct DashboardWidgetEntryView: View {
     let entry: DashboardWidgetEntry
 
     var body: some View {
-        switch family {
-        case .systemSmall:
-            DashboardWidgetSmall(entry: entry)
-        case .systemMedium:
-            DashboardWidgetMedium(entry: entry)
-        case .systemLarge:
-            DashboardWidgetLarge(entry: entry)
-        default:
-            DashboardWidgetSmall(entry: entry)
+        if entry.proRequired {
+            WidgetProRequiredView(title: String(localized: "Dashboard"))
+        } else {
+            switch family {
+            case .systemSmall:
+                DashboardWidgetSmall(entry: entry)
+            case .systemMedium:
+                DashboardWidgetMedium(entry: entry)
+            case .systemLarge:
+                DashboardWidgetLarge(entry: entry)
+            default:
+                DashboardWidgetSmall(entry: entry)
+            }
         }
     }
 }
@@ -74,6 +78,8 @@ struct DashboardWidgetEntry: TimelineEntry {
             pomodoroMinutes + flowtimeMinutes + timeBlockMinutes + stopwatchMinutes
         }
     }
+
+    var proRequired: Bool = false
 
     static let placeholder = DashboardWidgetEntry(
         date: Date(),
@@ -109,6 +115,19 @@ struct DashboardWidgetEntry: TimelineEntry {
         bestDayMinutes: 0,
         bestDayName: "",
         yesterdayMinutes: 0
+    )
+
+    static let proRequired = DashboardWidgetEntry(
+        date: Date(),
+        todayMinutes: 0,
+        todaySessions: 0,
+        streakDays: 0,
+        weeklyData: [],
+        weeklyTotalMinutes: 0,
+        bestDayMinutes: 0,
+        bestDayName: "",
+        yesterdayMinutes: 0,
+        proRequired: true
     )
 }
 

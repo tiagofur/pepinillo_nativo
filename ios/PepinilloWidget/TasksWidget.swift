@@ -34,15 +34,19 @@ struct TasksWidgetEntryView: View {
     let entry: TasksWidgetEntry
 
     var body: some View {
-        switch family {
-        case .systemSmall:
-            TasksWidgetSmall(entry: entry)
-        case .systemMedium:
-            TasksWidgetMedium(entry: entry)
-        case .systemLarge:
-            TasksWidgetLarge(entry: entry)
-        default:
-            TasksWidgetSmall(entry: entry)
+        if entry.proRequired {
+            WidgetProRequiredView(title: String(localized: "Tasks"))
+        } else {
+            switch family {
+            case .systemSmall:
+                TasksWidgetSmall(entry: entry)
+            case .systemMedium:
+                TasksWidgetMedium(entry: entry)
+            case .systemLarge:
+                TasksWidgetLarge(entry: entry)
+            default:
+                TasksWidgetSmall(entry: entry)
+            }
         }
     }
 }
@@ -53,6 +57,7 @@ struct TasksWidgetEntry: TimelineEntry {
     let date: Date
     let tasks: [WidgetTask]
     let activeTaskID: String?
+    var proRequired: Bool = false
 
     struct WidgetTask: Identifiable {
         let id: String
@@ -78,6 +83,13 @@ struct TasksWidgetEntry: TimelineEntry {
         date: Date(),
         tasks: [],
         activeTaskID: nil
+    )
+
+    static let proRequired = TasksWidgetEntry(
+        date: Date(),
+        tasks: [],
+        activeTaskID: nil,
+        proRequired: true
     )
 }
 

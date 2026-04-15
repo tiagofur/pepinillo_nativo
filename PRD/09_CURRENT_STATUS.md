@@ -107,7 +107,7 @@
 
 | Item                                | Priority | Notes                                                                                                  |
 | ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| Feature gating enforcement          | P0       | Analytics, sync, widgets, and themes are NOT actually blocked for free users                          |
+| Feature gating enforcement          | ✅ Done   | Analytics 30D/Year + weekly/monthly/AI reports, PRO themes, Dashboard/Tasks widgets, and backend sync all route free users to the paywall or skip gracefully |
 | Price update to $3.99/$24.99/$49.99 | P0       | Update via RevenueCat Offerings (PRIORITY)                                                             |
 | Xcode setup (non-code)              | P0       | App Group, CloudKit container, StoreKit config, targets, SPM, Info.plist, audio assets, localization |
 | macOS target                        | P2       | Included in roadmap but not implemented                                                                |

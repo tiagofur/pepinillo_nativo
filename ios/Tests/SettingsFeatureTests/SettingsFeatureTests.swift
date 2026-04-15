@@ -426,9 +426,24 @@ struct SettingsFeatureTests {
         state.isProUser = false
 
         let store = makeStore(state: state)
+        store.exhaustivity = .off
 
         await store.send(.themeChanged("ocean"))
-        // No state change — free user blocked from non-default themes
+        await store.receive(.upgradeTapped)
+        #expect(store.state.themeName == "default")
+    }
+
+    @Test("Free user selecting forest theme triggers upgrade action")
+    func testFreeUserForestThemeTriggersUpgrade() async {
+        var state = SettingsFeature.State()
+        state.isProUser = false
+
+        let store = makeStore(state: state)
+        store.exhaustivity = .off
+
+        await store.send(.themeChanged("forest"))
+        await store.receive(.upgradeTapped)
+        #expect(store.state.themeName == "default")
     }
 
     @Test("Free user can select default theme")

@@ -7,6 +7,7 @@
 
 import Foundation
 import ComposableArchitecture
+import WidgetKit
 
 @Reducer
 struct AppFeature {
@@ -327,7 +328,9 @@ struct AppFeature {
                 state.analytics.isProUser = sub.isPro
                 state.tasks.isProUser = sub.isPro
                 AppGroupDefaults.isProUser = sub.isPro
-                return .none
+                return .run { _ in
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
 
             case .subscriptionUpdated(let sub):
                 state.subscriptionState = sub
@@ -337,7 +340,9 @@ struct AppFeature {
                 state.tasks.isProUser = sub.isPro
                 AppGroupDefaults.isProUser = sub.isPro
                 if sub.isPro { state.focus.showPaywall = false }
-                return .none
+                return .run { _ in
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
 
             case .celebrationTriggered(let milestone):
                 state.pendingCelebration = milestone
@@ -728,6 +733,10 @@ struct AppFeature {
 
             case .settings(.paywallDismissed):
                 state.focus.showPaywall = false
+                return .none
+
+            case .analytics(.paywallRequested):
+                state.focus.showPaywall = true
                 return .none
 
             // MARK: - Settings: propagate config changes to active focus session

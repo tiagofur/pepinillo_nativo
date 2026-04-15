@@ -300,9 +300,8 @@ struct SettingsFeature {
                 return .send(.saveSettings)
 
             case .themeChanged(let name):
-                // Free users can only use the default theme
                 if !state.isProUser && name != "default" {
-                    return .none
+                    return .send(.upgradeTapped)
                 }
                 state.themeName = name
                 PreferenceDirtyTracker.markDirty("themeName")

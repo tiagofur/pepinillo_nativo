@@ -204,6 +204,12 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "activeSessionTimerEnd") }
     }
 
+    /// Whether the current user has an active Pro entitlement (read by widgets to gate PRO data).
+    static var isProUser: Bool {
+        get { defaults?.bool(forKey: "isProUser") ?? false }
+        set { defaults?.set(newValue, forKey: "isProUser") }
+    }
+
     /// Clear all external command flags after processing.
     static func clearExternalCommands() {
         defaults?.set(false, forKey: "externalStartRequested")

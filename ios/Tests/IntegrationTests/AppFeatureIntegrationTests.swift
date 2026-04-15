@@ -269,11 +269,13 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
         }
+        store.exhaustivity = .off
 
         await store.send(.subscriptionStateLoaded(.pro)) {
             $0.subscriptionState = .pro
             $0.focus.isProUser = true
             $0.settings.isProUser = true
+            $0.analytics.isProUser = true
         }
     }
 
@@ -286,12 +288,46 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
         }
+        store.exhaustivity = .off
 
         await store.send(.subscriptionUpdated(.pro)) {
             $0.subscriptionState = .pro
             $0.focus.isProUser = true
             $0.settings.isProUser = true
+            $0.analytics.isProUser = true
             $0.focus.showPaywall = false
         }
+    }
+
+    @Test func analyticsPaywallRequestedShowsPaywall() async {
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.analytics(.paywallRequested)) {
+            $0.focus.showPaywall = true
+        }
+    }
+
+    @Test func settingsThemeChangeForFreeUserShowsPaywall() async {
+        var initialState = AppFeature.State()
+        initialState.settings.isProUser = false
+        initialState.settings.themeName = "default"
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.settings(.themeChanged("ocean")))
+        // Settings emits upgradeTapped; AppFeature translates to focus.showPaywall = true
+        #expect(store.state.focus.showPaywall == true)
+        #expect(store.state.settings.themeName == "default")
     }
 }

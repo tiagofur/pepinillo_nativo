@@ -29,6 +29,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
     // MARK: - Entry Construction
 
     private func buildEntry(configuration: ConfigureDashboardWidgetIntent) async -> DashboardWidgetEntry {
+        guard AppGroupDefaults.isProUser else { return .proRequired }
         do {
             let container = try makeWidgetModelContainer()
             let context = ModelContext(container)
