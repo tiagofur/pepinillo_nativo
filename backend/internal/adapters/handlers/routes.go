@@ -1,12 +1,20 @@
 package handlers
 
 import (
+	"encoding/json"
+	"strings"
+
 	fiberws "github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/golang-jwt/jwt/v5"
 
 	"pepinillo/backend/internal/adapters/middleware"
 )
+
+func jwtParser() *jwt.Parser {
+	return jwt.NewParser()
+}
 
 type RouteHandlers struct {
 	Auth         *AuthHandler
@@ -33,20 +41,44 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	auth := api.Group("/auth")
 	authLimiter := limiter.New(limiter.Config{Max: 60})
+	// Per-IP limits — the existing line of defence.
 	loginRegisterLimiter := limiter.New(limiter.Config{Max: 5})
 	refreshLimiter := limiter.New(limiter.Config{Max: 10})
 	passwordRecoveryLimiter := limiter.New(limiter.Config{Max: 5})
 	emailVerificationLimiter := limiter.New(limiter.Config{Max: 10})
+
+	// Per-identity limits — catch credential-stuffing that rotates IP but targets
+	// a single account, and distributed-account-creation from one email. Keyed
+	// by the submitted email (login/register/password recovery/email verify) or
+	// by the userID decoded from the refresh token (refresh). Same storage as
+	// the IP limiter (Fiber's in-memory default) so no new deps.
+	loginRegisterByEmail := limiter.New(limiter.Config{
+		Max:          10, // slightly higher than per-IP to avoid false positives when multiple users share NAT
+		KeyGenerator: emailKeyGenerator("auth:login-register"),
+	})
+	refreshByUser := limiter.New(limiter.Config{
+		Max:          20,
+		KeyGenerator: refreshTokenUserKeyGenerator(),
+	})
+	passwordRecoveryByEmail := limiter.New(limiter.Config{
+		Max:          5,
+		KeyGenerator: emailKeyGenerator("auth:password-recovery"),
+	})
+	emailVerifyByEmail := limiter.New(limiter.Config{
+		Max:          10,
+		KeyGenerator: emailKeyGenerator("auth:email-verify"),
+	})
+
 	auth.Use(authLimiter)
-	auth.Post("/register", loginRegisterLimiter, deps.Auth.Register)
-	auth.Post("/login", loginRegisterLimiter, deps.Auth.Login)
+	auth.Post("/register", loginRegisterLimiter, loginRegisterByEmail, deps.Auth.Register)
+	auth.Post("/login", loginRegisterLimiter, loginRegisterByEmail, deps.Auth.Login)
 	auth.Post("/google", loginRegisterLimiter, deps.OAuth.LoginWithGoogle)
 	auth.Post("/apple", loginRegisterLimiter, deps.OAuth.LoginWithApple)
-	auth.Post("/refresh", refreshLimiter, deps.Auth.Refresh)
-	auth.Post("/forgot-password", passwordRecoveryLimiter, deps.Auth.ForgotPassword)
-	auth.Post("/reset-password", passwordRecoveryLimiter, deps.Auth.ResetPassword)
-	auth.Post("/verify-email", emailVerificationLimiter, deps.Auth.VerifyEmail)
-	auth.Post("/resend-verification", emailVerificationLimiter, deps.Auth.ResendVerification)
+	auth.Post("/refresh", refreshLimiter, refreshByUser, deps.Auth.Refresh)
+	auth.Post("/forgot-password", passwordRecoveryLimiter, passwordRecoveryByEmail, deps.Auth.ForgotPassword)
+	auth.Post("/reset-password", passwordRecoveryLimiter, passwordRecoveryByEmail, deps.Auth.ResetPassword)
+	auth.Post("/verify-email", emailVerificationLimiter, emailVerifyByEmail, deps.Auth.VerifyEmail)
+	auth.Post("/resend-verification", emailVerificationLimiter, emailVerifyByEmail, deps.Auth.ResendVerification)
 
 	protected := api.Group("", middleware.JWT(deps.JWTSecret))
 
@@ -156,7 +188,78 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	sync.Post("/sessions", deps.Sync.SyncSessions)
 	sync.Post("/initial-upload", deps.Sync.InitialUpload)
 
-	// WebSocket endpoint: JWT validated via query param before upgrade
+	// WebSocket endpoint: JWT validated via Authorization header (or
+	// Sec-WebSocket-Protocol sub-protocol) before upgrade. Query param is a
+	// deprecated fallback gated by DEPRECATED_WS_QUERY_AUTH.
 	api.Use("/ws", deps.WebSocket.WebSocketUpgrade)
 	api.Get("/ws", fiberws.New(deps.WebSocket.HandleWebSocket))
+}
+
+// emailKeyGenerator returns a Fiber limiter KeyGenerator that keys by the
+// submitted email (normalized lower-case + trimmed) under the given namespace,
+// falling back to c.IP() when the email cannot be extracted. Chain this after
+// the per-IP limiter so both bucket independently: a credential-stuffer that
+// rotates IPs but targets one account hits the email bucket; a bot scanning
+// from one IP hits the IP bucket.
+func emailKeyGenerator(namespace string) func(*fiber.Ctx) string {
+	return func(c *fiber.Ctx) string {
+		email := extractEmailFromBody(c.Body())
+		if email == "" {
+			return namespace + ":ip:" + c.IP()
+		}
+		return namespace + ":email:" + email
+	}
+}
+
+// refreshTokenUserKeyGenerator keys by the userID claim in the (unverified)
+// refresh token. Verification happens inside the handler; here we only need a
+// stable identity for rate limiting. Falls back to c.IP() if the token is
+// missing, malformed, or has no userID.
+func refreshTokenUserKeyGenerator() func(*fiber.Ctx) string {
+	return func(c *fiber.Ctx) string {
+		token := extractStringField(c.Body(), "refreshToken")
+		if token == "" {
+			return "auth:refresh:ip:" + c.IP()
+		}
+		if uid := unsafeUserIDFromJWT(token); uid != "" {
+			return "auth:refresh:user:" + uid
+		}
+		return "auth:refresh:ip:" + c.IP()
+	}
+}
+
+// extractEmailFromBody reads the "email" field from a JSON body without
+// mutating the buffer. Returns "" when the body is not JSON or the field is
+// absent. The body slice from Fiber is safe to read multiple times.
+func extractEmailFromBody(body []byte) string {
+	email := extractStringField(body, "email")
+	return strings.ToLower(strings.TrimSpace(email))
+}
+
+func extractStringField(body []byte, field string) string {
+	if len(body) == 0 {
+		return ""
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return ""
+	}
+	v, ok := payload[field].(string)
+	if !ok {
+		return ""
+	}
+	return v
+}
+
+// unsafeUserIDFromJWT decodes a JWT without verifying its signature and
+// returns the userID claim. Used ONLY for rate-limiter key derivation; the
+// handler still validates the token cryptographically before trusting it.
+func unsafeUserIDFromJWT(token string) string {
+	parser := jwtParser()
+	claims := &middleware.UserClaims{}
+	_, _, err := parser.ParseUnverified(token, claims)
+	if err != nil {
+		return ""
+	}
+	return claims.UserID
 }
