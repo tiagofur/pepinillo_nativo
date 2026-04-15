@@ -13,6 +13,10 @@ type Config struct {
 	Environment                            string
 	CORSAllowedOrigins                     string
 	DatabaseURL                            string
+	DBMaxOpenConns                         int64
+	DBMaxIdleConns                         int64
+	DBConnMaxLifetimeSeconds               int64
+	DBConnMaxIdleTimeSeconds               int64
 	RedisURL                               string
 	JWTSecret                              string
 	JWTIssuer                              string
@@ -86,6 +90,10 @@ func Load() (*Config, error) {
 		Environment:                            getEnv("APP_ENV", "development"),
 		CORSAllowedOrigins:                     getEnv("CORS_ALLOWED_ORIGINS", "*"),
 		DatabaseURL:                            getEnv("DATABASE_URL", ""),
+		DBMaxOpenConns:                         getEnvInt64("DB_MAX_OPEN_CONNS", 25),
+		DBMaxIdleConns:                         getEnvInt64("DB_MAX_IDLE_CONNS", 5),
+		DBConnMaxLifetimeSeconds:               getEnvInt64("DB_CONN_MAX_LIFETIME_SECONDS", 3600),
+		DBConnMaxIdleTimeSeconds:               getEnvInt64("DB_CONN_MAX_IDLE_TIME_SECONDS", 1800),
 		RedisURL:                               getEnv("REDIS_URL", ""),
 		JWTSecret:                              getEnv("JWT_SECRET", ""),
 		JWTIssuer:                              getEnv("JWT_ISSUER", "pepinillo-api"),

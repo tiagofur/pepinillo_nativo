@@ -77,7 +77,12 @@ func main() {
 		Expiration: time.Minute,
 	}))
 
-	db, err := postgres.NewDB(cfg.DatabaseURL)
+	db, err := postgres.NewDBWithPool(cfg.DatabaseURL, postgres.PoolConfig{
+		MaxOpenConns:    int(cfg.DBMaxOpenConns),
+		MaxIdleConns:    int(cfg.DBMaxIdleConns),
+		ConnMaxLifetime: time.Duration(cfg.DBConnMaxLifetimeSeconds) * time.Second,
+		ConnMaxIdleTime: time.Duration(cfg.DBConnMaxIdleTimeSeconds) * time.Second,
+	})
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
