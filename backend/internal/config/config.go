@@ -22,6 +22,7 @@ type Config struct {
 	JWTIssuer                              string
 	JWTAccessTTLSeconds                    int64
 	JWTRefreshTTLSeconds                   int64
+	RefreshTokenHashKey                    string
 	MinIOEndpoint                          string
 	MinIOAccessKey                         string
 	MinIOSecretKey                         string
@@ -99,6 +100,7 @@ func Load() (*Config, error) {
 		JWTIssuer:                              getEnv("JWT_ISSUER", "pepinillo-api"),
 		JWTAccessTTLSeconds:                    getEnvInt64("JWT_ACCESS_TTL_SECONDS", 900),
 		JWTRefreshTTLSeconds:                   getEnvInt64("JWT_REFRESH_TTL_SECONDS", 2592000),
+		RefreshTokenHashKey:                    getEnv("REFRESH_TOKEN_HASH_KEY", ""),
 		MinIOEndpoint:                          getEnv("MINIO_ENDPOINT", ""),
 		MinIOAccessKey:                         getEnv("MINIO_ACCESS_KEY", ""),
 		MinIOSecretKey:                         getEnv("MINIO_SECRET_KEY", ""),
@@ -161,6 +163,15 @@ func Load() (*Config, error) {
 
 	if cfg.JWTSecret == "" {
 		return nil, fmt.Errorf("JWT_SECRET is required")
+	}
+
+	isProduction := cfg.Environment == "production"
+
+	// REFRESH_TOKEN_HASH_KEY is required in production. In development we
+	// allow an empty value: main.go pads short keys with random bytes so the
+	// stores (which require ≥32 bytes) still construct for local iteration.
+	if isProduction && len(cfg.RefreshTokenHashKey) < 32 {
+		return nil, fmt.Errorf("REFRESH_TOKEN_HASH_KEY is required in production and must be at least 32 bytes")
 	}
 
 	return cfg, nil

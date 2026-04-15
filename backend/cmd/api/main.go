@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"log"
 	"net/http"
 	"strings"
@@ -94,17 +95,33 @@ func main() {
 	pomodoroRepo := postgres.NewPomodoroRepository(db)
 	aiRepo := postgres.NewAIInsightRepository(db)
 
+	// Refresh tokens are hashed with HMAC-SHA-256 keyed by REFRESH_TOKEN_HASH_KEY
+	// before being stored. config.Load() enforces a non-empty 32+ byte key in
+	// production; in development we pad short/empty keys with a random suffix
+	// so the stores (which require ≥32 bytes) still construct and local
+	// iteration works without configuration.
+	hashKey := []byte(cfg.RefreshTokenHashKey)
+	if len(hashKey) < 32 {
+		if len(hashKey) > 0 {
+			log.Println("WARNING: REFRESH_TOKEN_HASH_KEY is shorter than 32 bytes; padding with random bytes (development only)")
+		}
+		padding := make([]byte, 32-len(hashKey))
+		if _, err := cryptorand.Read(padding); err != nil {
+			log.Fatalf("failed to generate refresh token hash key padding: %v", err)
+		}
+		hashKey = append(hashKey, padding...)
+	}
 	var authStore ports.AuthStore
 	if cfg.RedisURL != "" {
-		store, err := redisStore.NewAuthStore(cfg.RedisURL)
+		store, err := redisStore.NewAuthStore(cfg.RedisURL, hashKey)
 		if err != nil {
 			log.Printf("redis unavailable, using memory auth store: %v", err)
-			authStore = memoryStore.NewAuthStore()
+			authStore = memoryStore.NewAuthStoreWithKey(hashKey)
 		} else {
 			authStore = store
 		}
 	} else {
-		authStore = memoryStore.NewAuthStore()
+		authStore = memoryStore.NewAuthStoreWithKey(hashKey)
 	}
 
 	var fileStorage ports.FileStorage = noopStorage.NewStorage()
@@ -291,7 +308,7 @@ func main() {
 				if cfg.RedisURL == "" {
 					return nil
 				}
-				store, err := redisStore.NewAuthStore(cfg.RedisURL)
+				store, err := redisStore.NewAuthStore(cfg.RedisURL, hashKey)
 				if err != nil {
 					return err
 				}

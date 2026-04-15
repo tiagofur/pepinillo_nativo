@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
@@ -11,15 +12,28 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 )
 
+// AuthStore persists refresh tokens and email/password reset codes in Redis.
+//
+// Refresh tokens are never stored in plaintext: we store HMAC-SHA-256(hashKey, token)
+// hex-encoded. The hashKey is a server-held secret (REFRESH_TOKEN_HASH_KEY env var)
+// separate from JWT_SECRET — if Redis is ever dumped, the tokens cannot be
+// reversed or brute-forced without the key. Lookup remains O(1) because the
+// HMAC is deterministic for a given (key, token) pair.
 type AuthStore struct {
-	client *goredis.Client
+	client  *goredis.Client
+	hashKey []byte
 }
 
 func (s *AuthStore) Ping(ctx context.Context) error {
 	return s.client.Ping(ctx).Err()
 }
 
-func NewAuthStore(redisURL string) (*AuthStore, error) {
+// NewAuthStore creates a Redis-backed auth store. hashKey must be non-empty and
+// at least 32 bytes — it's used to HMAC refresh tokens before storage.
+func NewAuthStore(redisURL string, hashKey []byte) (*AuthStore, error) {
+	if len(hashKey) < 32 {
+		return nil, fmt.Errorf("refresh token hash key must be at least 32 bytes, got %d", len(hashKey))
+	}
 	opt, err := goredis.ParseURL(redisURL)
 	if err != nil {
 		return nil, err
@@ -30,11 +44,11 @@ func NewAuthStore(redisURL string) (*AuthStore, error) {
 	if err := client.Ping(ctx).Err(); err != nil {
 		return nil, err
 	}
-	return &AuthStore{client: client}, nil
+	return &AuthStore{client: client, hashKey: hashKey}, nil
 }
 
 func (s *AuthStore) StoreRefreshToken(ctx context.Context, userID, token string, ttlSeconds int64) error {
-	hash := hashToken(token)
+	hash := s.hashToken(token)
 	tokenKey := fmt.Sprintf("refresh:%s:%s", userID, hash)
 	indexKey := fmt.Sprintf("refresh_index:%s", userID)
 	ttl := time.Duration(ttlSeconds) * time.Second
@@ -47,7 +61,7 @@ func (s *AuthStore) StoreRefreshToken(ctx context.Context, userID, token string,
 }
 
 func (s *AuthStore) ValidateRefreshToken(ctx context.Context, userID, token string) (bool, error) {
-	hash := hashToken(token)
+	hash := s.hashToken(token)
 	tokenKey := fmt.Sprintf("refresh:%s:%s", userID, hash)
 	count, err := s.client.Exists(ctx, tokenKey).Result()
 	if err != nil {
@@ -57,7 +71,7 @@ func (s *AuthStore) ValidateRefreshToken(ctx context.Context, userID, token stri
 }
 
 func (s *AuthStore) RevokeRefreshToken(ctx context.Context, userID, token string) error {
-	hash := hashToken(token)
+	hash := s.hashToken(token)
 	tokenKey := fmt.Sprintf("refresh:%s:%s", userID, hash)
 	indexKey := fmt.Sprintf("refresh_index:%s", userID)
 	pipe := s.client.TxPipeline()
@@ -128,7 +142,12 @@ func (s *AuthStore) RevokeEmailVerificationCode(ctx context.Context, email strin
 	return s.client.Del(ctx, key).Err()
 }
 
-func hashToken(token string) string {
-	sum := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(sum[:])
+// hashToken returns HMAC-SHA-256(hashKey, token) hex-encoded.
+// A server-held key (not a per-row salt) means lookups stay O(1) and a Redis
+// dump alone is useless to an attacker — they need the hashKey too, which
+// lives in env/vault, never in the DB.
+func (s *AuthStore) hashToken(token string) string {
+	mac := hmac.New(sha256.New, s.hashKey)
+	mac.Write([]byte(token))
+	return hex.EncodeToString(mac.Sum(nil))
 }
