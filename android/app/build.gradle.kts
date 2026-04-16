@@ -33,12 +33,17 @@ android {
         keystoreProperties.load(keystorePropertiesFile.inputStream())
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = file(keystoreProperties["storeFile"] as String)
-            storePassword = keystoreProperties["storePassword"] as String
-            keyAlias = keystoreProperties["keyAlias"] as String
-            keyPassword = keystoreProperties["keyPassword"] as String
+    val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+        .all { key -> keystoreProperties[key]?.toString()?.isNotBlank() == true }
+
+    if (hasReleaseSigning) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(keystoreProperties["storeFile"]!!.toString())
+                storePassword = keystoreProperties["storePassword"]!!.toString()
+                keyAlias = keystoreProperties["keyAlias"]!!.toString()
+                keyPassword = keystoreProperties["keyPassword"]!!.toString()
+            }
         }
     }
 
@@ -57,7 +62,9 @@ android {
             buildConfigField("String", "BASE_URL", "\"https://api.ppn.creapolis.dev/api/v1/\"")
             buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"254888961741-jhbnemtpraihlkb5ckjajmkqmijlr0tc.apps.googleusercontent.com\"")
             buildConfigField("String", "REVENUECAT_API_KEY", "\"goog_ITPYSPEdubAzAeoNGxezZuZJELT\"")
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
     compileOptions {

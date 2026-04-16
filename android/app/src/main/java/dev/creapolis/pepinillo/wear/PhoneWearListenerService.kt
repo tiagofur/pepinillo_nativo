@@ -43,7 +43,12 @@ class PhoneWearListenerService : WearableListenerService() {
         Log.d(TAG, "Watch connected: ${peer.displayName}")
 
         val state = focusEngine.state.value
-        WearDataLayerHelper.pushTimer(this, state, null)
+        scope.launch {
+            val linkedTaskName = state.linkedTaskId
+                ?.takeIf { it.isNotBlank() }
+                ?.let { taskRepository.getTaskById(it)?.title }
+            WearDataLayerHelper.pushTimer(this@PhoneWearListenerService, state, linkedTaskName)
+        }
 
         // Push tasks + stats directly (bypass WorkManager)
         pushTasksAndStatsDirectly()

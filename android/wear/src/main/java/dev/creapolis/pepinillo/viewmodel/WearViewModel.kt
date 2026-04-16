@@ -21,6 +21,13 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     val lastSyncAtMillis = WearDataStore.lastSyncAtMillis
     val diagnostics = WearDataStore.diagnostics
 
+    private suspend fun sendSafely(tag: String, action: suspend () -> Boolean) {
+        runCatching { action() }
+            .onFailure { error ->
+                WearDataStore.recordSyncFailure("$tag: ${error.javaClass.simpleName}")
+            }
+    }
+
     init {
         viewModelScope.launch {
             while (true) {
@@ -39,7 +46,9 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 phaseLabel = "Focus",
             ),
         )
-        viewModelScope.launch { sender.startTimer(mode) }
+        viewModelScope.launch {
+            sendSafely("start_timer") { sender.startTimer(mode) }
+        }
     }
 
     fun pauseTimer() {
@@ -47,7 +56,9 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         WearDataStore.updateTimer(
             timerState.value.copy(status = "Paused"),
         )
-        viewModelScope.launch { sender.pauseTimer() }
+        viewModelScope.launch {
+            sendSafely("pause_timer") { sender.pauseTimer() }
+        }
     }
 
     fun resumeTimer() {
@@ -55,7 +66,9 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         WearDataStore.updateTimer(
             timerState.value.copy(status = "Running"),
         )
-        viewModelScope.launch { sender.resumeTimer() }
+        viewModelScope.launch {
+            sendSafely("resume_timer") { sender.resumeTimer() }
+        }
     }
 
     fun stopTimer() {
@@ -68,7 +81,9 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 phaseLabel = "Listo",
             ),
         )
-        viewModelScope.launch { sender.stopTimer() }
+        viewModelScope.launch {
+            sendSafely("stop_timer") { sender.stopTimer() }
+        }
     }
 
     fun skipPhase() {
@@ -84,7 +99,9 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 progress = 1f,
             ),
         )
-        viewModelScope.launch { sender.skipPhase() }
+        viewModelScope.launch {
+            sendSafely("skip_phase") { sender.skipPhase() }
+        }
     }
 
     fun completeTask(taskId: String) {
@@ -92,7 +109,9 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         WearDataStore.updateTasks(
             tasks.value.filter { it.id != taskId },
         )
-        viewModelScope.launch { sender.completeTask(taskId) }
+        viewModelScope.launch {
+            sendSafely("complete_task") { sender.completeTask(taskId) }
+        }
     }
 
     fun toggleTaskLink(taskId: String, taskTitle: String) {
@@ -101,13 +120,17 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
             WearDataStore.updateTimer(
                 timerState.value.copy(linkedTaskId = null, linkedTaskName = null),
             )
-            viewModelScope.launch { sender.unlinkTask() }
+            viewModelScope.launch {
+                sendSafely("unlink_task") { sender.unlinkTask() }
+            }
         } else {
             // Optimistic UI: link immediately
             WearDataStore.updateTimer(
                 timerState.value.copy(linkedTaskId = taskId, linkedTaskName = taskTitle),
             )
-            viewModelScope.launch { sender.linkTask(taskId) }
+            viewModelScope.launch {
+                sendSafely("link_task") { sender.linkTask(taskId) }
+            }
         }
     }
 

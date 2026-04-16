@@ -51,11 +51,32 @@ class WearMessageSender(private val context: Context) {
             return false
         }
 
-        flushPendingCommands(nodes.map { it.id })
-
-        nodes.forEach { node ->
-            Wearable.getMessageClient(context).sendMessage(node.id, path, data).await()
+        runCatching {
+            flushPendingCommands(nodes.map { it.id })
+        }.onFailure { error ->
+            WearDataStore.recordSyncFailure("flush_before_send: ${error.javaClass.simpleName}")
         }
+
+        var successCount = 0
+        nodes.forEach { node ->
+            val sent = runCatching {
+                Wearable.getMessageClient(context).sendMessage(node.id, path, data).await()
+            }.isSuccess
+            if (sent) {
+                successCount += 1
+            }
+        }
+
+        if (successCount == 0) {
+            enqueuePendingCommand(path, data)
+            WearDataStore.recordSyncFailure("send_failed_all_nodes")
+            return false
+        }
+
+        if (successCount < nodes.size) {
+            WearDataStore.recordSyncFailure("send_partial_success")
+        }
+
         return true
     }
 
