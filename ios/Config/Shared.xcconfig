@@ -1,0 +1,15 @@
+// Shared.xcconfig — Base settings shared across Dev / Staging / Production.
+//
+// Per-environment configs (Dev / Staging / Production) #include this file and
+// override API_BASE_URL / WS_BASE_URL as needed.
+//
+// DEVELOPMENT_TEAM is defined here as a placeholder so all targets inherit the
+// same signing team. Replace with your real Apple Developer Team ID.
+
+// TODO: replace with real Apple Developer Team ID before archiving for App Store
+DEVELOPMENT_TEAM = T5SKULSP2M
+
+// xcconfig gotcha: `//` inside a value is a comment delimiter.
+// Workaround: inject the double-slash via $() substitution so the parser
+// doesn't treat it as a comment. Usage: https:$(SLASH_SLASH)host/path
+SLASH_SLASH = //

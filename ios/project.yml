@@ -6,14 +6,24 @@
 #   xcodegen generate
 #
 # This generates Pepinillo.xcodeproj with all 5 targets configured.
-# Adjust DEVELOPMENT_TEAM to your Apple Developer Team ID before running.
+# Adjust DEVELOPMENT_TEAM in Config/Shared.xcconfig to your Apple Developer
+# Team ID before archiving. Automatic code signing is enabled.
+#
+# Build configurations:
+#   - Debug           → Config/Dev.xcconfig         (API: localhost:8080)
+#   - Staging         → Config/Staging.xcconfig     (API: staging.api.ppn.creapolis.dev)
+#   - Release         → Config/Production.xcconfig  (API: api.ppn.creapolis.dev)
+#
+# Schemes:
+#   - Pepinillo Dev         → runs Debug config
+#   - Pepinillo Staging     → runs Staging config
+#   - Pepinillo Production  → runs Release config (archive-ready)
 #
 # Required one-time steps after generation:
-#   1. Open in Xcode → add TCA via SPM (File > Add Package Dependencies)
-#      URL: https://github.com/pointfreeco/swift-composable-architecture
-#   2. Set your Team in Signing & Capabilities for each target
-#   3. Create iCloud container "iCloud.com.pepinillo.app" in Capabilities
-#   4. Add StoreKit Configuration file for sandbox testing
+#   1. Open in Xcode → confirm SPM resolves TCA + RevenueCat + Snapshot
+#   2. Set your Team in Config/Shared.xcconfig (DEVELOPMENT_TEAM)
+#   3. Create iCloud container "iCloud.com.pepinillo.app" in your dev portal
+#   4. StoreKit config is auto-attached to the Dev scheme for sandbox testing
 
 name: Pepinillo
 
@@ -37,6 +47,9 @@ packages:
   SnapshotTesting:
     url: https://github.com/pointfreeco/swift-snapshot-testing
     from: "1.17.0"
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa
+    from: "8.36.0"
 
 # ── Build Settings (shared across all targets) ───────────────────────────────
 settings:
@@ -44,18 +57,22 @@ settings:
     MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "2"
     SWIFT_VERSION: "6.0"
-    DEVELOPMENT_TEAM: "T5SKULSP2M"  # ← Fill in your Apple Developer Team ID
     CODE_SIGN_STYLE: Automatic
     ENABLE_BITCODE: "NO"
   configs:
     Debug:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+    Staging:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: STAGING
     Release:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
 
 # ── Configs ──────────────────────────────────────────────────────────────────
+# Three build configurations mapped to xcconfig files per target (see
+# configFiles: blocks on each target below).
 configs:
   Debug: debug
+  Staging: release
   Release: release
 
 # ── Targets ──────────────────────────────────────────────────────────────────
@@ -68,6 +85,11 @@ targets:
     deploymentTarget: "17.0"
     bundleId: com.pepinillo.app
 
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Release: Config/Production.xcconfig
+
     info:
       path: App/Info.plist
       properties:
@@ -76,7 +98,9 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSRequiresIPhoneOS: true
         UILaunchScreen:
-          UIColorName: "AccentColor"
+          UIColorName: LaunchBackground
+          UIImageName: LaunchLogo
+          UIImageRespectsSafeAreaInsets: true
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
           UISceneConfigurations: {}
@@ -87,6 +111,18 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
+        # Background modes required for soundscape playback, push-driven sync,
+        # and BGTaskScheduler-driven recurrence/offline-sync jobs.
+        UIBackgroundModes:
+          - audio
+          - remote-notification
+          - processing
+        # Exposed from xcconfig into Info.plist so runtime code (APIClient,
+        # WebSocketClient) can read the per-environment base URL via Bundle.
+        API_BASE_URL: "$(API_BASE_URL)"
+        WS_BASE_URL: "$(WS_BASE_URL)"
+        APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
+        SENTRY_DSN: "$(SENTRY_DSN)"
         # Privacy usage descriptions (required for App Store review)
         NSUserNotificationUsageDescription: >
           Pepinillo sends reminders to start your focus sessions and notifies
@@ -97,9 +133,18 @@ targets:
         NSHealthShareUsageDescription: >
           Pepinillo reads your Mindful Minutes from Apple Health to show your
           focus history and keep your analytics accurate across devices.
+        NSRemindersUsageDescription: >
+          Pepinillo can import tasks from Reminders so you can start focusing
+          on them right away.
+        NSRemindersFullAccessUsageDescription: >
+          Pepinillo imports and updates your Reminders so you can turn them
+          into focus sessions.
         NSCalendarsUsageDescription: >
-          Pepinillo creates calendar events for Time Block sessions to sync
-          with your schedule.
+          Pepinillo reads your Calendar events so you can plan focus sessions
+          around your existing schedule.
+        NSCalendarsFullAccessUsageDescription: >
+          Pepinillo reads and updates your Calendar so your focus sessions
+          appear alongside your existing schedule.
         NSSiriUsageDescription: >
           Pepinillo uses Siri so you can start and stop focus sessions with
           your voice.
@@ -113,6 +158,9 @@ targets:
     entitlements:
       path: App/Pepinillo.entitlements
       properties:
+        aps-environment: development
+        com.apple.developer.applesignin:
+          - Default
         com.apple.developer.icloud-services: [CloudKit]
         com.apple.developer.icloud-container-identifiers:
           - iCloud.com.pepinillo.app
@@ -139,6 +187,7 @@ targets:
       - path: Shared/Resources
         optional: true
       - path: App/PrivacyInfo.xcprivacy
+      - path: Pepinillo.storekit
 
     dependencies:
       - package: ComposableArchitecture
@@ -161,6 +210,11 @@ targets:
     platform: iOS
     deploymentTarget: "17.0"
     bundleId: com.pepinillo.app.widget
+
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Release: Config/Production.xcconfig
 
     info:
       path: PepinilloWidget/Info.plist
@@ -206,6 +260,11 @@ targets:
     deploymentTarget: "10.0"
     bundleId: com.pepinillo.app.watch
 
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Release: Config/Production.xcconfig
+
     info:
       path: PepinilloWatch/Info.plist
       properties:
@@ -215,6 +274,11 @@ targets:
         WKCompanionAppBundleIdentifier: com.pepinillo.app
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        # Expose the per-environment URL to the Watch app as well (used by any
+        # future direct networking; today WatchConnectivity forwards data).
+        API_BASE_URL: "$(API_BASE_URL)"
+        WS_BASE_URL: "$(WS_BASE_URL)"
+        APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
 
     entitlements:
       path: PepinilloWatch/PepinilloWatch.entitlements
@@ -255,6 +319,11 @@ targets:
     deploymentTarget: "18.0"
     bundleId: com.pepinillo.app.controlcenter
 
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Release: Config/Production.xcconfig
+
     info:
       path: ControlCenterExtension/Info.plist
       properties:
@@ -289,6 +358,11 @@ targets:
     deploymentTarget: "17.0"
     bundleId: com.pepinillo.tests
 
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Release: Config/Production.xcconfig
+
     sources:
       - path: Tests
 
@@ -305,8 +379,11 @@ targets:
         BUNDLE_LOADER: "$(TEST_HOST)"
 
 # ── Schemes ──────────────────────────────────────────────────────────────────
+# Three schemes so developers can toggle environment from the Xcode scheme
+# picker without touching build settings. Each scheme pins a specific
+# configuration to Run/Test/Profile/Analyze/Archive.
 schemes:
-  Pepinillo:
+  Pepinillo Dev:
     build:
       targets:
         Pepinillo: all
@@ -316,6 +393,7 @@ schemes:
     run:
       config: Debug
       commandLineArguments: {}
+      storeKitConfiguration: Pepinillo.storekit
     test:
       config: Debug
       targets:
@@ -323,8 +401,55 @@ schemes:
           parallelizable: true
           randomExecutionOrder: true
     profile:
-      config: Release
+      config: Debug
     analyze:
       config: Debug
+    archive:
+      config: Debug
+
+  Pepinillo Staging:
+    build:
+      targets:
+        Pepinillo: all
+        PepinilloWidgetExtension: [build]
+        PepinilloWatch: [build]
+        PepinilloTests: [test]
+    run:
+      config: Staging
+      commandLineArguments: {}
+      storeKitConfiguration: Pepinillo.storekit
+    test:
+      config: Staging
+      targets:
+        - name: PepinilloTests
+          parallelizable: true
+          randomExecutionOrder: true
+    profile:
+      config: Staging
+    analyze:
+      config: Staging
+    archive:
+      config: Staging
+
+  Pepinillo Production:
+    build:
+      targets:
+        Pepinillo: all
+        PepinilloWidgetExtension: [build]
+        PepinilloWatch: [build]
+        PepinilloTests: [test]
+    run:
+      config: Release
+      commandLineArguments: {}
+    test:
+      config: Release
+      targets:
+        - name: PepinilloTests
+          parallelizable: true
+          randomExecutionOrder: true
+    profile:
+      config: Release
+    analyze:
+      config: Release
     archive:
       config: Release
