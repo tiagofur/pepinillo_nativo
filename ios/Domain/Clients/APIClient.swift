@@ -93,7 +93,17 @@ extension APIClient: DependencyKey {
 private struct APIHelper: Sendable {
     let keychain: KeychainClient
 
-    private static let baseURL = "https://api.ppn.creapolis.dev/api/v1"
+    /// Base URL resolved from Info.plist (`API_BASE_URL`, injected via xcconfig).
+    /// Falls back to the production API if the key is missing — never ships a
+    /// localhost default to the App Store.
+    private static let baseURL: String = {
+        if let value = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
+           !value.isEmpty,
+           value != "$(API_BASE_URL)" {
+            return value
+        }
+        return "https://api.ppn.creapolis.dev/api/v1"
+    }()
 
     private var encoder: JSONEncoder {
         let encoder = JSONEncoder()

@@ -39,7 +39,16 @@ private final class WebSocketManager: @unchecked Sendable {
     private var retryCount = 0
     private var shouldReconnect = false
 
-    private static let baseWSURL = "wss://api.ppn.creapolis.dev/api/v1/ws"
+    /// WebSocket base URL resolved from Info.plist (`WS_BASE_URL`, injected
+    /// via xcconfig). Falls back to production if the key is missing.
+    private static let baseWSURL: String = {
+        if let value = Bundle.main.object(forInfoDictionaryKey: "WS_BASE_URL") as? String,
+           !value.isEmpty,
+           value != "$(WS_BASE_URL)" {
+            return value
+        }
+        return "wss://api.ppn.creapolis.dev/api/v1/ws"
+    }()
     private static let maxBackoff: TimeInterval = 30
 
     func connect() async {
