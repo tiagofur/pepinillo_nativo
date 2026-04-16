@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	cryptorand "crypto/rand"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
+	sentryfiber "github.com/getsentry/sentry-go/fiber"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -41,8 +43,34 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		// Logger not yet initialized — fall back to default slog so the
+		// boot failure still produces a structured record.
+		slog.Error("failed to load config", "error", err)
+		os.Exit(1)
 	}
+
+	// Initialize structured JSON logger BEFORE anything else so every
+	// subsequent line (including migrations, Sentry init, Fiber boot) is
+	// structured. Level is env-driven via LOG_LEVEL.
+	observability.InitLogger(observability.LoggerConfig{
+		Level:       cfg.LogLevel,
+		Environment: cfg.Environment,
+		Service:     "pepinillo-backend",
+	})
+
+	// Initialize Sentry BEFORE the Fiber app so the middleware can attach.
+	// When SENTRY_DSN is empty this is a no-op (dev default).
+	if observability.InitSentry(observability.SentryConfig{
+		DSN:              cfg.SentryDSN,
+		Environment:      cfg.Environment,
+		Release:          cfg.SentryRelease,
+		SampleRate:       cfg.SentrySampleRate,
+		TracesSampleRate: cfg.SentryTracesSampleRate,
+		AttachStacktrace: true,
+	}) {
+		defer observability.FlushSentry(2 * time.Second)
+	}
+
 	runMigrations(cfg.DatabaseURL)
 
 	observability.ConfigureAlertRules(observability.AlertRules{
@@ -64,6 +92,15 @@ func main() {
 		ErrorHandler: handlers.ErrorHandler,
 	})
 
+	// Sentry Fiber middleware: captures panics and propagates request
+	// context (URL, method, headers minus cookies) to reported events. It
+	// is safe to attach when Sentry is disabled — the middleware no-ops
+	// when the hub has no client.
+	app.Use(sentryfiber.New(sentryfiber.Options{
+		Repanic:         true,
+		WaitForDelivery: false,
+	}))
+
 	app.Use(helmet.New())
 	app.Use(compress.New(compress.Config{
 		Level: compress.LevelDefault,
@@ -73,10 +110,10 @@ func main() {
 	// copy those settings to prod, and the production guard is the last line of defense.
 	corsOrigins := cfg.CORSAllowedOrigins
 	if corsOrigins == "" {
-		log.Println("WARNING: CORS_ALLOWED_ORIGINS is empty; falling back to \"*\" (development only)")
+		slog.Warn("CORS_ALLOWED_ORIGINS is empty; falling back to \"*\" (development only)")
 		corsOrigins = "*"
 	} else if strings.Contains(corsOrigins, "*") {
-		log.Println("WARNING: CORS_ALLOWED_ORIGINS contains \"*\" (development only — production boot rejects this)")
+		slog.Warn("CORS_ALLOWED_ORIGINS contains \"*\" (development only — production boot rejects this)")
 	}
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: corsOrigins,
@@ -95,7 +132,9 @@ func main() {
 		ConnMaxIdleTime: time.Duration(cfg.DBConnMaxIdleTimeSeconds) * time.Second,
 	})
 	if err != nil {
-		log.Fatalf("failed to connect database: %v", err)
+		slog.Error("failed to connect database", "error", err)
+		observability.CaptureError(err, map[string]string{"stage": "db_connect"})
+		os.Exit(1)
 	}
 
 	userRepo := postgres.NewUserRepository(db)
@@ -113,11 +152,12 @@ func main() {
 	hashKey := []byte(cfg.RefreshTokenHashKey)
 	if len(hashKey) < 32 {
 		if len(hashKey) > 0 {
-			log.Println("WARNING: REFRESH_TOKEN_HASH_KEY is shorter than 32 bytes; padding with random bytes (development only)")
+			slog.Warn("REFRESH_TOKEN_HASH_KEY is shorter than 32 bytes; padding with random bytes (development only)")
 		}
 		padding := make([]byte, 32-len(hashKey))
 		if _, err := cryptorand.Read(padding); err != nil {
-			log.Fatalf("failed to generate refresh token hash key padding: %v", err)
+			slog.Error("failed to generate refresh token hash key padding", "error", err)
+			os.Exit(1)
 		}
 		hashKey = append(hashKey, padding...)
 	}
@@ -125,7 +165,7 @@ func main() {
 	if cfg.RedisURL != "" {
 		store, err := redisStore.NewAuthStore(cfg.RedisURL, hashKey)
 		if err != nil {
-			log.Printf("redis unavailable, using memory auth store: %v", err)
+			slog.Warn("redis unavailable, using memory auth store", "error", err)
 			authStore = memoryStore.NewAuthStoreWithKey(hashKey)
 		} else {
 			authStore = store
@@ -145,7 +185,7 @@ func main() {
 			cfg.MinIOUseSSL,
 		)
 		if err != nil {
-			log.Printf("minio unavailable, using noop storage: %v", err)
+			slog.Warn("minio unavailable, using noop storage", "error", err)
 		} else {
 			fileStorage = storage
 		}
@@ -157,7 +197,7 @@ func main() {
 	wsHub := websocket.NewHub()
 	go wsHub.Run()
 	wsManager := websocket.NewManager(wsHub)
-	log.Println("WebSocket Hub and Manager initialized")
+	slog.Info("WebSocket Hub and Manager initialized")
 
 	// Email provider: SendGrid if API key present, else fallback to log notifier
 	var emailNotifier ports.Notifier
@@ -166,7 +206,7 @@ func main() {
 	} else {
 		emailNotifier = notifier.NewLogNotifier()
 		if cfg.EmailProvider == "sendgrid" {
-			log.Println("EMAIL_PROVIDER=sendgrid but SENDGRID_API_KEY not set, using log notifier")
+			slog.Warn("EMAIL_PROVIDER=sendgrid but SENDGRID_API_KEY not set, using log notifier")
 		}
 	}
 
@@ -255,16 +295,16 @@ func main() {
 	switch pushMode {
 	case "fcm":
 		pushProvider = muxPush.NewProvider(fcmProvider, fcmProvider, noopProvider)
-		log.Println("Push provider mode: fcm")
+		slog.Info("push provider configured", "mode", "fcm")
 	case "apns":
 		pushProvider = muxPush.NewProvider(apnsProvider, noopProvider, noopProvider)
-		log.Println("Push provider mode: apns")
+		slog.Info("push provider configured", "mode", "apns")
 	case "hybrid":
 		pushProvider = muxPush.NewProvider(apnsProvider, fcmProvider, noopProvider)
-		log.Println("Push provider mode: hybrid")
+		slog.Info("push provider configured", "mode", "hybrid")
 	default:
 		pushProvider = muxPush.NewProvider(noopProvider, noopProvider, noopProvider)
-		log.Println("Push provider mode: noop")
+		slog.Info("push provider configured", "mode", "noop")
 	}
 	pushService := services.NewPushService(deviceTokenRepo, pushProvider, behaviorLog)
 
@@ -272,10 +312,10 @@ func main() {
 	var llmProvider ports.LLMProvider
 	if cfg.GeminiAPIKey != "" {
 		llmProvider = geminiLLM.NewProvider(cfg.GeminiAPIKey)
-		log.Println("Gemini 2.5 Flash LLM provider enabled")
+		slog.Info("Gemini 2.5 Flash LLM provider enabled")
 	} else {
 		llmProvider = noopLLM.NewProvider()
-		log.Println("No GEMINI_API_KEY set — AI endpoints will use fallback responses")
+		slog.Info("No GEMINI_API_KEY set — AI endpoints will use fallback responses")
 	}
 
 	aiService := services.NewAIService(aiRepo, taskRepo, pomodoroRepo, llmProvider, cfg.MLServiceURL)
@@ -362,9 +402,11 @@ func main() {
 	api := app.Group("/api/v1")
 	handlers.RegisterAPIRoutes(api, routeDeps)
 
-	log.Printf("Pepinillo API listening on :%s", cfg.Port)
+	slog.Info("Pepinillo API listening", "port", cfg.Port)
 	if err := app.Listen(":" + cfg.Port); err != nil {
-		log.Fatalf("failed to start server: %v", err)
+		slog.Error("failed to start server", "error", err)
+		observability.CaptureError(err, map[string]string{"stage": "fiber_listen"})
+		os.Exit(1)
 	}
 }
 
@@ -376,7 +418,8 @@ func startRecurringTaskGenerator(taskService *services.TaskService, pushService 
 			to := now.AddDate(0, 0, 14)
 			users, created, byUser, err := taskService.GenerateRecurrencesForAllUsersWithSummary(context.Background(), from, to)
 			if err != nil {
-				log.Printf("recurrence generator failed: %v", err)
+				slog.Error("recurrence generator failed", "error", err)
+				observability.CaptureError(err, map[string]string{"stage": "recurrence_generator"})
 				return
 			}
 
@@ -385,11 +428,15 @@ func startRecurringTaskGenerator(taskService *services.TaskService, pushService 
 					From: from,
 					To:   to,
 				}); err != nil {
-					log.Printf("recurrence push failed user=%s: %v", row.UserID, err)
+					slog.Error("recurrence push failed", "userId", row.UserID, "error", err)
+					observability.CaptureError(err, map[string]string{
+						"stage":  "recurrence_push",
+						"userId": row.UserID,
+					})
 				}
 			}
 
-			log.Printf("recurrence generator completed: users=%d created=%d", users, created)
+			slog.Info("recurrence generator completed", "users", users, "created", created)
 		}
 
 		run()
@@ -408,13 +455,15 @@ func runMigrations(databaseURL string) {
 		databaseURL,
 	)
 	if err != nil {
-		log.Printf("migration setup skipped: %v", err)
+		slog.Warn("migration setup skipped", "error", err)
 		return
 	}
 	defer m.Close()
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatalf("migration failed: %v", err)
+		slog.Error("migration failed", "error", err)
+		observability.CaptureError(err, map[string]string{"stage": "migrations"})
+		os.Exit(1)
 	}
-	log.Println("database migrations applied successfully")
+	slog.Info("database migrations applied successfully")
 }

@@ -83,6 +83,11 @@ type Config struct {
 	RevenueCatSecretKey                    string // Secret API Key (V2) for server-to-server validation
 	RevenueCatWebhookAuthToken             string
 	RevenueCatAPIBaseURL                   string
+	LogLevel                               string
+	SentryDSN                              string
+	SentrySampleRate                       float64
+	SentryTracesSampleRate                 float64
+	SentryRelease                          string
 }
 
 func Load() (*Config, error) {
@@ -162,6 +167,11 @@ func Load() (*Config, error) {
 		RevenueCatSecretKey:                    getEnv("REVENUECAT_SECRET_KEY", ""),
 		RevenueCatWebhookAuthToken:             getEnv("REVENUECAT_WEBHOOK_AUTH_TOKEN", ""),
 		RevenueCatAPIBaseURL:                   getEnv("REVENUECAT_API_BASE_URL", "https://api.revenuecat.com/v1"),
+		LogLevel:                               getEnv("LOG_LEVEL", "info"),
+		SentryDSN:                              getEnv("SENTRY_DSN", ""),
+		SentrySampleRate:                       getEnvFloat64("SENTRY_SAMPLE_RATE", 1.0),
+		SentryTracesSampleRate:                 getEnvFloat64("SENTRY_TRACES_SAMPLE_RATE", 0.1),
+		SentryRelease:                          getEnv("SENTRY_RELEASE", ""),
 	}
 
 	if cfg.JWTSecret == "" {
@@ -222,6 +232,18 @@ func getEnvInt64(key string, fallback int64) int64 {
 		return fallback
 	}
 	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return fallback
+	}
+	return parsed
+}
+
+func getEnvFloat64(key string, fallback float64) float64 {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseFloat(value, 64)
 	if err != nil {
 		return fallback
 	}

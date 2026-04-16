@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
+
+	"pepinillo/backend/internal/observability"
 	"strings"
 
 	"github.com/sendgrid/sendgrid-go"
@@ -78,16 +80,25 @@ func (n *SendGridNotifier) sendEmail(ctx context.Context, toEmail, subject, plai
 
 	response, err := n.client.SendWithContext(ctx, message)
 	if err != nil {
-		log.Printf("sendgrid error: %v", err)
+		slog.Error("sendgrid send failed", "error", err, "toEmail", toEmail)
+		observability.CaptureError(err, map[string]string{
+			"stage":    "sendgrid_send",
+			"toEmail":  toEmail,
+			"provider": "sendgrid",
+		})
 		return fmt.Errorf("failed to send email: %w", err)
 	}
 
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		log.Printf("sendgrid status: %d, body: %s", response.StatusCode, response.Body)
+		slog.Error("sendgrid non-2xx response",
+			"status", response.StatusCode,
+			"body", response.Body,
+			"toEmail", toEmail,
+		)
 		return fmt.Errorf("email service returned status %d", response.StatusCode)
 	}
 
-	log.Printf("email sent successfully to %s (status: %d)", toEmail, response.StatusCode)
+	slog.Info("email sent", "toEmail", toEmail, "status", response.StatusCode)
 	return nil
 }
 
@@ -223,11 +234,11 @@ func (n *SendGridNotifier) getEmailChangeEmailTemplate(oldEmail, newEmail, code 
 func LogNotifierWithFallback(apiKey, fromEmail, fromName string) ports.Notifier {
 	sendgrid := NewSendGridNotifier(apiKey, fromEmail, fromName)
 	if sendgrid != nil {
-		log.Println("SendGrid notifier enabled")
+		slog.Info("sendgrid notifier enabled")
 		return sendgrid
 	}
 
-	log.Println("SendGrid not configured, using log notifier")
+	slog.Info("sendgrid not configured, using log notifier")
 	return NewLogNotifier()
 }
 
@@ -241,21 +252,21 @@ func NewFallbackNotifier(apiKey, fromEmail, fromName string) ports.Notifier {
 	logNotifier := NewLogNotifier()
 
 	if sg != nil {
-		log.Println("SendGrid notifier enabled with log fallback")
+		slog.Info("sendgrid notifier enabled with log fallback")
 		return &FallbackNotifier{
 			sendgrid: sg,
 			log:      logNotifier,
 		}
 	}
 
-	log.Println("SendGrid not configured, using log notifier only")
+	slog.Info("sendgrid not configured, using log notifier only")
 	return logNotifier
 }
 
 func (f *FallbackNotifier) SendPasswordResetCode(ctx context.Context, email, code string) error {
 	if f.sendgrid != nil {
 		if err := f.sendgrid.SendPasswordResetCode(ctx, email, code); err != nil {
-			log.Printf("SendGrid failed, logging instead: %v", err)
+			slog.Warn("sendgrid failed, falling back to log notifier", "error", err)
 			return f.log.SendPasswordResetCode(ctx, email, code)
 		}
 		return nil
@@ -266,7 +277,7 @@ func (f *FallbackNotifier) SendPasswordResetCode(ctx context.Context, email, cod
 func (f *FallbackNotifier) SendEmailVerificationCode(ctx context.Context, email, code string) error {
 	if f.sendgrid != nil {
 		if err := f.sendgrid.SendEmailVerificationCode(ctx, email, code); err != nil {
-			log.Printf("SendGrid failed, logging instead: %v", err)
+			slog.Warn("sendgrid failed, falling back to log notifier", "error", err)
 			return f.log.SendEmailVerificationCode(ctx, email, code)
 		}
 		return nil
@@ -277,7 +288,7 @@ func (f *FallbackNotifier) SendEmailVerificationCode(ctx context.Context, email,
 func (f *FallbackNotifier) SendEmailChangeVerification(ctx context.Context, oldEmail, newEmail, code string) error {
 	if f.sendgrid != nil {
 		if err := f.sendgrid.SendEmailChangeVerification(ctx, oldEmail, newEmail, code); err != nil {
-			log.Printf("SendGrid failed, logging instead: %v", err)
+			slog.Warn("sendgrid failed, falling back to log notifier", "error", err)
 			return f.log.SendEmailChangeVerification(ctx, oldEmail, newEmail, code)
 		}
 		return nil

@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"log"
+	"log/slog"
 	"strings"
 
 	fiberws "github.com/gofiber/contrib/websocket"
@@ -102,7 +102,9 @@ func extractWSToken(c *fiber.Ctx, allowQueryAuth bool) (string, bool) {
 
 	if allowQueryAuth {
 		if token := c.Query("token"); token != "" {
-			log.Printf("DEPRECATION: WebSocket connection authenticated via query param from %s — set DEPRECATED_WS_QUERY_AUTH=false and migrate clients to Authorization header (removal in v1.1)", c.IP())
+			slog.Warn("DEPRECATION: WebSocket connection authenticated via query param — set DEPRECATED_WS_QUERY_AUTH=false and migrate clients to Authorization header (removal in v1.1)",
+				"remoteIp", c.IP(),
+			)
 			return token, false
 		}
 	}

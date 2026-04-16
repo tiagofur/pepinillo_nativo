@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -23,15 +23,15 @@ import (
 )
 
 type OAuthService struct {
-	users          ports.UserRepository
-	authStore      ports.AuthStore
-	jwtSecret      string
-	jwtIssuer      string
-	accessTTL      int64
-	refreshTTL     int64
-	googleClient   *http.Client
+	users           ports.UserRepository
+	authStore       ports.AuthStore
+	jwtSecret       string
+	jwtIssuer       string
+	accessTTL       int64
+	refreshTTL      int64
+	googleClient    *http.Client
 	googleClientIDs []string
-	appleBundleID  string
+	appleBundleID   string
 }
 
 type googleTokenInfo struct {
@@ -84,20 +84,24 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 		return nil, nil, fmt.Errorf("invalid google token: %w", err)
 	}
 
+	if strings.TrimSpace(tokenInfo.Email) == "" {
+		return nil, nil, ErrOAuthEmailMissing
+	}
+
 	user, err := s.users.GetByGoogleID(ctx, tokenInfo.Sub)
 	if err != nil {
-		log.Printf("ERROR LoginWithGoogle: failed to get user by google id %s: %v", tokenInfo.Sub, err)
+		slog.Error("LoginWithGoogle: failed to get user by google id", "googleId", tokenInfo.Sub, "error", err)
 		return nil, nil, err
 	}
 
 	if user != nil {
 		tokens, err := s.generateTokens(user)
 		if err != nil {
-			log.Printf("ERROR LoginWithGoogle: failed to generate tokens for user %s: %v", user.ID, err)
+			slog.Error("LoginWithGoogle: failed to generate tokens", "userId", user.ID, "error", err)
 			return nil, nil, err
 		}
 		if err := s.authStore.StoreRefreshToken(ctx, user.ID, tokens.RefreshToken, s.refreshTTL); err != nil {
-			log.Printf("ERROR LoginWithGoogle: failed to store refresh token for user %s: %v", user.ID, err)
+			slog.Error("LoginWithGoogle: failed to store refresh token", "userId", user.ID, "error", err)
 			return nil, nil, err
 		}
 		return user, tokens, nil
@@ -105,7 +109,7 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 
 	existing, err := s.users.GetByEmail(ctx, tokenInfo.Email)
 	if err != nil {
-		log.Printf("ERROR LoginWithGoogle: failed to get user by email %s: %v", tokenInfo.Email, err)
+		slog.Error("LoginWithGoogle: failed to get user by email", "email", tokenInfo.Email, "error", err)
 		return nil, nil, err
 	}
 
@@ -114,29 +118,34 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 			return nil, nil, ErrAccountAlreadyLinked
 		}
 		if err := s.users.LinkGoogleAccount(ctx, existing.ID, tokenInfo.Sub, tokenInfo.Email, tokenInfo.Name, tokenInfo.Picture); err != nil {
-			log.Printf("ERROR LoginWithGoogle: failed to link google account to user %s: %v", existing.ID, err)
+			slog.Error("LoginWithGoogle: failed to link google account", "userId", existing.ID, "error", err)
 			return nil, nil, err
 		}
 		tokens, err := s.generateTokens(existing)
 		if err != nil {
-			log.Printf("ERROR LoginWithGoogle: failed to generate tokens for existing user %s: %v", existing.ID, err)
+			slog.Error("LoginWithGoogle: failed to generate tokens for existing user", "userId", existing.ID, "error", err)
 			return nil, nil, err
 		}
 		if err := s.authStore.StoreRefreshToken(ctx, existing.ID, tokens.RefreshToken, s.refreshTTL); err != nil {
-			log.Printf("ERROR LoginWithGoogle: failed to store refresh token for existing user %s: %v", existing.ID, err)
+			slog.Error("LoginWithGoogle: failed to store refresh token for existing user", "userId", existing.ID, "error", err)
 			return nil, nil, err
 		}
 		return existing, tokens, nil
 	}
 
 	emailVerified, _ := strconv.ParseBool(tokenInfo.EmailVerified)
+	var emailVerifiedAt *time.Time
+	if emailVerified {
+		now := time.Now().UTC()
+		emailVerifiedAt = &now
+	}
 	user = &domain.User{
 		ID:               uuid.NewString(),
 		Email:            tokenInfo.Email,
 		Name:             tokenInfo.Name,
 		ImageURL:         &tokenInfo.Picture,
 		EmailVerified:    emailVerified,
-		EmailVerifiedAt:  &[]time.Time{time.Now().UTC()}[0],
+		EmailVerifiedAt:  emailVerifiedAt,
 		SubscriptionTier: "free",
 		GoogleID:         &tokenInfo.Sub,
 		GoogleEmail:      &tokenInfo.Email,
@@ -145,17 +154,17 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 	}
 
 	if err := s.users.Create(ctx, user); err != nil {
-		log.Printf("ERROR LoginWithGoogle: failed to create new user with email %s: %v", tokenInfo.Email, err)
+		slog.Error("LoginWithGoogle: failed to create new user", "email", tokenInfo.Email, "error", err)
 		return nil, nil, err
 	}
 
 	tokens, err := s.generateTokens(user)
 	if err != nil {
-		log.Printf("ERROR LoginWithGoogle: failed to generate tokens for new user %s: %v", user.ID, err)
+		slog.Error("LoginWithGoogle: failed to generate tokens for new user", "userId", user.ID, "error", err)
 		return nil, nil, err
 	}
 	if err := s.authStore.StoreRefreshToken(ctx, user.ID, tokens.RefreshToken, s.refreshTTL); err != nil {
-		log.Printf("ERROR LoginWithGoogle: failed to store refresh token for new user %s: %v", user.ID, err)
+		slog.Error("LoginWithGoogle: failed to store refresh token for new user", "userId", user.ID, "error", err)
 		return nil, nil, err
 	}
 
@@ -182,6 +191,10 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken string) (*dom
 			return nil, nil, err
 		}
 		return user, tokens, nil
+	}
+
+	if strings.TrimSpace(tokenInfo.Email) == "" {
+		return nil, nil, ErrOAuthEmailMissing
 	}
 
 	existing, err := s.users.GetByEmail(ctx, tokenInfo.Email)
@@ -214,13 +227,18 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken string) (*dom
 	if tokenInfo.Name != nil {
 		name = fmt.Sprintf("%s %s", tokenInfo.Name.FirstName, tokenInfo.Name.LastName)
 	}
+	var emailVerifiedAt *time.Time
+	if tokenInfo.EmailVerified {
+		now := time.Now().UTC()
+		emailVerifiedAt = &now
+	}
 
 	user = &domain.User{
 		ID:               uuid.NewString(),
 		Email:            tokenInfo.Email,
 		Name:             name,
 		EmailVerified:    tokenInfo.EmailVerified,
-		EmailVerifiedAt:  &[]time.Time{time.Now().UTC()}[0],
+		EmailVerifiedAt:  emailVerifiedAt,
 		SubscriptionTier: "free",
 		AppleID:          &tokenInfo.Sub,
 		AppleEmail:       &tokenInfo.Email,
@@ -393,37 +411,41 @@ func (s *OAuthService) GetLinkedProviders(ctx context.Context, userID string) (*
 }
 
 func (s *OAuthService) verifyGoogleToken(ctx context.Context, idToken string) (*googleTokenInfo, error) {
+	if len(s.googleClientIDs) == 0 {
+		return nil, ErrGoogleAudienceNotConfigured
+	}
+
 	resp, err := s.googleClient.Get("https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken)
 	if err != nil {
-		log.Printf("ERROR verifyGoogleToken: failed to get token info from google: %v", err)
+		slog.Error("verifyGoogleToken: failed to get token info from google", "error", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("ERROR verifyGoogleToken: google returned status %s", resp.Status)
+		slog.Warn("verifyGoogleToken: google returned non-200 status", "status", resp.Status)
 		return nil, fmt.Errorf("google token verification failed: %s", resp.Status)
 	}
 
 	var tokenInfo googleTokenInfo
 	if err := json.NewDecoder(resp.Body).Decode(&tokenInfo); err != nil {
-		log.Printf("ERROR verifyGoogleToken: failed to decode token info response: %v", err)
+		slog.Error("verifyGoogleToken: failed to decode token info response", "error", err)
 		return nil, err
 	}
 
 	if !s.isValidGoogleAudience(tokenInfo.Aud) {
-		log.Printf("ERROR verifyGoogleToken: invalid audience %s", tokenInfo.Aud)
+		slog.Warn("verifyGoogleToken: invalid audience", "aud", tokenInfo.Aud)
 		return nil, errors.New("invalid google token audience")
 	}
 
 	expInt, err := strconv.ParseInt(tokenInfo.Exp, 10, 64)
 	if err != nil {
-		log.Printf("ERROR verifyGoogleToken: failed to parse exp %q: %v", tokenInfo.Exp, err)
+		slog.Warn("verifyGoogleToken: failed to parse exp", "exp", tokenInfo.Exp, "error", err)
 		return nil, fmt.Errorf("invalid token expiration: %w", err)
 	}
 	now := time.Now().Unix()
 	if expInt < now {
-		log.Printf("ERROR verifyGoogleToken: token expired at %d, current time %d", expInt, now)
+		slog.Warn("verifyGoogleToken: token expired", "expiresAt", expInt, "now", now)
 		return nil, errors.New("google token expired")
 	}
 
@@ -431,9 +453,6 @@ func (s *OAuthService) verifyGoogleToken(ctx context.Context, idToken string) (*
 }
 
 func (s *OAuthService) isValidGoogleAudience(aud string) bool {
-	if len(s.googleClientIDs) == 0 {
-		return true // skip validation if not configured
-	}
 	for _, id := range s.googleClientIDs {
 		if id == aud {
 			return true
@@ -485,7 +504,7 @@ func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken string) (*a
 	}
 
 	issuer := parsed.Issuer()
-	if !strings.Contains(issuer, "appleid.apple.com") {
+	if issuer != "https://appleid.apple.com" {
 		return nil, errors.New("invalid apple token issuer")
 	}
 
