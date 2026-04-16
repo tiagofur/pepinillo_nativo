@@ -7,8 +7,6 @@
     <exclude domain="sharedpref" path="pepinillo_auth.xml" />
     <exclude domain="sharedpref" path="__androidx_security_crypto_encrypted_prefs__.xml" />
 
-    <!-- Exclude the Room database - it syncs from server on login -->
-    <exclude domain="database" path="pepinillo.db" />
-    <exclude domain="database" path="pepinillo.db-wal" />
-    <exclude domain="database" path="pepinillo.db-shm" />
+    <!-- Room database is NOT included: no <include domain="database"> means it is
+         excluded from backup automatically when explicit <include> rules are present. -->
 </full-backup-content>

@@ -102,6 +102,8 @@ class FocusEngine @Inject constructor(
                 }
             }
         }
+    }
+
     // Day-change tracking for mid-session midnight crossing
     @Volatile private var currentDayStartMillis: Long = SessionRepository.startOfDay(System.currentTimeMillis())
     @Volatile private var nextDayStartMillis: Long = currentDayStartMillis + 86_400_000L
