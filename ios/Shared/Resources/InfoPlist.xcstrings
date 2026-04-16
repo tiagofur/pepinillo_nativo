@@ -1,0 +1,190 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "NSCalendarsUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo reads your Calendar events so you can plan focus sessions around your existing schedule."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo lee los eventos de tu Calendario para que puedas planificar tus sesiones de foco alrededor de tu agenda."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo lê os eventos do seu Calendário para que você possa planejar suas sessões de foco em torno da sua agenda."
+          }
+        }
+      }
+    },
+    "NSCalendarsFullAccessUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo reads and updates your Calendar so your focus sessions appear alongside your existing schedule."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo lee y actualiza tu Calendario para que tus sesiones de foco aparezcan junto a tu agenda."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo lê e atualiza seu Calendário para que suas sessões de foco apareçam junto com sua agenda."
+          }
+        }
+      }
+    },
+    "NSHealthShareUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo reads your Mindful Minutes from Apple Health to show your focus history and keep your analytics accurate across devices."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo lee tus Minutos de Plenitud desde Apple Salud para mostrar tu historial de foco y mantener tus estadísticas al día en todos tus dispositivos."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo lê seus Minutos de Atenção Plena do Apple Saúde para mostrar seu histórico de foco e manter suas análises precisas em todos os dispositivos."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo logs your focus sessions as Mindful Minutes in Apple Health to help you track your wellbeing alongside your productivity."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo registra tus sesiones de foco como Minutos de Plenitud en Apple Salud para ayudarte a cuidar tu bienestar junto con tu productividad."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo registra suas sessões de foco como Minutos de Atenção Plena no Apple Saúde para ajudar a acompanhar seu bem-estar junto com sua produtividade."
+          }
+        }
+      }
+    },
+    "NSRemindersUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo can import tasks from Reminders so you can start focusing on them right away."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo puede importar tareas desde Recordatorios para que puedas empezar a enfocarte en ellas al instante."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo pode importar tarefas dos Lembretes para que você comece a focar nelas imediatamente."
+          }
+        }
+      }
+    },
+    "NSRemindersFullAccessUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo imports and updates your Reminders so you can turn them into focus sessions."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo importa y actualiza tus Recordatorios para que puedas convertirlos en sesiones de foco."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo importa e atualiza seus Lembretes para que você possa transformá-los em sessões de foco."
+          }
+        }
+      }
+    },
+    "NSSiriUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo uses Siri so you can start and stop focus sessions with your voice."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo usa Siri para que puedas iniciar y detener sesiones de foco con tu voz."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo usa a Siri para que você inicie e pare sessões de foco com a sua voz."
+          }
+        }
+      }
+    },
+    "NSUserNotificationUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo sends reminders to start your focus sessions and notifies you when a Pomodoro or break is complete."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo te envía recordatorios para iniciar tus sesiones de foco y te avisa cuando un Pomodoro o descanso termina."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo envia lembretes para iniciar suas sessões de foco e notifica quando um Pomodoro ou intervalo termina."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
