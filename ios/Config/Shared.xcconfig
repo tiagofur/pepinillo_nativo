@@ -13,3 +13,8 @@ DEVELOPMENT_TEAM = T5SKULSP2M
 // Workaround: inject the double-slash via $() substitution so the parser
 // doesn't treat it as a comment. Usage: https:$(SLASH_SLASH)host/path
 SLASH_SLASH = //
+
+// Sentry crash reporting DSN. Empty by default — each environment xcconfig
+// sets its own value. Exposed through Info.plist SENTRY_DSN and read at
+// launch by SentryService. Empty value = Sentry disabled.
+SENTRY_DSN =

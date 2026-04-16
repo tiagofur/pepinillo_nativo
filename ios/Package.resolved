@@ -1,5 +1,5 @@
 {
-  "originHash" : "857f8dc826d1c1006ffa7b397a2b197f9f5f7a50d295d93bf74ba865c66ca19f",
+  "originHash" : "a98696d0e6e282dc7854a3da03d6ed7e9f089f92a80e2c7f63acf7a8fa1269b5",
   "pins" : [
     {
       "identity" : "combine-schedulers",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "fd16d76fd8b9a976d88bfb6cacc05ca8d19c91b6",
         "version" : "1.1.0"
+      }
+    },
+    {
+      "identity" : "purchases-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/RevenueCat/purchases-ios.git",
+      "state" : {
+        "revision" : "66f81c19e29170cecc1f155c62cd586cf53b8400",
+        "version" : "5.67.1"
       }
     },
     {

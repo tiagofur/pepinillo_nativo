@@ -23,6 +23,10 @@ struct PepinilloApp: App {
 
     @MainActor
     init() {
+        // Start Sentry FIRST so any crash during the rest of init is captured.
+        // No-op when DSN is empty (Dev builds, open-source contributors, etc.).
+        SentryService.start()
+
         // Install notification delegate and register categories before the app can receive any notifications
         NotificationDelegate.shared.install()
         NotificationClient.registerCategories()

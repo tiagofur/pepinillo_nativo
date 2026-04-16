@@ -191,6 +191,8 @@ targets:
 
     dependencies:
       - package: ComposableArchitecture
+      - package: Sentry
+        product: Sentry
       # Embed extensions (embed: false because they're app extensions, not frameworks)
       - target: PepinilloWidgetExtension
         embed: false
