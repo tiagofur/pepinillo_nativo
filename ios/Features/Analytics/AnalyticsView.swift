@@ -60,19 +60,21 @@ struct AnalyticsView: View {
             .navigationTitle(String(localized: "Analytics"))
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    Menu {
-                        Button {
-                            store.send(.aiReportTapped(.week))
+                    if AppConfig.aiInsightsEnabled {
+                        Menu {
+                            Button {
+                                store.send(.aiReportTapped(.week))
+                            } label: {
+                                Label(String(localized: "Weekly AI Report"), systemImage: "sparkles")
+                            }
+                            Button {
+                                store.send(.aiReportTapped(.month))
+                            } label: {
+                                Label(String(localized: "Monthly AI Report"), systemImage: "sparkles")
+                            }
                         } label: {
-                            Label(String(localized: "Weekly AI Report"), systemImage: "sparkles")
+                            Label(String(localized: "AI Report"), systemImage: "sparkles")
                         }
-                        Button {
-                            store.send(.aiReportTapped(.month))
-                        } label: {
-                            Label(String(localized: "Monthly AI Report"), systemImage: "sparkles")
-                        }
-                    } label: {
-                        Label(String(localized: "AI Report"), systemImage: "sparkles")
                     }
                     Button {
                         store.send(.weeklyReviewTapped)
@@ -93,7 +95,9 @@ struct AnalyticsView: View {
                 MonthlyReviewView(store: monthlyStore)
             }
             .sheet(item: $store.scope(state: \.aiReport, action: \.aiReport)) { aiReportStore in
-                AIReportView(store: aiReportStore)
+                if AppConfig.aiInsightsEnabled {
+                    AIReportView(store: aiReportStore)
+                }
             }
             .onAppear { store.send(.onAppear) }
         }
