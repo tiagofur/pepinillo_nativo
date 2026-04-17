@@ -3,6 +3,10 @@ tags:
   - backend
   - auth
   - billing
+aliases:
+  - Auth & Billing
+platform: backend
+type: module
 status: active
 date: 2026-04-17
 updated: 2026-04-17

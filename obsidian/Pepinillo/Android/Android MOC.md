@@ -1,6 +1,19 @@
-#android #moc #navegacion
+---
+tags:
+  - android
+  - moc
+  - navegacion
+aliases:
+  - Android MOC
+  - Android Hub
+platform: android
+type: moc
+status: active
+date: 2026-04-17
+updated: 2026-04-17
+---
 
-# Android - Mapa de Contenido
+# 🤖 Android — Mapa de Contenido
 
 > [!info] Plataforma
 > **Stack**: Kotlin, Jetpack Compose, Hilt, Room, WorkManager

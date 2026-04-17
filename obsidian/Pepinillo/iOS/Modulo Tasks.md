@@ -2,7 +2,14 @@
 tags:
   - ios
   - tasks
+aliases:
+  - iOS Tasks
+platform: ios
+type: module
 status: active
+date: 2026-04-17
+updated: 2026-04-17
+---
 date: 2026-04-17
 updated: 2026-04-17
 ---

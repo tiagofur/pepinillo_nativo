@@ -7,12 +7,14 @@ aliases:
   - Dashboard
   - Hub
   - Inicio
+platform: all
+type: dashboard
 status: active
 date: 2026-04-17
 updated: 2026-04-17
 ---
 
-# Pepinillo - Dashboard Ejecutivo
+# 🎯 Pepinillo — Dashboard Ejecutivo
 
 > [!tip] Punto de entrada diario
 > Abri este archivo para ver en 30 segundos el estado de producto, paridad y bloqueantes.
@@ -61,10 +63,22 @@ Detalle vivo: [[Cross-Platform/Parity Matrix]]
 2. Consolidar docs tecnicas por modulo de foco y tareas.
 3. Sincronizar PRD y estado de implementacion al cierre de cada sprint.
 
-## Accesos rapidos
+## Accesos rápidos
 
-- [[iOS/iOS MOC]]
-- [[Android/Android MOC]]
-- [[Backend/Backend MOC]]
-- [[Cross-Platform/Design System & Soundscapes]]
-- [[PRD/README]]
+### 📌 Vistas operativas
+- [[_views/Estado General|📊 Estado General]] — todos los docs por plataforma y tipo
+- [[_views/Parity Gaps|⚠️ Parity Gaps]] — brechas conocidas y pendientes P0
+- [[_views/Pendientes por Plataforma|✅ Pendientes]] — tareas abiertas por plataforma
+
+### 🗺️ Mapas de contenido
+- [[iOS/iOS MOC|🍎 iOS MOC]]
+- [[Android/Android MOC|🤖 Android MOC]]
+- [[Backend/Backend MOC|⚙️ Backend MOC]]
+- [[Cross-Platform/Design System & Soundscapes|🎨 Design System]]
+- [[Cross-Platform/Parity Matrix|🔀 Parity Matrix]]
+
+### 🗂️ Templates
+- [[_templates/README|Templates disponibles]]
+
+### 📖 Estrategia
+- [[PRD/README|PRD Index]]

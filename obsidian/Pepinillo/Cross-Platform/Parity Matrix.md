@@ -3,6 +3,11 @@ tags:
   - parity
   - cross-platform
   - pepinillo
+aliases:
+  - Parity Matrix
+  - Matriz de Paridad
+platform: cross-platform
+type: reference
 status: active
 date: 2026-04-17
 updated: 2026-04-17

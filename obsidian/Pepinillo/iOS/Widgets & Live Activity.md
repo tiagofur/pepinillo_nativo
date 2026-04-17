@@ -3,6 +3,14 @@ tags:
   - ios
   - widgets
   - live-activity
+aliases:
+  - iOS Widgets
+platform: ios
+type: module
+status: active
+date: 2026-04-17
+updated: 2026-04-17
+---
 status: active
 date: 2026-04-17
 updated: 2026-04-17

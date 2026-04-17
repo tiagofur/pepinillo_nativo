@@ -3,6 +3,10 @@ tags:
   - backend
   - go
   - arquitectura
+aliases:
+  - Backend Arquitectura
+platform: backend
+type: architecture
 status: active
 date: 2026-04-17
 updated: 2026-04-17

@@ -1,6 +1,19 @@
-#ios #moc #navegacion
+---
+tags:
+  - ios
+  - moc
+  - navegacion
+aliases:
+  - iOS MOC
+  - iOS Hub
+platform: ios
+type: moc
+status: active
+date: 2026-04-17
+updated: 2026-04-17
+---
 
-# iOS - Mapa de Contenido
+# 🍎 iOS — Mapa de Contenido
 
 > [!info] Plataforma
 > **Stack**: SwiftUI, TCA, SwiftData, URLSession, ActivityKit

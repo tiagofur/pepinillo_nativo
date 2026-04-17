@@ -2,7 +2,14 @@
 tags:
   - android
   - focus-engine
+aliases:
+  - Android Focus Engine
+platform: android
+type: module
 status: active
+date: 2026-04-17
+updated: 2026-04-17
+---
 date: 2026-04-17
 updated: 2026-04-17
 ---

@@ -3,6 +3,15 @@ tags:
   - android
   - widgets
   - wearos
+aliases:
+  - Android Widgets
+  - Wear OS
+platform: android
+type: module
+status: active
+date: 2026-04-17
+updated: 2026-04-17
+---
 status: active
 date: 2026-04-17
 updated: 2026-04-17

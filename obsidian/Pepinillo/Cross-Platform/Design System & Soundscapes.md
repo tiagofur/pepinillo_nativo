@@ -3,6 +3,11 @@ tags:
   - design-system
   - soundscape
   - cross-platform
+aliases:
+  - Design System
+  - Soundscapes
+platform: cross-platform
+type: reference
 status: active
 date: 2026-04-17
 updated: 2026-04-17

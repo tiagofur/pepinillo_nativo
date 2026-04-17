@@ -3,6 +3,10 @@ tags:
   - ios
   - arquitectura
   - tca
+aliases:
+  - iOS Arquitectura
+platform: ios
+type: architecture
 status: active
 date: 2026-04-17
 updated: 2026-04-17

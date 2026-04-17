@@ -3,6 +3,10 @@ tags:
   - android
   - arquitectura
   - compose
+aliases:
+  - Android Arquitectura
+platform: android
+type: architecture
 status: active
 date: 2026-04-17
 updated: 2026-04-17

@@ -1,6 +1,19 @@
-#backend #moc #navegacion
+---
+tags:
+  - backend
+  - moc
+  - navegacion
+aliases:
+  - Backend MOC
+  - Backend Hub
+platform: backend
+type: moc
+status: active
+date: 2026-04-17
+updated: 2026-04-17
+---
 
-# Backend - Mapa de Contenido
+# ⚙️ Backend — Mapa de Contenido
 
 > [!info] Plataforma
 > **Stack**: Go, Chi, PostgreSQL, JWT, WebSocket
