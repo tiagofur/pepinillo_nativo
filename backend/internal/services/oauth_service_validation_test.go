@@ -81,4 +81,3 @@ func TestCheckAppleNonce_MissingTokenClaim(t *testing.T) {
 		t.Fatal("expected error when token has no nonce claim, got nil")
 	}
 }
-
