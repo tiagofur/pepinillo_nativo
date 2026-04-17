@@ -317,7 +317,8 @@ extension SyncClient: DependencyKey {
                 guard await keychain.hasTokens() else {
                     throw SyncError.notAuthenticated
                 }
-                guard AppGroupDefaults.isProUser else { return false }
+                // initialUpload is allowed for all users (free + pro) to migrate
+                // local data to the server on first authenticated session.
 
                 let iso = ISO8601DateFormatter()
                 let deviceId = keychain.getOrCreateDeviceId()
@@ -436,7 +437,8 @@ extension SyncClient: DependencyKey {
                 guard await keychain.hasTokens() else {
                     throw SyncError.notAuthenticated
                 }
-                guard AppGroupDefaults.isProUser else { return }
+                // performInitialSync is allowed for all users (free + pro) to pull
+                // server data on first authenticated session.
 
                 let iso = ISO8601DateFormatter()
                 var taskCursor: String? = nil

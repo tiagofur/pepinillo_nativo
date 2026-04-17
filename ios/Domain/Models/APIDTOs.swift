@@ -29,6 +29,12 @@ public struct LogoutRequest: Codable, Sendable, Equatable {
 
 public struct AppleLoginRequest: Codable, Sendable, Equatable {
     public let idToken: String
+    public let nonce: String?
+
+    public init(idToken: String, nonce: String? = nil) {
+        self.idToken = idToken
+        self.nonce = nonce
+    }
 }
 
 public struct ForgotPasswordRequest: Codable, Sendable, Equatable {

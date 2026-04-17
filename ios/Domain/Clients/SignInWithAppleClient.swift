@@ -16,12 +16,14 @@ public struct AppleUserInfo: Sendable, Equatable {
     public let displayName: String? // fullName (only available on first sign-in)
     public let email: String?       // email (only available on first sign-in)
     public let identityToken: String? // JWT identity token for backend verification
+    public let nonce: String?       // raw nonce used to sign the idToken (PKCE-equivalent)
 
-    public init(userID: String, displayName: String?, email: String?, identityToken: String? = nil) {
+    public init(userID: String, displayName: String?, email: String?, identityToken: String? = nil, nonce: String? = nil) {
         self.userID = userID
         self.displayName = displayName
         self.email = email
         self.identityToken = identityToken
+        self.nonce = nonce
     }
 }
 

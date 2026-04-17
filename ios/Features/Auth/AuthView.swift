@@ -7,6 +7,7 @@
 import SwiftUI
 import AuthenticationServices
 import ComposableArchitecture
+import CryptoKit
 
 struct AuthView: View {
     @Bindable var store: StoreOf<AuthFeature>
@@ -14,6 +15,7 @@ struct AuthView: View {
     @Environment(\.colorScheme) private var colorScheme
     let onAppleSignIn: ((AppleUserInfo) -> Void)?
     let onAppleSignInFailed: (() -> Void)?
+    @State private var currentNonce: String = ""
 
     init(
         store: StoreOf<AuthFeature>,
@@ -187,6 +189,9 @@ struct AuthView: View {
                         .padding(.top, 12)
 
                         SignInWithAppleButton(.continue) { request in
+                            let nonce = generateAppleNonce()
+                            currentNonce = nonce
+                            request.nonce = sha256Hex(nonce)
                             request.requestedScopes = [.fullName, .email]
                         } onCompletion: { result in
                             switch result {
@@ -200,7 +205,8 @@ struct AuthView: View {
                                     userID: cred.user,
                                     displayName: cred.fullName?.formatted(),
                                     email: cred.email,
-                                    identityToken: identityToken
+                                    identityToken: identityToken,
+                                    nonce: currentNonce.isEmpty ? nil : currentNonce
                                 ))
                             case .failure:
                                 onAppleSignInFailed?()
@@ -298,5 +304,22 @@ struct AuthView: View {
 
     private var primaryCTAColor: Color {
         colorScheme == .light ? .black : theme.pomodoroColor
+    }
+
+    // MARK: - Apple Sign-In nonce helpers
+
+    /// Generates a cryptographically random nonce string (raw, not hashed).
+    private func generateAppleNonce() -> String {
+        var randomBytes = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        return String(randomBytes.map { charset[Int($0) % charset.count] })
+    }
+
+    /// Returns the lowercase hex-encoded SHA-256 of the input.
+    /// This is what Apple embeds in the `nonce` claim of the identity token.
+    private func sha256Hex(_ input: String) -> String {
+        let digest = SHA256.hash(data: Data(input.utf8))
+        return digest.map { String(format: "%02x", $0) }.joined()
     }
 }

@@ -540,7 +540,7 @@ struct AppFeature {
                         if let idToken = info.identityToken {
                             return .run { [apiClient, keychain, persistence, syncClient, webSocketClient] send in
                                 do {
-                                    let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken))
+                                    let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken, nonce: info.nonce))
                                     try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
                                     let dto = CachedUserDTO(
                                         id: response.user.id, email: response.user.email, name: response.user.name,

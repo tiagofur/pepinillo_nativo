@@ -18,6 +18,7 @@ type googleLoginRequest struct {
 
 type appleLoginRequest struct {
 	IDToken string `json:"idToken"`
+	Nonce   string `json:"nonce"`
 }
 
 type linkAccountRequest struct {
@@ -78,7 +79,7 @@ func (h *OAuthHandler) LoginWithApple(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "missing_required_fields")
 	}
 
-	user, tokens, err := h.oauth.LoginWithApple(c.Context(), req.IDToken)
+	user, tokens, err := h.oauth.LoginWithApple(c.Context(), req.IDToken, req.Nonce)
 	if err != nil {
 		return mapOAuthError(err)
 	}

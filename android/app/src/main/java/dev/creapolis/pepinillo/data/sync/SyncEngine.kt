@@ -167,11 +167,8 @@ class SyncEngine @Inject constructor(
             return InitialUploadResult.NotAuthenticated
         }
 
-        // Gate: Only PRO users can upload initial data
-        if (!subscriptionManager.subscriptionState.value.isPro) {
-            println("[$TAG]initialUpload: FREE TIER - SKIPPING INITIAL UPLOAD")
-            return InitialUploadResult.Success(hasExistingData = false)
-        }
+        // initialUpload is allowed for all users (free + pro) to migrate
+        // local data to the server on first authenticated session.
 
         return try {
             println("[$TAG]initialUpload: STARTING")

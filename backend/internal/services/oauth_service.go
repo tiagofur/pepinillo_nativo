@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -171,8 +173,8 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 	return user, tokens, nil
 }
 
-func (s *OAuthService) LoginWithApple(ctx context.Context, idToken string) (*domain.User, *AuthTokens, error) {
-	tokenInfo, err := s.verifyAppleToken(ctx, idToken)
+func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string) (*domain.User, *AuthTokens, error) {
+	tokenInfo, err := s.verifyAppleToken(ctx, idToken, nonce)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid apple token: %w", err)
 	}
@@ -317,7 +319,7 @@ func (s *OAuthService) UnlinkGoogleAccount(ctx context.Context, userID string) e
 }
 
 func (s *OAuthService) LinkAppleAccount(ctx context.Context, userID, idToken string) (*domain.User, error) {
-	tokenInfo, err := s.verifyAppleToken(ctx, idToken)
+	tokenInfo, err := s.verifyAppleToken(ctx, idToken, "")
 	if err != nil {
 		return nil, fmt.Errorf("invalid apple token: %w", err)
 	}
@@ -461,7 +463,7 @@ func (s *OAuthService) isValidGoogleAudience(aud string) bool {
 	return false
 }
 
-func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken string) (*appleTokenInfo, error) {
+func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken, nonce string) (*appleTokenInfo, error) {
 	appleKeysURL := "https://appleid.apple.com/auth/keys"
 
 	fetch, err := http.NewRequestWithContext(ctx, "GET", appleKeysURL, nil)
@@ -528,6 +530,19 @@ func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken string) (*a
 	exp := parsed.Expiration()
 	if exp.IsZero() || exp.Before(time.Now()) {
 		return nil, errors.New("apple token expired")
+	}
+
+	if nonce != "" {
+		privateClaims := parsed.PrivateClaims()
+		tokenNonce, ok := privateClaims["nonce"].(string)
+		if !ok || tokenNonce == "" {
+			return nil, errors.New("apple token missing nonce claim")
+		}
+		h := sha256.Sum256([]byte(nonce))
+		expected := hex.EncodeToString(h[:])
+		if tokenNonce != expected {
+			return nil, errors.New("apple token nonce mismatch")
+		}
 	}
 
 	return &tokenInfo, nil
