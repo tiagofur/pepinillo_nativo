@@ -100,7 +100,15 @@ struct AppView: View {
         // Auth sheet
         .sheet(item: $store.scope(state: \.auth, action: \.auth)) { authStore in
             NavigationStack {
-                AuthView(store: authStore)
+                AuthView(
+                    store: authStore,
+                    onAppleSignIn: { info in
+                        store.send(.signInWithAppleSucceeded(info))
+                    },
+                    onAppleSignInFailed: {
+                        store.send(.signInWithAppleFailed)
+                    }
+                )
             }
             .presentationDetents([.large])
         }

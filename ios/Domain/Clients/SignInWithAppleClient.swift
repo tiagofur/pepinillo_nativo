@@ -2,7 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // TCA dependency client for Sign In with Apple.
-// The actual sign-in button and flow live in DrawerView;
+// The actual sign-in button and flow live in AuthView;
 // this client only verifies credential state on app launch.
 
 import Foundation

@@ -131,11 +131,9 @@ struct ProfileFeature {
                     try? await persistence.saveCachedUser(dto)
                 }
 
-            case .profileRefreshed(.failure(let error)):
-                if error == .sessionExpired {
-                    return .send(.signOutTapped)
-                }
-                // Other errors: silently use cached data
+            case .profileRefreshed(.failure):
+                // Network errors and expired sessions: silently use cached data.
+                // Global token expiry is handled by AppFeature via tokenRefreshFailed.
                 return .none
 
             case .editProfileTapped:

@@ -494,11 +494,18 @@ struct AppFeature {
 
             case .signInWithAppleSucceeded(let info):
                 state.isDrawerOpen = false
+                state.auth = nil  // dismiss auth sheet if open
                 state.appleUserID = info.userID
-                state.displayName = info.displayName
-                state.userEmail = info.email
+                // Apple only provides displayName on the very first sign-in ever.
+                // Fall back to cached user name, then existing displayName, then email prefix.
+                let resolvedName = info.displayName
+                    ?? state.cachedUser?.name
+                    ?? state.displayName
+                    ?? info.email?.components(separatedBy: "@").first
+                state.displayName = resolvedName
+                state.userEmail = info.email ?? state.userEmail
                 return .merge(
-                    .run { [info] send in
+                    .run { [info, resolvedName] send in
                         var prefs = try await persistence.fetchPreferences()
                         prefs.appleUserID = info.userID
                         if let name = info.displayName { prefs.displayName = name }
@@ -506,6 +513,27 @@ struct AppFeature {
                         try await persistence.savePreferences(prefs)
                         // Identify user in RevenueCat
                         await subscriptionClient.logIn(info.userID)
+                        // Always synthesize and persist a CachedUserDTO from Apple identity
+                        // so ProfileFeature and drawer can display user info without a backend call.
+                        // The backend call below will overwrite this with full server data if successful.
+                        if try await (persistence.fetchCachedUser()) == nil {
+                            let now = ISO8601DateFormatter().string(from: .now)
+                            let dto = CachedUserDTO(
+                                id: info.userID,
+                                email: info.email ?? "",
+                                name: resolvedName ?? "Apple User",
+                                imageUrl: nil,
+                                birthDate: nil,
+                                subscriptionTier: "free",
+                                subscriptionExpiresAt: nil,
+                                emailVerified: false,
+                                appleId: info.userID,
+                                createdAt: now,
+                                updatedAt: now
+                            )
+                            try? await persistence.saveCachedUser(dto)
+                            await send(.cachedUserLoaded(dto))
+                        }
                     },
                     // Try to authenticate with backend if identity token available
                     {
@@ -530,7 +558,7 @@ struct AppFeature {
                                     }
                                     await webSocketClient.connect()
                                 } catch {
-                                    // Backend auth failed — continue with local-only Apple ID (existing behavior)
+                                    // Backend auth failed — synthetic CachedUserDTO already saved above
                                 }
                             }
                         }

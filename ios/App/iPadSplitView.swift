@@ -7,7 +7,6 @@
 // Detail: main feature view.
 
 import SwiftUI
-import AuthenticationServices
 import ComposableArchitecture
 
 // MARK: - iPad / Mac Split View
@@ -96,25 +95,14 @@ struct iPadSplitView: View {
                     }
 
                     if !store.isSignedIn {
-                        SignInWithAppleButton(.signIn) { request in
-                            request.requestedScopes = [.fullName, .email]
-                        } onCompletion: { result in
-                            switch result {
-                            case .success(let auth):
-                                guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
-                                    store.send(.signInWithAppleFailed)
-                                    return
-                                }
-                                store.send(.signInWithAppleSucceeded(AppleUserInfo(
-                                    userID: cred.user,
-                                    displayName: cred.fullName?.formatted(),
-                                    email: cred.email
-                                )))
-                            case .failure:
-                                store.send(.signInWithAppleFailed)
-                            }
+                        Button {
+                            store.send(.showAuth)
+                        } label: {
+                            Label(String(localized: "Log in"), systemImage: "person.crop.circle.badge.plus")
+                                .font(.subheadline.weight(.semibold))
+                                .frame(maxWidth: .infinity)
                         }
-                        .signInWithAppleButtonStyle(.whiteOutline)
+                        .buttonStyle(.borderedProminent)
                         .frame(height: 36)
                         .padding(.top, 6)
                     }

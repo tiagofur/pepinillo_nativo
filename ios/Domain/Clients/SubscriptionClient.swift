@@ -5,8 +5,11 @@
 // Manages Pro subscription products, purchases, and entitlement verification.
 
 import Foundation
-import RevenueCat
 import ComposableArchitecture
+
+#if canImport(RevenueCat)
+import RevenueCat
+#endif
 
 // MARK: - Subscription Product IDs
 
@@ -105,6 +108,7 @@ extension DependencyValues {
 
 extension SubscriptionClient {
     static let live: SubscriptionClient = {
+#if canImport(RevenueCat)
         let manager = SubscriptionManager()
         return SubscriptionClient(
             configure: { apiKey, userID in await manager.configure(apiKey: apiKey, userID: userID) },
@@ -116,11 +120,26 @@ extension SubscriptionClient {
             logIn: { userID in await manager.logIn(userID: userID) },
             logOut: { await manager.logOut() }
         )
+#else
+        // RevenueCat is not available on every platform target (e.g. watch simulator).
+        // Keep a functional no-op implementation so builds remain cross-target compatible.
+        return SubscriptionClient(
+            configure: { _, _ in },
+            fetchProducts: { PepinilloProduct.allCases.map(\.mockProductInfo) },
+            purchase: { _ in .failed(message: "Purchases unavailable on this platform") },
+            restorePurchases: { .free },
+            checkEntitlement: { .free },
+            listenForTransactionUpdates: { .finished },
+            logIn: { _ in },
+            logOut: { }
+        )
+#endif
     }()
 }
 
 // MARK: - Subscription Manager (actor)
 
+#if canImport(RevenueCat)
 private actor SubscriptionManager {
     private var isConfigured = false
 
@@ -283,6 +302,7 @@ private actor SubscriptionManager {
         return "once"
     }
 }
+#endif
 
 // MARK: - Mock helpers for previews / tests
 

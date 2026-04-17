@@ -243,6 +243,8 @@ public actor FocusEngine {
         current.progress = elapsed / updatedTarget
 
         state = current
+    }
+
     /// Resets the Pomodoro cycle counter when the calendar day changes.
     /// The current session (if any) continues normally — it will count as #1 of the new day.
     public func resetForNewDay() {

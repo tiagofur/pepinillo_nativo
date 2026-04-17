@@ -59,20 +59,6 @@ struct FocusComplicationProvider: TimelineProvider {
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
-    func relevances() async -> WidgetRelevances<Void> {
-        let defaults = UserDefaults.standard
-        let isActive = defaults.bool(forKey: WatchStatsKeys.isSessionActive)
-
-        if isActive {
-            return WidgetRelevances([
-                WidgetRelevance(context: (), score: 100)
-            ])
-        }
-        return WidgetRelevances([
-            WidgetRelevance(context: (), score: 10)
-        ])
-    }
-
     /// Reads persisted stats from UserDefaults (written by WatchTimerFeature on stats received).
     private func buildEntry() -> FocusComplicationEntry {
         let defaults = UserDefaults.standard

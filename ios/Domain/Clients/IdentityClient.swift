@@ -9,7 +9,7 @@ import ComposableArchitecture
 
 // MARK: - Identity State
 
-enum IdentityState: String, Sendable {
+public enum IdentityState: String, Sendable {
     case anonymous
     case registered
     case verified

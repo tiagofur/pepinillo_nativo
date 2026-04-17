@@ -5,7 +5,6 @@
 // Triggered by the hamburger button in the navigation bar.
 
 import SwiftUI
-import AuthenticationServices
 import ComposableArchitecture
 
 // MARK: - Drawer Overlay Container
@@ -56,7 +55,8 @@ struct DrawerView: View {
 
             // MARK: Header — greeting + sign in
             drawerHeader
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
                 .padding(.bottom, 16)
 
             Divider()
@@ -109,8 +109,7 @@ struct DrawerView: View {
         .safeAreaPadding(.bottom)
         .frame(maxHeight: .infinity)
         .background {
-            Rectangle()
-                .pepinilloGlass(cornerRadius: 0)
+            Color(.secondarySystemBackground)
                 .ignoresSafeArea(edges: .vertical)
         }
     }
@@ -119,88 +118,119 @@ struct DrawerView: View {
 
     @ViewBuilder
     private var drawerHeader: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Time-based greeting
-            Text(greeting)
-                .font(.title3)
-                .foregroundStyle(.secondary)
+        if store.isSignedIn {
+            signedInHeader
+        } else {
+            guestHeader
+        }
+    }
 
-            // User name or app name
-            Text(store.displayName ?? String(localized: "Pepinillo"))
-                .font(.title.weight(.bold))
-                .foregroundStyle(.primary)
+    @ViewBuilder
+    private var signedInHeader: some View {
+        Button {
+            store.send(.showProfile)
+        } label: {
+            HStack(spacing: 14) {
+                // Avatar with initials
+                avatarView
 
-            // Streak badge
-            if store.analytics.currentStreakDays > 0 {
-                HStack(spacing: 6) {
-                    Image(systemName: "flame.fill")
-                        .font(.caption)
-                        .foregroundStyle(theme.streakColor)
-                        .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(store.displayName ?? store.userEmail?.components(separatedBy: "@").first ?? "Apple User")
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
 
-                    Text(String(localized: "\(store.analytics.currentStreakDays) day streak"))
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(theme.streakColor)
-                }
-                .padding(.top, 4)
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(String(localized: "\(store.analytics.currentStreakDays) day focus streak"))
-            }
-
-            if store.isSignedIn {
-                // Tappable user name to open profile
-                Button {
-                    store.send(.showProfile)
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "person.crop.circle")
+                    if let email = store.userEmail, !email.isEmpty {
+                        Text(email)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(String(localized: "View Profile"))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
-                }
-                .padding(.top, 4)
-            }
 
-            // Sign In with Apple (when not signed in)
-            if !store.isSignedIn {
-                SignInWithAppleButton(.signIn) { request in
-                    request.requestedScopes = [.fullName, .email]
-                } onCompletion: { result in
-                    switch result {
-                    case .success(let auth):
-                        guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
-                            store.send(.signInWithAppleFailed)
-                            return
+                    // Streak badge
+                    if store.analytics.currentStreakDays > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: "flame.fill")
+                                .font(.caption2)
+                                .foregroundStyle(theme.streakColor)
+                                .accessibilityHidden(true)
+                            Text(String(localized: "\(store.analytics.currentStreakDays) day streak"))
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(theme.streakColor)
                         }
-                        let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
-                        store.send(.signInWithAppleSucceeded(AppleUserInfo(
-                            userID: cred.user,
-                            displayName: cred.fullName?.formatted(),
-                            email: cred.email,
-                            identityToken: identityToken
-                        )))
-                    case .failure:
-                        store.send(.signInWithAppleFailed)
+                        .padding(.top, 2)
                     }
                 }
-                .signInWithAppleButtonStyle(.whiteOutline)
-                .frame(height: 44)
-                .padding(.top, 8)
 
-                // Log in with email
-                Button {
-                    store.send(.showAuth)
-                } label: {
-                    Text(String(localized: "Log in with email"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.top, 4)
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
             }
         }
+        .buttonStyle(.plain)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .accessibilityLabel(String(localized: "View Profile"))
+        .accessibilityHint(String(localized: "Opens your profile"))
+    }
+
+    @ViewBuilder
+    private var guestHeader: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 14) {
+                // Guest avatar placeholder
+                Circle()
+                    .fill(Color(.tertiarySystemFill))
+                    .frame(width: 48, height: 48)
+                    .overlay {
+                        Image(systemName: "person.fill")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(greeting)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(String(localized: "Pepinillo"))
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                }
+            }
+
+            Button {
+                store.send(.showAuth)
+            } label: {
+                Label(String(localized: "Sign In or Create Account"), systemImage: "person.crop.circle.badge.plus")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.regular)
+        }
+    }
+
+    @ViewBuilder
+    private var avatarView: some View {
+        let initials = initialsFrom(store.displayName ?? store.userEmail)
+        Circle()
+            .fill(Color.accentColor.opacity(0.15))
+            .frame(width: 48, height: 48)
+            .overlay {
+                Text(initials)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.accentColor)
+            }
+    }
+
+    private func initialsFrom(_ name: String?) -> String {
+        guard let name, !name.isEmpty else { return "?" }
+        let parts = name.split(separator: " ").prefix(2)
+        return parts.compactMap { $0.first.map(String.init) }.joined().uppercased()
     }
 
     // MARK: - Greeting

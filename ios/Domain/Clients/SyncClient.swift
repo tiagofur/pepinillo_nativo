@@ -108,13 +108,13 @@ extension SyncClient: DependencyKey {
                 for task in tasksToSync {
                     let subtasks = try await persistence.fetchSubtasks(task.id)
                     let subTaskDTOs = subtasks.map { SubTaskSyncDTO(
-                        id: $0.serverId,
+                        id: nil,
                         taskId: task.serverId,
                         title: $0.title,
                         isFinished: $0.isCompleted
                     ) }
 
-                    let completedSessions = task.sessions.filter(\.wasCompleted)
+                    let completedSessions = try await persistence.fetchSessionsForTask(task.id).filter(\.wasCompleted)
                     var focusedSecondsPomodoro = 0
                     var focusedSecondsFlowtime = 0
                     var focusedSecondsTimeblock = 0
@@ -331,7 +331,7 @@ extension SyncClient: DependencyKey {
                 for task in allTasks where !task.isDeleted {
                     let subtasks = try await persistence.fetchSubtasks(task.id)
                     let subTaskDTOs = subtasks.map { SubTaskSyncDTO(
-                        id: $0.serverId,
+                        id: nil,
                         taskId: task.serverId,
                         title: $0.title,
                         isFinished: $0.isCompleted

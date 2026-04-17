@@ -30,6 +30,10 @@ func NewOAuthHandler(oauth *services.OAuthService) *OAuthHandler {
 
 func mapOAuthError(err error) error {
 	switch {
+	case errors.Is(err, services.ErrGoogleAudienceNotConfigured):
+		return fiber.NewError(fiber.StatusServiceUnavailable, err.Error())
+	case errors.Is(err, services.ErrOAuthEmailMissing):
+		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	case errors.Is(err, services.ErrUserNotFound):
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	case errors.Is(err, services.ErrAccountAlreadyLinked):

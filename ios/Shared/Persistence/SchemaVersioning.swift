@@ -31,7 +31,7 @@ import SwiftUI
 /// Captures the exact schema at launch. Never modify this enum after shipping —
 /// create SchemaV2 instead and add a migration stage.
 enum SchemaV1: VersionedSchema {
-    static var versionIdentifier = Schema.Version(1, 0, 0)
+    static let versionIdentifier = Schema.Version(1, 0, 0)
 
     static var models: [any PersistentModel.Type] {
         [
@@ -288,7 +288,7 @@ enum SchemaV1: VersionedSchema {
 /// Adds CachedUser model for backend auth sync.
 /// Lightweight migration — only adds a new table, no existing model changes.
 enum SchemaV2: VersionedSchema {
-    static var versionIdentifier = Schema.Version(2, 0, 0)
+    static let versionIdentifier = Schema.Version(2, 0, 0)
 
     static var models: [any PersistentModel.Type] {
         [
@@ -308,7 +308,7 @@ enum SchemaV2: VersionedSchema {
 /// Adds sync metadata fields to TaskItem: syncId, serverId, isDirty, isDeleted, syncedAt.
 /// Lightweight migration — only adds new columns with defaults, no data transformation needed.
 enum SchemaV3: VersionedSchema {
-    static var versionIdentifier = Schema.Version(3, 0, 0)
+    static let versionIdentifier = Schema.Version(3, 0, 0)
 
     static var models: [any PersistentModel.Type] {
         [

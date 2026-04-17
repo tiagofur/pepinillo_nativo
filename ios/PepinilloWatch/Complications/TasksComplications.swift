@@ -74,19 +74,6 @@ struct TasksComplicationProvider: TimelineProvider {
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
-    func relevances() async -> WidgetRelevances<Void> {
-        let defaults = UserDefaults.standard
-        let total = defaults.integer(forKey: WatchStatsKeys.tasksTotalCount)
-        let completed = defaults.integer(forKey: WatchStatsKeys.tasksCompletedCount)
-        let pending = total - completed
-
-        // Higher relevance when there are pending tasks
-        let score: Float = pending > 0 ? 50 : 5
-        return WidgetRelevances([
-            WidgetRelevance(context: (), score: score)
-        ])
-    }
-
     /// Reads persisted task data from UserDefaults (written by WatchAppFeature on tasks received).
     private func buildEntry() -> TasksComplicationEntry {
         let defaults = UserDefaults.standard

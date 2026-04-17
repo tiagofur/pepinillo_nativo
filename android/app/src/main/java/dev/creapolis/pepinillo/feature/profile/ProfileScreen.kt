@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -520,8 +521,12 @@ private fun GuestSignInCard(onSignInClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onSignInClick) {
-                Text("Sign In")
+            Button(
+                onClick = onSignInClick,
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+            ) {
+                Text("Sign In", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

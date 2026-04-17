@@ -306,9 +306,9 @@ authorizationController.performRequests { authorization, error in
 
 ## Environment Variables
 
-No new environment variables are required for OAuth integration:
-- Google token verification uses the public Google endpoint (no API key needed)
-- Apple token verification uses the public Apple JWKS endpoint (no credentials needed)
+OAuth token verification uses public provider endpoints (no provider API keys), but strict audience validation requires these backend vars:
+- `GOOGLE_CLIENT_IDS` (comma-separated; include all valid mobile/web client IDs)
+- `APPLE_BUNDLE_ID` (expected audience for Apple identity tokens)
 
 ## Testing
 

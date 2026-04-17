@@ -20,7 +20,27 @@ public struct WebSocketClient: Sendable {
 
 extension WebSocketClient: DependencyKey {
     public static var liveValue: WebSocketClient {
-        let manager = WebSocketManager()
+#if os(iOS)
+        @Dependency(\.keychainClient) var keychain
+        @Dependency(\.syncClient) var syncClient
+        let manager = WebSocketManager(
+            loadAccessToken: { await keychain.loadAccessToken() },
+            getOrCreateDeviceId: { keychain.getOrCreateDeviceId() },
+            syncTasks: { try await syncClient.syncTasks() },
+            syncSessions: { try await syncClient.syncSessions() },
+            syncSettings: { try await syncClient.syncSettings() },
+            syncAll: { try await syncClient.syncAll() }
+        )
+#else
+        let manager = WebSocketManager(
+            loadAccessToken: { nil },
+            getOrCreateDeviceId: { "" },
+            syncTasks: { },
+            syncSessions: { },
+            syncSettings: { },
+            syncAll: { }
+        )
+#endif
         return WebSocketClient(
             connect: { await manager.connect() },
             disconnect: { manager.disconnect() }
@@ -34,10 +54,32 @@ extension WebSocketClient: DependencyKey {
 
 private final class WebSocketManager: @unchecked Sendable {
     private let lock = NSLock()
+    private let loadAccessToken: @Sendable () async -> String?
+    private let getOrCreateDeviceId: @Sendable () -> String
+    private let syncTasks: @Sendable () async throws -> Void
+    private let syncSessions: @Sendable () async throws -> Void
+    private let syncSettings: @Sendable () async throws -> Void
+    private let syncAll: @Sendable () async throws -> Void
     private var webSocketTask: URLSessionWebSocketTask?
     private var isConnected = false
     private var retryCount = 0
     private var shouldReconnect = false
+
+    init(
+        loadAccessToken: @escaping @Sendable () async -> String?,
+        getOrCreateDeviceId: @escaping @Sendable () -> String,
+        syncTasks: @escaping @Sendable () async throws -> Void,
+        syncSessions: @escaping @Sendable () async throws -> Void,
+        syncSettings: @escaping @Sendable () async throws -> Void,
+        syncAll: @escaping @Sendable () async throws -> Void
+    ) {
+        self.loadAccessToken = loadAccessToken
+        self.getOrCreateDeviceId = getOrCreateDeviceId
+        self.syncTasks = syncTasks
+        self.syncSessions = syncSessions
+        self.syncSettings = syncSettings
+        self.syncAll = syncAll
+    }
 
     /// WebSocket base URL resolved from Info.plist (`WS_BASE_URL`, injected
     /// via xcconfig). Falls back to production if the key is missing.
@@ -52,45 +94,45 @@ private final class WebSocketManager: @unchecked Sendable {
     private static let maxBackoff: TimeInterval = 30
 
     func connect() async {
-        lock.lock()
-        shouldReconnect = true
-        retryCount = 0
-        lock.unlock()
+        lock.withLock {
+            shouldReconnect = true
+            retryCount = 0
+        }
 
         await performConnect()
     }
 
     func disconnect() {
-        lock.lock()
-        shouldReconnect = false
-        let task = webSocketTask
-        webSocketTask = nil
-        isConnected = false
-        lock.unlock()
+        let task = lock.withLock { () -> URLSessionWebSocketTask? in
+            shouldReconnect = false
+            let currentTask = webSocketTask
+            webSocketTask = nil
+            isConnected = false
+            return currentTask
+        }
 
         task?.cancel(with: .goingAway, reason: nil)
     }
 
     private func performConnect() async {
-        @Dependency(\.keychainClient) var keychain
-        guard let token = await keychain.loadAccessToken() else { return }
-        let deviceId = keychain.getOrCreateDeviceId()
+        guard let token = await loadAccessToken() else { return }
+        let deviceId = getOrCreateDeviceId()
 
         guard let url = URL(string: "\(Self.baseWSURL)?token=\(token)&deviceId=\(deviceId)") else { return }
 
         let session = URLSession(configuration: .default)
         let task = session.webSocketTask(with: url)
 
-        lock.lock()
-        webSocketTask = task
-        lock.unlock()
+        lock.withLock {
+            webSocketTask = task
+        }
 
         task.resume()
 
-        lock.lock()
-        isConnected = true
-        retryCount = 0
-        lock.unlock()
+        lock.withLock {
+            isConnected = true
+            retryCount = 0
+        }
 
         await receiveMessages(task: task)
     }
@@ -101,10 +143,10 @@ private final class WebSocketManager: @unchecked Sendable {
                 let message = try await task.receive()
                 await handleMessage(message)
             } catch {
-                lock.lock()
-                isConnected = false
-                let shouldRetry = shouldReconnect
-                lock.unlock()
+                let shouldRetry = lock.withLock { () -> Bool in
+                    isConnected = false
+                    return shouldReconnect
+                }
 
                 if shouldRetry {
                     await reconnectWithBackoff()
@@ -113,10 +155,10 @@ private final class WebSocketManager: @unchecked Sendable {
             }
         }
 
-        lock.lock()
-        isConnected = false
-        let shouldRetry = shouldReconnect
-        lock.unlock()
+        let shouldRetry = lock.withLock { () -> Bool in
+            isConnected = false
+            return shouldReconnect
+        }
 
         if shouldRetry {
             await reconnectWithBackoff()
@@ -129,18 +171,16 @@ private final class WebSocketManager: @unchecked Sendable {
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let type = json["type"] as? String else { return }
 
-        @Dependency(\.syncClient) var syncClient
-
         do {
             switch type {
             case "task_updated":
-                try await syncClient.syncTasks()
+                try await syncTasks()
             case "sessions_synced":
-                try await syncClient.syncSessions()
+                try await syncSessions()
             case "settings_updated":
-                try await syncClient.syncSettings()
+                try await syncSettings()
             case "sync_required":
-                try await syncClient.syncAll()
+                try await syncAll()
             default:
                 break
             }
@@ -150,17 +190,16 @@ private final class WebSocketManager: @unchecked Sendable {
     }
 
     private func reconnectWithBackoff() async {
-        lock.lock()
-        let count = retryCount
-        retryCount += 1
-        lock.unlock()
+        let count = lock.withLock { () -> Int in
+            let current = retryCount
+            retryCount += 1
+            return current
+        }
 
         let delay = min(pow(2.0, Double(count)), Self.maxBackoff)
         try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
 
-        lock.lock()
-        let shouldRetry = shouldReconnect
-        lock.unlock()
+        let shouldRetry = lock.withLock { shouldReconnect }
 
         guard shouldRetry else { return }
         await performConnect()

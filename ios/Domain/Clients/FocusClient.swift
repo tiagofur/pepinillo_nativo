@@ -86,6 +86,7 @@ extension FocusClient: DependencyKey {
             stop: { _ in },
             recordInterruption: {},
             skipPhase: {},
+            updateConfig: { _ in },
             events: { .finished },
             currentState: { nil },
             resetForNewDay: {}

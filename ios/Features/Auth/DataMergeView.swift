@@ -14,7 +14,7 @@ struct DataMergeView: View {
         VStack(spacing: 24) {
             Image(systemName: "arrow.triangle.2.circlepath")
                 .font(.system(size: 48))
-                .foregroundStyle(.accentColor)
+                .foregroundStyle(Color.accentColor)
 
             Text("Local Data Found")
                 .font(.title2.bold())
