@@ -119,6 +119,7 @@ struct DashboardWidgetEntry: TimelineEntry {
 
     static let proRequired = DashboardWidgetEntry(
         date: Date(),
+        isProUser: false,
         todayMinutes: 0,
         todaySessions: 0,
         streakDays: 0,

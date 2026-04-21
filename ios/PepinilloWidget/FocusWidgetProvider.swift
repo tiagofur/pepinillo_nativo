@@ -124,6 +124,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 dominantMode: dominantMode,
                 modeMinutes: modeMinutes
             )
+            return entry
         } catch {
             // SwiftData read failed (first launch / store not yet created) — show idle
             return .idle
@@ -167,8 +168,5 @@ struct ConfigureFocusWidgetIntent: WidgetConfigurationIntent {
     var showStreak: Bool
 
     @Parameter(title: "Show Mode Breakdown", default: false)
-    var showModeBreakdown: Bool
-}
-
     var showModeBreakdown: Bool
 }

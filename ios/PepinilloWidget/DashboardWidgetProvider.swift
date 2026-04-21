@@ -38,7 +38,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             let today = calendar.startOfDay(for: Date.now)
             guard let weekAgo = calendar.date(byAdding: .day, value: -6, to: today),
                   let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else {
-                return .idle
+                return .empty
             }
 
             // Fetch last 7 days of stats
@@ -145,6 +145,4 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
         }
         return streak
     }
-}
-   }
 }
