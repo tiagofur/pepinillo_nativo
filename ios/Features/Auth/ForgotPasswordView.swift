@@ -94,7 +94,7 @@ struct ForgotPasswordView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button {
                         store.send(.backTapped)
                     } label: {

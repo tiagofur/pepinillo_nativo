@@ -92,7 +92,7 @@ struct PepinilloApp: App {
                 VStack(spacing: 20) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 50))
-                        .foregroundColor(.red)
+                        .foregroundStyle(.red)
                     Text("Initialization Failed")
                         .font(.title)
                         .bold()
