@@ -28,7 +28,7 @@ struct DashboardHeroSection: View {
             .accessibilityElement(children: .combine)
             .accessibilityLabel(
                 streakDays > 0
-                    ? String(localized: "dashboard.hero.streak.label \(streakDays)", defaultValue: "Streak: \(streakDays) days")
+                    ? String(localized: "dashboard.hero.streak.label", defaultValue: "Streak: \(streakDays) days")
                     : String(localized: "dashboard.hero.streak.none", defaultValue: "No streak yet")
             )
 
@@ -40,7 +40,7 @@ struct DashboardHeroSection: View {
             )
             .accessibilityElement(children: .combine)
             .accessibilityLabel(
-                String(localized: "dashboard.hero.sessions.label \(sessionsCompleted)", defaultValue: "\(sessionsCompleted) sessions completed")
+                String(localized: "dashboard.hero.sessions.label", defaultValue: "\(sessionsCompleted) sessions completed")
             )
 
             HeroStatCard(
@@ -51,7 +51,7 @@ struct DashboardHeroSection: View {
             )
             .accessibilityElement(children: .combine)
             .accessibilityLabel(
-                String(localized: "dashboard.hero.focused.label \(formattedFocusTime)", defaultValue: "Focused: \(formattedFocusTime)")
+                String(localized: "dashboard.hero.focused.label", defaultValue: "Focused: \(formattedFocusTime)")
             )
         }
         .accessibilityElement(children: .contain)

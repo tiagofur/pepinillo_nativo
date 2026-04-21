@@ -141,7 +141,7 @@ struct AnalyticsView: View {
                     GridItem(.flexible(), spacing: 20),
                     GridItem(.flexible(), spacing: 20)
                 ],
-                alignment: .top,
+                alignment: .center,
                 spacing: 20
             ) {
                 // Left column — summary stats + reflection actions
