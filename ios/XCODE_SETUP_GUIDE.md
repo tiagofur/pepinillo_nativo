@@ -20,7 +20,7 @@ Verifica con `xcodegen --version` (necesitas 2.38+).
 
 ### Paso 2 — Poner tu Team ID
 
-Abre `pepinillo_ios/project.yml` y busca la línea:
+Abre `ios/project.yml` y busca la línea:
 
 ```yaml
 DEVELOPMENT_TEAM: ""  # ← Fill in your Apple Developer Team ID
@@ -35,7 +35,7 @@ DEVELOPMENT_TEAM: "ABC123XYZ"
 ### Paso 3 — Generar el proyecto
 
 ```bash
-cd ~/Desktop/creapolis/pepinillo/apps/ios_nativa
+cd /ruta/a/pepinillo_nativo/ios
 xcodegen generate
 ```
 
@@ -47,7 +47,7 @@ Deberías ver:
 Created project at Pepinillo.xcodeproj
 ```
 
-Esto genera `Pepinillo.xcodeproj` con **6 targets** preconfigurados:
+Esto genera `Pepinillo.xcodeproj` con **5 targets** preconfigurados:
 
 | Target | Tipo | Bundle ID |
 |--------|------|-----------|
@@ -194,14 +194,14 @@ Similar al paso anterior, si no existe:
 
 1. **File → New → File → StoreKit Configuration File**
 2. Nombre: `Pepinillo.storekit`
-3. Guardar en la raíz del proyecto (`pepinillo_ios/`)
+3. Guardar en la raíz del proyecto (`ios/`)
 4. Agrega 3 productos:
 
 | Tipo | Product ID | Nombre | Precio |
 |------|-----------|--------|--------|
-| Auto-Renewable Subscription | `com.pepinillo.pro.monthly` | Pro Monthly | $2.99 |
-| Auto-Renewable Subscription | `com.pepinillo.pro.annual` | Pro Annual | $14.99 |
-| Non-Consumable | `com.pepinillo.pro.lifetime` | Pro Lifetime | $29.99 |
+| Auto-Renewable Subscription | `com.pepinillo.app.pro.monthly` | Pro Monthly | $3.99 |
+| Auto-Renewable Subscription | `com.pepinillo.app.pro.annual` | Pro Annual | $24.99 |
+| Non-Consumable | `com.pepinillo.app.pro.lifetime` | Pro Lifetime | $49.99 |
 
 5. Para las subscriptions, crea un **Subscription Group** llamado `Pepinillo Pro`
 6. **Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration** → selecciona `Pepinillo.storekit`
@@ -251,6 +251,26 @@ Necesitas 8 archivos de audio (los puedes bajar de freesound.org o pixabay.com/m
 2. Click en **AppIcon**
 3. Arrastra tu icono de 1024x1024 al slot principal
 4. Xcode 15+ genera automáticamente todos los tamaños
+
+### 13. Integración Backend Production (iOS)
+
+Esta sección es el puente para seguir con iOS hasta release real.
+
+1. Define base URL de backend en producción: `https://api.ppn.creapolis.dev`
+2. Verifica que iOS use siempre HTTPS en APIClient/SyncClient/WebSocketClient
+3. Valida login con backend (`/api/v1/auth/login`) y refresco (`/api/v1/auth/refresh`)
+4. Valida OAuth real contra backend:
+   - `POST /api/v1/auth/apple`
+   - `POST /api/v1/auth/google`
+5. Valida sync completo:
+   - `GET /api/v1/sync/full`
+   - `POST /api/v1/sync/sessions`
+   - `POST /api/v1/sync/initial-upload`
+6. Valida settings sync con clave canónica `key` (el backend acepta alias `preferenceKey`, pero iOS debe enviar `key`)
+7. Valida recepción de pushes y registro de dispositivo (`/api/v1/push/devices`)
+8. Smoke test de facturación backend:
+   - `POST /api/v1/billing/verify-receipt`
+   - `POST /api/v1/webhooks/revenuecat` (desde sandbox)
 
 ---
 

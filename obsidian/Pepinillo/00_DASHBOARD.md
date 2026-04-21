@@ -19,14 +19,14 @@ updated: 2026-04-17
 > [!tip] Punto de entrada diario
 > Abri este archivo para ver en 30 segundos el estado de producto, paridad y bloqueantes.
 
-**Ultima actualizacion:** 2026-04-17
+**Ultima actualizacion:** 2026-04-20
 
 ## Salud del producto
 
 > [!info] Estado general
 > - iOS + watchOS: en desarrollo activo con build local OK
 > - Android + Wear OS: en desarrollo activo con build local OK
-> - Backend Go: API funcional con auth, sync y webhooks
+> - Backend Go: ✅ Funcional y testeado — hardening listo — listo para deploy a VPS
 
 > [!success] Enfoque de producto
 > Pepinillo se posiciona como plataforma de deep work con 4 modos de foco, tareas integradas y analytics por modo (no solo Pomodoro).
@@ -74,6 +74,7 @@ Detalle vivo: [[Cross-Platform/Parity Matrix]]
 - [[iOS/iOS MOC|🍎 iOS MOC]]
 - [[Android/Android MOC|🤖 Android MOC]]
 - [[Backend/Backend MOC|⚙️ Backend MOC]]
+- [[Backend/API Contract iOS|🔗 API Contract iOS]]
 - [[Cross-Platform/Design System & Soundscapes|🎨 Design System]]
 - [[Cross-Platform/Parity Matrix|🔀 Parity Matrix]]
 

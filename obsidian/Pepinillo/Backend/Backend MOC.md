@@ -16,9 +16,9 @@ updated: 2026-04-17
 # ⚙️ Backend — Mapa de Contenido
 
 > [!info] Plataforma
-> **Stack**: Go, Chi, PostgreSQL, JWT, WebSocket
+> **Stack**: Go, Fiber v2, GORM, PostgreSQL 16, Redis 7, MinIO
 > **Rol**: Fuente de verdad para identidad, sync y billing
-> **Estado**: API funcional con integraciones activas
+> **Estado**: ✅ Funcional y testeado — listo para deploy a VPS
 
 ---
 
@@ -28,7 +28,8 @@ updated: 2026-04-17
 |------|-----------|
 | Capas y arquitectura | [[Arquitectura General]] |
 | Autenticacion y suscripciones | [[Autenticacion & Suscripciones]] |
-| Contrato de paridad app/watch | [[../Cross-Platform/Parity Matrix|Parity Matrix]] |
+| Contrato API completo para iOS | [[API Contract iOS]] |
+| Contrato de paridad app/watch | [[../Cross-Platform/Parity Matrix\|Parity Matrix]] |
 
 ## Impacto cross-platform
 
