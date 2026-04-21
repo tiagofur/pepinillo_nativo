@@ -357,11 +357,11 @@ struct TaskListView: View {
     }
 }
 
-// MARK: - Task Detail Sheet (iPhone only)
+// MARK: - Task Detail Sheet (shared)
 
-/// Only presents the task detail as a sheet on compact size class (iPhone).
+/// Presents the task detail as a sheet on compact size class (iPhone).
 /// On regular size class (iPad), detail is shown inline in the split view detail column.
-private struct TaskDetailSheetModifier: ViewModifier {
+struct TaskDetailSheetModifier: ViewModifier {
     @Bindable var store: StoreOf<TaskListFeature>
     let isCompact: Bool
 

@@ -1,25 +1,26 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "NSCalendarsUsageDescription" : {
-      "extractionState" : "manual",
+    "CFBundleDisplayName" : {
+      "comment" : "Bundle display name",
+      "extractionState" : "extracted_with_value",
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pepinillo reads your Calendar events so you can plan focus sessions around your existing schedule."
+            "state" : "new",
+            "value" : "Pepinillo"
           }
-        },
-        "es" : {
+        }
+      }
+    },
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
           "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pepinillo lee los eventos de tu Calendario para que puedas planificar tus sesiones de foco alrededor de tu agenda."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O Pepinillo lê os eventos do seu Calendário para que você possa planejar suas sessões de foco em torno da sua agenda."
+            "state" : "new",
+            "value" : "Pepinillo"
           }
         }
       }
@@ -43,6 +44,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "O Pepinillo lê e atualiza seu Calendário para que suas sessões de foco apareçam junto com sua agenda."
+          }
+        }
+      }
+    },
+    "NSCalendarsUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo reads your Calendar events so you can plan focus sessions around your existing schedule."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo lee los eventos de tu Calendario para que puedas planificar tus sesiones de foco alrededor de tu agenda."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo lê os eventos do seu Calendário para que você possa planejar suas sessões de foco em torno da sua agenda."
           }
         }
       }
@@ -93,29 +117,6 @@
         }
       }
     },
-    "NSRemindersUsageDescription" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pepinillo can import tasks from Reminders so you can start focusing on them right away."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pepinillo puede importar tareas desde Recordatorios para que puedas empezar a enfocarte en ellas al instante."
-          }
-        },
-        "pt" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O Pepinillo pode importar tarefas dos Lembretes para que você comece a focar nelas imediatamente."
-          }
-        }
-      }
-    },
     "NSRemindersFullAccessUsageDescription" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -135,6 +136,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "O Pepinillo importa e atualiza seus Lembretes para que você possa transformá-los em sessões de foco."
+          }
+        }
+      }
+    },
+    "NSRemindersUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo can import tasks from Reminders so you can start focusing on them right away."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pepinillo puede importar tareas desde Recordatorios para que puedas empezar a enfocarte en ellas al instante."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Pepinillo pode importar tarefas dos Lembretes para que você comece a focar nelas imediatamente."
           }
         }
       }
