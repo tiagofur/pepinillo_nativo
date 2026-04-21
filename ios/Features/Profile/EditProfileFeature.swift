@@ -5,6 +5,7 @@
 // Handles name, birth date, and profile image upload.
 
 import Foundation
+import UIKit
 import ComposableArchitecture
 
 // MARK: - EditProfileFeature
@@ -17,24 +18,28 @@ struct EditProfileFeature {
     @ObservableState
     struct State: Equatable {
         var name: String = ""
+        var email: String = ""
         var birthDate: Date? = nil
         var imageUrl: String? = nil
         var selectedImageData: Data? = nil
         var isLoading = false
         var isUploading = false
         var errorMessage: String? = nil
+        var originalUser: CachedUserDTO? = nil
     }
 
     // MARK: - Action
 
     enum Action: Equatable {
         case nameChanged(String)
+        case emailChanged(String)
         case birthDateChanged(Date?)
         case photoSelected(Data)
         case removePhoto
         case saveTapped
         case cancelTapped
 
+        case uploadBypassed
         case uploadResponse(Result<ImageUploadResponse, APIClientError>)
         case saveResponse(Result<APIUser, APIClientError>)
 
@@ -48,6 +53,7 @@ struct EditProfileFeature {
     // MARK: - Dependencies
 
     @Dependency(\.apiClient) var apiClient
+    @Dependency(\.keychainClient) var keychain
     @Dependency(\.persistenceClient) var persistence
 
     // MARK: - Reducer
@@ -60,14 +66,24 @@ struct EditProfileFeature {
                 state.errorMessage = nil
                 return .none
 
+            case .emailChanged(let email):
+                state.email = email
+                state.errorMessage = nil
+                return .none
+
             case .birthDateChanged(let date):
                 state.birthDate = date
                 return .none
 
             case .photoSelected(let data):
                 state.selectedImageData = data
+                state.errorMessage = nil
                 state.isUploading = true
-                return .run { send in
+                return .run { [keychain] send in
+                    guard await keychain.hasTokens() else {
+                        await send(.uploadBypassed)
+                        return
+                    }
                     do {
                         let response = try await apiClient.uploadProfileImage(data, "image/jpeg")
                         await send(.uploadResponse(.success(response)))
@@ -78,9 +94,14 @@ struct EditProfileFeature {
                     }
                 }
 
+            case .uploadBypassed:
+                state.isUploading = false
+                return .none
+
             case .removePhoto:
                 state.selectedImageData = nil
                 state.imageUrl = nil
+                state.errorMessage = nil
                 return .none
 
             case .uploadResponse(.success(let response)):
@@ -94,7 +115,10 @@ struct EditProfileFeature {
                 return .none
 
             case .saveTapped:
-                guard !state.name.isEmpty else {
+                let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedEmail = state.email.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                guard !trimmedName.isEmpty else {
                     state.errorMessage = "Name cannot be empty"
                     return .none
                 }
@@ -103,30 +127,63 @@ struct EditProfileFeature {
                 let birthDateStr: String? = state.birthDate.map {
                     ISO8601DateFormatter().string(from: $0)
                 }
-                let request = UpdateProfileRequest(
-                    name: state.name,
-                    imageUrl: state.imageUrl,
-                    birthDate: birthDateStr
-                )
-                return .run { send in
+                let originalUser = state.originalUser
+                let currentImageUrl = state.imageUrl
+                let selectedImageData = state.selectedImageData
+                return .run { [keychain, persistence] send in
+                    let imageReference = Self.resolvedImageReference(
+                        currentImageUrl: currentImageUrl,
+                        selectedImageData: selectedImageData
+                    )
+                    let localDTO = Self.makeLocalUser(
+                        originalUser: originalUser,
+                        name: trimmedName,
+                        email: trimmedEmail,
+                        imageReference: imageReference,
+                        birthDate: birthDateStr
+                    )
+                    try? await persistence.saveCachedUser(localDTO)
+
+                    guard await keychain.hasTokens() else {
+                        await send(.delegate(.profileUpdated(localDTO)))
+                        return
+                    }
+
                     do {
+                        let request = UpdateProfileRequest(
+                            name: trimmedName,
+                            imageUrl: imageReference?.hasPrefix("data:image") == true ? nil : imageReference,
+                            birthDate: birthDateStr
+                        )
                         let user = try await apiClient.updateMe(request)
                         await send(.saveResponse(.success(user)))
-                    } catch let error as APIClientError {
-                        await send(.saveResponse(.failure(error)))
                     } catch {
-                        await send(.saveResponse(.failure(.networkError)))
+                        await send(.delegate(.profileUpdated(localDTO)))
                     }
                 }
 
             case .saveResponse(.success(let apiUser)):
                 state.isLoading = false
+                let birthDateStr: String? = state.birthDate.map {
+                    ISO8601DateFormatter().string(from: $0)
+                }
+                let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedEmail = state.email.trimmingCharacters(in: .whitespacesAndNewlines)
+                let resolvedEmail = trimmedEmail.isEmpty ? apiUser.email : trimmedEmail
+                let imageReference = Self.resolvedImageReference(
+                    currentImageUrl: state.imageUrl ?? apiUser.imageUrl,
+                    selectedImageData: state.selectedImageData
+                )
                 let dto = CachedUserDTO(
-                    id: apiUser.id, email: apiUser.email, name: apiUser.name,
-                    imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
+                    id: apiUser.id,
+                    email: resolvedEmail,
+                    name: trimmedName.isEmpty ? apiUser.name : trimmedName,
+                    imageUrl: imageReference,
+                    birthDate: birthDateStr ?? apiUser.birthDate,
                     subscriptionTier: apiUser.subscriptionTier,
                     subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
-                    emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
+                    emailVerified: resolvedEmail == apiUser.email ? apiUser.emailVerified : false,
+                    appleId: apiUser.appleId,
                     createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
                 )
                 return .run { send in
@@ -146,5 +203,58 @@ struct EditProfileFeature {
                 return .none
             }
         }
+    }
+
+    private static func resolvedImageReference(currentImageUrl: String?, selectedImageData: Data?) -> String? {
+        if let currentImageUrl, !currentImageUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return currentImageUrl
+        }
+
+        guard let selectedImageData else {
+            return nil
+        }
+        return dataURIString(from: selectedImageData)
+    }
+
+    private static func dataURIString(from data: Data) -> String? {
+        guard let image = UIImage(data: data),
+              let jpegData = image.jpegData(compressionQuality: 0.78) else {
+            return nil
+        }
+        return "data:image/jpeg;base64,\(jpegData.base64EncodedString())"
+    }
+
+    private static func makeLocalUser(
+        originalUser: CachedUserDTO?,
+        name: String,
+        email: String,
+        imageReference: String?,
+        birthDate: String?
+    ) -> CachedUserDTO {
+        let now = ISO8601DateFormatter().string(from: .now)
+        let preservedUser = originalUser ?? CachedUserDTO(
+            id: UUID().uuidString,
+            email: "",
+            name: "",
+            subscriptionTier: "free",
+            emailVerified: false,
+            createdAt: now,
+            updatedAt: now
+        )
+        let originalEmail = preservedUser.email.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return CachedUserDTO(
+            id: preservedUser.id,
+            email: email,
+            name: name,
+            imageUrl: imageReference,
+            birthDate: birthDate,
+            subscriptionTier: preservedUser.subscriptionTier,
+            subscriptionExpiresAt: preservedUser.subscriptionExpiresAt,
+            emailVerified: !originalEmail.isEmpty && email == originalEmail && preservedUser.emailVerified,
+            appleId: preservedUser.appleId,
+            createdAt: preservedUser.createdAt.isEmpty ? now : preservedUser.createdAt,
+            updatedAt: now
+        )
     }
 }

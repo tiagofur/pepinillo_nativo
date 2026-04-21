@@ -3,6 +3,7 @@
 //
 // Seeds realistic demo data for App Store screenshots.
 // Activated by the `-seedDemoData` launch argument.
+// Use `-proMode` to simulate Pepinillo+ subscription in debug builds.
 // This file is only used in Debug builds.
 
 #if DEBUG
@@ -11,6 +12,12 @@ import SwiftData
 
 @MainActor
 enum DemoDataSeeder {
+
+    /// Whether debug mode should simulate a paid subscription.
+    /// Activated by `-proMode` launch argument.
+    nonisolated static var shouldSimulatePro: Bool {
+        CommandLine.arguments.contains("-proMode")
+    }
 
     static func seedIfNeeded(container: ModelContainer) {
         guard CommandLine.arguments.contains("-seedDemoData") else { return }

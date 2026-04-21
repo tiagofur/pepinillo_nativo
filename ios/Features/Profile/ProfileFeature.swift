@@ -25,6 +25,10 @@ struct ProfileFeature {
         var totalFocusMinutes: Int = 0
         var totalSessions: Int = 0
         var bestStreak: Int = 0
+
+        init(user: CachedUserDTO? = nil) {
+            self.user = user
+        }
     }
 
     // MARK: - Action
@@ -103,7 +107,9 @@ struct ProfileFeature {
                 )
 
             case .cachedUserLoaded(let user):
-                state.user = user
+                if let user {
+                    state.user = user
+                }
                 return .none
 
             case .statsLoaded(let totalMinutes, let totalSessions, let bestStreak):
@@ -139,7 +145,9 @@ struct ProfileFeature {
             case .editProfileTapped:
                 let user = state.user
                 var editState = EditProfileFeature.State()
+                editState.originalUser = user
                 editState.name = user?.name ?? ""
+                editState.email = user?.email ?? ""
                 editState.imageUrl = user?.imageUrl
                 if let bd = user?.birthDate, !bd.isEmpty {
                     editState.birthDate = ISO8601DateFormatter().date(from: bd)
