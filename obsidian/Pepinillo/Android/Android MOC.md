@@ -10,7 +10,7 @@ platform: android
 type: moc
 status: active
 date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # 🤖 Android — Mapa de Contenido
@@ -18,7 +18,7 @@ updated: 2026-04-17
 > [!info] Plataforma
 > **Stack**: Kotlin, Jetpack Compose, Hilt, Room, WorkManager
 > **Targets**: Android phone + Wear OS
-> **Estado**: Desarrollo activo con sincronizacion y paridad en curso
+> **Estado**: Desarrollo activo con sincronizacion, monetizacion v2 y paridad en curso
 
 ---
 
@@ -28,6 +28,7 @@ updated: 2026-04-17
 |------|-----------|
 | Capas y decisiones arquitectonicas | [[Arquitectura General]] |
 | Integracion con backend y sync | [[../Backend/Arquitectura General|Backend Arquitectura]] |
+| Monetizacion y entitlements | [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]] |
 | Contrato de paridad | [[../Cross-Platform/Parity Matrix|Parity Matrix]] |
 
 ## Modulos clave
@@ -44,3 +45,4 @@ updated: 2026-04-17
 |------|-----------|
 | Estado global de producto | [[../00_DASHBOARD|Dashboard]] |
 | Fuente de alcance funcional | [[../PRD/README|PRD Index]] |
+| Decision de rollout Apple-first | [[../Cross-Platform/ADR-001 - Monetizacion Apple First|ADR-001]] |

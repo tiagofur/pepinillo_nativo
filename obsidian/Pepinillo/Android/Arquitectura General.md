@@ -9,7 +9,7 @@ platform: android
 type: architecture
 status: active
 date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # Android - Arquitectura General
@@ -34,6 +34,17 @@ updated: 2026-04-17
 - [[Modulo Tasks]]
 - [[Widgets & Wear OS]]
 
+## Monetizacion y sync
+
+| Capability / oferta | Regla |
+|---|---|
+| Oferta paga Android | `Everywhere Monthly` o `Everywhere Annual` durante el rollout Apple-first |
+| Premium local Android | viene incluido dentro de `Everywhere` |
+| Backend sync | solo con `Everywhere` |
+| Wear OS | hereda estado desde Android companion |
+| Apple Unlock | no aplica a Android / Wear OS |
+| Runtime actual | todavia usa un flag `premium` legacy, pendiente capability split |
+
 ## Principios
 
 - Motor de foco unificado por estrategia (4 modos).
@@ -44,6 +55,6 @@ updated: 2026-04-17
 
 - Auth y sync sobre API Go.
 - Batch sync y reconciliacion por timestamps.
-- Enforcement de entitlement PRO en app y server.
+- Enforcement de `Everywhere` en app y server, con backend como autoridad final para sync e IA.
 
-Ver tambien: [[../Backend/Arquitectura General|Backend Arquitectura]]
+Ver tambien: [[../Backend/Arquitectura General|Backend Arquitectura]] · [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]

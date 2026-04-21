@@ -8,10 +8,7 @@ platform: ios
 type: module
 status: active
 date: 2026-04-17
-updated: 2026-04-17
----
-date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # iOS - Modulo Tasks
@@ -22,7 +19,7 @@ updated: 2026-04-17
 ## Scope funcional
 
 - CRUD de tareas.
-- Subtareas (PRO).
+- Subtareas (APPLE).
 - Prioridad y energia.
 - Recurrencia.
 - Reordenado por prioridad.
@@ -36,3 +33,7 @@ updated: 2026-04-17
 ## Paridad esperada
 
 El comportamiento de negocio debe coincidir con [[../Android/Modulo Tasks|Android Modulo Tasks]], variando solo UI nativa.
+
+## Nota comercial
+
+En Apple, subtareas y recurrencia viven bajo `Apple Unlock`. El backend sync de Tasks solo forma parte de `Everywhere`.

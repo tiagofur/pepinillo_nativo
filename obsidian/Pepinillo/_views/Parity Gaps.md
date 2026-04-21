@@ -10,7 +10,7 @@ platform: cross-platform
 type: view
 status: active
 date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # 🔀 Parity Gaps — Brechas Cross-Platform
@@ -20,6 +20,14 @@ updated: 2026-04-17
 ---
 
 ## Brechas conocidas (hoy)
+
+> [!warning] Monetizacion v2 todavia no llego al runtime
+> - ✅ PRD + vault: alineados a Apple Unlock + Everywhere
+> - 🚧 iOS / Android / backend: siguen con modelo legacy `pro` / `premium`
+
+> [!warning] Backend sin capability split ni creditos IA
+> - ⬜ `local_premium`, `apple_cloud_sync`, `backend_sync`, `ai_credits_monthly`
+> - ⬜ ledger y reset mensual de creditos IA
 
 > [!warning] Drag-to-reorder en tareas
 > - ✅ iOS: implementado
@@ -38,20 +46,22 @@ updated: 2026-04-17
 > - 🚧 Android: analytics y widgets sin gating
 
 > [!warning] Feature gating en watchOS / Wear OS
-> - 🚧 Estado de paywall no propagado a watch surfaces
+> - 🚧 Estado de Apple Unlock / Everywhere no propagado a watch surfaces
 
 ---
 
 ## Pendientes por resolver (checklist operativo)
 
 ### 🍎 iOS — pendientes
-- [ ] Feature gating: ya está pero revisar analytics widgets
+- [ ] Crear productos Apple Unlock + Everywhere en RevenueCat / StoreKit
+- [ ] Migrar del flag `pro` a capability split en cliente iOS
 - [ ] Xcode setup (no-code): App Group, CloudKit, StoreKit config
-- [ ] Price update $3.99 / $24.99 / $49.99 en RevenueCat
 - [ ] iPad layouts (NavigationSplitView)
 - [ ] macOS target
 
 ### 🤖 Android — pendientes
+- [ ] Migrar SKUs legacy `pro.*` a Everywhere
+- [ ] Renombrar `premium` legacy a capabilities compartidas
 - [ ] Feature gating completo: analytics, widgets, temas
 - [ ] Paywall UI completa
 - [ ] Firebase Analytics / Crashlytics (`google-services.json`)
@@ -62,14 +72,21 @@ updated: 2026-04-17
 - [ ] OEM testing (Samsung, Pixel, Xiaomi, OnePlus)
 
 ### ⌚ watchOS — pendientes
+- [ ] Propagacion de Apple Unlock / Everywhere desde iPhone
 - [ ] Session journaling UX simplificada
 - [ ] Task linking en sesión
 - [ ] Energy levels UI
 
 ### ⌚ Wear OS — pendientes
+- [ ] Propagacion de Everywhere desde Android companion
 - [ ] Session journaling UX simplificada
 - [ ] Task linking en sesión
 - [ ] Feature gating sincronizado desde companion app
+
+### ⚙️ Backend — pendientes
+- [ ] Capability split comercial (`local_premium`, `apple_cloud_sync`, `backend_sync`, `ai_credits_monthly`)
+- [ ] Ledger de creditos IA con reset mensual
+- [ ] Migracion de source product legacy a catalogo v2
 
 ---
 

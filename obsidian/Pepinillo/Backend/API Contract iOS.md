@@ -159,6 +159,9 @@ GET /api/v1/users/me
 }
 ```
 
+> [!info] Compatibilidad legacy
+> `isPro` sigue siendo el flag expuesto hoy por compatibilidad. El target del rollout nuevo es devolver capabilities o account type mas expresivos.
+
 ### Actualizar perfil 🔐
 ```
 PUT /api/v1/users/me
@@ -332,7 +335,7 @@ Content-Type: application/json
 
 {
   "receiptData": "<base64 receipt>",
-  "productId": "com.pepinillo.app.pro.monthly"
+  "productId": "com.pepinillo.app.apple.unlock"
 }
 ```
 **Respuesta 200:**
@@ -344,13 +347,19 @@ Content-Type: application/json
 }
 ```
 
+> [!info] Compatibilidad
+> La respuesta sigue exponiendo `entitlement: "pro"` mientras el backend migra a capabilities. Durante la transicion tambien debe aceptar SKUs legacy `com.pepinillo.app.pro.*`.
+
 ### Product IDs válidos
 
 | ID | Precio |
 |---|---|
-| `com.pepinillo.app.pro.monthly` | $3.99 / mes |
-| `com.pepinillo.app.pro.annual` | $24.99 / año |
-| `com.pepinillo.app.pro.lifetime` | $49.99 único |
+| `com.pepinillo.app.apple.unlock` | $19.99 único |
+| `com.pepinillo.app.everywhere.monthly` | $4.99 / mes |
+| `com.pepinillo.app.everywhere.annual` | $34.99 / año |
+
+> [!warning] Migracion legacy
+> Hasta completar la migracion comercial, backend sigue recibiendo `com.pepinillo.app.pro.monthly`, `com.pepinillo.app.pro.annual` y `com.pepinillo.app.pro.lifetime`.
 
 ---
 

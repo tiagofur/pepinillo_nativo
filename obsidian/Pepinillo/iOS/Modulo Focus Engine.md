@@ -8,10 +8,7 @@ platform: ios
 type: module
 status: active
 date: 2026-04-17
-updated: 2026-04-17
----
-date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # iOS - Modulo Focus Engine
@@ -24,8 +21,8 @@ updated: 2026-04-17
 | Modo | Tier | Resultado esperado |
 |---|---|---|
 | Pomodoro | FREE | Ciclos trabajo/descanso |
-| Flowtime | PRO | Sesion libre con break sugerido |
-| TimeBlock | PRO | Bloque fijo con objetivo |
+| Flowtime | APPLE | Sesion libre con break sugerido |
+| TimeBlock | APPLE | Bloque fijo con objetivo |
 | Stopwatch | FREE | Conteo ascendente sin presion |
 
 ## Comportamientos clave
@@ -39,4 +36,5 @@ updated: 2026-04-17
 
 - [[Widgets & Live Activity]]
 - [[../Backend/Arquitectura General|Backend Arquitectura]]
+- [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]
 - [[../Cross-Platform/Parity Matrix|Parity Matrix]]

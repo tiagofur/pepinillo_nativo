@@ -8,10 +8,7 @@ platform: android
 type: module
 status: active
 date: 2026-04-17
-updated: 2026-04-17
----
-date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # Android - Modulo Focus Engine
@@ -24,8 +21,8 @@ updated: 2026-04-17
 | Modo | Tier | Resultado esperado |
 |---|---|---|
 | Pomodoro | FREE | Ciclos trabajo/descanso |
-| Flowtime | PRO | Sesion libre con break sugerido |
-| TimeBlock | PRO | Bloque fijo con objetivo |
+| Flowtime | EVERYWHERE | Sesion libre con break sugerido |
+| TimeBlock | EVERYWHERE | Bloque fijo con objetivo |
 | Stopwatch | FREE | Conteo ascendente sin presion |
 
 ## Comportamientos clave
@@ -39,4 +36,9 @@ updated: 2026-04-17
 
 - [[Widgets & Wear OS]]
 - [[../Backend/Arquitectura General|Backend Arquitectura]]
+- [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]
 - [[../Cross-Platform/Parity Matrix|Parity Matrix]]
+
+## Nota comercial
+
+En Android, Flowtime y TimeBlock forman parte de `Everywhere`. `Apple Unlock` no aplica fuera del ecosistema Apple.

@@ -28,6 +28,7 @@ updated: 2026-04-17
 |------|-----------|
 | Capas y decisiones arquitectonicas | [[Arquitectura General]] |
 | Integracion con backend y sync | [[../Backend/Arquitectura General|Backend Arquitectura]] |
+| Monetizacion y entitlements | [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]] |
 | Contrato de paridad | [[../Cross-Platform/Parity Matrix|Parity Matrix]] |
 
 ## Modulos clave
@@ -44,3 +45,4 @@ updated: 2026-04-17
 |------|-----------|
 | Estado global de producto | [[../00_DASHBOARD|Dashboard]] |
 | Fuente de alcance funcional | [[../PRD/README|PRD Index]] |
+| Decision de rollout Apple-first | [[../Cross-Platform/ADR-001 - Monetizacion Apple First|ADR-001]] |

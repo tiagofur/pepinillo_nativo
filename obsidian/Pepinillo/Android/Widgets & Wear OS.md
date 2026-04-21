@@ -10,11 +10,7 @@ platform: android
 type: module
 status: active
 date: 2026-04-17
-updated: 2026-04-17
----
-status: active
-date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # Android - Widgets & Wear OS
@@ -34,8 +30,17 @@ updated: 2026-04-17
 - Complications en watch face.
 - Sync con phone para estado y contexto.
 
+## Monetizacion y entitlement
+
+- Wear OS hereda entitlement desde Android phone.
+- `Everywhere` es la unica oferta paga valida para Android + Wear OS durante el rollout actual.
+- `Apple Unlock` no aplica a Wear OS.
+- El capability split objetivo debe propagarse desde companion app a tiles, complications y vistas de stats.
+
 ## Checklist de calidad
 
 - El timer en notificacion/tiles coincide con sesion real.
 - Las acciones pause/resume/stop son confiables.
-- Android/Wear mantienen coherencia de estado.
+- Android/Wear mantienen coherencia de estado y entitlement.
+
+Ver tambien: [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]

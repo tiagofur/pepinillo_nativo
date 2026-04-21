@@ -15,7 +15,7 @@ updated: 2026-04-20
 # Backend - Autenticacion & Suscripciones
 
 > [!abstract] Resumen
-> Este modulo controla identidad, sesiones y entitlement PRO para garantizar reglas consistentes en todas las plataformas.
+> Este modulo controla identidad, sesiones y las capacidades comerciales que reemplazan el PRO legacy para garantizar reglas consistentes en todas las plataformas.
 
 ## Flujo de autenticacion
 
@@ -61,25 +61,26 @@ Logout:
 | Duración refresh | Larga (configurable, almacenado en Redis) |
 | Invalidación | `POST /api/v1/auth/logout` borra el refresh de Redis |
 
-## Suscripciones — RevenueCat
+## Suscripciones — Monetizacion v2
 
 | Key | Valor |
 |---|---|
 | SDK iOS (público) | `appl_xnChlVXXtUFhusIfJyNrNDcMGLj` |
 | Backend secret | `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (env `REVENUECAT_SECRET_KEY`) |
-| Entitlement | `pro` |
+| Runtime legacy | Entitlement `pro` en iOS / `premium` en Android |
+| Capabilities target | `local_premium`, `apple_cloud_sync`, `backend_sync`, `ai_credits_monthly` |
 
-### Product IDs (canónicos)
+### Catalogo comercial canonico
 
-| Producto | ID | Precio |
-|---|---|---|
-| Mensual | `com.pepinillo.app.pro.monthly` | $3.99 / mes |
-| Anual | `com.pepinillo.app.pro.annual` | $24.99 / año |
-| Lifetime | `com.pepinillo.app.pro.lifetime` | $49.99 único |
+| Oferta | Producto target | Precio | Cobertura |
+|---|---|---|---|
+| Apple Unlock | `com.pepinillo.app.apple.unlock` | $19.99 / $9.99 LATAM | premium local Apple + iCloud |
+| Everywhere Monthly | `com.pepinillo.app.everywhere.monthly` | $4.99 / $2.49 LATAM | backend sync + creditos IA |
+| Everywhere Annual | `com.pepinillo.app.everywhere.annual` | $34.99 / $17.99 LATAM | backend sync + creditos IA |
 
-> [!danger] IDs incorrectos en código viejo
-> El prefijo viejo era `com.pepinillo.pro.*`. El correcto es `com.pepinillo.app.pro.*`.
-> Cualquier referencia al prefijo viejo en el cliente iOS debe corregirse.
+> [!warning] Runtime actual
+> El runtime todavia usa SKUs legacy `com.pepinillo.app.pro.*` y un unico flag `pro` / `premium`.
+> La migracion a los offers canonicos anteriores sigue pendiente.
 
 ### Endpoints de billing
 
@@ -91,19 +92,24 @@ Body: { receiptData: "<base64>", productId: "com.pepinillo.app.pro.monthly" }
 POST /api/v1/webhooks/revenuecat   (solo backend, no llamar desde cliente)
 ```
 
+> [!info] Evolucion esperada
+> `billing/verify` sigue siendo el endpoint autoritativo, pero backend debe resolver `source product -> capabilities -> saldo IA`.
+
 ### Fuentes de verdad
 
 | Fuente | Rol |
 |---|---|
-| RevenueCat | Estado de entitlement `pro` |
-| Backend | Enforcement final por usuario |
-| Apps cliente | UX de paywall y gating local |
+| RevenueCat / stores | Estado del producto comprado |
+| Backend | Resolucion de capabilities, enforcement y saldo IA |
+| Apps cliente | UX de paywall, gating local y surfaces companion |
 
 ## Regla de enforcement
 
-1. Cliente consulta estado y adapta UI.
-2. Backend valida entitlement para operaciones protegidas.
-3. Si hay divergencia, backend prevalece.
+1. Cliente consulta capabilities y adapta UI.
+2. Backend valida capability requerida para operaciones protegidas.
+3. `apple_cloud_sync` habilita iCloud local; `backend_sync` habilita sync por API.
+4. Creditos IA se descuentan server-side.
+5. Si hay divergencia, backend prevalece.
 
 ## Códigos de error relevantes
 
@@ -115,6 +121,8 @@ POST /api/v1/webhooks/revenuecat   (solo backend, no llamar desde cliente)
 
 ## Checklist de paridad
 
-- iOS y Android deben mapear el mismo entitlement (`pro`).
-- watchOS y Wear OS respetan gating recibido desde companion app.
-- Cambios de pricing se actualizan aquí y en StoreKit config de Xcode.
+- iOS y Android deben converger del naming legacy `pro` / `premium` a capabilities compartidas.
+- watchOS y Wear OS deben respetar `Apple Unlock` / `Everywhere` recibido desde companion app.
+- Cambios de pricing se actualizan aquí, en PRD y en configuraciones de stores.
+
+Ver tambien: [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]

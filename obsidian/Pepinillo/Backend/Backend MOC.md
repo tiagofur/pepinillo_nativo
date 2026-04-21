@@ -28,6 +28,7 @@ updated: 2026-04-17
 |------|-----------|
 | Capas y arquitectura | [[Arquitectura General]] |
 | Autenticacion y suscripciones | [[Autenticacion & Suscripciones]] |
+| Monetizacion y entitlements | [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]] |
 | Contrato API completo para iOS | [[API Contract iOS]] |
 | Contrato de paridad app/watch | [[../Cross-Platform/Parity Matrix\|Parity Matrix]] |
 

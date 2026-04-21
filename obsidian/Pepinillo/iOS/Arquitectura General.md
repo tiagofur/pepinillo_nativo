@@ -43,6 +43,16 @@ updated: 2026-04-20
 **App Group:** `group.com.pepinillo.app`  
 **CloudKit container:** `iCloud.com.pepinillo.app`
 
+## Monetizacion y sync
+
+| Capability | Regla |
+|---|---|
+| Premium local Apple | `Apple Unlock` o `Everywhere` habilitan features premium locales |
+| iCloud / CloudKit | solo con `Apple Unlock` o `Everywhere` |
+| Backend sync | solo con `Everywhere` |
+| watchOS | hereda estado desde iPhone companion |
+| Runtime actual | todavia usa un unico flag `pro`, pendiente capability split |
+
 ## Modulos funcionales
 
 - [[Modulo Focus Engine]]
@@ -77,4 +87,4 @@ updated: 2026-04-20
 > [!warning] URL base producción
 > `https://api.ppn.creapolis.dev` — no hardcodear; usar config por environment.
 
-Ver tambien: [[../Backend/Arquitectura General|Backend Arquitectura]] · [[../Backend/Autenticacion & Suscripciones|Auth & Billing]]
+Ver tambien: [[../Backend/Arquitectura General|Backend Arquitectura]] · [[../Backend/Autenticacion & Suscripciones|Auth & Billing]] · [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]

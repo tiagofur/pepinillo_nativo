@@ -10,7 +10,7 @@ platform: cross-platform
 type: reference
 status: active
 date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # Parity Matrix - Pepinillo
@@ -64,7 +64,10 @@ updated: 2026-04-17
 | Dashboard diario | ✅ | ✅ | 🚧 | 🚧 | |
 | Weekly review | ✅ | ✅ | 📋 | 📋 | |
 | Monthly review | ✅ | ✅ | 📋 | 📋 | |
-| Paywall / entitlement PRO | ✅ | ✅ | 🚧 | 🚧 | enforcement via backend |
+| Apple Unlock (premium local) | 📋 | N/A | 📋 | N/A | rollout Apple-first |
+| Everywhere (sync + IA) | 📋 | 📋 | 🚧 | 🚧 | suscripcion recurrente |
+| Capability-based gating | 📋 | 📋 | 📋 | 📋 | reemplaza `pro` / `premium` legacy |
+| Paywall / entitlement propagation | ✅ legacy | ✅ legacy | 🚧 | 🚧 | companion surfaces todavia parciales |
 
 ## Regla de trabajo
 

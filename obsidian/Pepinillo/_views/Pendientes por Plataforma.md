@@ -10,7 +10,7 @@ platform: all
 type: view
 status: active
 date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # ✅ Pendientes por Plataforma
@@ -49,10 +49,10 @@ Actualizar esta lista cada sprint:
 
 | Plataforma | Item | Referencia |
 |---|---|---|
-| Android | Feature gating completo (analytics, widgets) | [[../Android/Arquitectura General]] |
-| Android | Paywall UI completa | [[../Backend/Autenticacion & Suscripciones]] |
-| iOS | Price update RevenueCat $3.99 / $24.99 | [[../iOS/Arquitectura General]] |
-| iOS + Android | Stores listing (screenshots, ASO, descripciones) | — |
+| iOS | Crear Apple Unlock + Everywhere en RevenueCat / StoreKit | [[../iOS/Arquitectura General]] |
+| Backend | Capability split + creditos IA mensuales | [[../Backend/Autenticacion & Suscripciones]] |
+| Android | Migrar billing legacy a Everywhere | [[../Backend/Autenticacion & Suscripciones]] |
+| watchOS + Wear OS | Propagar entitlements nuevos desde companion app | [[../Cross-Platform/Parity Matrix]] |
 
 ---
 
@@ -60,10 +60,10 @@ Actualizar esta lista cada sprint:
 
 > Reemplazá esta sección al iniciar un sprint nuevo usando `[[_templates/Template - Sprint]]`.
 
-- [ ] Cerrar gating PRO Android
-- [ ] Completar paywall UI Android  
-- [ ] Price update RevenueCat (iOS + Android)
-- [ ] CI/CD básico Android (GitHub Actions lint + tests)
+- [ ] Crear offers Apple Unlock + Everywhere en Apple
+- [ ] Diseñar capability split backend + ledger IA
+- [ ] Migrar Android de `premium` legacy a Everywhere
+- [ ] Propagar entitlements a watchOS y Wear OS
 
 ---
 

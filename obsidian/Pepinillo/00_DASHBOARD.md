@@ -11,7 +11,7 @@ platform: all
 type: dashboard
 status: active
 date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # 🎯 Pepinillo — Dashboard Ejecutivo
@@ -19,7 +19,7 @@ updated: 2026-04-17
 > [!tip] Punto de entrada diario
 > Abri este archivo para ver en 30 segundos el estado de producto, paridad y bloqueantes.
 
-**Ultima actualizacion:** 2026-04-20
+**Ultima actualizacion:** 2026-04-21
 
 ## Salud del producto
 
@@ -34,6 +34,7 @@ updated: 2026-04-17
 > [!warning] Bloqueantes externos esperables
 > - Dashboards de stores/suscripciones (App Store Connect, Play Console, RevenueCat)
 > - Deploy/ops segun ventana de release
+> - Migracion comercial v2 (Apple Unlock + Everywhere) todavia pendiente en runtime
 
 ## Progreso por streams
 
@@ -43,7 +44,7 @@ updated: 2026-04-17
 | Tasks | CRUD + subtareas + recurrencia | `████████████████░░░░` 80% | 🚧 |
 | Analytics | Semanal/mensual + inteligencia | `█████████████░░░░░░░` 65% | 🚧 |
 | Ecosystem | Widgets + watches + asistentes | `██████████████░░░░░░` 70% | 🚧 |
-| Billing | Gating y subscriptions | `████████████████░░░░` 80% | 🚧 |
+| Billing | Monetizacion v2 + capability split | `██████████████░░░░░░` 70% | 🚧 |
 
 ## Matriz de paridad rapida
 
@@ -59,9 +60,9 @@ Detalle vivo: [[Cross-Platform/Parity Matrix]]
 
 ## Siguientes 3 focos
 
-1. Cerrar brechas de paridad puntuales en dashboards y gating PRO.
-2. Consolidar docs tecnicas por modulo de foco y tareas.
-3. Sincronizar PRD y estado de implementacion al cierre de cada sprint.
+1. Migrar billing legacy a Apple Unlock + Everywhere en iOS.
+2. Diseñar capability split backend + creditos IA mensuales.
+3. Propagar entitlements nuevos a watchOS, Wear OS y vistas de paridad.
 
 ## Accesos rápidos
 
@@ -83,3 +84,5 @@ Detalle vivo: [[Cross-Platform/Parity Matrix]]
 
 ### 📖 Estrategia
 - [[PRD/README|PRD Index]]
+- [[Cross-Platform/Monetizacion y Entitlements|💸 Monetizacion y Entitlements]]
+- [[Cross-Platform/ADR-001 - Monetizacion Apple First|📋 ADR-001 Apple First]]
