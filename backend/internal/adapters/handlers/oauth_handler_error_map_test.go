@@ -26,6 +26,11 @@ func TestMapOAuthError(t *testing.T) {
 			statusCode: fiber.StatusBadRequest,
 		},
 		{
+			name:       "invalid oauth token",
+			err:        services.ErrInvalidOAuthToken,
+			statusCode: fiber.StatusUnauthorized,
+		},
+		{
 			name:       "user not found",
 			err:        services.ErrUserNotFound,
 			statusCode: fiber.StatusNotFound,

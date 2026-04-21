@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
 
 	"pepinillo/backend/internal/services"
@@ -73,6 +75,9 @@ func (h *SyncHandler) InitialUpload(c *fiber.Ctx) error {
 
 	result, err := h.sync.InitialUpload(c.Context(), userID, deviceID, &req)
 	if err != nil {
+		if errors.Is(err, services.ErrInvalidPreferenceKey) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
 		return err
 	}
 

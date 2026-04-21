@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"pepinillo/backend/internal/domain"
@@ -26,6 +27,9 @@ func (s *PreferenceService) GetPreferences(ctx context.Context, userID string) (
 func (s *PreferenceService) UpsertPreferences(ctx context.Context, userID, deviceID string, prefs []domain.UserPreference) ([]domain.UserPreference, error) {
 	now := time.Now().UTC()
 	for i := range prefs {
+		if strings.TrimSpace(prefs[i].Key) == "" {
+			return nil, ErrInvalidPreferenceKey
+		}
 		prefs[i].UserID = userID
 		if prefs[i].UpdatedAt.IsZero() {
 			prefs[i].UpdatedAt = now

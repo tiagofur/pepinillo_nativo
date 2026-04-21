@@ -83,7 +83,7 @@ func NewOAuthService(
 func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*domain.User, *AuthTokens, error) {
 	tokenInfo, err := s.verifyGoogleToken(ctx, idToken)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid google token: %w", err)
+		return nil, nil, fmt.Errorf("%w: %v", ErrInvalidOAuthToken, err)
 	}
 
 	if strings.TrimSpace(tokenInfo.Email) == "" {
@@ -176,7 +176,7 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string) (*domain.User, *AuthTokens, error) {
 	tokenInfo, err := s.verifyAppleToken(ctx, idToken, nonce)
 	if err != nil {
-		return nil, nil, fmt.Errorf("invalid apple token: %w", err)
+		return nil, nil, fmt.Errorf("%w: %v", ErrInvalidOAuthToken, err)
 	}
 
 	user, err := s.users.GetByAppleID(ctx, tokenInfo.Sub)
@@ -265,7 +265,7 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 func (s *OAuthService) LinkGoogleAccount(ctx context.Context, userID, idToken string) (*domain.User, error) {
 	tokenInfo, err := s.verifyGoogleToken(ctx, idToken)
 	if err != nil {
-		return nil, fmt.Errorf("invalid google token: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidOAuthToken, err)
 	}
 
 	user, err := s.users.GetByID(ctx, userID)
@@ -321,7 +321,7 @@ func (s *OAuthService) UnlinkGoogleAccount(ctx context.Context, userID string) e
 func (s *OAuthService) LinkAppleAccount(ctx context.Context, userID, idToken string) (*domain.User, error) {
 	tokenInfo, err := s.verifyAppleToken(ctx, idToken, "")
 	if err != nil {
-		return nil, fmt.Errorf("invalid apple token: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidOAuthToken, err)
 	}
 
 	user, err := s.users.GetByID(ctx, userID)

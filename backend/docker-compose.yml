@@ -8,10 +8,12 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - postgres
-      - redis
-      - minio
-      - ml-service
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
 
   postgres:
     image: postgres:16-alpine
@@ -20,14 +22,24 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: pepinillo
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pepinillo"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   minio:
     image: minio/minio:latest
@@ -42,6 +54,7 @@ services:
       - minio_data:/data
 
   ml-service:
+    profiles: ["ml"]
     build:
       context: .
       dockerfile: Dockerfile.ml
@@ -49,6 +62,7 @@ services:
       - "8001:8001"
 
   caddy:
+    profiles: ["caddy"]
     image: caddy:2-alpine
     ports:
       - "80:80"

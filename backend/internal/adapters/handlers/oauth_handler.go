@@ -33,6 +33,8 @@ func mapOAuthError(err error) error {
 	switch {
 	case errors.Is(err, services.ErrGoogleAudienceNotConfigured):
 		return fiber.NewError(fiber.StatusServiceUnavailable, err.Error())
+	case errors.Is(err, services.ErrInvalidOAuthToken):
+		return fiber.NewError(fiber.StatusUnauthorized, err.Error())
 	case errors.Is(err, services.ErrOAuthEmailMissing):
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	case errors.Is(err, services.ErrUserNotFound):

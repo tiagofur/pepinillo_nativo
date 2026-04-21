@@ -6,3 +6,7 @@ type SubTask struct {
 	Title      *string `json:"title"`
 	IsFinished bool    `json:"isFinished" gorm:"default:false;not null"`
 }
+
+func (SubTask) TableName() string {
+	return "subtasks"
+}

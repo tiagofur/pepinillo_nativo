@@ -121,10 +121,10 @@ func collectAffectedDates(sessions []domain.FocusSession) []time.Time {
 // InitialUploadRequest represents the full state from a client performing
 // an anonymous-to-registered account migration (or first device sync).
 type InitialUploadRequest struct {
-	DeviceID string                   `json:"deviceId"`
-	Tasks    []domain.Task            `json:"tasks"`
-	Sessions []domain.FocusSession    `json:"sessions"`
-	Settings []domain.UserPreference  `json:"settings"`
+	DeviceID string                  `json:"deviceId"`
+	Tasks    []domain.Task           `json:"tasks"`
+	Sessions []domain.FocusSession   `json:"sessions"`
+	Settings []domain.UserPreference `json:"settings"`
 }
 
 // InitialUploadResponse returns the merged server state after an initial upload.
@@ -181,6 +181,9 @@ func (s *SyncService) InitialUpload(ctx context.Context, userID, deviceID string
 
 	// 5. Upsert settings
 	for i := range req.Settings {
+		if strings.TrimSpace(req.Settings[i].Key) == "" {
+			return nil, ErrInvalidPreferenceKey
+		}
 		req.Settings[i].UserID = userID
 		if req.Settings[i].UpdatedAt.IsZero() {
 			req.Settings[i].UpdatedAt = now

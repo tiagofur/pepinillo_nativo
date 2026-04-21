@@ -163,3 +163,13 @@ func TestUpsertPreferences_WSNotification(t *testing.T) {
 	require.Equal(t, "u1", ws.sentMessages[0].userID)
 	require.Equal(t, "d1", ws.sentMessages[0].excludeDeviceID)
 }
+
+func TestUpsertPreferences_RejectsEmptyKey(t *testing.T) {
+	repo := newLWWPreferenceRepository()
+	svc := NewPreferenceService(repo, nil)
+
+	_, err := svc.UpsertPreferences(context.Background(), "u1", "d1", []domain.UserPreference{
+		{Key: "", Value: "dark"},
+	})
+	require.ErrorIs(t, err, ErrInvalidPreferenceKey)
+}

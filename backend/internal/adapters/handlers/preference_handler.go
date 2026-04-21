@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -48,6 +49,9 @@ func (h *PreferenceHandler) Upsert(c *fiber.Ctx) error {
 
 	merged, err := h.preferences.UpsertPreferences(c.Context(), userID, deviceID, req.Preferences)
 	if err != nil {
+		if errors.Is(err, services.ErrInvalidPreferenceKey) {
+			return fiber.NewError(fiber.StatusBadRequest, err.Error())
+		}
 		return err
 	}
 

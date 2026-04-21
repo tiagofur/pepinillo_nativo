@@ -17,14 +17,14 @@ import (
 // ---------------------------------------------------------------------------
 
 type fakeFocusRepository struct {
-	sessions           []domain.FocusSession
-	upsertBatchErr     error
-	recomputeErr       error
-	updatedSinceErr    error
-	listAllErr         error
-	paginatedErr       error
-	recomputedDates    []time.Time
-	upsertedSessions   []domain.FocusSession
+	sessions         []domain.FocusSession
+	upsertBatchErr   error
+	recomputeErr     error
+	updatedSinceErr  error
+	listAllErr       error
+	paginatedErr     error
+	recomputedDates  []time.Time
+	upsertedSessions []domain.FocusSession
 }
 
 func (f *fakeFocusRepository) GetConfig(_ context.Context, _ string) (*domain.FocusConfig, error) {
@@ -215,11 +215,11 @@ type fakeSentMessage struct {
 func (f *fakeWSManager) HandleConnection(_ context.Context, _ string, _ interface{}) error {
 	return nil
 }
-func (f *fakeWSManager) SendToUser(_ string, _ []byte) error                     { return nil }
-func (f *fakeWSManager) SendToAll(_ []byte) error                                { return nil }
-func (f *fakeWSManager) BroadcastToUsers(_ []string, _ []byte) error             { return nil }
-func (f *fakeWSManager) DisconnectUser(_ string)                                 {}
-func (f *fakeWSManager) UserCount(_ string) int                                  { return 0 }
+func (f *fakeWSManager) SendToUser(_ string, _ []byte) error         { return nil }
+func (f *fakeWSManager) SendToAll(_ []byte) error                    { return nil }
+func (f *fakeWSManager) BroadcastToUsers(_ []string, _ []byte) error { return nil }
+func (f *fakeWSManager) DisconnectUser(_ string)                     {}
+func (f *fakeWSManager) UserCount(_ string) int                      { return 0 }
 func (f *fakeWSManager) SendToUserExcluding(userID, excludeDeviceID string, message []byte) error {
 	f.sentMessages = append(f.sentMessages, fakeSentMessage{userID, excludeDeviceID, message})
 	return nil
@@ -430,6 +430,21 @@ func TestInitialUpload_EmptyUpload(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, resp)
 	require.False(t, resp.HasExistingData)
+}
+
+func TestInitialUpload_RejectsEmptyPreferenceKey(t *testing.T) {
+	taskRepo := &fakeSyncTaskRepository{}
+	focusRepo := &fakeFocusRepository{}
+	prefRepo := &fakePreferenceRepository{}
+	svc := NewSyncService(focusRepo, taskRepo, prefRepo, nil)
+
+	req := &InitialUploadRequest{
+		DeviceID: "device-1",
+		Settings: []domain.UserPreference{{Key: "", Value: "forest"}},
+	}
+
+	_, err := svc.InitialUpload(context.Background(), "user-1", "device-1", req)
+	require.ErrorIs(t, err, ErrInvalidPreferenceKey)
 }
 
 // ---------------------------------------------------------------------------
