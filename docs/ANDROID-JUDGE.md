@@ -11,6 +11,8 @@
 
 The Pepinillo Android application has been fully optimized for production readiness. All blocking issues regarding battery consumption, security, and monetization gating have been resolved. The app now strictly adheres to modern Android background execution rules and provides a high-quality "Google-Native" experience with Material You, Splash Screen API, and Haptic Feedback.
 
+> Terminology note: this audit predates monetization v2 naming. References to `Pro` in this document should now be interpreted as Android/Wear `Everywhere` gating. `Apple Unlock` remains Apple-only and does not apply to Android.
+
 ### Findings Summary
 
 | Priority | Count | Status |
