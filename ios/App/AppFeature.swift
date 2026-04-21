@@ -3,7 +3,10 @@
 //
 // Root TCA feature that composes all child features.
 // Manages tab selection, subscription state, celebrations, Watch bridge,
-// drawer navigation, and Sign in with Apple state.
+// and Sign in with Apple state.
+//
+// Navigation: 4 tabs (Focus, Plan, Dashboard, Account/"...") with no lateral drawer.
+// Account tab centralizes Profile, Settings, Subscription, Export, Help.
 
 import Foundation
 import ComposableArchitecture
@@ -26,9 +29,6 @@ struct AppFeature {
         // Celebration overlay
         var pendingCelebration: CelebrationMilestone? = nil
 
-        // Drawer
-        var isDrawerOpen: Bool = false
-        var isSettingsPresented: Bool = false
         @Presents var calendar: CalendarFeature.State?
 
         // Auth & Profile sheets
@@ -42,26 +42,75 @@ struct AppFeature {
         var userEmail: String? = nil
         var cachedUser: CachedUserDTO? = nil
         var isSignedIn: Bool { cachedUser != nil || appleUserID != nil }
+        var profileSummaryUser: CachedUserDTO? {
+            func normalized(_ value: String?) -> String? {
+                guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+                    return nil
+                }
+                return value
+            }
+
+            let cachedName = normalized(cachedUser?.name)
+            let cachedEmail = normalized(cachedUser?.email)
+            let restoredName = normalized(displayName)
+            let restoredEmail = normalized(userEmail)
+            let resolvedUserID = normalized(cachedUser?.id) ?? appleUserID
+            let resolvedAppleID = normalized(cachedUser?.appleId) ?? appleUserID
+
+            guard let resolvedUserID else {
+                return nil
+            }
+
+            let resolvedEmail = cachedEmail ?? restoredEmail ?? ""
+
+            let resolvedName: String
+            if let cachedName {
+                resolvedName = cachedName
+            } else if let restoredName {
+                resolvedName = restoredName
+            } else if let emailPrefix = (cachedEmail ?? restoredEmail)?.split(separator: "@").first, !emailPrefix.isEmpty {
+                resolvedName = String(emailPrefix)
+            } else {
+                resolvedName = "Apple User"
+            }
+
+            return CachedUserDTO(
+                id: resolvedUserID,
+                email: resolvedEmail,
+                name: resolvedName,
+                imageUrl: cachedUser?.imageUrl,
+                birthDate: cachedUser?.birthDate,
+                subscriptionTier: normalized(cachedUser?.subscriptionTier) ?? (subscriptionState.isPro ? "pro" : "free"),
+                subscriptionExpiresAt: cachedUser?.subscriptionExpiresAt,
+                emailVerified: cachedUser?.emailVerified ?? false,
+                appleId: resolvedAppleID,
+                createdAt: cachedUser?.createdAt ?? "",
+                updatedAt: cachedUser?.updatedAt ?? ""
+            )
+        }
     }
 
     enum Tab: String, Equatable, CaseIterable {
         case focus
-        case tasks
-        case analytics
+        case plan
+        case dashboard
+        case account
 
         var title: String {
             switch self {
             case .focus:     return String(localized: "Focus")
-            case .tasks:     return String(localized: "Tasks")
-            case .analytics: return String(localized: "Analytics")
+            case .plan:      return String(localized: "Plan")
+            case .dashboard: return String(localized: "Dashboard")
+            case .account:   return String(localized: "More")
             }
         }
 
         var systemImage: String {
             switch self {
             case .focus:     return "brain.head.profile"
-            case .tasks:     return "checklist"
-            case .analytics: return "chart.bar"
+            case .plan:      return "checklist"
+            case .dashboard: return "chart.bar"
+            case .account:   return "ellipsis"
             }
         }
     }
@@ -95,16 +144,16 @@ struct AppFeature {
         // Watch bridge
         case watchCommandReceived(WatchCommand)
 
-        // Drawer
-        case drawerOpened
-        case drawerClosed
-        case settingsDrawerTapped
-        case settingsSheetDismissed
-        case weeklyReviewDrawerTapped
-        case upgradeDrawerTapped
-        case calendarDrawerTapped
+        // Calendar
+        case calendarTapped
         case calendarSheetDismissed
         case calendar(PresentationAction<CalendarFeature.Action>)
+
+        // Weekly Review
+        case weeklyReviewTapped
+
+        // Upgrade (from Account tab subscription row)
+        case upgradeTapped
 
         // Auth & Profile
         case showAuth
@@ -235,7 +284,7 @@ struct AppFeature {
                         await send(.cachedUserLoaded(user))
                     },
                     // If tokens exist, try to refresh user profile from network and sync tasks
-                    .run { [keychain, apiClient, persistence, syncClient] send in
+                    .run { [keychain, apiClient, persistence, syncClient, isPro = state.subscriptionState.isPro] send in
                         guard await keychain.hasTokens() else { return }
                         do {
                             let apiUser = try await apiClient.getMe()
@@ -253,7 +302,7 @@ struct AppFeature {
                             // Network error — use cached data silently
                         }
                         // Sync tasks after profile refresh if Pro
-                        if state.subscriptionState.isPro {
+                        if isPro {
                             try? await syncClient.syncAll()
                         }
                     },
@@ -324,24 +373,36 @@ struct AppFeature {
                 return .none
 
             case .subscriptionStateLoaded(let sub):
-                state.subscriptionState = sub
-                state.focus.isProUser = sub.isPro
-                state.settings.isProUser = sub.isPro
-                state.analytics.isProUser = sub.isPro
-                state.tasks.isProUser = sub.isPro
-                AppGroupDefaults.isProUser = sub.isPro
+                #if DEBUG
+                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .appleUnlock : sub
+                #else
+                let effectiveSub = sub
+                #endif
+                state.subscriptionState = effectiveSub
+                let isPro = effectiveSub.isPro
+                state.focus.isProUser = isPro
+                state.settings.isProUser = isPro
+                state.analytics.isProUser = isPro
+                state.tasks.isProUser = isPro
+                AppGroupDefaults.isProUser = isPro
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
                 }
 
             case .subscriptionUpdated(let sub):
-                state.subscriptionState = sub
-                state.focus.isProUser = sub.isPro
-                state.settings.isProUser = sub.isPro
-                state.analytics.isProUser = sub.isPro
-                state.tasks.isProUser = sub.isPro
-                AppGroupDefaults.isProUser = sub.isPro
-                if sub.isPro { state.focus.showPaywall = false }
+                #if DEBUG
+                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .appleUnlock : sub
+                #else
+                let effectiveSub = sub
+                #endif
+                state.subscriptionState = effectiveSub
+                let isPro = effectiveSub.isPro
+                state.focus.isProUser = isPro
+                state.settings.isProUser = isPro
+                state.analytics.isProUser = isPro
+                state.tasks.isProUser = isPro
+                AppGroupDefaults.isProUser = isPro
+                if isPro { state.focus.showPaywall = false }
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
                 }
@@ -354,42 +415,24 @@ struct AppFeature {
                 state.pendingCelebration = nil
                 return .none
 
-            // MARK: - Drawer
+            // MARK: - Upgrade (from Account tab)
 
-            case .drawerOpened:
-                state.isDrawerOpen = true
+            case .upgradeTapped:
+                state.focus.showPaywall = true
                 return .none
 
-            case .drawerClosed:
-                state.isDrawerOpen = false
+            // MARK: - Calendar & Weekly Review
+
+            case .calendarTapped:
+                state.calendar = CalendarFeature.State()
                 return .none
 
-            case .settingsDrawerTapped:
-                state.isDrawerOpen = false
-                state.isSettingsPresented = true
-                return .none
-
-            case .settingsSheetDismissed:
-                state.isSettingsPresented = false
-                return .none
-
-            case .weeklyReviewDrawerTapped:
-                state.isDrawerOpen = false
+            case .weeklyReviewTapped:
                 if state.subscriptionState.isPro {
                     state.analytics.weeklyReview = WeeklyReviewFeature.State()
                 } else {
                     state.focus.showPaywall = true
                 }
-                return .none
-
-            case .upgradeDrawerTapped:
-                state.isDrawerOpen = false
-                state.focus.showPaywall = true
-                return .none
-
-            case .calendarDrawerTapped:
-                state.isDrawerOpen = false
-                state.calendar = CalendarFeature.State()
                 return .none
 
             case .calendarSheetDismissed:
@@ -403,19 +446,23 @@ struct AppFeature {
 
             case .showAuth:
                 state.auth = AuthFeature.State()
-                state.isDrawerOpen = false
                 return .none
 
             case .showProfile:
-                state.profile = ProfileFeature.State()
-                state.isDrawerOpen = false
+                state.profile = ProfileFeature.State(user: state.profileSummaryUser)
                 return .none
 
             case .cachedUserLoaded(let user):
                 state.cachedUser = user
                 if let user {
-                    state.displayName = user.name
-                    state.userEmail = user.email
+                    let normalizedName = user.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let normalizedEmail = user.email.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !normalizedName.isEmpty {
+                        state.displayName = normalizedName
+                    }
+                    if !normalizedEmail.isEmpty {
+                        state.userEmail = normalizedEmail
+                    }
                 }
                 return .none
 
@@ -515,7 +562,6 @@ struct AppFeature {
                 }
 
             case .signInWithAppleSucceeded(let info):
-                state.isDrawerOpen = false
                 state.auth = nil  // dismiss auth sheet if open
                 state.appleUserID = info.userID
                 // Apple only provides displayName on the very first sign-in ever.
@@ -526,8 +572,9 @@ struct AppFeature {
                     ?? info.email?.components(separatedBy: "@").first
                 state.displayName = resolvedName
                 state.userEmail = info.email ?? state.userEmail
+                let fallbackUser = state.profileSummaryUser
                 return .merge(
-                    .run { [info, resolvedName] send in
+                    .run { [info, resolvedName, fallbackUser] send in
                         var prefs = try await persistence.fetchPreferences()
                         prefs.appleUserID = info.userID
                         if let name = info.displayName { prefs.displayName = name }
@@ -535,32 +582,15 @@ struct AppFeature {
                         try await persistence.savePreferences(prefs)
                         // Identify user in RevenueCat
                         await subscriptionClient.logIn(info.userID)
-                        // Always synthesize and persist a CachedUserDTO from Apple identity
-                        // so ProfileFeature and drawer can display user info without a backend call.
-                        // The backend call below will overwrite this with full server data if successful.
-                        if try await (persistence.fetchCachedUser()) == nil {
-                            let now = ISO8601DateFormatter().string(from: .now)
-                            let dto = CachedUserDTO(
-                                id: info.userID,
-                                email: info.email ?? "",
-                                name: resolvedName ?? "Apple User",
-                                imageUrl: nil,
-                                birthDate: nil,
-                                subscriptionTier: "free",
-                                subscriptionExpiresAt: nil,
-                                emailVerified: false,
-                                appleId: info.userID,
-                                createdAt: now,
-                                updatedAt: now
-                            )
-                            try? await persistence.saveCachedUser(dto)
-                            await send(.cachedUserLoaded(dto))
+                        if let fallbackUser {
+                            try? await persistence.saveCachedUser(fallbackUser)
+                            await send(.cachedUserLoaded(fallbackUser))
                         }
                     },
                     // Try to authenticate with backend if identity token available
                     {
                         if let idToken = info.identityToken {
-                            return .run { [apiClient, keychain, persistence, syncClient, webSocketClient] send in
+                            return .run { [apiClient, keychain, persistence, syncClient, webSocketClient, isPro = state.subscriptionState.isPro] send in
                                 do {
                                     guard let nonce = info.nonce, !nonce.isEmpty else {
                                         return
@@ -578,7 +608,7 @@ struct AppFeature {
                                     try? await persistence.saveCachedUser(dto)
                                     await send(.cachedUserLoaded(dto))
                                     // Sync tasks and connect WebSocket after successful Apple Sign-In if Pro
-                                    if state.subscriptionState.isPro {
+                                    if isPro {
                                         try? await syncClient.syncAll()
                                     }
                                     await webSocketClient.connect()
@@ -595,7 +625,6 @@ struct AppFeature {
                 return .none
 
             case .signOutTapped:
-                state.isDrawerOpen = false
                 state.appleUserID = nil
                 state.displayName = nil
                 state.userEmail = nil
@@ -849,7 +878,7 @@ struct AppFeature {
                 return .none
 
             case .handoffAnalyticsReceived:
-                state.selectedTab = .analytics
+                state.selectedTab = .dashboard
                 return .none
 
             case .tasks(.addTaskTapped),

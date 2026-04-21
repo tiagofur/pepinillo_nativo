@@ -4,7 +4,10 @@
 // Root view routing:
 // - Not onboarded → OnboardingView
 // - iPad / Mac (.regular width) → iPadSplitView (three-column NavigationSplitView)
-// - iPhone → TabView (3 tabs) + DrawerOverlay
+// - iPhone → TabView (4 tabs: Focus, Plan, Dashboard, Account/"...")
+//
+// The lateral drawer has been replaced by the Account tab ("...") which
+// centralizes Profile, Settings, Subscription, Export, and Help.
 //
 // Hosts the celebration overlay, paywall sheet, auth sheet, and profile sheet at root level.
 
@@ -59,25 +62,7 @@ struct AppView: View {
                 }
             )
         }
-        // Settings sheet (from drawer)
-        .sheet(
-            isPresented: Binding(
-                get: { store.isSettingsPresented },
-                set: { if !$0 { store.send(.settingsSheetDismissed) } }
-            )
-        ) {
-            NavigationStack {
-                SettingsView(store: store.scope(state: \.settings, action: \.settings))
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button(String(localized: "Done")) {
-                                store.send(.settingsSheetDismissed)
-                            }
-                        }
-                    }
-            }
-        }
-        // Calendar sheet (from drawer)
+        // Calendar sheet
         .sheet(item: $store.scope(state: \.calendar, action: \.calendar)) { calendarStore in
             NavigationStack {
                 CalendarView(store: calendarStore)
@@ -90,11 +75,11 @@ struct AppView: View {
                     }
             }
         }
-        // Weekly Review sheet (from drawer)
+        // Weekly Review sheet
         .sheet(
             item: $store.scope(state: \.analytics.weeklyReview, action: \.analytics.weeklyReview)
         ) { weeklyStore in
-            WeeklyReviewView(store: weeklyStore)
+            WeeklyReviewView(store: weeklyStore, isProUser: store.subscriptionState.isPro, analyticsStore: store.scope(state: \.analytics, action: \.analytics))
                 .iPadSheetSizing()
         }
         // Auth sheet
@@ -167,44 +152,24 @@ struct AppView: View {
 
     // MARK: - iPhone Layout
 
+    private var allTabs: [AppFeature.Tab] {
+        [.focus, .plan, .dashboard, .account]
+    }
+
     private var iPhoneLayout: some View {
-        ZStack {
-            TabView(selection: Binding(
-                get: { store.selectedTab },
-                set: { store.send(.tabSelected($0)) }
-            )) {
-                ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
-                    tabContent(for: tab)
-                        .tabItem {
-                            Label(tab.title, systemImage: tab.systemImage)
-                        }
-                        .tag(tab)
-                }
+        TabView(selection: Binding(
+            get: { store.selectedTab },
+            set: { store.send(.tabSelected($0)) }
+        )) {
+            ForEach(allTabs, id: \.self) { tab in
+                tabContent(for: tab)
+                    .tabItem {
+                        Label(tab.title, systemImage: tab.systemImage)
+                    }
+                    .tag(tab)
             }
-            .focusedValue(\.appStore, store)
-
-            // Edge swipe to open drawer
-            if !store.isDrawerOpen {
-                HStack {
-                    Color.clear
-                        .frame(width: 20)
-                        .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 30)
-                                .onEnded { value in
-                                    if value.translation.width > 30 && abs(value.translation.height) < 80 {
-                                        store.send(.drawerOpened, animation: .easeInOut(duration: 0.28))
-                                    }
-                                }
-                        )
-                    Spacer()
-                }
-                .ignoresSafeArea()
-            }
-
-            // Drawer overlay (sits on top of TabView)
-            DrawerOverlayView(store: store)
         }
+        .focusedValue(\.appStore, store)
     }
 
     // MARK: - Tab Content Router
@@ -215,38 +180,20 @@ struct AppView: View {
         case .focus:
             NavigationStack {
                 FocusView(store: store.scope(state: \.focus, action: \.focus))
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            AvatarNavButton {
-                                store.send(.drawerOpened, animation: .easeInOut(duration: 0.28))
-                            }
-                        }
-                    }
             }
 
-        case .tasks:
+        case .plan:
             NavigationStack {
-                TaskListView(store: store.scope(state: \.tasks, action: \.tasks))
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            AvatarNavButton {
-                                store.send(.drawerOpened, animation: .easeInOut(duration: 0.28))
-                            }
-                        }
-                    }
+                PlanView(store: store.scope(state: \.tasks, action: \.tasks))
             }
 
-        case .analytics:
+        case .dashboard:
             NavigationStack {
-                AnalyticsView(store: store.scope(state: \.analytics, action: \.analytics))
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            AvatarNavButton {
-                                store.send(.drawerOpened, animation: .easeInOut(duration: 0.28))
-                            }
-                        }
-                    }
+                DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
             }
+
+        case .account:
+            AccountView(store: store)
         }
     }
 }
