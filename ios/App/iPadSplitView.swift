@@ -1,10 +1,9 @@
 // iPadSplitView.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// Three-column NavigationSplitView layout for iPad and Mac.
-// Sidebar: Focus, Tasks, Analytics (3 tabs) + Settings link.
-// Content: task list (only in Tasks mode, otherwise fills detail).
-// Detail: main feature view.
+// Adaptive NavigationSplitView layout for iPad and Mac.
+// Sidebar: Focus, Plan, Dashboard, Account top-level areas.
+// Plan uses three columns; other areas use two columns.
 
 import SwiftUI
 import ComposableArchitecture
@@ -14,12 +13,11 @@ import ComposableArchitecture
 struct iPadSplitView: View {
     @Bindable var store: StoreOf<AppFeature>
     @State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
-    @State private var showSettings: Bool = false
 
     var body: some View {
         Group {
-            if store.selectedTab == .tasks {
-                // Three-column layout for Tasks — Mail-style adaptive:
+            if store.selectedTab == .plan {
+                // Three-column layout for Plan — Mail-style adaptive:
                 // Landscape: sidebar + task list + detail
                 // Portrait: sidebar auto-hidden, task list + detail
                 NavigationSplitView(columnVisibility: $columnVisibility) {
@@ -40,17 +38,6 @@ struct iPadSplitView: View {
                 }
                 .navigationSplitViewStyle(.balanced)
             }
-        }
-        .sheet(isPresented: $showSettings) {
-            NavigationStack {
-                SettingsView(store: store.scope(state: \.settings, action: \.settings))
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button(String(localized: "Done")) { showSettings = false }
-                        }
-                    }
-            }
-            .iPadSheetSizing()
         }
         .sheet(item: $store.scope(state: \.calendar, action: \.calendar)) { calendarStore in
             NavigationStack {
@@ -73,40 +60,45 @@ struct iPadSplitView: View {
         List {
             // Greeting header
             Section {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(sidebarGreeting)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    Text(store.displayName ?? String(localized: "Pepinillo"))
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.primary)
-
-                    if store.analytics.currentStreakDays > 0 {
-                        HStack(spacing: 5) {
-                            Image(systemName: "flame.fill")
-                                .font(.caption2)
-                                .foregroundStyle(theme.streakColor)
-                            Text(String(localized: "\(store.analytics.currentStreakDays) day streak"))
-                                .font(.caption.weight(.medium))
-                                .foregroundStyle(theme.streakColor)
-                        }
-                        .padding(.top, 2)
+                Button {
+                    if store.isSignedIn {
+                        store.send(.showProfile)
+                    } else {
+                        store.send(.showAuth)
                     }
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(sidebarGreeting)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
-                    if !store.isSignedIn {
-                        Button {
-                            store.send(.showAuth)
-                        } label: {
+                        Text(store.displayName ?? String(localized: "Pepinillo"))
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.primary)
+
+                        if store.analytics.currentStreakDays > 0 {
+                            HStack(spacing: 5) {
+                                Image(systemName: "flame.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(theme.streakColor)
+                                Text(String(localized: "\(store.analytics.currentStreakDays) day streak"))
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(theme.streakColor)
+                            }
+                            .padding(.top, 2)
+                        }
+
+                        if !store.isSignedIn {
                             Label(String(localized: "Log in"), systemImage: "person.crop.circle.badge.plus")
                                 .font(.subheadline.weight(.semibold))
-                                .frame(maxWidth: .infinity)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.top, 6)
                         }
-                        .buttonStyle(.borderedProminent)
-                        .frame(height: 36)
-                        .padding(.top, 6)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
@@ -114,26 +106,20 @@ struct iPadSplitView: View {
             // Main tabs
             Section {
                 ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
-                    Button {
-                        store.send(.tabSelected(tab))
-                    } label: {
-                        Label(tab.title, systemImage: tab.systemImage)
-                    }
-                    .listRowBackground(store.selectedTab == tab ? Color.accentColor.opacity(0.15) : nil)
-                    .foregroundStyle(store.selectedTab == tab ? Color.accentColor : .primary)
+                    sidebarTabButton(tab)
                 }
             }
 
             // Extra features below tabs
             Section {
                 Button {
-                    store.send(.weeklyReviewDrawerTapped)
+                    store.send(.weeklyReviewTapped)
                 } label: {
                     Label(String(localized: "Weekly Review"), systemImage: "calendar.badge.clock")
                 }
 
                 Button {
-                    store.send(.calendarDrawerTapped)
+                    store.send(.calendarTapped)
                 } label: {
                     Label(String(localized: "Calendar"), systemImage: "calendar")
                 }
@@ -148,7 +134,7 @@ struct iPadSplitView: View {
 
                 if !store.subscriptionState.isPro {
                     Button {
-                        store.send(.upgradeDrawerTapped)
+                        store.send(.upgradeTapped)
                     } label: {
                         Label(String(localized: "Upgrade to Pro"), systemImage: "crown")
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -172,21 +158,11 @@ struct iPadSplitView: View {
                     .foregroundStyle(.red)
                 }
 
-                Button {
-                    showSettings = true
-                } label: {
-                    Label(String(localized: "Settings"), systemImage: "gearshape")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
             }
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if store.selectedTab == .tasks {
+                if store.selectedTab == .plan {
                     Button {
                         store.send(.tasks(.addTaskTapped))
                     } label: {
@@ -208,12 +184,28 @@ struct iPadSplitView: View {
                 .frame(maxWidth: 560)
                 .frame(maxWidth: .infinity)
 
-        case .analytics:
+        case .dashboard:
             AnalyticsView(store: store.scope(state: \.analytics, action: \.analytics))
 
-        case .tasks:
+        case .account:
+            AccountView(store: store)
+
+        case .plan:
             EmptyView() // Handled by three-column layout
         }
+    }
+
+    // MARK: - Sidebar Helpers
+
+    private func sidebarTabButton(_ tab: AppFeature.Tab) -> some View {
+        let isSelected = store.selectedTab == tab
+        return Button {
+            store.send(.tabSelected(tab))
+        } label: {
+            Label(tab.title, systemImage: tab.systemImage)
+        }
+        .listRowBackground(isSelected ? Color.accentColor.opacity(0.15) : nil)
+        .foregroundStyle(isSelected ? Color.accentColor : .primary)
     }
 
     // MARK: - Greeting
