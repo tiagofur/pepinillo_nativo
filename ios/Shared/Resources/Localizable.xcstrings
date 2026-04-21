@@ -7697,6 +7697,159 @@
           }
         }
       }
+    },
+    "dashboard.hero.streak.label %lld" : {
+      "comment" : "VoiceOver label for the streak stat card — reads as 'Streak: N days'",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha: %lld días"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência: %lld dias"
+          }
+        }
+      }
+    },
+    "dashboard.hero.streak.none" : {
+      "comment" : "VoiceOver label for streak card when the user has no active streak",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin racha activa"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sem sequência ativa"
+          }
+        }
+      }
+    },
+    "dashboard.hero.sessions.label %lld" : {
+      "comment" : "VoiceOver label for sessions stat card",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sesiones completadas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld sessões concluídas"
+          }
+        }
+      }
+    },
+    "dashboard.hero.focused.label %@" : {
+      "comment" : "VoiceOver label for focus time stat card",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enfocado: %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Focado: %@"
+          }
+        }
+      }
+    },
+    "dashboard.hero.group.label" : {
+      "comment" : "VoiceOver group label for the hero stat cards row",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estadísticas de hoy"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estatísticas de hoje"
+          }
+        }
+      }
+    },
+    "dashboard.reflection.weekly.hint" : {
+      "comment" : "VoiceOver accessibility hint for the Weekly Review button",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre tu reporte semanal de productividad"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre seu relatório semanal de produtividade"
+          }
+        }
+      }
+    },
+    "dashboard.reflection.monthly.hint" : {
+      "comment" : "VoiceOver accessibility hint for the Monthly Review button",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre tu reporte mensual de productividad"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre seu relatório mensal de produtividade"
+          }
+        }
+      }
+    },
+    "dashboard.charts.barChart.label" : {
+      "comment" : "VoiceOver accessibility label for the focus bar chart",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gráfico de barras de minutos de enfoque para el período seleccionado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gráfico de barras de minutos de foco para o período selecionado"
+          }
+        }
+      }
+    },
+    "dashboard.charts.patterns.label" : {
+      "comment" : "VoiceOver accessibility label for the productivity patterns section",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patrones de productividad: horas pico, mejor día, tasa de completado y puntuación de enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Padrões de produtividade: horas de pico, melhor dia, taxa de conclusão e pontuação de foco"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
