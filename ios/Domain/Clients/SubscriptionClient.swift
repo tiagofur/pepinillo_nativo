@@ -2,7 +2,15 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // TCA dependency wrapping RevenueCat SDK.
-// Manages Pro subscription products, purchases, and entitlement verification.
+// Manages subscription products, purchases, and entitlement verification.
+//
+// Products:
+//   - Apple Unlock (one-time): local premium + iCloud sync + local AI
+//   - Everywhere Monthly/Annual (subscription): everything + backend sync + cloud AI credits
+//
+// Legacy products (grandfathered):
+//   - Pro Monthly/Annual → migrated to Everywhere
+//   - Pro Lifetime → grandfathered to Apple Unlock
 
 import Foundation
 import ComposableArchitecture
@@ -14,22 +22,50 @@ import RevenueCat
 // MARK: - Subscription Product IDs
 
 enum PepinilloProduct: String, CaseIterable, Sendable {
+    // Active products (configured in App Store Connect + RevenueCat)
     case monthly  = "com.pepinillo.app.pro.monthly"
     case annual   = "com.pepinillo.app.pro.annual"
     case lifetime = "com.pepinillo.app.pro.lifetime"
 
+    // TODO: Phase 6 — New product IDs (create in App Store Connect + RevenueCat first)
+    // case appleUnlock       = "com.pepinillo.app.apple.unlock"
+    // case everywhereMonthly  = "com.pepinillo.app.everywhere.monthly"
+    // case everywhereAnnual   = "com.pepinillo.app.everywhere.annual"
+
     var isSubscription: Bool { self != .lifetime }
+
+    /// Products shown in paywall.
+    static var currentProducts: [PepinilloProduct] {
+        allCases
+    }
 }
 
 // MARK: - Subscription State
 
 struct SubscriptionState: Equatable, Sendable {
-    var isPro: Bool = false
+    var capabilities: UserCapabilities = .free
     var activeProductID: String? = nil
     var expirationDate: Date? = nil
 
-    static let free = SubscriptionState(isPro: false)
-    static let pro  = SubscriptionState(isPro: true)
+    // MARK: Backward-compatible computed properties
+
+    /// True if user has any paid tier (Apple Unlock or Everywhere).
+    var isPro: Bool { capabilities.hasAnyPremium }
+
+    /// True if user has the Everywhere subscription.
+    var isEverywhere: Bool { capabilities.isEverywhere }
+
+    /// Human-readable tier name.
+    var tierName: String { capabilities.tierDisplayName }
+
+    // MARK: Static presets
+
+    static let free = SubscriptionState(capabilities: .free)
+    static let appleUnlock = SubscriptionState(capabilities: .appleUnlock)
+    static let everywhere = SubscriptionState(capabilities: .everywhere)
+
+    /// Legacy convenience — use .appleUnlock or .everywhere instead.
+    static let pro = SubscriptionState(capabilities: .appleUnlock)
 }
 
 // MARK: - Product Info (value type for UI)
@@ -87,9 +123,9 @@ extension SubscriptionClient: DependencyKey {
     static let liveValue = SubscriptionClient.live
     static let testValue = SubscriptionClient(
         configure: { _, _ in },
-        fetchProducts: { PepinilloProduct.allCases.map(\.mockProductInfo) },
+        fetchProducts: { PepinilloProduct.currentProducts.map(\.mockProductInfo) },
         purchase: { _ in .success(productID: PepinilloProduct.annual.rawValue) },
-        restorePurchases: { .pro },
+        restorePurchases: { .appleUnlock },
         checkEntitlement: { .free },
         listenForTransactionUpdates: { .finished },
         logIn: { _ in },
@@ -125,7 +161,7 @@ extension SubscriptionClient {
         // Keep a functional no-op implementation so builds remain cross-target compatible.
         return SubscriptionClient(
             configure: { _, _ in },
-            fetchProducts: { PepinilloProduct.allCases.map(\.mockProductInfo) },
+            fetchProducts: { PepinilloProduct.currentProducts.map(\.mockProductInfo) },
             purchase: { _ in .failed(message: "Purchases unavailable on this platform") },
             restorePurchases: { .free },
             checkEntitlement: { .free },
@@ -155,11 +191,11 @@ private actor SubscriptionManager {
         do {
             let offerings = try await Purchases.shared.offerings()
             guard let offering = offerings.current else {
-                return PepinilloProduct.allCases.map(\.mockProductInfo)
+                return PepinilloProduct.currentProducts.map(\.mockProductInfo)
             }
 
             var productInfos: [ProductInfo] = []
-            for pepProduct in PepinilloProduct.allCases {
+            for pepProduct in PepinilloProduct.currentProducts {
                 if let package = offering.package(identifier: pepProduct.rawValue) ?? offering.availablePackages.first(where: { $0.product.productIdentifier == pepProduct.rawValue }) {
                     let productInfo = ProductInfo(
                         id: pepProduct.rawValue,
@@ -173,12 +209,12 @@ private actor SubscriptionManager {
                 }
             }
 
-            return productInfos.isEmpty ? PepinilloProduct.allCases.map(\.mockProductInfo) : productInfos.sorted { a, b in
+            return productInfos.isEmpty ? PepinilloProduct.currentProducts.map(\.mockProductInfo) : productInfos.sorted { a, b in
                 let order = ["month": 0, "year": 1, "once": 2]
                 return (order[a.billingPeriod] ?? 0) < (order[b.billingPeriod] ?? 0)
             }
         } catch {
-            return PepinilloProduct.allCases.map(\.mockProductInfo)
+            return PepinilloProduct.currentProducts.map(\.mockProductInfo)
         }
     }
 
@@ -195,7 +231,14 @@ private actor SubscriptionManager {
 
             let result = try await Purchases.shared.purchase(package: package)
 
-            if result.customerInfo.entitlements["premium"]?.isActive == true {
+            // Check for active entitlement (supports current "premium" and future "apple_unlock"/"everywhere")
+            let entitlements = result.customerInfo.entitlements
+            let hasActiveEntitlement = entitlements["everywhere"]?.isActive == true
+                || entitlements["apple_unlock"]?.isActive == true
+                || entitlements["premium"]?.isActive == true
+                || entitlements["pro"]?.isActive == true
+
+            if hasActiveEntitlement {
                 return .success(productID: productID)
             } else {
                 return .failed(message: "Purchase completed but entitlement not active")
@@ -262,30 +305,60 @@ private actor SubscriptionManager {
     }
 
     private func subscriptionStateFromCustomerInfo(_ customerInfo: CustomerInfo) -> SubscriptionState {
-        // Check if user has "premium" entitlement and it's active
-        if let proEntitlement = customerInfo.entitlements["premium"], proEntitlement.isActive {
-            let expiryDate = proEntitlement.expirationDate
-
-            // For subscriptions, check grace period (RevenueCat handles this internally)
-            // For lifetime, expiryDate will be nil
+        // Check for Everywhere entitlement first (superset of Apple Unlock)
+        if let everywhereEntitlement = customerInfo.entitlements["everywhere"], everywhereEntitlement.isActive {
+            let expiryDate = everywhereEntitlement.expirationDate
             if let expiry = expiryDate {
-                // Grace period: 3 days after expiration
+                // Subscription with expiration — check grace period (3 days)
                 if expiry.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
                     return SubscriptionState(
-                        isPro: true,
+                        capabilities: .everywhere,
                         activeProductID: customerInfo.activeSubscriptions.first,
                         expirationDate: expiry
                     )
                 }
             } else {
-                // Lifetime purchase (no expiration)
+                // No expiration (shouldn't happen for Everywhere, but be safe)
                 return SubscriptionState(
-                    isPro: true,
-                    activeProductID: customerInfo.allPurchasedProductIdentifiers.first,
+                    capabilities: .everywhere,
+                    activeProductID: customerInfo.activeSubscriptions.first,
                     expirationDate: nil
                 )
             }
         }
+
+        // Check for Apple Unlock entitlement (one-time purchase)
+        if let unlockEntitlement = customerInfo.entitlements["apple_unlock"], unlockEntitlement.isActive {
+            return SubscriptionState(
+                capabilities: .appleUnlock,
+                activeProductID: customerInfo.allPurchasedProductIdentifiers.first,
+                expirationDate: nil  // One-time purchase, no expiration
+            )
+        }
+
+        // Legacy: check for old "premium" / "pro" entitlements — grandfather to appropriate tier
+        if let proEntitlement = customerInfo.entitlements["premium"] ?? customerInfo.entitlements["pro"], proEntitlement.isActive {
+            let expiryDate = proEntitlement.expirationDate
+
+            // Legacy lifetime → grandfather to Apple Unlock
+            if expiryDate == nil {
+                return SubscriptionState(
+                    capabilities: .appleUnlock,
+                    activeProductID: customerInfo.allPurchasedProductIdentifiers.first,
+                    expirationDate: nil
+                )
+            }
+
+            // Legacy subscription → grandfather to Everywhere
+            if expiryDate!.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
+                return SubscriptionState(
+                    capabilities: .everywhere,
+                    activeProductID: customerInfo.activeSubscriptions.first,
+                    expirationDate: expiryDate
+                )
+            }
+        }
+
         return .free
     }
 

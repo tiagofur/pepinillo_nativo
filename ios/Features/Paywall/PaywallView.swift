@@ -1,7 +1,9 @@
 // PaywallView.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// Pro subscription paywall. Shows product options and handles purchase flow.
+// Two-tier paywall: Pepinillo+ (one-time) and Everywhere/AI+ (subscription).
+// Apple Intelligence is the hero differentiator.
+// Transparency: Pepinillo+ is explicitly "Not a subscription."
 
 import SwiftUI
 import ComposableArchitecture
@@ -14,18 +16,19 @@ struct PaywallView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 28) {
-                    ProHeaderSection()
-                    ProFeaturesSection()
-                    ProductCardsSection(store: store)
-                    PurchaseButton(store: store)
-                    LegalFooter(store: store)
+                VStack(spacing: 24) {
+                    PaywallHeaderSection()
+                    PaywallPepinilloPlusSection()
+                    PaywallEverywhereSection()
+                    PaywallProductCardsSection(store: store)
+                    PaywallPurchaseButton(store: store)
+                    PaywallLegalFooter(store: store)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
                 .padding(.bottom, 32)
             }
-            .navigationTitle(String(localized: "Pepinillo Pro"))
+            .navigationTitle(String(localized: "Choose Your Plan"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -43,7 +46,7 @@ struct PaywallView: View {
             }
             .alert(
                 store.subscriptionState.isPro
-                    ? String(localized: "You're Pro!")
+                    ? String(localized: "Welcome to Pepinillo+!")
                     : String(localized: "Purchase Status"),
                 isPresented: Binding(
                     get: { store.purchaseResult != nil },
@@ -63,30 +66,30 @@ struct PaywallView: View {
     }
 }
 
-// MARK: - Sub-Views
+// MARK: - Header
 
-private struct ProHeaderSection: View {
+struct PaywallHeaderSection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appeared = false
 
     var body: some View {
         VStack(spacing: 12) {
-            Text("🧠")
-                .font(.system(size: 56))
+            Text("🧠✨")
+                .font(.system(size: 52))
                 .scaleEffect(appeared ? 1 : 0.5)
                 .accessibilityHidden(true)
 
-            Text(String(localized: "Unlock Deep Focus"))
+            Text(String(localized: "Unlock Your Deep Focus"))
                 .font(.title2)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
 
-            Text(String(localized: "Get access to all focus modes, premium soundscapes, and advanced analytics."))
+            Text(String(localized: "Apple Intelligence meets deep work. Get AI-powered insights, all focus modes, and a productivity system that learns how you work best."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
-        .padding(.top, 8)
+        .padding(.top, 4)
         .offset(y: appeared ? 0 : 15)
         .opacity(appeared ? 1 : 0)
         .onAppear {
@@ -101,33 +104,57 @@ private struct ProHeaderSection: View {
     }
 }
 
-private struct ProFeaturesSection: View {
+// MARK: - Pepinillo+ Features (One-Time)
+
+struct PaywallPepinilloPlusSection: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appeared = false
 
-    private var features: [(String, String, String)] {[
-        (String(localized: "All focus modes"),      String(localized: "flowtime, time blocks, and stopwatch"),       "rectangle.split.3x1"),
-        (String(localized: "Premium soundscapes"),  String(localized: "binaural beats, lo-fi, ocean, fireplace"),   "music.note"),
-        (String(localized: "Advanced analytics"),   String(localized: "detailed charts, weekly reviews"),           "chart.bar.xaxis"),
-        (String(localized: "iCloud sync"),          String(localized: "seamlessly across all your Apple devices"),  "icloud"),
-        (String(localized: "Widget customization"), String(localized: "choose what you see on your home screen"),   "widget.small"),
-        (String(localized: "Streak protection"),    String(localized: "one free skip per week"),                    "flame"),
-    ]}
+    private let features: [(String, String, String)] = [
+        ("Apple Intelligence", "AI-powered productivity reports & insights", "sparkles"),
+        ("All 4 Focus Modes", "Pomodoro, Flowtime, Time Block, Stopwatch", "rectangle.split.3x1"),
+        ("Unlimited Tasks", "subtasks, recurring tasks, energy levels", "checklist"),
+        ("Advanced Analytics", "30-day, 1-year views, weekly & monthly reviews", "chart.bar.xaxis"),
+        ("Apple Ecosystem", "iCloud sync, all widgets, Apple Watch companion", "apple.logo"),
+        ("Premium Themes", "Forest, Ocean, Sunset, Liquid Glass", "paintpalette"),
+    ]
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
+            // Tier header
+            HStack {
+                Text(String(localized: "Pepinillo+"))
+                    .font(.headline)
+                Spacer()
+                Text(String(localized: "One purchase. Yours forever."))
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.green.opacity(0.15), in: Capsule())
+                    .foregroundStyle(Color.green)
+            }
+
+            // Not a subscription badge
+            HStack(spacing: 6) {
+                Image(systemName: "lock.shield")
+                    .font(.caption2)
+                Text(String(localized: "NOT a subscription — pay once, own it for life"))
+                    .font(.caption2.weight(.medium))
+            }
+            .foregroundStyle(.secondary)
+
+            // Features
             ForEach(Array(features.enumerated()), id: \.element.0) { index, feature in
                 let (title, subtitle, icon) = feature
-                HStack(spacing: 14) {
+                HStack(spacing: 12) {
                     Image(systemName: icon)
                         .font(.body)
                         .foregroundStyle(Color.accentColor)
-                        .frame(width: 26)
+                        .frame(width: 24)
 
                     VStack(alignment: .leading, spacing: 1) {
                         Text(title)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                            .font(.subheadline.weight(.medium))
                         Text(subtitle)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -136,29 +163,137 @@ private struct ProFeaturesSection: View {
                     Spacer()
 
                     Image(systemName: "checkmark")
-                        .font(.caption)
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(.green)
-                        .accessibilityHidden(true)
                 }
-                .accessibilityElement(children: .combine)
                 .offset(x: appeared ? 0 : -20)
                 .opacity(appeared ? 1 : 0)
                 .animation(
                     reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8)
-                    .delay(0.15 + Double(index) * 0.06),
+                    .delay(0.1 + Double(index) * 0.05),
                     value: appeared
                 )
             }
         }
         .padding(16)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .onAppear {
-            appeared = true
-        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+        )
+        .onAppear { appeared = true }
     }
 }
 
-private struct ProductCardsSection: View {
+// MARK: - Everywhere/AI+ Features (Subscription)
+
+struct PaywallEverywhereSection: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var appeared = false
+
+    private let availableFeatures: [(String, String, String)] = [
+        ("Everything in Pepinillo+", "All Apple features included", "plus.circle"),
+    ]
+
+    private let comingSoonFeatures: [(String, String, String)] = [
+        ("AI Coach", "personalized productivity coaching", "person.wave.2"),
+        ("Advanced AI Insights", "predictive windows, burnout detection", "brain"),
+        ("AI Task Scheduling", "smart scheduling based on your patterns", "calendar.badge.clock"),
+        ("AI Subtask Generation", "auto-decompose complex tasks", "list.bullet.indent"),
+        ("Cross-Platform Sync", "iOS + Android + Web (when available)", "arrow.triangle.2.circlepath"),
+        ("100 AI Credits/month", "for cloud-powered AI workflows", "bolt.horizontal"),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // Tier header
+            HStack {
+                Text(String(localized: "Everywhere/AI+"))
+                    .font(.headline)
+                Spacer()
+                Text(String(localized: "Subscription"))
+                    .font(.caption2.weight(.semibold))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.accentColor.opacity(0.15), in: Capsule())
+                    .foregroundStyle(Color.accentColor)
+            }
+
+            // Available features
+            ForEach(Array(availableFeatures.enumerated()), id: \.element.0) { _, feature in
+                let (title, subtitle, icon) = feature
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.body)
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(title)
+                            .font(.subheadline.weight(.medium))
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "checkmark")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.green)
+                }
+            }
+
+            Divider()
+                .padding(.vertical, 2)
+
+            // Coming soon section
+            Text(String(localized: "Coming Soon"))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            ForEach(Array(comingSoonFeatures.enumerated()), id: \.element.0) { index, feature in
+                let (title, subtitle, icon) = feature
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.body)
+                        .foregroundStyle(.tertiary)
+                        .frame(width: 24)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(title)
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.secondary)
+                        Text(subtitle)
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+
+                    Spacer()
+
+                    Text(String(localized: "Soon"))
+                        .font(.caption2.weight(.semibold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color(.tertiarySystemFill), in: Capsule())
+                        .foregroundStyle(.secondary)
+                }
+                .offset(x: appeared ? 0 : -15)
+                .opacity(appeared ? 0.7 : 0)
+                .animation(
+                    reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8)
+                    .delay(0.3 + Double(index) * 0.04),
+                    value: appeared
+                )
+            }
+        }
+        .padding(16)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .onAppear { appeared = true }
+    }
+}
+
+// MARK: - Product Cards
+
+struct PaywallProductCardsSection: View {
     @Bindable var store: StoreOf<PaywallFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appeared = false
@@ -166,7 +301,7 @@ private struct ProductCardsSection: View {
     var body: some View {
         VStack(spacing: 12) {
             ForEach(Array(store.products.enumerated()), id: \.element.id) { index, product in
-                ProductCard(
+                PaywallProductCard(
                     product: product,
                     isSelected: store.selectedProductID == product.id
                 ) {
@@ -176,7 +311,7 @@ private struct ProductCardsSection: View {
                 .opacity(appeared ? 1 : 0)
                 .animation(
                     reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8)
-                    .delay(0.4 + Double(index) * 0.08),
+                    .delay(0.5 + Double(index) * 0.08),
                     value: appeared
                 )
             }
@@ -185,7 +320,7 @@ private struct ProductCardsSection: View {
     }
 }
 
-private struct ProductCard: View {
+struct PaywallProductCard: View {
     let product: ProductInfo
     let isSelected: Bool
     let onTap: () -> Void
@@ -193,7 +328,6 @@ private struct ProductCard: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                // Selection indicator
                 Circle()
                     .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.3))
                     .frame(width: 22, height: 22)
@@ -206,13 +340,20 @@ private struct ProductCard: View {
                     }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack {
+                    HStack(spacing: 6) {
                         Text(product.displayName)
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
 
-                        if product.isFeatured {
+                        if product.billingPeriod == "once" {
+                            Text(String(localized: "ONE-TIME"))
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.green, in: Capsule())
+                        } else if product.isFeatured {
                             Text(String(localized: "BEST VALUE"))
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundStyle(.white)
@@ -256,14 +397,27 @@ private struct ProductCard: View {
     }
 }
 
-private struct PurchaseButton: View {
+// MARK: - Purchase Button
+
+struct PaywallPurchaseButton: View {
     @Bindable var store: StoreOf<PaywallFeature>
+
+    private var buttonLabel: String {
+        if store.subscriptionState.isPro {
+            return String(localized: "You're Pepinillo+ ✓")
+        }
+        let selected = store.products.first { $0.id == store.selectedProductID }
+        if let product = selected, product.billingPeriod == "once" {
+            return String(localized: "Get Pepinillo+ — One Time")
+        }
+        return String(localized: "Continue")
+    }
 
     var body: some View {
         Button {
             store.send(.purchaseTapped)
         } label: {
-            Text(String(localized: "Continue"))
+            Text(buttonLabel)
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
@@ -272,13 +426,13 @@ private struct PurchaseButton: View {
         }
         .disabled(store.isLoading || store.subscriptionState.isPro)
         .accessibilityLabel(store.subscriptionState.isPro
-            ? String(localized: "You are already a Pro subscriber")
+            ? String(localized: "You already have Pepinillo+")
             : String(localized: "Continue with purchase"))
         .overlay {
             if store.subscriptionState.isPro {
                 RoundedRectangle(cornerRadius: 14)
                     .fill(Color.green)
-                Text(String(localized: "You're Pro ✓"))
+                Text(String(localized: "You're Pepinillo+ ✓"))
                     .font(.headline)
                     .foregroundStyle(.white)
             }
@@ -286,7 +440,9 @@ private struct PurchaseButton: View {
     }
 }
 
-private struct LegalFooter: View {
+// MARK: - Legal Footer
+
+struct PaywallLegalFooter: View {
     @Bindable var store: StoreOf<PaywallFeature>
 
     var body: some View {
@@ -314,16 +470,16 @@ private struct LegalFooter: View {
             products: PepinilloProduct.allCases.map { product in
                 switch product {
                 case .monthly:
-                    return ProductInfo(id: product.rawValue, displayName: "Pro Monthly",
-                                       description: "All features.", displayPrice: "$2.99",
+                    return ProductInfo(id: product.rawValue, displayName: "Everywhere/AI+",
+                                       description: "Monthly subscription.", displayPrice: "$4.99",
                                        billingPeriod: "month")
                 case .annual:
-                    return ProductInfo(id: product.rawValue, displayName: "Pro Annual",
-                                       description: "Best value — save 50%.", displayPrice: "$14.99",
+                    return ProductInfo(id: product.rawValue, displayName: "Everywhere/AI+",
+                                       description: "Best value — save 42%.", displayPrice: "$34.99",
                                        billingPeriod: "year", isFeatured: true)
                 case .lifetime:
-                    return ProductInfo(id: product.rawValue, displayName: "Pro Lifetime",
-                                       description: "Pay once, own forever.", displayPrice: "$29.99",
+                    return ProductInfo(id: product.rawValue, displayName: "Pepinillo+",
+                                       description: "One purchase. Yours forever.", displayPrice: "$19.99",
                                        billingPeriod: "once")
                 }
             }
