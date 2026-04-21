@@ -1,9 +1,10 @@
 // WeeklyReviewView.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// Weekly Review sheet: compares current week vs previous, shows trends,
-// dominant mode, best day, and per-day breakdown.
-// Presented from AnalyticsView toolbar button.
+// Weekly Review sheet with 2 tabs:
+// - Data: charts, comparisons, mode breakdown (always visible)
+// - AI Insights: productivity score, patterns, recommendations (Pepinillo+ only)
+// Presented from Dashboard reflection cards.
 
 import SwiftUI
 import Charts
@@ -11,26 +12,29 @@ import ComposableArchitecture
 
 struct WeeklyReviewView: View {
     @Bindable var store: StoreOf<WeeklyReviewFeature>
+    let isProUser: Bool
+    let analyticsStore: StoreOf<AnalyticsFeature>
+
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedTab: ReviewTab = .data
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if store.isLoading {
-                    ProgressView()
-                        .padding(.top, 60)
-                } else {
-                    VStack(spacing: 20) {
-                        comparisonCards
-                        weekChart
-                        dominantModeCard
-                        bestDayCard
-                        modeBreakdown
-                        streakCard
+            VStack(spacing: 0) {
+                // Tab picker
+                reviewTabPicker
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+
+                // Tab content
+                ScrollView {
+                    switch selectedTab {
+                    case .data:
+                        dataTab
+                    case .aiInsights:
+                        aiInsightsTab
                     }
-                    .padding(16)
-                    .padding(.bottom, 32)
                 }
             }
             .navigationTitle(String(localized: "Weekly Review"))
@@ -41,6 +45,76 @@ struct WeeklyReviewView: View {
                 }
             }
             .onAppear { store.send(.onAppear) }
+        }
+    }
+
+    // MARK: - Tab Picker
+
+    private var reviewTabPicker: some View {
+        Picker(String(localized: "Review Section"), selection: $selectedTab) {
+            ForEach(ReviewTab.allCases, id: \.self) { tab in
+                Label(tab.label, systemImage: tab.icon)
+                    .tag(tab)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.bottom, 8)
+    }
+
+    // MARK: - Data Tab
+
+    private var dataTab: some View {
+        VStack(spacing: 20) {
+            if store.isLoading {
+                ProgressView()
+                    .padding(.top, 60)
+            } else {
+                comparisonCards
+                weekChart
+                dominantModeCard
+                bestDayCard
+                modeBreakdown
+                streakCard
+            }
+        }
+        .padding(16)
+        .padding(.bottom, 32)
+    }
+
+    // MARK: - AI Insights Tab
+
+    private var aiInsightsTab: some View {
+        Group {
+            if isProUser {
+                AIInsightsContent(
+                    period: .week,
+                    analyticsStore: analyticsStore
+                )
+            } else {
+                proRequiredOverlay
+            }
+        }
+    }
+
+    private var proRequiredOverlay: some View {
+        VStack(spacing: 20) {
+            Spacer()
+                .frame(height: 40)
+
+            Image(systemName: "sparkles")
+                .font(.system(size: 48))
+                .foregroundStyle(.teal)
+
+            Text(String(localized: "AI Insights requiere Pepinillo+"))
+                .font(.title3.bold())
+
+            Text(String(localized: "Obtén análisis impulsados por Inteligencia Artificial de tus patrones de productividad, puntuación de productividad y recomendaciones personalizadas."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Spacer()
         }
     }
 
@@ -257,6 +331,27 @@ struct TrendCard: View {
         case .up:      return .green
         case .down:    return .red
         case .neutral: return .secondary
+        }
+    }
+}
+
+// MARK: - Review Tab Enum
+
+enum ReviewTab: String, CaseIterable {
+    case data
+    case aiInsights
+
+    var label: String {
+        switch self {
+        case .data: return String(localized: "Data")
+        case .aiInsights: return String(localized: "AI Insights")
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .data: return "chart.bar"
+        case .aiInsights: return "sparkles"
         }
     }
 }

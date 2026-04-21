@@ -1,35 +1,37 @@
 // MonthlyReviewView.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// Monthly Review sheet: compares current month vs previous, shows trends,
-// dominant mode, best week, top tasks, and mode distribution.
-// Presented from AnalyticsView toolbar button.
+// Monthly Review sheet with 2 tabs:
+// - Data: comparisons, completion rate, best week, top tasks
+// - AI Insights: productivity score, patterns, recommendations (Pepinillo+ only)
+// Presented from Dashboard reflection cards.
 
 import SwiftUI
 import ComposableArchitecture
 
 struct MonthlyReviewView: View {
     @Bindable var store: StoreOf<MonthlyReviewFeature>
+    let isProUser: Bool
+    let analyticsStore: StoreOf<AnalyticsFeature>
+
     @Environment(\.appTheme) private var theme
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedTab: ReviewTab = .data
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if store.isLoading {
-                    ProgressView()
-                        .padding(.top, 60)
-                } else {
-                    VStack(spacing: 20) {
-                        comparisonCards
-                        completionRateCard
-                        bestWeekCard
-                        topTasksSection
-                        dominantModeCard
-                        modeBreakdown
+            VStack(spacing: 0) {
+                reviewTabPicker
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+
+                ScrollView {
+                    switch selectedTab {
+                    case .data:
+                        dataTab
+                    case .aiInsights:
+                        aiInsightsTab
                     }
-                    .padding(16)
-                    .padding(.bottom, 32)
                 }
             }
             .navigationTitle(String(localized: "Monthly Review"))
@@ -40,6 +42,76 @@ struct MonthlyReviewView: View {
                 }
             }
             .onAppear { store.send(.onAppear) }
+        }
+    }
+
+    // MARK: - Tab Picker
+
+    private var reviewTabPicker: some View {
+        Picker(String(localized: "Review Section"), selection: $selectedTab) {
+            ForEach(ReviewTab.allCases, id: \.self) { tab in
+                Label(tab.label, systemImage: tab.icon)
+                    .tag(tab)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.bottom, 8)
+    }
+
+    // MARK: - Data Tab
+
+    private var dataTab: some View {
+        VStack(spacing: 20) {
+            if store.isLoading {
+                ProgressView()
+                    .padding(.top, 60)
+            } else {
+                comparisonCards
+                completionRateCard
+                bestWeekCard
+                topTasksSection
+                dominantModeCard
+                modeBreakdown
+            }
+        }
+        .padding(16)
+        .padding(.bottom, 32)
+    }
+
+    // MARK: - AI Insights Tab
+
+    private var aiInsightsTab: some View {
+        Group {
+            if isProUser {
+                AIInsightsContent(
+                    period: .month,
+                    analyticsStore: analyticsStore
+                )
+            } else {
+                proRequiredOverlay
+            }
+        }
+    }
+
+    private var proRequiredOverlay: some View {
+        VStack(spacing: 20) {
+            Spacer()
+                .frame(height: 40)
+
+            Image(systemName: "sparkles")
+                .font(.system(size: 48))
+                .foregroundStyle(.purple)
+
+            Text(String(localized: "AI Insights requiere Pepinillo+"))
+                .font(.title3.bold())
+
+            Text(String(localized: "Obtén análisis mensuales impulsados por Inteligencia Artificial con detección de patrones, puntuación de productividad y coaching personalizado."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            Spacer()
         }
     }
 
