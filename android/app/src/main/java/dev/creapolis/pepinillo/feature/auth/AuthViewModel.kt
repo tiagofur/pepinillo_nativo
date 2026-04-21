@@ -36,6 +36,7 @@ data class AuthUiState(
     val isAuthenticated: Boolean = false,
     val isGuestMode: Boolean = false,
     val showMergeDialog: Boolean = false,
+    val emailVerificationRequired: String? = null, // email address awaiting verification
 )
 
 @HiltViewModel
@@ -249,7 +250,15 @@ class AuthViewModel @Inject constructor(
         userRepository.cacheUserFromDto(response.user)
         identityManager.refreshState()
 
-        // Check if local Room has data that needs uploading
+        // Email/password users must verify before accessing data endpoints
+        if (!response.user.emailVerified) {
+            _uiState.value = _uiState.value.copy(
+                isLoading = false,
+                googleSignInLoading = false,
+                emailVerificationRequired = response.user.email,
+            )
+            return
+        }
         val hasLocal = syncEngine.hasLocalData()
         if (hasLocal) {
             Log.d(TAG, "Local data exists, running initial upload")
@@ -302,6 +311,68 @@ class AuthViewModel @Inject constructor(
             googleSignInLoading = false,
             isAuthenticated = true,
         )
+    }
+
+    // ── Helpers ──
+
+    fun verifyEmail(code: String) {
+        val email = _uiState.value.emailVerificationRequired ?: return
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            when (val result = apiClient.verifyEmail(email, code)) {
+                is NetworkResult.Success -> {
+                    val response = result.data
+                    authStore.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
+                    authStore.saveUser(response.user.id, response.user.name, response.user.email)
+                    userRepository.cacheUserFromDto(response.user)
+                    identityManager.refreshState()
+                    viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
+                    syncWebSocketClient.connect()
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        emailVerificationRequired = null,
+                        isAuthenticated = true,
+                    )
+                }
+                is NetworkResult.Error -> {
+                    val msg = when {
+                        result.message == "invalid_code" -> "Invalid or expired verification code"
+                        result.message == "already_verified" -> "Email is already verified"
+                        result.code in 500..599 -> "Server error. Please try again later."
+                        else -> "Verification failed. Please check the code and try again."
+                    }
+                    _uiState.value = _uiState.value.copy(isLoading = false, error = msg)
+                }
+                is NetworkResult.NetworkError -> {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = mapNetworkError(result.exception),
+                    )
+                }
+            }
+        }
+    }
+
+    fun resendVerificationEmail() {
+        val email = _uiState.value.emailVerificationRequired ?: return
+        viewModelScope.launch {
+            apiClient.resendVerificationEmail(email)
+        }
+    }
+
+    fun dismissEmailVerification() {
+        // User explicitly cancels — log them out so they aren't in a broken half-authed state
+        viewModelScope.launch {
+            authStore.clearAll()
+            identityManager.refreshState()
+            _uiState.value = AuthUiState(isAuthenticated = false)
+        }
+    }
+
+    fun restoreEmailVerificationState(email: String) {
+        if (_uiState.value.emailVerificationRequired == null) {
+            _uiState.value = _uiState.value.copy(emailVerificationRequired = email)
+        }
     }
 
     // ── Helpers ──

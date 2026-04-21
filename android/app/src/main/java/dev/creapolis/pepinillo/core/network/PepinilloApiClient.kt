@@ -47,6 +47,12 @@ class PepinilloApiClient @Inject constructor(
     suspend fun resetPassword(email: String, code: String, newPassword: String): NetworkResult<Unit> =
         safeCall { httpClient.post("auth/reset-password") { jsonBody(ResetPasswordRequest(email, code, newPassword)) }.body() }
 
+    suspend fun verifyEmail(email: String, code: String): NetworkResult<VerifyEmailResponse> =
+        safeCall { httpClient.post("auth/verify-email") { jsonBody(VerifyEmailRequest(email, code)) }.body() }
+
+    suspend fun resendVerificationEmail(email: String): NetworkResult<Unit> =
+        safeCall { httpClient.post("auth/resend-verification") { jsonBody(ResendVerificationRequest(email)) }.body() }
+
     suspend fun refreshToken(refreshToken: String): NetworkResult<RefreshResponse> =
         safeCall { httpClient.post("auth/refresh") { jsonBody(RefreshRequest(refreshToken)) }.body() }
 

@@ -80,6 +80,9 @@ func (h *OAuthHandler) LoginWithApple(c *fiber.Ctx) error {
 	if req.IDToken == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "missing_required_fields")
 	}
+	if req.Nonce == "" {
+		return fiber.NewError(fiber.StatusBadRequest, "missing_required_fields")
+	}
 
 	user, tokens, err := h.oauth.LoginWithApple(c.Context(), req.IDToken, req.Nonce)
 	if err != nil {

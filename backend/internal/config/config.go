@@ -199,6 +199,9 @@ func Load() (*Config, error) {
 				return nil, fmt.Errorf("CORS_ALLOWED_ORIGINS cannot contain \"*\" in production; list explicit origins instead")
 			}
 		}
+		if strings.TrimSpace(cfg.AppleBundleID) == "" {
+			return nil, fmt.Errorf("APPLE_BUNDLE_ID is required in production")
+		}
 	}
 
 	return cfg, nil

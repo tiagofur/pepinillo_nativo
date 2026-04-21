@@ -18,6 +18,19 @@ data class ForgotPasswordRequest(val email: String)
 data class ResetPasswordRequest(val email: String, val code: String, val newPassword: String)
 
 @Serializable
+data class VerifyEmailRequest(val email: String, val code: String)
+
+@Serializable
+data class ResendVerificationRequest(val email: String)
+
+@Serializable
+data class VerifyEmailResponse(
+    val message: String,
+    val user: UserDto,
+    val tokens: TokensDto,
+)
+
+@Serializable
 data class RegisterRequest(
     val email: String,
     val name: String,

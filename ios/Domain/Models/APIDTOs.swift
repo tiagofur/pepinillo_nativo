@@ -29,9 +29,9 @@ public struct LogoutRequest: Codable, Sendable, Equatable {
 
 public struct AppleLoginRequest: Codable, Sendable, Equatable {
     public let idToken: String
-    public let nonce: String?
+    public let nonce: String
 
-    public init(idToken: String, nonce: String? = nil) {
+    public init(idToken: String, nonce: String) {
         self.idToken = idToken
         self.nonce = nonce
     }
@@ -39,6 +39,21 @@ public struct AppleLoginRequest: Codable, Sendable, Equatable {
 
 public struct ForgotPasswordRequest: Codable, Sendable, Equatable {
     public let email: String
+}
+
+public struct VerifyEmailRequest: Codable, Sendable, Equatable {
+    public let email: String
+    public let code: String
+}
+
+public struct ResendVerificationRequest: Codable, Sendable, Equatable {
+    public let email: String
+}
+
+public struct VerifyEmailResponse: Codable, Sendable, Equatable {
+    public let message: String
+    public let user: APIUser
+    public let tokens: APITokens
 }
 
 public struct ResetPasswordRequest: Codable, Sendable, Equatable {

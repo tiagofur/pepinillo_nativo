@@ -3,7 +3,7 @@
 **Date:** 2026-03-24  
 **Version:** 1.1  
 **Status:** Active Development  
-**Last Updated:** 2026-04-02  
+**Last Updated:** 2026-04-20  
 **Update Cadence:** Per sprint
 
 ---
@@ -102,6 +102,29 @@
   - iOS products imported (monthly, annual, lifetime)
   - Entitlements linked (premium/pro)
   - S2S notifications configured
+
+### Auth Hardening — P0 + P1 Complete (2026-04-20) ✅
+
+**P0 — Apple Sign-In hardening (all platforms):**
+- Backend now requires `APPLE_BUNDLE_ID` in production (`backend/internal/config/config.go`).
+- Backend `/api/v1/auth/apple` now requires `nonce` in request payload (`backend/internal/adapters/handlers/oauth_handler.go`).
+- Apple token verification hardened in backend with:
+  - retry/backoff when fetching Apple JWKS,
+  - strict `iat` validation (missing, too old, or future tokens rejected),
+  - existing issuer/audience/expiration/nonce checks preserved (`backend/internal/services/oauth_service.go`).
+- iOS Apple login request now requires non-optional nonce in DTO and guarded flow before backend exchange (`ios/Domain/Models/APIDTOs.swift`, `ios/Features/Auth/AuthView.swift`, `ios/App/AppFeature.swift`).
+- Added focused backend tests for production config and Apple token validation branches (`backend/internal/config/config_test.go`, `backend/internal/services/oauth_service_validation_test.go`, `backend/internal/adapters/handlers/oauth_handler_test.go`).
+
+**P1.1 — Email verification gate (backend + iOS + Android):**
+- Backend embeds `emailVerified` in JWT access/refresh claims (`backend/internal/adapters/middleware/jwt_middleware.go`, `backend/internal/services/auth_service.go`, `backend/internal/services/oauth_service.go`).
+- New `RequireEmailVerified()` middleware blocks unverified users from all data endpoints with `403 email_not_verified` (`backend/internal/adapters/middleware/email_verification.go`).
+- Route restructure: all data routes (tasks, focus, pomodoro, AI, analytics, sync, preferences, push) moved under `verified` group; auth routes + `GET /users/me` + billing remain accessible to unverified users (`backend/internal/adapters/handlers/routes.go`).
+- `VerifyEmail` backend endpoint now returns fresh tokens with `emailVerified: true` so clients update Keychain/EncryptedSharedPreferences atomically on success (`backend/internal/services/auth_service.go`, `backend/internal/adapters/handlers/auth_handler.go`).
+- iOS: `EmailVerificationFeature` + `EmailVerificationView` added; `AuthFeature` sends `.emailVerificationRequired` delegate when backend returns unverified user; `AppFeature` shows non-dismissible verification sheet (`ios/Features/Auth/EmailVerificationFeature.swift`, `ios/Features/Auth/EmailVerificationView.swift`, `ios/App/AppFeature.swift`, `ios/App/AppView.swift`).
+- Android: `handleAuthSuccess` in `AuthViewModel` gates on `emailVerified`; new `EmailVerificationScreen` composable added; route `email-verification/{email}` wired in `MainActivity` (`android/app/.../feature/auth/EmailVerificationScreen.kt`, `AuthViewModel.kt`, `MainActivity.kt`).
+
+**P1.2 — deviceId Keychain migration (iOS):**
+- `getOrCreateDeviceId` migrated from `UserDefaults` to iOS Keychain (`kSecAttrAccessibleAfterFirstUnlock`) with transparent legacy migration path (`ios/Domain/Clients/KeychainClient.swift`).
 
 ### Pending iOS
 

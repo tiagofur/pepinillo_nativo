@@ -34,6 +34,7 @@ struct AppFeature {
         // Auth & Profile sheets
         @Presents var auth: AuthFeature.State?
         @Presents var profile: ProfileFeature.State?
+        @Presents var emailVerification: EmailVerificationFeature.State?
 
         // Sign in with Apple
         var appleUserID: String? = nil
@@ -110,6 +111,7 @@ struct AppFeature {
         case showProfile
         case auth(PresentationAction<AuthFeature.Action>)
         case profile(PresentationAction<ProfileFeature.Action>)
+        case emailVerification(PresentationAction<EmailVerificationFeature.Action>)
         case cachedUserLoaded(CachedUserDTO?)
         case tokenRefreshFailed
 
@@ -430,6 +432,26 @@ struct AppFeature {
                     await webSocketClient.connect()
                 }
 
+            case .auth(.presented(.delegate(.emailVerificationRequired(let email)))):
+                state.auth = nil  // dismiss auth sheet
+                state.emailVerification = EmailVerificationFeature.State(email: email)
+                return .none
+
+            case .emailVerification(.presented(.delegate(.verificationSucceeded(let user)))):
+                state.cachedUser = user
+                state.displayName = user.name
+                state.userEmail = user.email
+                state.emailVerification = nil  // dismiss verification sheet
+                return .run { [syncClient, webSocketClient, isPro = state.subscriptionState.isPro] _ in
+                    if isPro {
+                        try? await syncClient.syncAll()
+                    }
+                    await webSocketClient.connect()
+                }
+
+            case .emailVerification:
+                return .none
+
             case .auth(.presented(.delegate(.guestModeSelected))):
                 state.auth = nil  // dismiss auth sheet
                 return .none
@@ -540,7 +562,10 @@ struct AppFeature {
                         if let idToken = info.identityToken {
                             return .run { [apiClient, keychain, persistence, syncClient, webSocketClient] send in
                                 do {
-                                    let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken, nonce: info.nonce))
+                                    guard let nonce = info.nonce, !nonce.isEmpty else {
+                                        return
+                                    }
+                                    let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken, nonce: nonce))
                                     try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
                                     let dto = CachedUserDTO(
                                         id: response.user.id, email: response.user.email, name: response.user.name,
@@ -849,6 +874,9 @@ struct AppFeature {
         }
         .ifLet(\.$profile, action: \.profile) {
             ProfileFeature()
+        }
+        .ifLet(\.$emailVerification, action: \.emailVerification) {
+            EmailVerificationFeature()
         }
     }
 }

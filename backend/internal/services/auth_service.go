@@ -17,14 +17,14 @@ import (
 )
 
 type AuthService struct {
-	users          ports.UserRepository
-	authStore      ports.AuthStore
-	notifier       ports.Notifier
-	behaviorLogger ports.BehaviorLogger
-	wsManager      ports.WebSocketManager
-	jwtSecret      string
-	jwtIssuer      string
-	accessTTLSeconds int64
+	users             ports.UserRepository
+	authStore         ports.AuthStore
+	notifier          ports.Notifier
+	behaviorLogger    ports.BehaviorLogger
+	wsManager         ports.WebSocketManager
+	jwtSecret         string
+	jwtIssuer         string
+	accessTTLSeconds  int64
 	refreshTTLSeconds int64
 }
 
@@ -36,14 +36,14 @@ type AuthTokens struct {
 
 func NewAuthService(users ports.UserRepository, authStore ports.AuthStore, notifier ports.Notifier, behaviorLogger ports.BehaviorLogger, wsManager ports.WebSocketManager, jwtSecret, jwtIssuer string, accessTTLSeconds, refreshTTLSeconds int64) *AuthService {
 	return &AuthService{
-		users: users,
-		authStore: authStore,
-		notifier: notifier,
-		behaviorLogger: behaviorLogger,
-		wsManager: wsManager,
-		jwtSecret: jwtSecret,
-		jwtIssuer: jwtIssuer,
-		accessTTLSeconds: accessTTLSeconds,
+		users:             users,
+		authStore:         authStore,
+		notifier:          notifier,
+		behaviorLogger:    behaviorLogger,
+		wsManager:         wsManager,
+		jwtSecret:         jwtSecret,
+		jwtIssuer:         jwtIssuer,
+		accessTTLSeconds:  accessTTLSeconds,
 		refreshTTLSeconds: refreshTTLSeconds,
 	}
 }
@@ -311,10 +311,11 @@ func (s *AuthService) generateTokens(user *domain.User) (*AuthTokens, error) {
 	refreshExpiry := now.Add(time.Duration(s.refreshTTLSeconds) * time.Second)
 
 	accessClaims := middleware.UserClaims{
-		UserID: user.ID,
-		Email:  user.Email,
-		Tier:   user.SubscriptionTier,
-		TokenType: "access",
+		UserID:        user.ID,
+		Email:         user.Email,
+		Tier:          user.SubscriptionTier,
+		TokenType:     "access",
+		EmailVerified: user.EmailVerified,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.NewString(),
 			Issuer:    s.jwtIssuer,
@@ -330,10 +331,11 @@ func (s *AuthService) generateTokens(user *domain.User) (*AuthTokens, error) {
 	}
 
 	refreshClaims := middleware.UserClaims{
-		UserID: user.ID,
-		Email:  user.Email,
-		Tier:   user.SubscriptionTier,
-		TokenType: "refresh",
+		UserID:        user.ID,
+		Email:         user.Email,
+		Tier:          user.SubscriptionTier,
+		TokenType:     "refresh",
+		EmailVerified: user.EmailVerified,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.NewString(),
 			Issuer:    s.jwtIssuer,
@@ -374,41 +376,45 @@ func generateResetCode() (string, error) {
 	return string(result), nil
 }
 
-func (s *AuthService) VerifyEmail(ctx context.Context, email, code string) (*domain.User, error) {
+func (s *AuthService) VerifyEmail(ctx context.Context, email, code string) (*domain.User, *AuthTokens, error) {
 	if !isValidEmail(email) {
-		return nil, ErrInvalidEmail
+		return nil, nil, ErrInvalidEmail
 	}
 
 	valid, err := s.authStore.ValidateEmailVerificationCode(ctx, email, code)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if !valid {
-		return nil, ErrInvalidVerificationCode
+		return nil, nil, ErrInvalidVerificationCode
 	}
 
 	user, err := s.users.GetByEmail(ctx, email)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, nil, ErrUserNotFound
 	}
 
 	if user.EmailVerified {
-		return nil, ErrEmailAlreadyVerified
+		return nil, nil, ErrEmailAlreadyVerified
 	}
 
 	if err := s.users.MarkEmailVerified(ctx, user.ID); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := s.authStore.RevokeEmailVerificationCode(ctx, email); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	_ = s.behaviorLogger.LogEvent(ctx, user.ID, "email_verified", map[string]any{"email": user.Email})
 
 	user.EmailVerified = true
-	return user, nil
+	tokens, err := s.generateTokens(user)
+	if err != nil {
+		return nil, nil, err
+	}
+	return user, tokens, nil
 }
 
 func (s *AuthService) ResendVerificationCode(ctx context.Context, email string) error {
@@ -575,4 +581,3 @@ func (s *AuthService) sendUserUpdateNotification(userID string, user *domain.Use
 }
 
 func strPtr(s string) *string { return &s }
-

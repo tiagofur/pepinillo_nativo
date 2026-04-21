@@ -96,12 +96,17 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	protected.Delete("/auth/unlink/apple", deps.OAuth.UnlinkAppleAccount)
 	protected.Get("/auth/providers", deps.OAuth.GetLinkedProviders)
 
-	users := protected.Group("/users")
-	users.Get("/me", deps.Users.Me)
-	users.Put("/me", deps.Users.UpdateMe)
-	users.Post("/me/image", deps.Users.UploadImage)
+	// Profile read: no email gate (needed to check emailVerified status after login)
+	protected.Get("/users/me", deps.Users.Me)
 
-	tasks := protected.Group("/tasks")
+	// All data-access routes require email verification.
+	verified := protected.Group("", middleware.RequireEmailVerified())
+
+	verifiedUsers := verified.Group("/users")
+	verifiedUsers.Put("/me", deps.Users.UpdateMe)
+	verifiedUsers.Post("/me/image", deps.Users.UploadImage)
+
+	tasks := verified.Group("/tasks")
 	tasks.Get("/", deps.Tasks.List)
 	tasks.Post("/", deps.Tasks.Upsert)
 	tasks.Put("/:id", deps.Tasks.Upsert)
@@ -122,7 +127,7 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	tasks.Put("/:taskId/subtasks/:subtaskId", deps.SubTasks.Update)
 	tasks.Delete("/:taskId/subtasks/:subtaskId", deps.SubTasks.Delete)
 
-	pomodoro := protected.Group("/pomodoro")
+	pomodoro := verified.Group("/pomodoro")
 	pomodoro.Get("/config", deps.Pomodoro.GetConfig)
 	pomodoro.Put("/config", deps.Pomodoro.UpsertConfig)
 	pomodoro.Get("/stats", deps.Pomodoro.ListStats)
@@ -135,7 +140,7 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	pomodoro.Put("/sessions/:id", deps.Pomodoro.UpdateSession)
 
 	// New Focus endpoints (multi-mode support)
-	focus := protected.Group("/focus")
+	focus := verified.Group("/focus")
 	focus.Get("/config", deps.Focus.GetConfig)
 	focus.Put("/config", deps.Focus.UpsertConfig)
 	focus.Get("/stats", deps.Focus.ListStats)
@@ -147,7 +152,7 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	focus.Post("/sessions", deps.Focus.InsertSession)
 	focus.Put("/sessions/:id", deps.Focus.UpdateSession)
 
-	ai := protected.Group("/ai")
+	ai := verified.Group("/ai")
 	ai.Use(middleware.NewRequireProFeatureMiddleware("predictions"))
 	ai.Use(middleware.NewRequireProFeatureMiddleware("advanced_analytics"))
 	ai.Get("/daily-tip", deps.AI.DailyTip)
@@ -165,25 +170,25 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	webhooks := api.Group("/webhooks")
 	webhooks.Post("/revenuecat", deps.RevenueCat.Webhook)
 
-	push := protected.Group("/push")
+	push := verified.Group("/push")
 	push.Post("/devices", deps.Push.RegisterDevice)
 	push.Get("/devices", deps.Push.ListDevices)
 	push.Delete("/devices/:token", deps.Push.UnregisterDevice)
 	push.Post("/test", deps.Push.SendTestPush)
 
 	// Analytics endpoints (PRO only)
-	analytics := protected.Group("/analytics")
+	analytics := verified.Group("/analytics")
 	analytics.Use(middleware.NewRequireProFeatureMiddleware("advanced_analytics"))
 	analytics.Get("/weekly-report", deps.Analytics.WeeklyReport)
 	analytics.Get("/monthly-report", deps.Analytics.MonthlyReport)
 	analytics.Get("/completion-rate", deps.Analytics.CompletionRate)
 	analytics.Get("/streak", deps.Analytics.StreakStats)
 
-	preferences := protected.Group("/preferences")
+	preferences := verified.Group("/preferences")
 	preferences.Get("/", deps.Preferences.List)
 	preferences.Put("/", deps.Preferences.Upsert)
 
-	sync := protected.Group("/sync")
+	sync := verified.Group("/sync")
 	sync.Get("/full", deps.Sync.FullSync)
 	sync.Post("/sessions", deps.Sync.SyncSessions)
 	sync.Post("/initial-upload", deps.Sync.InitialUpload)

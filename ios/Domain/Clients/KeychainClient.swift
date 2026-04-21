@@ -45,12 +45,21 @@ extension KeychainClient: DependencyKey {
             load(account: accessTokenAccount) != nil
         },
         getOrCreateDeviceId: {
-            let key = "com.pepinillo.deviceId"
-            if let existing = UserDefaults.standard.string(forKey: key) {
+            let keychainAccount = "deviceId"
+            // 1. Already in Keychain — fast path
+            if let existing = load(account: keychainAccount) {
                 return existing
             }
+            // 2. Migration: read from UserDefaults (legacy), move to Keychain, clear
+            let legacyKey = "com.pepinillo.deviceId"
+            if let legacy = UserDefaults.standard.string(forKey: legacyKey) {
+                try? save(account: keychainAccount, value: legacy)
+                UserDefaults.standard.removeObject(forKey: legacyKey)
+                return legacy
+            }
+            // 3. First install: generate, persist in Keychain
             let newId = UUID().uuidString
-            UserDefaults.standard.set(newId, forKey: key)
+            try? save(account: keychainAccount, value: newId)
             return newId
         }
     )

@@ -245,13 +245,13 @@ func TestAuthService_EmailVerificationFlow_Integration(t *testing.T) {
 	code := notifier.LastCode("integration@example.com")
 	require.NotEmpty(t, code, "expected a verification code to be sent")
 
-	verifiedUser, err := svc.VerifyEmail(ctx, "integration@example.com", code)
+	verifiedUser, _, err := svc.VerifyEmail(ctx, "integration@example.com", code)
 	require.NoError(t, err)
 	require.NotNil(t, verifiedUser)
 	assert.True(t, verifiedUser.EmailVerified)
 
 	// Step 3: Re-verify (should fail — already verified)
-	_, err = svc.VerifyEmail(ctx, "integration@example.com", code)
+	_, _, err = svc.VerifyEmail(ctx, "integration@example.com", code)
 	assert.Error(t, err)
 }
 

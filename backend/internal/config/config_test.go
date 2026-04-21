@@ -17,10 +17,11 @@ func setEnv(t *testing.T, values map[string]string) {
 
 func baseProdEnv() map[string]string {
 	return map[string]string{
-		"APP_ENV":                 "production",
-		"JWT_SECRET":              "prod-secret-value",
-		"REFRESH_TOKEN_HASH_KEY":  strings.Repeat("a", 32),
-		"CORS_ALLOWED_ORIGINS":    "https://app.example.com",
+		"APP_ENV":                "production",
+		"JWT_SECRET":             "prod-secret-value",
+		"REFRESH_TOKEN_HASH_KEY": strings.Repeat("a", 32),
+		"CORS_ALLOWED_ORIGINS":   "https://app.example.com",
+		"APPLE_BUNDLE_ID":        "dev.creapolis.pepinillo",
 	}
 }
 
@@ -88,6 +89,20 @@ func TestLoad_ProductionRejectsShortHashKey(t *testing.T) {
 	_, err := Load()
 	if err == nil {
 		t.Fatal("expected error for short hash key in production")
+	}
+}
+
+func TestLoad_ProductionRequiresAppleBundleID(t *testing.T) {
+	env := baseProdEnv()
+	env["APPLE_BUNDLE_ID"] = ""
+	setEnv(t, env)
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error for missing APPLE_BUNDLE_ID in production")
+	}
+	if !strings.Contains(err.Error(), "APPLE_BUNDLE_ID") {
+		t.Fatalf("expected APPLE_BUNDLE_ID error, got: %v", err)
 	}
 }
 

@@ -200,13 +200,17 @@ struct AuthView: View {
                                     onAppleSignInFailed?()
                                     return
                                 }
+                                guard !currentNonce.isEmpty else {
+                                    onAppleSignInFailed?()
+                                    return
+                                }
                                 let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
                                 onAppleSignIn?(AppleUserInfo(
                                     userID: cred.user,
                                     displayName: cred.fullName?.formatted(),
                                     email: cred.email,
                                     identityToken: identityToken,
-                                    nonce: currentNonce.isEmpty ? nil : currentNonce
+                                    nonce: currentNonce
                                 ))
                             case .failure:
                                 onAppleSignInFailed?()

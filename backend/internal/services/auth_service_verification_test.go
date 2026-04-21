@@ -56,7 +56,7 @@ func TestAuthService_VerifyEmail_Success(t *testing.T) {
 
 	service := createAuthService(mockUserRepo, mockAuthStore, mockNotifier, mockLogger)
 
-	updatedUser, err := service.VerifyEmail(context.Background(), "test@example.com", "123456")
+	updatedUser, _, err := service.VerifyEmail(context.Background(), "test@example.com", "123456")
 
 	assert.NoError(t, err)
 	assert.NotNil(t, updatedUser)
@@ -77,7 +77,7 @@ func TestAuthService_VerifyEmail_InvalidCode(t *testing.T) {
 
 	service := createAuthService(mockUserRepo, mockAuthStore, mockNotifier, mockLogger)
 
-	_, err := service.VerifyEmail(context.Background(), "test@example.com", "000000")
+	_, _, err := service.VerifyEmail(context.Background(), "test@example.com", "000000")
 
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrInvalidVerificationCode)
@@ -99,7 +99,7 @@ func TestAuthService_VerifyEmail_AlreadyVerified(t *testing.T) {
 
 	service := createAuthService(mockUserRepo, mockAuthStore, mockNotifier, mockLogger)
 
-	_, err := service.VerifyEmail(context.Background(), "test@example.com", "123456")
+	_, _, err := service.VerifyEmail(context.Background(), "test@example.com", "123456")
 
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrEmailAlreadyVerified)
@@ -119,7 +119,7 @@ func TestAuthService_VerifyEmail_UserNotFound(t *testing.T) {
 
 	service := createAuthService(mockUserRepo, mockAuthStore, mockNotifier, mockLogger)
 
-	_, err := service.VerifyEmail(context.Background(), "test@example.com", "123456")
+	_, _, err := service.VerifyEmail(context.Background(), "test@example.com", "123456")
 
 	assert.Error(t, err)
 	assert.ErrorIs(t, err, ErrUserNotFound)

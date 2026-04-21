@@ -61,6 +61,7 @@ struct AuthFeature {
         enum Delegate: Equatable {
             case authenticated(CachedUserDTO)
             case guestModeSelected
+            case emailVerificationRequired(email: String)
         }
     }
 
@@ -179,6 +180,10 @@ struct AuthFeature {
             // MARK: - Post-auth sync flow
 
             case .authSucceeded(let userDTO):
+                guard userDTO.emailVerified else {
+                    state.isSyncing = false
+                    return .send(.delegate(.emailVerificationRequired(email: userDTO.email)))
+                }
                 state.isSyncing = true
                 return .run { [persistence, syncClient] send in
                     // Check if there's local data to merge

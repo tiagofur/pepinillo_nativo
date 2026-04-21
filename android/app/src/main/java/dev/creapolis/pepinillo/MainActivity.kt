@@ -37,6 +37,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dev.creapolis.pepinillo.feature.auth.EmailVerificationScreen
 import dev.creapolis.pepinillo.feature.auth.ForgotPasswordScreen
 import dev.creapolis.pepinillo.feature.auth.LoginScreen
 import dev.creapolis.pepinillo.feature.auth.RegisterScreen
@@ -316,6 +318,9 @@ fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
                             popUpTo("login") { inclusive = true }
                         }
                     },
+                    onEmailVerificationRequired = { email ->
+                        navController.navigate("email-verification/$email")
+                    },
                 )
             }
             composable("register") {
@@ -326,6 +331,9 @@ fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
                             popUpTo("login") { inclusive = true }
                         }
                     },
+                    onEmailVerificationRequired = { email ->
+                        navController.navigate("email-verification/$email")
+                    },
                 )
             }
             composable("forgot-password") {
@@ -334,6 +342,34 @@ fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
                     onResetSuccess = {
                         navController.navigate("login") {
                             popUpTo("forgot-password") { inclusive = true }
+                        }
+                    },
+                )
+            }
+            composable("email-verification/{email}") { backStackEntry ->
+                val email = backStackEntry.arguments?.getString("email") ?: ""
+                val authViewModel = androidx.hilt.navigation.compose.hiltViewModel<dev.creapolis.pepinillo.feature.auth.AuthViewModel>()
+                val uiState by authViewModel.uiState.collectAsState()
+                LaunchedEffect(Unit) {
+                    authViewModel.restoreEmailVerificationState(email)
+                }
+                LaunchedEffect(uiState.isAuthenticated) {
+                    if (uiState.isAuthenticated) {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
+                }
+                EmailVerificationScreen(
+                    email = email,
+                    isLoading = uiState.isLoading,
+                    error = uiState.error,
+                    onVerify = { code -> authViewModel.verifyEmail(code) },
+                    onResend = authViewModel::resendVerificationEmail,
+                    onCancel = {
+                        authViewModel.dismissEmailVerification()
+                        navController.navigate("login") {
+                            popUpTo("login") { inclusive = true }
                         }
                     },
                 )

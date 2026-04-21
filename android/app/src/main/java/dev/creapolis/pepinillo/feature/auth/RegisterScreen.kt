@@ -49,6 +49,7 @@ import dev.creapolis.pepinillo.feature.auth.components.DataMergeDialog
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onAuthenticated: () -> Unit,
+    onEmailVerificationRequired: (email: String) -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -60,6 +61,10 @@ fun RegisterScreen(
 
     LaunchedEffect(uiState.isAuthenticated, uiState.isGuestMode) {
         if (uiState.isAuthenticated || uiState.isGuestMode) onAuthenticated()
+    }
+
+    LaunchedEffect(uiState.emailVerificationRequired) {
+        uiState.emailVerificationRequired?.let { onEmailVerificationRequired(it) }
     }
 
     if (uiState.showMergeDialog) {

@@ -36,6 +36,8 @@ type OAuthService struct {
 	appleBundleID   string
 }
 
+const appleTokenMaxAge = 10 * time.Minute
+
 type googleTokenInfo struct {
 	Aud           string `json:"aud"`
 	Sub           string `json:"sub"`
@@ -466,29 +468,9 @@ func (s *OAuthService) isValidGoogleAudience(aud string) bool {
 func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken, nonce string) (*appleTokenInfo, error) {
 	appleKeysURL := "https://appleid.apple.com/auth/keys"
 
-	fetch, err := http.NewRequestWithContext(ctx, "GET", appleKeysURL, nil)
+	appleKeys, err := s.fetchAppleKeysWithRetry(ctx, appleKeysURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request for apple keys: %w", err)
-	}
-
-	resp, err := s.googleClient.Do(fetch)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch apple keys: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to fetch apple keys: %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read apple keys response: %w", err)
-	}
-
-	appleKeys, err := jwk.Parse(body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse apple keys: %w", err)
+		return nil, err
 	}
 
 	parsed, err := jwxjwt.ParseString(idToken, jwxjwt.WithKeySet(appleKeys))
@@ -528,24 +510,107 @@ func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken, nonce stri
 	}
 
 	exp := parsed.Expiration()
-	if exp.IsZero() || exp.Before(time.Now()) {
+	now := time.Now()
+	if exp.IsZero() || exp.Before(now) {
 		return nil, errors.New("apple token expired")
+	}
+
+	iat := parsed.IssuedAt()
+	if err := validateAppleIssuedAt(iat, now); err != nil {
+		return nil, err
 	}
 
 	if nonce != "" {
 		privateClaims := parsed.PrivateClaims()
 		tokenNonce, ok := privateClaims["nonce"].(string)
-		if !ok || tokenNonce == "" {
-			return nil, errors.New("apple token missing nonce claim")
+		if !ok {
+			tokenNonce = ""
 		}
-		h := sha256.Sum256([]byte(nonce))
-		expected := hex.EncodeToString(h[:])
-		if tokenNonce != expected {
-			return nil, errors.New("apple token nonce mismatch")
+		if err := validateAppleNonce(tokenNonce, nonce); err != nil {
+			return nil, err
 		}
 	}
 
 	return &tokenInfo, nil
+}
+
+func (s *OAuthService) fetchAppleKeysWithRetry(ctx context.Context, appleKeysURL string) (jwk.Set, error) {
+	var lastErr error
+	delays := []time.Duration{0, time.Second, 2 * time.Second}
+
+	for _, delay := range delays {
+		if delay > 0 {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(delay):
+			}
+		}
+
+		fetch, err := http.NewRequestWithContext(ctx, http.MethodGet, appleKeysURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request for apple keys: %w", err)
+		}
+
+		resp, err := s.googleClient.Do(fetch)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to fetch apple keys: %w", err)
+			continue
+		}
+
+		body, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if readErr != nil {
+			lastErr = fmt.Errorf("failed to read apple keys response: %w", readErr)
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("failed to fetch apple keys: %s", resp.Status)
+			continue
+		}
+
+		appleKeys, parseErr := jwk.Parse(body)
+		if parseErr != nil {
+			lastErr = fmt.Errorf("failed to parse apple keys: %w", parseErr)
+			continue
+		}
+
+		return appleKeys, nil
+	}
+
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return nil, errors.New("failed to fetch apple keys")
+}
+
+func validateAppleNonce(tokenNonce, providedNonce string) error {
+	if providedNonce == "" {
+		return nil
+	}
+	if tokenNonce == "" {
+		return errors.New("apple token missing nonce claim")
+	}
+	h := sha256.Sum256([]byte(providedNonce))
+	expected := hex.EncodeToString(h[:])
+	if tokenNonce != expected {
+		return errors.New("apple token nonce mismatch")
+	}
+	return nil
+}
+
+func validateAppleIssuedAt(iat, now time.Time) error {
+	if iat.IsZero() {
+		return errors.New("apple token missing iat")
+	}
+	if iat.After(now.Add(30 * time.Second)) {
+		return errors.New("apple token issued in the future")
+	}
+	if now.Sub(iat) > appleTokenMaxAge {
+		return errors.New("apple token too old")
+	}
+	return nil
 }
 
 func (s *OAuthService) generateTokens(user *domain.User) (*AuthTokens, error) {
@@ -554,10 +619,11 @@ func (s *OAuthService) generateTokens(user *domain.User) (*AuthTokens, error) {
 	refreshExpiry := now.Add(time.Duration(s.refreshTTL) * time.Second)
 
 	accessClaims := middleware.UserClaims{
-		UserID:    user.ID,
-		Email:     user.Email,
-		Tier:      user.SubscriptionTier,
-		TokenType: "access",
+		UserID:        user.ID,
+		Email:         user.Email,
+		Tier:          user.SubscriptionTier,
+		TokenType:     "access",
+		EmailVerified: user.EmailVerified,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.NewString(),
 			Issuer:    s.jwtIssuer,
@@ -573,10 +639,11 @@ func (s *OAuthService) generateTokens(user *domain.User) (*AuthTokens, error) {
 	}
 
 	refreshClaims := middleware.UserClaims{
-		UserID:    user.ID,
-		Email:     user.Email,
-		Tier:      user.SubscriptionTier,
-		TokenType: "refresh",
+		UserID:        user.ID,
+		Email:         user.Email,
+		Tier:          user.SubscriptionTier,
+		TokenType:     "refresh",
+		EmailVerified: user.EmailVerified,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        uuid.NewString(),
 			Issuer:    s.jwtIssuer,

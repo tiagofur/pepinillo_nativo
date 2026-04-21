@@ -8,10 +8,11 @@ import (
 )
 
 type UserClaims struct {
-	UserID string `json:"userId"`
-	Email  string `json:"email"`
-	Tier   string `json:"tier"`
-	TokenType string `json:"tokenType"`
+	UserID        string `json:"userId"`
+	Email         string `json:"email"`
+	Tier          string `json:"tier"`
+	TokenType     string `json:"tokenType"`
+	EmailVerified bool   `json:"emailVerified"`
 	jwt.RegisteredClaims
 }
 
@@ -46,6 +47,7 @@ func JWT(secret string) fiber.Handler {
 		c.Locals("userID", claims.UserID)
 		c.Locals("email", claims.Email)
 		c.Locals("tier", claims.Tier)
+		c.Locals("emailVerified", claims.EmailVerified)
 		return c.Next()
 	}
 }

@@ -119,6 +119,16 @@ struct AppView: View {
             }
             .presentationDetents([.large])
         }
+        // Email verification sheet (shown after email/password login when not yet verified)
+        .sheet(item: $store.scope(state: \.emailVerification, action: \.emailVerification)) { verificationStore in
+            NavigationStack {
+                EmailVerificationView(store: verificationStore)
+                    .navigationTitle(String(localized: "Verify Email"))
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .presentationDetents([.large])
+            .interactiveDismissDisabled()
+        }
         // Celebration overlay
         .overlay {
             if let milestone = store.pendingCelebration {

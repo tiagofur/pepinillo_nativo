@@ -225,7 +225,7 @@ func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "missing_required_fields")
 	}
 
-	user, err := h.auth.VerifyEmail(c.Context(), req.Email, req.Code)
+	user, tokens, err := h.auth.VerifyEmail(c.Context(), req.Email, req.Code)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidEmail) || errors.Is(err, services.ErrInvalidVerificationCode) {
 			return fiber.NewError(fiber.StatusBadRequest, err.Error())
@@ -242,6 +242,7 @@ func (h *AuthHandler) VerifyEmail(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{
 		"message": "email_verified",
 		"user":    user,
+		"tokens":  tokens,
 	})
 }
 
@@ -304,9 +305,9 @@ func (h *AuthHandler) RequestEmailChange(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(fiber.Map{
-		"message":     "verification_code_sent_to_new_email",
+		"message":      "verification_code_sent_to_new_email",
 		"pendingEmail": user.PendingEmail,
-		"user":        user,
+		"user":         user,
 	})
 }
 
