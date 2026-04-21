@@ -15,6 +15,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.data.sync.SyncEngine
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -67,7 +67,7 @@ class FocusTimerWidget : GlanceAppWidget() {
             val isPro = entryPoint.subscriptionManager().subscriptionState.value.isPro
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
                 prefs.toMutablePreferences().apply {
-                    this[PREF_IS_PRO] = isPro
+                    this[PREF_FOCUS_IS_PRO] = isPro
                 }
             }
         } catch (e: Exception) {
@@ -108,7 +108,7 @@ private val PREF_PHASE = stringPreferencesKey("widget_phase")
 private val PREF_STATUS = stringPreferencesKey("widget_status")
 private val PREF_PROGRESS = floatPreferencesKey("widget_progress")
 private val PREF_LINKED_TASK = stringPreferencesKey("widget_linked_task")
-private val PREF_IS_PRO = androidx.datastore.preferences.core.booleanPreferencesKey("is_pro")
+private val PREF_FOCUS_IS_PRO = androidx.datastore.preferences.core.booleanPreferencesKey("focus_widget_is_pro")
 
 private fun prefsToTimerState(prefs: Preferences): TimerWidgetState {
     val modeName = prefs[PREF_MODE] ?: FocusMode.Pomodoro.name
@@ -127,7 +127,7 @@ private fun prefsToTimerState(prefs: Preferences): TimerWidgetState {
         status = status,
         progress = prefs[PREF_PROGRESS] ?: 1f,
         linkedTaskName = prefs[PREF_LINKED_TASK],
-        isPro = prefs[PREF_IS_PRO] ?: false,
+        isPro = prefs[PREF_FOCUS_IS_PRO] ?: false,
     )
 }
 
@@ -253,9 +253,6 @@ private fun ReadyWidget(context: Context, state: TimerWidgetState) {
     }
 }
 
-import java.time.Instant
-import androidx.glance.text.TextRelativeTimeFormat
-
 @Composable
 private fun RunningWidget(context: Context, state: TimerWidgetState) {
     Column(
@@ -282,30 +279,15 @@ private fun RunningWidget(context: Context, state: TimerWidgetState) {
         )
         Spacer(modifier = GlanceModifier.height(2.dp))
         
-        if (isRunning && state.finishTimestamp != null) {
-            // Native system-handled countdown (Battery efficient!)
-            Text(
-                text = Instant.ofEpochMilli(state.finishTimestamp),
-                format = TextRelativeTimeFormat.Countdown,
-                style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 36.sp,
-                    color = color,
-                    textAlign = TextAlign.Center,
-                ),
-            )
-        } else {
-            // Static display when paused
-            Text(
-                text = state.displayTime,
-                style = TextStyle(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 36.sp,
-                    color = color,
-                    textAlign = TextAlign.Center,
-                ),
-            )
-        }
+        Text(
+            text = state.displayTime,
+            style = TextStyle(
+                fontWeight = FontWeight.Bold,
+                fontSize = 36.sp,
+                color = color,
+                textAlign = TextAlign.Center,
+            ),
+        )
 
         // Show linked task name
         if (!state.linkedTaskName.isNullOrBlank()) {
@@ -364,26 +346,21 @@ private fun ModeSelectorRow(context: Context, selectedMode: FocusMode?, isPro: B
         modifier = GlanceModifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        ModeChip(context, FocusMode.Pomodoro, "Pomo", selectedMode, isPro)
+        ModeChip(FocusMode.Pomodoro, "Pomo", selectedMode, isPro)
         Spacer(modifier = GlanceModifier.width(4.dp))
-        ModeChip(context, FocusMode.Flow, "Flow", selectedMode, isPro)
+        ModeChip(FocusMode.Flow, "Flow", selectedMode, isPro)
         Spacer(modifier = GlanceModifier.width(4.dp))
-        ModeChip(context, FocusMode.Blocks, "Blocks", selectedMode, isPro)
+        ModeChip(FocusMode.Blocks, "Blocks", selectedMode, isPro)
         Spacer(modifier = GlanceModifier.width(4.dp))
-        ModeChip(context, FocusMode.Chrono, "Chrono", selectedMode, isPro)
+        ModeChip(FocusMode.Chrono, "Chrono", selectedMode, isPro)
     }
 }
 
 @Composable
-private fun ModeChip(context: Context, mode: FocusMode, label: String, selectedMode: FocusMode?, isPro: Boolean) {
+private fun ModeChip(mode: FocusMode, label: String, selectedMode: FocusMode?, isPro: Boolean) {
     val isSelected = mode == selectedMode
     val isLocked = !mode.isFreeTier && !isPro
     val color = modeColor(mode)
-    val bgColor = when {
-        isSelected -> color
-        isLocked -> ColorProvider(R.color.widget_stop_bg).getColor(context).copy(alpha = 0.5f)
-        else -> ColorProvider(R.color.widget_stop_bg)
-    }
     val textColor = if (isSelected) ColorProvider(R.color.widget_white) else ColorProvider(R.color.widget_stop_text)
 
     Box(
@@ -408,7 +385,7 @@ private fun ModeChip(context: Context, mode: FocusMode, label: String, selectedM
                 style = TextStyle(
                     fontSize = 11.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    color = if (isLocked && !isSelected) textColor.getColor(context).copy(alpha = 0.5f) else textColor,
+                    color = textColor,
                 ),
             )
         }

@@ -282,7 +282,8 @@ class FocusTimerService : Service() {
                         lastWidgetUpdate = now
                         
                         val finishTimestamp = if (state.status == TimerStatus.Running) {
-                            System.currentTimeMillis() + (state.remainingSeconds * 1000L)
+                            val remainingMillis = (state.totalMillis - state.elapsedMillis).coerceAtLeast(0L)
+                            System.currentTimeMillis() + remainingMillis
                         } else null
 
                         val widgetState = TimerWidgetState(
