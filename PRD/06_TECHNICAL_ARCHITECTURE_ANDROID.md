@@ -1,7 +1,7 @@
 # Technical Architecture — Android & Wear OS
 
-**Version:** 1.0
-**Last Updated:** 2026-03-24
+**Version:** 1.1
+**Last Updated:** 2026-04-21
 **Platforms:** Android (phone/tablet/foldable) + Wear OS (watch)
 
 ---
@@ -25,7 +25,7 @@
 | **Wear Tiles**         | Horologist                       | 0.6.20          | `SuspendingTileService` for Wear OS Tiles                                                                                                    |
 | **Wear Complications** | watchface-complications          | 1.2.1           | `SuspendingComplicationDataSourceService`                                                                                                    |
 | **Wear Data Layer**    | play-services-wearable           | 18.2.0          | `DataClient` + `MessageClient` for sync phone↔watch                                                                                          |
-| **Billing**            | RevenueCat Purchases SDK         | v8.10.0         | In-app subscriptions (FREE/PRO); shared `premium` entitlement with iOS                                                                       |
+| **Billing**            | RevenueCat Purchases SDK         | v8.10.0         | Android uses Pepinillo Everywhere as the paid rollout path; legacy `premium` entitlement naming still exists pending capability split         |
 | **Health**             | Health Connect                   | 1.1.0-rc01      | Mindful Sessions (API experimental)                                                                                                          |
 | **Audio**              | Media3/ExoPlayer                 | 1.5.0           | Soundscapes (6 ambient tracks)                                                                                                               |
 | **Charts**             | Vico                             | 1.14.0          | `compose-m3` charts for dashboard                                                                                                            |
@@ -182,7 +182,7 @@ app/src/main/kotlin/dev/creapolis/pepinillo/
 │
 └── platform/
     ├── billing/
-    │   └── BillingManager.kt          # Play Billing 7.1.1, FREE/PRO tiers
+    │   └── SubscriptionManager.kt     # RevenueCat v8.10.0, FREE + Everywhere Monthly/Annual (legacy `premium` naming pending migration)
     ├── calendar/
     │   └── GoogleCalendarManager.kt   # blockFocusTime() on completion WORK session
     ├── focusmode/
@@ -1000,21 +1000,23 @@ Implemented with `WindowSizeClass` from Material 3:
 
 ### RevenueCat Integration (Android)
 
-**Status:** ✅ Fully Configured (2026-03-21)
+**Status:** ✅ Configured in legacy form; monetization v2 migration pending (2026-04-21)
 
 #### SDK Setup
 
 ```kotlin
 @Singleton
-class BillingManager @Inject constructor(
+class SubscriptionManager @Inject constructor(
     private val context: Context,
 ) {
     // RevenueCat Purchases SDK v8.10.0
     //
     // Configuration:
     // - Android Public API Key: goog_ITPYSPEdubAzAeoNGxezZuZJELT
-    // - Entitlement: "premium" (shared with iOS)
-    // - Products: monthly, annual, lifetime
+    // - Current runtime entitlement: "premium" (legacy naming drift from iOS `pro`)
+    // - Target paid offers: Everywhere Monthly, Everywhere Annual
+    // - Apple Unlock does not apply to Android / Wear OS during the Apple-first rollout
+    // - Legacy SKUs `com.pepinillo.app.pro.*` remain accepted during migration
     //
     // Purchase flow:
     // 1. RevenueCat.logIn(userId) → authenticate the user
@@ -1024,31 +1026,36 @@ class BillingManager @Inject constructor(
     //
     // Tiers:
     //   - FREE: basic functionality (Pomodoro, limited tasks)
-    //   - PRO: all modes, soundscapes, advanced analytics, widgets
+    //   - EVERYWHERE: advanced Android features + backend sync + monthly AI credits
 }
 ```
 
 #### Product IDs
 
-| Plan     | Product ID                     |
-| -------- | ------------------------------ |
-| Monthly  | com.pepinillo.app.pro.monthly  |
-| Annual   | com.pepinillo.app.pro.annual   |
-| Lifetime | com.pepinillo.app.pro.lifetime |
+| Offer | Product ID | Status |
+| ----- | ---------- | ------ |
+| Everywhere Monthly | com.pepinillo.app.everywhere.monthly | Target rollout SKU |
+| Everywhere Annual | com.pepinillo.app.everywhere.annual | Target rollout SKU |
+| Legacy monthly | com.pepinillo.app.pro.monthly | Transitional compatibility |
+| Legacy annual | com.pepinillo.app.pro.annual | Transitional compatibility |
+| Legacy lifetime | com.pepinillo.app.pro.lifetime | Transitional compatibility; must not unlock Android paid state permanently |
 
 #### Entitlement Verification
 
-- **Entitlement ID:** `premium` (shared across iOS and Android)
-- **Local caching:** subscription state cached via RevenueCat SDK
-- **Server-side verification:** Go backend integrated with RevenueCat REST API
+- **Current runtime entitlement:** `premium` (legacy Android naming)
+- **Target backend capabilities:** `local_premium`, `backend_sync`, `ai_credits_monthly`
+- **Local caching:** subscription state cached via RevenueCat SDK and exposed as Android paid state
+- **Server-side verification:** Go backend integrated with RevenueCat REST API and planned capability derivation
 - **Grace period:** 3 days supported via RevenueCat
 - **User identification:** integrated with the app auth flow
+- **Commercial rule:** Android paid access comes from Pepinillo Everywhere only; Apple Unlock is Apple-local and does not unlock Android
 
 ### FeatureGate
 
-- Checks subscription tier before allowing access to PRO features
+- Checks Android paid state before allowing access to Everywhere-gated features
 - Caches subscription state locally via RevenueCat SDK
 - Server-side verification via Go backend (endpoint `/api/v1/webhooks/revenuecat` implemented)
+- Must evolve from a single legacy `premium` flag to capability-based checks once backend rollout starts
 
 ---
 
@@ -1299,7 +1306,8 @@ type User struct {
     PasswordHash     string
     ImageURL         string
     BirthDate        time.Time
-    SubscriptionTier string    // "free" | "pro"
+    SubscriptionTier string    // legacy: "free" | "pro" until capability split lands
+    Capabilities     []string  // target rollout: local_premium, backend_sync, ai_credits_monthly
     EmailVerified    bool
     CreatedAt        time.Time
     UpdatedAt        time.Time
@@ -1441,9 +1449,9 @@ class SyncWorker @AssistedInject constructor(
 - **Periodic:** `PeriodicWorkRequestBuilder<SyncWorker>(15, MINUTES)` with `NetworkType.CONNECTED` constraint
 - **Immediate:** `OneTimeWorkRequestBuilder<SyncWorker>().setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)` after user actions
 
-### 19.4 Cross-Platform Subscriptions
+### 19.4 Pepinillo Everywhere and Cross-Platform Paid State
 
-Subscriptions are verified **server-side** to guarantee parity across platforms. A user who purchases PRO on Android can use PRO on iOS and vice versa.
+Subscriptions are verified **server-side** to guarantee parity for the recurring Pepinillo Everywhere offer. Android and Wear OS treat `Everywhere` as the sole paid path during the Apple-first rollout.
 
 #### Verification Flow
 
@@ -1463,27 +1471,27 @@ Subscriptions are verified **server-side** to guarantee parity across platforms.
 │              │     │              │     │              │
 │              │◄────│ 6. Updates   │     │              │
 │              │     │    user.sub  │     │              │
-│ 7. Caches    │     │    tier=pro  │     │              │
-│    local PRO │     │              │     │              │
+│ 7. Caches    │     │ capabilities │     │              │
+│    paid state│     │  / account   │     │              │
 └──────────────┘     └──────────────┘     └──────────────┘
 ```
 
 **Detailed steps:**
 
-1. The user completes the purchase via Play Billing Library 7.1.1
+1. The user completes the purchase of Pepinillo Everywhere via RevenueCat / Google Play
 2. The app sends `POST /api/v1/billing/verify` with the purchase token and product ID
 3. The backend validates the receipt against the Google Play Developer API
    4-5. Google confirms that the purchase is legitimate
-4. The backend updates `User.SubscriptionTier = "pro"` in PostgreSQL
-5. The app caches PRO state locally; all future checks query `GET /api/v1/users/me`
+4. The backend derives the paid capability set for Android (`local_premium`, `backend_sync`, `ai_credits_monthly`)
+5. The app caches Android paid state locally; all future checks query `GET /api/v1/users/me`
 
-**Source of truth:** the backend `subscription_tier` field. The app queries `/users/me` at startup and periodically to synchronize subscription state. Local `BillingManager` acts as cache.
+**Source of truth:** the backend capability/account-state model. During transition, the existing `subscription_tier` field remains legacy-compatible, but Android rollout must converge on capabilities. The app queries `/users/me` at startup and periodically to synchronize paid state. Local `SubscriptionManager` acts as cache.
 
-**Cross-platform parity:** a user who purchases PRO on iOS (App Store) will see PRO status on Android after login, because the backend centralizes tier state.
+**Cross-platform parity:** a user who purchases Pepinillo Everywhere on Android will see paid Android access after login on supported clients. A user who purchases Apple Unlock only on iOS must remain Free on Android, because Apple Unlock is Apple-local only.
 
 ### 19.5 User Profile
 
-The user profile combines authentication data, statistics, and subscription state.
+The user profile combines authentication data, statistics, and paid state.
 
 #### Profile Data Model
 
@@ -1492,8 +1500,9 @@ The user profile combines authentication data, statistics, and subscription stat
 | `name`                  | Backend (`User.Name`)             | Display name (from Google/Apple or manual) |
 | `email`                 | Backend (`User.Email`)            | Account email                              |
 | `avatarUrl`             | Backend (`User.ImageURL`)         | Profile photo (Google/Apple URL)           |
-| `subscriptionTier`      | Backend (`User.SubscriptionTier`) | `"free"` or `"pro"`                        |
-| `subscriptionExpiresAt` | Backend                           | PRO subscription expiration date           |
+| `subscriptionTier`      | Backend (`User.SubscriptionTier`) | Legacy runtime field: `"free"` or `"pro"` |
+| `capabilities`          | Backend target model              | Android rollout target: `local_premium`, `backend_sync`, `ai_credits_monthly` |
+| `subscriptionExpiresAt` | Backend                           | Everywhere renewal / expiration date       |
 | `linkedAccounts`        | Backend                           | Linked providers: Google, Apple, email     |
 | `emailVerified`         | Backend (`User.EmailVerified`)    | Whether the email is verified              |
 | `memberSince`           | Backend (`User.CreatedAt`)        | Registration date                          |
@@ -1512,7 +1521,7 @@ The user profile combines authentication data, statistics, and subscription stat
 
 The profile screen (`ProfileScreen`) shows:
 
-- **Header:** Avatar, name, email, PRO/FREE badge
+- **Header:** Avatar, name, email, paid state badge (`Free` / `Everywhere`, with legacy compatibility while runtime still exposes `pro`/`premium`)
 - **Statistics:** streak, total hours, sessions, completed tasks, member since
 - **Account:** Linked accounts (Google, Apple, email), option to link/unlink
 - **Subscription:** current status, expiration date, manage/upgrade button

@@ -1,9 +1,9 @@
 # Pepinillo — Current Implementation Status
 
 **Date:** 2026-03-24  
-**Version:** 1.1  
+**Version:** 1.3  
 **Status:** Active Development  
-**Last Updated:** 2026-04-20  
+**Last Updated:** 2026-04-21  
 **Update Cadence:** Per sprint
 
 ---
@@ -12,11 +12,34 @@
 
 | Platform        | Status                                                              | Files           | Approx. Lines | Build                |
 | --------------- | ------------------------------------------------------------------- | --------------- | ------------- | -------------------- |
-| iOS (iPhone)    | App Store Ready (Audit P0-P3 fixes applied, ready for review)       | ~143 Swift      | ~30K          | Requires Xcode setup |
+| iOS (iPhone)    | App Store Ready (Audit P0-P3 fixes applied, ready for review)       | ~143 Swift      | ~30K          | BUILD SUCCESSFUL (Pepinillo Dev, iPhone 17 Pro simulator) |
 | watchOS         | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included      | Requires Xcode setup |
 | Android (phone) | Sprints 1-4 complete (Foundation + Ecosystem + Polish)              | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL     |
 | Wear OS         | Implemented (timer, tasks, stats, tile, complication)               | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL     |
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
+
+### Monetization Direction (2026-04-21, v3.0)
+
+- **Approved commercial model:** Pepinillo+ (one-time, NOT a subscription) + Everywhere/AI+ (recurring sync + Advanced AI).
+- **Naming finalized:** "Pepinillo+" for the one-time purchase, "Everywhere/AI+" for the subscription.
+- **Product ID reuse:** Existing `pro.lifetime` → Pepinillo+, `pro.monthly`/`pro.annual` → Everywhere/AI+. No new SKUs needed.
+- **Apple Intelligence as hero:** On-device AI Reports (Foundation Models + template fallback) is the primary differentiator.
+- **Próximamente strategy:** Everywhere/AI+ features (Backend Sync, AI Coach, Task Scheduling, Subtask Gen) shown only in paywall with subtle badge.
+- **Transparency principle:** Pepinillo+ is explicitly "One purchase. Yours forever. Not a subscription."
+- **Current runtime:** legacy single-tier Pro model with monthly / annual / lifetime products.
+- **Primary implementation debt:** 
+  1. Enable `AppConfig.aiInsightsEnabled = true` (feature flag currently OFF)
+  2. Redesign Paywall for Pepinillo+ vs Everywhere/AI+ tiers
+  3. Update RevenueCat entitlements to `apple_unlock` + `everywhere` (currently `premium`/`pro`)
+  4. Update App Store Connect product metadata with new names and descriptions
+
+### Product Reset Direction (2026-04-21)
+
+- **Hero user:** knowledge worker / creative doing deep work daily.
+- **Canonical product pillars:** `Execute`, `Plan`, `Reflect`, and `Admin`.
+- **Canonical phone surfaces:** `Focus`, `Plan`, and `Dashboard` as primary destinations; `Account / Admin` lives outside the main productivity axis.
+- **Current product gaps:** task depth is still too light, Dashboard/reviews are not yet a unified reflection engine, and AI positioning is more defined in strategy than in product behavior.
+- **Immediate product priority:** stop accumulating disconnected surfaces and redesign screen ownership before major new feature expansion.
 
 ---
 
@@ -84,12 +107,13 @@
 ### Billing ✅
 
 - **RevenueCat iOS:** fully configured
-  - SDK v5+ (wrapping StoreKit 2) with 3 products (monthly, annual, lifetime)
+  - SDK v5+ (wrapping StoreKit 2) with legacy 3-product setup (monthly, annual, lifetime)
   - iOS Public API Key: `appl_xnChlVXXtUFhusIfJyNrNDcMGLj` (configured in code)
-  - Entitlement: `pro` via RevenueCat Offerings/Packages
+  - Entitlement: `pro` via RevenueCat Offerings/Packages (legacy single-flag model)
   - User identification integrated with Sign in with Apple flow
   - Grace period support via RevenueCat entitlements
   - Paywall implemented
+  - **Target packaging:** Apple Unlock + Everywhere Monthly + Everywhere Annual
 
 ### RevenueCat Backend: Secret API key configured
 
@@ -126,15 +150,36 @@
 **P1.2 — deviceId Keychain migration (iOS):**
 - `getOrCreateDeviceId` migrated from `UserDefaults` to iOS Keychain (`kSecAttrAccessibleAfterFirstUnlock`) with transparent legacy migration path (`ios/Domain/Clients/KeychainClient.swift`).
 
+### Navigation Parity R1 Progress (2026-04-20) ✅ / Transitional
+
+- The 4-tab parity pass aligned iOS and Android shells as a short-term baseline.
+- That baseline is now considered **transitional** under the product reset.
+- Next IA target: `Focus`, `Plan`, and `Dashboard` as primary productivity destinations, with `Account / Admin` holding Settings, Profile, Subscription, and support.
+- Reviews and calendar entry points should consolidate under `Dashboard` or `Plan`, instead of remaining scattered across drawers and duplicated shortcuts.
+
+### Widget/Build Stabilization (2026-04-20) ✅
+
+- Fixed multiple Swift syntax and state-construction errors in widget providers (`ios/PepinilloWidget/DashboardWidgetProvider.swift`, `ios/PepinilloWidget/FocusWidgetProvider.swift`, `ios/PepinilloWidget/DashboardWidget.swift`).
+- Removed duplicated `isProUser` declaration causing compile failure (`ios/Shared/Persistence/AppGroupContainer.swift`).
+- Fixed SwiftUI style API mismatch in email verification view (`ios/Features/Auth/EmailVerificationView.swift`).
+- Addressed Swift concurrency capture violations in `AppFeature` async effects (`ios/App/AppFeature.swift`).
+- Regenerated Xcode project from `project.yml` to ensure source inclusion consistency (`ios/Pepinillo.xcodeproj`).
+
 ### Pending iOS
 
 | Item                                | Priority | Notes                                                                                                  |
 | ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| Feature gating enforcement          | ✅ Done   | Analytics 30D/Year + weekly/monthly/AI reports, PRO themes, Dashboard/Tasks widgets, and backend sync all route free users to the paywall or skip gracefully |
-| Price update to $3.99/$24.99/$49.99 | P0       | Update via RevenueCat Offerings (PRIORITY)                                                             |
+| ✅ Product reset IA + screen ownership | DONE     | 4-tab: Focus / Plan / Dashboard / Account("...") with full-screen NavigationLink pushes |
+| ✅ Account tab full-screen navigation | DONE     | Profile, Subscription, Export, Help all push as NavigationLink (Phase 5 complete) |
+| Enable Apple Intelligence (AI Reports) | P0    | Code is ready, just needs `AppConfig.aiInsightsEnabled = true` + paywall redesign |
+| Paywall redesign for Pepinillo+ / Everywhere/AI+ | P0 | Two-tier paywall: one-time vs subscription, Próximamente section |
+| RevenueCat entitlement reconfiguration | P0     | Map `pro.lifetime` → `apple_unlock`, `pro.monthly`/`pro.annual` → `everywhere` |
+| App Store Connect metadata update | P0       | New names, descriptions, and screenshots for the 3 products |
+| Demo data verification | P0       | Run `-seedDemoData` and verify Dashboard, AI Reports, charts all display correctly |
+| Feature gating enforcement | ✅ Done   | Legacy single-pro gating is in place; entitlement names updated for new tiers |
 | Xcode setup (non-code)              | P0       | App Group, CloudKit container, StoreKit config, targets, SPM, Info.plist, audio assets, localization |
 | macOS target                        | P2       | Included in roadmap but not implemented                                                                |
-| iPad layouts                        | P2       | NavigationSplitView, Stage Manager, keyboard shortcuts                                                 |
+| iPad layouts                        | P2       | NavigationSplitView parity baseline is implemented; Stage Manager and keyboard shortcuts remain        |
 
 ---
 
@@ -208,15 +253,15 @@
 - **RevenueCat Android:** fully configured
   - SDK v8.10.0 (Purchases SDK) integrated
   - Android Public API Key: `goog_ITPYSPEdubAzAeoNGxezZuZJELT` (configured in code)
-  - Product IDs: com.pepinillo.app.pro.monthly, com.pepinillo.app.pro.annual, com.pepinillo.app.pro.lifetime
-  - Entitlement: `premium` (shared with iOS via RevenueCat)
+  - Legacy Product IDs: com.pepinillo.app.pro.monthly, com.pepinillo.app.pro.annual, com.pepinillo.app.pro.lifetime
+  - Entitlement: `premium` (legacy naming drift from iOS `pro`)
   - User identification integrated with auth flow
   - Grace period support via RevenueCat entitlements
   - Paywall implemented
-- **Cross-platform billing parity:** iOS and Android both use RevenueCat (core setup completed)
+- **Cross-platform billing stack parity:** iOS and Android both use RevenueCat (core setup completed)
   - iOS uses RevenueCat SDK v5+ (wrapping StoreKit 2)
   - Android uses RevenueCat Purchases SDK v8.10.0
-  - Shared `premium` entitlement across platforms
+  - Packaging still needs migration to Apple Unlock + Everywhere
 - **RevenueCat Backend:** Secret API key configured
   - Secret API Key (V2): `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (label: "Pepinillo Backend")
   - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented)
@@ -235,10 +280,20 @@
 | Unused imports cleaned | ✅ | Removed `runBlocking` import from MainActivity |
 | Full sync pagination | ✅ | Already implemented in `InitialSyncManager` with cursor-based loops |
 
+### Android/Wear Build Stabilization (2026-04-20) ✅
+
+- Fixed unresolved DI import for `SubscriptionManager` in `MainActivity` (`android/app/src/main/java/dev/creapolis/pepinillo/MainActivity.kt`).
+- Fixed WorkManager network constraint compile issue by restoring `NetworkType` import (`android/app/src/main/java/dev/creapolis/pepinillo/data/sync/SyncWorker.kt`).
+- Fixed timer service widget timestamp calculation using `remainingMillis` derived from state (`android/app/src/main/java/dev/creapolis/pepinillo/service/FocusTimerService.kt`).
+- Fixed Glance widget compilation issues in focus widget (misplaced imports, key conflict, invalid countdown API usage, color type mismatch) (`android/app/src/main/java/dev/creapolis/pepinillo/widget/FocusTimerWidget.kt`).
+- Fixed Wear presentation compile blockers (`Alignment`/`height` imports in stats screen; `Stop` icon import in timer screen) (`android/wear/src/main/java/dev/creapolis/pepinillo/presentation/StatsScreen.kt`, `android/wear/src/main/java/dev/creapolis/pepinillo/presentation/TimerScreen.kt`).
+- Validation: `:app:assembleDebug` and `:wear:assembleDebug` both successful.
+
 ### Pending Android
 
 | Item                           | Priority | Notes                                                                        |
 | ------------------------------ | -------- | ---------------------------------------------------------------------------- |
+| Product reset IA + screen ownership | P0    | Same conceptual shell as iOS: `Focus / Plan / Dashboard` with Settings moved under `Account / Admin` |
 | Feature gating enforcement     | P0       | Subtasks & recurrence are gated; analytics, widgets, and themes still need gating |
 | Complete paywall UI            | P0       | Subscription screen is functional but not complete                           |
 | Firebase Analytics/Crashlytics | P1       | Plugins commented out; missing `google-services.json`                        |
@@ -335,7 +390,7 @@
 | ------------------------- | --------------------- | ------------------------------------------------- | ------------------------------------------------------ |
 | Auth                      | ✅ Sign in with Apple | ✅ JWT + Go backend                              |                                                        |
 | Anonymous user support    | ✅ IdentityClient     | ✅ IdentityManager state machine                 | Both: full offline use without account                 |
-| Sync                      | ✅ CloudKit + Backend | ✅ Room + SyncEngine + WorkManager + WebSocket   | Both: full backend sync architecture                   |
+| Sync                      | ✅ CloudKit + Backend | ✅ Room + SyncEngine + WorkManager + WebSocket   | Commercial split now distinguishes Apple-local sync from Everywhere backend sync |
 | Settings sync             | ✅ PreferenceDirtyTracker (17 keys, per-key LWW) | ✅ SettingsSyncEngine (17 keys, per-key LWW)     | Both: bidirectional via user_preferences table |
 | Batch session sync        | ✅ SyncClient.syncSessions() | ✅ POST /sync/sessions                       | Both: replaces individual POSTs                        |
 | Initial upload            | ✅ SyncClient.initialUpload() | ✅ POST /sync/initial-upload                    | Both: atomic upload on anonymous-to-registered         |
@@ -350,9 +405,11 @@
 | ----------------------------------- | ---------------------------------- | --------------------------------------- | -------------------------------------------------------- |
 | Billing SDK                         | ✅ RevenueCat SDK v5+ (StoreKit 2) | ✅ RevenueCat SDK v8.10.0 (Purchases)   | Core cross-platform billing parity established           |
 | Paywall UI                          | ✅                                 | ✅                                      | Available on both platforms                              |
-| Feature gating                      | ⚠️ Not enforced                    | ✅ Subtasks/recurrence gated            | iOS and several Android features still require full gating |
-| Products (monthly/annual/lifetime)  | ✅ 3 products via RevenueCat       | ✅ 3 products: monthly/annual/lifetime  | Configured in RevenueCat                                 |
-| Entitlements verification           | ✅ RevenueCat entitlements (`pro`) | ✅ RevenueCat entitlements (`premium`)  | Entitlement naming still needs full harmonization check  |
+| Feature gating                      | ✅ Legacy gating enforced          | ⚠️ Partial                              | Next step is capability-based gating for Apple Unlock vs Everywhere |
+| Products (current runtime)          | ✅ monthly/annual/lifetime         | ✅ monthly/annual/lifetime              | Legacy single-tier model still configured                |
+| Products (target rollout)           | 📋 Apple Unlock + Everywhere       | 📋 Everywhere monthly/annual            | Approved commercial direction as of 2026-04-21           |
+| Entitlements verification           | ✅ RevenueCat entitlements (`pro`) | ✅ RevenueCat entitlements (`premium`)  | Naming drift still needs harmonization and capability split |
+| AI credit ledger                    | ⬜                                  | ⬜                                       | Backend work not started                                 |
 
 ### Design and Accessibility
 
@@ -489,8 +546,10 @@
 | 3   | Android: add Google Sign-In via Credential Manager                    | P0       | #2 (OAuth backend) | 6-8h     |
 | 4   | ~~iOS: create API client, connect auth + sync to backend~~            | ✅ DONE  | #2 (OAuth backend) | Done     |
 | 5   | Improve sync engine (WebSocket real-time, bidirectional multi-device) | P1       | #1 (deployment)    | 12-16h   |
-| 6   | Cross-platform subscription verification                              | P1       | #1, #4             | 8-12h    |
-| 7   | User profile screen (both platforms)                                  | P1       | #2, #3, #4         | 8-12h    |
+| 6   | Monetization v2 capability split (`local_premium`, sync, AI credits)  | P0       | #1                 | 8-12h    |
+| 7   | AI credit ledger + monthly reset policy                               | P1       | #1, #6             | 10-14h   |
+| 8   | Cross-platform subscription verification                              | P1       | #1, #4, #6         | 8-12h    |
+| 9   | User profile screen (both platforms)                                  | P1       | #2, #3, #4, #8     | 8-12h    |
 
 ---
 

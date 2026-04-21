@@ -1,7 +1,7 @@
 # Unified Competitive Analysis — Pepinillo
 
-**Version:** 1.0  
-**Last Updated:** 2026-03-24  
+**Version:** 1.1  
+**Last Updated:** 2026-04-21  
 **Scope:** iOS + Android + watchOS + Wear OS  
 **Status:** Active
 
@@ -9,7 +9,7 @@
 
 ## 1. Market Repositioning
 
-Pepinillo stops competing as a "Pomodoro app" ($3.99 commodity tier) and instead positions itself as a **deep work companion** ($25-50/year tier), where margins are higher, users are more loyal, and the competitive set is surprisingly thin.
+Pepinillo must stop competing as a "better Pomodoro app" and instead compete as a **deep work operating system**: a product that helps users plan the right work, execute with the right mode, and reflect on what actually works.
 
 ### Previous competitive set (Pomodoro)
 
@@ -21,15 +21,23 @@ Structured, Session, Things 3 (partial), Centered, Endel, TickTick, Focus To-Do 
 
 ### The market gap
 
-**No app offers all of this together:**
+**No product currently wins the full execution loop together:**
 
-1. Multiple focus techniques (Pomodoro + Flowtime + Time Block + Free)
-2. Integrated task management linked to focus sessions
-3. Full ecosystem integration (Apple: Watch, Dynamic Island, Siri, Focus Modes | Android: Wear OS, Glance, Quick Settings, Assistant, Health Connect)
-4. Analytics that compare effectiveness across techniques
-5. Localization and LATAM-first pricing
+1. **Execute**: multiple focus techniques with fast session start and native surfaces
+2. **Plan**: medium-depth tasks tied directly to deep-work sessions
+3. **Reflect**: reviews, coaching, and reports that improve future behavior
+4. **Ecosystem depth**: Apple + Android devices treated as first-class products
+5. **Regional strategy**: localization and LATAM-first premium pricing
 
-Each competitor covers 1-3 of these points. Pepinillo covers all 5.
+Each competitor wins one or two of these battlefields. Very few even attempt three.
+
+### Competitive Battlefields
+
+| Battlefield | What great looks like | Why it matters |
+| ----------- | --------------------- | -------------- |
+| **Execute** | Fastest, calmest path to focused work across phone, widget, watch, and voice | This is where timer-first competitors are weak and where Pepinillo is already strongest |
+| **Plan** | Tasks strong enough for real daily work, without PM bloat | If Tasks stay too shallow, users keep a second app open and Pepinillo becomes optional |
+| **Reflect** | Dashboard, reviews, goals, and coaching that change user behavior | If reflection is thin, analytics become decoration and AI becomes vague marketing |
 
 ---
 
@@ -271,6 +279,15 @@ Pepinillo is the **only deep-work app that covers all 4 devices** (iPhone, Apple
 | Focus To-Do   |    ✅     |    ❌     |    ✅     |    ❌     |
 | Session       |    ✅     |    ⚠️     |    ⚠️     |    ❌     |
 
+### 7.4 Product Reset Implications
+
+| Battlefield | Current strength | Required improvement to truly win |
+| ----------- | ---------------- | --------------------------------- |
+| **Execute** | 4-mode focus engine, widgets, watch/wear, native surfaces | Protect simplicity and keep Focus as the hero surface |
+| **Plan** | Tasks already linked to sessions, energy, recurrence, subtasks | Add medium-depth planning: projects/areas, dates, calendar-aware shaping, stronger daily views |
+| **Reflect** | Weekly/monthly review and AI reports already exist | Turn Dashboard into a true reflection hub with goals, coaching, and better next-action insight |
+| **UX / IA** | Native apps on all platforms | Reduce navigation fragmentation; users should understand the app in the same mental model on iOS and Android |
+
 ---
 
 ## 8. Risks by Platform
@@ -308,11 +325,11 @@ Pepinillo is the **only deep-work app that covers all 4 devices** (iPhone, Apple
 
 ## 9. Strategic Conclusions
 
-1. **No competitor offers 4 focus modes + tasks + a complete ecosystem on BOTH platforms.** This is a genuinely open opportunity.
-2. **Structured is the #1 threat on iOS** — it has Apple editorial relationships and strong design quality. But it only does time-blocking.
-3. **Focus To-Do is the #1 threat on Android** — direct overlap in Pomodoro + tasks. But it has outdated UI and Pomodoro only.
-4. **The $30-40/yr price point is validated** by Structured, Fantastical, Craft (iOS), and TickTick (Android).
-5. **"Focus your way" / "Trabaja profundo. A tu manera."** is a powerful message — it positions us as the flexible option vs. single-technique competitors.
-6. **LATAM remains an underserved market** — no premium focus app has a LATAM strategy.
-7. **Users of Things 3 + Forest (iOS) and TickTick + Focus To-Do (Android) are our best acquisition target** — they already pay for tasks AND focus separately. Pepinillo replaces both.
-8. **Coverage of 4 devices (iPhone, Watch, Android, Wear OS) is a unique differentiator** that no competitor can currently match.
+1. **Pepinillo already has a genuine execution moat**: 4 focus modes, native surfaces, and 4-device coverage.
+2. **That moat is not enough by itself.** If planning remains too shallow and reflection remains too generic, users will still pair Pepinillo with stronger task apps.
+3. **Structured is the iOS benchmark for calm product polish.** We should not copy it 1:1, but we must exceed it in flexibility and execution depth.
+4. **Things 3, Todoist, and TickTick are the planning benchmark.** We do not need their full scope, but we do need stronger daily planning than timer-first apps offer today.
+5. **AI should be coaching and reflection first**, not an undifferentiated assistant. Honest intelligence beats vague AI positioning.
+6. **The biggest UX risk is fragmentation, not lack of screens.** Pepinillo must organize around `Focus`, `Plan`, `Dashboard`, and `Account / Admin` with ruthless clarity.
+7. **LATAM remains an underserved premium lane** and strengthens the commercial case for a calmer, native, premium product.
+8. **The most powerful acquisition story is replacing two-app workflows**: task manager + focus timer becomes one calmer deep-work system.

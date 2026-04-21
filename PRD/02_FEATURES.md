@@ -1,7 +1,7 @@
 # Pepinillo — Unified Features Document
 
-**Version:** 1.0  
-**Last Updated:** 2026-03-24  
+**Version:** 1.3  
+**Last Updated:** 2026-04-21  
 **Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS  
 **Author:** Tiago David + Claude Code  
 **Status:** Active
@@ -18,6 +18,44 @@
 | **[watchOS]** | Exclusive to Apple Watch                       |
 | **[Wear OS]** | Exclusive to Wear OS                           |
 
+### Commercial Labels
+
+| Label | Meaning |
+| ----- | ------- |
+| **FREE** | Core offline Pepinillo experience |
+| **PEPINILLO+** | One-time purchase — full Apple experience with Apple Intelligence (not a subscription) |
+| **EVERYWHERE/AI+** | Recurring subscription — cross-platform sync + Advanced AI (Coach, Scheduling, Subtask Gen) + 100 AI credits/month |
+
+**Commercial note:** older parts of this document still use legacy `PRO` or `APPLE` wording in places. Unless explicitly stated otherwise, `APPLE` should now be interpreted as **PEPINILLO+** and `EVERYWHERE` as **EVERYWHERE/AI+**. The canonical rollout lives in [PRD/04_MONETIZATION.md](PRD/04_MONETIZATION.md) v3.0.
+
+## Product Reset (2026-04-21)
+
+### Product Pillars
+
+| Pillar | Role | Must own |
+| ------ | ---- | -------- |
+| **Execute** | Help users start and sustain deep work fast | Focus screen, timer state, mode choice, in-session task link, post-session reflection entry |
+| **Plan** | Turn work into a realistic deep-work plan | Inbox, Today, Upcoming, lightweight projects/areas, dates, energy, recurrence, task detail |
+| **Reflect** | Teach the user what works and what to improve | Dashboard, Weekly Review, Monthly Review, goals, AI coaching, progress summaries |
+| **Admin** | Manage identity, settings, subscription, export, and support | Profile, auth, paywall, settings, sync state, help |
+
+### Core Screen Architecture
+
+| Surface | Responsibility | Rule |
+| ------- | -------------- | ---- |
+| **Focus** | Hero execution surface | Must always be the fastest path to timer-running |
+| **Plan** | Task planning and daily shaping | Medium-depth personal planning, not generic project management |
+| **Dashboard** | Reflection, reviews, goals, and coaching | Reviews live here, not as hidden duplicate destinations |
+| **Account / Admin** | Profile, auth, subscription, settings, export, help | Essential, but not a co-equal productivity destination |
+| **Contextual flows** | Paywall, auth, session reflection, task detail, calendar pickers | Should appear when needed, not live as primary tabs |
+
+### IA Rules
+
+- Phone apps should expose only **3 primary productivity destinations**: `Focus`, `Plan`, and `Dashboard`.
+- `Settings`, `Profile`, `Subscription`, and support belong under **Account / Admin**, not the main productivity axis.
+- `Weekly Review` and `Monthly Review` belong to `Dashboard`.
+- `Focus` remains the hero. `Plan` supports Focus. `Dashboard` teaches the user what to change next.
+
 ---
 
 ## P0 — Must-Have (Mandatory)
@@ -31,8 +69,8 @@ Pepinillo's primary differentiator: 4 focus techniques in one app, implemented w
 | Mode                   | Description                                                                                                                                                                                                  | Tier |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- |
 | **Pomodoro**           | Classic 25/5/15 intervals. Automatic work-break-work cycles. Tracks pomodoro count (e.g., "3 of 4"). Customizable durations.                                                                             | FREE |
-| **Flowtime**           | Open-ended session without fixed intervals. When fatigue hits, user takes a break. App suggests break duration based on focused time (10 min -> 2 min break, 50 min -> 10 min break). Ideal for creative work. | PRO  |
-| **Time Block**         | Fixed time block (e.g., "2 hours of writing"). Continuous countdown with optional mid-point check-ins. Tracks completed blocks per day.                                                                  | PRO  |
+| **Flowtime**           | Open-ended session without fixed intervals. When fatigue hits, user takes a break. App suggests break duration based on focused time (10 min -> 2 min break, 50 min -> 10 min break). Ideal for creative work. | APPLE  |
+| **Time Block**         | Fixed time block (e.g., "2 hours of writing"). Continuous countdown with optional mid-point check-ins. Tracks completed blocks per day.                                                                  | APPLE  |
 | **Stopwatch (Chrono)** | Ascending timer without pressure. No goals or structure. Just tracks how long you work. Pause and stop. Ideal for casual/flexible segment.                                                                | FREE |
 
 #### Engine Architecture
@@ -49,7 +87,14 @@ Pepinillo's primary differentiator: 4 focus techniques in one app, implemented w
 
 ### Task Management [All]
 
-Integrated task system with the focus engine. Not a generic task manager: designed to plan and execute deep work sessions.
+Integrated planning layer for the focus engine. Pepinillo Tasks should be **deeper than a timer app** and **lighter than Todoist/Things**: serious enough for daily deep work, without becoming bloated personal PM software.
+
+#### Planning Guardrails
+
+- Canonical planning views: **Inbox**, **Today**, **Upcoming**, and **lightweight projects/areas**.
+- Dates and calendar context should support planning, not replace the calendar app.
+- Energy, recurrence, estimates, and task-to-session linkage remain part of the core model.
+- No collaboration, team boards, document sprawl, or enterprise-style task management.
 
 #### Core Functionality
 
@@ -57,45 +102,53 @@ Integrated task system with the focus engine. Not a generic task manager: design
 | -------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------ |
 | Task CRUD                  | FREE                            | Create, edit, delete tasks with title and description                                                  |
 | Drag-to-reorder            | FREE                            | Reorder tasks by priority via drag                                                                     |
-| Subtasks                   | PRO                             | Nested subtasks (up to 20 per task) with individual checkboxes                                         |
+| Subtasks                   | APPLE                           | Nested subtasks (up to 20 per task) with individual checkboxes                                         |
 | Priority                   | FREE                            | None / Low / Medium / High — visual indicator                                                          |
 | Energy Levels              | FREE                            | Deep Work / Shallow Work / Admin — group similar tasks                                                 |
 | Est./Completed Pomodoros   | FREE                            | Assign pomodoro estimate to task, track completed                                                      |
 | Link Task to Focus Session | FREE                            | Any focus mode can link to active task. Session records: task, mode used, duration, completion status |
-| Recurring Tasks            | PRO                             | 5 presets: daily, weekdays, weekly, biweekly, monthly                                                  |
-| Task Limit                 | FREE: 3 active / PRO: unlimited | Natural upgrade motivation                                                                              |
+| Recurring Tasks            | APPLE                           | 5 presets: daily, weekdays, weekly, biweekly, monthly                                                  |
+| Task Limit                 | FREE: 3 active / APPLE: unlimited | Natural upgrade motivation                                                                            |
 
 ---
 
-### Analytics & Dashboard [All]
+### Dashboard / Reflect [All]
 
-Analytic dashboard with mode-specific breakdown — not just "total hours" but how each technique performs for the user.
+Dashboard is the **reflection home** of Pepinillo. It should not just show charts; it should help the user understand progress, review the week, and make better next decisions.
+
+#### Reflect Model (Product Reset)
+
+- `Dashboard` owns **Weekly Review**, **Monthly Review**, goals, trend interpretation, and coaching.
+- Calendar access and date filters support Dashboard, but do not become separate primary destinations.
+- MVP intelligence means **reports, mode recommendations, and priority coaching**.
+- Post-MVP exploration can include planning assistant, scheduling help, and subtask generation.
 
 #### Time Views
 
 | View                | Tier |
 | ------------------- | ---- |
 | Today + Last 7 Days | FREE |
-| 30 Days             | PRO  |
-| 1 Year              | PRO  |
+| 30 Days             | APPLE  |
+| 1 Year              | APPLE  |
 
 #### Dashboard Components
 
 | Component               | Tier | Details                                                                                             |
 | ----------------------- | ---- | --------------------------------------------------------------------------------------------------- |
 | Daily Summary           | FREE | Focus hours, completed sessions, finished tasks                                                     |
-| Mode Breakdown          | PRO  | Charts showing time distribution across Pomodoro/Flowtime/TimeBlock/Chrono                         |
-| Most Productive Hours   | PRO  | Analysis by hour of day and day of week                                                             |
-| Completion Rate by Mode | PRO  | Helps users discover which technique works best                                                     |
+| Mode Breakdown          | APPLE  | Charts showing time distribution across Pomodoro/Flowtime/TimeBlock/Chrono                         |
+| Most Productive Hours   | APPLE  | Analysis by hour of day and day of week                                                             |
+| Completion Rate by Mode | APPLE  | Helps users discover which technique works best                                                     |
 | Achievements            | FREE | 6 badge types: First Session, Weekly Streak, Pomodoro Master, Deep Diver, Century Club, Early Bird |
-| Weekly Review           | PRO  | Weekly comparison: focus hours, mode distribution, tasks, streaks. Trend arrows vs. previous week  |
-| Monthly Review          | PRO  | Monthly review with long-term trends and productivity patterns                                      |
-| AI Productivity Reports | PRO  | On-device AI-generated reports, no cloud data sent                                                  |
+| Weekly Review           | APPLE  | Weekly comparison: focus hours, mode distribution, tasks, streaks. Trend arrows vs. previous week  |
+| Monthly Review          | APPLE  | Monthly review with long-term trends and productivity patterns                                      |
+| AI Productivity Reports | APPLE  | Local/on-device AI-generated reports. Cloud credit-based AI workflows belong to Everywhere          |
 
 #### AI Reports Implementation by Platform
 
 - **[iOS]**: Apple Foundation Models (iOS 18+). Fallback to predefined templates with interpolated data if device doesn't support Foundation Models.
 - **[Android]**: On-device ML (Gemini Nano / smart templates). Fallback to templates with interpolated data if ML unavailable.
+- **Pepinillo Everywhere**: monthly AI credits unlock cloud-backed AI workflows that should not depend on local model availability.
 
 ---
 
@@ -108,8 +161,8 @@ Multiple widgets to interact with Pepinillo without opening the app.
 | Size       | Content                                | Tier |
 | ---------- | -------------------------------------- | ---- |
 | Small (S)  | Active timer or daily progress         | FREE |
-| Medium (M) | Timer + top 3 tasks of the day         | PRO  |
-| Large (L)  | Timer + tasks + daily mode-based stats | PRO  |
+| Medium (M) | Timer + top 3 tasks of the day         | APPLE  |
+| Large (L)  | Timer + tasks + daily mode-based stats | APPLE  |
 
 **Implementation:**
 
@@ -121,7 +174,7 @@ Multiple widgets to interact with Pepinillo without opening the app.
 - **[iOS]**: WidgetKit Lock Screen widgets (circular, rectangular, inline)
 - **[Android]**: Glance widget with `KEYGUARD` category (API 33+, Android 13+)
 
-**Tier:** Basic timer widget = FREE. Additional widgets = PRO.
+**Tier:** Basic timer widget = FREE. Additional widgets = APPLE.
 
 ---
 
@@ -335,6 +388,7 @@ First-run flow to introduce users to Pepinillo.
 
 - **[Android]**: 5 screens with interactive onboarding
 - **[iOS]**: 3-4 screens including permission setup
+- **Outcome rule:** onboarding should end in `Focus`, ready to start the first session, while `Plan` and `Dashboard` are introduced progressively.
 
 **Tier:** FREE
 
@@ -517,9 +571,11 @@ Historical session analysis to suggest the best focus mode by task type.
 #### [iOS] — RevenueCat SDK v5+
 
 - RevenueCat SDK v5+ wrapping native StoreKit 2
-- Products: Monthly, Annual, Lifetime
+- **Pepinillo+** (one-time, not a subscription): `com.pepinillo.app.pro.lifetime`
+- **Everywhere/AI+ Monthly**: `com.pepinillo.app.pro.monthly`
+- **Everywhere/AI+ Annual**: `com.pepinillo.app.pro.annual`
 - iOS Public API Key: `appl_xnChlVXXtUFhusIfJyNrNDcMGLj`
-- Entitlement: `pro` (unified as `premium` in backend)
+- Entitlement resolution: `everywhere` > `apple_unlock` > legacy `premium`/`pro`
 - Server-side verification via Go backend + RevenueCat
 - Native restore purchases
 - Grace period: 3 days supported
@@ -527,29 +583,26 @@ Historical session analysis to suggest the best focus mode by task type.
 #### [Android] — RevenueCat Purchases SDK v8.10.0 ✅ NEW
 
 - RevenueCat Purchases SDK v8.10.0
-- Products: Monthly, Annual, Lifetime
-  - com.pepinillo.app.pro.monthly
-  - com.pepinillo.app.pro.annual
-  - com.pepinillo.app.pro.lifetime
+- Rollout products: Everywhere Monthly, Everywhere Annual
 - Android Public API Key: `goog_ITPYSPEdubAzAeoNGxezZuZJELT`
-- Entitlement: `premium` (unified with iOS)
+- Current runtime entitlement: `premium` (legacy naming drift to remove)
 - Server-side verification via Go backend + RevenueCat
 - Grace period: 3 days supported
-- **Cross-platform parity ACHIEVED:** Both iOS and Android now use RevenueCat
+- **Cross-platform billing stack parity:** both platforms use RevenueCat, but packaging still needs migration to Apple Unlock + Everywhere
 
 #### Prices
 
-| Plan     | Global (US/EU)                        | LATAM (MX/CO/AR/BR/CL/PE) |
-| -------- | ------------------------------------- | -------------------------- |
-| Monthly  | $3.99/month                           | $1.99/month                |
-| Annual   | $24.99/year (~$2.08/month, 48% save) | $12.99/year (~$1.08/month) |
-| Lifetime | $49.99                                | $29.99                     |
+| Offer | Global (US/EU) | LATAM (MX/CO/AR/BR/CL/PE) | Type |
+| ----- | -------------- | -------------------------- | ---- |
+| Pepinillo+ | $19.99 one-time | $9.99 one-time | **Not a subscription** |
+| Everywhere/AI+ Monthly | $4.99/month | $2.49/month | Subscription |
+| Everywhere/AI+ Annual | $34.99/year (~$2.92/month) | $17.99/year (~$1.50/month) | Subscription |
 
 ---
 
-### User Profile [All]
+### Account / Admin Hub [All]
 
-Profile screen with account information and productivity statistics.
+Administrative surface for account information and productivity identity. It owns profile, auth state, subscription, settings, sync state, export, and support without competing with Focus, Plan, or Dashboard in primary navigation.
 
 #### Account Information
 
@@ -557,7 +610,7 @@ Profile screen with account information and productivity statistics.
 | ---------------- | ------------------------------------------------------------- | ---- |
 | Avatar           | User profile photo (from Google/Apple or custom)             | FREE |
 | Name and Email   | Basic account data                                            | FREE |
-| Account Type     | Free or Pro (tier: monthly/annual/lifetime + expiration date) | FREE |
+| Account Type     | Free, Apple Unlock, or Everywhere (with cycle / expiration when applicable) | FREE |
 | Linked Accounts  | Connected providers (Google, Apple, email/password)          | FREE |
 
 #### Profile Statistics
@@ -601,7 +654,17 @@ Authentication with social providers in addition to email/password.
 
 ### Cloud Sync and Multi-Device [All]
 
-Bidirectional data synchronization between devices via Go backend.
+Pepinillo supports **two sync layers** during the Apple-first monetization rollout.
+
+#### Apple-Local Sync [iOS]
+
+- CloudKit / iCloud synchronization between Apple devices on the same Apple account
+- No backend account, no store-portable entitlement, and no cross-platform promise
+- **Tier:** APPLE or EVERYWHERE
+
+#### Backend Sync [All]
+
+Bidirectional data synchronization between supported devices via the Go backend.
 
 #### Synced Data
 
@@ -631,31 +694,32 @@ Bidirectional data synchronization between devices via Go backend.
 - **[Android]**: SyncEngine + Room dirty flags + WorkManager + SyncWebSocketClient (OkHttp)
 - **[iOS]**: SyncClient + IdentityClient + WebSocketClient (TCA dependencies) + URLSession API client, with CloudKit retained as secondary sync layer
 
-**Tier:** PRO
+**Tier:** EVERYWHERE
 
 ---
 
-### Cross-Platform Subscriptions [All]
+### Pepinillo Everywhere Subscription [All]
 
-Pay in either store (App Store or Google Play) and get PRO on all platforms.
+Pepinillo Everywhere is the recurring layer that funds backend sync, account-based restore, and monthly AI credits.
 
 #### Flow
 
-1. User purchases subscription in App Store or Google Play
+1. User purchases Pepinillo Everywhere in App Store or Google Play
 2. Client sends receipt to Go backend (`/api/v1/billing/verify`)
 3. Backend verifies receipt with corresponding store (Apple App Store Server API / Google Play Developer API)
-4. Backend updates user subscription status
-5. All user devices receive PRO status on sync
+4. Backend updates user capabilities (`backend_sync`, `ai_credits_monthly`, and any bundled local premium access)
+5. All supported user devices receive updated paid status on sync
 
 #### Architecture
 
 | Component           | Detail                                                                     |
 | ------------------- | -------------------------------------------------------------------------- |
-| Source of truth     | Go backend (not local device)                                              |
+| Source of truth     | Go backend capability model (not local device)                             |
 | Apple verification  | App Store Server API v2 (server-to-server)                                |
 | Google verification | Google Play Developer API (server-to-server)                              |
 | Grace period        | 3 days before revoking access after renewal failure                        |
 | Polling             | Client checks subscription status on app start and periodically            |
+| AI credits          | Reset monthly; no rollover in launch scope                                 |
 
 **Tier:** — (billing infrastructure)
 
@@ -694,8 +758,8 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 | -------------------------------------- | --- | ------- | ------- | ------- | ---- |
 | **Focus Engine**                       |     |         |         |         |      |
 | Pomodoro mode                          | ✅  | ✅      | ⬜      | ✅      | FREE |
-| Flowtime mode                          | ✅  | ✅      | ⬜      | ✅      | PRO  |
-| Time Block mode                        | ✅  | ✅      | ⬜      | ✅      | PRO  |
+| Flowtime mode                          | ✅  | ✅      | ⬜      | ✅      | APPLE / EVERYWHERE  |
+| Time Block mode                        | ✅  | ✅      | ⬜      | ✅      | APPLE / EVERYWHERE  |
 | Stopwatch/Chrono mode                  | ✅  | ✅      | ⬜      | ✅      | FREE |
 | Strategy pattern engine                | ✅  | ✅      | ⬜      | ✅      | —    |
 | Background timer survival              | ✅  | ✅      | ⬜      | ⬜      | FREE |
@@ -704,25 +768,25 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 | **Task Management**                    |     |         |         |         |      |
 | Task CRUD                              | ✅  | ✅      | ⬜      | ✅      | FREE |
 | Drag-to-reorder                        | ✅  | ✅      | ➖      | ➖      | FREE |
-| Subtasks                               | ✅  | ✅      | ➖      | ➖      | PRO  |
+| Subtasks                               | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Priority (none/low/med/high)           | ✅  | ✅      | ➖      | ➖      | FREE |
 | Energy levels                          | ✅  | ✅      | ➖      | ➖      | FREE |
 | Estimated/completed pomodoros          | ✅  | ✅      | ➖      | ➖      | FREE |
 | Link task to session                   | ✅  | ✅      | ⬜      | ⬜      | FREE |
-| Recurring tasks                        | ✅  | ✅      | ➖      | ➖      | PRO  |
+| Recurring tasks                        | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | **Analytics and Dashboard**            |     |         |         |         |      |
 | Daily summary (7 days)                 | ✅  | ✅      | ⬜      | ✅      | FREE |
-| 30-day view                            | ✅  | ✅      | ➖      | ➖      | PRO  |
-| 1-year view                            | ✅  | ✅      | ➖      | ➖      | PRO  |
-| Mode breakdown (charts)                | ✅  | ✅      | ➖      | ➖      | PRO  |
+| 30-day view                            | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| 1-year view                            | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Mode breakdown (charts)                | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Achievements (6 types)                 | ✅  | ✅      | ➖      | ➖      | FREE |
-| Weekly Review                          | ✅  | ✅      | ➖      | ➖      | PRO  |
-| Monthly Review                         | ✅  | ✅      | ➖      | ➖      | PRO  |
-| AI Productivity Reports                | 🔄  | 🔄      | ➖      | ➖      | PRO  |
+| Weekly Review                          | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Monthly Review                         | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| AI Productivity Reports                | 🔄  | 🔄      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | **Widgets**                            |     |         |         |         |      |
 | Home Screen — Small                    | ✅  | ⬜      | ➖      | ➖      | FREE |
-| Home Screen — Medium                   | ✅  | ⬜      | ➖      | ➖      | PRO  |
-| Home Screen — Large                    | ✅  | ⬜      | ➖      | ➖      | PRO  |
+| Home Screen — Medium                   | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Home Screen — Large                    | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Lock Screen widget                     | ✅  | ⬜      | ➖      | ➖      | FREE |
 | **Notifications**                      |     |         |         |         |      |
 | Phase transition                       | ✅  | ✅      | ✅      | ✅      | FREE |
@@ -733,25 +797,25 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 | Dynamic Island + Live Activity         | ✅  | ➖      | ➖      | ➖      | FREE |
 | Foreground notification with progress  | ➖  | ✅      | ➖      | ➖      | FREE |
 | **Smartwatch**                         |     |         |         |         |      |
-| Watch timer                            | ⬜  | ➖      | ⬜      | ✅      | PRO  |
-| Mode selection                         | ⬜  | ➖      | ⬜      | ✅      | PRO  |
-| Watch task list                        | ⬜  | ➖      | ⬜      | ✅      | PRO  |
-| Watch dashboard/stats                  | ⬜  | ➖      | ⬜      | ✅      | PRO  |
-| Complications (enhanced)               | ⬜  | ➖      | ✅      | ✅      | PRO  |
-| Focus Timer Tile (enhanced)            | ➖  | ➖      | ➖      | ✅      | PRO  |
-| Tasks Tile                             | ➖  | ➖      | ✅      | ✅      | PRO  |
-| Watch haptics                          | ⬜  | ➖      | ⬜      | ⬜      | PRO  |
+| Watch timer                            | ⬜  | ➖      | ⬜      | ✅      | APPLE / EVERYWHERE  |
+| Mode selection                         | ⬜  | ➖      | ⬜      | ✅      | APPLE / EVERYWHERE  |
+| Watch task list                        | ⬜  | ➖      | ⬜      | ✅      | APPLE / EVERYWHERE  |
+| Watch dashboard/stats                  | ⬜  | ➖      | ⬜      | ✅      | APPLE / EVERYWHERE  |
+| Complications (enhanced)               | ⬜  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
+| Focus Timer Tile (enhanced)            | ➖  | ➖      | ➖      | ✅      | APPLE / EVERYWHERE  |
+| Tasks Tile                             | ➖  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
+| Watch haptics                          | ⬜  | ➖      | ⬜      | ⬜      | APPLE / EVERYWHERE  |
 | **Voice Assistant**                    |     |         |         |         |      |
 | Siri Shortcuts + App Intents           | ✅  | ➖      | ➖      | ➖      | FREE |
 | Google Assistant App Actions           | ➖  | ⬜      | ➖      | ➖      | FREE |
 | **Synchronization**                    |     |         |         |         |      |
-| CloudKit sync (Apple-to-Apple)         | ✅  | ➖      | ✅      | ➖      | PRO  |
-| Backend REST API sync                  | ✅  | ✅      | ➖      | 🔄      | PRO  |
+| CloudKit sync (Apple-to-Apple)         | ✅  | ➖      | ✅      | ➖      | APPLE / EVERYWHERE  |
+| Backend REST API sync                  | ✅  | ✅      | ➖      | 🔄      | EVERYWHERE  |
 | **Themes and Design**                  |     |         |         |         |      |
 | Classic theme                          | ✅  | ✅      | ✅      | ✅      | FREE |
-| Forest / Ocean / Sunset                | ✅  | ✅      | ⬜      | ✅      | PRO  |
+| Forest / Ocean / Sunset                | ✅  | ✅      | ⬜      | ✅      | APPLE / EVERYWHERE  |
 | Theme picker (horizontal scroll cards) | ✅  | ✅      | ➖      | ➖      | FREE |
-| Liquid Glass (iOS 26)                  | ⬜  | ➖      | ⬜      | ➖      | PRO  |
+| Liquid Glass (iOS 26)                  | ⬜  | ➖      | ⬜      | ➖      | APPLE / EVERYWHERE  |
 | Material You dynamic colors            | ➖  | ✅      | ➖      | ✅      | FREE |
 | Light/Dark/System appearance selector  | ✅  | ✅      | ✅      | ✅      | FREE |
 | Focus mode colors (red/purple/green)   | ✅  | ✅      | ✅      | ✅      | FREE |
@@ -773,20 +837,20 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 | Feature                           | iOS | Android | watchOS | Wear OS | Tier |
 | --------------------------------- | --- | ------- | ------- | ------- | ---- |
 | Soundscapes (4 basic)             | ✅  | ⬜      | ➖      | ➖      | FREE |
-| Soundscapes (8 total)             | ✅  | ⬜      | ➖      | ➖      | PRO  |
-| Mode Intelligence                 | ✅  | ⬜      | ➖      | ➖      | PRO  |
+| Soundscapes (8 total)             | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Mode Intelligence                 | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Streaks                           | ✅  | ✅      | ⬜      | ⬜      | FREE |
-| Streak Protection (1 skip/week)   | ⬜  | ⬜      | ➖      | ➖      | PRO  |
-| Apple Health (Mindful Minutes)    | ⬜  | ➖      | ➖      | ➖      | PRO  |
-| Health Connect (Mindful Minutes)  | ➖  | ⬜      | ➖      | ➖      | PRO  |
+| Streak Protection (1 skip/week)   | ⬜  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Apple Health (Mindful Minutes)    | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Health Connect (Mindful Minutes)  | ➖  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Control Center widget (iOS 18+)   | ✅  | ➖      | ➖      | ➖      | FREE |
 | Quick Settings Tile               | ➖  | ⬜      | ➖      | ➖      | FREE |
-| Apple Reminders import            | ⬜  | ➖      | ➖      | ➖      | PRO  |
-| Google Tasks import               | ➖  | ⬜      | ➖      | ➖      | PRO  |
-| Apple Calendar integration        | ✅  | ➖      | ➖      | ➖      | PRO  |
-| Google Calendar integration       | ➖  | ✅      | ➖      | ➖      | PRO  |
-| Focus Modes (FocusFilterIntent)   | ⬜  | ➖      | ➖      | ➖      | PRO  |
-| DND / Focus Mode API              | ➖  | ⬜      | ➖      | ➖      | PRO  |
+| Apple Reminders import            | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Google Tasks import               | ➖  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Apple Calendar integration        | ✅  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Google Calendar integration       | ➖  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Focus Modes (FocusFilterIntent)   | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| DND / Focus Mode API              | ➖  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | StoreKit 2 subscriptions          | ✅  | ➖      | ➖      | ➖      | —    |
 | Google Play Billing 7             | ➖  | 🔄      | ➖      | ➖      | —    |
 
@@ -794,14 +858,14 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 
 | Feature                               | iOS | Android | watchOS | Wear OS | Tier |
 | ------------------------------------- | --- | ------- | ------- | ------- | ---- |
-| Advanced AI Insights                  | ⬜  | ⬜      | ➖      | ➖      | PRO  |
+| Advanced AI Insights                  | ⬜  | ⬜      | ➖      | ➖      | EVERYWHERE  |
 | Social Accountability                 | ⬜  | ⬜      | ➖      | ➖      | PRO  |
-| CSV/PDF Export                        | ⬜  | ⬜      | ➖      | ➖      | PRO  |
-| Apple Vision Pro                      | ⬜  | ➖      | ➖      | ➖      | PRO  |
-| Device handoff                        | ⬜  | ➖      | ⬜      | ➖      | PRO  |
-| Shortcuts automation                  | ⬜  | ➖      | ➖      | ➖      | PRO  |
-| Cross-platform sync (iOS <-> Android) | ⬜  | ⬜      | ⬜      | ⬜      | PRO  |
-| Pomodoro -> Flowtime auto-switch      | ⬜  | ⬜      | ➖      | ➖      | PRO  |
+| CSV/PDF Export                        | ⬜  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Apple Vision Pro                      | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Device handoff                        | ⬜  | ➖      | ⬜      | ➖      | APPLE / EVERYWHERE  |
+| Shortcuts automation                  | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Cross-platform sync (iOS <-> Android) | ⬜  | ⬜      | ⬜      | ⬜      | EVERYWHERE  |
+| Pomodoro -> Flowtime auto-switch      | ⬜  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Tablet/Foldable optimized             | ➖  | ⬜      | ➖      | ➖      | FREE |
 
 ### Planned — Backend and Accounts
@@ -817,12 +881,12 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 | Sign In with Apple                             | ⬜  | ➖      | ➖      | ➖      | FREE |
 | Account linking (multiple providers)          | ⬜  | ⬜      | ➖      | ➖      | FREE |
 | **Cloud Sync and Multi-Device**               |     |         |         |         |      |
-| Bidirectional sync via Go backend             | ✅  | 🔄      | ⬜      | 🔄      | PRO  |
-| WebSocket real-time sync                      | ✅  | ✅      | ⬜      | ⬜      | PRO  |
-| Multi-device coordination                     | ✅  | ✅      | ⬜      | ⬜      | PRO  |
+| Bidirectional sync via Go backend             | ✅  | 🔄      | ⬜      | 🔄      | EVERYWHERE  |
+| WebSocket real-time sync                      | ✅  | ✅      | ⬜      | ⬜      | EVERYWHERE  |
+| Multi-device coordination                     | ✅  | ✅      | ⬜      | ⬜      | EVERYWHERE  |
 | **Cross-Platform Subscriptions**              |     |         |         |         |      |
 | Server-side receipt verification              | ⬜  | ⬜      | ➖      | ➖      | —    |
-| Shared PRO status across stores               | ⬜  | ⬜      | ⬜      | ⬜      | —    |
+| Shared paid state across stores               | ⬜  | ⬜      | ⬜      | ⬜      | —    |
 
 ---
 
@@ -846,9 +910,9 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 
 3. **Android paywall is in progress**: `PaywallScreen` and `PaywallViewModel` exist, but complete feature-gating enforcement is still pending.
 
-4. **Inconsistent feature-gating on iOS**: According to the `PLAN_FREE_PRO_TIERS` analysis, several features advertised as PRO in the iOS paywall are not truly gated yet (analytics >7 days, sync, widgets, themes, subtasks, recurrence). Alignment is required.
+4. **Capability split still pending**: The docs now distinguish Apple Unlock from Everywhere, but runtime gating still needs to migrate from the legacy single-Pro model to capability-based enforcement.
 
-5. **Theme parity achieved**: Both platforms (Android + iOS) have 4 named themes (Classic, Forest, Ocean, Sunset) with a horizontal-scroll-card theme picker, consistent focus mode colors (Pomodoro=red, TimeBlock=purple, Chrono=green), and PRO gating for Forest/Ocean/Sunset. Android additionally offers Material You as an option. iOS has a Light/Dark/System selector. Wear OS syncs the selected theme from Android phone.
+5. **Theme parity achieved**: Both platforms (Android + iOS) have 4 named themes (Classic, Forest, Ocean, Sunset) with a horizontal-scroll-card theme picker, consistent focus mode colors (Pomodoro=red, TimeBlock=purple, Chrono=green), and premium gating for Forest/Ocean/Sunset. Android additionally offers Material You as an option. iOS has a Light/Dark/System selector. Wear OS syncs the selected theme from Android phone.
 
 6. **Session Journaling promoted to P0**: Originally P2 in iOS PRD, now implemented on both phone platforms as part of the focus engine.
 
@@ -856,4 +920,4 @@ Pay in either store (App Store or Google Play) and get PRO on all platforms.
 
 8. **Social login planned**: Google Sign-In (Android via Credential Manager) and Sign In with Apple (iOS via AuthenticationServices) are planned. Backend must add OAuth providers. Account linking will allow multiple providers per account.
 
-9. **Unified cloud sync achieved**: Both iOS and Android now have full sync architecture via Go backend. iOS uses TCA-based sync clients (SyncClient, IdentityClient, WebSocketClient) with URLSession. Android uses SyncEngine + Room dirty flags + SyncWebSocketClient (OkHttp). Both platforms support: settings sync (per-key LWW), batch session sync, initial upload on registration, cursor-paginated full sync for new devices, WebSocket real-time notifications, and data merge dialogs for anonymous-to-existing-account transitions. iOS retains CloudKit as a secondary sync layer for Apple-to-Apple device sync.
+9. **Unified cloud sync architecture achieved**: Both iOS and Android now have full sync architecture via Go backend. iOS uses TCA-based sync clients (SyncClient, IdentityClient, WebSocketClient) with URLSession. Android uses SyncEngine + Room dirty flags + SyncWebSocketClient (OkHttp). Both platforms support: settings sync (per-key LWW), batch session sync, initial upload on registration, cursor-paginated full sync for new devices, WebSocket real-time notifications, and data merge dialogs for anonymous-to-existing-account transitions. Commercially, backend sync now maps to `Everywhere`, while iOS retains CloudKit as Apple-local sync under Apple Unlock.

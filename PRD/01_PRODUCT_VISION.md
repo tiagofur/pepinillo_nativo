@@ -1,7 +1,7 @@
-# Pepinillo — Unified Product Document: Deep Work Platform for Multi-Platform
+# Pepinillo — Product Vision: Deep Work Operating System
 
-**Version:** 1.0  
-**Last Updated:** 2026-03-24  
+**Version:** 1.1  
+**Last Updated:** 2026-04-21  
 **Author:** Tiago David + Claude Code  
 **Status:** Active  
 **Platforms:** iOS, Android, watchOS, Wear OS  
@@ -11,33 +11,54 @@
 
 ## 1. Problem
 
-Knowledge workers, students, and creatives lose an average of **2.1 hours per day** to context switching and interruptions. The market's response has been fragmented:
+Knowledge workers, students, and creatives do not just need a timer. They need a **deep-work execution loop**: decide what matters, start fast, stay in flow, and learn what actually works. The market response is still fragmented:
 
-- **Pomodoro timers** (Forest, Focus Keeper, Brain Focus) offer a single rigid technique.
-- **Task managers** (Things 3, Todoist) don't integrate focus time.
-- **Time-blocking apps** (Structured) lack flexible timer methods.
+- **Pomodoro timers** (Forest, Focus Keeper, Brain Focus) offer one rigid technique and weak planning.
+- **Task managers** (Things 3, Todoist, TickTick) help organize work, but they do not turn that plan into focused execution.
+- **Calendar / time-blocking apps** (Structured) shine at scheduling, but not at flexible focus methods or reflection.
+- **AI productivity tools** are often vague assistants with little behavioral truth behind them.
 
-**No app combines multiple focus techniques + task management + deep analytics in one experience.** The market competes on price ($2-5) with single-technique apps. There is no premium solution that offers:
+**The real gap is not "better timer features". The gap is a product that connects planning, execution, and reflection in one native experience.**
 
-1. **4 focus techniques** in one app
-2. **Integrated task management** with energy levels and recurrence
-3. **Complete ecosystem** on both platforms (Apple: widgets, Dynamic Island, watchOS, Siri; Android: widgets, Wear OS, Quick Settings, Google Assistant)
-4. **Mode-specific analytics** to discover which technique works best
-5. **LATAM-first pricing** that's accessible
+Pepinillo started as a Flutter Pomodoro app. While functional, it had two critical limitations: (1) it was locked to Pomodoro as the center of the product, and (2) Flutter's abstraction blocked the native platform integration required for a premium experience.
 
-Pepinillo started as a Flutter Pomodoro app. While functional, it had two critical limitations: (1) it was locked to Pomodoro as the only focus method, and (2) Flutter's abstraction blocked access to native platform APIs that are essential for a premium experience.
+**The opportunity:** reposition Pepinillo from "another focus timer" to **the deep-work operating system for knowledge workers and creatives**. That means:
 
-**The opportunity:** Reposition Pepinillo from "another Pomodoro timer" (saturated market, low price ceiling) to **"the multi-platform deep work platform"** — a premium productivity tool that offers multiple focus techniques, integrated task management, and the deepest possible integration with Apple and Android ecosystems. This moves us from competing with $3.99 apps to the premium tier of $30-60/year.
+1. **Multiple focus techniques** so the app adapts to the user instead of forcing one method
+2. **Medium-depth planning** strong enough for daily deep work without becoming a bloated PM tool
+3. **Reflective intelligence** that helps users improve, not just log time
+4. **Native ecosystem depth** across Apple and Android surfaces
+5. **LATAM-first pricing and localization** in a premium category with weak regional competition
 
 ---
 
 ## 2. Vision
 
-> **"Pepinillo is your command center for deep work."**
+> **"Pepinillo is the calm, native operating system for deep work."**
 >
-> An app where you plan what to work on, choose how to focus, track your progress, and build lasting productivity habits — all integrated natively into your Apple and Android devices.
+> You decide what matters, start focusing in seconds, reflect on what worked, and repeat across every device you actually use.
 
 The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness of deep work — memorable, accessible, and distinctive in a market full of generic names like "Focus Timer Pro" and "Session."
+
+### Product Pillars
+
+| Pillar | Job | Guardrail |
+| ------ | --- | --------- |
+| **Execute** | Start a session fast, stay in focus, complete meaningful work | The hero surface must remain calm, obvious, and one-tap fast |
+| **Plan** | Turn work into a realistic deep-work plan | Medium depth only; serious personal planning, not team PM |
+| **Reflect** | Understand patterns, review progress, and improve behavior | Analytics must teach something, not just display charts |
+| **Admin** | Manage identity, settings, subscription, export, and support | Admin flows must not pollute daily focus/navigation |
+
+### Primary Product Surfaces
+
+| Surface | Purpose |
+| ------- | ------- |
+| **Focus** | Hero execution surface: timer, mode, active task, session state |
+| **Plan** | Inbox, today, upcoming, lightweight projects/areas, task detail |
+| **Dashboard** | Reviews, analytics, goals, reportes, and coaching |
+| **Account / Admin** | Profile, auth, subscription, settings, sync state, export, help |
+
+**Experience rule:** on phone, only `Focus`, `Plan`, and `Dashboard` are primary productivity destinations. `Account / Admin` is essential, but lives off the main work axis.
 
 ### Platform Availability
 
@@ -57,13 +78,14 @@ The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness
 
 | #      | Objective                                                                                                            | Metric                                                                                                                               |
 | ------ | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **G1** | **Be THE deep work app** — Pepinillo must feel as if it were built by Apple/Google for their ecosystems respectively | App Store rating >= 4.7; Play Store rating >= 4.5; featured editorial placement in both stores within 6 months                       |
-| **G2** | **Multi-mode focus** — Users choose the technique that works for them, not the one the app imposes                   | >= 3 modes used across the user base; Pomodoro accounts for < 60% of sessions (proving users want variety)                           |
-| **G3** | **Premium conversion through undeniable value** — Users pay because the FREE tier already impressed them             | Premium conversion >= 8% (vs. industry avg 3-5% for timer apps); ARPU >= $3.50/month                                                 |
-| **G4** | **Ecosystem depth as a competitive moat** — No competitor matches our integration breadth                            | >= 60% of focus sessions started outside the main app (widgets, Watch/Wear, Siri/Assistant, Dynamic Island/Notification)             |
-| **G5** | **Lead the LATAM market** — First premium productivity app with LATAM-first pricing and localization                 | Top 10 Productivity in Brazil and Mexico within 12 months; 40%+ of the user base in LATAM                                            |
-| **G6** | **Build lasting habits, not just usage** — Users develop real productivity improvements                              | >= 40% D30 retention; average streak >= 14 days among retained users                                                                 |
-| **G7** | **Cross-platform parity** — Same features, same quality, across all platforms                                        | 100% of P0 features available on iOS and Android simultaneously; bugs fixed on one platform verified and fixed on the other platform |
+| **G1** | **Be the best daily deep-work experience** — Pepinillo must feel as if Apple/Google built it for their ecosystems   | App Store rating >= 4.7; Play Store rating >= 4.5; featured editorial placement in at least one store within 6 months               |
+| **G2** | **Own the execution loop** — users can move from intent to timer-running in seconds                                  | >= 60% of retained users start sessions in <= 10 seconds from app, widget, watch, or voice entry                                     |
+| **G3** | **Planning that earns its place** — strong enough for daily deep work without becoming a generic task manager        | >= 50% of retained users link tasks to sessions or actively use planning views weekly                                                 |
+| **G4** | **Reflection that changes behavior** — reviews and coaching must improve choices, not just describe history          | >= 35% of retained users open Weekly Review monthly; >= 20% of mode recommendations lead to action                                   |
+| **G5** | **Premium conversion through undeniable value** — users pay because Execute + Plan + Reflect feels materially better | Premium conversion >= 8%; ARPU >= $3.50/month                                                                                         |
+| **G6** | **Ecosystem depth as moat** — no competitor matches our cross-device entry and control surfaces                      | >= 60% of focus sessions started outside the main app (widgets, watch/wear, Siri/Assistant, Dynamic Island/notification)            |
+| **G7** | **Cross-platform mental-model parity** — same product logic, native visual execution                                 | 100% of P0 features on iOS and Android simultaneously; canonical `Focus / Plan / Dashboard / Account` model shared across phone apps |
+| **G8** | **Lead the LATAM premium productivity lane**                                                                          | Top 10 Productivity in Brazil and Mexico within 12 months; 40%+ of the user base in LATAM                                            |
 
 ---
 
@@ -73,10 +95,11 @@ The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness
 | ------- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | **NG1** | **No team/collaboration features**          | Individual deep work comes first; B2B is a separate initiative                                              |
 | **NG2** | **No note-taking / document editor**        | We complement apps like Craft, Notion, and Google Docs; we do not replace them                              |
-| **NG3** | **No AI task breakdown**                    | AI is only for insights and analysis (Mode Intelligence, Weekly Review); the workflow remains human-driven  |
-| **NG4** | **No ambient music creation / marketplace** | Curated pre-included soundscapes are enough; we are not a music app                                         |
-| **NG5** | **No web app parity target**                | The web app (Next.js) has its own separate roadmap                                                          |
-| **NG6** | **No calendar replacement**                 | We integrate with Apple Calendar and Google Calendar; we do not compete with Fantastical or Google Calendar |
+| **NG3** | **No autonomous AI project manager in MVP** | MVP AI is reflection + coaching + recommendations. Scheduling help and subtask generation are post-MVP only |
+| **NG4** | **No meditation / wellness brand pivot**    | Calm is the tone, but Pepinillo remains a productivity tool, not a relaxation product                       |
+| **NG5** | **No ambient music creation / marketplace** | Curated soundscapes are enough; we are not building an audio business                                       |
+| **NG6** | **No web / desktop promise before reality** | Do not sell value for clients that are not yet shipped or committed                                          |
+| **NG7** | **No calendar replacement**                 | We align with Apple Calendar / Google Calendar; we do not compete with Fantastical or Google Calendar       |
 
 > **Note:** The former iOS NG1 ("Android remains on Flutter") is **obsolete**. Android is now native Kotlin with full parity.
 
@@ -88,16 +111,16 @@ The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness
 
 | Segment               | Description                                                                      | Platforms    |
 | --------------------- | -------------------------------------------------------------------------------- | ------------ |
-| **Power Users**       | Apple users (iPhone/Watch) and Samsung/Pixel users seeking premium productivity  | iOS, Android |
-| **LATAM Students**    | Need affordable pricing, Spanish/Portuguese support, and varied study techniques | iOS, Android |
-| **Remote Workers**    | Need daily structure, Pomodoro + Time Blocks, and productivity tracking          | iOS, Android |
-| **Knowledge Workers** | Professionals who do deep work regularly (writers, analysts, researchers)        | iOS, Android |
+| **Knowledge Workers / Creatives** | Writers, analysts, researchers, designers, and builders who do deep work daily | iOS, Android |
+| **Remote Workers**    | Need daily structure, flexible focus methods, and reliable personal planning     | iOS, Android |
+| **LATAM Students**    | Need affordable pricing, Spanish/Portuguese support, and multiple study techniques | iOS, Android |
+| **Professionals rebuilding focus habits** | People who already know they are distracted and want a calmer execution loop | iOS, Android |
 
 ### P1 — Expansion
 
 | Segment                 | Description                                                               | Platforms        |
 | ----------------------- | ------------------------------------------------------------------------- | ---------------- |
-| **ADHD Community**      | Multiple techniques for different mental states; flexibility is essential | iOS, Android     |
+| **ADHD / flexible cognition users** | Multiple techniques for different mental states; flexibility is essential | iOS, Android     |
 | **Watch Users**         | Want to control the timer from their wrist without taking out their phone | watchOS, Wear OS |
 | **Cal Newport Readers** | Already convinced by deep work; looking for the tool that implements it   | iOS, Android     |
 
@@ -123,25 +146,25 @@ Unlike pure Pomodoro apps, Pepinillo offers **four focus techniques** that users
 | **Best for** | Studying, administrative tasks, and any work that benefits from rigid structure                   |
 | **Tier**     | FREE                                                                                              |
 
-### 6.2 Flowtime Mode (PRO)
+### 6.2 Flowtime Mode (APPLE)
 
 | Aspect       | Detail                                                                                                      |
 | ------------ | ----------------------------------------------------------------------------------------------------------- |
 | **Mechanic** | Open-ended focus session. No forced intervals. The user taps to take a break when concentration drops       |
 | **Behavior** | The app suggests break duration based on focused time (10 min focus -> 2 min break, 50 min -> 10 min break) |
 | **Best for** | Creative work, writing, programming — any activity where interrupting flow is counterproductive             |
-| **Tier**     | PRO                                                                                                         |
+| **Tier**     | APPLE                                                                                                       |
 
 > **Why this matters:** Many productivity experts (including Cal Newport) argue that forced 25-minute blocks interrupt flow states. Flowtime captures the audience that tried Pomodoro and abandoned it.
 
-### 6.3 Time-Block Mode (PRO)
+### 6.3 Time-Block Mode (APPLE)
 
 | Aspect       | Detail                                                                                                                 |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | **Mechanic** | Fixed focus block (e.g., "2 hours of writing"). A continuous countdown with optional midpoint check-ins                |
 | **Behavior** | Tracks how many blocks are completed per day. Integrates with Apple Calendar / Google Calendar to display blocked time |
 | **Best for** | Users of the time-blocking technique; full-day planning                                                                |
-| **Tier**     | PRO                                                                                                                    |
+| **Tier**     | APPLE                                                                                                                  |
 
 > **Why this matters:** Time-blocking is the #1 technique recommended by Cal Newport in "Deep Work." Currently, no major app implements it as a first-class timer mode.
 

@@ -1,326 +1,338 @@
-# Monetization — Pepinillo (iOS + Android)
+# Monetization — Pepinillo (Apple-First Rollout)
 
-**Version:** 1.0  
-**Last Updated:** 2026-03-24  
-**Scope:** Unified monetization document for both platforms  
-**Authoritative Source for Pricing:** This document  
-**Update Cadence:** Per pricing change
+**Version:** 3.0  
+**Last Updated:** 2026-04-21  
+**Scope:** Canonical packaging, pricing, rollout, and entitlement architecture  
+**Authoritative Source for Packaging and Pricing:** This document  
+**Update Cadence:** Per commercial model change
 
 ---
 
 ## 1. Business Model
 
-**Freemium with subscription.** The same model applies on both platforms (iOS and Android).
+**Freemium with two paid layers.** Pepinillo separates local premium value from recurring-cost value.
 
-Users get a functional and useful experience in the free tier — sufficient to validate the app's value — but with strategic limitations that motivate conversion to Pro. The goal is not to frustrate users, but to demonstrate premium value.
+- **Pepinillo+:** one-time purchase for the full Apple experience with Apple Intelligence.
+- **Everywhere/AI+:** monthly or annual subscription for cross-platform sync and advanced AI capabilities.
 
-**Price Positioning:** Premium productivity tier ($25-50/year), not the free timer market ($2-5). We compete in the league of Things 3, Fantastical, and Craft.
+This split exists because local premium features can be sold once, but multi-platform backend sync and cloud AI create ongoing cost. The commercial model reflects that cost structure.
 
----
+**Positioning:** Pepinillo is not monetizing cosmetic access. Users pay to get better at deep work and to keep one reliable system across their devices.
 
-## 2. FREE Tier (Free)
+**Transparency principle:** Pepinillo+ is explicitly **not a subscription**. One purchase, forever. This must be crystal clear in all user-facing copy. Users who buy Pepinillo+ own it — no recurring charges, no surprises.
 
-| Feature            | Free limit                                | Justification                                              |
-| ------------------ | ----------------------------------------- | ---------------------------------------------------------- |
-| Focus modes        | Pomodoro + Chrono/Stopwatch (2 of 4)      | The 2 most basic modes; they cover casual use cases        |
-| Active tasks       | Maximum 3 tasks                            | Enough to test, not enough for active users                |
-| Subtasks           | NOT available                              | High perceived value, low development cost                 |
-| Recurring tasks    | NOT available                              | Pro only                                                   |
-| Soundscapes        | 4 basics: Rain, Forest, Cafe, White Noise | Enough to experience the value                             |
-| Analytics          | Today only + last 7 days                   | Motivates upgrade for full history                         |
-| Widgets            | 1 basic widget (timer)                     | All others are Pro                                         |
-| Themes             | Default theme only                         | Aesthetic limitation that motivates upgrade                |
-| Daily sessions     | Unlimited                                  | Do NOT limit sessions — frustrates without converting      |
-| History            | 7 days                                     | Data is lost afterward; motivates Pro for retention        |
-| Sync/Cloud         | NOT available (local only)                 | Sync as a Pro differentiator                               |
-| Watch/Wear OS      | NOT available                              | Strong differentiator for power users                      |
-| Data export        | NOT available                              | Pro only                                                   |
+**Rollout principle:** do not market value that is not yet shipped. `Everywhere/AI+` features listed as "Próximamente" are communicated only in the paywall to set expectations, not promoted elsewhere in the app.
 
 ---
 
-## 3. PRO Tier
+## 2. Canonical Commercial Vocabulary
 
-| Feature           | Pro                                                                                 |
-| ----------------- | ----------------------------------------------------------------------------------- |
-| Focus modes       | All modes: Pomodoro, Flowtime, Time Block, Chrono/Stopwatch                        |
-| Tasks             | Unlimited + subtasks + recurrence                                                   |
-| Soundscapes       | 8 total: Rain, Forest, Cafe, White Noise + Binaural Beats, Lo-fi, Ocean, Fireplace |
-| Analytics         | Full history + Weekly Review + Monthly Review + AI Reports                          |
-| Widgets           | All widgets (Timer, Stats, Tasks, Lock Screen, Quick Settings)                      |
-| Themes            | All available themes (including Liquid Glass on iOS 26, Material You on Android)    |
-| Sync/Cloud        | Full sync across devices (CloudKit on iOS, Go backend on Android)                   |
-| Watch/Wear OS     | Full app on Apple Watch and Wear OS                                                 |
-| Data export       | CSV and PDF                                                                          |
-| Streak Protection | 1 free skip per week                                                                 |
+| Term | Meaning | Operational note |
+| ---- | ------- | ---------------- |
+| **Free** | Core Pepinillo experience | Must be strong enough to create habit before monetization pressure appears |
+| **Pepinillo+** | One-time Apple-only premium purchase | Not a subscription. Funds local premium value + Apple Intelligence, not recurring backend or cloud AI cost |
+| **Everywhere/AI+** | Recurring monthly/annual subscription | Funds cross-platform sync, advanced cloud AI (Coach, Scheduling, Subtask Gen), and monthly AI credits |
+| **Apple Intelligence** | On-device AI via Apple Foundation Models + template fallback | Included in Pepinillo+ on Apple platforms. Always works — template fallback when Foundation Models unavailable |
+| **AI+ (Advanced AI)** | Cloud-powered AI features: Coach, Task Scheduling, Subtask Generation, Advanced Insights | Included only in Everywhere/AI+ |
+| **Local Intelligence** | Mode Intelligence, on-device/template AI Reports | Included in Pepinillo+ |
+| **Legacy `pro` / `premium`** | Transitional runtime shorthand | Mapping: `pro.lifetime` → Pepinillo+, `pro.monthly`/`pro.annual` → Everywhere/AI+ |
+
+---
+
+## 3. Offer Structure
+
+### 3.1 Free
+
+| Feature | Free limit | Why it stays free |
+| ------- | ---------- | ----------------- |
+| Focus modes | Pomodoro + Stopwatch | Enough to prove the core workflow |
+| Tasks | Up to 3 active tasks | Lets users form a habit before paying |
+| Subtasks / recurrence | Not available | High perceived value for serious planners |
+| Analytics | Today + last 7 days | Demonstrates value, preserves upgrade trigger |
+| Widgets | One basic timer widget | Good trial surface without giving away the full ecosystem |
+| Themes | Default / system only | Simple aesthetic gate |
+| Soundscapes | 4 basics | Enough to feel product quality |
+| Apple Watch / Wear OS | No full companion experience | Companion apps remain a premium differentiator |
+| Sync | Device-local only | No cross-device promise in Free |
+| Export | Not available | Professional workflow feature |
+| AI Reports | Not available | Premium reflection feature |
+
+### 3.2 Pepinillo+ (One-Time Purchase)
+
+Pepinillo+ is the one-time premium purchase for iPhone, iPad, macOS, and watchOS.
+
+**Explicitly NOT a subscription.** Users own it forever after a single purchase.
+
+| Feature | Included in Pepinillo+ |
+| ------- | ---------------------- |
+| Focus modes | Flowtime + Time Block in addition to Free modes |
+| Tasks | Unlimited tasks, subtasks, recurrence |
+| Analytics | 30-day + 1-year history, Weekly Review, Monthly Review |
+| Apple Intelligence | On-device AI Reports via Apple Foundation Models (iOS 26+) with template fallback for all devices |
+| Mode Intelligence | Smart mode suggestions based on historical session data |
+| Themes and soundscapes | All premium themes (Forest, Ocean, Sunset + Liquid Glass) and premium soundscapes |
+| Apple ecosystem surfaces | All widgets (S/M/L + Lock Screen), full watchOS companion, Live Activity, Dynamic Island |
+| Export | CSV / PDF export |
+| Apple sync | iCloud / CloudKit sync between Apple devices |
+| Streak protection | 1 free skip per week |
+| Calendar integration | Apple Calendar time blocking |
+| Health integration | Apple Health Mindful Minutes |
+| Reminders import | Apple Reminders one-way import |
+| System Focus Modes | Auto DND during sessions via FocusFilterIntent |
+
+Pepinillo+ **does not** include cross-platform backend sync, cloud AI features, or monthly AI credits.
+
+**Paywall copy emphasis:**
+- "One purchase. Yours forever."
+- "Not a subscription — pay once, own Pepinillo+ for life."
+- Apple Intelligence as headline differentiator
+
+### 3.3 Everywhere/AI+ (Subscription)
+
+Everywhere/AI+ is the recurring plan for cross-platform power users who want the deepest AI assistance.
+
+| Feature | Included in Everywhere/AI+ |
+| ------- | -------------------------------- |
+| **Everything in Pepinillo+** | Full Apple premium experience included |
+| Cross-platform backend sync | Go-backend account sync across iOS + Android + Web (when available) |
+| Advanced AI Insights | Cloud-powered predictive insights: productive windows, burnout detection, trend forecasting |
+| AI Coach | Personalized productivity coaching with actionable weekly recommendations |
+| AI Task Scheduling | Smart task scheduling based on energy patterns, calendar availability, and historical productivity |
+| AI Subtask Generation | Automatically break complex tasks into actionable subtasks |
+| 100 AI Credits / month | Monthly allowance for cloud AI workflows (no rollover) |
+| Cross-device recovery | Restore and migrate data through account-based identity |
+| Android / Wear OS | When available, includes full premium experience on those platforms |
+
+Everywhere/AI+ never offers lifetime access. Recurring infrastructure and recurring AI must remain on recurring billing.
+
+**Próximamente note:** Backend Sync, AI Coach, Task Scheduling, and Subtask Generation features are displayed in the paywall as "Próximamente" to set expectations. They are NOT promoted elsewhere in the app until shipped.
 
 ---
 
 ## 4. Pricing (AUTHORITATIVE)
 
-**Effective Date:** 2026-03-24  
-**These prices supersede all prior references.**
+**Effective Date:** 2026-04-21  
+**These prices supersede the former single-tier Pro model for planning and rollout.**
 
 ### Global Market (US/EU/Tier 1)
 
-| Plan     | Price           | Equivalent Monthly | Savings |
-| -------- | --------------- | ------------------ | ------- |
-| Monthly  | **$3.99/month** | $3.99              | —       |
-| Annual   | **$24.99/year** | $2.08              | 48%     |
-| Lifetime | **$49.99**      | —                  | —       |
+| Offer | Price | Equivalent Monthly | Notes |
+| ----- | ----- | ------------------ | ----- |
+| **Pepinillo+** | **$19.99 one-time** | — | One purchase, forever. Not a subscription |
+| **Everywhere/AI+ Monthly** | **$4.99/month** | $4.99 | Cross-platform sync + Advanced AI |
+| **Everywhere/AI+ Annual** | **$34.99/year** | $2.92 | 42% lower than monthly |
 
 ### LATAM (MX/CO/AR/BR/CL/PE)
 
-| Plan     | Price           | Equivalent Monthly | Savings |
-| -------- | --------------- | ------------------ | ------- |
-| Monthly  | **$1.99/month** | $1.99              | —       |
-| Annual   | **$12.99/year** | $1.08              | 46%     |
-| Lifetime | **$29.99**      | —                  | —       |
+| Offer | Price | Equivalent Monthly | Notes |
+| ----- | ----- | ------------------ | ----- |
+| **Pepinillo+** | **$9.99 one-time** | — | One purchase, forever. Not a subscription |
+| **Everywhere/AI+ Monthly** | **$2.49/month** | $2.49 | Cross-platform sync + Advanced AI |
+| **Everywhere/AI+ Annual** | **$17.99/year** | $1.50 | 40% lower than monthly |
 
-### Price justification
+### Pricing rationale
 
-- **$3.99 vs $4.99**: Lower psychological barrier. $3.99 is in the sweet spot for productivity apps.
-- **Annual at a 48% discount**: Strong incentive for annual subscriptions (higher LTV).
-- **Lifetime at $49.99**: Reasonable for early adopters; not so low that it cannibalizes subscriptions.
-- **LATAM at ~50% of global**: Purchasing power parity. Both stores support regionalized pricing.
-
-### Price Update Action Items
-
-| Platform       | Current (Live)                                | Target                                        | Status           | Action Required                             |
-| -------------- | --------------------------------------------- | --------------------------------------------- | ---------------- | ------------------------------------------- |
-| iOS (StoreKit) | Monthly $2.99, Annual $14.99, Lifetime $29.99 | Monthly $3.99, Annual $24.99, Lifetime $49.99 | ⚠️ LEGACY PRICES | Update via RevenueCat Offerings (PRIORITY) |
-| Android        | Not yet implemented                           | Monthly $3.99, Annual $24.99, Lifetime $49.99 | 🔄 IN PROGRESS   | Configure via RevenueCat + Google Play      |
-
-**Timeline:** These new prices are effective immediately for all new subscriptions. Legacy prices will expire on 2026-04-30.
+- **Pepinillo+ stays below the annual subscription** so users can afford a one-time upgrade without undermining recurring economics.
+- **Everywhere/AI+ Annual** is the default value plan because it funds infrastructure more predictably and lowers churn risk.
+- **LATAM pricing stays materially below Tier 1 pricing** to preserve Pepinillo's regional advantage.
+- **No lifetime recurring offer** because sync and AI costs do not disappear.
 
 ---
 
-## 5. Implementation by Platform
+## 5. Apple Intelligence Strategy
 
-### 5.1 iOS
+### Why This Wins Apple Design Awards
 
-| Aspect       | Detail                                                                              |
-| ------------ | ----------------------------------------------------------------------------------- |
-| Framework    | RevenueCat SDK v5+ (wrapping native StoreKit 2)                                    |
-| Products     | `monthly`, `annual`, `lifetime` via RevenueCat Offerings/Packages                  |
-| Entitlement  | `pro` (unified in RevenueCat)                                                       |
-| User ID      | Integrated with Sign in with Apple flow via `logIn(userId)`                        |
-| Verification | Server-side via Go backend (`POST /api/v1/billing/verify` and RevenueCat REST API) |
-| Restore      | RevenueCat `logIn()` + `entitlements` property                                     |
-| Local cache  | RevenueCat SDK caches entitlements automatically                                    |
-| Grace period | Automatically handled by RevenueCat according to App Store Connect configuration    |
-| Webhooks     | Backend receives events via `POST /api/v1/webhooks/revenuecat`                     |
+Pepinillo's Apple Intelligence integration is the **primary differentiator** against every other focus/productivity app:
 
-### 5.2 Android
+1. **On-device AI Reports** — Uses Apple Foundation Models (iOS 26+) to generate personalized productivity reports without any API call. Zero latency, zero cost, zero privacy concerns.
+2. **Template Fallback** — When Foundation Models are unavailable (older devices, first-gen implementation), deterministic template-based reports provide the same structured experience.
+3. **Mode Intelligence** — Local ML that learns which focus technique works best for each task type. Pure on-device, no cloud dependency.
+4. **Siri Integration** — 9 intents across 3 languages for hands-free productivity. "How's my focus today?" is magical.
+5. **Interactive Widgets** — Full session control from Home Screen, Lock Screen, and Control Center.
+6. **Live Activity + Dynamic Island** — Always-visible session state during deep work.
 
-| Aspect       | Detail                                                                                   |
-| ------------ | ---------------------------------------------------------------------------------------- |
-| Framework    | Google Play Billing Library 7 (BillingClient 7.x)                                       |
-| Singleton    | `SubscriptionManager` with retry logic                                                   |
-| Verification | Server-side via Go backend (`POST /api/v1/billing/verify`)                              |
-| Restore      | `queryPurchases(BillingClient.ProductType.SUBS + INAPP)`                                |
-| Local cache  | DataStore with `isPro`, `tier`, `expirationDate` (trust cache for 7 days offline)       |
-| State        | Observable `StateFlow<SubscriptionState>`                                                |
-| DI           | Hilt module (`@Singleton` scope)                                                         |
+### AI+ (Everywhere/AI+ Cloud Features)
 
-### 5.3 Product IDs
+These features require cloud AI (Gemini/OpenAI) and backend infrastructure:
 
-**iOS (StoreKit):**
+| Feature | Description | Why it needs cloud |
+| ------- | ----------- | ------------------ |
+| **Advanced AI Insights** | Predictive productive windows, burnout detection, long-term trend forecasting | Requires large context window + historical pattern analysis beyond on-device capability |
+| **AI Coach** | Personalized weekly coaching with habit recommendations, motivation, and accountability | Requires nuanced natural language generation beyond template scope |
+| **AI Task Scheduling** | Smart scheduling based on energy patterns, calendar, and historical data | Requires multi-factor optimization across calendar + health + historical data |
+| **AI Subtask Generation** | Automatically decompose complex tasks into actionable subtasks | Requires task understanding + decomposition reasoning |
+
+### Implementation Architecture
 
 ```
-com.pepinillo.app.pro.monthly
-com.pepinillo.app.pro.annual
-com.pepinillo.app.pro.lifetime
+AI Report Generation Pipeline:
+  ┌──────────────────────────────────────────────┐
+  │  AIReportClient.liveValue                     │
+  │  ┌──────────────────────────────────────────┐ │
+  │  │ 1. OnDeviceReportGenerator               │ │
+  │  │    (Apple Foundation Models, iOS 26+)     │ │
+  │  │    ↓ unavailable/error?                   │ │
+  │  │ 2. TemplateReportGenerator                │ │
+  │  │    (deterministic, ALWAYS works)           │ │
+  │  └──────────────────────────────────────────┘ │
+  └──────────────────────────────────────────────┘
+
+AI+ Features (future, Everywhere/AI+):
+  ┌──────────────────────────────────────────────┐
+  │  Cloud AI Client                              │
+  │  → Gemini / OpenAI API                        │
+  │  → Monthly AI credits (100/month)             │
+  │  → Requires backend + billing verification    │
+  └──────────────────────────────────────────────┘
 ```
-
-**Android (Google Play):**
-
-```
-com.pepinillo.app.pro.monthly    → $3.99/month
-com.pepinillo.app.pro.annual     → $24.99/year
-com.pepinillo.app.pro.lifetime   → $49.99 (in-app product, no subscription)
-```
-
-### 5.4 Backend
-
-- **Billing Verification Endpoint (Authoritative):** `POST /api/v1/billing/verify`
-  - Legacy paths are deprecated and must not be used
-  - Supports verification of Google Play, App Store, and RevenueCat receipts
-  - Tier mapping: `free`, `pro_monthly`, `pro_annual`, `lifetime`
-  - Updates user tier in the database after successful verification
-  - Returns: `{"tier": "pro_monthly", "expiresAt": "2026-04-24", "isActive": true}`
-
-- **RevenueCat integration:**
-  - Webhook endpoint: `POST /api/v1/webhooks/revenuecat` (receives subscription lifecycle events)
-  - REST API client: verifies entitlements via the RevenueCat API
-  - Supported events: purchase, renewal, cancellation, expiration, billing issues
-
-- **Fallback:** Direct App Store/Google Play verification if RevenueCat is unavailable
 
 ---
 
-## 6. Feature Gating (Enforcement)
+## 6. Platform Packaging
 
-### 6.1 Gating mechanisms
+### 6.1 iOS / watchOS / Apple ecosystem
 
-| Mechanism        | Description                                                                        |
-| ---------------- | ---------------------------------------------------------------------------------- |
-| Lock icons       | Lock icon on Pro features (Flowtime/Time Block modes, premium soundscapes)        |
-| Task counter     | Visible counter "2/3 Tasks" for Free users; lock "+" button at 3                |
-| Blur overlay     | Analytics data >7 days with blur/overlay and CTA "Unlock full history"           |
-| Upgrade prompts  | Contextual prompts at natural friction points                                      |
-| Free trial       | 7-day free Pro trial                                                               |
+| Aspect | Detail |
+| ------ | ------ |
+| Billing framework | RevenueCat SDK v5+ wrapping StoreKit 2 |
+| Primary offers | Pepinillo+ (one-time), Everywhere/AI+ Monthly, Everywhere/AI+ Annual |
+| Apple sync | CloudKit / iCloud unlocked by Pepinillo+ or Everywhere/AI+ |
+| Backend sync | Requires Everywhere/AI+ (Próximamente) |
+| Watch behavior | watchOS inherits entitlement state from the iPhone companion |
+| Restore behavior | RevenueCat restore + backend reconciliation |
 
-### 6.2 Gating by screen
+### 6.2 Android / Wear OS
 
-| Screen              | Free restriction                                                                 |
-| ------------------- | -------------------------------------------------------------------------------- |
-| Focus Screen        | Lock on Flowtime and Time Block modes; lock on premium soundscapes              |
-| Tasks Screen        | Maximum 3 tasks; no subtasks; no recurrence; contextual upgrade prompt           |
-| Dashboard/Analytics | Last 7 days only; blur on older history; Weekly/Monthly Review blocked           |
-| Settings            | Show current tier; "Upgrade to Pro" button; extra themes blocked                |
-| Widgets             | Only timer widget available; others show "Upgrade to Pro"                       |
-| Watch/Wear OS       | Upgrade message if a Free user opens the watch app                               |
+| Aspect | Detail |
+| ------ | ------ |
+| Billing framework | RevenueCat / Google Play Billing |
+| Primary offers during rollout | Everywhere/AI+ Monthly, Everywhere/AI+ Annual |
+| Local premium | Included inside Everywhere/AI+ during rollout |
+| Backend sync | Requires Everywhere/AI+ |
+| Wear behavior | Wear OS inherits entitlement state from the Android companion |
 
-### 6.3 Current gating issues (to be fixed)
+### 6.3 Product IDs (Reusing Existing SKUs)
 
-**iOS — Features listed as Pro but NOT gated:**
+**We reuse the 3 existing product IDs in App Store Connect.** Only the metadata (name, description, price) changes.
 
-| Feature             | Current status             | Required action                         |
-| ------------------- | -------------------------- | --------------------------------------- |
-| Analytics >7 days   | Accessible to everyone     | Add gate in `AnalyticsFeature`          |
-| iCloud Sync         | Works for everyone         | Add gate in sync logic                  |
-| Additional widgets  | Accessible without limits  | Add gate in widget configuration        |
-| Themes              | All available              | Add gate in theme selector              |
-| Subtasks            | Accessible to everyone     | Add gate in task creation               |
-| Recurrence          | Accessible to everyone     | Add gate in task creation               |
+**iOS (StoreKit / RevenueCat):**
 
-**Android — No feature gating implemented:**
+| Product ID | Previous Name | New Name | Type |
+| ---------- | ------------- | -------- | ---- |
+| `com.pepinillo.app.pro.lifetime` | Pro Lifetime | **Pepinillo+** | Non-consumable (one-time) |
+| `com.pepinillo.app.pro.monthly` | Pro Monthly | **Everywhere/AI+ Monthly** | Auto-renewable subscription |
+| `com.pepinillo.app.pro.annual` | Pro Annual | **Everywhere/AI+ Annual** | Auto-renewable subscription |
 
-| Component             | Status     |
-| --------------------- | ---------- |
-| FeatureGate service   | Does not exist |
-| Paywall screen        | Does not exist |
-| SubscriptionManager   | Does not exist |
-| UI locks/restrictions | Do not exist   |
+**Android (Google Play / RevenueCat):**
 
----
+| Product ID | Name | Type |
+| ---------- | ---- | ---- |
+| `com.pepinillo.app.pro.monthly` | Everywhere/AI+ Monthly | Auto-renewable subscription |
+| `com.pepinillo.app.pro.annual` | Everywhere/AI+ Annual | Auto-renewable subscription |
 
-## 7. Purchase Flows
+### 6.4 RevenueCat Entitlement Configuration
 
-### 7.1 Purchase flow (applies to both platforms)
+| Entitlement Name | Products | Capabilities Unlocked |
+| ---------------- | -------- | --------------------- |
+| `apple_unlock` | `pro.lifetime` | `localPremium`, `appleCloudSync`, `localAI`, `exportAccess` |
+| `everywhere` | `pro.monthly`, `pro.annual` | All `apple_unlock` + `backendSync`, `aiCreditsMonthly: 100`, `crossDeviceRestore` |
+| `premium` (legacy) | — | Grandfathered → `apple_unlock` if lifetime, `everywhere` if subscription |
+| `pro` (legacy) | — | Same mapping as `premium` |
 
-```
- 1. User taps a Pro feature or the "Upgrade" button
- 2. Paywall is shown with a list of Pro benefits
- 3. Paywall loads products from the store (StoreKit 2 / Google Play)
- 4. User selects a plan (Monthly / Annual / Lifetime)
- 5. "BEST VALUE" badge is highlighted on the Annual plan
- 6. User confirms purchase
- 7. Store shows native payment dialog
- 8. App receives purchase confirmation
- 9. App sends token/receipt to backend → POST /api/v1/billing/verify
-10. Backend verifies with the corresponding store API
-11. Feature unlocks immediately; UI updates
-```
-
-### 7.2 Restoration flow
-
-```
-1. User taps "Restore Purchases" in Paywall or Settings
-2. App queries active purchases in the store
-3. For each active purchase → verify with backend
-4. Update local subscription status
-```
-
-### 7.3 Expiration flow
-
-```
-1. App starts → query active purchases in the store
-2. If there are no active purchases AND local cache says isPro:
-3.   Verify with backend
-4.   If backend confirms expiration → downgrade to Free
-5.   Grace period: 3 days after expiration before revoking access
-```
-
-### 7.4 Required Paywall elements
-
-- List of 6+ Pro benefits
-- Plan selector (Monthly / Annual / Lifetime)
-- "BEST VALUE" badge on Annual plan
-- Purchase button with loading state
-- "Restore Purchases" link
-- Links to Terms of Use and Privacy Policy (required by both stores)
-  - Terms: https://creapolis.dev/terms-of-use/
-  - Privacy: https://creapolis.dev/privacy-policy/
+**Migration:** Existing `premium`/`pro` entitlement holders are grandfathered. Lifetime → `apple_unlock` capabilities. Subscription → `everywhere` capabilities. No user loses access.
 
 ---
 
-## 8. Conversion Hooks
+## 7. Backend And Entitlement Architecture
 
-Psychological triggers that motivate upgrades from Free to Pro:
+### Target capabilities
 
-| Hook                              | Mechanism                                                                        | Expected impact                                           |
-| --------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Only 2 of 4 free modes**        | "Unlock Flowtime and Time Block" is the primary conversion trigger             | High — Flowtime attracts users who bounced from Pomodoro |
-| **3-task limit**                  | Natural upgrade pressure for active users who need more organization             | High — creates daily friction                             |
-| **Basic vs full stats**           | Seeing only 7 days creates FOMO; blur older data with CTA                        | Medium-high — data-driven users want trends              |
-| **Watch/Wear OS as aspiration**   | "Control your focus from your watch" — aspirational feature for power users    | Medium — niche audience but high purchase intent          |
-| **Theme variety**                 | One free theme vs all themes (Liquid Glass, Material You, etc.)                 | Medium — aesthetic motivation                             |
-| **No subtasks or recurrence**     | Users managing complex projects need structure                                  | Medium-high — functional differentiator                   |
-| **No sync/cloud**                 | Risk of losing data motivates backup; multi-device use requires sync            | Medium — grows over time                                  |
-| **No export**                     | Professional users need CSV/PDF reports                                         | Low-medium — niche but valuable                           |
+| Capability | Pepinillo+ | Everywhere/AI+ | Purpose |
+| ---------- | ---------- | -------------- | ------- |
+| `local_premium` | ✅ | ✅ | Unlock local premium features on the current platform |
+| `apple_cloud_sync` | ✅ | ✅ | Allow Apple-only iCloud / CloudKit sync |
+| `local_ai` | ✅ | ✅ | Apple Intelligence on-device reports + Mode Intelligence |
+| `export_access` | ✅ | ✅ | CSV / PDF data export |
+| `backend_sync` | — | ✅ | Go-backend sync across supported clients |
+| `ai_credits_monthly` | — | 100/month | Cloud AI credit allowance |
+| `cross_device_restore` | — | ✅ | Account-based entitlement portability |
 
-### Prompt strategy
+### Rules
 
-- **Non-intrusive**: Show upgrade prompts only when the user tries to use a Pro feature
-- **Contextual**: The prompt explains the specific benefit being unlocked
-- **Controlled frequency**: Maximum 1 prompt per session (no spam)
-- **Free trial**: Offer 7 free Pro days on the first upgrade attempt
+1. **Store purchase or RevenueCat event** identifies the source product.
+2. **RevenueCat entitlement resolution** maps product to capability set (client-side).
+3. **Backend** derives capabilities from that product for server-side enforcement.
+4. **Clients** adapt UX locally, but backend remains authoritative for protected operations.
+5. **Lifetime (Pepinillo+)** grants `local_premium`, `apple_cloud_sync`, `local_ai`, `export_access` but must never grant perpetual `backend_sync` or perpetual AI credits.
 
----
-
-## 9. Monetization Metrics
-
-### 9.1 Conversion objectives
-
-| Metric                  | Target (30 days) | Target (90 days) | Stretch      |
-| ----------------------- | ---------------- | ---------------- | ------------ |
-| Free → Pro conversion   | >= 6%            | >= 8%            | >= 10%       |
-| Trial-to-Paid           | —                | >= 40%           | >= 50%       |
-| Monthly churn           | —                | < 8%             | < 5%         |
-| ARPU (paying users)     | >= $3.50/month   | >= $3.50/month   | >= $4.50/month |
-
-### 9.2 Revenue projections (conservative)
-
-| Scenario         | MAU | Conversion | ARPU  | MRR     |
-| ---------------- | --- | ---------- | ----- | ------- |
-| Base (Month 6)   | 8K  | 6%         | $3.50 | $1,680  |
-| Good (Month 6)   | 15K | 8%         | $3.80 | $4,560  |
-| Stretch (Month 12) | 30K | 10%      | $4.00 | $12,000 |
-
-### 9.3 Metrics to track
-
-| Metric                                                       | Tool                                    |
-| ------------------------------------------------------------ | --------------------------------------- |
-| Conversion by plan (monthly/annual/lifetime)                | Backend analytics                       |
-| Revenue by region (Global vs LATAM)                         | App Store Connect / Google Play Console |
-| Paywall view-to-purchase rate                               | In-app analytics                        |
-| Most attempted feature by Free users (conversion trigger)   | In-app analytics                        |
-| Average time Free → Pro                                     | Backend analytics                       |
-| Churn by cohort                                              | Backend analytics                       |
-| LTV by plan                                                  | Calculated (ARPU / churn rate)          |
+**Billing verification endpoint remains authoritative:** `POST /api/v1/billing/verify`
 
 ---
 
-## Appendix: Competitor Comparison
+## 8. Gating And Paywall Rules
 
-| App            | Monthly      | Annual        | Lifetime         |
-| -------------- | ------------ | ------------- | ---------------- |
-| Forest         | —            | $19.99/yr     | $3.99 (one-time) |
-| Focus Bear     | $4.99/mo     | $29.99/yr     | —                |
-| Tide           | $2.99/mo     | $14.99/yr     | $49.99           |
-| Be Focused Pro | —            | —             | $4.99            |
-| Session        | $4.99/mo     | $29.99/yr     | $79.99           |
-| **Pepinillo**  | **$3.99/mo** | **$24.99/yr** | **$49.99**       |
+| Trigger | Recommended offer | Why |
+| ------- | ----------------- | --- |
+| User taps Flowtime / Time Block | Pepinillo+ or Everywhere/AI+ | Premium local value |
+| User opens AI Report | Pepinillo+ or Everywhere/AI+ | Apple Intelligence included in both paid tiers |
+| User wants iCloud sync | Pepinillo+ or Everywhere/AI+ | Apple-local continuity |
+| User wants advanced AI features | Everywhere/AI+ (Próximamente) | Cloud AI features |
+| User wants cross-platform sync | Everywhere/AI+ (Próximamente) | Backend infrastructure required |
 
-Pepinillo is competitively positioned: cheaper than Session and Focus Bear, while offering more features than Tide and Forest. LATAM pricing (~50% of global pricing) is a unique differentiator in the market.
+### Paywall Design Principles
+
+1. **Transparency first:** Pepinillo+ is clearly labeled "One purchase. Yours forever. Not a subscription."
+2. **Apple Intelligence as hero:** The AI Reports feature is the headline differentiator
+3. **Próximamente section:** Everywhere/AI+ features not yet shipped appear with a subtle badge
+4. **Value anchoring:** Annual subscription shows per-month savings
+
+---
+
+## 9. Rollout Plan
+
+| Phase | Goal | Status |
+| ----- | ---- | ------ |
+| **Phase 0** | Documentation alignment | ✅ This document (v3.0) |
+| **Phase 1** | Enable Apple Intelligence + redesign Paywall | 🔄 In progress |
+| **Phase 2** | Submit to App Store with Pepinillo+ as primary offer | ⬜ Next |
+| **Phase 3** | Backend Sync + AI+ implementation for Everywhere/AI+ | ⬜ Future |
+| **Phase 4** | Android migration to Everywhere/AI+ | ⬜ Future |
+| **Phase 5** | Marketing expansion (macOS, Web when shipped) | ⬜ Future |
+
+---
+
+## 10. Success Metrics
+
+| Metric | Target |
+| ------ | ------ |
+| Free → Pepinillo+ conversion | ≥ 4% on Apple platforms |
+| Free → Everywhere/AI+ conversion | ≥ 3% in first 90 days (post-launch) |
+| Pepinillo+ → Everywhere/AI+ attach rate | ≥ 15% |
+| AI Report activation | ≥ 50% of paid users generate at least 1 report/month |
+| AI credit activation (future) | ≥ 40% of Everywhere/AI+ subscribers use credits monthly |
+
+---
+
+## Appendix: Changes from v2.0 → v3.0
+
+| Change | v2.0 | v3.0 |
+| ------ | ---- | ---- |
+| One-time purchase name | "Apple Unlock" | **Pepinillo+** |
+| Subscription name | "Pepinillo Everywhere" | **Everywhere/AI+** |
+| Product IDs | New IDs (not yet created) | **Reusing existing** `pro.lifetime`, `pro.monthly`, `pro.annual` |
+| RevenueCat entitlements | `apple_unlock`, `everywhere` (new) | Same names, mapped to existing products |
+| Apple Intelligence | Mentioned as "Local Intelligence" | **Full section** with implementation architecture |
+| AI+ features | "Monthly AI credits" | **Detailed:** Advanced Insights, AI Coach, Task Scheduling, Subtask Gen |
+| Próximamente strategy | Not defined | **Defined:** Only in paywall, not promoted elsewhere |
+| Transparency | Generic | **Explicit:** "Not a subscription" messaging throughout |
+
+---
+
+## Appendix: Strategic Notes
+
+- The old one-tier Pro model was simple, but it mixed local premium, backend cost, and AI cost into one offer.
+- Pepinillo+ gives a safer one-time entry point for users who mostly live inside the Apple ecosystem.
+- Everywhere/AI+ is the recurring business layer that can sustainably fund sync, identity, server operations, and cloud AI.
+- Reusing existing product IDs eliminates App Store Connect migration risk and RevenueCat reconfiguration complexity.
+- Apple Intelligence is our competitive moat. No other focus app has this level of on-device AI integration with template fallback.
