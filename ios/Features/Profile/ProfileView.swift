@@ -60,6 +60,7 @@ struct ProfileView: View {
                 }
                 .frame(width: 72, height: 72)
                 .clipShape(Circle())
+                .accessibilityHidden(true)
             } else {
                 Circle()
                     .fill(.secondary.opacity(0.2))
@@ -67,6 +68,7 @@ struct ProfileView: View {
                     .overlay {
                         Image(systemName: "person.fill").font(.title).foregroundStyle(.secondary)
                     }
+                    .accessibilityHidden(true)
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -80,6 +82,8 @@ struct ProfileView: View {
                                 .font(.body)
                                 .foregroundStyle(.secondary)
                         }
+                        .accessibilityLabel(String(localized: "a11y.profile.edit.label", defaultValue: "Edit profile"))
+                        .accessibilityHint(String(localized: "a11y.profile.edit.hint", defaultValue: "Opens profile editor"))
                     }
                 }
 
@@ -91,6 +95,7 @@ struct ProfileView: View {
                     Label(birthDate, systemImage: "calendar")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel("\(String(localized: "a11y.profile.birthdate.prefix", defaultValue: "Birth date")): \(birthDate)")
                 } else if store.user != nil {
                     Label("Add your birth date manually in Edit Profile", systemImage: "calendar.badge.plus")
                         .font(.caption)
@@ -109,6 +114,7 @@ struct ProfileView: View {
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+        .accessibilityElement(children: .contain)
     }
 
     private var formattedBirthDate: String? {
@@ -132,19 +138,23 @@ struct ProfileView: View {
                 StatMiniCard(
                     icon: "timer",
                     value: "\(store.totalFocusMinutes / 60)h",
-                    label: "Focus time"
+                    label: "Focus time",
+                    accessibilityLabel: "Focus time: \(store.totalFocusMinutes / 60) hours"
                 )
                 StatMiniCard(
                     icon: "checkmark.circle",
                     value: "\(store.totalSessions)",
-                    label: "Sessions"
+                    label: "Sessions",
+                    accessibilityLabel: "Sessions: \(store.totalSessions)"
                 )
                 StatMiniCard(
                     icon: "flame",
                     value: "\(store.bestStreak)",
-                    label: "Best streak"
+                    label: "Best streak",
+                    accessibilityLabel: "Best streak: \(store.bestStreak) days"
                 )
             }
+            .accessibilityLabel(String(localized: "a11y.profile.lifetimestats.label", defaultValue: "Lifetime statistics"))
         }
     }
 
@@ -167,6 +177,8 @@ struct ProfileView: View {
                     ) {
                         store.send(.signOutTapped)
                     }
+                    .accessibilityLabel(String(localized: "a11y.account.signout.label", defaultValue: "Sign out"))
+                    .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
                 }
             }
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
@@ -180,6 +192,7 @@ private struct StatMiniCard: View {
     let icon: String
     let value: String
     let label: String
+    var accessibilityLabel: String = ""
 
     var body: some View {
         VStack(spacing: 10) {
@@ -195,6 +208,8 @@ private struct StatMiniCard: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel.isEmpty ? "\(label): \(value)" : accessibilityLabel)
     }
 }
 

@@ -25,18 +25,21 @@ struct EditProfileView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityAddTraits(.isStaticText)
 
                 // Name field
                 VStack(alignment: .leading, spacing: 8) {
                     Text(String(localized: "editprofile.name.label", defaultValue: "Name"))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     TextField(String(localized: "editprofile.name.placeholder", defaultValue: "Your name"), text: Binding(
                         get: { store.name },
                         set: { store.send(.nameChanged($0)) }
                     ))
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.name)
+                    .accessibilityLabel(String(localized: "editprofile.name.label", defaultValue: "Name"))
                 }
 
                 // Email field
@@ -44,6 +47,7 @@ struct EditProfileView: View {
                     Text(String(localized: "editprofile.email.label", defaultValue: "Email"))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     TextField(String(localized: "auth.field.email", defaultValue: "Email"), text: Binding(
                         get: { store.email },
                         set: { store.send(.emailChanged($0)) }
@@ -53,6 +57,7 @@ struct EditProfileView: View {
                     .autocorrectionDisabled(true)
                     .keyboardType(.emailAddress)
                     .textContentType(.emailAddress)
+                    .accessibilityLabel(String(localized: "a11y.auth.field.email.label", defaultValue: "Email address"))
                 }
 
                 // Birth date
@@ -60,6 +65,7 @@ struct EditProfileView: View {
                     Text(String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     DatePicker(
                         String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"),
                         selection: Binding(
@@ -70,6 +76,7 @@ struct EditProfileView: View {
                     )
                     .datePickerStyle(.compact)
                     .labelsHidden()
+                    .accessibilityLabel(String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"))
                 }
 
                 // Error
@@ -142,9 +149,16 @@ struct EditProfileView: View {
                     Circle()
                         .fill(Color(.systemFill).opacity(0.7))
                         .frame(width: 96, height: 96)
+                        .accessibilityHidden(true)
                     ProgressView().tint(.white)
+                        .accessibilityHidden(true)
                 }
             }
+            .accessibilityLabel(String(localized: "a11y.editprofile.avatar.label", defaultValue: "Profile photo"))
+            .accessibilityHint(store.isUploading
+                ? String(localized: "a11y.editprofile.avatar.uploading", defaultValue: "Uploading photo")
+                : String(localized: "a11y.editprofile.avatar.hint", defaultValue: "Tap Change Photo to update or remove your profile photo")
+            )
 
             if store.imageUrl != nil || store.selectedImageData != nil {
                 Button(String(localized: "editprofile.removephoto.button", defaultValue: "Remove Photo")) {
@@ -152,6 +166,7 @@ struct EditProfileView: View {
                 }
                 .font(.footnote)
                 .foregroundStyle(.red)
+                .accessibilityLabel(String(localized: "editprofile.removephoto.button", defaultValue: "Remove Photo"))
             }
 
             // Photo picker
@@ -164,6 +179,8 @@ struct EditProfileView: View {
                     .font(.subheadline)
             }
             .disabled(store.isUploading)
+            .accessibilityLabel(String(localized: "a11y.editprofile.photopicker.label", defaultValue: "Profile photo"))
+            .accessibilityHint(String(localized: "a11y.editprofile.photopicker.hint", defaultValue: "Tap to change or remove your profile photo"))
             .onChange(of: selectedItem) { _, newItem in
                 guard let newItem else { return }
                 Task {

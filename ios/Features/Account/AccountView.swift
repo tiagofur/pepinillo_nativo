@@ -51,6 +51,7 @@ struct AccountView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 14) {
                 avatarView
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
@@ -81,6 +82,7 @@ struct AccountView: View {
                 Image(systemName: "chevron.right.circle.fill")
                     .font(.title3)
                     .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
             }
 
             HStack(spacing: 8) {
@@ -89,6 +91,7 @@ struct AccountView: View {
                     title: subscriptionLabel,
                     tint: store.subscriptionState.isPro ? .yellow : theme.pomodoroColor
                 )
+                .accessibilityLabel("\(subscriptionLabel) subscription")
 
                 if store.analytics.currentStreakDays > 0 {
                     statusChip(
@@ -96,8 +99,10 @@ struct AccountView: View {
                         title: String(localized: "\(store.analytics.currentStreakDays) day streak"),
                         tint: theme.streakColor
                     )
+                    .accessibilityLabel("\(store.analytics.currentStreakDays) day streak")
                 }
             }
+            .accessibilityHidden(true)
         }
         .padding(18)
         .background(
@@ -118,6 +123,20 @@ struct AccountView: View {
                 .strokeBorder(Color.accentColor.opacity(0.08), lineWidth: 1)
         )
         .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(signedInAccessibilityLabel)
+        .accessibilityHint(String(localized: "a11y.account.profilecard.hint", defaultValue: "Opens your profile"))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var signedInAccessibilityLabel: String {
+        var parts: [String] = [signedInDisplayName]
+        if let email = signedInEmail { parts.append(email) }
+        parts.append(subscriptionLabel)
+        if store.analytics.currentStreakDays > 0 {
+            parts.append("\(store.analytics.currentStreakDays) day streak")
+        }
+        return parts.joined(separator: ", ")
     }
 
     private var guestHeader: some View {
@@ -131,6 +150,7 @@ struct AccountView: View {
                             .font(.title3)
                             .foregroundStyle(theme.pomodoroColor)
                     }
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(greeting)
@@ -147,6 +167,8 @@ struct AccountView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(String(localized: "a11y.account.guest.label", defaultValue: "Not signed in. Set up your profile to save data across devices."))
 
             SignInWithAppleButton(.continue) { request in
                 let nonce = AppleAuthHelper.generateNonce()
@@ -245,6 +267,7 @@ struct AccountView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .accessibilityHint(String(localized: "a11y.account.nav.subscription.hint", defaultValue: "Opens subscription plan options"))
         }
     }
 
@@ -258,6 +281,7 @@ struct AccountView: View {
             } label: {
                 Label(String(localized: "Settings"), systemImage: "gearshape")
             }
+            .accessibilityHint(String(localized: "a11y.account.nav.settings.hint", defaultValue: "Opens app settings"))
 
             NavigationLink {
                 ExportView(isPro: store.subscriptionState.isPro)
@@ -270,6 +294,7 @@ struct AccountView: View {
                     }
                 }
             }
+            .accessibilityHint(String(localized: "a11y.account.nav.export.hint", defaultValue: "Opens data export options"))
         }
     }
 
@@ -283,12 +308,14 @@ struct AccountView: View {
             } label: {
                 Label(String(localized: "Help & Support"), systemImage: "questionmark.circle")
             }
+            .accessibilityHint(String(localized: "a11y.account.nav.help.hint", defaultValue: "Opens help and support resources"))
 
             NavigationLink {
                 AboutView(store: Store(initialState: AboutFeature.State()) { AboutFeature() })
             } label: {
                 Label(String(localized: "About Pepinillo"), systemImage: "info.circle")
             }
+            .accessibilityHint(String(localized: "a11y.account.nav.about.hint", defaultValue: "Opens information about this app"))
         }
     }
 
@@ -304,6 +331,8 @@ struct AccountView: View {
                     Label(String(localized: "Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
                         .foregroundStyle(.red)
                 }
+                .accessibilityLabel(String(localized: "a11y.account.signout.label", defaultValue: "Sign out"))
+                .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
             }
         } else {
             EmptyView()

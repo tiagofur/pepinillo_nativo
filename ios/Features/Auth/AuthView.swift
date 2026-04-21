@@ -40,6 +40,7 @@ struct AuthView: View {
                         .font(.system(size: 29, weight: .semibold))
                         .foregroundStyle(theme.pomodoroColor)
                 }
+                .accessibilityHidden(true)
 
                 Text(String(localized: "auth.welcome.title", defaultValue: "Welcome to Pepinillo"))
                     .font(.system(.title, design: .rounded).weight(.bold))
@@ -63,6 +64,11 @@ struct AuthView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 24)
+                .accessibilityLabel(String(localized: "a11y.auth.mode.label", defaultValue: "Authentication mode"))
+                .accessibilityValue(store.mode == .login
+                    ? String(localized: "auth.mode.signin", defaultValue: "Sign In")
+                    : String(localized: "auth.mode.register", defaultValue: "Create Account")
+                )
 
                 Spacer().frame(height: 14)
 
@@ -77,6 +83,7 @@ struct AuthView: View {
                         )
                         .textContentType(.name)
                         .textFieldStyle(.roundedBorder)
+                        .accessibilityLabel(String(localized: "a11y.auth.field.name.label", defaultValue: "Name"))
                     }
 
                     TextField(
@@ -91,6 +98,7 @@ struct AuthView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
                     .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel(String(localized: "a11y.auth.field.email.label", defaultValue: "Email address"))
 
                     HStack(spacing: 10) {
                         Group {
@@ -114,6 +122,11 @@ struct AuthView: View {
                                 .textContentType(store.mode == .register ? .newPassword : .password)
                             }
                         }
+                        .accessibilityLabel(String(localized: "a11y.auth.field.password.label", defaultValue: "Password"))
+                        .accessibilityHint(store.mode == .register
+                            ? String(localized: "a11y.auth.field.password.hint.register", defaultValue: "Must be at least 8 characters with uppercase, lowercase, and a number")
+                            : String(localized: "a11y.auth.field.password.hint.login", defaultValue: "Enter your account password")
+                        )
 
                         Button {
                             store.send(.togglePasswordVisibility)
@@ -122,7 +135,10 @@ struct AuthView: View {
                                 .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel(store.isPasswordVisible ? "Hide password" : "Show password")
+                        .accessibilityLabel(store.isPasswordVisible
+                            ? String(localized: "a11y.auth.password.hide", defaultValue: "Hide password")
+                            : String(localized: "a11y.auth.password.show", defaultValue: "Show password")
+                        )
                     }
                     .textFieldStyle(.roundedBorder)
 
@@ -131,6 +147,7 @@ struct AuthView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityHidden(true)
                     }
                 }
                 .padding(18)
@@ -148,6 +165,8 @@ struct AuthView: View {
                         .padding(.horizontal, 24)
                         .padding(.top, 10)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityLabel(error)
+                        .accessibilityAddTraits(.isStaticText)
                 }
 
                 Spacer().frame(height: 20)
@@ -163,6 +182,7 @@ struct AuthView: View {
                         if store.isLoading {
                             ProgressView()
                                 .tint(.white)
+                                .accessibilityHidden(true)
                         }
                         Text(store.mode == .login ? String(localized: "auth.mode.signin", defaultValue: "Sign In") : String(localized: "auth.mode.register", defaultValue: "Create Account"))
                     }
@@ -174,6 +194,10 @@ struct AuthView: View {
                 .tint(theme.pomodoroColor)
                 .disabled(store.isLoading)
                 .padding(.horizontal, 24)
+                .accessibilityLabel(store.mode == .login
+                    ? String(localized: "auth.mode.signin", defaultValue: "Sign In")
+                    : String(localized: "auth.mode.register", defaultValue: "Create Account")
+                )
 
                 if store.mode == .login, onAppleSignIn != nil {
                     VStack(spacing: 8) {
@@ -190,6 +214,7 @@ struct AuthView: View {
                         }
                         .padding(.horizontal, 24)
                         .padding(.top, 12)
+                        .accessibilityHidden(true)
 
                         SignInWithAppleButton(.continue) { request in
                             let nonce = AppleAuthHelper.generateNonce()
@@ -236,6 +261,7 @@ struct AuthView: View {
                     .foregroundStyle(.secondary)
                     .font(.footnote)
                     .padding(.top, 10)
+                    .accessibilityHint(String(localized: "a11y.auth.forgotpassword.hint", defaultValue: "Opens password recovery"))
                 }
 
                 Button {
@@ -246,6 +272,7 @@ struct AuthView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 12)
+                .accessibilityHint(String(localized: "a11y.auth.guest.hint", defaultValue: "Continue without signing in — data stays on this device"))
 
                 Spacer().frame(height: 24)
             }
@@ -282,15 +309,20 @@ struct AuthView: View {
                 ZStack {
                     Color(.systemBackground).opacity(0.6)
                         .ignoresSafeArea()
+                        .accessibilityHidden(true)
                     VStack(spacing: 16) {
                         ProgressView()
                             .scaleEffect(1.5)
+                            .accessibilityHidden(true)
                         Text("Syncing your data...")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                     .padding(32)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(String(localized: "a11y.auth.syncing.label", defaultValue: "Syncing your account"))
+                    .accessibilityAddTraits(.updatesFrequently)
                 }
             }
         }

@@ -50,6 +50,8 @@ struct ForgotPasswordView: View {
                         .padding(.top, 8)
                         .padding(.horizontal, 24)
                         .multilineTextAlignment(.center)
+                        .accessibilityLabel(error)
+                        .accessibilityAddTraits(.isStaticText)
                 }
 
                 Spacer().frame(height: 24)
@@ -124,6 +126,7 @@ struct ForgotPasswordView: View {
         .keyboardType(.emailAddress)
         .textInputAutocapitalization(.never)
         .textFieldStyle(.roundedBorder)
+        .accessibilityLabel(String(localized: "a11y.auth.field.email.label", defaultValue: "Email address"))
     }
 
     // MARK: - Reset Step
@@ -140,6 +143,8 @@ struct ForgotPasswordView: View {
         .textContentType(.oneTimeCode)
         .keyboardType(.numberPad)
         .textFieldStyle(.roundedBorder)
+        .accessibilityLabel(String(localized: "a11y.forgotpassword.code.label", defaultValue: "Reset code"))
+        .accessibilityHint(String(localized: "a11y.forgotpassword.code.hint", defaultValue: "Enter the code sent to your email"))
 
         // New Password
         HStack {
@@ -164,6 +169,8 @@ struct ForgotPasswordView: View {
                     .textContentType(.newPassword)
                 }
             }
+            .accessibilityLabel(String(localized: "a11y.forgotpassword.newpassword.label", defaultValue: "New password"))
+            .accessibilityHint(String(localized: "a11y.auth.field.password.hint.register", defaultValue: "Must be at least 8 characters with uppercase, lowercase, and a number"))
 
             Button {
                 store.send(.togglePasswordVisibility)
@@ -172,6 +179,10 @@ struct ForgotPasswordView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(store.isPasswordVisible
+                ? String(localized: "a11y.auth.password.hide", defaultValue: "Hide password")
+                : String(localized: "a11y.auth.password.show", defaultValue: "Show password")
+            )
         }
         .textFieldStyle(.roundedBorder)
 
@@ -198,6 +209,7 @@ struct ForgotPasswordView: View {
                     .textContentType(.newPassword)
                 }
             }
+            .accessibilityLabel(String(localized: "a11y.forgotpassword.confirmpassword.label", defaultValue: "Confirm new password"))
 
             Button {
                 store.send(.toggleConfirmPasswordVisibility)
@@ -206,6 +218,10 @@ struct ForgotPasswordView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(store.isConfirmPasswordVisible
+                ? String(localized: "a11y.auth.password.hide", defaultValue: "Hide password")
+                : String(localized: "a11y.auth.password.show", defaultValue: "Show password")
+            )
         }
         .textFieldStyle(.roundedBorder)
 
@@ -214,5 +230,6 @@ struct ForgotPasswordView: View {
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 4)
+            .accessibilityHidden(true)
     }
 }

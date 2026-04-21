@@ -7850,6 +7850,754 @@
           }
         }
       }
+    },
+    "a11y.auth.mode.label" : {
+      "comment" : "A11y — Auth segmented control label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de autenticación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Modo de autenticação"
+          }
+        }
+      }
+    },
+    "a11y.auth.field.name.label" : {
+      "comment" : "A11y — Auth name text field label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nombre"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nome"
+          }
+        }
+      }
+    },
+    "a11y.auth.field.email.label" : {
+      "comment" : "A11y — Auth email text field label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dirección de correo electrónico"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Endereço de e-mail"
+          }
+        }
+      }
+    },
+    "a11y.auth.field.password.label" : {
+      "comment" : "A11y — Auth password field label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contraseña"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senha"
+          }
+        }
+      }
+    },
+    "a11y.auth.field.password.hint.register" : {
+      "comment" : "A11y — Auth password field hint during registration",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Debe tener al menos 8 caracteres con mayúsculas, minúsculas y un número"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deve ter pelo menos 8 caracteres com maiúsculas, minúsculas e um número"
+          }
+        }
+      }
+    },
+    "a11y.auth.field.password.hint.login" : {
+      "comment" : "A11y — Auth password field hint during login",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá la contraseña de tu cuenta"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Digite a senha da sua conta"
+          }
+        }
+      }
+    },
+    "a11y.auth.password.hide" : {
+      "comment" : "A11y — Hide password toggle button label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar contraseña"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar senha"
+          }
+        }
+      }
+    },
+    "a11y.auth.password.show" : {
+      "comment" : "A11y — Show password toggle button label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar contraseña"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar senha"
+          }
+        }
+      }
+    },
+    "a11y.auth.forgotpassword.hint" : {
+      "comment" : "A11y — Forgot password link hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la recuperación de contraseña"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre a recuperação de senha"
+          }
+        }
+      }
+    },
+    "a11y.auth.guest.hint" : {
+      "comment" : "A11y — Continue without account button hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continuá sin cuenta — los datos se quedan en este dispositivo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue sem conta — os dados ficam neste dispositivo"
+          }
+        }
+      }
+    },
+    "a11y.auth.syncing.label" : {
+      "comment" : "A11y — Syncing overlay label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizando tu cuenta"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizando sua conta"
+          }
+        }
+      }
+    },
+    "a11y.emailverification.sent.label %@" : {
+      "comment" : "A11y — Email verification sent message. %@ is the email address.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviamos un código de 6 dígitos a %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviamos um código de 6 dígitos para %@"
+          }
+        }
+      }
+    },
+    "a11y.emailverification.code.label" : {
+      "comment" : "A11y — Email verification code field label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de verificación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de verificação"
+          }
+        }
+      }
+    },
+    "a11y.emailverification.code.hint" : {
+      "comment" : "A11y — Email verification code field hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá el código de 6 dígitos de tu correo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Digite o código de 6 dígitos do seu e-mail"
+          }
+        }
+      }
+    },
+    "a11y.emailverification.resend.label" : {
+      "comment" : "A11y — Resend verification email button label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reenviar correo de verificación"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reenviar e-mail de verificação"
+          }
+        }
+      }
+    },
+    "a11y.emailverification.resend.hint" : {
+      "comment" : "A11y — Resend verification email button hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envía un nuevo enlace de verificación a tu correo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envia um novo link de verificação para seu e-mail"
+          }
+        }
+      }
+    },
+    "a11y.forgotpassword.code.label" : {
+      "comment" : "A11y — Forgot password reset code field label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de restablecimiento"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Código de redefinição"
+          }
+        }
+      }
+    },
+    "a11y.forgotpassword.code.hint" : {
+      "comment" : "A11y — Forgot password reset code field hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingresá el código enviado a tu correo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Digite o código enviado para seu e-mail"
+          }
+        }
+      }
+    },
+    "a11y.forgotpassword.newpassword.label" : {
+      "comment" : "A11y — Forgot password new password field label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nueva contraseña"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nova senha"
+          }
+        }
+      }
+    },
+    "a11y.forgotpassword.confirmpassword.label" : {
+      "comment" : "A11y — Forgot password confirm password field label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmá la nueva contraseña"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirme a nova senha"
+          }
+        }
+      }
+    },
+    "a11y.account.profilecard.hint" : {
+      "comment" : "A11y — Account profile card tap hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre tu perfil"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre seu perfil"
+          }
+        }
+      }
+    },
+    "a11y.account.subscription.chip %@" : {
+      "comment" : "A11y — Account subscription tier chip. %@ is the tier name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suscripción %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assinatura %@"
+          }
+        }
+      }
+    },
+    "a11y.account.streak.chip %lld" : {
+      "comment" : "A11y — Account streak chip. %lld is the number of days.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld días de racha"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld dias de sequência"
+          }
+        }
+      }
+    },
+    "a11y.account.guest.label" : {
+      "comment" : "A11y — Account guest header combined label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No estás conectado. Configurá tu perfil para guardar datos en todos tus dispositivos."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você não está conectado. Configure seu perfil para salvar dados em todos os dispositivos."
+          }
+        }
+      }
+    },
+    "a11y.account.nav.subscription.hint" : {
+      "comment" : "A11y — Account nav row hint for Subscription",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre las opciones de plan de suscripción"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre as opções de plano de assinatura"
+          }
+        }
+      }
+    },
+    "a11y.account.nav.settings.hint" : {
+      "comment" : "A11y — Account nav row hint for Settings",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la configuración de la app"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre as configurações do app"
+          }
+        }
+      }
+    },
+    "a11y.account.nav.export.hint" : {
+      "comment" : "A11y — Account nav row hint for Export Data",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre las opciones de exportación de datos"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre as opções de exportação de dados"
+          }
+        }
+      }
+    },
+    "a11y.account.nav.help.hint" : {
+      "comment" : "A11y — Account nav row hint for Help & Support",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre recursos de ayuda y soporte"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre recursos de ajuda e suporte"
+          }
+        }
+      }
+    },
+    "a11y.account.nav.about.hint" : {
+      "comment" : "A11y — Account nav row hint for About",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre información sobre la app"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre informações sobre o app"
+          }
+        }
+      }
+    },
+    "a11y.account.signout.label" : {
+      "comment" : "A11y — Sign out button label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar sesión"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sair da conta"
+          }
+        }
+      }
+    },
+    "a11y.account.signout.hint" : {
+      "comment" : "A11y — Sign out button hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrá tu sesión en este dispositivo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encerra sua sessão neste dispositivo"
+          }
+        }
+      }
+    },
+    "a11y.profile.edit.label" : {
+      "comment" : "A11y — Profile edit pencil button label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar perfil"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar perfil"
+          }
+        }
+      }
+    },
+    "a11y.profile.edit.hint" : {
+      "comment" : "A11y — Profile edit pencil button hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre el editor de perfil"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre o editor de perfil"
+          }
+        }
+      }
+    },
+    "a11y.profile.birthdate.label %@" : {
+      "comment" : "A11y — Profile birth date row label. %@ is the formatted date.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fecha de nacimiento: %@"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data de nascimento: %@"
+          }
+        }
+      }
+    },
+    "a11y.profile.stat.focustime %lld" : {
+      "comment" : "A11y — Profile lifetime stat card for focus time. %lld is hours.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo de enfoque: %lld horas"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tempo de foco: %lld horas"
+          }
+        }
+      }
+    },
+    "a11y.profile.stat.sessions %lld" : {
+      "comment" : "A11y — Profile lifetime stat card for sessions. %lld is the count.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesiones: %lld"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sessões: %lld"
+          }
+        }
+      }
+    },
+    "a11y.profile.stat.beststreak %lld" : {
+      "comment" : "A11y — Profile lifetime stat card for best streak. %lld is the days.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mejor racha: %lld días"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melhor sequência: %lld dias"
+          }
+        }
+      }
+    },
+    "a11y.profile.lifetimestats.label" : {
+      "comment" : "A11y — Profile lifetime stats container label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estadísticas de toda la vida"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estatísticas de toda a vida"
+          }
+        }
+      }
+    },
+    "a11y.editprofile.avatar.label" : {
+      "comment" : "A11y — EditProfile avatar circle label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto de perfil"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto de perfil"
+          }
+        }
+      }
+    },
+    "a11y.editprofile.avatar.uploading" : {
+      "comment" : "A11y — EditProfile avatar uploading state hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Subiendo la foto"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviando a foto"
+          }
+        }
+      }
+    },
+    "a11y.editprofile.avatar.hint" : {
+      "comment" : "A11y — EditProfile avatar circle hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocá Cambiar foto para actualizar o eliminar tu foto de perfil"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque em Alterar foto para atualizar ou remover sua foto de perfil"
+          }
+        }
+      }
+    },
+    "a11y.editprofile.photopicker.label" : {
+      "comment" : "A11y — EditProfile photo picker label",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto de perfil"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Foto de perfil"
+          }
+        }
+      }
+    },
+    "a11y.editprofile.photopicker.hint" : {
+      "comment" : "A11y — EditProfile photo picker hint",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tocá para cambiar o eliminar tu foto de perfil"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque para alterar ou remover sua foto de perfil"
+          }
+        }
+      }
+    },
+    "a11y.profile.birthdate.prefix" : {
+      "comment" : "A11y — Profile birth date label prefix (followed by the date value)",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fecha de nacimiento"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Data de nascimento"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
