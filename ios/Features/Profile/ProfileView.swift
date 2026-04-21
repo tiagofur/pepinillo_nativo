@@ -16,9 +16,9 @@ struct ProfileView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 // Header
-                Text("Profile")
+                Text(String(localized: "profile.title", defaultValue: "Profile"))
                     .font(.title.bold())
-                Text("Your productivity journey")
+                Text(String(localized: "profile.subtitle", defaultValue: "Your productivity journey"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
@@ -32,7 +32,7 @@ struct ProfileView: View {
                 accountSection
 
                 // Footer
-                Text("Pepinillo v1.0.0")
+                Text("Pepinillo v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity)
@@ -54,10 +54,8 @@ struct ProfileView: View {
     @ViewBuilder
     private var userCard: some View {
         HStack(spacing: 16) {
-            if let imageUrl = store.user?.imageUrl, let url = URL(string: imageUrl) {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
+            if let imageReference = store.user?.imageUrl {
+                ProfileAvatarImageView(imageReference: imageReference) {
                     Image(systemName: "person.fill").font(.title).foregroundStyle(.secondary)
                 }
                 .frame(width: 72, height: 72)
@@ -71,7 +69,7 @@ struct ProfileView: View {
                     }
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
                     Text(store.user?.name ?? "Guest User")
                         .font(.title3.weight(.semibold))
@@ -88,6 +86,23 @@ struct ProfileView: View {
                 Text(store.user?.email ?? "Sign in to sync your data")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+
+                if let birthDate = formattedBirthDate {
+                    Label(birthDate, systemImage: "calendar")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else if store.user != nil {
+                    Label("Add your birth date manually in Edit Profile", systemImage: "calendar.badge.plus")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if store.user?.appleId != nil {
+                    Text(String(localized: "profile.apple.disclaimer", defaultValue: "Apple only shares name and email during authorization. Birth date and photo are managed manually in Pepinillo."))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
 
             Spacer()
@@ -96,12 +111,20 @@ struct ProfileView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
     }
 
+    private var formattedBirthDate: String? {
+        guard let rawBirthDate = store.user?.birthDate, !rawBirthDate.isEmpty,
+              let date = ISO8601DateFormatter().date(from: rawBirthDate) else {
+            return nil
+        }
+        return date.formatted(date: .abbreviated, time: .omitted)
+    }
+
     // MARK: - Stats Section
 
     @ViewBuilder
     private var statsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Lifetime Stats")
+            Text(String(localized: "profile.lifetimeStats", defaultValue: "Lifetime Stats"))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.tint)
 
@@ -130,7 +153,7 @@ struct ProfileView: View {
     @ViewBuilder
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Account")
+            Text(String(localized: "profile.account.section", defaultValue: "Account"))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.tint)
 
@@ -138,7 +161,7 @@ struct ProfileView: View {
                 if store.user != nil {
                     ActionRow(
                         icon: "arrow.right.square",
-                        label: "Sign Out",
+                        label: String(localized: "profile.signout.button", defaultValue: "Sign Out"),
                         subtitle: store.user?.email ?? "",
                         isLoading: store.isLoading
                     ) {

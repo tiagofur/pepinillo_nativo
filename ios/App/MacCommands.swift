@@ -2,7 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // macOS / Mac Catalyst menu bar commands.
-// Provides Focus, Tasks, and Window menus with keyboard shortcuts.
+// Provides Focus, Plan, and Window menus with keyboard shortcuts.
 // Injected into the WindowGroup via .commands { PepinilloCommands() }.
 
 import SwiftUI
@@ -15,8 +15,8 @@ struct PepinilloCommands: Commands {
 
     var body: some Commands {
         // MARK: Focus Menu
-        CommandMenu("Focus") {
-            Button("Start / Pause") {
+        CommandMenu(String(localized: "menu.focus.title", defaultValue: "Focus")) {
+            Button(String(localized: "menu.focus.startpause", defaultValue: "Start / Pause")) {
                 let focus = store.focus
                 if !focus.isRunning {
                     store.send(.focus(.startTapped))
@@ -28,7 +28,7 @@ struct PepinilloCommands: Commands {
             }
             .keyboardShortcut(.space, modifiers: [])
 
-            Button("Stop Session") {
+            Button(String(localized: "menu.focus.stopsession", defaultValue: "Stop Session")) {
                 store.send(.focus(.stopTapped))
             }
             .keyboardShortcut(".", modifiers: .command)
@@ -36,55 +36,55 @@ struct PepinilloCommands: Commands {
 
             Divider()
 
-            Button("Pomodoro") {
+            Button(String(localized: "menu.focus.pomodoro", defaultValue: "Pomodoro")) {
                 store.send(.focus(.modeSelected(.pomodoro)))
             }
             .keyboardShortcut("1", modifiers: .command)
 
-            Button("Flowtime") {
+            Button(String(localized: "menu.focus.flowtime", defaultValue: "Flowtime")) {
                 store.send(.focus(.modeSelected(.flowtime)))
             }
             .keyboardShortcut("2", modifiers: .command)
 
-            Button("Time Block") {
+            Button(String(localized: "menu.focus.timeblock", defaultValue: "Time Block")) {
                 store.send(.focus(.modeSelected(.timeBlock)))
             }
             .keyboardShortcut("3", modifiers: .command)
 
-            Button("Stopwatch") {
+            Button(String(localized: "menu.focus.stopwatch", defaultValue: "Stopwatch")) {
                 store.send(.focus(.modeSelected(.stopwatch)))
             }
             .keyboardShortcut("4", modifiers: .command)
         }
 
-        // MARK: Tasks Menu
-        CommandMenu("Tasks") {
-            Button("New Task") {
-                store.send(.tabSelected(.tasks))
+        // MARK: Plan Menu
+        CommandMenu(String(localized: "menu.plan.title", defaultValue: "Plan")) {
+            Button(String(localized: "menu.plan.newtask", defaultValue: "New Task")) {
+                store.send(.tabSelected(.plan))
                 store.send(.tasks(.addTaskTapped))
             }
             .keyboardShortcut("n", modifiers: .command)
 
-            Button("Go to Tasks") {
-                store.send(.tabSelected(.tasks))
+            Button(String(localized: "menu.plan.gotoplan", defaultValue: "Go to Plan")) {
+                store.send(.tabSelected(.plan))
             }
             .keyboardShortcut("t", modifiers: [.command, .shift])
         }
 
         // MARK: View Menu Additions
         CommandGroup(after: .toolbar) {
-            Button("Go to Focus") {
+            Button(String(localized: "menu.view.gotofocus", defaultValue: "Go to Focus")) {
                 store.send(.tabSelected(.focus))
             }
             .keyboardShortcut("f", modifiers: [.command, .shift])
 
-            Button("Go to Analytics") {
-                store.send(.tabSelected(.analytics))
+            Button(String(localized: "menu.view.gotodashboard", defaultValue: "Go to Dashboard")) {
+                store.send(.tabSelected(.dashboard))
             }
             .keyboardShortcut("a", modifiers: [.command, .shift])
 
-            Button("Settings") {
-                store.send(.settingsDrawerTapped)
+            Button(String(localized: "menu.view.settings", defaultValue: "Settings")) {
+                store.send(.tabSelected(.account))
             }
             .keyboardShortcut(",", modifiers: .command)
         }

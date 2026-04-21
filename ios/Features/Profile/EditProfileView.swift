@@ -7,6 +7,7 @@
 import SwiftUI
 import PhotosUI
 import ComposableArchitecture
+import UIKit
 
 // MARK: - EditProfileView
 
@@ -20,12 +21,17 @@ struct EditProfileView: View {
                 // Avatar
                 avatarSection
 
+                Text("Apple decides whether to share your name and email during Sign in with Apple. Birth date and profile photo are managed manually in Pepinillo, and you can keep using a private relay email or replace it locally here.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 // Name field
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Name")
+                    Text(String(localized: "editprofile.name.label", defaultValue: "Name"))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
-                    TextField("Your name", text: Binding(
+                    TextField(String(localized: "editprofile.name.placeholder", defaultValue: "Your name"), text: Binding(
                         get: { store.name },
                         set: { store.send(.nameChanged($0)) }
                     ))
@@ -33,13 +39,29 @@ struct EditProfileView: View {
                     .textContentType(.name)
                 }
 
+                // Email field
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(String(localized: "editprofile.email.label", defaultValue: "Email"))
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    TextField(String(localized: "auth.field.email", defaultValue: "Email"), text: Binding(
+                        get: { store.email },
+                        set: { store.send(.emailChanged($0)) }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .keyboardType(.emailAddress)
+                    .textContentType(.emailAddress)
+                }
+
                 // Birth date
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Birth date")
+                    Text(String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                     DatePicker(
-                        "Birth date",
+                        String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"),
                         selection: Binding(
                             get: { store.birthDate ?? Date() },
                             set: { store.send(.birthDateChanged($0)) }
@@ -65,7 +87,7 @@ struct EditProfileView: View {
                         if store.isLoading {
                             ProgressView().tint(.white)
                         } else {
-                            Text("Save Changes")
+                            Text(String(localized: "editprofile.save.button", defaultValue: "Save Changes"))
                         }
                     }
                     .font(.headline)
@@ -73,15 +95,15 @@ struct EditProfileView: View {
                     .frame(height: 52)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(store.isLoading || store.name.isEmpty)
+                .disabled(store.isLoading || store.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding(24)
         }
-        .navigationTitle("Edit Profile")
+        .navigationTitle(String(localized: "editprofile.title", defaultValue: "Edit Profile"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { store.send(.cancelTapped) }
+                Button(String(localized: "editprofile.cancel.button", defaultValue: "Cancel")) { store.send(.cancelTapped) }
             }
         }
     }
@@ -97,10 +119,15 @@ struct EditProfileView: View {
                     .fill(.secondary.opacity(0.2))
                     .frame(width: 96, height: 96)
 
-                if let imageUrl = store.imageUrl, let url = URL(string: imageUrl) {
-                    AsyncImage(url: url) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
+                if let selectedImageData = store.selectedImageData,
+                   let selectedImage = UIImage(data: selectedImageData) {
+                    Image(uiImage: selectedImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 96, height: 96)
+                        .clipShape(Circle())
+                } else if let imageReference = store.imageUrl {
+                    ProfileAvatarImageView(imageReference: imageReference) {
                         ProgressView()
                     }
                     .frame(width: 96, height: 96)
@@ -113,10 +140,18 @@ struct EditProfileView: View {
 
                 if store.isUploading {
                     Circle()
-                        .fill(.black.opacity(0.4))
+                        .fill(Color(.systemFill).opacity(0.7))
                         .frame(width: 96, height: 96)
                     ProgressView().tint(.white)
                 }
+            }
+
+            if store.imageUrl != nil || store.selectedImageData != nil {
+                Button(String(localized: "editprofile.removephoto.button", defaultValue: "Remove Photo")) {
+                    store.send(.removePhoto)
+                }
+                .font(.footnote)
+                .foregroundStyle(.red)
             }
 
             // Photo picker
@@ -125,7 +160,7 @@ struct EditProfileView: View {
                 matching: .images,
                 photoLibrary: .shared()
             ) {
-                Text("Change Photo")
+                Text(String(localized: "editprofile.changephoto.button", defaultValue: "Change Photo"))
                     .font(.subheadline)
             }
             .disabled(store.isUploading)

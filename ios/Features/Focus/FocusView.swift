@@ -98,9 +98,8 @@ struct FocusView: View {
             controlButtons
                 .padding(.bottom, 24)
 
-            // Soundscape + Settings row
+            // Soundscape shortcut
             HStack(spacing: 24) {
-                // Soundscape button
                 Button {
                     store.send(.soundscapePickerTapped)
                 } label: {
@@ -120,19 +119,8 @@ struct FocusView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(store.selectedSoundscape == .none ? String(localized: "Choose soundscape") : String(localized: "Soundscape: \(store.selectedSoundscape.displayName)"))
-
-                Spacer()
-
-                // Settings button
-                Button {
-                    store.send(.settingsTapped)
-                } label: {
-                    Image(systemName: "gearshape")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityLabel(String(localized: "Settings"))
             }
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 40)
             .padding(.bottom, 16)
         }
@@ -188,8 +176,8 @@ struct FocusView: View {
             )
             .presentationDetents([.medium])
         }
-        .confirmationDialog("End Session?", isPresented: $showStopConfirmation, titleVisibility: .visible) {
-            Button("End Session", role: .destructive) {
+        .confirmationDialog(String(localized: "focus.endsession.title", defaultValue: "End Session?"), isPresented: $showStopConfirmation, titleVisibility: .visible) {
+            Button(String(localized: "focus.endsession.button", defaultValue: "End Session"), role: .destructive) {
                 store.send(.stopTapped)
                 HapticManager.notification(.warning)
             }

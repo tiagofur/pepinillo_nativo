@@ -7,7 +7,6 @@
 import SwiftUI
 import AuthenticationServices
 import ComposableArchitecture
-import CryptoKit
 
 struct AuthView: View {
     @Bindable var store: StoreOf<AuthFeature>
@@ -30,36 +29,47 @@ struct AuthView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                Spacer().frame(height: 24)
+                Spacer().frame(height: 20)
 
-                // MARK: Header
                 ZStack {
                     Circle()
-                        .fill(theme.pomodoroColor.opacity(colorScheme == .dark ? 0.24 : 0.14))
-                        .frame(width: 70, height: 70)
+                        .fill(theme.pomodoroColor.opacity(colorScheme == .dark ? 0.26 : 0.16))
+                        .frame(width: 72, height: 72)
 
                     Image(systemName: "leaf.fill")
-                        .font(.system(size: 28, weight: .semibold))
+                        .font(.system(size: 29, weight: .semibold))
                         .foregroundStyle(theme.pomodoroColor)
                 }
 
-                Text("Pepinillo")
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                Text(String(localized: "auth.welcome.title", defaultValue: "Welcome to Pepinillo"))
+                    .font(.system(.title, design: .rounded).weight(.bold))
                     .foregroundStyle(.primary)
                     .padding(.top, 14)
 
-                Text("Your deep work companion")
+                Text(String(localized: "auth.welcome.subtitle", defaultValue: "Sign in and start your next deep work session."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .padding(.top, 2)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
 
-                Spacer().frame(height: 32)
+                Spacer().frame(height: 20)
 
-            // MARK: Fields
+                Picker(String(localized: "auth.mode.picker", defaultValue: "Authentication Mode"), selection: Binding(
+                    get: { store.mode },
+                    set: { store.send(.switchMode($0)) }
+                )) {
+                    Text(String(localized: "auth.mode.signin", defaultValue: "Sign In")).tag(AuthFeature.AuthMode.login)
+                    Text(String(localized: "auth.mode.register", defaultValue: "Create Account")).tag(AuthFeature.AuthMode.register)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 24)
+
+                Spacer().frame(height: 14)
+
                 VStack(spacing: 12) {
                     if store.mode == .register {
                         TextField(
-                            "Name",
+                            String(localized: "auth.field.name", defaultValue: "Name"),
                             text: Binding(
                                 get: { store.name },
                                 set: { store.send(.nameChanged($0)) }
@@ -70,7 +80,7 @@ struct AuthView: View {
                     }
 
                     TextField(
-                        "Email",
+                        String(localized: "auth.field.email", defaultValue: "Email"),
                         text: Binding(
                             get: { store.email },
                             set: { store.send(.emailChanged($0)) }
@@ -79,14 +89,14 @@ struct AuthView: View {
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
                     .textFieldStyle(.roundedBorder)
 
-                    // Password with visibility toggle
-                    HStack {
+                    HStack(spacing: 10) {
                         Group {
                             if store.isPasswordVisible {
                                 TextField(
-                                    "Password",
+                                    String(localized: "auth.field.password", defaultValue: "Password"),
                                     text: Binding(
                                         get: { store.password },
                                         set: { store.send(.passwordChanged($0)) }
@@ -95,7 +105,7 @@ struct AuthView: View {
                                 .textContentType(store.mode == .register ? .newPassword : .password)
                             } else {
                                 SecureField(
-                                    "Password",
+                                    String(localized: "auth.field.password", defaultValue: "Password"),
                                     text: Binding(
                                         get: { store.password },
                                         set: { store.send(.passwordChanged($0)) }
@@ -112,41 +122,36 @@ struct AuthView: View {
                                 .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(store.isPasswordVisible ? "Hide password" : "Show password")
                     }
                     .textFieldStyle(.roundedBorder)
 
                     if store.mode == .register {
-                        Text("Min 8 chars, with uppercase, lowercase, and a number")
+                        Text(String(localized: "auth.password.hint", defaultValue: "Use at least 8 characters, with uppercase, lowercase, and a number."))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.leading, 4)
                     }
                 }
                 .padding(18)
-                .background {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(.ultraThinMaterial)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                .stroke(Color.primary.opacity(0.1), lineWidth: 1)
-                        }
+                .pepinilloGlass(cornerRadius: 22)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .stroke(theme.pomodoroColor.opacity(colorScheme == .dark ? 0.22 : 0.16), lineWidth: 1)
                 }
                 .padding(.horizontal, 24)
 
-            // MARK: Error
-            if let error = store.errorMessage {
-                Text(error)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-                    .padding(.top, 8)
-                    .padding(.horizontal, 24)
-                    .multilineTextAlignment(.center)
-            }
+                if let error = store.errorMessage {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
 
-            Spacer().frame(height: 24)
+                Spacer().frame(height: 20)
 
-            // MARK: Primary Button
                 Button {
                     if store.mode == .login {
                         store.send(.loginTapped)
@@ -154,23 +159,21 @@ struct AuthView: View {
                         store.send(.registerTapped)
                     }
                 } label: {
-                    Group {
+                    HStack(spacing: 8) {
                         if store.isLoading {
                             ProgressView()
                                 .tint(.white)
-                        } else {
-                            Text(store.mode == .login ? "Sign In" : "Create Account")
                         }
+                        Text(store.mode == .login ? String(localized: "auth.mode.signin", defaultValue: "Sign In") : String(localized: "auth.mode.register", defaultValue: "Create Account"))
                     }
-                    .font(.headline)
+                    .font(.callout.weight(.semibold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(height: 46)
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(primaryCTAColor)
+                .tint(theme.pomodoroColor)
                 .disabled(store.isLoading)
                 .padding(.horizontal, 24)
-                .shadow(color: primaryCTAColor.opacity(0.24), radius: 12, x: 0, y: 8)
 
                 if store.mode == .login, onAppleSignIn != nil {
                     VStack(spacing: 8) {
@@ -189,9 +192,9 @@ struct AuthView: View {
                         .padding(.top, 12)
 
                         SignInWithAppleButton(.continue) { request in
-                            let nonce = generateAppleNonce()
+                            let nonce = AppleAuthHelper.generateNonce()
                             currentNonce = nonce
-                            request.nonce = sha256Hex(nonce)
+                            request.nonce = AppleAuthHelper.sha256Hex(nonce)
                             request.requestedScopes = [.fullName, .email]
                         } onCompletion: { result in
                             switch result {
@@ -216,10 +219,9 @@ struct AuthView: View {
                                 onAppleSignInFailed?()
                             }
                         }
-                        .signInWithAppleButtonStyle(.black)
-                        .frame(height: 52)
+                        .signInWithAppleButtonStyle(.whiteOutline)
+                        .frame(height: 46)
                         .padding(.horizontal, 24)
-                        .padding(.top, 8)
                     }
                     .transition(.asymmetric(
                         insertion: .move(edge: .top).combined(with: .opacity),
@@ -227,44 +229,31 @@ struct AuthView: View {
                     ))
                 }
 
-                // MARK: Forgot Password (login mode only)
                 if store.mode == .login {
-                    Button("Forgot your password?") {
+                    Button(String(localized: "auth.forgotpassword.button", defaultValue: "Forgot your password?")) {
                         store.send(.forgotPasswordTapped)
                     }
                     .foregroundStyle(.secondary)
                     .font(.footnote)
-                    .padding(.top, 8)
+                    .padding(.top, 10)
                 }
 
-                // MARK: Switch Mode
-                Button {
-                    store.send(.switchMode(store.mode == .login ? .register : .login))
-                } label: {
-                    Text(store.mode == .login
-                        ? "Don't have an account? Sign up"
-                        : "Already have an account? Sign in")
-                        .font(.subheadline)
-                }
-                .padding(.top, 12)
-
-                // MARK: Guest Mode
                 Button {
                     store.send(.continueAsGuestTapped)
                 } label: {
-                    Text("Continue without account")
+                    Text(String(localized: "auth.guest.button", defaultValue: "Continue without account"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.top, 8)
+                .padding(.top, 12)
 
-                Spacer().frame(height: 20)
+                Spacer().frame(height: 24)
             }
         }
         .background {
             LinearGradient(
                 colors: [
-                    theme.pomodoroColor.opacity(colorScheme == .dark ? 0.18 : 0.08),
+                    theme.pomodoroColor.opacity(colorScheme == .dark ? 0.18 : 0.10),
                     Color.clear,
                 ],
                 startPoint: .top,
@@ -272,6 +261,7 @@ struct AuthView: View {
             )
             .ignoresSafeArea()
         }
+        .scrollDismissesKeyboard(.interactively)
         .animation(.spring(response: 0.34, dampingFraction: 0.86), value: store.mode)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $store.scope(state: \.forgotPassword, action: \.forgotPassword)) { forgotPasswordStore in
@@ -290,7 +280,7 @@ struct AuthView: View {
         .overlay {
             if store.isSyncing {
                 ZStack {
-                    Color.black.opacity(0.3)
+                    Color(.systemBackground).opacity(0.6)
                         .ignoresSafeArea()
                     VStack(spacing: 16) {
                         ProgressView()
@@ -306,24 +296,4 @@ struct AuthView: View {
         }
     }
 
-    private var primaryCTAColor: Color {
-        colorScheme == .light ? .black : theme.pomodoroColor
-    }
-
-    // MARK: - Apple Sign-In nonce helpers
-
-    /// Generates a cryptographically random nonce string (raw, not hashed).
-    private func generateAppleNonce() -> String {
-        var randomBytes = [UInt8](repeating: 0, count: 32)
-        _ = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
-        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
-        return String(randomBytes.map { charset[Int($0) % charset.count] })
-    }
-
-    /// Returns the lowercase hex-encoded SHA-256 of the input.
-    /// This is what Apple embeds in the `nonce` claim of the identity token.
-    private func sha256Hex(_ input: String) -> String {
-        let digest = SHA256.hash(data: Data(input.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
-    }
 }
