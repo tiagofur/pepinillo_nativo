@@ -20,12 +20,12 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.savePreferences = { _ in }
         }
 
-        await store.send(.tabSelected(.tasks)) {
-            $0.selectedTab = .tasks
+        await store.send(.tabSelected(.plan)) {
+            $0.selectedTab = .plan
         }
 
-        await store.send(.tabSelected(.analytics)) {
-            $0.selectedTab = .analytics
+        await store.send(.tabSelected(.dashboard)) {
+            $0.selectedTab = .dashboard
         }
     }
 
@@ -128,6 +128,95 @@ struct AppFeatureIntegrationTests {
 
         await store.send(.appLaunched)
         #expect(store.state.hasCompletedOnboarding == false)
+    }
+
+    @Test func appleSignInSeedsProfileFromIdentityWhenBackendUserIsUnavailable() async {
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
+            $0.persistenceClient.fetchCachedUser = { nil }
+            $0.persistenceClient.saveCachedUser = { _ in }
+            $0.subscriptionClient.logIn = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(
+            .signInWithAppleSucceeded(
+                AppleUserInfo(
+                    userID: "apple-user-123",
+                    displayName: "Tiago",
+                    email: "tiago@example.com"
+                )
+            )
+        ) {
+            $0.appleUserID = "apple-user-123"
+            $0.displayName = "Tiago"
+            $0.userEmail = "tiago@example.com"
+        }
+
+        await store.send(.showProfile) {
+            $0.profile = ProfileFeature.State(
+                user: CachedUserDTO(
+                    id: "apple-user-123",
+                    email: "tiago@example.com",
+                    name: "Tiago",
+                    subscriptionTier: "free",
+                    emailVerified: true,
+                    appleId: "apple-user-123"
+                )
+            )
+        }
+    }
+
+    @Test func showProfileMergesRestoredAppleIdentityWithCachedProfileFields() async {
+        var initialState = AppFeature.State()
+        initialState.appleUserID = "apple-user-123"
+        initialState.displayName = "Tiago"
+        initialState.userEmail = "tiago@example.com"
+
+        let cachedUser = CachedUserDTO(
+            id: "apple-user-123",
+            email: "",
+            name: "",
+            imageUrl: nil,
+            birthDate: "1990-05-20T00:00:00Z",
+            subscriptionTier: "free",
+            emailVerified: false,
+            appleId: "apple-user-123",
+            createdAt: "",
+            updatedAt: ""
+        )
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        }
+
+        await store.send(.cachedUserLoaded(cachedUser)) {
+            $0.cachedUser = cachedUser
+        }
+
+        #expect(store.state.displayName == "Tiago")
+        #expect(store.state.userEmail == "tiago@example.com")
+
+        await store.send(.showProfile) {
+            $0.profile = ProfileFeature.State(
+                user: CachedUserDTO(
+                    id: "apple-user-123",
+                    email: "tiago@example.com",
+                    name: "Tiago",
+                    imageUrl: nil,
+                    birthDate: "1990-05-20T00:00:00Z",
+                    subscriptionTier: "free",
+                    emailVerified: false,
+                    appleId: "apple-user-123",
+                    createdAt: "",
+                    updatedAt: ""
+                )
+            )
+        }
     }
 
     // MARK: - Watch Command Bridge (Watch → iOS)
