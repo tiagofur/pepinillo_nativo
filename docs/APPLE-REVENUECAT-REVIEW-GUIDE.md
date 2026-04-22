@@ -13,7 +13,7 @@
 - **Pepinillo** es una app de deep work y productividad (focus timer + tasks + analytics) para iOS, iPadOS, macOS, watchOS y Android.
 - El modelo de monetización evolucionó de un único tier "Pro" a dos tiers pagos: **Pepinillo+** (compra única, lifetime) y **Everywhere/AI+** (suscripción mensual/anual, sync cross-platform + IA cloud).
 - **Pepinillo+** usa los product IDs existentes (`com.pepinillo.app.pro.*`) — no hay productos nuevos que crear en App Store Connect, solo actualizar el metadata (nombre, descripción, precio).
-- La revisión es necesaria porque los entitlements en RevenueCat y los product IDs en el código apuntan a IDs legacy (`apple_unlock`, `everywhere`), y el metadata de precios en App Store Connect probablemente refleja los valores antiguos del tier Pro.
+- La revisión es necesaria porque los entitlements en RevenueCat deben crearse con los nuevos IDs (`pepinillo_plus`, `everywhere_plus`) que el código ya usa, y el metadata de precios en App Store Connect probablemente refleja los valores antiguos del tier Pro.
 - El backend (Go) valida webhooks de RevenueCat con Bearer Token — esto debe estar configurado en el dashboard de RevenueCat antes del launch.
 
 ---
@@ -291,22 +291,22 @@ En RevenueCat → Products → botón **"Import from App Store"**:
 
 ### 3.3 Entitlements — crear 2 entitlements
 
-#### Entitlement `apple_unlock`
+#### Entitlement `pepinillo_plus`
 
-> Este es el ID que el código Swift verifica actualmente (ver `SubscriptionClient.swift` línea 331: `entitlements["apple_unlock"]`). Debe existir en el dashboard con este nombre exacto.
+> Este es el ID que el código Swift verifica actualmente (ver `SubscriptionClient.swift`: `entitlements["pepinillo_plus"]`). Debe existir en el dashboard con este nombre exacto.
 
-- [ ] Entitlement creado con identifier: **`apple_unlock`**
+- [ ] Entitlement creado con identifier: **`pepinillo_plus`**
 - [ ] Display name: `Pepinillo+`
 - [ ] Products que lo otorgan:
   - [ ] `com.pepinillo.app.pro.lifetime` (one-time lifetime)
-  - [ ] `com.pepinillo.app.pro.monthly` (Everywhere — superset de apple_unlock)
-  - [ ] `com.pepinillo.app.pro.annual` (Everywhere — superset de apple_unlock)
+  - [ ] `com.pepinillo.app.pro.monthly` (Everywhere+ — superset de pepinillo_plus)
+  - [ ] `com.pepinillo.app.pro.annual` (Everywhere+ — superset de pepinillo_plus)
 
-#### Entitlement `everywhere`
+#### Entitlement `everywhere_plus`
 
-> Este es el ID que el código Swift verifica para el tier Everywhere (ver `SubscriptionClient.swift` línea 309: `entitlements["everywhere"]`). Debe existir en el dashboard con este nombre exacto.
+> Este es el ID que el código Swift verifica para el tier Everywhere+ (ver `SubscriptionClient.swift`: `entitlements["everywhere_plus"]`). Debe existir en el dashboard con este nombre exacto.
 
-- [ ] Entitlement creado con identifier: **`everywhere`**
+- [ ] Entitlement creado con identifier: **`everywhere_plus`**
 - [ ] Display name: `Everywhere/AI+`
 - [ ] Products que lo otorgan:
   - [ ] `com.pepinillo.app.pro.monthly`
@@ -381,28 +381,24 @@ RevenueCat tiene un "Customer Center" para manejo de suscripciones en-app:
 
 > Esta sección documenta las discrepancias entre el estado actual del código y el estado objetivo. Algunas son bloqueantes para el launch.
 
-### 4.1 MISMATCH CRÍTICO — Entitlement IDs en el código vs. objetivo inicial
+### 4.1 RESUELTO — Entitlement IDs en el código (v3.1)
 
 **Archivo**: `ios/Domain/Clients/SubscriptionClient.swift`
 
-El código actualmente verifica estos entitlement IDs en RevenueCat:
-- Línea 309: `entitlements["everywhere"]` — para el tier Everywhere
-- Línea 331: `entitlements["apple_unlock"]` — para el tier Pepinillo+
-- Líneas 236-239: también chequea `entitlements["everywhere"]`, `entitlements["apple_unlock"]`, `entitlements["premium"]`, `entitlements["pro"]`
+El código verifica estos entitlement IDs en RevenueCat (actualizados en v3.1):
+- `entitlements["everywhere_plus"]` — para el tier Everywhere+
+- `entitlements["pepinillo_plus"]` — para el tier Pepinillo+
+- `entitlements["premium"]` y `entitlements["pro"]` — grandfathering de usuarios legacy
 
-**Los IDs en el código son** `apple_unlock` y `everywhere`.
+**Entitlement IDs vigentes**: `pepinillo_plus` y `everywhere_plus` (alineados con marketing).
 
-**El enunciado de esta guía pedía** entitlements `pepinillo_plus` y `everywhere_plus`.
-
-**El PRD (sección 6.4) confirma**: los entitlement IDs correctos son **`apple_unlock`** y **`everywhere`** — los mismos que están en el código.
-
-**Conclusión**: el código está alineado con el PRD. La sección 3.3 de esta guía usa los IDs correctos (`apple_unlock` y `everywhere`). **No hay mismatch — el código es correcto.**
+**Acción requerida en RevenueCat**: crear los entitlements con estos IDs exactos (sección 3.3 de esta guía).
 
 ---
 
-### 4.2 MISMATCH CRÍTICO — Product IDs legacy en `PepinilloProduct` enum
+### 4.2 RESUELTO — Product IDs en `PepinilloProduct` enum
 
-**Archivo**: `ios/Domain/Clients/SubscriptionClient.swift`, líneas 26-28
+**Archivo**: `ios/Domain/Clients/SubscriptionClient.swift`
 
 ```swift
 case monthly  = "com.pepinillo.app.pro.monthly"
@@ -410,18 +406,7 @@ case annual   = "com.pepinillo.app.pro.annual"
 case lifetime = "com.pepinillo.app.pro.lifetime"
 ```
 
-Y en las líneas 30-33 (comentadas con TODO):
-
-```swift
-// TODO: Phase 6 — New product IDs (create in App Store Connect + RevenueCat first)
-// case appleUnlock       = "com.pepinillo.app.apple.unlock"
-// case everywhereMonthly  = "com.pepinillo.app.everywhere.monthly"
-// case everywhereAnnual   = "com.pepinillo.app.everywhere.annual"
-```
-
-**El PRD v3.0 (sección 6.3) confirma**: se reusan los product IDs `com.pepinillo.app.pro.*` — los comentados (Phase 6) son los IDs obsoletos que se decidió NO usar. **El código actual con los IDs `pro.*` ES CORRECTO según el PRD.** El TODO comentado puede eliminarse para evitar confusión.
-
-**Acción recomendada**: eliminar o actualizar el comentario `TODO: Phase 6` para que no confunda a futuros developers. **No es bloqueante para el launch.**
+El PRD v3.1 (sección 6.3) confirma: se reusan los product IDs `com.pepinillo.app.pro.*`. El bloque `TODO: Phase 6` con IDs obsoletos fue eliminado en v3.1. **Código correcto.**
 
 ---
 
@@ -505,11 +490,11 @@ El App Group `group.com.pepinillo.app` debe estar registrado en el Apple Develop
 | `ios/PepinilloWidget/PepinilloWidget.entitlements` | App Group `group.com.pepinillo.app` presente |
 | `ios/PepinilloWatch/PepinilloWatch.entitlements` | App Group `group.com.pepinillo.app` presente |
 | `ios/ControlCenterExtension/PepinilloControlCenter.entitlements` | App Group `group.com.pepinillo.app` presente |
-| `ios/Domain/Clients/SubscriptionClient.swift` | Entitlement IDs `apple_unlock` y `everywhere` coinciden con el dashboard de RC |
+| `ios/Domain/Clients/SubscriptionClient.swift` | Entitlement IDs `pepinillo_plus` y `everywhere_plus` coinciden con el dashboard de RC |
 | `ios/App/AppFeature.swift` (línea 245) | API key `appl_xnChlVXXtUFhusIfJyNrNDcMGLj` corresponde al proyecto de producción en RC |
 | `ios/Config/Production.xcconfig` | `DEVELOPMENT_TEAM = T5SKULSP2M` es el Team ID correcto del Apple Developer account |
 | `ios/Features/Paywall/PaywallView.swift` | PaywallProductCardsSection renderiza productos reales (no mocks) en producción |
-| `ios/Domain/Models/UserCapabilities.swift` | Capabilities `appleUnlock` y `everywhere` coinciden con entitlements de RC |
+| `ios/Domain/Models/UserCapabilities.swift` | Capabilities `pepinilloPlus` y `everywherePlus` coinciden con entitlements de RC |
 
 ---
 
@@ -520,7 +505,7 @@ Los siguientes ítems deben estar completados antes de enviar a revisión de App
 - [ ] Los 3 productos en App Store Connect tienen **Cleared for Sale: YES** y metadata actualizado (nombre, descripción, precio) en EN/ES/PT
 - [ ] Subscription Group `Everywhere Plus` configurado con monthly + annual, ranks correctos
 - [ ] RevenueCat: 3 productos importados y linked al offering `default`
-- [ ] RevenueCat: entitlements **`apple_unlock`** y **`everywhere`** creados y asignados a los productos correctos
+- [ ] RevenueCat: entitlements **`pepinillo_plus`** y **`everywhere_plus`** creados y asignados a los productos correctos
 - [ ] Webhook de RevenueCat respondiendo **HTTP 200** desde el VPS (`https://api.ppn.creapolis.dev/api/v1/webhooks/revenuecat`)
 - [ ] API key de RevenueCat iOS (`appl_xnChlVXXtUFhusIfJyNrNDcMGLj`) verificada como key de producción en el dashboard correcto
 - [ ] Paywall renderiza correctamente los 3 packages en sandbox (precios reales de App Store, no mocks)
