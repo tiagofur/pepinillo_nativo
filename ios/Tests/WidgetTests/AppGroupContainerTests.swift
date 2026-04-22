@@ -8,7 +8,7 @@ import Testing
 import Foundation
 @testable import Pepinillo
 
-@Suite("AppGroupContainerTests")
+@Suite("AppGroupContainerTests", .serialized)
 struct AppGroupContainerTests {
 
     @Test("userCapabilities round-trips through AppGroupDefaults")

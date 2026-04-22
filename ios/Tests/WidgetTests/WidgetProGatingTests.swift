@@ -8,7 +8,7 @@ import Testing
 import Foundation
 @testable import Pepinillo
 
-@Suite("WidgetProGating")
+@Suite("WidgetProGating", .serialized)
 struct WidgetProGatingTests {
 
     // MARK: - AppGroupDefaults.userCapabilities read/write
