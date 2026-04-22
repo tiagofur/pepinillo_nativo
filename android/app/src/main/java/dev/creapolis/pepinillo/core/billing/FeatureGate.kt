@@ -3,7 +3,6 @@ package dev.creapolis.pepinillo.core.billing
 import dev.creapolis.pepinillo.domain.soundscape.Soundscape
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -13,7 +12,8 @@ class FeatureGate @Inject constructor(
 ) {
     val subscriptionState: StateFlow<SubscriptionState> = subscriptionManager.subscriptionState
 
-    val isPro: Boolean get() = subscriptionManager.subscriptionState.value.isPro
+    /** True for any paid user (Pepinillo+ or any Everywhere+ tier). */
+    val isPro: Boolean get() = subscriptionManager.subscriptionState.value.hasLocalPremium
 
     fun canUseMode(mode: FocusMode): Boolean {
         if (isPro) return true
@@ -31,7 +31,8 @@ class FeatureGate @Inject constructor(
 
     fun canAccessFullAnalytics(): Boolean = isPro
 
-    fun canUseSync(): Boolean = isPro
+    /** Only Everywhere+ users can sync to the backend. */
+    fun canUseSync(): Boolean = subscriptionManager.subscriptionState.value.canSync
 
     fun canUseWearOS(): Boolean = isPro
 
