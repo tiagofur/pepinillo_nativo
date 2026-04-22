@@ -19,9 +19,9 @@ var (
 )
 
 type RevenueCatConfig struct {
-	APIKey             string
-	WebhookAuthToken   string
-	APIBaseURL         string
+	APIKey           string
+	WebhookAuthToken string
+	APIBaseURL       string
 }
 
 type RevenueCatService struct {
@@ -49,25 +49,25 @@ func NewRevenueCatService(users ports.UserRepository, cfg RevenueCatConfig, beha
 
 // RevenueCat webhook payload structures
 type RevenueCatWebhookPayload struct {
-	APIVersion string `json:"api_version"`
+	APIVersion string          `json:"api_version"`
 	Event      RevenueCatEvent `json:"event"`
 }
 
 type RevenueCatEvent struct {
-	Type            string   `json:"type"`
-	ID              string   `json:"id"`
-	AppUserID       string   `json:"app_user_id"`
-	Aliases         []string `json:"aliases"`
-	ProductID       string   `json:"product_id"`
-	EntitlementIDs  []string `json:"entitlement_ids"`
-	PeriodType      string   `json:"period_type"`
-	PurchasedAtMs   int64    `json:"purchased_at_ms"`
-	ExpirationAtMs  int64    `json:"expiration_at_ms"`
-	Store           string   `json:"store"`
-	Environment     string   `json:"environment"`
-	IsFamilyShare   bool     `json:"is_family_share"`
-	Currency        string   `json:"currency"`
-	Price           float64  `json:"price"`
+	Type           string   `json:"type"`
+	ID             string   `json:"id"`
+	AppUserID      string   `json:"app_user_id"`
+	Aliases        []string `json:"aliases"`
+	ProductID      string   `json:"product_id"`
+	EntitlementIDs []string `json:"entitlement_ids"`
+	PeriodType     string   `json:"period_type"`
+	PurchasedAtMs  int64    `json:"purchased_at_ms"`
+	ExpirationAtMs int64    `json:"expiration_at_ms"`
+	Store          string   `json:"store"`
+	Environment    string   `json:"environment"`
+	IsFamilyShare  bool     `json:"is_family_share"`
+	Currency       string   `json:"currency"`
+	Price          float64  `json:"price"`
 }
 
 // RevenueCat subscriber API response structures
@@ -76,8 +76,8 @@ type RevenueCatSubscriberResponse struct {
 }
 
 type RevenueCatSubscriber struct {
-	Entitlements    map[string]RevenueCatEntitlement         `json:"entitlements"`
-	Subscriptions   map[string]RevenueCatSubscriptionProduct `json:"subscriptions"`
+	Entitlements  map[string]RevenueCatEntitlement         `json:"entitlements"`
+	Subscriptions map[string]RevenueCatSubscriptionProduct `json:"subscriptions"`
 }
 
 type RevenueCatEntitlement struct {
@@ -122,7 +122,7 @@ func (s *RevenueCatService) ProcessWebhookEvent(ctx context.Context, payload *Re
 	user, err := s.users.GetByID(ctx, appUserID)
 	if err != nil {
 		s.logRevenueCatEvent(ctx, appUserID, "webhook_process_failed", map[string]any{
-			"reason": err.Error(),
+			"reason":     err.Error(),
 			"event_type": eventType,
 		})
 		return err
@@ -165,7 +165,7 @@ func (s *RevenueCatService) handlePurchaseEvent(ctx context.Context, userID stri
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
 		s.logRevenueCatEvent(ctx, userID, "webhook_process_failed", map[string]any{
-			"reason": err.Error(),
+			"reason":     err.Error(),
 			"event_type": event.Type,
 		})
 		return err
@@ -175,7 +175,7 @@ func (s *RevenueCatService) handlePurchaseEvent(ctx context.Context, userID stri
 	user.SubscriptionExpiresAt = expiresAt
 	if err := s.users.Update(ctx, user); err != nil {
 		s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
-			"reason": err.Error(),
+			"reason":     err.Error(),
 			"event_type": event.Type,
 		})
 		return err
@@ -183,9 +183,9 @@ func (s *RevenueCatService) handlePurchaseEvent(ctx context.Context, userID stri
 
 	s.logRevenueCatEvent(ctx, userID, "webhook_purchase_processed", map[string]any{
 		"event_type": event.Type,
-		"tier": tier,
+		"tier":       tier,
 		"product_id": event.ProductID,
-		"store": event.Store,
+		"store":      event.Store,
 	})
 	return nil
 }
@@ -194,7 +194,7 @@ func (s *RevenueCatService) handleCancellationEvent(ctx context.Context, userID 
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
 		s.logRevenueCatEvent(ctx, userID, "webhook_process_failed", map[string]any{
-			"reason": err.Error(),
+			"reason":     err.Error(),
 			"event_type": event.Type,
 		})
 		return err
@@ -218,7 +218,7 @@ func (s *RevenueCatService) handleCancellationEvent(ctx context.Context, userID 
 
 	if err := s.users.Update(ctx, user); err != nil {
 		s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
-			"reason": err.Error(),
+			"reason":     err.Error(),
 			"event_type": event.Type,
 		})
 		return err
@@ -234,7 +234,7 @@ func (s *RevenueCatService) handleBillingIssueEvent(ctx context.Context, userID 
 	// Log the billing issue but keep the current tier (grace period)
 	s.logRevenueCatEvent(ctx, userID, "webhook_billing_issue", map[string]any{
 		"product_id": event.ProductID,
-		"store": event.Store,
+		"store":      event.Store,
 	})
 	return nil
 }
@@ -244,7 +244,7 @@ func (s *RevenueCatService) handleNonRenewingPurchaseEvent(ctx context.Context, 
 	user, err := s.users.GetByID(ctx, userID)
 	if err != nil {
 		s.logRevenueCatEvent(ctx, userID, "webhook_process_failed", map[string]any{
-			"reason": err.Error(),
+			"reason":     err.Error(),
 			"event_type": event.Type,
 		})
 		return err
@@ -257,14 +257,14 @@ func (s *RevenueCatService) handleNonRenewingPurchaseEvent(ctx context.Context, 
 
 	if err := s.users.Update(ctx, user); err != nil {
 		s.logRevenueCatEvent(ctx, userID, "webhook_update_failed", map[string]any{
-			"reason": err.Error(),
+			"reason":     err.Error(),
 			"event_type": event.Type,
 		})
 		return err
 	}
 
 	s.logRevenueCatEvent(ctx, userID, "webhook_non_renewing_purchase_processed", map[string]any{
-		"tier": tier,
+		"tier":       tier,
 		"product_id": event.ProductID,
 	})
 	return nil
@@ -272,10 +272,12 @@ func (s *RevenueCatService) handleNonRenewingPurchaseEvent(ctx context.Context, 
 
 // mapRevenueCatProductToTier maps RevenueCat product ID and expiration to our tier system
 func (s *RevenueCatService) mapRevenueCatProductToTier(event RevenueCatEvent) (string, *time.Time) {
-	// Check if "premium" entitlement is active
+	// Check if any paid entitlement is active.
+	// RevenueCat entitlements: "everywhere_plus" (subscriptions), "pepinillo_plus" (lifetime one-time).
 	hasProEntitlement := false
 	for _, ent := range event.EntitlementIDs {
-		if strings.ToLower(strings.TrimSpace(ent)) == "premium" {
+		norm := strings.ToLower(strings.TrimSpace(ent))
+		if norm == "everywhere_plus" || norm == "pepinillo_plus" {
 			hasProEntitlement = true
 			break
 		}
@@ -285,25 +287,27 @@ func (s *RevenueCatService) mapRevenueCatProductToTier(event RevenueCatEvent) (s
 		return "free", nil
 	}
 
-	// Determine tier from product ID
+	// Determine canonical tier from product ID.
+	// Product IDs: com.pepinillo.app.pro.lifetime, .monthly, .annual
 	product := strings.ToLower(strings.TrimSpace(event.ProductID))
 
 	var tier string
 	switch {
 	case strings.Contains(product, "lifetime"):
-		tier = "lifetime"
+		// One-time purchase — Pepinillo+ (local premium, no backend sync)
+		tier = "pepinillo_plus"
 	case strings.Contains(product, "annual") || strings.Contains(product, "yearly"):
-		tier = "pro_yearly"
+		tier = "everywhere_annual"
 	case strings.Contains(product, "monthly") || strings.Contains(product, "month"):
-		tier = "pro_monthly"
+		tier = "everywhere_monthly"
 	default:
-		// Default to pro_monthly if we can't determine from product ID
-		tier = "pro_monthly"
+		// Fallback: treat unknown product as monthly subscription
+		tier = "everywhere_monthly"
 	}
 
-	// Determine expiration
+	// Lifetime has no expiration; subscriptions may carry one.
 	var expiresAt *time.Time
-	if event.ExpirationAtMs > 0 {
+	if tier != "pepinillo_plus" && event.ExpirationAtMs > 0 {
 		expires := time.UnixMilli(event.ExpirationAtMs).UTC()
 		expiresAt = &expires
 	}
@@ -331,7 +335,7 @@ func (s *RevenueCatService) VerifyViaRevenueCat(ctx context.Context, userID stri
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		s.logRevenueCatEvent(ctx, userID, "verify_revenuecat_failed", map[string]any{
-			"reason": err.Error(),
+			"reason":     err.Error(),
 			"durationMs": time.Since(startedAt).Milliseconds(),
 		})
 		return nil, err
@@ -357,7 +361,7 @@ func (s *RevenueCatService) VerifyViaRevenueCat(ctx context.Context, userID stri
 	var payload RevenueCatSubscriberResponse
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
 		s.logRevenueCatEvent(ctx, userID, "verify_revenuecat_failed", map[string]any{
-			"reason": fmt.Sprintf("decode error: %v", err),
+			"reason":     fmt.Sprintf("decode error: %v", err),
 			"durationMs": time.Since(startedAt).Milliseconds(),
 		})
 		return nil, err
@@ -367,7 +371,7 @@ func (s *RevenueCatService) VerifyViaRevenueCat(ctx context.Context, userID stri
 	tier, expiresAt := s.extractRevenueCatEntitlements(payload.Subscriber)
 
 	s.logRevenueCatEvent(ctx, userID, "verify_revenuecat_succeeded", map[string]any{
-		"tier": tier,
+		"tier":       tier,
 		"durationMs": time.Since(startedAt).Milliseconds(),
 	})
 
@@ -379,36 +383,41 @@ func (s *RevenueCatService) VerifyViaRevenueCat(ctx context.Context, userID stri
 	}, nil
 }
 
-// extractRevenueCatEntitlements determines the tier and expiration from a RevenueCat subscriber
+// extractRevenueCatEntitlements determines the canonical tier and expiration from a RevenueCat subscriber.
+// RevenueCat entitlements: "everywhere_plus" (subscriptions), "pepinillo_plus" (lifetime one-time).
 func (s *RevenueCatService) extractRevenueCatEntitlements(subscriber RevenueCatSubscriber) (string, *time.Time) {
-	// Check if "premium" entitlement is active
-	proEntitlement, hasProEntitlement := subscriber.Entitlements["premium"]
-	if !hasProEntitlement {
+	// Check pepinillo_plus first (one-time, lifetime — never expires).
+	if _, hasPepinilloPlus := subscriber.Entitlements["pepinillo_plus"]; hasPepinilloPlus {
+		return "pepinillo_plus", nil
+	}
+
+	// Check everywhere_plus (subscription).
+	everywhereEntitlement, hasEverywhere := subscriber.Entitlements["everywhere_plus"]
+	if !hasEverywhere {
 		return "free", nil
 	}
 
-	// Check if entitlement has expired
-	if proEntitlement.ExpiresDate != nil {
-		expiresStr, ok := proEntitlement.ExpiresDate.(string)
+	// Check if the subscription entitlement has expired.
+	if everywhereEntitlement.ExpiresDate != nil {
+		expiresStr, ok := everywhereEntitlement.ExpiresDate.(string)
 		if ok && expiresStr != "" && expiresStr != "null" {
 			if expiresTime, err := time.Parse(time.RFC3339, expiresStr); err == nil {
 				if time.Now().UTC().After(expiresTime) {
 					return "free", nil
 				}
-				return "pro", &expiresTime
+				// Entitlement is active — determine monthly vs annual from subscriptions below.
 			}
 		}
 	}
 
-	// If no expiration on entitlement, check subscriptions for details
-	tier := "pro"
+	// Walk active subscriptions to determine monthly vs annual and exact expiration.
+	tier := "everywhere_monthly" // safe default
 	var expiresAt *time.Time
 
-	// Look through subscriptions to determine tier (monthly vs yearly vs lifetime)
 	for productID, subscription := range subscriber.Subscriptions {
 		productLower := strings.ToLower(productID)
 
-		// Skip if subscription has unsubscribe date (cancelled)
+		// Skip cancelled subscriptions.
 		if subscription.UnsubscribeDate != nil {
 			unsubStr, ok := subscription.UnsubscribeDate.(string)
 			if ok && unsubStr != "" && unsubStr != "null" {
@@ -416,20 +425,16 @@ func (s *RevenueCatService) extractRevenueCatEntitlements(subscriber RevenueCatS
 			}
 		}
 
-		// Determine tier from product ID
-		if strings.Contains(productLower, "lifetime") {
-			tier = "lifetime"
-			expiresAt = nil
-			break
-		} else if strings.Contains(productLower, "annual") || strings.Contains(productLower, "yearly") {
-			tier = "pro_yearly"
+		// Map product ID to canonical tier.
+		if strings.Contains(productLower, "annual") || strings.Contains(productLower, "yearly") {
+			tier = "everywhere_annual"
 		} else if strings.Contains(productLower, "monthly") || strings.Contains(productLower, "month") {
-			if tier == "pro" || tier == "pro_monthly" {
-				tier = "pro_monthly"
+			if tier == "everywhere_monthly" {
+				tier = "everywhere_monthly"
 			}
 		}
 
-		// Extract expiration from subscription
+		// Extract expiration date from the active subscription.
 		if expiresAt == nil && subscription.ExpiresDate != nil {
 			expiresStr, ok := subscription.ExpiresDate.(string)
 			if ok && expiresStr != "" && expiresStr != "null" {

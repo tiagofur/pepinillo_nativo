@@ -80,7 +80,7 @@ struct AppFeature {
                 name: resolvedName,
                 imageUrl: cachedUser?.imageUrl,
                 birthDate: cachedUser?.birthDate,
-                subscriptionTier: normalized(cachedUser?.subscriptionTier) ?? (subscriptionState.isPro ? "pro" : "free"),
+                subscriptionTier: normalized(cachedUser?.subscriptionTier) ?? subscriptionState.capabilities.tierIdentifier,
                 subscriptionExpiresAt: cachedUser?.subscriptionExpiresAt,
                 emailVerified: cachedUser?.emailVerified ?? false,
                 appleId: resolvedAppleID,
@@ -384,7 +384,7 @@ struct AppFeature {
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
-                AppGroupDefaults.isProUser = true
+                AppGroupDefaults.isProUser = isPro
                 if isPro { state.focus.showPaywall = false }
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
@@ -402,23 +402,7 @@ struct AppFeature {
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
-                AppGroupDefaults.isProUser = true
-                return .run { _ in
-                    WidgetCenter.shared.reloadAllTimelines()
-                }
-
-            case .subscriptionUpdated(let sub):
-                #if DEBUG
-                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .pepinilloPlus : sub
-                #else
-                let effectiveSub = sub
-                #endif
-                state.subscriptionState = effectiveSub
-                let isPro = effectiveSub.isPro
-                state.focus.isProUser = isPro
-                state.settings.isProUser = isPro
-                state.tasks.isProUser = isPro
-                AppGroupDefaults.isProUser = true
+                AppGroupDefaults.isProUser = isPro
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
                 }
