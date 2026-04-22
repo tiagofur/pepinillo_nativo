@@ -64,7 +64,7 @@ class FocusTimerWidget : GlanceAppWidget() {
             val entryPoint = EntryPointAccessors.fromApplication(
                 context.applicationContext, WidgetEntryPoint::class.java,
             )
-            val isPro = entryPoint.subscriptionManager().subscriptionState.value.isPro
+            val isPro = entryPoint.subscriptionManager().subscriptionState.value.hasLocalPremium
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
                 prefs.toMutablePreferences().apply {
                     this[PREF_FOCUS_IS_PRO] = isPro

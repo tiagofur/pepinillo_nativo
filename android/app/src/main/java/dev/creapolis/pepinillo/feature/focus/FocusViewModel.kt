@@ -217,7 +217,7 @@ class FocusViewModel @Inject constructor(
             canSkip = combined.timerState.mode == FocusMode.Pomodoro &&
                 (combined.timerState.status == TimerStatus.Running || combined.timerState.status == TimerStatus.WaitingForNext) &&
                 (combined.timerState.phase == FocusPhase.ShortBreak || combined.timerState.phase == FocusPhase.LongBreak),
-            isPro = settings.subState.isPro,
+            isPro = settings.subState.hasLocalPremium,
             showPaywall = settings.showPaywall,
             showJournalSheet = settings.showJournal,
             selectedSoundscape = soundscape.soundscape,

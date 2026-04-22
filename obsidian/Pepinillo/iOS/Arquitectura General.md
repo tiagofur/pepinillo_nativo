@@ -9,7 +9,7 @@ platform: ios
 type: architecture
 status: active
 date: 2026-04-17
-updated: 2026-04-20
+updated: 2026-04-21
 ---
 
 # iOS - Arquitectura General
@@ -58,6 +58,28 @@ updated: 2026-04-20
 - [[Modulo Focus Engine]]
 - [[Modulo Tasks]]
 - [[Widgets & Live Activity]]
+
+## Shell y ownership de account
+
+| Surface | Estado actual iPhone |
+|---|---|
+| Bottom nav | `Focus` · `Plan` · `Dashboard` · `More` |
+| Focus | sesion de foco, task linking, soundscapes, journal |
+| Plan | lista y detalle de tareas, filtros, quick add, schedule |
+| Dashboard | analytics, weekly/monthly review, calendar, AI report |
+| More | auth, profile, subscription, settings, export, help/support, about |
+
+- En iPhone, `More` es el owner funcional de account/admin; `Settings` no vive como tab propio.
+- `Calendar`, `Weekly Review`, `Monthly Review` y `AI Report` son flows secundarios; no son tabs primarios.
+- En regular width se usa split navigation; la shell de 4 tabs aplica al baseline phone.
+
+## Perfil y auth Apple-local
+
+- `More` y `Profile` leen estado de auth/profile desde el root app state, no desde flows aislados.
+- Sign in with Apple solo puede aportar nombre y email cuando Apple decide compartirlos; no existe scope para fecha de nacimiento o foto.
+- El runtime actual mergea identidad restaurada de Apple con el perfil cacheado para no perder nombre/email por datos locales incompletos.
+- Edit Profile ya permite completar manualmente `name`, `email`, `birthDate` y `photo` en un flujo local-first compatible con la fase iCloud-only.
+- El perfil visible desde `More` debe ser honesto sobre estas limitaciones y seguir siendo util sin requerir backend.
 
 ## Principios
 

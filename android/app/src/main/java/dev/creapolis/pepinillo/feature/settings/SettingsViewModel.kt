@@ -101,7 +101,7 @@ class SettingsViewModel @Inject constructor(
 
         prefs.toUiState(
             currentStreak = sessionRepository.calculateCurrentStreak(allDays),
-            isPro = subState.isPro,
+            isPro = subState.hasLocalPremium,
             subscriptionTier = subState.tier,
             isOnline = isOnline,
             syncState = syncState,

@@ -27,10 +27,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SwipeToDismissBox
@@ -126,7 +126,7 @@ fun TasksScreen(
             ) {
                 Column {
                     Text(
-                        text = "Tasks",
+                        text = "Plan",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -447,7 +447,7 @@ private fun SortButton(
     Box {
         IconButton(onClick = { expanded = true }) {
             Icon(
-                Icons.Rounded.Sort,
+                Icons.AutoMirrored.Rounded.Sort,
                 contentDescription = "Sort",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )

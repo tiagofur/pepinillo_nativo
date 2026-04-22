@@ -199,10 +199,15 @@ class SubscriptionManager @Inject constructor(
 
     fun updateFromServer(tier: String, expiresAt: Long?) {
         val subscriptionTier = when (tier) {
-            "pro_monthly" -> SubscriptionTier.PRO_MONTHLY
-            "pro_yearly" -> SubscriptionTier.PRO_YEARLY
-            "lifetime" -> SubscriptionTier.LIFETIME
-            else -> SubscriptionTier.FREE
+            "pepinillo_plus" -> SubscriptionTier.PEPINILLO_PLUS
+            "everywhere_monthly" -> SubscriptionTier.EVERYWHERE_MONTHLY
+            "everywhere_annual" -> SubscriptionTier.EVERYWHERE_ANNUAL
+            "everywhere_lifetime" -> SubscriptionTier.EVERYWHERE_LIFETIME
+            "free", "" -> SubscriptionTier.FREE
+            else -> {
+                Log.w(TAG, "Unknown tier string from server: '$tier', defaulting to FREE")
+                SubscriptionTier.FREE
+            }
         }
         _subscriptionState.value = SubscriptionState(
             tier = subscriptionTier,

@@ -45,6 +45,21 @@ updated: 2026-04-21
 > - ✅ iOS: analytics 30D/Year + temas + widgets
 > - 🚧 Android: analytics y widgets sin gating
 
+> [!warning] Android shell phone todavia no cierra parity completa con iPhone
+> - 🚧 bottom nav y naming migrando a `Focus / Plan / Dashboard / More`
+> - ⬜ falta validar back stack, ownership final y consistencia guest/signed-in en device
+
+> [!warning] Android More / account hub sigue parcial
+> - 🚧 `More` ya absorbe profile, paywall, settings y auth entry points
+> - ⬜ faltan parity completa de Help/Support, About y Export como surfaces Android equivalentes
+
+> [!warning] Profile parity iOS ↔ Android necesita cierre despues del shell reset
+> - ✅ iOS: More/Profile ya refleja estado Apple-local y edicion manual local-first
+> - 🚧 Android: revisar Profile/Edit Profile contra ese baseline y cerrar diferencias de surface
+
+> [!warning] Wear OS impact por cambios de account ownership
+> - ⬜ documentar si profile/billing/gating necesitan propagacion explicita desde el companion Android
+
 > [!warning] Feature gating en watchOS / Wear OS
 > - 🚧 Estado de Apple Unlock / Everywhere no propagado a watch surfaces
 
@@ -60,6 +75,10 @@ updated: 2026-04-21
 - [ ] macOS target
 
 ### 🤖 Android — pendientes
+- [ ] Validar en device la shell `Focus / Plan / Dashboard / More`
+- [ ] Completar `More` como owner canonical de Profile, Subscription, Settings, Help/Support, About y Sign out
+- [ ] Resolver `Export` como surface Android equivalente dentro de `More`
+- [ ] Revisar `Profile` / `Edit Profile` Android contra el baseline iOS actual
 - [ ] Migrar SKUs legacy `pro.*` a Everywhere
 - [ ] Renombrar `premium` legacy a capabilities compartidas
 - [ ] Feature gating completo: analytics, widgets, temas
@@ -78,6 +97,7 @@ updated: 2026-04-21
 - [ ] Energy levels UI
 
 ### ⌚ Wear OS — pendientes
+- [ ] Revisar impacto de shell/account parity Android en ownership de profile y billing del companion
 - [ ] Propagacion de Everywhere desde Android companion
 - [ ] Session journaling UX simplificada
 - [ ] Task linking en sesión

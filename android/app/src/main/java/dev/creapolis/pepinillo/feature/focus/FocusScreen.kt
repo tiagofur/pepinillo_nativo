@@ -29,7 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.LocalFireDepartment
@@ -80,7 +80,7 @@ import dev.creapolis.pepinillo.ui.theme.colorScheme
 fun FocusScreen(
     modifier: Modifier = Modifier,
     viewModel: FocusViewModel = hiltViewModel(),
-    onProfileClick: () -> Unit = {},
+    onMoreClick: () -> Unit = {},
     onNavigateToPaywall: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -135,7 +135,7 @@ fun FocusScreen(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ── 1. GREETING + PROFILE ──
+        // ── 1. GREETING + MORE ──
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -155,14 +155,14 @@ fun FocusScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            // Profile avatar
+            // More shortcut
             Icon(
-                imageVector = Icons.Outlined.AccountCircle,
-                contentDescription = "Profile",
+                imageVector = Icons.Rounded.MoreHoriz,
+                contentDescription = "More",
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .clickable(onClick = onProfileClick),
+                    .clickable(onClick = onMoreClick),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

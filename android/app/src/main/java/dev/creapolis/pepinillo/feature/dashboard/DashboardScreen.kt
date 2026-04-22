@@ -110,7 +110,7 @@ fun DashboardScreen(
         ) {
             Column {
                 Text(
-                    text = "Analytics",
+                    text = "Dashboard",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,

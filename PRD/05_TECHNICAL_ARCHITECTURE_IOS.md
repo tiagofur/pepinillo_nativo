@@ -100,8 +100,8 @@ Views use `@Bindable var store: StoreOf<MyFeature>` and send actions to the stor
 ios/
 ├── App/
 │   ├── PepinilloApp.swift              # @main, root Store creation, ModelContainer
-│   ├── AppFeature.swift                # Root reducer: coordinates tabs, Watch listener, auth, WebSocket lifecycle
-│   ├── AppView.swift                   # Root view with TabView / NavigationSplitView
+│   ├── AppFeature.swift                # Root reducer: coordinates shell tabs, auth/profile sheets, Watch listener, WebSocket lifecycle
+│   ├── AppView.swift                   # Root view with TabView / NavigationSplitView; iPhone runtime shell is Focus / Plan / Dashboard / More
 │   ├── DrawerView.swift                # Side drawer (iPad/Mac)
 │   ├── iPadSplitView.swift             # Adaptive iPad Split View + Stage Manager layout
 │   ├── MacCommands.swift               # Menu commands for Mac (Catalyst)
@@ -192,6 +192,17 @@ ios/
 │   │   ├── AuthFeature.swift           # Reducer: auth flow, initial upload, merge dialog, initial sync (NEW)
 │   │   ├── AuthView.swift              # Auth view with merge dialog sheet (NEW)
 │   │   └── DataMergeView.swift         # SwiftUI merge dialog: upload local vs download cloud (NEW)
+│   │
+│   ├── Account/
+│   │   ├── AccountView.swift           # `More` tab hub for auth, billing, settings, export and support
+│   │   ├── ExportView.swift            # Export surface launched from More
+│   │   └── HelpSupportView.swift       # Help and support surface launched from More
+│   │
+│   ├── Profile/
+│   │   ├── ProfileFeature.swift        # Reducer: full profile screen launched from More
+│   │   ├── ProfileView.swift           # Profile screen with auth/account context
+│   │   ├── EditProfileFeature.swift    # Local-first profile editing orchestration
+│   │   └── EditProfileView.swift       # Manual edit flow for name, email, birth date and photo
 │   │
 │   ├── Settings/
 │   │   ├── SettingsFeature.swift       # Reducer: global configuration + dirty tracking per preference key (ENHANCED)
@@ -293,6 +304,19 @@ ios/
 │
 └── Package.swift                       # SPM dependencies
 ```
+
+### Current iPhone Shell and Account Ownership
+
+| Surface | Runtime ownership |
+| ------- | ----------------- |
+| `Focus` | Hero execution surface |
+| `Plan` | Task planning, detail and daily shaping |
+| `Dashboard` | Analytics, reviews, calendar entry, AI report entry |
+| `More` | Auth, profile, subscription, settings, export, help/support and about |
+
+- `More` is the current phone label for the Account / Admin surface.
+- `Calendar`, `Weekly Review`, `Monthly Review`, and `AI Report` are contextual flows reached from `Dashboard` or root sheet routing, not primary tabs.
+- Regular-width layouts still switch to split navigation; the 4-tab shell is the current iPhone runtime baseline.
 
 ---
 
@@ -1533,14 +1557,15 @@ The user profile combines authentication data, statistics, and subscription stat
 
 | Field                   | Source                            | Description                                    |
 | ----------------------- | --------------------------------- | ---------------------------------------------- |
-| `name`                  | Backend (`User.Name`)             | Display name (from Apple/Google or manual)     |
-| `email`                 | Backend (`User.Email`)            | Account email                                  |
-| `avatarUrl`             | Backend (`User.ImageURL`)         | Profile photo (Apple/Google URL)               |
-| `subscriptionTier`      | Backend (`User.SubscriptionTier`) | `"free"` or `"pro"`                            |
-| `subscriptionExpiresAt` | Backend                           | PRO subscription expiration date               |
-| `linkedAccounts`        | Backend                           | Linked providers: Apple, Google, email         |
+| `name`                  | Restored Apple identity + cached profile + backend (`User.Name`) | Display name; manual local editing is supported |
+| `email`                 | Apple authorization, backend (`User.Email`), or local profile edit | Account email or Apple private relay; editable locally in Apple-local mode |
+| `avatarUrl`             | Backend (`User.ImageURL`) or local cached image reference | Manual photo is supported; Apple does not provide a profile photo |
+| `birthDate`             | Local cached profile              | Manual field; Apple does not provide it        |
+| `subscriptionTier`      | Backend (`User.SubscriptionTier`) with cached local fallback | Legacy runtime `"free"` or `"pro"` while capability split is in progress |
+| `subscriptionExpiresAt` | Backend or cached local fallback  | Active paid period expiration when applicable  |
+| `linkedAccounts`        | Backend target model              | Current iOS runtime should not assume Google linking; Apple + email are the active paths |
 | `emailVerified`         | Backend (`User.EmailVerified`)    | Whether the email is verified                  |
-| `memberSince`           | Backend (`User.CreatedAt`)        | Registration date                              |
+| `memberSince`           | Backend (`User.CreatedAt`) or cached profile | Registration date                              |
 
 #### Profile Statistics (calculated)
 
@@ -1554,46 +1579,21 @@ The user profile combines authentication data, statistics, and subscription stat
 
 #### TCA Implementation
 
-The profile is implemented as a TCA feature:
-
-```swift
-@Reducer
-struct ProfileFeature {
-    @ObservableState
-    struct State: Equatable {
-        var userName: String
-        var userEmail: String
-        var avatarURL: URL?
-        var subscriptionTier: String       // "free" | "pro"
-        var linkedAccounts: [String]       // ["apple", "google", "email"]
-        var memberSince: Date
-        // Stats
-        var currentStreak: Int
-        var totalFocusHours: Double
-        var totalSessions: Int
-        var totalTasksCompleted: Int
-    }
-
-    enum Action {
-        case onAppear
-        case profileLoaded(UserProfile)
-        case statsLoaded(ProfileStats)
-        case logoutTapped
-        case deleteAccountTapped
-        case manageSubscriptionTapped
-    }
-}
-```
+- `AppFeature` owns root auth/profile sheet routing and computes the merged `profileSummaryUser` shown by `More` and `Profile`.
+- `ProfileFeature` owns the dedicated full-screen profile launched from `More`.
+- `EditProfileFeature` supports manual editing of `name`, `email`, `birthDate`, and `photo`; when backend tokens are unavailable, it persists changes locally first.
+- `ProfileAvatarImageView` renders both remote avatar URLs and Apple-local cached image references.
 
 #### Profile Screen
 
 The `ProfileView` (SwiftUI) shows:
 
 - **Header:** Avatar, name, email, PRO/FREE badge
-- **Statistics:** Streak, total hours, sessions, completed tasks, member since
-- **Account:** Linked accounts (Apple, Google, email), option to link/unlink
-- **Subscription:** Current status, expiration date, manage/upgrade button
-- **Actions:** Sign out, delete account
+- **Profile details:** birth date when present, or a manual prompt when it is missing
+- **Apple-local context:** explicit note that Apple does not provide birth date or profile photo and may not resend name/email after initial authorization
+- **Statistics:** streak, total hours, sessions, completed tasks, member since
+- **Subscription:** current status, expiration date, manage/upgrade button
+- **Actions:** sign out; provider linking and account-deletion flows remain separate workstreams
 
 
 

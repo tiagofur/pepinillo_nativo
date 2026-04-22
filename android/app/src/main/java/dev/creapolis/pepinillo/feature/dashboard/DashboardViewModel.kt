@@ -41,9 +41,9 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
 
     val isPro: StateFlow<Boolean> = featureGate.subscriptionState.let { flow ->
-        kotlinx.coroutines.flow.MutableStateFlow(flow.value.isPro).also { mutable ->
+        kotlinx.coroutines.flow.MutableStateFlow(flow.value.hasLocalPremium).also { mutable ->
             viewModelScope.launch {
-                flow.collect { mutable.value = it.isPro }
+                flow.collect { mutable.value = it.hasLocalPremium }
             }
         }
     }

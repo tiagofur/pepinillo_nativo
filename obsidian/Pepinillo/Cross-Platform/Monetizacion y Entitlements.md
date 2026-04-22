@@ -77,7 +77,7 @@ updated: 2026-04-21
 ## Implicancias tecnicas
 
 - El backend deja de pensar en un solo `pro` boolean y pasa a capacidades.
-- RevenueCat sigue siendo entrada de eventos, pero el backend resuelve enforcement final.
+-  RevenueCat sigue siendo entrada de eventos, pero el backend resuelve enforcement final.
 - iCloud en Apple ya no se vende como sync general; se vende como continuidad nativa Apple.
 - La IA con creditos requiere ledger, fecha de reset y reglas de decremento server-side.
 - Las pantallas de watchOS/Wear OS necesitan propagacion de capability split, no solo un flag legacy.

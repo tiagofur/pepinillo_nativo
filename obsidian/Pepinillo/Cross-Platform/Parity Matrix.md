@@ -25,6 +25,17 @@ updated: 2026-04-21
 - 📋 Planificado
 - N/A No aplica
 
+## Navegacion y account IA
+
+| Feature | iOS | Android | watchOS | Wear OS | Notas |
+|---|:-:|:-:|:-:|:-:|---|
+| Shell phone `Focus / Plan / Dashboard / More` | ✅ | 🚧 | N/A | N/A | Android migra desde `Focus / Tasks / Stats / Settings` |
+| Naming top-level alineado al baseline iPhone | ✅ | 🚧 | N/A | N/A | `Plan`, `Dashboard` y `More` deben ser los labels canonicales en phone |
+| `More` / Account hub como owner de profile + settings + billing | ✅ | 🚧 | N/A | N/A | Android ya abre profile/paywall/settings desde `More`, pero todavia faltan cierres de parity |
+| Profile entry point desde account hub | ✅ | 🚧 | N/A | N/A | Android antes lo colgaba de Focus; la fase actual lo reordena |
+| Help / About accesibles desde account area | ✅ | 🚧 | N/A | N/A | Android los expone desde `More`, con consolidacion de contenido pendiente |
+| Export accesible desde account area | ✅ | 📋 | N/A | N/A | Falta surface Android equivalente |
+
 ## Core product
 
 | Feature | iOS | Android | watchOS | Wear OS | Notas |

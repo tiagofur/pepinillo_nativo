@@ -71,7 +71,7 @@ class DailyStatsWidget : GlanceAppWidget() {
             val stats = runCatching { sessionRepo.getTodayStats().first() }.getOrNull()
             val allDays = runCatching { sessionRepo.getAllDaysWithSessions().first() }.getOrDefault(emptyList())
             val streak = runCatching { sessionRepo.calculateCurrentStreak(allDays) }.getOrDefault(0)
-            val isPro = subscriptionManager.subscriptionState.value.isPro
+            val isPro = subscriptionManager.subscriptionState.value.hasLocalPremium
             
             val startOfDay = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)

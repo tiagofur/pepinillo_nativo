@@ -29,7 +29,7 @@ class SoundscapePickerViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(
         SoundscapePickerUiState(
             selectedSoundscape = soundscapeManager.currentSoundscape,
-            isPro = featureGate.isPro,
+            isPro = featureGate.isPro, // hasLocalPremium: any paid tier
         )
     )
     val uiState: StateFlow<SoundscapePickerUiState> = _uiState.asStateFlow()

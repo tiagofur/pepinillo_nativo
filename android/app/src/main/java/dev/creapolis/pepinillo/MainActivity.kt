@@ -60,6 +60,7 @@ import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.AIReportScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
+import dev.creapolis.pepinillo.feature.more.MoreScreen
 import dev.creapolis.pepinillo.feature.paywall.PaywallScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
 import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
@@ -118,7 +119,7 @@ class MainActivity : ComponentActivity() {
         syncScope.launch {
             subscriptionManager.subscriptionState.collect { state ->
                 Log.d("MainActivity", "Subscription state changed: ${state.tier}, syncing to Wear OS")
-                WearDataLayerHelper.pushUserStatus(this@MainActivity, state.isPro)
+                WearDataLayerHelper.pushUserStatus(this@MainActivity, state.hasLocalPremium)
             }
         }
 
@@ -138,7 +139,7 @@ class MainActivity : ComponentActivity() {
                 darkTheme = darkTheme,
                 dynamicColor = dynamicColor,
                 selectedThemeId = selectedTheme,
-                isPro = subscriptionState.isPro,
+                isPro = subscriptionState.hasLocalPremium,
             ) {
                 PepinilloApp(prefsRepository = prefsRepository)
             }
@@ -224,15 +225,21 @@ fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
         ) {
             composable(TopLevelDestination.Focus.route) {
                 FocusScreen(
-                    onProfileClick = {
-                        navController.navigate("profile")
+                    onMoreClick = {
+                        navController.navigate(TopLevelDestination.More.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     },
                     onNavigateToPaywall = {
                         navController.navigate("paywall")
                     },
                 )
             }
-            composable(TopLevelDestination.Tasks.route) {
+            composable(TopLevelDestination.Plan.route) {
                 TasksScreen(
                     onTaskClick = { taskId ->
                         navController.navigate("tasks/$taskId")
@@ -297,7 +304,19 @@ fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
                     onSignOutClick = { /* handled internally */ },
                 )
             }
-            composable(TopLevelDestination.Settings.route) {
+            composable(TopLevelDestination.More.route) {
+                MoreScreen(
+                    onProfileClick = { navController.navigate("profile") },
+                    onSignInClick = { navController.navigate("login") },
+                    onCreateAccountClick = { navController.navigate("register") },
+                    onSubscriptionClick = { navController.navigate("paywall") },
+                    onSettingsClick = { navController.navigate("settings") },
+                    onAppSetupClick = { navController.navigate("app_setup") },
+                    onHelpClick = { navController.navigate("settings") },
+                    onAboutClick = { navController.navigate("settings") },
+                )
+            }
+            composable("settings") {
                 SettingsScreen(
                     onNavigateToAppSetup = { navController.navigate("app_setup") },
                     onNavigateToPaywall = { navController.navigate("paywall") },

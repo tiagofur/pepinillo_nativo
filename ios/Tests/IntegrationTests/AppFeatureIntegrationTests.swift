@@ -9,6 +9,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
+@Suite(.serialized)
 @MainActor
 struct AppFeatureIntegrationTests {
 
@@ -93,12 +94,14 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { completedPrefs }
             $0.persistenceClient.savePreferences = { _ in }
+            $0.persistenceClient.fetchCachedUser = { nil }
             $0.subscriptionClient.checkEntitlement = { .free }
             $0.subscriptionClient.listenForTransactionUpdates = { AsyncStream { $0.finish() } }
             $0.notificationClient.requestAuthorization = { false }
             $0.notificationClient.observeActions = { .finished }
             $0.watchConnectivityClient.isSupported = { false }
             $0.signInWithAppleClient.checkCredentialState = { _ in false }
+            $0.keychainClient.hasTokens = { false }
         }
 
         store.exhaustivity = .off
@@ -116,12 +119,14 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
+            $0.persistenceClient.fetchCachedUser = { nil }
             $0.subscriptionClient.checkEntitlement = { .free }
             $0.subscriptionClient.listenForTransactionUpdates = { AsyncStream { $0.finish() } }
             $0.notificationClient.requestAuthorization = { false }
             $0.notificationClient.observeActions = { .finished }
             $0.watchConnectivityClient.isSupported = { false }
             $0.signInWithAppleClient.checkCredentialState = { _ in false }
+            $0.keychainClient.hasTokens = { false }
         }
 
         store.exhaustivity = .off
@@ -139,6 +144,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchCachedUser = { nil }
             $0.persistenceClient.saveCachedUser = { _ in }
             $0.subscriptionClient.logIn = { _ in }
+            $0.keychainClient.hasTokens = { false }
         }
 
         store.exhaustivity = .off
@@ -273,6 +279,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.watchConnectivityClient.sendSessionState = { _ in }
             $0.focusClient.start = { _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }

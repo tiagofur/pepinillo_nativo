@@ -27,6 +27,7 @@ updated: 2026-04-21
 | Area | Documento |
 |------|-----------|
 | Capas y decisiones arquitectonicas | [[Arquitectura General]] |
+| Shell phone + stream More parity | [[Arquitectura General#Shell phone y stream de paridad|Arquitectura General]] |
 | Integracion con backend y sync | [[../Backend/Arquitectura General|Backend Arquitectura]] |
 | Monetizacion y entitlements | [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]] |
 | Contrato de paridad | [[../Cross-Platform/Parity Matrix|Parity Matrix]] |

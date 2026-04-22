@@ -127,7 +127,7 @@ class TasksViewModel @Inject constructor(
             selectedSort = sort,
             energyFilter = energy,
             isLoading = false,
-            isPro = subState.isPro,
+            isPro = subState.hasLocalPremium,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TasksUiState())
 

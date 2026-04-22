@@ -60,9 +60,9 @@ Detalle vivo: [[Cross-Platform/Parity Matrix]]
 
 ## Siguientes 3 focos
 
-1. Migrar billing legacy a Apple Unlock + Everywhere en iOS.
-2. Diseñar capability split backend + creditos IA mensuales.
-3. Propagar entitlements nuevos a watchOS, Wear OS y vistas de paridad.
+1. Cerrar shell parity Android phone con `Focus / Plan / Dashboard / More` y ownership canonical de `More`.
+2. Revisar `Profile` / `Edit Profile` Android contra el baseline actual de iOS More/Profile.
+3. Diseñar capability split backend + creditos IA mensuales.
 
 ## Accesos rápidos
 

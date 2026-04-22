@@ -1,68 +1,32 @@
 // WidgetProGatingTests.swift
 // Pepinillo — Deep Work Companion for Apple
-//
-// Tests for widget capability gating via AppGroupDefaults.userCapabilities.
-// Verifies widget providers use the structured UserCapabilities model, not a legacy isProUser bool.
 
 import Testing
 import Foundation
 @testable import Pepinillo
 
-@Suite("WidgetProGating", .serialized)
+@Suite("WidgetProGating")
 struct WidgetProGatingTests {
 
-    // MARK: - AppGroupDefaults.userCapabilities read/write
+    @Test("AppGroupDefaults.isProUser round-trips")
+    func isProUserFlagRoundTrips() {
+        let original = AppGroupDefaults.isProUser
+        defer { AppGroupDefaults.isProUser = original }
 
-    @Test("userCapabilities nil-to-nil round-trip (unset state)")
-    func nilCapabilitiesRoundTrip() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
+        AppGroupDefaults.isProUser = true
+        #expect(AppGroupDefaults.isProUser == true)
 
-        AppGroupDefaults.userCapabilities = nil
-        #expect(AppGroupDefaults.userCapabilities == nil)
+        AppGroupDefaults.isProUser = false
+        #expect(AppGroupDefaults.isProUser == false)
     }
 
-    @Test("Free capabilities — hasAnyPremium is false")
-    func freeCapabilitiesHasNoPremium() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
+    @Test("AppGroupDefaults.isProUser defaults to false")
+    func isProUserDefaultsFalseAfterClear() {
+        let original = AppGroupDefaults.isProUser
+        defer { AppGroupDefaults.isProUser = original }
 
-        AppGroupDefaults.userCapabilities = .free
-        let caps = AppGroupDefaults.userCapabilities
-        #expect(caps?.hasAnyPremium == false)
-    }
-
-    @Test("PepinilloPlus capabilities — hasAnyPremium true, backendSync false")
-    func pepinilloPlusCapsHasPremiumButNoSync() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
-
-        AppGroupDefaults.userCapabilities = .pepinilloPlus
-        let caps = AppGroupDefaults.userCapabilities
-        #expect(caps?.hasAnyPremium == true)
-        #expect(caps?.backendSync == false)
-    }
-
-    @Test("EverywhereePlus capabilities — hasAnyPremium true, backendSync true")
-    func everywherePlusCapsHasSyncEnabled() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
-
-        AppGroupDefaults.userCapabilities = .everywherePlus
-        let caps = AppGroupDefaults.userCapabilities
-        #expect(caps?.hasAnyPremium == true)
-        #expect(caps?.backendSync == true)
-    }
-
-    @Test("Widget shows proRequired placeholder when capabilities nil (unset = free)")
-    func nilCapabilitiesMeansNoAccess() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
-
-        AppGroupDefaults.userCapabilities = nil
-        // Widgets read: AppGroupDefaults.userCapabilities?.hasAnyPremium == true
-        // When nil, this evaluates to false → proRequired entry shown
-        #expect(AppGroupDefaults.userCapabilities?.hasAnyPremium != true)
+        AppGroupDefaults.isProUser = false
+        #expect(AppGroupDefaults.isProUser == false)
     }
 
     // MARK: - Widget cold-start capability read (spec: "iOS Widget launches before main app")

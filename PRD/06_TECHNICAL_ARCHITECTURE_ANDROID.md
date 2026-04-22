@@ -90,7 +90,7 @@ The project uses **MVVM (Model-View-ViewModel)** with layered Clean Architecture
 app/src/main/kotlin/dev/creapolis/pepinillo/
 ├── PepinilloApp.kt                    # @HiltAndroidApp + WorkManager Configuration.Provider
 ├── MainActivity.kt                     # Single Activity, Compose host
-│                                       # Adaptive nav (BottomBar/Rail/Drawer)
+│                                       # Adaptive nav (NavigationBar/Rail/Drawer)
 │                                       # Conditional onboarding + auth gate
 │                                       # Google Assistant intent handling
 │
@@ -174,8 +174,14 @@ app/src/main/kotlin/dev/creapolis/pepinillo/
 │   │   ├── DashboardScreen.kt        # Vico Charts, mode breakdown, streaks
 │   │   ├── WeeklyReviewScreen.kt     # Weekly review
 │   │   └── AchievementsSection.kt    # Achievements with progress
+│   ├── more/
+│   │   └── MoreScreen.kt             # Account/admin hub for phone shell parity
+│   ├── profile/
+│   │   ├── ProfileScreen.kt          # Full profile screen launched from More
+│   │   ├── ProfileViewModel.kt       # Account/profile state + local stats
+│   │   └── EditProfileSheet.kt       # Edit profile surface
 │   ├── settings/
-│   │   └── SettingsScreen.kt         # Two-column on tablet, FocusConfig sliders
+│   │   └── SettingsScreen.kt         # Secondary settings surface opened from More on phone
 │   └── soundscape/
 │       ├── SoundscapePlayer.kt       # ExoPlayer wrapper
 │       └── SoundscapeScreen.kt       # 6 ambient tracks
@@ -204,6 +210,21 @@ app/src/main/kotlin/dev/creapolis/pepinillo/
         ├── LockScreenTimerWidget.kt   # Glance KEYGUARD widget (Android 14+)
         └── WidgetStateStore.kt        # updateAppWidgetState via PreferencesGlanceStateDefinition
 ```
+
+### Current Phone Shell and Account Ownership
+
+| Surface | Runtime ownership |
+| ------- | ----------------- |
+| `Focus` | Hero execution surface |
+| `Plan` | Task planning and daily shaping on top of the existing tasks engine |
+| `Dashboard` | Analytics, reviews, calendar entry and AI report entry |
+| `More` | Auth, profile, subscription/paywall, settings, app setup, help/about entry points |
+
+- `Settings` is no longer a top-level compact-phone destination; it is a secondary route launched from `More`.
+- `Profile` remains a dedicated screen, but its canonical phone entry point is `More`.
+- `Help & Support` and `About` are surfaced from `More`; dedicated Android equivalents can continue to evolve behind those entry points.
+- `Export` is still an explicit parity gap on Android phone.
+- Wear OS is impacted only as a companion ownership/gating concern; no watch bottom-nav parity is implied.
 
 ### Module Wear OS (`wear/`)
 
@@ -963,7 +984,7 @@ Implemented with `WindowSizeClass` from Material 3:
 
 | WindowWidthSizeClass   | Navigation                          | Layout                          |
 | ---------------------- | ----------------------------------- | ------------------------------- |
-| **Compact** (<600dp)   | `NavigationBar` (bottom)            | Single-column, original layouts |
+| **Compact** (<600dp)   | `NavigationBar` (bottom) with `Focus / Plan / Dashboard / More` | Single-column, original layouts |
 | **Medium** (600-840dp) | `NavigationRail` (left rail)        | Two-pane where applicable       |
 | **Expanded** (>840dp)  | `PermanentNavigationDrawer` (240dp) | Full multi-column layout        |
 
@@ -1253,7 +1274,7 @@ The following key technical decisions were made during development and are docum
 ### 16. `NavigationRail` vs `BottomBar`
 
 **Problem:** Choosing when to show each navigation type.
-**Solution:** Use `calculateWindowSizeClass(activity)` in `setContent{}`, pass `widthSizeClass` to `MainScaffold`. Compact→Bottom, Medium→Rail, Expanded→Drawer.
+**Solution:** Use `calculateWindowSizeClass(activity)` in `setContent{}`, pass `widthSizeClass` to `MainScaffold`. Compact uses the current phone shell (`Focus / Plan / Dashboard / More`), Medium→Rail, Expanded→Drawer.
 
 ### 17. App Actions deep links
 
@@ -1523,6 +1544,7 @@ The profile screen (`ProfileScreen`) shows:
 
 - **Header:** Avatar, name, email, paid state badge (`Free` / `Everywhere`, with legacy compatibility while runtime still exposes `pro`/`premium`)
 - **Statistics:** streak, total hours, sessions, completed tasks, member since
-- **Account:** Linked accounts (Google, Apple, email), option to link/unlink
+- **Entry point:** reached from `More`, not as a top-level phone destination
+- **Account:** current auth/profile state with linked-provider model as a backend target; full provider linking remains a separate workstream
 - **Subscription:** current status, expiration date, manage/upgrade button
-- **Actions:** sign out, delete account
+- **Actions:** sign out from profile; settings, help/about, and app setup are owned by `More`

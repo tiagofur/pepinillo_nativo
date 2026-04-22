@@ -10,7 +10,7 @@ platform: ios
 type: moc
 status: active
 date: 2026-04-17
-updated: 2026-04-17
+updated: 2026-04-21
 ---
 
 # 🍎 iOS — Mapa de Contenido
@@ -27,6 +27,7 @@ updated: 2026-04-17
 | Area | Documento |
 |------|-----------|
 | Capas y decisiones arquitectonicas | [[Arquitectura General]] |
+| Shell phone + More/Profile/Auth | [[Arquitectura General#Shell y ownership de account|Arquitectura General]] |
 | Integracion con backend y sync | [[../Backend/Arquitectura General|Backend Arquitectura]] |
 | Monetizacion y entitlements | [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]] |
 | Contrato de paridad | [[../Cross-Platform/Parity Matrix|Parity Matrix]] |

@@ -45,6 +45,26 @@ updated: 2026-04-21
 | Apple Unlock | no aplica a Android / Wear OS |
 | Runtime actual | todavia usa un flag `premium` legacy, pendiente capability split |
 
+## Shell phone y stream de paridad
+
+| Surface | Estado de la fase 2026-04-21 |
+|---|---|
+| Bottom nav phone | migrando a `Focus` · `Plan` · `Dashboard` · `More` para igualar el baseline iPhone |
+| Focus | sigue siendo el hub de sesion; account shortcuts deben apuntar a `More`, no a `Profile` como owner principal |
+| Plan | reutiliza el engine de tareas existente, pero adopta naming y rol equivalentes a iOS |
+| Dashboard | mantiene analytics, calendar, reviews y AI report como flows secundarios |
+| More | nuevo owner funcional de profile, subscription/paywall, settings, app setup, help/about y estado signed-in/guest |
+
+- `Settings` deja de ser destino top-level y pasa a ser una surface secundaria abierta desde `More`.
+- `Profile` sigue existiendo como pantalla dedicada, pero su entry point canonical en phone debe salir de `More`.
+- `Help & Support` y `About` entran primero como accesos desde `More`; las surfaces dedicadas pueden seguir en una etapa posterior si el contenido actual de `Settings` no alcanza.
+- `Export` sigue siendo una brecha abierta de parity y debe quedar rastreado en la matriz y en `Parity Gaps`.
+
+## Impacto Wear OS
+
+- No se busca bottom nav parity en reloj; el impacto de esta fase en Wear OS es de ownership companion, gating y documentacion.
+- Todo cambio de account/profile/billing en phone Android debe revisar si necesita propagacion explicita al companion Wear.
+
 ## Principios
 
 - Motor de foco unificado por estrategia (4 modos).

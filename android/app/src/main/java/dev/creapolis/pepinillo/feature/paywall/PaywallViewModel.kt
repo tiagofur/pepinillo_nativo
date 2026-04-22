@@ -49,7 +49,7 @@ class PaywallViewModel @Inject constructor(
                 it.productId.contains("annual")
             }?.productId,
             isPurchasing = purchasing,
-            isPro = subState.isPro,
+            isPro = subState.hasLocalPremium,
             error = error,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaywallUiState())
@@ -76,7 +76,7 @@ class PaywallViewModel @Inject constructor(
             subscriptionManager.launchPurchaseFlow(activity, product)
             // Observe subscription state changes to detect when purchase completes
             subscriptionManager.subscriptionState.collect { state ->
-                if (state.isPro) {
+                if (state.hasLocalPremium) {
                     _isPurchasing.value = false
                 }
             }
@@ -89,7 +89,7 @@ class PaywallViewModel @Inject constructor(
             _error.value = null
             subscriptionManager.checkExistingPurchases()
             _isPurchasing.value = false
-            if (!subscriptionManager.subscriptionState.value.isPro) {
+            if (!subscriptionManager.subscriptionState.value.hasLocalPremium) {
                 _error.value = "No active subscription found"
             }
         }
