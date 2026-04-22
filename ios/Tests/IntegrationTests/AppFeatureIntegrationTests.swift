@@ -352,6 +352,67 @@ struct AppFeatureIntegrationTests {
 
     // MARK: - Subscription State
 
+    // MARK: - UserCapabilities propagation to App Group
+
+    @Test func subscriptionStateLoadedWritesCapabilitiesToAppGroup() async {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        AppGroupDefaults.userCapabilities = nil
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.subscriptionStateLoaded(.everywherePlus))
+
+        // After subscriptionStateLoaded, userCapabilities should be written to App Group
+        let caps = AppGroupDefaults.userCapabilities
+        #expect(caps?.backendSync == true)
+        #expect(caps?.hasAnyPremium == true)
+    }
+
+    @Test func subscriptionUpdatedWritesCapabilitiesToAppGroup() async {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        AppGroupDefaults.userCapabilities = nil
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.subscriptionUpdated(.pepinilloPlus))
+
+        let caps = AppGroupDefaults.userCapabilities
+        #expect(caps?.backendSync == false)
+        #expect(caps?.localPremium == true)
+        #expect(caps?.hasAnyPremium == true)
+    }
+
+    @Test func subscriptionUpdatedFreeWritesFreeCapabilities() async {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        AppGroupDefaults.userCapabilities = .everywherePlus
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.subscriptionUpdated(.free))
+
+        let caps = AppGroupDefaults.userCapabilities
+        #expect(caps?.backendSync == false)
+        #expect(caps?.hasAnyPremium == false)
+    }
+
     @Test func subscriptionStateLoadedUpdatesProStatus() async {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
