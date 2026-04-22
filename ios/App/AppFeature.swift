@@ -384,7 +384,8 @@ struct AppFeature {
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
-                AppGroupDefaults.userCapabilities = effectiveSub.capabilities
+                AppGroupDefaults.isProUser = true
+                if isPro { state.focus.showPaywall = false }
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
                 }
@@ -401,8 +402,23 @@ struct AppFeature {
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
-                AppGroupDefaults.userCapabilities = effectiveSub.capabilities
-                if isPro { state.focus.showPaywall = false }
+                AppGroupDefaults.isProUser = true
+                return .run { _ in
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
+
+            case .subscriptionUpdated(let sub):
+                #if DEBUG
+                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .pepinilloPlus : sub
+                #else
+                let effectiveSub = sub
+                #endif
+                state.subscriptionState = effectiveSub
+                let isPro = effectiveSub.isPro
+                state.focus.isProUser = isPro
+                state.settings.isProUser = isPro
+                state.tasks.isProUser = isPro
+                AppGroupDefaults.isProUser = true
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
                 }

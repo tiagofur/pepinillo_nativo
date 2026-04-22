@@ -29,17 +29,16 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
     // MARK: - Entry Construction
 
     private func buildEntry(configuration: ConfigureDashboardWidgetIntent) async -> DashboardWidgetEntry {
-        guard AppGroupDefaults.userCapabilities?.hasAnyPremium == true else { return .proRequired }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date.now)
+        let weekAgo = calendar.date(byAdding: .day, value: -6, to: today)!
+        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        
+        guard AppGroupDefaults.isProUser else { return .proRequired }
+        
         do {
             let container = try makeWidgetModelContainer()
             let context = ModelContext(container)
-            let calendar = Calendar.current
-
-            let today = calendar.startOfDay(for: Date.now)
-            guard let weekAgo = calendar.date(byAdding: .day, value: -6, to: today),
-                  let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else {
-                return .empty
-            }
 
             // Fetch last 7 days of stats
             let descriptor = FetchDescriptor<DailyStats>(
@@ -105,7 +104,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             // Streak
             let streak = computeStreak(context: context, today: today, calendar: calendar)
 
-            let isPro = AppGroupDefaults.userCapabilities?.hasAnyPremium ?? false
+            let isPro = AppGroupDefaults.isProUser
             return DashboardWidgetEntry(
                 date: Date.now,
                 isProUser: isPro,
