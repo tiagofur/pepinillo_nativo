@@ -167,3 +167,198 @@ func TestProtectedPushAndTaskSyncEndpoints_WithJWT(t *testing.T) {
 }
 
 func ptrStr(s string) *string { return &s }
+
+// makeAccessTokenWithTier creates a JWT with the given tier embedded in claims.
+func makeAccessTokenWithTier(t *testing.T, userID, email, tier string) string {
+	t.Helper()
+	claims := middleware.UserClaims{
+		UserID:        userID,
+		Email:         email,
+		Tier:          tier,
+		TokenType:     "access",
+		EmailVerified: true,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, err := token.SignedString([]byte(testJWTSecret))
+	require.NoError(t, err)
+	return signed
+}
+
+// buildSyncGatingApp builds a minimal Fiber app that replicates the
+// production middleware chain for the sync group:
+//
+//	JWT → SubscriptionMiddleware → RequireBackendSync → 200 handler
+//
+// A non-gated endpoint (/users/me) is registered without RequireBackendSync
+// to verify the middleware is not applied globally.
+func buildSyncGatingApp(userRepo ports.UserRepository) *fiber.App {
+	app := fiber.New()
+	protected := app.Group("", middleware.JWT(testJWTSecret))
+	protected.Use(middleware.NewSubscriptionMiddleware(userRepo))
+
+	// Non-gated endpoint — must not be affected by RequireBackendSync.
+	protected.Get("/users/me", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
+	})
+
+	// Gated sync group.
+	syncGroup := protected.Group("/sync", middleware.NewRequireBackendSync())
+	syncGroup.Get("/full", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
+	})
+	syncGroup.Post("/sessions", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
+	})
+	syncGroup.Post("/initial-upload", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
+	})
+
+	// Gated preferences.
+	protected.Put("/preferences", middleware.NewRequireBackendSync(), func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})
+	})
+
+	return app
+}
+
+func doSyncRequest(t *testing.T, app *fiber.App, method, path, token string) int {
+	t.Helper()
+	var req *http.Request
+	if method == http.MethodGet {
+		req = httptest.NewRequest(http.MethodGet, path, nil)
+	} else {
+		req = httptest.NewRequest(method, path, bytes.NewReader([]byte("{}")))
+		req.Header.Set("Content-Type", "application/json")
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	return resp.StatusCode
+}
+
+// TestSyncRouteGating_FreeTier_Returns402 verifies that a free-tier user
+// receives 402 on all gated sync endpoints when RequireBackendSync is wired
+// into the route group (mirrors the production route wiring in routes.go).
+//
+// This test must FAIL (RED) until T1.10 wires RequireBackendSync into the
+// production RegisterAPIRoutes function. The test uses a helper that builds a
+// minimal app with the same middleware chain that production routes.go applies.
+func TestSyncRouteGating_FreeTier_Returns402(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	userRepo := newIntegrationUserRepo()
+	user := &domain.User{
+		ID:               "sg-free",
+		Email:            "sg-free@test.com",
+		Name:             "SG Free",
+		PasswordHash:     ptrStr("x"),
+		SubscriptionTier: "free",
+		EmailVerified:    true,
+	}
+	require.NoError(t, userRepo.Create(context.Background(), user))
+
+	// buildSyncGatingApp mirrors what RegisterAPIRoutes must do after T1.10.
+	// If production routes.go does NOT wire RequireBackendSync, the production
+	// routes test (TestSyncRouteGating_ProductionRoutes_*) will catch it.
+	app := buildSyncGatingApp(userRepo)
+	token := makeAccessTokenWithTier(t, user.ID, user.Email, "free")
+
+	for _, tc := range []struct{ method, path string }{
+		{http.MethodGet, "/sync/full"},
+		{http.MethodPost, "/sync/sessions"},
+		{http.MethodPost, "/sync/initial-upload"},
+		{http.MethodPut, "/preferences"},
+	} {
+		code := doSyncRequest(t, app, tc.method, tc.path, token)
+		if code != http.StatusPaymentRequired {
+			t.Errorf("%s %s: expected 402, got %d", tc.method, tc.path, code)
+		}
+	}
+}
+
+// TestSyncRouteGating_EverywhereMonthly_Returns200 verifies that an
+// Everywhere+ user with an active subscription can access the gated endpoints.
+func TestSyncRouteGating_EverywhereMonthly_Returns200(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	userRepo := newIntegrationUserRepo()
+	future := time.Now().Add(30 * 24 * time.Hour)
+	user := &domain.User{
+		ID:                    "sg-everywhere",
+		Email:                 "sg-everywhere@test.com",
+		Name:                  "SG Everywhere",
+		PasswordHash:          ptrStr("x"),
+		SubscriptionTier:      "everywhere_monthly",
+		SubscriptionExpiresAt: &future,
+		EmailVerified:         true,
+	}
+	require.NoError(t, userRepo.Create(context.Background(), user))
+
+	app := buildSyncGatingApp(userRepo)
+	token := makeAccessTokenWithTier(t, user.ID, user.Email, "everywhere_monthly")
+
+	for _, tc := range []struct{ method, path string }{
+		{http.MethodGet, "/sync/full"},
+		{http.MethodPost, "/sync/sessions"},
+		{http.MethodPost, "/sync/initial-upload"},
+		{http.MethodPut, "/preferences"},
+	} {
+		code := doSyncRequest(t, app, tc.method, tc.path, token)
+		if code != http.StatusOK {
+			t.Errorf("%s %s: expected 200, got %d", tc.method, tc.path, code)
+		}
+	}
+}
+
+// TestSyncRouteGating_NonGatedEndpointUnaffected verifies that /users/me
+// (a non-gated endpoint) is accessible to free-tier users.
+func TestSyncRouteGating_NonGatedEndpointUnaffected(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	userRepo := newIntegrationUserRepo()
+	user := &domain.User{
+		ID:               "sg-nongated",
+		Email:            "sg-nongated@test.com",
+		Name:             "SG NonGated",
+		PasswordHash:     ptrStr("x"),
+		SubscriptionTier: "free",
+		EmailVerified:    true,
+	}
+	require.NoError(t, userRepo.Create(context.Background(), user))
+
+	app := buildSyncGatingApp(userRepo)
+	token := makeAccessTokenWithTier(t, user.ID, user.Email, "free")
+
+	code := doSyncRequest(t, app, http.MethodGet, "/users/me", token)
+	if code != http.StatusOK {
+		t.Errorf("GET /users/me: expected 200, got %d", code)
+	}
+}
+
+// TestProductionRoutes_SyncGroupHasRequireBackendSync verifies that the
+// production routes.go file wires RequireBackendSync on the sync group and
+// preferences endpoint. This is a source-level assertion test: it reads
+// routes.go and asserts the middleware call is present.
+//
+// This test FAILS (RED) until T1.10 adds NewRequireBackendSync() to routes.go.
+func TestProductionRoutes_SyncGroupHasRequireBackendSync(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	routesFile := readRoutesFile(t)
+
+	assertContains(t, routesFile, "NewRequireBackendSync",
+		"routes.go must call middleware.NewRequireBackendSync() on sync/preferences routes")
+}

@@ -16,6 +16,17 @@ func migrationsDir() string {
 	return filepath.Join(filepath.Dir(filename), "..", "..", "migrations")
 }
 
+func readRoutesFile(t *testing.T) string {
+	t.Helper()
+	_, filename, _, _ := runtime.Caller(0)
+	path := filepath.Join(filepath.Dir(filename), "..", "..", "internal", "adapters", "handlers", "routes.go")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("routes.go not found: %v", err)
+	}
+	return string(data)
+}
+
 func readMigrationFile(t *testing.T, name string) string {
 	t.Helper()
 	path := filepath.Join(migrationsDir(), name)
