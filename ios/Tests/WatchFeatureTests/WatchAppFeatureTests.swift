@@ -464,8 +464,9 @@ struct WatchAppFeatureTests {
             $0.selectedTab = .timer
         }
 
+        let taskAIDString = Self.taskA.id.uuidString
         commandsSent.withValue {
-            #expect($0.contains(.linkTask(id: Self.taskA.id.uuidString)))
+            #expect($0.contains(.linkTask(id: taskAIDString)))
         }
     }
 
@@ -489,8 +490,9 @@ struct WatchAppFeatureTests {
         await store.send(.tasks(.taskLongPressed(Self.taskA.id)))
         await store.receive(.tasks(.taskLinked(Self.taskA.id, "Write documentation")))
 
+        let taskAIDString2 = Self.taskA.id.uuidString
         commandsSent.withValue {
-            #expect($0.contains(.linkTask(id: Self.taskA.id.uuidString)))
+            #expect($0.contains(.linkTask(id: taskAIDString2)))
         }
     }
 
@@ -589,8 +591,9 @@ struct WatchAppFeatureTests {
             )
         }
 
+        let taskAIDStringToggle = Self.taskA.id.uuidString
         commandsSent.withValue {
-            #expect($0.contains(.toggleTaskCompleted(id: Self.taskA.id.uuidString)))
+            #expect($0.contains(.toggleTaskCompleted(id: taskAIDStringToggle)))
         }
     }
 
@@ -922,8 +925,9 @@ struct WatchAppFeatureTests {
             $0.selectedTab = .timer
         }
 
+        let taskBIDString = Self.taskB.id.uuidString
         commandsSent.withValue {
-            #expect($0.contains(.linkTask(id: Self.taskB.id.uuidString)))
+            #expect($0.contains(.linkTask(id: taskBIDString)))
         }
     }
 }
