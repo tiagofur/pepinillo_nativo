@@ -18,20 +18,29 @@
 | Wear OS         | Implemented (timer, tasks, stats, tile, complication)               | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL     |
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
 
-### Monetization Direction (2026-04-21, v3.0)
+### Monetization Direction (2026-04-22, v3.1)
 
 - **Approved commercial model:** Pepinillo+ (one-time, NOT a subscription) + Everywhere/AI+ (recurring sync + Advanced AI).
-- **Naming finalized:** "Pepinillo+" for the one-time purchase, "Everywhere/AI+" for the subscription.
+- **Naming finalized (v3.1):** "Pepinillo+" for the one-time purchase, "Everywhere/AI+" for the subscription. Entitlement IDs: `pepinillo_plus` + `everywhere_plus`.
 - **Product ID reuse:** Existing `pro.lifetime` → Pepinillo+, `pro.monthly`/`pro.annual` → Everywhere/AI+. No new SKUs needed.
 - **Apple Intelligence as hero:** On-device AI Reports (Foundation Models + template fallback) is the primary differentiator.
 - **Próximamente strategy:** Everywhere/AI+ features (Backend Sync, AI Coach, Task Scheduling, Subtask Gen) shown only in paywall with subtle badge.
 - **Transparency principle:** Pepinillo+ is explicitly "One purchase. Yours forever. Not a subscription."
-- **Current runtime:** legacy single-tier Pro model with monthly / annual / lifetime products.
-- **Primary implementation debt:** 
-  1. Enable `AppConfig.aiInsightsEnabled = true` (feature flag currently OFF)
-  2. Redesign Paywall for Pepinillo+ vs Everywhere/AI+ tiers
-  3. Update RevenueCat entitlements to `pepinillo_plus` + `everywhere_plus` (currently `premium`/`pro`)
-  4. Update App Store Connect product metadata with new names and descriptions
+- **Prices (global):** Pepinillo+ $19.99 one-time · Everywhere/AI+ $4.99/month · $34.99/year.
+- **Prices (LATAM):** Pepinillo+ $9.99 · Everywhere/AI+ $2.49/month · $17.99/year.
+- **Implementation status (code — done):**
+  - [x] `AppConfig.aiInsightsEnabled = true`
+  - [x] `PaywallView.swift` — two-tier design, "NOT a subscription" badge, Apple Intelligence as hero
+  - [x] `SubscriptionClient.swift` — `pepinillo_plus`/`everywhere_plus` entitlements, legacy `premium`/`pro` fallback
+  - [x] `UserCapabilities.swift` — granular capability model
+  - [x] `Pepinillo.storekit` — renamed to "Pepinillo+" / "Everywhere/AI+ Monthly" / "Everywhere/AI+ Annual", prices $19.99/$4.99/$34.99
+  - [x] Mock display names and prices aligned to v3.1
+- **Implementation status (external — manual tasks remaining):**
+  - [ ] **[BLOCKER]** Update revoked API keys in RevenueCat (App Store Connect API: `22YZT9D55J` · In-App Purchase: `Z95PS2LD73`)
+  - [ ] Complete metadata + rename products in App Store Connect
+  - [ ] Create `pepinillo_plus` + `everywhere_plus` entitlements in RevenueCat
+  - [ ] Create new RevenueCat offerings with canonical naming
+  - [ ] Configure S2S Notifications webhook in App Store Connect
 
 ### Product Reset Direction (2026-04-21)
 
@@ -114,7 +123,7 @@
   - User identification integrated with Sign in with Apple flow
   - Grace period support via RevenueCat entitlements
   - Paywall implemented
-  - **Target packaging:** Apple Unlock + Everywhere Monthly + Everywhere Annual
+  - **Target packaging:** Pepinillo+ + Everywhere/AI+ Monthly + Everywhere/AI+ Annual
 
 ### RevenueCat Backend: Secret API key configured
 
@@ -264,7 +273,7 @@
 - **Cross-platform billing stack parity:** iOS and Android both use RevenueCat (core setup completed)
   - iOS uses RevenueCat SDK v5+ (wrapping StoreKit 2)
   - Android uses RevenueCat Purchases SDK v8.10.0
-  - Packaging still needs migration to Apple Unlock + Everywhere
+  - Packaging still needs migration to Pepinillo+ + Everywhere/AI+ (external RevenueCat + App Store Connect config pending)
 - **RevenueCat Backend:** Secret API key configured
   - Secret API Key (V2): `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (label: "Pepinillo Backend")
   - Webhook handler: `POST /api/v1/webhooks/revenuecat` (implemented)
@@ -409,9 +418,9 @@
 | ----------------------------------- | ---------------------------------- | --------------------------------------- | -------------------------------------------------------- |
 | Billing SDK                         | ✅ RevenueCat SDK v5+ (StoreKit 2) | ✅ RevenueCat SDK v8.10.0 (Purchases)   | Core cross-platform billing parity established           |
 | Paywall UI                          | ✅                                 | ✅                                      | Available on both platforms                              |
-| Feature gating                      | ✅ Legacy gating enforced          | ⚠️ Partial                              | Next step is capability-based gating for Apple Unlock vs Everywhere |
+| Feature gating                      | ✅ Legacy gating enforced          | ⚠️ Partial                              | Next step is capability-based gating for Pepinillo+ vs Everywhere/AI+ |
 | Products (current runtime)          | ✅ monthly/annual/lifetime         | ✅ monthly/annual/lifetime              | Legacy single-tier model still configured                |
-| Products (target rollout)           | 📋 Apple Unlock + Everywhere       | 📋 Everywhere monthly/annual            | Approved commercial direction as of 2026-04-21           |
+| Products (target rollout)           | 📋 Pepinillo+ + Everywhere/AI+     | 📋 Everywhere/AI+ monthly/annual        | Approved commercial direction (v3.1, 2026-04-22). iOS code aligned; RC + ASC config pending |
 | Entitlements verification           | ✅ RevenueCat entitlements (`pro`) | ✅ RevenueCat entitlements (`premium`)  | Naming drift still needs harmonization and capability split |
 | AI credit ledger                    | ⬜                                  | ⬜                                       | Backend work not started                                 |
 
