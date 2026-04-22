@@ -107,6 +107,110 @@ class SyncEngineTest {
     }
 
     // -----------------------------------------------------------------------
+    // syncAll -- no-op when canSync = false (Pepinillo+ / FREE)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncAll is no-op when canSync is false (PEPINILLO_PLUS)`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { subscriptionManager.subscriptionState } returns MutableStateFlow(
+            SubscriptionState(tier = SubscriptionTier.PEPINILLO_PLUS)
+        )
+        // Re-create engine so it picks up the new subscriptionManager state
+        syncEngine = SyncEngine(
+            context = context,
+            taskDao = taskDao,
+            subtaskDao = subtaskDao,
+            sessionDao = sessionDao,
+            dailyStatsDao = dailyStatsDao,
+            preferenceSyncDao = preferenceSyncDao,
+            userPreferencesRepository = userPreferencesRepository,
+            apiClient = apiClient,
+            authStore = authStore,
+            settingsSyncEngine = settingsSyncEngine,
+            syncMetadataStore = syncMetadataStore,
+            syncStatusManager = syncStatusManager,
+            subscriptionManager = subscriptionManager,
+        )
+
+        val result = syncEngine.syncAll()
+
+        // Should return Success (no error) but make zero network calls
+        assertEquals(SyncResult.Success, result)
+        coVerify(exactly = 0) { settingsSyncEngine.syncSettings() }
+        coVerify(exactly = 0) { apiClient.syncTasks(any()) }
+        coVerify(exactly = 0) { apiClient.syncSessions(any()) }
+    }
+
+    @Test
+    fun `syncAll is no-op when canSync is false (FREE)`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { subscriptionManager.subscriptionState } returns MutableStateFlow(
+            SubscriptionState(tier = SubscriptionTier.FREE)
+        )
+        syncEngine = SyncEngine(
+            context = context,
+            taskDao = taskDao,
+            subtaskDao = subtaskDao,
+            sessionDao = sessionDao,
+            dailyStatsDao = dailyStatsDao,
+            preferenceSyncDao = preferenceSyncDao,
+            userPreferencesRepository = userPreferencesRepository,
+            apiClient = apiClient,
+            authStore = authStore,
+            settingsSyncEngine = settingsSyncEngine,
+            syncMetadataStore = syncMetadataStore,
+            syncStatusManager = syncStatusManager,
+            subscriptionManager = subscriptionManager,
+        )
+
+        val result = syncEngine.syncAll()
+
+        assertEquals(SyncResult.Success, result)
+        coVerify(exactly = 0) { settingsSyncEngine.syncSettings() }
+    }
+
+    @Test
+    fun `syncAll proceeds when canSync is true (EVERYWHERE_MONTHLY)`() = runTest {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.getUserId() } returns "user-1"
+        every { subscriptionManager.subscriptionState } returns MutableStateFlow(
+            SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
+        )
+        syncEngine = SyncEngine(
+            context = context,
+            taskDao = taskDao,
+            subtaskDao = subtaskDao,
+            sessionDao = sessionDao,
+            dailyStatsDao = dailyStatsDao,
+            preferenceSyncDao = preferenceSyncDao,
+            userPreferencesRepository = userPreferencesRepository,
+            apiClient = apiClient,
+            authStore = authStore,
+            settingsSyncEngine = settingsSyncEngine,
+            syncMetadataStore = syncMetadataStore,
+            syncStatusManager = syncStatusManager,
+            subscriptionManager = subscriptionManager,
+        )
+
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(emptyList())
+        coEvery { sessionDao.getDirtySessions() } returns emptyList()
+        coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(
+            dev.creapolis.pepinillo.core.network.SessionSyncResponse(
+                sessions = emptyList(),
+                serverTimestamp = "2025-01-01T00:00:00Z"
+            )
+        )
+        coEvery { apiClient.getStats(any(), any()) } returns NetworkResult.Success(emptyList())
+
+        val result = syncEngine.syncAll()
+
+        assertEquals(SyncResult.Success, result)
+        coVerify { settingsSyncEngine.syncSettings() }
+    }
+
+    // -----------------------------------------------------------------------
     // syncAll -- calls phases in correct order
     // -----------------------------------------------------------------------
 
