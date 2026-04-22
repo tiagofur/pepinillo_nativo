@@ -9,7 +9,7 @@ import Foundation
 
 // MARK: - User Capabilities
 
-struct UserCapabilities: Equatable, Sendable {
+struct UserCapabilities: Equatable, Sendable, Codable {
     // MARK: Apple Unlock (one-time purchase)
     /// Flowtime, Time Block, unlimited tasks, subtasks, recurrence,
     /// premium themes, premium soundscapes, all widgets, watchOS companion.
