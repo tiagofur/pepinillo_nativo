@@ -41,4 +41,4 @@ updated: 2026-04-21
 
 ## Nota comercial
 
-En Android, Flowtime y TimeBlock forman parte de `Everywhere`. `Apple Unlock` no aplica fuera del ecosistema Apple.
+En Android, Flowtime y TimeBlock forman parte de `Everywhere/AI+`. `Pepinillo+` no aplica fuera del ecosistema Apple.

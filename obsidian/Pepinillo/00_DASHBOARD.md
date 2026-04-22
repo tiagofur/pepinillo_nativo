@@ -34,7 +34,7 @@ updated: 2026-04-21
 > [!warning] Bloqueantes externos esperables
 > - Dashboards de stores/suscripciones (App Store Connect, Play Console, RevenueCat)
 > - Deploy/ops segun ventana de release
-> - Migracion comercial v2 (Apple Unlock + Everywhere) todavia pendiente en runtime
+> - Migracion comercial v3.1 (Pepinillo+ + Everywhere/AI+) — codigo iOS alineado; config externa en RevenueCat + App Store Connect pendiente
 
 ## Progreso por streams
 

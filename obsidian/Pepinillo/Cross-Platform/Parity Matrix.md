@@ -75,8 +75,8 @@ updated: 2026-04-21
 | Dashboard diario | ✅ | ✅ | 🚧 | 🚧 | |
 | Weekly review | ✅ | ✅ | 📋 | 📋 | |
 | Monthly review | ✅ | ✅ | 📋 | 📋 | |
-| Apple Unlock (premium local) | 📋 | N/A | 📋 | N/A | rollout Apple-first |
-| Everywhere (sync + IA) | 📋 | 📋 | 🚧 | 🚧 | suscripcion recurrente |
+| **Pepinillo+** (premium local, compra unica) | 📋 | N/A | 📋 | N/A | rollout Apple-first |
+| **Everywhere/AI+** (sync + IA, suscripcion) | 📋 | 📋 | 🚧 | 🚧 | suscripcion recurrente |
 | Capability-based gating | 📋 | 📋 | 📋 | 📋 | reemplaza `pro` / `premium` legacy |
 | Paywall / entitlement propagation | ✅ legacy | ✅ legacy | 🚧 | 🚧 | companion surfaces todavia parciales |
 

@@ -36,4 +36,4 @@ El comportamiento de negocio debe coincidir con [[../Android/Modulo Tasks|Androi
 
 ## Nota comercial
 
-En Apple, subtareas y recurrencia viven bajo `Apple Unlock`. El backend sync de Tasks solo forma parte de `Everywhere`.
+En Apple, subtareas y recurrencia viven bajo `Pepinillo+`. El backend sync de Tasks solo forma parte de `Everywhere/AI+`.

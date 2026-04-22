@@ -38,11 +38,11 @@ updated: 2026-04-21
 
 | Capability / oferta | Regla |
 |---|---|
-| Oferta paga Android | `Everywhere Monthly` o `Everywhere Annual` durante el rollout Apple-first |
-| Premium local Android | viene incluido dentro de `Everywhere` |
-| Backend sync | solo con `Everywhere` |
+| Oferta paga Android | `Everywhere/AI+ Monthly` o `Everywhere/AI+ Annual` durante el rollout Apple-first |
+| Premium local Android | viene incluido dentro de `Everywhere/AI+` |
+| Backend sync | solo con `Everywhere/AI+` |
 | Wear OS | hereda estado desde Android companion |
-| Apple Unlock | no aplica a Android / Wear OS |
+| Pepinillo+ | no aplica a Android / Wear OS |
 | Runtime actual | todavia usa un flag `premium` legacy, pendiente capability split |
 
 ## Shell phone y stream de paridad

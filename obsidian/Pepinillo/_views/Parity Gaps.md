@@ -21,9 +21,10 @@ updated: 2026-04-21
 
 ## Brechas conocidas (hoy)
 
-> [!warning] Monetizacion v2 todavia no llego al runtime
-> - ✅ PRD + vault: alineados a Apple Unlock + Everywhere
-> - 🚧 iOS / Android / backend: siguen con modelo legacy `pro` / `premium`
+> [!warning] Monetizacion v3.1 — codigo iOS alineado, config externa pendiente
+> - ✅ iOS codigo: `Pepinillo+` / `Everywhere/AI+` — entitlements, paywall, storekit, mocks
+> - ⬜ RevenueCat: claves API revocadas, entitlements/offerings legacy pendientes
+> - 🚧 Android / backend: siguen con modelo legacy `pro` / `premium`
 
 > [!warning] Backend sin capability split ni creditos IA
 > - ⬜ `local_premium`, `apple_cloud_sync`, `backend_sync`, `ai_credits_monthly`
@@ -61,14 +62,15 @@ updated: 2026-04-21
 > - ⬜ documentar si profile/billing/gating necesitan propagacion explicita desde el companion Android
 
 > [!warning] Feature gating en watchOS / Wear OS
-> - 🚧 Estado de Apple Unlock / Everywhere no propagado a watch surfaces
+> - 🚧 Estado de Pepinillo+ / Everywhere/AI+ no propagado a watch surfaces
 
 ---
 
 ## Pendientes por resolver (checklist operativo)
 
 ### 🍎 iOS — pendientes
-- [ ] Crear productos Apple Unlock + Everywhere en RevenueCat / StoreKit
+- [ ] Crear entitlements `pepinillo_plus` + `everywhere_plus` y offerings en RevenueCat
+- [ ] Completar metadata de productos en App Store Connect (nombres + precios)
 - [ ] Migrar del flag `pro` a capability split en cliente iOS
 - [ ] Xcode setup (no-code): App Group, CloudKit, StoreKit config
 - [ ] iPad layouts (NavigationSplitView)
@@ -91,7 +93,7 @@ updated: 2026-04-21
 - [ ] OEM testing (Samsung, Pixel, Xiaomi, OnePlus)
 
 ### ⌚ watchOS — pendientes
-- [ ] Propagacion de Apple Unlock / Everywhere desde iPhone
+- [ ] Propagacion de Pepinillo+ / Everywhere/AI+ desde iPhone
 - [ ] Session journaling UX simplificada
 - [ ] Task linking en sesión
 - [ ] Energy levels UI

@@ -11,7 +11,7 @@ type: adr
 status: accepted
 adr-number: "001"
 date: 2026-04-21
-updated: 2026-04-21
+updated: 2026-04-22
 ---
 
 # 📋 ADR-001: Adoptar monetizacion Apple-first con premium local separado de sync e IA
@@ -19,6 +19,7 @@ updated: 2026-04-21
 **Estado:** `accepted`
 **Plataforma:** cross-platform
 **Fecha:** 2026-04-21
+**Naming v3.1 (2026-04-22):** `Apple Unlock` → **`Pepinillo+`** · `Pepinillo Everywhere` → **`Everywhere/AI+`**
 
 ---
 
@@ -32,10 +33,12 @@ El modelo comercial vigente mezclaba en un solo `Pro` tres cosas distintas: prem
 
 **Decidimos:** lanzar una estrategia Apple-first con dos capas pagas.
 
-- `Apple Unlock`: compra unica para premium local Apple + iCloud.
-- `Pepinillo Everywhere`: suscripcion recurrente para backend sync + creditos IA.
+- `Pepinillo+`: compra unica para premium local Apple + iCloud + Apple Intelligence. **No es una suscripcion.**
+- `Everywhere/AI+`: suscripcion recurrente (mensual o anual) para backend sync + creditos IA cloud.
 
-`Everywhere` sera superconjunto de `Apple Unlock` en Apple. El lifetime legacy se grandfather a `Apple Unlock`, pero no otorga sync o IA perpetuos.
+`Everywhere/AI+` es superconjunto de `Pepinillo+` en Apple. El lifetime legacy se grandfather a `Pepinillo+`, pero no otorga sync o IA perpetuos.
+
+> **Nota de naming:** Las versiones iniciales del ADR usaban `Apple Unlock` y `Pepinillo Everywhere`. El nombre canonico actual (v3.1) es `Pepinillo+` y `Everywhere/AI+`. Los entitlement IDs de RevenueCat son `pepinillo_plus` y `everywhere_plus`.
 
 ---
 
@@ -43,9 +46,9 @@ El modelo comercial vigente mezclaba en un solo `Pro` tres cosas distintas: prem
 
 | Opcion | Pros | Contras |
 |---|---|---|
-| **Apple Unlock + Everywhere (elegida)** | separa costo local de costo recurrente, crea entry point mas accesible en Apple, hace sustentable sync e IA | agrega complejidad de rollout y capability split |
+| **Pepinillo+ + Everywhere/AI+ (elegida)** | separa costo local de costo recurrente, crea entry point mas accesible en Apple, hace sustentable sync e IA | agrega complejidad de rollout y capability split |
 | Una sola suscripcion para todo | mensaje simple, menos complejidad tecnica al inicio | cobra recurrente por valor local Apple, reduce atractivo de compra unica |
-| Apple Unlock + sync + add-on IA separado | maximiza monetizacion por capas | demasiado complejo para usuario y para enforcement inicial |
+| Pepinillo+ + sync + add-on IA separado | maximiza monetizacion por capas | demasiado complejo para usuario y para enforcement inicial |
 
 ---
 

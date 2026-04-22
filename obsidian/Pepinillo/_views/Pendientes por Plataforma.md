@@ -49,10 +49,13 @@ Actualizar esta lista cada sprint:
 
 | Plataforma | Item | Referencia |
 |---|---|---|
-| iOS | Crear Apple Unlock + Everywhere en RevenueCat / StoreKit | [[../iOS/Arquitectura General]] |
+| iOS | [BLOCKER] Actualizar claves API revocadas en RevenueCat | [[../iOS/Arquitectura General]] |
+| iOS | Crear entitlements `pepinillo_plus`/`everywhere_plus` + offerings en RevenueCat | [[../iOS/Arquitectura General]] |
+| iOS | Completar metadata + renombrar productos en App Store Connect | [[../iOS/Arquitectura General]] |
+| iOS | Configurar S2S Notifications webhook en App Store Connect | [[../Backend/Autenticacion & Suscripciones]] |
 | Backend | Capability split + creditos IA mensuales | [[../Backend/Autenticacion & Suscripciones]] |
-| Android | Migrar billing legacy a Everywhere | [[../Backend/Autenticacion & Suscripciones]] |
-| watchOS + Wear OS | Propagar entitlements nuevos desde companion app | [[../Cross-Platform/Parity Matrix]] |
+| Android | Migrar billing legacy a Everywhere/AI+ | [[../Backend/Autenticacion & Suscripciones]] |
+| watchOS + Wear OS | Propagar entitlements Pepinillo+/Everywhere/AI+ desde companion app | [[../Cross-Platform/Parity Matrix]] |
 
 ---
 
@@ -60,9 +63,12 @@ Actualizar esta lista cada sprint:
 
 > Reemplazá esta sección al iniciar un sprint nuevo usando `[[_templates/Template - Sprint]]`.
 
-- [ ] Crear offers Apple Unlock + Everywhere en Apple
+- [ ] [BLOCKER] Actualizar claves API revocadas en RevenueCat (Key IDs: `22YZT9D55J` + `Z95PS2LD73`)
+- [ ] Crear entitlements `pepinillo_plus` + `everywhere_plus` en RevenueCat y asociar productos
+- [ ] Crear offerings "Pepinillo+" y "Everywhere/AI+" en RevenueCat
+- [ ] Completar metadata en App Store Connect + configurar S2S Notifications
 - [ ] Diseñar capability split backend + ledger IA
-- [ ] Migrar Android de `premium` legacy a Everywhere
+- [ ] Migrar Android de `premium` legacy a Everywhere/AI+
 - [ ] Propagar entitlements a watchOS y Wear OS
 
 ---

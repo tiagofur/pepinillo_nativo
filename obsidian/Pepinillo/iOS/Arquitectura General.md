@@ -47,9 +47,9 @@ updated: 2026-04-21
 
 | Capability | Regla |
 |---|---|
-| Premium local Apple | `Apple Unlock` o `Everywhere` habilitan features premium locales |
-| iCloud / CloudKit | solo con `Apple Unlock` o `Everywhere` |
-| Backend sync | solo con `Everywhere` |
+| Premium local Apple | `Pepinillo+` o `Everywhere/AI+` habilitan features premium locales |
+| iCloud / CloudKit | solo con `Pepinillo+` o `Everywhere/AI+` |
+| Backend sync | solo con `Everywhere/AI+` |
 | watchOS | hereda estado desde iPhone companion |
 | Runtime actual | todavia usa un unico flag `pro`, pendiente capability split |
 

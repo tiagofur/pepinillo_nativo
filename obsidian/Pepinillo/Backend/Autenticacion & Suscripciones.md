@@ -74,9 +74,9 @@ Logout:
 
 | Oferta | Producto target | Precio | Cobertura |
 |---|---|---|---|
-| Apple Unlock | `com.pepinillo.app.apple.unlock` | $19.99 / $9.99 LATAM | premium local Apple + iCloud |
-| Everywhere Monthly | `com.pepinillo.app.everywhere.monthly` | $4.99 / $2.49 LATAM | backend sync + creditos IA |
-| Everywhere Annual | `com.pepinillo.app.everywhere.annual` | $34.99 / $17.99 LATAM | backend sync + creditos IA |
+| Pepinillo+ | `com.pepinillo.app.pro.lifetime` | $19.99 / $9.99 LATAM | premium local Apple + iCloud + Apple Intelligence |
+| Everywhere/AI+ Monthly | `com.pepinillo.app.pro.monthly` | $4.99 / $2.49 LATAM | backend sync + creditos IA |
+| Everywhere/AI+ Annual | `com.pepinillo.app.pro.annual` | $34.99 / $17.99 LATAM | backend sync + creditos IA |
 
 > [!warning] Runtime actual
 > El runtime todavia usa SKUs legacy `com.pepinillo.app.pro.*` y un unico flag `pro` / `premium`.
@@ -122,7 +122,7 @@ POST /api/v1/webhooks/revenuecat   (solo backend, no llamar desde cliente)
 ## Checklist de paridad
 
 - iOS y Android deben converger del naming legacy `pro` / `premium` a capabilities compartidas.
-- watchOS y Wear OS deben respetar `Apple Unlock` / `Everywhere` recibido desde companion app.
+- watchOS y Wear OS deben respetar `Pepinillo+` / `Everywhere/AI+` recibido desde companion app.
 - Cambios de pricing se actualizan aquí, en PRD y en configuraciones de stores.
 
 Ver tambien: [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]

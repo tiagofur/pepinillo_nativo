@@ -33,8 +33,8 @@ updated: 2026-04-21
 ## Monetizacion y entitlement
 
 - Wear OS hereda entitlement desde Android phone.
-- `Everywhere` es la unica oferta paga valida para Android + Wear OS durante el rollout actual.
-- `Apple Unlock` no aplica a Wear OS.
+- `Everywhere/AI+` es la unica oferta paga valida para Android + Wear OS durante el rollout actual.
+- `Pepinillo+` no aplica a Wear OS.
 - El capability split objetivo debe propagarse desde companion app a tiles, complications y vistas de stats.
 
 ## Checklist de calidad
