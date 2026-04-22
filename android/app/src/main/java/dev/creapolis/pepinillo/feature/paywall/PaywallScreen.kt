@@ -146,12 +146,13 @@ fun PaywallScreen(
         if (uiState.products.isNotEmpty()) {
             uiState.products.forEach { product ->
                 val isSelected = product.productId == uiState.selectedProductId
-                val isAnnual = product.productId == PepinilloProducts.ANNUAL
+                val isAnnual = product.productId == PepinilloProducts.EVERYWHERE_ANNUAL
                 ProductCard(
                     name = when {
-                        product.productId == PepinilloProducts.MONTHLY -> "Monthly"
-                        product.productId == PepinilloProducts.ANNUAL -> "Annual"
-                        product.productId == PepinilloProducts.LIFETIME -> "Lifetime"
+                        product.productId == PepinilloProducts.EVERYWHERE_MONTHLY -> "Monthly"
+                        product.productId == PepinilloProducts.EVERYWHERE_ANNUAL -> "Annual"
+                        product.productId == PepinilloProducts.EVERYWHERE_LIFETIME -> "Lifetime"
+                        product.productId == PepinilloProducts.PEPINILLO_PLUS -> "Pepinillo+"
                         else -> product.title
                     },
                     price = product.formattedPrice,

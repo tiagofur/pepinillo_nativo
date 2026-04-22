@@ -1,6 +1,10 @@
 package dev.creapolis.pepinillo.data.sync
 
+import android.content.Context
 import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
+import dev.creapolis.pepinillo.core.billing.SubscriptionState
+import dev.creapolis.pepinillo.core.billing.SubscriptionTier
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
@@ -21,6 +25,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -40,6 +45,9 @@ class SyncEngineTest {
     private lateinit var authStore: AuthStore
     private lateinit var settingsSyncEngine: SettingsSyncEngine
     private lateinit var syncMetadataStore: SyncMetadataStore
+    private lateinit var syncStatusManager: SyncStatusManager
+    private lateinit var subscriptionManager: SubscriptionManager
+    private lateinit var context: Context
     private lateinit var syncEngine: SyncEngine
 
     @Before
@@ -54,11 +62,20 @@ class SyncEngineTest {
         authStore = mockk(relaxed = true)
         settingsSyncEngine = mockk(relaxed = true)
         syncMetadataStore = mockk(relaxed = true)
+        syncStatusManager = mockk(relaxed = true)
+        subscriptionManager = mockk(relaxed = true)
+        context = mockk(relaxed = true)
 
         every { userPreferencesRepository.preferences } returns flowOf(UserPreferences())
         coEvery { settingsSyncEngine.syncSettings() } returns Result.success(Unit)
 
+        // Default: Everywhere+ so existing syncAll tests still reach the sync logic
+        every { subscriptionManager.subscriptionState } returns MutableStateFlow(
+            SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
+        )
+
         syncEngine = SyncEngine(
+            context = context,
             taskDao = taskDao,
             subtaskDao = subtaskDao,
             sessionDao = sessionDao,
@@ -69,6 +86,8 @@ class SyncEngineTest {
             authStore = authStore,
             settingsSyncEngine = settingsSyncEngine,
             syncMetadataStore = syncMetadataStore,
+            syncStatusManager = syncStatusManager,
+            subscriptionManager = subscriptionManager,
         )
     }
 

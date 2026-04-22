@@ -179,7 +179,7 @@ class FocusViewModelTest {
 
     @Test
     fun `selectMode with pro mode Flow with subscription works`() = runTest {
-        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.PRO_MONTHLY)
+        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
         viewModel.selectMode(FocusMode.Flow)
         assertEquals(FocusMode.Flow, engine.state.value.mode)
         assertFalse(viewModel.uiState.value.showPaywall)
@@ -187,7 +187,7 @@ class FocusViewModelTest {
 
     @Test
     fun `selectMode with pro mode Blocks with subscription works`() = runTest {
-        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.PRO_YEARLY)
+        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL)
         viewModel.selectMode(FocusMode.Blocks)
         assertEquals(FocusMode.Blocks, engine.state.value.mode)
         assertFalse(viewModel.uiState.value.showPaywall)
@@ -195,7 +195,7 @@ class FocusViewModelTest {
 
     @Test
     fun `selectMode with lifetime subscription allows all modes`() = runTest {
-        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.LIFETIME)
+        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_LIFETIME)
         viewModel.selectMode(FocusMode.Flow)
         assertEquals(FocusMode.Flow, engine.state.value.mode)
         viewModel.selectMode(FocusMode.Blocks)

@@ -37,6 +37,8 @@ private class FakeFocusSessionDao : FocusSessionDao {
     override suspend fun getAllSessionsSync(): List<FocusSessionEntity> = emptyList()
     override suspend fun getSessionCount(): Int = 0
     override suspend fun deleteAll() = Unit
+    override suspend fun updateLinkedTaskId(sessionId: String, taskId: String) = Unit
+    override fun getDirtySessionCount(): Flow<Int> = flowOf(0)
 }
 
 private class FakeDailyStatsDao : DailyStatsDao {

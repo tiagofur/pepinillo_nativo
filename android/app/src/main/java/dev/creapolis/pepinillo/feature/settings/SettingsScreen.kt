@@ -266,9 +266,10 @@ fun SettingsScreen(
                         )
                         Text(
                             text = when (uiState.subscriptionTier) {
-                                SubscriptionTier.PRO_MONTHLY -> "Monthly subscription"
-                                SubscriptionTier.PRO_YEARLY -> "Annual subscription"
-                                SubscriptionTier.LIFETIME -> "Lifetime access"
+                                SubscriptionTier.PEPINILLO_PLUS -> "Pepinillo+ access"
+                                SubscriptionTier.EVERYWHERE_MONTHLY -> "Monthly subscription"
+                                SubscriptionTier.EVERYWHERE_ANNUAL -> "Annual subscription"
+                                SubscriptionTier.EVERYWHERE_LIFETIME -> "Lifetime access"
                                 else -> ""
                             },
                             style = MaterialTheme.typography.bodySmall,
