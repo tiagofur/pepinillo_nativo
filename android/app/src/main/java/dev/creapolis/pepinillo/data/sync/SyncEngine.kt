@@ -107,9 +107,9 @@ class SyncEngine @Inject constructor(
             return SyncResult.NotAuthenticated
         }
 
-        // Gate: Only PRO users can sync
-        if (!subscriptionManager.subscriptionState.value.isPro) {
-            println("[$TAG]syncAll: FREE TIER - SKIPPING CLOUD SYNC")
+        // Gate: Only Everywhere+ users can sync to the backend
+        if (!subscriptionManager.subscriptionState.value.canSync) {
+            println("[$TAG]syncAll: TIER ${subscriptionManager.subscriptionState.value.tier} - NO BACKEND SYNC ENTITLEMENT")
             return SyncResult.Success
         }
 
