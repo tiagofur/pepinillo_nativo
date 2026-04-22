@@ -1,17 +1,17 @@
 package middleware
 
 import (
-	"strings"
-
 	"github.com/gofiber/fiber/v2"
 
 	"pepinillo/backend/internal/ports"
 )
 
 const (
-	FreeTier   string = "free"
-	ProMonthly string = "pro_monthly"
-	ProAnnual  string = "pro_annual"
+	FreeTier              string = "free"
+	PepinilloPlus         string = "pepinillo_plus"
+	EverywhereMonthly     string = "everywhere_monthly"
+	EverywhereAnnual      string = "everywhere_annual"
+	EverywhereLifetime    string = "everywhere_lifetime"
 )
 
 type SubscriptionTier string
@@ -40,7 +40,7 @@ func GetTierLimits(tier string) TierLimits {
 			CustomTimer:       false,
 			ModeSwitching:     false,
 		}
-	case ProMonthly, ProAnnual:
+	case PepinilloPlus, EverywhereMonthly, EverywhereAnnual, EverywhereLifetime:
 		return TierLimits{
 			Tier:              tier,
 			MaxTasks:          10000,
@@ -65,19 +65,27 @@ func GetTierLimits(tier string) TierLimits {
 	}
 }
 
-func IsProTier(tier string) bool {
-	return tier == ProMonthly || tier == ProAnnual
+// CanSync returns true only for the three Everywhere+ tiers that have backend
+// VPS sync. Free and Pepinillo+ do not have backend sync capability.
+func CanSync(tier string) bool {
+	return tier == EverywhereMonthly || tier == EverywhereAnnual || tier == EverywhereLifetime
 }
 
+// NormalizeTier maps a raw tier string from the database to one of the five
+// canonical tier constants. Unknown or legacy strings map to "free".
+// This is a clean cutover — no legacy aliases are accepted.
 func NormalizeTier(tier string) string {
-	normalized := strings.ToLower(strings.TrimSpace(tier))
-	switch normalized {
-	case "premium", "pro", "pro_monthly", "pro-monthly":
-		return ProMonthly
-	case "pro_annual", "pro-annual":
-		return ProAnnual
-	case "free", "":
+	switch tier {
+	case FreeTier:
 		return FreeTier
+	case PepinilloPlus:
+		return PepinilloPlus
+	case EverywhereMonthly:
+		return EverywhereMonthly
+	case EverywhereAnnual:
+		return EverywhereAnnual
+	case EverywhereLifetime:
+		return EverywhereLifetime
 	default:
 		return FreeTier
 	}
@@ -128,7 +136,8 @@ func NewSubscriptionMiddleware(userRepo ports.UserRepository) fiber.Handler {
 
 		c.Locals("tier", tier)
 		c.Locals("tierLimits", GetTierLimits(tier))
-		c.Locals("isPro", IsProTier(tier))
+		c.Locals("isPro", CanSync(tier))
+		c.Locals("subscription_expires_at", user.SubscriptionExpiresAt)
 
 		return c.Next()
 	}

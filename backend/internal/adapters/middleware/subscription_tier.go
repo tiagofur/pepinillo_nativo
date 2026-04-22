@@ -28,18 +28,21 @@ func NewRequireProFeatureMiddleware(feature string) fiber.Handler {
 	}
 }
 
+// RequireProFeatureAccess returns true when the given feature requires premium
+// access AND the current tier does NOT have it, i.e. access should be blocked.
 func RequireProFeatureAccess(feature string, tier string) bool {
+	limits := GetTierLimits(tier)
 	switch feature {
 	case "ai_insights":
-		return tier == "pro_monthly" || tier == "pro_annual"
+		return !limits.AIInsights
 	case "predictions":
-		return tier == "pro_monthly" || tier == "pro_annual"
+		return !limits.Predictions
 	case "advanced_analytics":
-		return tier == "pro_monthly" || tier == "pro_annual"
+		return !limits.AdvancedAnalytics
 	case "custom_timer":
-		return tier == "pro_monthly" || tier == "pro_annual"
+		return !limits.CustomTimer
 	case "mode_switching":
-		return tier == "pro_monthly" || tier == "pro_annual"
+		return !limits.ModeSwitching
 	default:
 		return false
 	}
