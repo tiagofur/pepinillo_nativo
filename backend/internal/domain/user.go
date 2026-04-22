@@ -16,6 +16,10 @@ type User struct {
 	PendingEmail          *string    `json:"pendingEmail,omitempty" gorm:"index"`
 	EmailChangedAt        *time.Time `json:"emailChangedAt,omitempty"`
 
+	// Pepinillo+ one-time purchase entitlement timestamp (set when purchase is
+	// confirmed, never cleared by Everywhere+ activation/cancellation).
+	PepinilloPlusEntitlementAt *time.Time `json:"pepinilloPlusEntitlementAt,omitempty"`
+
 	// Google OAuth
 	GoogleID      *string `json:"googleId,omitempty" gorm:"uniqueIndex"`
 	GoogleEmail   *string `json:"googleEmail,omitempty"`

@@ -22,8 +22,41 @@ import (
 	"sync"
 	"time"
 
+	"pepinillo/backend/internal/domain"
 	"pepinillo/backend/internal/ports"
 )
+
+// EffectiveTier resolves the user's actual tier from the combination of their
+// stored subscription_tier, subscription_expires_at, and the
+// pepinillo_plus_entitlement_at one-time purchase timestamp.
+//
+// Resolution order:
+//  1. If tier is one of the three Everywhere+ variants AND the subscription is
+//     not expired (or has no expiry, e.g. lifetime), return that tier.
+//  2. If an Everywhere+ tier is expired, fall through.
+//  3. If pepinillo_plus_entitlement_at is set, return "pepinillo_plus".
+//  4. If subscription_tier is explicitly "pepinillo_plus", return "pepinillo_plus".
+//  5. Otherwise return "free".
+func EffectiveTier(u *domain.User) string {
+	now := time.Now().UTC()
+
+	switch u.SubscriptionTier {
+	case "everywhere_monthly", "everywhere_annual", "everywhere_lifetime":
+		// Lifetime has no expiry; for monthly/annual, check expiry.
+		if u.SubscriptionExpiresAt == nil || u.SubscriptionExpiresAt.After(now) {
+			return u.SubscriptionTier
+		}
+		// Subscription expired — fall through to entitlement check.
+	}
+
+	if u.PepinilloPlusEntitlementAt != nil {
+		return "pepinillo_plus"
+	}
+	if u.SubscriptionTier == "pepinillo_plus" {
+		return "pepinillo_plus"
+	}
+	return "free"
+}
 
 var (
 	ErrInvalidBillingPlatform       = errors.New("invalid_billing_platform")
