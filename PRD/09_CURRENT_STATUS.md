@@ -30,7 +30,7 @@
 - **Primary implementation debt:** 
   1. Enable `AppConfig.aiInsightsEnabled = true` (feature flag currently OFF)
   2. Redesign Paywall for Pepinillo+ vs Everywhere/AI+ tiers
-  3. Update RevenueCat entitlements to `apple_unlock` + `everywhere` (currently `premium`/`pro`)
+  3. Update RevenueCat entitlements to `pepinillo_plus` + `everywhere_plus` (currently `premium`/`pro`)
   4. Update App Store Connect product metadata with new names and descriptions
 
 ### Product Reset Direction (2026-04-21)
@@ -38,6 +38,7 @@
 - **Hero user:** knowledge worker / creative doing deep work daily.
 - **Canonical product pillars:** `Execute`, `Plan`, `Reflect`, and `Admin`.
 - **Canonical phone surfaces:** `Focus`, `Plan`, and `Dashboard` as primary destinations; `Account / Admin` lives outside the main productivity axis.
+- **Current runtime baseline during transition:** iPhone ships `Focus / Plan / Dashboard / More`; Android phone is converging to the same shell while ownership is consolidated.
 - **Current product gaps:** task depth is still too light, Dashboard/reviews are not yet a unified reflection engine, and AI positioning is more defined in strategy than in product behavior.
 - **Immediate product priority:** stop accumulating disconnected surfaces and redesign screen ownership before major new feature expansion.
 
@@ -152,9 +153,11 @@
 
 ### Navigation Parity R1 Progress (2026-04-20) ✅ / Transitional
 
-- The 4-tab parity pass aligned iOS and Android shells as a short-term baseline.
-- That baseline is now considered **transitional** under the product reset.
-- Next IA target: `Focus`, `Plan`, and `Dashboard` as primary productivity destinations, with `Account / Admin` holding Settings, Profile, Subscription, and support.
+- The current runtime phone baseline is `Focus`, `Plan`, `Dashboard`, and `More`.
+- `More` is the current shipping label for the Account / Admin surface, and owns profile, auth, subscription, settings, export, and support on iPhone.
+- Android phone is actively converging toward the same shell and ownership model.
+- That 4-surface baseline is still considered **transitional** under the product reset.
+- Next IA target: `Focus`, `Plan`, and `Dashboard` as primary productivity destinations, with `Account / Admin` holding Settings, Profile, Subscription, and support outside the main productivity axis.
 - Reviews and calendar entry points should consolidate under `Dashboard` or `Plan`, instead of remaining scattered across drawers and duplicated shortcuts.
 
 ### Widget/Build Stabilization (2026-04-20) ✅
@@ -169,11 +172,11 @@
 
 | Item                                | Priority | Notes                                                                                                  |
 | ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| ✅ Product reset IA + screen ownership | DONE     | 4-tab: Focus / Plan / Dashboard / Account("...") with full-screen NavigationLink pushes |
+| ✅ Product reset IA + screen ownership | DONE     | 4-tab runtime baseline: Focus / Plan / Dashboard / More, with More owning account/admin surfaces |
 | ✅ Account tab full-screen navigation | DONE     | Profile, Subscription, Export, Help all push as NavigationLink (Phase 5 complete) |
 | Enable Apple Intelligence (AI Reports) | P0    | Code is ready, just needs `AppConfig.aiInsightsEnabled = true` + paywall redesign |
 | Paywall redesign for Pepinillo+ / Everywhere/AI+ | P0 | Two-tier paywall: one-time vs subscription, Próximamente section |
-| RevenueCat entitlement reconfiguration | P0     | Map `pro.lifetime` → `apple_unlock`, `pro.monthly`/`pro.annual` → `everywhere` |
+| RevenueCat entitlement reconfiguration | P0     | Map `pro.lifetime` → `pepinillo_plus`, `pro.monthly`/`pro.annual` → `everywhere_plus` |
 | App Store Connect metadata update | P0       | New names, descriptions, and screenshots for the 3 products |
 | Demo data verification | P0       | Run `-seedDemoData` and verify Dashboard, AI Reports, charts all display correctly |
 | Feature gating enforcement | ✅ Done   | Legacy single-pro gating is in place; entitlement names updated for new tiers |
@@ -293,7 +296,8 @@
 
 | Item                           | Priority | Notes                                                                        |
 | ------------------------------ | -------- | ---------------------------------------------------------------------------- |
-| Product reset IA + screen ownership | P0    | Same conceptual shell as iOS: `Focus / Plan / Dashboard` with Settings moved under `Account / Admin` |
+| Product reset IA + screen ownership | P0    | Active runtime parity phase uses `Focus / Plan / Dashboard / More`; final 3-surface IA remains target-state |
+| More hub parity closures       | P0       | Complete dedicated Android equivalents for Help/Support, About, Export, and final profile/account ownership |
 | Feature gating enforcement     | P0       | Subtasks & recurrence are gated; analytics, widgets, and themes still need gating |
 | Complete paywall UI            | P0       | Subscription screen is functional but not complete                           |
 | Firebase Analytics/Crashlytics | P1       | Plugins commented out; missing `google-services.json`                        |
@@ -499,7 +503,7 @@
 | Push notifications                  | ✅ Implemented     | APNS (iOS) + FCM (Android)                                                      |
 | WebSocket                           | ✅ Implemented     | Real-time communication channel                                                 |
 | AI Insights                         | ✅ Implemented     | Gemini integration for productivity reports                                     |
-| OAuth social login                  | ❌ Not implemented | Google Sign-In and Sign In with Apple providers are still missing               |
+| OAuth social login                  | 🔄 Partial         | Sign in with Apple is implemented on iOS + backend; Android Google Sign-In/provider linking rollout is still pending |
 | Real-time multi-device coordination | ❌ Not implemented | WebSocket exists but cross-device coordination logic is still missing           |
 | Deployment                          | ❌ Not deployed    | Needs cloud hosting (Railway/Fly.io/VPS) + PostgreSQL + Redis                  |
 
@@ -542,14 +546,14 @@
 | #   | Task                                                                  | Priority | Dependencies       | Estimate |
 | --- | --------------------------------------------------------------------- | -------- | ------------------ | -------- |
 | 1   | Deploy backend to cloud hosting                                       | P0       | None               | 4-8h     |
-| 2   | Add OAuth providers (Google + Apple) to backend                       | P0       | #1 (deployment)    | 8-12h    |
-| 3   | Android: add Google Sign-In via Credential Manager                    | P0       | #2 (OAuth backend) | 6-8h     |
+| 2   | Complete remaining OAuth rollout (Google provider, account linking hardening) | P0 | #1 (deployment) | 8-12h |
+| 3   | Android: add Google Sign-In via Credential Manager                    | P0       | #2 (OAuth rollout) | 6-8h     |
 | 4   | ~~iOS: create API client, connect auth + sync to backend~~            | ✅ DONE  | #2 (OAuth backend) | Done     |
 | 5   | Improve sync engine (WebSocket real-time, bidirectional multi-device) | P1       | #1 (deployment)    | 12-16h   |
 | 6   | Monetization v2 capability split (`local_premium`, sync, AI credits)  | P0       | #1                 | 8-12h    |
 | 7   | AI credit ledger + monthly reset policy                               | P1       | #1, #6             | 10-14h   |
 | 8   | Cross-platform subscription verification                              | P1       | #1, #4, #6         | 8-12h    |
-| 9   | User profile screen (both platforms)                                  | P1       | #2, #3, #4, #8     | 8-12h    |
+| 9   | Account/profile parity refinement (both platforms)                    | P1       | #2, #3, #4, #8     | 8-12h    |
 
 ---
 

@@ -1,10 +1,12 @@
 # Monetization — Pepinillo (Apple-First Rollout)
 
-**Version:** 3.0  
+**Version:** 3.1  
 **Last Updated:** 2026-04-21  
 **Scope:** Canonical packaging, pricing, rollout, and entitlement architecture  
 **Authoritative Source for Packaging and Pricing:** This document  
 **Update Cadence:** Per commercial model change
+
+> **Changelog v3.1 (2026-04-21):** Renamed entitlement IDs `apple_unlock` → `pepinillo_plus` and `everywhere` → `everywhere_plus` for marketing-code alignment. No functional change.
 
 ---
 
@@ -235,12 +237,12 @@ AI+ Features (future, Everywhere/AI+):
 
 | Entitlement Name | Products | Capabilities Unlocked |
 | ---------------- | -------- | --------------------- |
-| `apple_unlock` | `pro.lifetime` | `localPremium`, `appleCloudSync`, `localAI`, `exportAccess` |
-| `everywhere` | `pro.monthly`, `pro.annual` | All `apple_unlock` + `backendSync`, `aiCreditsMonthly: 100`, `crossDeviceRestore` |
-| `premium` (legacy) | — | Grandfathered → `apple_unlock` if lifetime, `everywhere` if subscription |
+| `pepinillo_plus` | `pro.lifetime` | `localPremium`, `appleCloudSync`, `localAI`, `exportAccess` |
+| `everywhere_plus` | `pro.monthly`, `pro.annual` | All `pepinillo_plus` + `backendSync`, `aiCreditsMonthly: 100`, `crossDeviceRestore` |
+| `premium` (legacy) | — | Grandfathered → `pepinillo_plus` if lifetime, `everywhere_plus` if subscription |
 | `pro` (legacy) | — | Same mapping as `premium` |
 
-**Migration:** Existing `premium`/`pro` entitlement holders are grandfathered. Lifetime → `apple_unlock` capabilities. Subscription → `everywhere` capabilities. No user loses access.
+**Migration:** Existing `premium`/`pro` entitlement holders are grandfathered. Lifetime → `pepinillo_plus` capabilities. Subscription → `everywhere_plus` capabilities. No user loses access.
 
 ---
 
@@ -321,11 +323,25 @@ AI+ Features (future, Everywhere/AI+):
 | One-time purchase name | "Apple Unlock" | **Pepinillo+** |
 | Subscription name | "Pepinillo Everywhere" | **Everywhere/AI+** |
 | Product IDs | New IDs (not yet created) | **Reusing existing** `pro.lifetime`, `pro.monthly`, `pro.annual` |
-| RevenueCat entitlements | `apple_unlock`, `everywhere` (new) | Same names, mapped to existing products |
+| RevenueCat entitlements | `apple_unlock`, `everywhere` (new) | Same products, renamed to `pepinillo_plus`, `everywhere_plus` in v3.1 |
 | Apple Intelligence | Mentioned as "Local Intelligence" | **Full section** with implementation architecture |
 | AI+ features | "Monthly AI credits" | **Detailed:** Advanced Insights, AI Coach, Task Scheduling, Subtask Gen |
 | Próximamente strategy | Not defined | **Defined:** Only in paywall, not promoted elsewhere |
 | Transparency | Generic | **Explicit:** "Not a subscription" messaging throughout |
+
+---
+
+## Appendix: Changes from v3.0 → v3.1
+
+| Change | v3.0 | v3.1 |
+| ------ | ---- | ---- |
+| RC entitlement (one-time) | `apple_unlock` | **`pepinillo_plus`** |
+| RC entitlement (subscription) | `everywhere` | **`everywhere_plus`** |
+| Swift enum (SubscriptionState) | `.appleUnlock` / `.everywhere` | **`.pepinilloPlus`** / **`.everywherePlus`** |
+| Swift static (UserCapabilities) | `.appleUnlock` / `.everywhere` | **`.pepinilloPlus`** / **`.everywherePlus`** |
+| tierIdentifier string | `"apple_unlock"` / `"everywhere"` | **`"pepinillo_plus"`** / **`"everywhere_plus"`** |
+
+No product IDs or backend tier strings were changed. No functional behavior changed.
 
 ---
 

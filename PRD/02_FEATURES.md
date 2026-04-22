@@ -55,6 +55,7 @@
 - `Settings`, `Profile`, `Subscription`, and support belong under **Account / Admin**, not the main productivity axis.
 - `Weekly Review` and `Monthly Review` belong to `Dashboard`.
 - `Focus` remains the hero. `Plan` supports Focus. `Dashboard` teaches the user what to change next.
+- During the current transition, the shipping phone runtime may temporarily expose a fourth tab labeled `More` to host **Account / Admin** while ownership is consolidated. This does not change the target-state rule of 3 primary productivity destinations.
 
 ---
 
@@ -575,7 +576,7 @@ Historical session analysis to suggest the best focus mode by task type.
 - **Everywhere/AI+ Monthly**: `com.pepinillo.app.pro.monthly`
 - **Everywhere/AI+ Annual**: `com.pepinillo.app.pro.annual`
 - iOS Public API Key: `appl_xnChlVXXtUFhusIfJyNrNDcMGLj`
-- Entitlement resolution: `everywhere` > `apple_unlock` > legacy `premium`/`pro`
+- Entitlement resolution: `everywhere_plus` > `pepinillo_plus` > legacy `premium`/`pro`
 - Server-side verification via Go backend + RevenueCat
 - Native restore purchases
 - Grace period: 3 days supported
@@ -604,6 +605,8 @@ Historical session analysis to suggest the best focus mode by task type.
 
 Administrative surface for account information and productivity identity. It owns profile, auth state, subscription, settings, sync state, export, and support without competing with Focus, Plan, or Dashboard in primary navigation.
 
+**Current runtime note:** on phone, this surface may be labeled `More`. `More` is the current shipping label for the Account / Admin hub on iPhone, and Android phone is converging to the same label during the active parity phase.
+
 #### Account Information
 
 | Field            | Detail                                                        | Tier |
@@ -626,8 +629,8 @@ Administrative surface for account information and productivity identity. It own
 
 **Implementation:**
 
-- **[iOS]**: SwiftUI screen with profile data from backend + local/synced statistics
-- **[Android]**: Compose screen with Circuit presenter, backend data via Ktor
+- **[iOS]**: SwiftUI/TCA `More` tab that owns auth, profile, subscription, settings, export, help/support, and about, with profile data coming from backend plus Apple-local cached state where needed
+- **[Android]**: Compose + ViewModel `More` hub that owns profile, auth entry points, paywall, settings, app setup, and support entry points; `Export` remains an explicit parity gap
 
 ---
 
