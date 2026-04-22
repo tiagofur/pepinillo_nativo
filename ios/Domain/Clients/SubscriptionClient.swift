@@ -5,12 +5,12 @@
 // Manages subscription products, purchases, and entitlement verification.
 //
 // Products:
-//   - Apple Unlock (one-time): local premium + iCloud sync + local AI
-//   - Everywhere Monthly/Annual (subscription): everything + backend sync + cloud AI credits
+//   - Pepinillo+ (one-time): local premium + iCloud sync + Apple Intelligence
+//   - Everywhere/AI+ Monthly/Annual (subscription): everything + backend sync + cloud AI credits
 //
 // Legacy products (grandfathered):
-//   - Pro Monthly/Annual → migrated to Everywhere
-//   - Pro Lifetime → grandfathered to Apple Unlock
+//   - Pro Monthly/Annual → mapped to Everywhere/AI+
+//   - Pro Lifetime → grandfathered to Pepinillo+
 
 import Foundation
 import ComposableArchitecture
@@ -44,7 +44,7 @@ struct SubscriptionState: Equatable, Sendable {
 
     // MARK: Backward-compatible computed properties
 
-    /// True if user has any paid tier (Apple Unlock or Everywhere).
+    /// True if user has any paid tier (Pepinillo+ or Everywhere/AI+).
     var isPro: Bool { capabilities.hasAnyPremium }
 
     /// True if user has the Everywhere subscription.
@@ -378,16 +378,16 @@ private extension PepinilloProduct {
     var mockProductInfo: ProductInfo {
         switch self {
         case .monthly:
-            return ProductInfo(id: rawValue, displayName: "Pro Monthly",
-                               description: "All features, billed monthly.", displayPrice: "$3.99",
+            return ProductInfo(id: rawValue, displayName: "Everywhere/AI+ Monthly",
+                               description: "Everything in Pepinillo+ plus backend sync and advanced cloud AI.", displayPrice: "$4.99",
                                billingPeriod: "month")
         case .annual:
-            return ProductInfo(id: rawValue, displayName: "Pro Annual",
-                               description: "Best value — save 48%.", displayPrice: "$24.99",
+            return ProductInfo(id: rawValue, displayName: "Everywhere/AI+ Annual",
+                               description: "Best value — save 42% vs monthly.", displayPrice: "$34.99",
                                billingPeriod: "year", isFeatured: true)
         case .lifetime:
-            return ProductInfo(id: rawValue, displayName: "Pro Lifetime",
-                               description: "Pay once, own forever.", displayPrice: "$49.99",
+            return ProductInfo(id: rawValue, displayName: "Pepinillo+",
+                               description: "One purchase. Yours forever. Not a subscription.", displayPrice: "$19.99",
                                billingPeriod: "once")
         }
     }

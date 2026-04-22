@@ -15,18 +15,18 @@
   ],
   "products" : [
     {
-      "displayPrice" : "49.99",
+      "displayPrice" : "19.99",
       "familyShareable" : false,
       "internalID" : "A87542D8",
       "localizations" : [
         {
-          "description" : "Unlock all Pro features forever with a single purchase.",
-          "displayName" : "Pro Lifetime",
+          "description" : "One purchase. Yours forever. Full local premium, Apple Intelligence, iCloud sync, all widgets, full watchOS companion. Not a subscription.",
+          "displayName" : "Pepinillo+",
           "locale" : "en_US"
         }
       ],
       "productID" : "com.pepinillo.app.pro.lifetime",
-      "referenceName" : "Pro Lifetime",
+      "referenceName" : "Pepinillo+",
       "type" : "NonConsumable"
     }
   ],
@@ -50,7 +50,7 @@
       "localizations" : [
 
       ],
-      "name" : "Pepinillo Pro",
+      "name" : "Everywhere/AI+",
       "subscriptions" : [
         {
           "adHocOffers" : [
@@ -59,21 +59,21 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "3.99",
+          "displayPrice" : "4.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "2E20FCA7",
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Full access to all Pro features, billed monthly.",
-              "displayName" : "Pro Monthly",
+              "description" : "Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features. Billed monthly.",
+              "displayName" : "Everywhere/AI+ Monthly",
               "locale" : "en_US"
             }
           ],
           "productID" : "com.pepinillo.app.pro.monthly",
           "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Pro Monthly",
+          "referenceName" : "Everywhere/AI+ Monthly",
           "subscriptionGroupID" : "E43EFE78",
           "type" : "RecurringSubscription",
           "winbackOffers" : [
@@ -87,21 +87,21 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "24.99",
+          "displayPrice" : "34.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "7B20B271",
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Full access to all Pro features, billed annually. Save 48%.",
-              "displayName" : "Pro Annual",
+              "description" : "Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features. Billed annually — save 42% vs monthly.",
+              "displayName" : "Everywhere/AI+ Annual",
               "locale" : "en_US"
             }
           ],
           "productID" : "com.pepinillo.app.pro.annual",
           "recurringSubscriptionPeriod" : "P1Y",
-          "referenceName" : "Pro Annual",
+          "referenceName" : "Everywhere/AI+ Annual",
           "subscriptionGroupID" : "E43EFE78",
           "type" : "RecurringSubscription",
           "winbackOffers" : [

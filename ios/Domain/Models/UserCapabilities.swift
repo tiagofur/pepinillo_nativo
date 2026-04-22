@@ -3,14 +3,14 @@
 //
 // Capability-based entitlement model replacing the legacy isProUser boolean.
 // Each capability maps to a specific feature set, enabling granular gating
-// between Apple Unlock (one-time) and Pepinillo Everywhere (subscription).
+// between Pepinillo+ (one-time) and Everywhere/AI+ (subscription).
 
 import Foundation
 
 // MARK: - User Capabilities
 
 struct UserCapabilities: Equatable, Sendable, Codable {
-    // MARK: Apple Unlock (one-time purchase)
+    // MARK: Pepinillo+ (one-time purchase)
     /// Flowtime, Time Block, unlimited tasks, subtasks, recurrence,
     /// premium themes, premium soundscapes, all widgets, watchOS companion.
     var localPremium: Bool
@@ -24,7 +24,7 @@ struct UserCapabilities: Equatable, Sendable, Codable {
     /// CSV / PDF data export.
     var exportAccess: Bool
 
-    // MARK: Pepinillo Everywhere (subscription)
+    // MARK: Everywhere/AI+ (subscription)
     /// Go backend sync — cross-platform (iOS + Android + Web).
     var backendSync: Bool
 
