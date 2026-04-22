@@ -29,7 +29,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
     // MARK: - Entry Construction
 
     private func buildEntry(configuration: ConfigureDashboardWidgetIntent) async -> DashboardWidgetEntry {
-        guard AppGroupDefaults.isProUser else { return .proRequired }
+        guard AppGroupDefaults.userCapabilities?.hasAnyPremium == true else { return .proRequired }
         do {
             let container = try makeWidgetModelContainer()
             let context = ModelContext(container)
@@ -105,7 +105,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             // Streak
             let streak = computeStreak(context: context, today: today, calendar: calendar)
 
-            let isPro = AppGroupDefaults.isProUser
+            let isPro = AppGroupDefaults.userCapabilities?.hasAnyPremium ?? false
             return DashboardWidgetEntry(
                 date: Date.now,
                 isProUser: isPro,

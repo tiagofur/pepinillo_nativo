@@ -103,7 +103,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 timerText = nil
             }
 
-            let isPro = AppGroupDefaults.isProUser
+            let isPro = AppGroupDefaults.userCapabilities?.hasAnyPremium ?? false
             let entry = FocusWidgetEntry(
                 date: Date(),
                 isProUser: isPro,
