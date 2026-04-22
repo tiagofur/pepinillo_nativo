@@ -344,8 +344,9 @@ func main() {
 		WebSocket:  handlers.NewWebSocketHandler(wsManager, cfg.JWTSecret, cfg.DeprecatedWSQueryAuth),
 		Analytics:   handlers.NewAnalyticsHandler(analyticsService),
 		Preferences: handlers.NewPreferenceHandler(preferenceService),
-		Sync:        handlers.NewSyncHandler(syncService),
-		JWTSecret:  cfg.JWTSecret,
+		Sync:           handlers.NewSyncHandler(syncService),
+		UserRepository: userRepo,
+		JWTSecret:      cfg.JWTSecret,
 		HealthChecks: handlers.DependencyChecksFrom(
 			func(ctx context.Context) error {
 				sqlDB, err := db.DB()

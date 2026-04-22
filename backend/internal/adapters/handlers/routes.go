@@ -10,6 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"pepinillo/backend/internal/adapters/middleware"
+	"pepinillo/backend/internal/ports"
 )
 
 func jwtParser() *jwt.Parser {
@@ -34,6 +35,9 @@ type RouteHandlers struct {
 	Sync         *SyncHandler
 	JWTSecret    string
 	HealthChecks DependencyChecks
+	// UserRepository is required to resolve subscription state for the
+	// RequireBackendSync middleware on sync and preferences routes.
+	UserRepository ports.UserRepository
 }
 
 func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
@@ -186,12 +190,20 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	preferences := verified.Group("/preferences")
 	preferences.Get("/", deps.Preferences.List)
-	preferences.Put("/", deps.Preferences.Upsert)
+	// PUT /preferences requires an Everywhere+ subscription (backend sync tier).
+	preferences.Put("/",
+		middleware.NewSubscriptionMiddleware(deps.UserRepository),
+		middleware.NewRequireBackendSync(),
+		deps.Preferences.Upsert,
+	)
 
+	// sync routes require an active Everywhere+ subscription.
+	subMw := middleware.NewSubscriptionMiddleware(deps.UserRepository)
+	syncGate := middleware.NewRequireBackendSync()
 	sync := verified.Group("/sync")
-	sync.Get("/full", deps.Sync.FullSync)
-	sync.Post("/sessions", deps.Sync.SyncSessions)
-	sync.Post("/initial-upload", deps.Sync.InitialUpload)
+	sync.Get("/full", subMw, syncGate, deps.Sync.FullSync)
+	sync.Post("/sessions", subMw, syncGate, deps.Sync.SyncSessions)
+	sync.Post("/initial-upload", subMw, syncGate, deps.Sync.InitialUpload)
 
 	// WebSocket endpoint: JWT validated via Authorization header (or
 	// Sec-WebSocket-Protocol sub-protocol) before upgrade. Query param is a
