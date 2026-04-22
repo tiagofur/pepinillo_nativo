@@ -48,10 +48,21 @@ enum AppGroup {
 enum AppGroupDefaults {
     private static var defaults: UserDefaults? { UserDefaults(suiteName: AppGroup.id) }
 
-    /// Whether the user has an active Pro subscription (read by widgets, extensions).
-    static var isProUser: Bool {
-        get { defaults?.bool(forKey: "isProUser") ?? false }
-        set { defaults?.set(newValue, forKey: "isProUser") }
+    /// Full capability payload for the current user (read by widgets, extensions).
+    /// Replaces the legacy `isProUser` Bool with a structured, serializable model.
+    /// Returns nil if no capabilities have been written yet (treat as Free).
+    static var userCapabilities: UserCapabilities? {
+        get {
+            guard let data = defaults?.data(forKey: "userCapabilities") else { return nil }
+            return try? JSONDecoder().decode(UserCapabilities.self, from: data)
+        }
+        set {
+            if let caps = newValue, let data = try? JSONEncoder().encode(caps) {
+                defaults?.set(data, forKey: "userCapabilities")
+            } else {
+                defaults?.removeObject(forKey: "userCapabilities")
+            }
+        }
     }
 
     /// Whether a focus session is currently active (read by widgets, Control Center, Siri).
