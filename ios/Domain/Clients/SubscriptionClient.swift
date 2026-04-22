@@ -27,11 +27,6 @@ enum PepinilloProduct: String, CaseIterable, Sendable {
     case annual   = "com.pepinillo.app.pro.annual"
     case lifetime = "com.pepinillo.app.pro.lifetime"
 
-    // TODO: Phase 6 — New product IDs (create in App Store Connect + RevenueCat first)
-    // case appleUnlock       = "com.pepinillo.app.apple.unlock"
-    // case everywhereMonthly  = "com.pepinillo.app.everywhere.monthly"
-    // case everywhereAnnual   = "com.pepinillo.app.everywhere.annual"
-
     var isSubscription: Bool { self != .lifetime }
 
     /// Products shown in paywall.
@@ -61,11 +56,11 @@ struct SubscriptionState: Equatable, Sendable {
     // MARK: Static presets
 
     static let free = SubscriptionState(capabilities: .free)
-    static let appleUnlock = SubscriptionState(capabilities: .appleUnlock)
-    static let everywhere = SubscriptionState(capabilities: .everywhere)
+    static let pepinilloPlus = SubscriptionState(capabilities: .pepinilloPlus)
+    static let everywherePlus = SubscriptionState(capabilities: .everywherePlus)
 
-    /// Legacy convenience — use .appleUnlock or .everywhere instead.
-    static let pro = SubscriptionState(capabilities: .appleUnlock)
+    /// Legacy convenience — use .pepinilloPlus or .everywherePlus instead.
+    static let pro = SubscriptionState(capabilities: .pepinilloPlus)
 }
 
 // MARK: - Product Info (value type for UI)
@@ -125,7 +120,7 @@ extension SubscriptionClient: DependencyKey {
         configure: { _, _ in },
         fetchProducts: { PepinilloProduct.currentProducts.map(\.mockProductInfo) },
         purchase: { _ in .success(productID: PepinilloProduct.annual.rawValue) },
-        restorePurchases: { .appleUnlock },
+        restorePurchases: { .pepinilloPlus },
         checkEntitlement: { .free },
         listenForTransactionUpdates: { .finished },
         logIn: { _ in },
@@ -231,10 +226,10 @@ private actor SubscriptionManager {
 
             let result = try await Purchases.shared.purchase(package: package)
 
-            // Check for active entitlement (supports current "premium" and future "apple_unlock"/"everywhere")
+            // Check for active entitlement (supports new "pepinillo_plus"/"everywhere_plus" and legacy "premium"/"pro")
             let entitlements = result.customerInfo.entitlements
-            let hasActiveEntitlement = entitlements["everywhere"]?.isActive == true
-                || entitlements["apple_unlock"]?.isActive == true
+            let hasActiveEntitlement = entitlements["everywhere_plus"]?.isActive == true
+                || entitlements["pepinillo_plus"]?.isActive == true
                 || entitlements["premium"]?.isActive == true
                 || entitlements["pro"]?.isActive == true
 
@@ -305,32 +300,32 @@ private actor SubscriptionManager {
     }
 
     private func subscriptionStateFromCustomerInfo(_ customerInfo: CustomerInfo) -> SubscriptionState {
-        // Check for Everywhere entitlement first (superset of Apple Unlock)
-        if let everywhereEntitlement = customerInfo.entitlements["everywhere"], everywhereEntitlement.isActive {
+        // Check for Everywhere+ entitlement first (superset of Pepinillo+)
+        if let everywhereEntitlement = customerInfo.entitlements["everywhere_plus"], everywhereEntitlement.isActive {
             let expiryDate = everywhereEntitlement.expirationDate
             if let expiry = expiryDate {
                 // Subscription with expiration — check grace period (3 days)
                 if expiry.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
                     return SubscriptionState(
-                        capabilities: .everywhere,
+                        capabilities: .everywherePlus,
                         activeProductID: customerInfo.activeSubscriptions.first,
                         expirationDate: expiry
                     )
                 }
             } else {
-                // No expiration (shouldn't happen for Everywhere, but be safe)
+                // No expiration (shouldn't happen for Everywhere+, but be safe)
                 return SubscriptionState(
-                    capabilities: .everywhere,
+                    capabilities: .everywherePlus,
                     activeProductID: customerInfo.activeSubscriptions.first,
                     expirationDate: nil
                 )
             }
         }
 
-        // Check for Apple Unlock entitlement (one-time purchase)
-        if let unlockEntitlement = customerInfo.entitlements["apple_unlock"], unlockEntitlement.isActive {
+        // Check for Pepinillo+ entitlement (one-time purchase)
+        if let unlockEntitlement = customerInfo.entitlements["pepinillo_plus"], unlockEntitlement.isActive {
             return SubscriptionState(
-                capabilities: .appleUnlock,
+                capabilities: .pepinilloPlus,
                 activeProductID: customerInfo.allPurchasedProductIdentifiers.first,
                 expirationDate: nil  // One-time purchase, no expiration
             )
@@ -340,19 +335,19 @@ private actor SubscriptionManager {
         if let proEntitlement = customerInfo.entitlements["premium"] ?? customerInfo.entitlements["pro"], proEntitlement.isActive {
             let expiryDate = proEntitlement.expirationDate
 
-            // Legacy lifetime → grandfather to Apple Unlock
+            // Legacy lifetime → grandfather to Pepinillo+
             if expiryDate == nil {
                 return SubscriptionState(
-                    capabilities: .appleUnlock,
+                    capabilities: .pepinilloPlus,
                     activeProductID: customerInfo.allPurchasedProductIdentifiers.first,
                     expirationDate: nil
                 )
             }
 
-            // Legacy subscription → grandfather to Everywhere
+            // Legacy subscription → grandfather to Everywhere+
             if expiryDate!.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
                 return SubscriptionState(
-                    capabilities: .everywhere,
+                    capabilities: .everywherePlus,
                     activeProductID: customerInfo.activeSubscriptions.first,
                     expirationDate: expiryDate
                 )

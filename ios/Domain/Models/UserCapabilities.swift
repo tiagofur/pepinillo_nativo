@@ -47,10 +47,13 @@ struct UserCapabilities: Equatable, Sendable {
         backendSync
     }
 
-    /// True if user has at least Apple Unlock (or higher).
-    var hasAppleUnlock: Bool {
+    /// True if user has at least Pepinillo+ (or higher).
+    var hasPepinilloPlus: Bool {
         localPremium
     }
+
+    /// Backward-compat alias for hasPepinilloPlus.
+    var hasAppleUnlock: Bool { hasPepinilloPlus }
 
     /// Remaining AI credits for current billing cycle.
     var hasCloudAI: Bool {
@@ -70,8 +73,8 @@ struct UserCapabilities: Equatable, Sendable {
         crossDeviceRestore: false
     )
 
-    /// Apple Unlock — one-time purchase. Full local features + iCloud sync.
-    static let appleUnlock = UserCapabilities(
+    /// Pepinillo+ — one-time purchase. Full local features + iCloud sync.
+    static let pepinilloPlus = UserCapabilities(
         localPremium: true,
         appleCloudSync: true,
         localAI: true,
@@ -81,8 +84,8 @@ struct UserCapabilities: Equatable, Sendable {
         crossDeviceRestore: false
     )
 
-    /// Pepinillo Everywhere — subscription. Everything in Apple Unlock + backend + cloud AI.
-    static let everywhere = UserCapabilities(
+    /// Everywhere+ — subscription. Everything in Pepinillo+ + backend + cloud AI.
+    static let everywherePlus = UserCapabilities(
         localPremium: true,
         appleCloudSync: true,
         localAI: true,
@@ -155,8 +158,8 @@ extension UserCapabilities {
 
     /// Short tier identifier for analytics / debugging.
     var tierIdentifier: String {
-        if isEverywhere { return "everywhere" }
-        if hasAppleUnlock { return "apple_unlock" }
+        if isEverywhere { return "everywhere_plus" }
+        if hasPepinilloPlus { return "pepinillo_plus" }
         return "free"
     }
 }

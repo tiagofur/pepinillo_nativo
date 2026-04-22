@@ -374,7 +374,7 @@ struct AppFeature {
 
             case .subscriptionStateLoaded(let sub):
                 #if DEBUG
-                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .appleUnlock : sub
+                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .pepinilloPlus : sub
                 #else
                 let effectiveSub = sub
                 #endif
@@ -391,7 +391,7 @@ struct AppFeature {
 
             case .subscriptionUpdated(let sub):
                 #if DEBUG
-                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .appleUnlock : sub
+                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .pepinilloPlus : sub
                 #else
                 let effectiveSub = sub
                 #endif
