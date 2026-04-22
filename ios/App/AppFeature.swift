@@ -384,7 +384,7 @@ struct AppFeature {
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
-                AppGroupDefaults.isProUser = isPro
+                AppGroupDefaults.userCapabilities = effectiveSub.capabilities
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
                 }
@@ -401,7 +401,7 @@ struct AppFeature {
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
-                AppGroupDefaults.isProUser = isPro
+                AppGroupDefaults.userCapabilities = effectiveSub.capabilities
                 if isPro { state.focus.showPaywall = false }
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
