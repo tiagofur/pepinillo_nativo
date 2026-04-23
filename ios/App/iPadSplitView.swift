@@ -1,26 +1,24 @@
 // iPadSplitView.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// Adaptive iPad / Mac layouts. Two concrete variants:
+// Adaptive iPad / Mac layouts. Two concrete variants chosen by
+// AppView via GeometryReader (horizontalSizeClass alone cannot
+// differentiate iPad portrait from landscape — both report .regular):
 //
-//   • iPadLandscapeLayout — NavigationSplitView (sidebar + detail). Sidebar
-//     exposes ONLY the same 4 tabs as the iPhone TabView (Focus, Plan,
-//     Dashboard, Account). Extras like Weekly Review and Calendar live inside
-//     the Account tab — same as iPhone.
+//   • iPadLandscapeLayout — NavigationSplitView (sidebar + detail).
+//     Sidebar exposes the same 4 tabs as the iPhone TabView.
 //
-//   • iPadPortraitLayout — Top-menu navigation. A segmented control at the top
-//     switches between the same 4 tabs; content fills the rest. Matches the
-//     iPhone TabView spirit without collapsing columns.
-//
-// Detection (portrait vs landscape) happens in AppView.swift via GeometryReader
-// because on iPad both orientations report horizontalSizeClass == .regular.
+//   • iPadPortraitLayout — Top menu above the content. Same 4 tabs
+//     as a row of buttons at the top. Each tab has its OWN
+//     NavigationStack so the top menu never moves because of
+//     inner nav bars.
 
 import SwiftUI
 import ComposableArchitecture
 
-// MARK: - Unified iPad Layout: Sidebar + Detail
+// MARK: - iPad Landscape: Sidebar + Detail
 
-struct iPadLayout: View {
+struct iPadLandscapeLayout: View {
     @Bindable var store: StoreOf<AppFeature>
     @Environment(\.appTheme) private var theme
 
@@ -120,6 +118,84 @@ struct iPadLayout: View {
         case 12..<18: return String(localized: "Good afternoon,")
         default:      return String(localized: "Good evening,")
         }
+    }
+}
+
+// MARK: - iPad Portrait: Top menu + content
+
+/// Top menu (fixed, outside any NavigationStack) + per-tab independent
+/// NavigationStacks. Keeping the top menu outside prevents it from being
+/// pushed around by each inner view's nav bar. Each tab has its own
+/// NavigationStack so navigation state is independent per tab and
+/// switching tabs always works cleanly.
+struct iPadPortraitLayout: View {
+    @Bindable var store: StoreOf<AppFeature>
+
+    var body: some View {
+        VStack(spacing: 0) {
+            topTabBar
+
+            Divider()
+
+            Group {
+                switch store.selectedTab {
+                case .focus:
+                    NavigationStack {
+                        FocusView(store: store.scope(state: \.focus, action: \.focus))
+                    }
+
+                case .plan:
+                    NavigationStack {
+                        PlanView(store: store.scope(state: \.tasks, action: \.tasks))
+                    }
+
+                case .dashboard:
+                    NavigationStack {
+                        DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
+                    }
+
+                case .account:
+                    AccountView(store: store)
+                }
+            }
+        }
+    }
+
+    // MARK: - Top Tab Bar
+
+    private var topTabBar: some View {
+        HStack(spacing: 8) {
+            ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
+                tabButton(tab)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    private func tabButton(_ tab: AppFeature.Tab) -> some View {
+        let isSelected = store.selectedTab == tab
+        return Button {
+            store.send(.tabSelected(tab))
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: tab.systemImage)
+                    .font(.system(size: 16, weight: .medium))
+                Text(tab.title)
+                    .font(.subheadline.weight(isSelected ? .semibold : .regular))
+            }
+            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                isSelected ? Color.accentColor.opacity(0.15) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(tab.title)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 

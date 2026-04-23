@@ -32,21 +32,26 @@ struct AppView: View {
     }
 
     var body: some View {
-        Group {
-            if !store.hasCompletedOnboarding {
-                OnboardingView { selectedMode in
-                    store.send(.onboardingCompletedWithMode(selectedMode))
-                }
-            } else if sizeClass == .regular {
-                GeometryReader { geo in
-                    if geo.size.width > geo.size.height {
-                        iPadLandscapeLayout(store: store)
-                    } else {
-                        iPadPortraitLayout(store: store)
+        ZStack {
+            PepinilloLiquidBackground()
+                .ignoresSafeArea()
+
+            Group {
+                if !store.hasCompletedOnboarding {
+                    OnboardingView { selectedMode in
+                        store.send(.onboardingCompletedWithMode(selectedMode))
                     }
+                } else if sizeClass == .regular {
+                    GeometryReader { geo in
+                        if geo.size.width > geo.size.height {
+                            iPadLandscapeLayout(store: store)
+                        } else {
+                            iPadPortraitLayout(store: store)
+                        }
+                    }
+                } else {
+                    iPhoneLayout
                 }
-            } else {
-                iPhoneLayout
             }
         }
         .environment(\.appTheme, activeTheme)
