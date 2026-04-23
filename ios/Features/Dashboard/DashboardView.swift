@@ -1,16 +1,16 @@
 // DashboardView.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// Responsive Dashboard — single source of truth for iPhone, iPad, and Mac.
+// Dashboard tab — the reflection engine.
+// Same 1-column layout on iPhone, iPad portrait, and iPad landscape.
 // Composes shared components from Analytics/Components/:
 //   • DashboardHeroSection       — streak + sessions + focus time
 //   • DashboardReflectionActions — Weekly/Monthly Review entry points
 //   • DashboardStatCards         — period summary stat row
 //   • DashboardChartsContent     — bar chart + patterns + breakdown + streaks
 //
-// Layout strategy:
-//   • compact (iPhone, narrow iPad): single-column VStack
-//   • regular (full iPad, Mac):      hero full-width, then 2-column LazyVGrid
+// Toolbar exposes Weekly Review, Monthly Review, and AI Report (if enabled)
+// across all platforms.
 
 import SwiftUI
 import ComposableArchitecture
@@ -18,7 +18,6 @@ import ComposableArchitecture
 struct DashboardView: View {
     @Bindable var store: StoreOf<AnalyticsFeature>
     @Environment(\.appTheme) private var theme
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     var body: some View {
         ZStack {
@@ -26,8 +25,18 @@ struct DashboardView: View {
 
             ScrollView {
                 VStack(spacing: 20) {
-                    periodPicker
-                        .padding(.horizontal, horizontalSizeClass == .regular ? 24 : 16)
+                    DashboardHeroSection(
+                        streakDays: store.currentStreakDays,
+                        sessionsCompleted: store.sessionsCompleted,
+                        totalFocusMinutes: store.totalFocusMinutes
+                    )
+                    .padding(.horizontal, 16)
+
+                    DashboardReflectionActions(
+                        onWeeklyReview:  { store.send(.weeklyReviewTapped) },
+                        onMonthlyReview: { store.send(.monthlyReviewTapped) }
+                    )
+                    .padding(.horizontal, 16)
 
                     if store.isLoading {
                         AnalyticsPlaceholder()
@@ -41,7 +50,18 @@ struct DashboardView: View {
                         )
                         .padding(.top, 40)
                     } else {
-                        content
+                        analyticsSectionHeader
+                            .padding(.horizontal, 16)
+
+                        DashboardStatCards(
+                            formattedTotalTime: formattedTotalTime,
+                            sessionsCompleted: store.sessionsCompleted,
+                            currentStreakDays: store.currentStreakDays
+                        )
+                        .padding(.horizontal, 16)
+
+                        DashboardChartsContent(store: store)
+                            .padding(.horizontal, 16)
                     }
                 }
                 .padding(.bottom, 32)
@@ -73,109 +93,38 @@ struct DashboardView: View {
                 } label: {
                     Label(String(localized: "Weekly Review"), systemImage: "calendar.badge.clock")
                 }
-                .accessibilityHint(String(localized: "dashboard.reflection.weekly.hint", defaultValue: "Opens your weekly productivity report"))
-
                 Button {
                     store.send(.monthlyReviewTapped)
                 } label: {
                     Label(String(localized: "Monthly Review"), systemImage: "calendar.badge.checkmark")
                 }
-                .accessibilityHint(String(localized: "dashboard.reflection.monthly.hint", defaultValue: "Opens your monthly productivity report"))
             }
         }
         .onAppear { store.send(.onAppear) }
     }
 
-    // MARK: - Layout
+    // MARK: - Analytics Section Header
 
-    @ViewBuilder
-    private var content: some View {
-        if horizontalSizeClass == .regular {
-            regularLayout
-        } else {
-            compactLayout
+    private var analyticsSectionHeader: some View {
+        HStack {
+            Text(String(localized: "Analytics"))
+                .font(.headline)
+            Spacer()
+            periodPicker
         }
     }
-
-    /// Compact (iPhone / narrow iPad): single-column VStack.
-    private var compactLayout: some View {
-        VStack(spacing: 20) {
-            DashboardHeroSection(
-                streakDays: store.currentStreakDays,
-                sessionsCompleted: store.sessionsCompleted,
-                totalFocusMinutes: store.totalFocusMinutes
-            )
-            .padding(.horizontal, 16)
-
-            DashboardReflectionActions(
-                onWeeklyReview:  { store.send(.weeklyReviewTapped) },
-                onMonthlyReview: { store.send(.monthlyReviewTapped) }
-            )
-            .padding(.horizontal, 16)
-
-            DashboardStatCards(
-                formattedTotalTime: formattedTotalTime,
-                sessionsCompleted: store.sessionsCompleted,
-                currentStreakDays: store.currentStreakDays
-            )
-            .padding(.horizontal, 16)
-
-            DashboardChartsContent(store: store)
-                .padding(.horizontal, 16)
-        }
-    }
-
-    /// Regular (full-size iPad, Mac): hero full-width, content in 2-column grid.
-    private var regularLayout: some View {
-        VStack(spacing: 20) {
-            DashboardHeroSection(
-                streakDays: store.currentStreakDays,
-                sessionsCompleted: store.sessionsCompleted,
-                totalFocusMinutes: store.totalFocusMinutes
-            )
-            .padding(.horizontal, 24)
-
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 20),
-                    GridItem(.flexible(), spacing: 20)
-                ],
-                alignment: .center,
-                spacing: 20
-            ) {
-                // Left column — summary stats + reflection actions
-                VStack(spacing: 16) {
-                    DashboardStatCards(
-                        formattedTotalTime: formattedTotalTime,
-                        sessionsCompleted: store.sessionsCompleted,
-                        currentStreakDays: store.currentStreakDays
-                    )
-
-                    DashboardReflectionActions(
-                        onWeeklyReview:  { store.send(.weeklyReviewTapped) },
-                        onMonthlyReview: { store.send(.monthlyReviewTapped) }
-                    )
-                }
-
-                // Right column — full charts block
-                DashboardChartsContent(store: store)
-            }
-            .padding(.horizontal, 24)
-        }
-    }
-
-    // MARK: - Period Picker
 
     private var periodPicker: some View {
         Picker(String(localized: "Period"), selection: Binding(
             get: { store.period },
             set: { store.send(.periodChanged($0)) }
         )) {
-            ForEach(AnalyticsFeature.State.Period.allCases, id: \.self) { p in
-                Text(p.displayName).tag(p)
+            ForEach(AnalyticsFeature.State.Period.allCases, id: \.self) { period in
+                Text(period.displayName).tag(period)
             }
         }
         .pickerStyle(.segmented)
+        .frame(width: 200)
     }
 
     // MARK: - Helpers

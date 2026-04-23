@@ -155,9 +155,7 @@ struct iPadPortraitLayout: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                topTabMenu
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                topTabBar
 
                 Divider()
 
@@ -177,17 +175,40 @@ struct iPadPortraitLayout: View {
         }
     }
 
-    private var topTabMenu: some View {
-        Picker("", selection: Binding(
-            get: { store.selectedTab },
-            set: { store.send(.tabSelected($0)) }
-        )) {
+    private var topTabBar: some View {
+        HStack(spacing: 8) {
             ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
-                Label(tab.title, systemImage: tab.systemImage)
-                    .tag(tab)
+                tabButton(tab)
             }
         }
-        .pickerStyle(.segmented)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.bar)
+    }
+
+    private func tabButton(_ tab: AppFeature.Tab) -> some View {
+        let isSelected = store.selectedTab == tab
+        return Button {
+            store.send(.tabSelected(tab))
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: tab.systemImage)
+                    .font(.system(size: 16, weight: .medium))
+                Text(tab.title)
+                    .font(.subheadline.weight(isSelected ? .semibold : .regular))
+            }
+            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                isSelected ? Color.accentColor.opacity(0.15) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 10)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(tab.title)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 
