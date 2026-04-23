@@ -141,6 +141,7 @@ struct iPadPortraitLayout: View {
                     .tag(tab)
             }
         }
+        .forceBottomTabBarOnIPad()
     }
 
     @ViewBuilder
@@ -174,14 +175,27 @@ struct iPadPortraitLayout: View {
 // MARK: - Helpers
 
 private extension View {
+    /// Forces the TabView to use bottom tabs (iPhone style) on iPad in
+    /// iOS 18+, instead of the new sidebar-adaptable style that renders
+    /// top pills + a reserved sidebar gutter. No-op on iOS 17.
+    @ViewBuilder
+    func forceBottomTabBarOnIPad() -> some View {
+        if #available(iOS 18.0, *) {
+            self.tabViewStyle(.tabBarOnly)
+        } else {
+            self
+        }
+    }
+
     /// Centers the view within the available width, capped at `maxWidth`.
-    /// A full-width systemBackground fills the gap on the sides so the empty
-    /// area matches the app's base background instead of showing white.
+    /// A full-width PepinilloLiquidBackground fills the gutter on both sides
+    /// so the app's liquid gradient continues edge-to-edge instead of
+    /// showing a flat white strip.
     func constrainedWidth(_ maxWidth: CGFloat) -> some View {
         self
             .frame(maxWidth: maxWidth)
             .frame(maxWidth: .infinity)
-            .background(Color(.systemBackground).ignoresSafeArea())
+            .background(PepinilloLiquidBackground().ignoresSafeArea())
     }
 }
 
