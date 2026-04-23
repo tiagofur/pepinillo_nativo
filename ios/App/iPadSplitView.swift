@@ -18,9 +18,9 @@
 import SwiftUI
 import ComposableArchitecture
 
-// MARK: - Landscape: Sidebar + Detail
+// MARK: - Unified iPad Layout: Sidebar + Detail
 
-struct iPadLandscapeLayout: View {
+struct iPadLayout: View {
     @Bindable var store: StoreOf<AppFeature>
     @Environment(\.appTheme) private var theme
 
@@ -69,22 +69,12 @@ struct iPadLandscapeLayout: View {
                     sidebarTabButton(tab)
                 }
             }
+            .listRowSeparator(.hidden)
         }
+        .scrollContentBackground(.hidden)
         .navigationTitle("")
         .toolbar(.hidden, for: .navigationBar)
-        .navigationSplitViewColumnWidth(min: 240, ideal: 320, max: 380)
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                if store.selectedTab == .plan {
-                    Button {
-                        store.send(.tasks(.addTaskTapped))
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .keyboardShortcut("n", modifiers: .command)
-                }
-            }
-        }
+        .navigationSplitViewColumnWidth(min: 240, ideal: 280, max: 320)
     }
 
     private func sidebarTabButton(_ tab: AppFeature.Tab) -> some View {
@@ -93,8 +83,21 @@ struct iPadLandscapeLayout: View {
             store.send(.tabSelected(tab))
         } label: {
             Label(tab.title, systemImage: tab.systemImage)
+                .font(.headline)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.accentColor.opacity(0.15))
+                            .pepinilloGlass(cornerRadius: 12)
+                    }
+                }
         }
-        .listRowBackground(isSelected ? Color.accentColor.opacity(0.15) : nil)
+        .buttonStyle(.plain)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
         .foregroundStyle(isSelected ? Color.accentColor : .primary)
     }
 
@@ -104,6 +107,7 @@ struct iPadLandscapeLayout: View {
     private var detailColumn: some View {
         NavigationStack {
             iPadTabContent(store: store, tab: store.selectedTab)
+                .padding(.horizontal, 24)
         }
     }
 
@@ -115,59 +119,6 @@ struct iPadLandscapeLayout: View {
         case 5..<12:  return String(localized: "Good morning,")
         case 12..<18: return String(localized: "Good afternoon,")
         default:      return String(localized: "Good evening,")
-        }
-    }
-}
-
-// MARK: - Portrait: Top menu + content
-
-/// Native TabView (iPhone-style bottom tabs) with content constrained to a
-/// comfortable max width so the UI doesn't sprawl across the full iPad width.
-struct iPadPortraitLayout: View {
-    @Bindable var store: StoreOf<AppFeature>
-
-    private static let contentMaxWidth: CGFloat = 720
-
-    var body: some View {
-        TabView(selection: Binding(
-            get: { store.selectedTab },
-            set: { store.send(.tabSelected($0)) }
-        )) {
-            ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
-                tabContent(for: tab)
-                    .tabItem {
-                        Label(tab.title, systemImage: tab.systemImage)
-                    }
-                    .tag(tab)
-            }
-        }
-        .forceBottomTabBarOnIPad()
-    }
-
-    @ViewBuilder
-    private func tabContent(for tab: AppFeature.Tab) -> some View {
-        switch tab {
-        case .focus:
-            NavigationStack {
-                FocusView(store: store.scope(state: \.focus, action: \.focus))
-                    .constrainedWidth(Self.contentMaxWidth)
-            }
-
-        case .plan:
-            NavigationStack {
-                PlanView(store: store.scope(state: \.tasks, action: \.tasks))
-                    .constrainedWidth(Self.contentMaxWidth)
-            }
-
-        case .dashboard:
-            NavigationStack {
-                DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
-                    .constrainedWidth(Self.contentMaxWidth)
-            }
-
-        case .account:
-            AccountView(store: store)
-                .constrainedWidth(Self.contentMaxWidth)
         }
     }
 }
@@ -204,20 +155,23 @@ struct iPadTabContent: View {
     let tab: AppFeature.Tab
 
     var body: some View {
-        switch tab {
-        case .focus:
-            FocusView(store: store.scope(state: \.focus, action: \.focus))
-                .frame(maxWidth: 560)
-                .frame(maxWidth: .infinity)
+        Group {
+            switch tab {
+            case .focus:
+                FocusView(store: store.scope(state: \.focus, action: \.focus))
+                    .frame(maxWidth: 560)
+                    .frame(maxWidth: .infinity)
 
-        case .plan:
-            PlanView(store: store.scope(state: \.tasks, action: \.tasks))
+            case .plan:
+                PlanView(store: store.scope(state: \.tasks, action: \.tasks))
 
-        case .dashboard:
-            DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
+            case .dashboard:
+                DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
 
-        case .account:
-            AccountView(store: store)
+            case .account:
+                AccountView(store: store)
+            }
         }
+        .background(Color.clear)
     }
 }

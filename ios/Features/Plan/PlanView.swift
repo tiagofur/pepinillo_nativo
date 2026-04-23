@@ -78,8 +78,6 @@ struct PlanView: View {
 
     var body: some View {
         ZStack {
-            PepinilloLiquidBackground()
-
             VStack(spacing: 0) {
             taskSections
             addTaskBar
