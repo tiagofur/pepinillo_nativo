@@ -18,6 +18,8 @@ struct AccountView: View {
     var body: some View {
         NavigationStack {
             ZStack {
+                PepinilloLiquidBackground()
+
                 ScrollView {
                     VStack(spacing: 20) {
                         userSection

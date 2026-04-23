@@ -15,6 +15,8 @@ struct FocusView: View {
 
     var body: some View {
         ZStack {
+            PepinilloLiquidBackground()
+
             VStack(spacing: 0) {
                 // MARK: - Mode Selector (top)
                 if !store.isRunning {

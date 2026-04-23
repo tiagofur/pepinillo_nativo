@@ -45,10 +45,8 @@ struct AppView: View {
                         iPadPortraitLayout(store: store)
                     }
                 }
-                .background(PepinilloLiquidBackground().ignoresSafeArea())
             } else {
                 iPhoneLayout
-                    .background(PepinilloLiquidBackground().ignoresSafeArea())
             }
         }
         .environment(\.appTheme, activeTheme)
