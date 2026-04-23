@@ -3,12 +3,10 @@
 //
 // Root view routing:
 // - Not onboarded → OnboardingView
-// - iPad / Mac landscape (.regular, width > height) → iPadLandscapeLayout (sidebar + detail)
-// - iPad / Mac portrait  (.regular, width ≤ height) → iPadPortraitLayout  (top menu + content)
-// - iPhone / compact                                → iPhoneLayout        (TabView, 4 tabs)
-//
-// Portrait/landscape detection on iPad uses GeometryReader because SwiftUI
-// reports horizontalSizeClass == .regular for both orientations.
+// - iOS 18+ (iPad & iPhone) → TabView(.sidebarAdaptable)
+//   iPad: floating top pill + on-demand sidebar (Apple-native iPadOS 18+ pattern)
+//   iPhone: bottom tabs (unchanged)
+// - iOS 17 fallback → iPhoneLayout (TabView with bottom tabs, all devices)
 //
 // Hosts the celebration overlay, paywall sheet, auth sheet, and profile sheet at root level.
 
@@ -17,7 +15,6 @@ import ComposableArchitecture
 
 struct AppView: View {
     @Bindable var store: StoreOf<AppFeature>
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private var activeTheme: AppTheme {
         AppTheme.named(store.settings.themeName)
@@ -41,14 +38,8 @@ struct AppView: View {
                     OnboardingView { selectedMode in
                         store.send(.onboardingCompletedWithMode(selectedMode))
                     }
-                } else if sizeClass == .regular {
-                    GeometryReader { geo in
-                        if geo.size.width > geo.size.height {
-                            iPadLandscapeLayout(store: store)
-                        } else {
-                            iPadPortraitLayout(store: store)
-                        }
-                    }
+                } else if #available(iOS 18.0, *) {
+                    adaptableTabView
                 } else {
                     iPhoneLayout
                 }
@@ -176,18 +167,66 @@ struct AppView: View {
         }
     }
 
-    // MARK: - iPhone Layout
+    // MARK: - iOS 18+ Adaptable TabView
+    // On iPad: floating top pill + on-demand sidebar (sidebarAdaptable).
+    // On iPhone: bottom tabs — same as before.
 
-    private var allTabs: [AppFeature.Tab] {
-        [.focus, .plan, .dashboard, .account]
+    @available(iOS 18.0, *)
+    private var adaptableTabView: some View {
+        TabView(selection: Binding(
+            get: { store.selectedTab },
+            set: { store.send(.tabSelected($0)) }
+        )) {
+            Tab(
+                String(localized: "Focus"),
+                systemImage: AppFeature.Tab.focus.systemImage,
+                value: AppFeature.Tab.focus
+            ) {
+                NavigationStack {
+                    FocusView(store: store.scope(state: \.focus, action: \.focus))
+                }
+            }
+
+            Tab(
+                String(localized: "Plan"),
+                systemImage: AppFeature.Tab.plan.systemImage,
+                value: AppFeature.Tab.plan
+            ) {
+                NavigationStack {
+                    PlanView(store: store.scope(state: \.tasks, action: \.tasks))
+                }
+            }
+
+            Tab(
+                String(localized: "Dashboard"),
+                systemImage: AppFeature.Tab.dashboard.systemImage,
+                value: AppFeature.Tab.dashboard
+            ) {
+                NavigationStack {
+                    DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
+                }
+            }
+
+            Tab(
+                String(localized: "More"),
+                systemImage: AppFeature.Tab.account.systemImage,
+                value: AppFeature.Tab.account
+            ) {
+                AccountView(store: store)
+            }
+        }
+        .tabViewStyle(.sidebarAdaptable)
+        .focusedValue(\.appStore, store)
     }
+
+    // MARK: - iOS 17 Fallback Layout
 
     private var iPhoneLayout: some View {
         TabView(selection: Binding(
             get: { store.selectedTab },
             set: { store.send(.tabSelected($0)) }
         )) {
-            ForEach(allTabs, id: \.self) { tab in
+            ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
                 tabContent(for: tab)
                     .tabItem {
                         Label(tab.title, systemImage: tab.systemImage)
@@ -198,7 +237,7 @@ struct AppView: View {
         .focusedValue(\.appStore, store)
     }
 
-    // MARK: - Tab Content Router
+    // MARK: - Tab Content Router (iOS 17 fallback)
 
     @ViewBuilder
     private func tabContent(for tab: AppFeature.Tab) -> some View {
