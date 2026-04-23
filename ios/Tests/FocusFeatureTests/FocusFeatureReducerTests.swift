@@ -245,9 +245,10 @@ struct FocusFeatureReducerTests {
         store.exhaustivity = .off
 
         let taskID = UUID()
-        await store.send(.linkTask(taskID, "Write blog post")) {
+        await store.send(.linkTask(taskID, "Write blog post", "🧠")) {
             $0.linkedTaskID = taskID
             $0.linkedTaskTitle = "Write blog post"
+            $0.linkedTaskEmoji = "🧠"
             $0.modeSuggestion = nil
         }
     }

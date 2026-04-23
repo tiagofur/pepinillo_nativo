@@ -115,8 +115,7 @@ struct DashboardChartsContent: View {
             )
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 16)
         .opacity(chartAppeared ? 1 : 0)
         .conditionalAnimation(.easeIn(duration: 0.5), value: chartAppeared)
     }
@@ -157,8 +156,7 @@ struct DashboardChartsContent: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 16)
         .accessibilityLabel(
             String(localized: "dashboard.charts.patterns.label", defaultValue: "Productivity patterns including peak hours, best day, completion rate, and focus score")
         )
@@ -179,8 +177,7 @@ struct DashboardChartsContent: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 16)
     }
 
     // MARK: - Streak Section

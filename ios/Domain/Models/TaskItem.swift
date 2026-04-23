@@ -220,4 +220,12 @@ public enum EnergyLevel: String, Codable, CaseIterable, Sendable {
         case .admin:   return .orange
         }
     }
+
+    public var emoji: String {
+        switch self {
+        case .deep:    return "🧠"
+        case .shallow: return "📋"
+        case .admin:   return "📁"
+        }
+    }
 }

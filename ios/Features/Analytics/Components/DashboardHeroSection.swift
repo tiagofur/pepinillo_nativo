@@ -93,7 +93,7 @@ struct HeroStatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .pepinilloGlass(cornerRadius: 14)
     }
 }
 

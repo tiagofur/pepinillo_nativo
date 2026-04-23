@@ -78,9 +78,10 @@ struct AppFeatureIntegrationTests {
             $0.selectedTab = .focus
         }
 
-        await store.receive(.focus(.linkTask(taskID, "Code the feature"))) {
+        await store.receive(.focus(.linkTask(taskID, "Code the feature", "🧠"))) {
             $0.focus.linkedTaskID = taskID
             $0.focus.linkedTaskTitle = "Code the feature"
+            $0.focus.linkedTaskEmoji = "🧠"
         }
     }
 

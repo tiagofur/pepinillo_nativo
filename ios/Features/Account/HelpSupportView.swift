@@ -10,12 +10,19 @@ struct HelpSupportView: View {
     @State private var expandedFAQ: FAQItem.ID?
 
     var body: some View {
-        List {
-            quickActionsSection
-            faqSection
-            contactSection
+        ZStack {
+            PepinilloLiquidBackground()
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    quickActionsSection
+                    faqSection
+                    contactSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 20)
+            }
         }
-        .listStyle(.insetGrouped)
         .navigationTitle(String(localized: "Help & Support"))
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -23,57 +30,123 @@ struct HelpSupportView: View {
     // MARK: - Quick Actions
 
     private var quickActionsSection: some View {
-        Section {
-            Link(destination: URL(string: "https://pepinillo.app/guide")!) {
-                Label(String(localized: "Quick Start Guide"), systemImage: "book")
-            }
-
-            Link(destination: URL(string: "https://pepinillo.app/tips")!) {
-                Label(String(localized: "Focus Tips & Techniques"), systemImage: "lightbulb")
-            }
-        } header: {
+        VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Getting Started"))
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            VStack(spacing: 0) {
+                Link(destination: URL(string: "https://creapolis.dev/proyectos/pepinillo/guide")!) {
+                    HStack {
+                        Label(String(localized: "Quick Start Guide"), systemImage: "book")
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(16)
+                }
+
+                Divider().padding(.leading, 56).opacity(0.1)
+
+                Link(destination: URL(string: "https://creapolis.dev/proyectos/pepinillo/tips")!) {
+                    HStack {
+                        Label(String(localized: "Focus Tips & Techniques"), systemImage: "lightbulb")
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(16)
+                }
+            }
+            .pepinilloGlass()
         }
     }
 
     // MARK: - FAQ
 
     private var faqSection: some View {
-        Section {
-            ForEach(FAQItem.all) { item in
-                FAQRow(item: item, isExpanded: expandedFAQ == item.id)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            expandedFAQ = expandedFAQ == item.id ? nil : item.id
-                        }
-                    }
-            }
-        } header: {
+        VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Frequently Asked Questions"))
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            VStack(spacing: 0) {
+                ForEach(FAQItem.all) { item in
+                    FAQRow(item: item, isExpanded: expandedFAQ == item.id)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                expandedFAQ = expandedFAQ == item.id ? nil : item.id
+                            }
+                        }
+                        .padding(16)
+                    
+                    if item.id != FAQItem.all.last?.id {
+                        Divider().padding(.leading, 56).opacity(0.1)
+                    }
+                }
+            }
+            .pepinilloGlass()
         }
     }
 
     // MARK: - Contact
 
     private var contactSection: some View {
-        Section {
-            Link(destination: URL(string: "mailto:support@pepinillo.app")!) {
-                Label(String(localized: "Email Support"), systemImage: "envelope")
-            }
-
-            Link(destination: URL(string: "https://pepinillo.app/feedback")!) {
-                Label(String(localized: "Send Feedback"), systemImage: "text.bubble")
-            }
-
-            Link(destination: URL(string: "https://twitter.com/pepinilloapp")!) {
-                Label(String(localized: "Follow on X/Twitter"), systemImage: "bubble.left.and.bubble.right")
-            }
-        } header: {
+        VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Contact Us"))
-        } footer: {
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            VStack(spacing: 0) {
+                Link(destination: URL(string: "mailto:hola@creapolis.dev")!) {
+                    HStack {
+                        Label(String(localized: "Email Support"), systemImage: "envelope")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(16)
+                }
+
+                Divider().padding(.leading, 56).opacity(0.1)
+
+                Link(destination: URL(string: "https://creapolis.dev/proyectos/pepinillo/feedback")!) {
+                    HStack {
+                        Label(String(localized: "Send Feedback"), systemImage: "text.bubble")
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(16)
+                }
+
+                Divider().padding(.leading, 56).opacity(0.1)
+
+                Link(destination: URL(string: "https://x.com/creapolisdev")!) {
+                    HStack {
+                        Label(String(localized: "Follow on X"), systemImage: "bubble.left.and.bubble.right")
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(16)
+                }
+            }
+            .pepinilloGlass()
+            
             Text(String(localized: "We typically respond within 24 hours."))
                 .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
         }
     }
 }

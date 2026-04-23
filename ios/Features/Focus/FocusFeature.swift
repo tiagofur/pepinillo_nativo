@@ -43,6 +43,7 @@ struct FocusFeature {
         // Task linking
         var linkedTaskID: UUID?
         var linkedTaskTitle: String?
+        var linkedTaskEmoji: String?
 
         // Configuration
         var config: FocusConfig = .default
@@ -82,7 +83,7 @@ struct FocusFeature {
         case resumeTapped
         case stopTapped
         case skipPhaseTapped
-        case linkTask(UUID?, String?)
+        case linkTask(UUID?, String?, String?)
         case customDurationChanged(Int)
         case configUpdated(FocusConfig)
 
@@ -337,9 +338,10 @@ struct FocusFeature {
 
             // MARK: Task Linking
 
-            case .linkTask(let id, let title):
+            case .linkTask(let id, let title, let emoji):
                 state.linkedTaskID = id
                 state.linkedTaskTitle = title
+                state.linkedTaskEmoji = emoji
                 state.modeSuggestion = nil
                 AppGroupDefaults.activeTaskID = id?.uuidString
                 AppGroupDefaults.activeSessionTaskTitle = title
@@ -548,7 +550,7 @@ struct FocusFeature {
 
             case .unlinkTaskTapped:
                 state.isTaskPickerPresented = false
-                return .send(.linkTask(nil, nil))
+                return .send(.linkTask(nil, nil, nil))
 
             // MARK: Soundscape
 

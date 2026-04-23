@@ -10,7 +10,7 @@ import ComposableArchitecture
 struct TaskPickerView: View {
     let linkedTaskID: UUID?
     let tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState>
-    let onSelectTask: (UUID, String) -> Void
+    let onSelectTask: (UUID, String, String) -> Void
     let onUnlink: () -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -46,7 +46,7 @@ struct TaskPickerView: View {
                         ForEach(activeTasks) { task in
                             Button {
                                 HapticManager.selection()
-                                onSelectTask(task.id, task.title)
+                                onSelectTask(task.id, task.title, task.energyLevel.emoji)
                                 dismiss()
                             } label: {
                                 HStack(spacing: 10) {
@@ -77,18 +77,6 @@ struct TaskPickerView: View {
                     Button(String(localized: "Done")) { dismiss() }
                 }
             }
-        }
-    }
-}
-
-// MARK: - EnergyLevel emoji
-
-extension EnergyLevel {
-    var emoji: String {
-        switch self {
-        case .deep:    return "🧠"
-        case .shallow: return "📋"
-        case .admin:   return "📁"
         }
     }
 }

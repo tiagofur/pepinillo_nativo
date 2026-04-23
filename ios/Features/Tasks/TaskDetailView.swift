@@ -14,38 +14,46 @@ struct TaskDetailView: View {
     enum Field: Hashable { case title, subtask, notes }
 
     var body: some View {
-        Group {
-            if isSheet {
-                NavigationStack {
-                    formContent
-                        .toolbar {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button(String(localized: "Done")) {
-                                    focusedField = nil
-                                    store.send(.dismissTapped)
+        ZStack {
+            PepinilloLiquidBackground()
+            
+            Group {
+                if isSheet {
+                    NavigationStack {
+                        formContent
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button(String(localized: "Done")) {
+                                        focusedField = nil
+                                        store.send(.dismissTapped)
+                                    }
                                 }
                             }
-                        }
+                    }
+                } else {
+                    formContent
                 }
-            } else {
-                formContent
             }
         }
     }
 
     private var formContent: some View {
-        Form {
-            titleSection
-            subtasksSection
-            schedulingSection
-            metadataSection
-            recurrenceSection
-            notesSection
-            if store.totalFocusSeconds > 0 {
-                statsSection
+        ScrollView {
+            VStack(spacing: 20) {
+                titleSection
+                subtasksSection
+                schedulingSection
+                metadataSection
+                recurrenceSection
+                notesSection
+                if store.totalFocusSeconds > 0 {
+                    statsSection
+                }
+                actionsSection
+                deleteSection
             }
-            actionsSection
-            deleteSection
+            .padding(.horizontal, 16)
+            .padding(.vertical, 20)
         }
         .navigationTitle(String(localized: "Task Details"))
         .navigationBarTitleDisplayMode(.inline)
@@ -91,7 +99,7 @@ struct TaskDetailView: View {
     // MARK: - Sections
 
     private var titleSection: some View {
-        Section {
+        VStack {
             HStack(spacing: 12) {
                 Button {
                     store.send(.completionToggled)
@@ -121,67 +129,74 @@ struct TaskDetailView: View {
             }
             .padding(.vertical, 2)
         }
+        .padding(16)
+        .pepinilloGlass()
     }
 
     private var subtasksSection: some View {
-        Section {
-            if store.subtasks.isEmpty && store.isLoading {
-                HStack {
-                    Spacer()
-                    ProgressView()
-                    Spacer()
-                }
-            }
-
-            ForEach(store.subtasks) { subtask in
-                HStack(spacing: 12) {
-                    Button {
-                        store.send(.subtaskToggled(subtask.id))
-                        HapticManager.impact(.light)
-                    } label: {
-                        Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
-                            .foregroundStyle(subtask.isCompleted ? .green : .secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(subtask.isCompleted
-                        ? String(localized: "Mark \(subtask.title) as incomplete")
-                        : String(localized: "Mark \(subtask.title) as complete"))
-
-                    Text(subtask.title)
-                        .strikethrough(subtask.isCompleted)
-                        .foregroundStyle(subtask.isCompleted ? .secondary : .primary)
-                }
-            }
-            .onDelete { indexSet in
-                for index in indexSet {
-                    store.send(.subtaskDeleted(store.subtasks[index].id))
-                }
-            }
-
-            TextField(
-                String(localized: "Add subtask…"),
-                text: Binding(
-                    get: { store.newSubtaskTitle },
-                    set: { store.send(.newSubtaskTitleChanged($0)) }
-                )
-            )
-            .focused($focusedField, equals: .subtask)
-            .submitLabel(.done)
-            .onSubmit { store.send(.addSubtaskTapped) }
-            .foregroundStyle(.secondary)
-        } header: {
+        VStack(alignment: .leading, spacing: 12) {
             let completed = store.subtasks.filter(\.isCompleted).count
             let total = store.subtasks.count
-            if total > 0 {
-                Text(String(localized: "Subtasks (\(completed)/\(total))"))
-            } else {
-                Text(String(localized: "Subtasks"))
+            
+            Text(total > 0 ? String(localized: "Subtasks (\(completed)/\(total))") : String(localized: "Subtasks"))
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.bottom, 4)
+
+            VStack(spacing: 12) {
+                if store.subtasks.isEmpty && store.isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                }
+
+                ForEach(store.subtasks) { subtask in
+                    HStack(spacing: 12) {
+                        Button {
+                            store.send(.subtaskToggled(subtask.id))
+                            HapticManager.impact(.light)
+                        } label: {
+                            Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(subtask.isCompleted ? .green : .secondary)
+                        }
+                        .buttonStyle(.plain)
+
+                        Text(subtask.title)
+                            .strikethrough(subtask.isCompleted)
+                            .foregroundStyle(subtask.isCompleted ? .secondary : .primary)
+                        
+                        Spacer()
+                        
+                        Button {
+                            store.send(.subtaskDeleted(subtask.id))
+                        } label: {
+                            Image(systemName: "xmark.circle")
+                                .foregroundStyle(.tertiary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                TextField(
+                    String(localized: "Add subtask…"),
+                    text: Binding(
+                        get: { store.newSubtaskTitle },
+                        set: { store.send(.newSubtaskTitleChanged($0)) }
+                    )
+                )
+                .focused($focusedField, equals: .subtask)
+                .submitLabel(.done)
+                .onSubmit { store.send(.addSubtaskTapped) }
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
             }
+            .padding(16)
+            .pepinilloGlass()
         }
     }
 
     private var schedulingSection: some View {
-        Section {
+        VStack(spacing: 12) {
             Toggle(
                 String(localized: "Focus Today"),
                 isOn: Binding(
@@ -190,6 +205,9 @@ struct TaskDetailView: View {
                 )
             )
             .tint(.orange)
+
+            Divider()
+                .opacity(0.1)
 
             if store.dueDate != nil {
                 DatePicker(
@@ -203,101 +221,131 @@ struct TaskDetailView: View {
                 Button(String(localized: "Remove Due Date"), role: .destructive) {
                     store.send(.dueDateChanged(nil))
                 }
+                .font(.subheadline)
             } else {
                 Button {
                     store.send(.dueDateChanged(Calendar.current.date(byAdding: .day, value: 1, to: .now)))
                 } label: {
                     Label(String(localized: "Add Due Date"), systemImage: "calendar.badge.plus")
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
+        .padding(16)
+        .pepinilloGlass()
     }
 
     private var metadataSection: some View {
-        Section {
-            Picker(
-                String(localized: "Priority"),
-                selection: Binding(
-                    get: { store.priority },
-                    set: { store.send(.priorityChanged($0)) }
-                )
-            ) {
-                ForEach(TaskPriority.allCases, id: \.self) { priority in
-                    HStack {
-                        if priority != .none {
-                            Image(systemName: priority.icon)
-                        }
-                        Text(priority.displayName)
-                    }
-                    .tag(priority)
-                }
-            }
-
-            Picker(
-                String(localized: "Energy"),
-                selection: Binding(
-                    get: { store.energyLevel },
-                    set: { store.send(.energyLevelChanged($0)) }
-                )
-            ) {
-                ForEach(EnergyLevel.allCases, id: \.self) { level in
-                    Label(level.displayName, systemImage: level.icon).tag(level)
-                }
-            }
-
-            Stepper(
-                String(localized: "Pomodoros: \(store.estimatedPomodoros)"),
-                value: Binding(
-                    get: { store.estimatedPomodoros },
-                    set: { store.send(.estimatedPomodorosChanged($0)) }
-                ),
-                in: 1...8
-            )
-
-            if store.completedPomodoros > 0 {
-                LabeledContent(String(localized: "Completed")) {
-                    Text("🍅 \(store.completedPomodoros)/\(store.estimatedPomodoros)")
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } header: {
+        VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Priority & Focus"))
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.bottom, 4)
+
+            VStack(spacing: 16) {
+                Picker(
+                    String(localized: "Priority"),
+                    selection: Binding(
+                        get: { store.priority },
+                        set: { store.send(.priorityChanged($0)) }
+                    )
+                ) {
+                    ForEach(TaskPriority.allCases, id: \.self) { priority in
+                        HStack {
+                            if priority != .none {
+                                Image(systemName: priority.icon)
+                            }
+                            Text(priority.displayName)
+                        }
+                        .tag(priority)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Divider().opacity(0.1)
+
+                Picker(
+                    String(localized: "Energy"),
+                    selection: Binding(
+                        get: { store.energyLevel },
+                        set: { store.send(.energyLevelChanged($0)) }
+                    )
+                ) {
+                    ForEach(EnergyLevel.allCases, id: \.self) { level in
+                        Label(level.displayName, systemImage: level.icon).tag(level)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Divider().opacity(0.1)
+
+                Stepper(
+                    String(localized: "Pomodoros: \(store.estimatedPomodoros)"),
+                    value: Binding(
+                        get: { store.estimatedPomodoros },
+                        set: { store.send(.estimatedPomodorosChanged($0)) }
+                    ),
+                    in: 1...8
+                )
+
+                if store.completedPomodoros > 0 {
+                    LabeledContent(String(localized: "Completed")) {
+                        Text("🍅 \(store.completedPomodoros)/\(store.estimatedPomodoros)")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(16)
+            .pepinilloGlass()
         }
     }
 
     private var recurrenceSection: some View {
-        Section {
-            if let rule = store.recurrenceRule, let preset = RecurrencePreset.from(rule: rule) {
-                HStack {
-                    Label(preset.displayName, systemImage: preset.icon)
-                    Spacer()
-                    Button(String(localized: "Remove")) {
-                        store.send(.recurrenceChanged(nil))
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.red)
-                    .accessibilityLabel(String(localized: "Remove recurrence"))
-                }
-            } else {
-                Menu {
-                    ForEach(RecurrencePreset.allCases, id: \.self) { preset in
-                        Button {
-                            store.send(.recurrenceChanged(preset.rawValue))
-                        } label: {
-                            Label(preset.displayName, systemImage: preset.icon)
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: "Recurrence"))
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            VStack {
+                if let rule = store.recurrenceRule, let preset = RecurrencePreset.from(rule: rule) {
+                    HStack {
+                        Label(preset.displayName, systemImage: preset.icon)
+                        Spacer()
+                        Button(String(localized: "Remove")) {
+                            store.send(.recurrenceChanged(nil))
                         }
+                        .font(.subheadline)
+                        .foregroundStyle(.red)
                     }
-                } label: {
-                    Label(String(localized: "Set Repeat"), systemImage: "arrow.clockwise")
+                } else {
+                    Menu {
+                        ForEach(RecurrencePreset.allCases, id: \.self) { preset in
+                            Button {
+                                store.send(.recurrenceChanged(preset.rawValue))
+                            } label: {
+                                Label(preset.displayName, systemImage: preset.icon)
+                            }
+                        }
+                    } label: {
+                        Label(String(localized: "Set Repeat"), systemImage: "arrow.clockwise")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
-        } header: {
-            Text(String(localized: "Recurrence"))
+            .padding(16)
+            .pepinilloGlass()
         }
     }
 
     private var notesSection: some View {
-        Section {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: "Notes"))
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
             TextEditor(
                 text: Binding(
                     get: { store.notes },
@@ -305,55 +353,74 @@ struct TaskDetailView: View {
                 )
             )
             .focused($focusedField, equals: .notes)
-            .frame(minHeight: 80)
-        } header: {
-            Text(String(localized: "Notes"))
+            .frame(minHeight: 120)
+            .padding(12)
+            .pepinilloGlass()
         }
     }
 
     private var statsSection: some View {
-        Section {
-            LabeledContent(String(localized: "Total Focus Time")) {
-                Text(formatDuration(store.totalFocusSeconds))
-                    .foregroundStyle(.secondary)
-            }
-            LabeledContent(String(localized: "Completed Pomodoros")) {
-                Text("\(store.completedPomodoros)")
-                    .foregroundStyle(.secondary)
-            }
-            Button {
-                store.send(.viewAnalyticsTapped)
-            } label: {
-                Label(String(localized: "Focus Analytics"), systemImage: "chart.bar.xaxis")
-                    .foregroundStyle(.tint)
-            }
-            .accessibilityHint(String(localized: "View detailed focus session charts for this task"))
-        } header: {
+        VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Focus History"))
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            VStack(spacing: 14) {
+                LabeledContent(String(localized: "Total Focus Time")) {
+                    Text(formatDuration(store.totalFocusSeconds))
+                        .foregroundStyle(.primary)
+                }
+                
+                Divider().opacity(0.1)
+                
+                LabeledContent(String(localized: "Completed Pomodoros")) {
+                    Text("\(store.completedPomodoros)")
+                        .foregroundStyle(.primary)
+                }
+                
+                Divider().opacity(0.1)
+
+                Button {
+                    store.send(.viewAnalyticsTapped)
+                } label: {
+                    Label(String(localized: "Focus Analytics"), systemImage: "chart.bar.xaxis")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+            }
+            .padding(16)
+            .pepinilloGlass()
         }
     }
 
     private var actionsSection: some View {
-        Section {
-            Button {
-                store.send(.startFocusTapped)
-                HapticManager.impact(.medium)
-            } label: {
-                Label(String(localized: "Start Focus Session"), systemImage: "play.circle.fill")
-                    .foregroundStyle(.tint)
-            }
-            .disabled(store.isCompleted)
-            .accessibilityLabel(String(localized: "Start focus session for this task"))
-            .accessibilityHint(store.isCompleted ? String(localized: "Not available for completed tasks") : "")
+        Button {
+            store.send(.startFocusTapped)
+            HapticManager.impact(.medium)
+        } label: {
+            Label(String(localized: "Start Focus Session"), systemImage: "play.circle.fill")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(store.isCompleted ? Color.gray : Color.accentColor)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: (store.isCompleted ? Color.clear : Color.accentColor.opacity(0.3)), radius: 8, y: 4)
         }
+        .disabled(store.isCompleted)
     }
 
     private var deleteSection: some View {
-        Section {
-            Button(String(localized: "Delete Task"), role: .destructive) {
-                store.send(.deleteTapped)
-            }
-            .accessibilityHint(String(localized: "Permanently removes this task"))
+        Button {
+            store.send(.deleteTapped)
+        } label: {
+            Text(String(localized: "Delete Task"))
+                .font(.subheadline.bold())
+                .foregroundStyle(.red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
         }
     }
 

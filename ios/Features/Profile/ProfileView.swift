@@ -13,32 +13,36 @@ struct ProfileView: View {
     @Bindable var store: StoreOf<ProfileFeature>
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Header
-                Text(String(localized: "profile.title", defaultValue: "Profile"))
-                    .font(.title.bold())
-                Text(String(localized: "profile.subtitle", defaultValue: "Your productivity journey"))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+        ZStack {
+            PepinilloLiquidBackground()
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Header
+                    Text(String(localized: "profile.title", defaultValue: "Profile"))
+                        .font(.title.bold())
+                    Text(String(localized: "profile.subtitle", defaultValue: "Your productivity journey"))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
 
-                // User card
-                userCard
+                    // User card
+                    userCard
 
-                // Stats
-                statsSection
+                    // Stats
+                    statsSection
 
-                // Account actions
-                accountSection
+                    // Account actions
+                    accountSection
 
-                // Footer
-                Text("Pepinillo v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .frame(maxWidth: .infinity)
+                    // Footer
+                    Text("Pepinillo v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity)
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 16)
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
@@ -113,7 +117,7 @@ struct ProfileView: View {
             Spacer()
         }
         .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+        .pepinilloGlass()
         .accessibilityElement(children: .contain)
     }
 
@@ -181,7 +185,7 @@ struct ProfileView: View {
                     .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
                 }
             }
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+            .pepinilloGlass()
         }
     }
 }
@@ -207,7 +211,7 @@ private struct StatMiniCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+        .pepinilloGlass()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel.isEmpty ? "\(label): \(value)" : accessibilityLabel)
     }

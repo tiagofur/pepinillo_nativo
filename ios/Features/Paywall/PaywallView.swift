@@ -2,8 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Two-tier paywall: Pepinillo+ (one-time) and Everywhere/AI+ (subscription).
-// Apple Intelligence is the hero differentiator.
-// Transparency: Pepinillo+ is explicitly "Not a subscription."
+// Enhanced with Liquid Glass design and Apple compliance features.
 
 import SwiftUI
 import ComposableArchitecture
@@ -15,25 +14,42 @@ struct PaywallView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    PaywallHeaderSection()
-                    PaywallPepinilloPlusSection()
-                    PaywallEverywhereSection()
-                    PaywallProductCardsSection(store: store)
-                    PaywallPurchaseButton(store: store)
-                    PaywallLegalFooter(store: store)
+            ZStack {
+                PepinilloLiquidBackground()
+                
+                ScrollView {
+                    VStack(spacing: 32) {
+                        PaywallHeaderSection()
+                        
+                        VStack(spacing: 24) {
+                            PaywallPepinilloPlusSection()
+                            PaywallEverywhereSection()
+                        }
+                        
+                        PaywallProductCardsSection(store: store)
+                        
+                        VStack(spacing: 20) {
+                            PaywallPurchaseButton(store: store)
+                            PaywallLegalFooter(store: store)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 40)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 32)
             }
-            .navigationTitle(String(localized: "Choose Your Plan"))
+            .navigationTitle(String(localized: "Upgrade to Pro"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(String(localized: "Close")) { store.send(.closeTapped) }
-                        .foregroundStyle(.secondary)
+                    Button {
+                        store.send(.closeTapped)
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.secondary.opacity(0.5))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .overlay {
@@ -46,7 +62,7 @@ struct PaywallView: View {
             }
             .alert(
                 store.subscriptionState.isPro
-                    ? String(localized: "Welcome to Pepinillo+!")
+                    ? String(localized: "Welcome to Pepinillo Pro!")
                     : String(localized: "Purchase Status"),
                 isPresented: Binding(
                     get: { store.purchaseResult != nil },
@@ -54,10 +70,6 @@ struct PaywallView: View {
                 )
             ) {
                 Button(String(localized: "OK")) { store.send(.alertDismissed) }
-                if store.purchaseResult?.isSuccess == true {
-                    Button(String(localized: "Start Focusing")) { store.send(.closeTapped) }
-                        .keyboardShortcut(.defaultAction)
-                }
             } message: {
                 Text(store.purchaseResult?.message ?? "")
             }
@@ -73,30 +85,39 @@ struct PaywallHeaderSection: View {
     @State private var appeared = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text("🧠✨")
-                .font(.system(size: 52))
-                .scaleEffect(appeared ? 1 : 0.5)
-                .accessibilityHidden(true)
+        VStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(colors: [Color.accentColor, .green], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .frame(width: 100, height: 100)
+                    .blur(radius: 20)
+                    .opacity(0.3)
+                
+                Text("🧠✨")
+                    .font(.system(size: 64))
+                    .shadow(color: Color.accentColor.opacity(0.3), radius: 10)
+            }
+            .scaleEffect(appeared ? 1 : 0.5)
+            .accessibilityHidden(true)
 
-            Text(String(localized: "Unlock Your Deep Focus"))
-                .font(.title2)
-                .fontWeight(.bold)
-                .multilineTextAlignment(.center)
+            VStack(spacing: 8) {
+                Text(String(localized: "Master Your Focus"))
+                    .font(.title.bold())
+                    .multilineTextAlignment(.center)
 
-            Text(String(localized: "Apple Intelligence meets deep work. Get AI-powered insights, all focus modes, and a productivity system that learns how you work best."))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                Text(String(localized: "Join thousands of users using Apple Intelligence to reach their peak productivity."))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 20)
+            }
         }
-        .padding(.top, 4)
-        .offset(y: appeared ? 0 : 15)
+        .padding(.top, 10)
+        .offset(y: appeared ? 0 : 20)
         .opacity(appeared ? 1 : 0)
         .onAppear {
-            if reduceMotion {
-                appeared = true
-            } else {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
+            if !appeared {
+                withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
                     appeared = true
                 }
             }
@@ -104,190 +125,95 @@ struct PaywallHeaderSection: View {
     }
 }
 
-// MARK: - Pepinillo+ Features (One-Time)
+// MARK: - Features Sections
 
 struct PaywallPepinilloPlusSection: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var appeared = false
-
-    private let features: [(String, String, String)] = [
-        ("Apple Intelligence", "AI-powered productivity reports & insights", "sparkles"),
-        ("All 4 Focus Modes", "Pomodoro, Flowtime, Time Block, Stopwatch", "rectangle.split.3x1"),
-        ("Unlimited Tasks", "subtasks, recurring tasks, energy levels", "checklist"),
-        ("Advanced Analytics", "30-day, 1-year views, weekly & monthly reviews", "chart.bar.xaxis"),
-        ("Apple Ecosystem", "iCloud sync, all widgets, Apple Watch companion", "apple.logo"),
-        ("Premium Themes", "Forest, Ocean, Sunset, Liquid Glass", "paintpalette"),
-    ]
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Tier header
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text(String(localized: "Pepinillo+"))
+                Label(String(localized: "Pepinillo+"), systemImage: "star.fill")
                     .font(.headline)
+                    .foregroundStyle(.green)
+                
                 Spacer()
-                Text(String(localized: "One purchase. Yours forever."))
-                    .font(.caption2.weight(.semibold))
+                
+                Text(String(localized: "Lifetime"))
+                    .font(.caption2.bold())
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.green.opacity(0.15), in: Capsule())
-                    .foregroundStyle(Color.green)
+                    .background(.green.opacity(0.2), in: Capsule())
+                    .foregroundStyle(.green)
             }
-
-            // Not a subscription badge
-            HStack(spacing: 6) {
-                Image(systemName: "lock.shield")
-                    .font(.caption2)
-                Text(String(localized: "NOT a subscription — pay once, own it for life"))
-                    .font(.caption2.weight(.medium))
-            }
-            .foregroundStyle(.secondary)
-
-            // Features
-            ForEach(Array(features.enumerated()), id: \.element.0) { index, feature in
-                let (title, subtitle, icon) = feature
-                HStack(spacing: 12) {
-                    Image(systemName: icon)
-                        .font(.body)
-                        .foregroundStyle(Color.accentColor)
-                        .frame(width: 24)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(title)
-                            .font(.subheadline.weight(.medium))
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "checkmark")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.green)
-                }
-                .offset(x: appeared ? 0 : -20)
-                .opacity(appeared ? 1 : 0)
-                .animation(
-                    reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8)
-                    .delay(0.1 + Double(index) * 0.05),
-                    value: appeared
-                )
+            
+            VStack(alignment: .leading, spacing: 12) {
+                FeatureRow(icon: "sparkles", title: "Apple Intelligence", subtitle: "AI-powered productivity insights")
+                FeatureRow(icon: "rectangle.split.3x1", title: "All Focus Modes", subtitle: "Pomodoro, Flowtime, Time Block")
+                FeatureRow(icon: "checklist", title: "Unlimited Tasks", subtitle: "Smart lists & recurring tasks")
+                FeatureRow(icon: "apple.logo", title: "Ecosystem Pro", subtitle: "All widgets & Watch companion")
             }
         }
-        .padding(16)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.green.opacity(0.3), lineWidth: 1)
-        )
-        .onAppear { appeared = true }
+        .padding(20)
+        .pepinilloGlass(cornerRadius: 24)
     }
 }
 
-// MARK: - Everywhere/AI+ Features (Subscription)
-
 struct PaywallEverywhereSection: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var appeared = false
-
-    private let availableFeatures: [(String, String, String)] = [
-        ("Everything in Pepinillo+", "All Apple features included", "plus.circle"),
-    ]
-
-    private let comingSoonFeatures: [(String, String, String)] = [
-        ("AI Coach", "personalized productivity coaching", "person.wave.2"),
-        ("Advanced AI Insights", "predictive windows, burnout detection", "brain"),
-        ("AI Task Scheduling", "smart scheduling based on your patterns", "calendar.badge.clock"),
-        ("AI Subtask Generation", "auto-decompose complex tasks", "list.bullet.indent"),
-        ("Cross-Platform Sync", "iOS + Android + Web (when available)", "arrow.triangle.2.circlepath"),
-        ("100 AI Credits/month", "for cloud-powered AI workflows", "bolt.horizontal"),
-    ]
-
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Tier header
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text(String(localized: "Everywhere/AI+"))
+                Label(String(localized: "Everywhere/AI+"), systemImage: "globe")
                     .font(.headline)
+                    .foregroundStyle(Color.accentColor)
+                
                 Spacer()
-                Text(String(localized: "Subscription"))
-                    .font(.caption2.weight(.semibold))
+                
+                Text(String(localized: "Pro"))
+                    .font(.caption2.bold())
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.accentColor.opacity(0.15), in: Capsule())
+                    .background(Color.accentColor.opacity(0.2), in: Capsule())
                     .foregroundStyle(Color.accentColor)
             }
-
-            // Available features
-            ForEach(Array(availableFeatures.enumerated()), id: \.element.0) { _, feature in
-                let (title, subtitle, icon) = feature
-                HStack(spacing: 12) {
-                    Image(systemName: icon)
-                        .font(.body)
-                        .foregroundStyle(Color.accentColor)
-                        .frame(width: 24)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(title)
-                            .font(.subheadline.weight(.medium))
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Image(systemName: "checkmark")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.green)
-                }
+            
+            VStack(alignment: .leading, spacing: 12) {
+                FeatureRow(icon: "plus.circle", title: "Everything in Pepinillo+", subtitle: "Plus cloud-powered features")
+                FeatureRow(icon: "person.wave.2", title: "AI Productivity Coach", subtitle: "Personalized habit building")
+                FeatureRow(icon: "arrow.triangle.2.circlepath", title: "Full Web & Android Sync", subtitle: "Access your focus anywhere")
             }
-
-            Divider()
-                .padding(.vertical, 2)
-
-            // Coming soon section
-            Text(String(localized: "Coming Soon"))
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-
-            ForEach(Array(comingSoonFeatures.enumerated()), id: \.element.0) { index, feature in
-                let (title, subtitle, icon) = feature
-                HStack(spacing: 12) {
-                    Image(systemName: icon)
-                        .font(.body)
-                        .foregroundStyle(.tertiary)
-                        .frame(width: 24)
-
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(title)
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.secondary)
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-
-                    Spacer()
-
-                    Text(String(localized: "Soon"))
-                        .font(.caption2.weight(.semibold))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color(.tertiarySystemFill), in: Capsule())
-                        .foregroundStyle(.secondary)
-                }
-                .offset(x: appeared ? 0 : -15)
-                .opacity(appeared ? 0.7 : 0)
-                .animation(
-                    reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8)
-                    .delay(0.3 + Double(index) * 0.04),
-                    value: appeared
-                )
+            
+            HStack {
+                Spacer()
+                Text("Coming soon in 2024")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.secondary.opacity(0.6))
+                    .textCase(.uppercase)
             }
         }
-        .padding(16)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .onAppear { appeared = true }
+        .padding(20)
+        .pepinilloGlass(cornerRadius: 24)
+    }
+}
+
+struct FeatureRow: View {
+    let icon: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
+    
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 24)
+            
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 }
 
@@ -295,28 +221,18 @@ struct PaywallEverywhereSection: View {
 
 struct PaywallProductCardsSection: View {
     @Bindable var store: StoreOf<PaywallFeature>
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var appeared = false
 
     var body: some View {
         VStack(spacing: 12) {
-            ForEach(Array(store.products.enumerated()), id: \.element.id) { index, product in
+            ForEach(store.products) { product in
                 PaywallProductCard(
                     product: product,
                     isSelected: store.selectedProductID == product.id
                 ) {
                     store.send(.productSelected(product.id))
                 }
-                .offset(y: appeared ? 0 : 20)
-                .opacity(appeared ? 1 : 0)
-                .animation(
-                    reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.8)
-                    .delay(0.5 + Double(index) * 0.08),
-                    value: appeared
-                )
             }
         }
-        .onAppear { appeared = true }
     }
 }
 
@@ -327,73 +243,74 @@ struct PaywallProductCard: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                Circle()
-                    .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.3))
-                    .frame(width: 22, height: 22)
-                    .overlay {
-                        if isSelected {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(.white)
-                        }
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(isSelected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: 2)
+                        .frame(width: 24, height: 24)
+                    
+                    if isSelected {
+                        Circle()
+                            .fill(Color.accentColor)
+                            .frame(width: 14, height: 14)
                     }
-
+                }
+                
                 VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 8) {
                         Text(product.displayName)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                            .font(.headline)
                             .foregroundStyle(.primary)
-
-                        if product.billingPeriod == "once" {
-                            Text(String(localized: "ONE-TIME"))
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.green, in: Capsule())
-                        } else if product.isFeatured {
-                            Text(String(localized: "BEST VALUE"))
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.white)
+                        
+                        if product.isFeatured {
+                            Text(String(localized: "Popular"))
+                                .font(.system(size: 10, weight: .bold))
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(Color.accentColor, in: Capsule())
+                                .foregroundStyle(.white)
                         }
                     }
-
+                    
                     Text(product.description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
+                
                 Spacer()
-
-                VStack(alignment: .trailing, spacing: 1) {
+                
+                VStack(alignment: .trailing, spacing: 0) {
                     Text(product.displayPrice)
-                        .font(.subheadline)
-                        .fontWeight(.bold)
+                        .font(.headline)
                         .foregroundStyle(.primary)
-
+                    
                     if product.billingPeriod != "once" {
                         Text("/ \(product.billingPeriod)")
-                            .font(.caption2)
+                            .font(.caption2.bold())
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(isSelected ? Color.accentColor.opacity(0.08) : Color(.systemBackground))
-                    .stroke(isSelected ? Color.accentColor : Color(.separator), lineWidth: 1.5)
-            )
+            .padding(18)
+            .background {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.accentColor.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(Color.accentColor, lineWidth: 2)
+                        )
+                } else {
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(.white.opacity(0.2), lineWidth: 1)
+                        )
+                }
+            }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(product.displayName), \(product.description), \(product.displayPrice)\(product.billingPeriod != "once" ? " per \(product.billingPeriod)" : "")")
-        .accessibilityAddTraits([.isButton])
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 
@@ -404,11 +321,14 @@ struct PaywallPurchaseButton: View {
 
     private var buttonLabel: String {
         if store.subscriptionState.isPro {
-            return String(localized: "You're Pepinillo+ ✓")
+            return String(localized: "Subscription Active")
         }
         let selected = store.products.first { $0.id == store.selectedProductID }
-        if let product = selected, product.billingPeriod == "once" {
-            return String(localized: "Get Pepinillo+ — One Time")
+        if let product = selected {
+            if product.billingPeriod == "once" {
+                return String(localized: "Get Lifetime Access")
+            }
+            return String(localized: "Start My Free Trial")
         }
         return String(localized: "Continue")
     }
@@ -417,26 +337,25 @@ struct PaywallPurchaseButton: View {
         Button {
             store.send(.purchaseTapped)
         } label: {
-            Text(buttonLabel)
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                .foregroundStyle(.white)
+            HStack {
+                if store.isLoading {
+                    ProgressView().tint(.white)
+                } else {
+                    Text(buttonLabel)
+                }
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .background(
+                LinearGradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)], startPoint: .top, endPoint: .bottom),
+                in: RoundedRectangle(cornerRadius: 24)
+            )
+            .foregroundStyle(.white)
+            .shadow(color: Color.accentColor.opacity(0.3), radius: 10, y: 5)
         }
         .disabled(store.isLoading || store.subscriptionState.isPro)
-        .accessibilityLabel(store.subscriptionState.isPro
-            ? String(localized: "You already have Pepinillo+")
-            : String(localized: "Continue with purchase"))
-        .overlay {
-            if store.subscriptionState.isPro {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.green)
-                Text(String(localized: "You're Pepinillo+ ✓"))
-                    .font(.headline)
-                    .foregroundStyle(.white)
-            }
-        }
+        .padding(.top, 10)
     }
 }
 
@@ -446,18 +365,33 @@ struct PaywallLegalFooter: View {
     @Bindable var store: StoreOf<PaywallFeature>
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 16) {
             Button(String(localized: "Restore Purchases")) {
                 store.send(.restoreTapped)
             }
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .accessibilityHint(String(localized: "Restores previously purchased subscriptions"))
-
-            Text(String(localized: "Payment will be charged to your Apple ID. Subscriptions auto-renew unless cancelled 24 hours before the end of the current period."))
-                .font(.caption2)
+            .font(.subheadline.bold())
+            .foregroundStyle(Color.accentColor)
+            
+            Text(String(localized: "Payment will be charged to your Apple ID account. Subscription automatically renews unless it is canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period."))
+                .font(.system(size: 10))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+                .padding(.horizontal, 10)
+            
+            HStack(spacing: 24) {
+                Button(String(localized: "Terms of Use")) {
+                    store.send(.termsOfServiceTapped)
+                }
+                
+                Text("•")
+                    .foregroundStyle(.secondary.opacity(0.5))
+                
+                Button(String(localized: "Privacy Policy")) {
+                    store.send(.privacyPolicyTapped)
+                }
+            }
+            .font(.subheadline.bold())
+            .foregroundStyle(Color.accentColor)
         }
     }
 }
@@ -471,15 +405,15 @@ struct PaywallLegalFooter: View {
                 switch product {
                 case .monthly:
                     return ProductInfo(id: product.rawValue, displayName: "Everywhere/AI+",
-                                       description: "Monthly subscription.", displayPrice: "$4.99",
+                                       description: "Monthly access to all features.", displayPrice: "$4.99",
                                        billingPeriod: "month")
                 case .annual:
                     return ProductInfo(id: product.rawValue, displayName: "Everywhere/AI+",
-                                       description: "Best value — save 42%.", displayPrice: "$34.99",
+                                       description: "Best value — cancel anytime.", displayPrice: "$34.99",
                                        billingPeriod: "year", isFeatured: true)
                 case .lifetime:
                     return ProductInfo(id: product.rawValue, displayName: "Pepinillo+",
-                                       description: "One purchase. Yours forever.", displayPrice: "$19.99",
+                                       description: "One-time purchase for life.", displayPrice: "$19.99",
                                        billingPeriod: "once")
                 }
             }

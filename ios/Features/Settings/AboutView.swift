@@ -11,91 +11,138 @@ struct AboutView: View {
     @Environment(\.appTheme) private var theme
 
     var body: some View {
-        Form {
-            // MARK: App Identity
-            Section {
-                HStack(spacing: 14) {
-                    if let icon = UIImage(named: "AppIcon") {
-                        Image(uiImage: icon)
-                            .resizable()
-                            .frame(width: 60, height: 60)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                    } else {
-                        Image(systemName: "leaf.fill")
-                            .font(.system(size: 32))
-                            .frame(width: 60, height: 60)
-                            .foregroundStyle(Color.accentColor)
+        ZStack {
+            PepinilloLiquidBackground()
+            
+            ScrollView {
+                VStack(spacing: 24) {
+                    // MARK: App Identity
+                    VStack(spacing: 16) {
+                        if let icon = UIImage(named: "AppIcon") {
+                            Image(uiImage: icon)
+                                .resizable()
+                                .frame(width: 80, height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 18))
+                                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                        } else {
+                            Image(systemName: "leaf.fill")
+                                .font(.system(size: 40))
+                                .frame(width: 80, height: 80)
+                                .foregroundStyle(Color.accentColor)
+                                .background(Circle().fill(Color.accentColor.opacity(0.1)))
+                        }
+
+                        VStack(spacing: 4) {
+                            Text("Pepinillo")
+                                .font(.title2.bold())
+                                .foregroundStyle(.primary)
+                            
+                            Text(String(localized: "Deep Work Companion"))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            
+                            Text(String(localized: "Version \(store.appVersion) (\(store.buildNumber))"))
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(Capsule().stroke(.tertiary, lineWidth: 0.5))
+                        }
+                    }
+                    .padding(.vertical, 8)
+
+                    // MARK: Subscription
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(String(localized: "Subscription"))
+                            .font(.caption.bold())
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                            .padding(.horizontal, 4)
+
+                        HStack {
+                            if store.isProUser {
+                                Label {
+                                    Text(String(localized: "Pepinillo Pro"))
+                                        .fontWeight(.medium)
+                                } icon: {
+                                    Image(systemName: "crown.fill")
+                                        .foregroundStyle(.yellow)
+                                }
+                                Spacer()
+                                Text(String(localized: "Active"))
+                                    .font(.subheadline.bold())
+                                    .foregroundStyle(.green)
+                            } else {
+                                Label {
+                                    Text(String(localized: "Pepinillo Free"))
+                                        .fontWeight(.medium)
+                                } icon: {
+                                    Image(systemName: "star.circle")
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .padding(16)
+                        .pepinilloGlass()
                     }
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Pepinillo")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        Text(String(localized: "Deep Work Companion"))
-                            .font(.subheadline)
+                    // MARK: Legal
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(String(localized: "Legal"))
+                            .font(.caption.bold())
                             .foregroundStyle(.secondary)
-                        Text(String(localized: "Version \(store.appVersion) (\(store.buildNumber))"))
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .padding(.vertical, 4)
-            }
+                            .textCase(.uppercase)
+                            .padding(.horizontal, 4)
 
-            // MARK: Subscription
-            Section {
-                if store.isProUser {
-                    HStack {
-                        Image(systemName: "crown.fill")
-                            .foregroundStyle(.yellow)
-                        Text(String(localized: "Pepinillo Pro"))
-                            .fontWeight(.medium)
-                        Spacer()
-                        Text(String(localized: "Active"))
-                            .foregroundStyle(.green)
-                            .font(.subheadline)
-                    }
-                } else {
-                    HStack {
-                        Image(systemName: "star.circle")
-                            .foregroundStyle(.secondary)
-                        Text(String(localized: "Pepinillo Free"))
-                            .fontWeight(.medium)
-                    }
-                }
-            }
+                        VStack(spacing: 0) {
+                            Button {
+                                store.send(.privacyPolicyTapped)
+                            } label: {
+                                HStack {
+                                    Label(String(localized: "Privacy Policy"), systemImage: "doc.text")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .padding(16)
+                            }
+                            .buttonStyle(.plain)
 
-            // MARK: Legal
-            Section {
-                Button {
-                    store.send(.privacyPolicyTapped)
-                } label: {
-                    HStack {
-                        Label(String(localized: "Privacy Policy"), systemImage: "doc.text")
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .foregroundStyle(.primary)
+                            Divider().padding(.leading, 56).opacity(0.1)
 
-                Button {
-                    store.send(.termsOfServiceTapped)
-                } label: {
-                    HStack {
-                        Label(String(localized: "Terms of Service"), systemImage: "doc.plaintext")
-                        Spacer()
-                        Image(systemName: "arrow.up.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            Button {
+                                store.send(.termsOfServiceTapped)
+                            } label: {
+                                HStack {
+                                    Label(String(localized: "Terms of Service"), systemImage: "doc.plaintext")
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.tertiary)
+                                }
+                                .padding(16)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .pepinilloGlass()
                     }
+
+                    Spacer(minLength: 40)
+                    
+                    Text("© \(Calendar.current.component(.year, from: Date())) Creapolis Dev")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
                 }
-                .foregroundStyle(.primary)
-            } header: {
-                Text(String(localized: "Legal"))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 20)
             }
         }
         .navigationTitle(String(localized: "About"))
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

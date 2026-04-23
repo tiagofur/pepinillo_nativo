@@ -20,6 +20,9 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
+            // Animated Liquid Background
+            PepinilloLiquidBackground()
+            
             // Page content
             TabView(selection: $currentPage) {
                 ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
@@ -42,7 +45,7 @@ struct OnboardingView: View {
                         Button(String(localized: "Skip")) {
                             withAnimation { currentPage = pages.count }
                         }
-                        .font(.subheadline)
+                        .font(.subheadline.bold())
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 24)
                         .padding(.top, 56)
@@ -58,7 +61,7 @@ struct OnboardingView: View {
                 Spacer()
                 continueButton
                     .padding(.horizontal, 32)
-                    .padding(.bottom, 48)
+                    .padding(.bottom, 60) // Extra padding for the page index indicators
             }
         }
         .conditionalAnimation(.easeInOut(duration: 0.3), value: currentPage)
@@ -79,13 +82,16 @@ struct OnboardingView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: 56)
                 .background(
-                    currentPage < pages.count
-                        ? Color.accentColor
-                        : Color(red: 0.18, green: 0.55, blue: 0.23)  // forest green for final CTA
+                    Capsule()
+                        .fill(
+                            (currentPage < pages.count
+                             ? Color.accentColor
+                             : Color(red: 0.18, green: 0.55, blue: 0.23)).gradient
+                        )
                 )
-                .clipShape(Capsule())
+                .shadow(color: (currentPage < pages.count ? Color.accentColor : Color.green).opacity(0.3), radius: 10, y: 5)
         }
         .accessibilityLabel(currentPage < pages.count
             ? String(localized: "Continue to next page")
@@ -95,36 +101,44 @@ struct OnboardingView: View {
     // MARK: - Get Started Page
 
     private var getStartedPage: some View {
-        VStack(spacing: 32) {
-            VStack(spacing: 8) {
-                Text("🥒")
-                    .font(.system(size: 64))
-                    .accessibilityHidden(true)
-                Text(String(localized: "Your default mode"))
-                    .font(.title2)
-                    .fontWeight(.bold)
-                Text(String(localized: "You can always change this in Settings."))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.top, 80)
+        ScrollView {
+            VStack(spacing: 32) {
+                VStack(spacing: 12) {
+                    Text("🥒")
+                        .font(.system(size: 80))
+                        .accessibilityHidden(true)
+                        .shadow(radius: 10)
+                    
+                    Text(String(localized: "Ready to focus?"))
+                        .font(.largeTitle.bold())
+                    
+                    Text(String(localized: "Choose your default focus style. You can change this later in settings."))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                }
+                .padding(.top, 60)
 
-            // Mode selector cards
-            VStack(spacing: 12) {
-                ForEach(FocusMode.allCases) { mode in
-                    DefaultModeCard(
-                        mode: mode,
-                        isSelected: selectedDefaultMode == mode
-                    ) {
-                        selectedDefaultMode = mode
+                // Mode selector cards
+                VStack(spacing: 16) {
+                    ForEach(FocusMode.allCases) { mode in
+                        DefaultModeCard(
+                            mode: mode,
+                            isSelected: selectedDefaultMode == mode
+                        ) {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedDefaultMode = mode
+                            }
+                        }
                     }
                 }
-            }
-            .padding(.horizontal, 24)
+                .padding(.horizontal, 24)
 
-            Spacer()
+                Spacer(minLength: 120)
+            }
         }
+        .scrollIndicators(.hidden)
     }
 }
 
@@ -139,33 +153,26 @@ struct OnboardingPage {
 
     static let all: [OnboardingPage] = [
         OnboardingPage(
-            emoji: "🍅",
-            title: String(localized: "Pomodoro"),
-            subtitle: String(localized: "The classic method"),
-            description: String(localized: "Work 25 minutes, rest 5. After 4 cycles, take a longer break. Proven for over 30 years to beat procrastination."),
-            accentColor: Color(red: 0.91, green: 0.30, blue: 0.24)
+            emoji: "🎯",
+            title: String(localized: "Choose Your Focus"),
+            subtitle: String(localized: "4 modes, 1 goal"),
+            description: String(localized: "Whether it's Pomodoro, Flowtime, or Time Blocks, we have the perfect scientific method to keep you in the zone."),
+            accentColor: Color.blue
         ),
         OnboardingPage(
-            emoji: "🌊",
-            title: String(localized: "Flowtime"),
-            subtitle: String(localized: "Follow your flow"),
-            description: String(localized: "Work as long as you're in the zone. Pepinillo tracks your flow and suggests the perfect break length based on how long you focused."),
-            accentColor: Color(red: 0.20, green: 0.53, blue: 0.92)
+            emoji: "✅",
+            title: String(localized: "Organize Your Day"),
+            subtitle: String(localized: "Integrated Task Manager"),
+            description: String(localized: "Don't just track time; track progress. Plan your deep work sessions directly from your task list."),
+            accentColor: Color.orange
         ),
         OnboardingPage(
-            emoji: "📦",
-            title: String(localized: "Time Block"),
-            subtitle: String(localized: "Own your calendar"),
-            description: String(localized: "Commit to a fixed block — 1 hour, 2 hours, whatever you need. One task, no interruptions. The way Cal Newport works."),
-            accentColor: Color(red: 0.56, green: 0.27, blue: 0.87)
-        ),
-        OnboardingPage(
-            emoji: "⏱️",
-            title: String(localized: "Stopwatch"),
-            subtitle: String(localized: "Zero pressure"),
-            description: String(localized: "Just start the timer and see how long you focus. No targets, no breaks. Perfect for creative work or when you just need to begin."),
-            accentColor: Color(red: 0.18, green: 0.72, blue: 0.44)
-        ),
+            emoji: "📈",
+            title: String(localized: "Analyze Your Growth"),
+            subtitle: String(localized: "Dashboard & Insights"),
+            description: String(localized: "Visualize your productivity streaks and deep work trends. Knowledge is power to improve your focus."),
+            accentColor: Color.accentColor
+        )
     ]
 }
 
@@ -173,62 +180,94 @@ struct OnboardingPage {
 
 struct OnboardingPageView: View {
     let page: OnboardingPage
-    @State private var appeared = false
+    @State private var emojiAppeared = false
+    @State private var titleAppeared = false
+    @State private var descAppeared = false
+    @State private var floatingOffset: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
             Spacer()
-                .frame(height: 80)
+                .frame(height: 60)
 
             // Emoji in a colored circle
             ZStack {
                 Circle()
                     .fill(page.accentColor.opacity(0.12))
-                    .frame(width: 120, height: 120)
+                    .frame(width: 140, height: 140)
+                    .blur(radius: emojiAppeared ? 0 : 20)
+                
                 Text(page.emoji)
-                    .font(.system(size: 56))
+                    .font(.system(size: 72))
+                    .offset(y: floatingOffset)
             }
-            .scaleEffect(appeared ? 1 : 0.6)
-            .opacity(appeared ? 1 : 0)
+            .scaleEffect(emojiAppeared ? 1 : 0.4)
+            .opacity(emojiAppeared ? 1 : 0)
+            .rotationEffect(.degrees(emojiAppeared ? 0 : -15))
             .accessibilityHidden(true)
+            .padding(.bottom, 40)
 
-            VStack(spacing: 8) {
-                Text(page.title)
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundStyle(page.accentColor)
-                    .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Text(page.title)
+                        .font(.largeTitle.bold())
+                        .foregroundStyle(.primary)
+                        .offset(x: titleAppeared ? 0 : -50)
+                        .opacity(titleAppeared ? 1 : 0)
+                        .accessibilityAddTraits(.isHeader)
 
-                Text(page.subtitle)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+                    Text(page.subtitle)
+                        .font(.title3.weight(.medium))
+                        .foregroundStyle(page.accentColor)
+                        .offset(x: titleAppeared ? 0 : 50)
+                        .opacity(titleAppeared ? 1 : 0)
+                }
+
+                Text(page.description)
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.primary.opacity(0.8))
+                    .lineSpacing(4)
+                    .scaleEffect(descAppeared ? 1 : 0.9)
+                    .opacity(descAppeared ? 1 : 0)
             }
-            .offset(y: appeared ? 0 : 20)
-            .opacity(appeared ? 1 : 0)
+            .padding(32)
+            .pepinilloGlass()
+            .padding(.horizontal, 24)
+            .offset(y: descAppeared ? 0 : 30)
 
-            Text(page.description)
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.primary.opacity(0.8))
-                .padding(.horizontal, 32)
-                .lineSpacing(4)
-                .offset(y: appeared ? 0 : 20)
-                .opacity(appeared ? 1 : 0)
-
-            Spacer()
             Spacer()
         }
         .onAppear {
             if reduceMotion {
-                appeared = true
+                emojiAppeared = true
+                titleAppeared = true
+                descAppeared = true
             } else {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1)) {
-                    appeared = true
+                // Staggered entrance
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1)) {
+                    emojiAppeared = true
+                }
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.3)) {
+                    titleAppeared = true
+                }
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.5)) {
+                    descAppeared = true
+                }
+                
+                // Floating emoji effect
+                withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                    floatingOffset = -10
                 }
             }
         }
-        .onDisappear { appeared = false }
+        .onDisappear {
+            emojiAppeared = false
+            titleAppeared = false
+            descAppeared = false
+            floatingOffset = 0
+        }
     }
 }
 
@@ -247,15 +286,15 @@ struct DefaultModeCard: View {
                 ZStack {
                     Circle()
                         .fill(modeColor.opacity(0.12))
-                        .frame(width: 44, height: 44)
+                        .frame(width: 48, height: 48)
                     Text(mode.icon)
-                        .font(.title2)
+                        .font(.title)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(mode.displayName)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                        .font(.subheadline.bold())
+                        .foregroundStyle(.primary)
                     Text(modeTagline)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -264,17 +303,17 @@ struct DefaultModeCard: View {
                 Spacer()
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(isSelected ? modeColor : .secondary)
+                    .font(.title2)
+                    .foregroundStyle(isSelected ? modeColor : .secondary.opacity(0.4))
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(isSelected ? modeColor.opacity(0.08) : Color(.secondarySystemBackground))
+            .padding(.vertical, 16)
+            .pepinilloGlass()
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(isSelected ? modeColor : Color.clear, lineWidth: 1.5)
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(isSelected ? modeColor : Color.clear, lineWidth: 2)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
             .accessibilityAddTraits(.isButton)
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
             .accessibilityLabel("\(mode.displayName), \(modeTagline)")

@@ -40,19 +40,22 @@ struct PaywallFeature {
         case subscriptionStateLoaded(SubscriptionState)
         case alertDismissed
         case closeTapped
+        case privacyPolicyTapped
+        case termsOfServiceTapped
     }
 
     // MARK: - Dependencies
 
     @Dependency(\.subscriptionClient) var subscriptionClient
     @Dependency(\.dismiss) var dismiss
+    @Dependency(\.openURL) var openURL
 
     // MARK: - Reducer
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-
+            // ... (keeping existing cases)
             case .appeared:
                 state.isLoading = true
                 return .merge(
@@ -69,7 +72,6 @@ struct PaywallFeature {
             case .productsLoaded(let products):
                 state.isLoading = false
                 state.products = products
-                // Default to featured (annual) product
                 if let featured = products.first(where: { $0.isFeatured }) {
                     state.selectedProductID = featured.id
                 } else {
@@ -116,7 +118,7 @@ struct PaywallFeature {
                         isSuccess: false
                     )
                 case .cancelled:
-                    break // No alert for user cancellation
+                    break
                 case .failed(let message):
                     state.purchaseResult = State.PurchaseResultAlert(
                         message: message,
@@ -136,6 +138,12 @@ struct PaywallFeature {
 
             case .closeTapped:
                 return .run { _ in await dismiss() }
+
+            case .privacyPolicyTapped:
+                return .run { _ in await openURL(URL(string: "https://creapolis.dev/privacy-policy/")!) }
+
+            case .termsOfServiceTapped:
+                return .run { _ in await openURL(URL(string: "https://creapolis.dev/terms-of-use/")!) }
             }
         }
     }

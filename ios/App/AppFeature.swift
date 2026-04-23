@@ -322,7 +322,9 @@ struct AppFeature {
                             }
                         }
                     }
-                    .cancellable(id: CancelID.watchCommandListener)
+                    .cancellable(id: CancelID.watchCommandListener),
+                    // Load tasks early so they are available for focus linking
+                    .send(.tasks(.onAppear))
                 )
 
             case .requestNotificationPermission:
@@ -688,10 +690,10 @@ struct AppFeature {
                     return .send(.focus(.skipPhaseTapped))
                 case .linkTask(let idStr):
                     guard let id = UUID(uuidString: idStr) else { return .none }
-                    let title = state.tasks.tasks.first(where: { $0.id == id })?.title
-                    return .send(.focus(.linkTask(id, title)))
+                    let task = state.tasks.tasks.first(where: { $0.id == id })
+                    return .send(.focus(.linkTask(id, task?.title, task?.energyLevel.emoji)))
                 case .unlinkTask:
-                    return .send(.focus(.linkTask(nil, nil)))
+                    return .send(.focus(.linkTask(nil, nil, nil)))
                 case .toggleTaskCompleted(let idStr):
                     guard let id = UUID(uuidString: idStr) else { return .none }
                     return .send(.tasks(.taskCompleted(id)))
@@ -803,7 +805,10 @@ struct AppFeature {
             case .tasks(.startFocusOnTask(let taskID)):
                 if let task = state.tasks.tasks[id: taskID] {
                     state.selectedTab = .focus
-                    return .send(.focus(.linkTask(taskID, task.title)))
+                    return .merge(
+                        .send(.focus(.linkTask(taskID, task.title, task.energyLevel.emoji))),
+                        .send(.focus(.startTapped))
+                    )
                 }
                 return .none
 
