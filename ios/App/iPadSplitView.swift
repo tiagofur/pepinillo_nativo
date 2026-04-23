@@ -31,17 +31,6 @@ struct iPadLandscapeLayout: View {
             detailColumn
         }
         .navigationSplitViewStyle(.balanced)
-        .sheet(item: $store.scope(state: \.calendar, action: \.calendar)) { calendarStore in
-            NavigationStack {
-                CalendarView(store: calendarStore)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button(String(localized: "Done")) { store.send(.calendarSheetDismissed) }
-                        }
-                    }
-            }
-            .iPadSheetSizing()
-        }
     }
 
     // MARK: - Sidebar
@@ -132,66 +121,65 @@ struct iPadLandscapeLayout: View {
 
 // MARK: - Portrait: Top menu + content
 
+/// Native TabView (iPhone-style bottom tabs) with content constrained to a
+/// comfortable max width so the UI doesn't sprawl across the full iPad width.
 struct iPadPortraitLayout: View {
     @Bindable var store: StoreOf<AppFeature>
 
+    private static let contentMaxWidth: CGFloat = 720
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                topTabBar
-
-                Divider()
-
-                iPadTabContent(store: store, tab: store.selectedTab)
-            }
-        }
-        .sheet(item: $store.scope(state: \.calendar, action: \.calendar)) { calendarStore in
-            NavigationStack {
-                CalendarView(store: calendarStore)
-                    .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
-                            Button(String(localized: "Done")) { store.send(.calendarSheetDismissed) }
-                        }
-                    }
-            }
-            .iPadSheetSizing()
-        }
-    }
-
-    private var topTabBar: some View {
-        HStack(spacing: 8) {
+        TabView(selection: Binding(
+            get: { store.selectedTab },
+            set: { store.send(.tabSelected($0)) }
+        )) {
             ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
-                tabButton(tab)
+                tabContent(for: tab)
+                    .tabItem {
+                        Label(tab.title, systemImage: tab.systemImage)
+                    }
+                    .tag(tab)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.bar)
     }
 
-    private func tabButton(_ tab: AppFeature.Tab) -> some View {
-        let isSelected = store.selectedTab == tab
-        return Button {
-            store.send(.tabSelected(tab))
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: tab.systemImage)
-                    .font(.system(size: 16, weight: .medium))
-                Text(tab.title)
-                    .font(.subheadline.weight(isSelected ? .semibold : .regular))
+    @ViewBuilder
+    private func tabContent(for tab: AppFeature.Tab) -> some View {
+        switch tab {
+        case .focus:
+            NavigationStack {
+                FocusView(store: store.scope(state: \.focus, action: \.focus))
+                    .constrainedWidth(Self.contentMaxWidth)
             }
-            .foregroundStyle(isSelected ? Color.accentColor : .secondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(
-                isSelected ? Color.accentColor.opacity(0.15) : Color.clear,
-                in: RoundedRectangle(cornerRadius: 10)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 10))
+
+        case .plan:
+            NavigationStack {
+                PlanView(store: store.scope(state: \.tasks, action: \.tasks))
+                    .constrainedWidth(Self.contentMaxWidth)
+            }
+
+        case .dashboard:
+            NavigationStack {
+                DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
+                    .constrainedWidth(Self.contentMaxWidth)
+            }
+
+        case .account:
+            AccountView(store: store)
+                .constrainedWidth(Self.contentMaxWidth)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(tab.title)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+}
+
+// MARK: - Helpers
+
+private extension View {
+    /// Centers the view within the available width, capped at `maxWidth`.
+    /// Outer frame still expands so backgrounds fill the full screen width.
+    func constrainedWidth(_ maxWidth: CGFloat) -> some View {
+        self
+            .frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity)
     }
 }
 
