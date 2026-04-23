@@ -21,8 +21,6 @@ struct DashboardView: View {
 
     var body: some View {
         ZStack {
-            PepinilloLiquidBackground()
-
             ScrollView {
                 VStack(spacing: 20) {
                     DashboardHeroSection(

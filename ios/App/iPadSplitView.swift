@@ -188,14 +188,12 @@ private extension View {
     }
 
     /// Centers the view within the available width, capped at `maxWidth`.
-    /// A full-width PepinilloLiquidBackground fills the gutter on both sides
-    /// so the app's liquid gradient continues edge-to-edge instead of
-    /// showing a flat white strip.
+    /// No background — the app-wide PepinilloLiquidBackground in AppView
+    /// shows through the gutters and the content area uniformly.
     func constrainedWidth(_ maxWidth: CGFloat) -> some View {
         self
             .frame(maxWidth: maxWidth)
             .frame(maxWidth: .infinity)
-            .background(PepinilloLiquidBackground().ignoresSafeArea())
     }
 }
 

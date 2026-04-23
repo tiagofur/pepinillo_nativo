@@ -14,17 +14,18 @@ struct FocusView: View {
     @State private var showStopConfirmation = false
 
     var body: some View {
-        VStack(spacing: 0) {
-            // MARK: - Mode Selector (top)
-            if !store.isRunning {
-                ModePickerView(
-                    selectedMode: store.selectedMode,
-                    isProUser: store.isProUser,
-                    onSelect: { store.send(.modeSelected($0)) }
-                )
-                .padding(.top, 16)
-                .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
-            }
+        ZStack {
+            VStack(spacing: 0) {
+                // MARK: - Mode Selector (top)
+                if !store.isRunning {
+                    ModePickerView(
+                        selectedMode: store.selectedMode,
+                        isProUser: store.isProUser,
+                        onSelect: { store.send(.modeSelected($0)) }
+                    )
+                    .padding(.top, 16)
+                    .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
+                }
 
             if let suggestion = store.modeSuggestion {
                 ModeIntelligenceBanner(
@@ -43,42 +44,53 @@ struct FocusView: View {
                 .padding(.horizontal, 40)
 
             // Phase label
-            Text(store.phaseLabel)
-                .font(.title3)
-                .fontWeight(.medium)
+            Text(store.phaseLabel.uppercased())
+                .font(.system(.subheadline, design: .rounded))
+                .fontWeight(.bold)
+                .tracking(2)
                 .foregroundStyle(.secondary)
-                .padding(.top, 12)
+                .padding(.top, 16)
 
             // Linked task (tappable to change/unlink)
             if let taskTitle = store.linkedTaskTitle {
                 Button {
                     store.send(.taskPickerTapped)
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle")
-                            .font(.caption)
+                    HStack(spacing: 8) {
+                        if let emoji = store.linkedTaskEmoji {
+                            Text(emoji)
+                                .font(.title3)
+                        } else {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.subheadline)
+                        }
+                        
                         Text(taskTitle)
-                            .font(.subheadline)
+                            .font(.callout.weight(.semibold))
                             .lineLimit(1)
+                        
                         Image(systemName: "chevron.down")
-                            .font(.caption2)
+                            .font(.caption)
                     }
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .pepinilloGlass(cornerRadius: 16)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(String(localized: "Linked task: \(taskTitle). Tap to change or unlink."))
                 .padding(.top, 8)
-            } else if store.isRunning {
+            } else {
                 Button {
                     store.send(.taskPickerTapped)
                 } label: {
                     HStack(spacing: 6) {
-                        Image(systemName: "plus.circle")
-                            .font(.caption)
-                        Text(String(localized: "Link Task"))
+                        Image(systemName: "plus.circle.fill")
                             .font(.subheadline)
+                        Text(String(localized: "Link Task"))
+                            .font(.callout.weight(.medium))
                     }
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(String(localized: "Link a task to this session"))
@@ -103,26 +115,29 @@ struct FocusView: View {
                 Button {
                     store.send(.soundscapePickerTapped)
                 } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 8) {
                         Text(store.selectedSoundscape.emoji)
-                            .font(.body)
+                            .font(.title3)
                         if store.selectedSoundscape != .none && store.isRunning {
                             AudioBarsView()
-                                .frame(width: 14, height: 10)
+                                .frame(width: 16, height: 12)
                         }
                         Text(store.selectedSoundscape == .none
                              ? String(localized: "Sounds")
                              : store.selectedSoundscape.displayName)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .font(.subheadline.weight(.medium))
                     }
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .pepinilloGlass(cornerRadius: 20)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(store.selectedSoundscape == .none ? String(localized: "Choose soundscape") : String(localized: "Soundscape: \(store.selectedSoundscape.displayName)"))
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 40)
             .padding(.bottom, 16)
+        }
         }
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.isRunning)
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.selectedMode)
@@ -167,8 +182,8 @@ struct FocusView: View {
             TaskPickerView(
                 linkedTaskID: store.linkedTaskID,
                 tasks: store.availableTasks,
-                onSelectTask: { id, title in
-                    store.send(.linkTask(id, title))
+                onSelectTask: { id, title, emoji in
+                    store.send(.linkTask(id, title, emoji))
                 },
                 onUnlink: {
                     store.send(.unlinkTaskTapped)
@@ -194,7 +209,7 @@ struct FocusView: View {
         ZStack {
             // Background ring
             Circle()
-                .stroke(modeColor.opacity(0.15), lineWidth: 8)
+                .stroke(modeColor.opacity(0.15), lineWidth: 14)
 
             // Progress ring (only for countdown modes)
             if let progress = store.progress {
@@ -202,21 +217,21 @@ struct FocusView: View {
                     .trim(from: 0, to: CGFloat(progress))
                     .stroke(
                         modeGradient,
-                        style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                        style: StrokeStyle(lineWidth: 14, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
                     .conditionalAnimation(.linear(duration: 0.1), value: progress)
             }
 
             // Center content
-            VStack(spacing: 4) {
+            VStack(spacing: 8) {
                 // Mode icon
                 Text(store.modeIcon)
-                    .font(.largeTitle)
+                    .font(.system(size: 40))
 
                 // Time display
                 Text(store.displayTime)
-                    .font(.system(.largeTitle, design: .rounded).weight(.light))
+                    .font(.system(size: 64, weight: .medium, design: .rounded))
                     .monospacedDigit()
                     .contentTransition(.numericText())
 
@@ -318,8 +333,9 @@ struct FocusView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background(modeColor)
+                    .background(modeColor.gradient)
                     .clipShape(Capsule())
+                    .shadow(color: modeColor.opacity(0.3), radius: 12, y: 6)
                     .padding(.horizontal, 40)
                 }
                 .buttonStyle(.pressable)
@@ -406,6 +422,7 @@ struct ModePickerView: View {
     let selectedMode: FocusMode
     let isProUser: Bool
     let onSelect: (FocusMode) -> Void
+    @Namespace private var namespace
 
     var body: some View {
         HStack(spacing: 12) {
@@ -424,11 +441,18 @@ struct ModePickerView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
                     .background(
-                        selectedMode == mode
-                            ? AnyShapeStyle(.tint.opacity(0.15))
-                            : AnyShapeStyle(.clear)
+                        ZStack {
+                            if selectedMode == mode {
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.accentColor.opacity(0.12))
+                                    .matchedGeometryEffect(id: "mode_bg", in: namespace)
+                            } else {
+                                Color.clear
+                            }
+                        }
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .pepinilloGlass(cornerRadius: 16)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay {
                         if !mode.isFreeTier && !isProUser {
                             Image(systemName: "lock.fill")

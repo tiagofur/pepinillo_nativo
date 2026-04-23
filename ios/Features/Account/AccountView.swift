@@ -17,15 +17,19 @@ struct AccountView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                userSection
-                subscriptionSection
-                configurationSection
-                supportSection
-                accountSection
+            ZStack {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        userSection
+                        subscriptionSection
+                        configurationSection
+                        supportSection
+                        accountSection
+                    }
+                    .padding(.vertical, 20)
+                }
+                .navigationTitle(String(localized: "More"))
             }
-            .listStyle(.insetGrouped)
-            .navigationTitle(String(localized: "More"))
         }
     }
 
@@ -33,18 +37,21 @@ struct AccountView: View {
 
     @ViewBuilder
     private var userSection: some View {
-        Section {
+        VStack(alignment: .leading, spacing: 0) {
             if store.isSignedIn {
                 Button {
                     store.send(.showProfile)
                 } label: {
                     signedInLabel
+                        .padding(18)
                 }
                 .buttonStyle(.plain)
             } else {
                 guestHeader
             }
         }
+        .pepinilloGlass()
+        .padding(.horizontal, 16)
     }
 
     private var signedInLabel: some View {
@@ -104,25 +111,6 @@ struct AccountView: View {
             }
             .accessibilityHidden(true)
         }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.accentColor.opacity(0.12),
-                            Color(.secondarySystemBackground)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(Color.accentColor.opacity(0.08), lineWidth: 1)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(signedInAccessibilityLabel)
         .accessibilityHint(String(localized: "a11y.account.profilecard.hint", defaultValue: "Opens your profile"))
@@ -221,30 +209,13 @@ struct AccountView: View {
             .controlSize(.regular)
         }
         .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            theme.pomodoroColor.opacity(0.10),
-                            Color(.secondarySystemBackground)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(theme.pomodoroColor.opacity(0.12), lineWidth: 1)
-        )
     }
 
     // MARK: - Subscription
 
     @ViewBuilder
     private var subscriptionSection: some View {
-        Section {
+        VStack(alignment: .leading, spacing: 0) {
             NavigationLink {
                 PaywallContent(
                     store: Store(initialState: PaywallFeature.State()) {
@@ -265,23 +236,44 @@ struct AccountView: View {
                     Text(subscriptionLabel)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
             }
+            .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.subscription.hint", defaultValue: "Opens subscription plan options"))
         }
+        .pepinilloGlass()
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Configuration
 
     @ViewBuilder
     private var configurationSection: some View {
-        Section {
+        VStack(alignment: .leading, spacing: 0) {
             NavigationLink {
                 SettingsView(store: store.scope(state: \.settings, action: \.settings))
             } label: {
-                Label(String(localized: "Settings"), systemImage: "gearshape")
+                HStack {
+                    Label(String(localized: "Settings"), systemImage: "gearshape")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
             }
+            .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.settings.hint", defaultValue: "Opens app settings"))
+
+            Divider()
+                .padding(.leading, 52)
 
             NavigationLink {
                 ExportView(isPro: store.subscriptionState.isPro)
@@ -292,31 +284,62 @@ struct AccountView: View {
                     if !store.subscriptionState.isPro {
                         proBadge
                     }
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
             }
+            .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.export.hint", defaultValue: "Opens data export options"))
         }
+        .pepinilloGlass()
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Support
 
     @ViewBuilder
     private var supportSection: some View {
-        Section {
+        VStack(alignment: .leading, spacing: 0) {
             NavigationLink {
                 HelpSupportView()
             } label: {
-                Label(String(localized: "Help & Support"), systemImage: "questionmark.circle")
+                HStack {
+                    Label(String(localized: "Help & Support"), systemImage: "questionmark.circle")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
             }
+            .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.help.hint", defaultValue: "Opens help and support resources"))
+
+            Divider()
+                .padding(.leading, 52)
 
             NavigationLink {
                 AboutView(store: Store(initialState: AboutFeature.State()) { AboutFeature() })
             } label: {
-                Label(String(localized: "About Pepinillo"), systemImage: "info.circle")
+                HStack {
+                    Label(String(localized: "About Pepinillo"), systemImage: "info.circle")
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 14)
+                .padding(.horizontal, 16)
             }
+            .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.about.hint", defaultValue: "Opens information about this app"))
         }
+        .pepinilloGlass()
+        .padding(.horizontal, 16)
     }
 
     // MARK: - Account
@@ -324,16 +347,22 @@ struct AccountView: View {
     @ViewBuilder
     private var accountSection: some View {
         if store.isSignedIn {
-            Section {
+            VStack(alignment: .leading, spacing: 0) {
                 Button(role: .destructive) {
                     store.send(.signOutTapped)
                 } label: {
                     Label(String(localized: "Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
                         .foregroundStyle(.red)
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel(String(localized: "a11y.account.signout.label", defaultValue: "Sign out"))
                 .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
             }
+            .pepinilloGlass()
+            .padding(.horizontal, 16)
         } else {
             EmptyView()
         }
