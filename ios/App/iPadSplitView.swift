@@ -49,45 +49,28 @@ struct iPadLandscapeLayout: View {
     private var sidebarColumn: some View {
         List {
             Section {
-                Button {
-                    if store.isSignedIn {
-                        store.send(.showProfile)
-                    } else {
-                        store.send(.showAuth)
-                    }
-                } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(sidebarGreeting)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(sidebarGreeting)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
 
-                        Text(store.displayName ?? String(localized: "Pepinillo"))
-                            .font(.title2.weight(.bold))
-                            .foregroundStyle(.primary)
+                    Text(store.displayName ?? String(localized: "Pepinillo"))
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.primary)
 
-                        if store.analytics.currentStreakDays > 0 {
-                            HStack(spacing: 5) {
-                                Image(systemName: "flame.fill")
-                                    .font(.caption2)
-                                    .foregroundStyle(theme.streakColor)
-                                Text(String(localized: "\(store.analytics.currentStreakDays) day streak"))
-                                    .font(.caption.weight(.medium))
-                                    .foregroundStyle(theme.streakColor)
-                            }
-                            .padding(.top, 2)
+                    if store.analytics.currentStreakDays > 0 {
+                        HStack(spacing: 5) {
+                            Image(systemName: "flame.fill")
+                                .font(.caption2)
+                                .foregroundStyle(theme.streakColor)
+                            Text(String(localized: "\(store.analytics.currentStreakDays) day streak"))
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(theme.streakColor)
                         }
-
-                        if !store.isSignedIn {
-                            Label(String(localized: "Log in"), systemImage: "person.crop.circle.badge.plus")
-                                .font(.subheadline.weight(.semibold))
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.top, 6)
-                        }
+                        .padding(.top, 2)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             }
