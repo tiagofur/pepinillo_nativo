@@ -11,7 +11,6 @@ import ComposableArchitecture
 
 struct PlanView: View {
     @Bindable var store: StoreOf<TaskListFeature>
-    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var taskToDelete: UUID?
     @State private var collapsedSections: Set<PlanSection> = []
 
@@ -78,7 +77,10 @@ struct PlanView: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(spacing: 0) {
+        ZStack {
+            PepinilloLiquidBackground()
+            
+            VStack(spacing: 0) {
             taskSections
             addTaskBar
         }
@@ -100,7 +102,7 @@ struct PlanView: View {
             }
         }
         .onAppear { store.send(.onAppear) }
-        .modifier(TaskDetailSheetModifier(store: store, isCompact: sizeClass == .compact))
+        .modifier(TaskDetailSheetModifier(store: store))
         .alert(
             String(localized: "Import Failed"),
             isPresented: Binding(
@@ -113,6 +115,7 @@ struct PlanView: View {
             Text(store.importError ?? "")
         }
     }
+}
 
     // MARK: - Task Sections
 
@@ -138,6 +141,8 @@ struct PlanView: View {
                     }
                 }
                 .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
                 .refreshable { store.send(.onAppear) }
             }
         }
@@ -234,7 +239,11 @@ struct PlanView: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 2)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .pepinilloGlass(cornerRadius: 12)
+        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 4, trailing: 16))
+        .listRowBackground(Color.clear)
     }
 
     // MARK: - Add Task Bar
@@ -263,9 +272,11 @@ struct PlanView: View {
             .disabled(store.newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty)
             .accessibilityLabel(String(localized: "Add new task"))
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .pepinilloGlass(cornerRadius: 32)
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.bar)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Undo Banner
@@ -290,7 +301,7 @@ struct PlanView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .pepinilloGlass(cornerRadius: 12)
         .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
         .padding(.horizontal, 16)
     }

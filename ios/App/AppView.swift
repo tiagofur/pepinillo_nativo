@@ -3,11 +3,12 @@
 //
 // Root view routing:
 // - Not onboarded → OnboardingView
-// - iPad / Mac (.regular width) → iPadSplitView (three-column NavigationSplitView)
-// - iPhone → TabView (4 tabs: Focus, Plan, Dashboard, Account/"...")
+// - iPad / Mac landscape (.regular, width > height) → iPadLandscapeLayout (sidebar + detail)
+// - iPad / Mac portrait  (.regular, width ≤ height) → iPadPortraitLayout  (top menu + content)
+// - iPhone / compact                                → iPhoneLayout        (TabView, 4 tabs)
 //
-// The lateral drawer has been replaced by the Account tab ("...") which
-// centralizes Profile, Settings, Subscription, Export, and Help.
+// Portrait/landscape detection on iPad uses GeometryReader because SwiftUI
+// reports horizontalSizeClass == .regular for both orientations.
 //
 // Hosts the celebration overlay, paywall sheet, auth sheet, and profile sheet at root level.
 
@@ -37,7 +38,13 @@ struct AppView: View {
                     store.send(.onboardingCompletedWithMode(selectedMode))
                 }
             } else if sizeClass == .regular {
-                iPadSplitView(store: store)
+                GeometryReader { geo in
+                    if geo.size.width > geo.size.height {
+                        iPadLandscapeLayout(store: store)
+                    } else {
+                        iPadPortraitLayout(store: store)
+                    }
+                }
             } else {
                 iPhoneLayout
             }
@@ -80,6 +87,20 @@ struct AppView: View {
             item: $store.scope(state: \.analytics.weeklyReview, action: \.analytics.weeklyReview)
         ) { weeklyStore in
             WeeklyReviewView(store: weeklyStore, isProUser: store.subscriptionState.isPro, analyticsStore: store.scope(state: \.analytics, action: \.analytics))
+                .iPadSheetSizing()
+        }
+        // Monthly Review sheet
+        .sheet(
+            item: $store.scope(state: \.analytics.monthlyReview, action: \.analytics.monthlyReview)
+        ) { monthlyStore in
+            MonthlyReviewView(store: monthlyStore, isProUser: store.subscriptionState.isPro, analyticsStore: store.scope(state: \.analytics, action: \.analytics))
+                .iPadSheetSizing()
+        }
+        // AI Report sheet
+        .sheet(
+            item: $store.scope(state: \.analytics.aiReport, action: \.analytics.aiReport)
+        ) { aiStore in
+            AIReportView(store: aiStore)
                 .iPadSheetSizing()
         }
         // Auth sheet

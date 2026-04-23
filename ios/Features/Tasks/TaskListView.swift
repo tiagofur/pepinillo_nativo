@@ -9,9 +9,7 @@ import ComposableArchitecture
 
 struct TaskListView: View {
     @Bindable var store: StoreOf<TaskListFeature>
-    var isInSplitView: Bool = false
     @State private var taskToDelete: UUID?
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         let content = VStack(spacing: 0) {
@@ -50,7 +48,7 @@ struct TaskListView: View {
         .onAppear {
             store.send(.onAppear)
         }
-        .modifier(TaskDetailSheetModifier(store: store, isCompact: !isInSplitView && sizeClass == .compact))
+        .modifier(TaskDetailSheetModifier(store: store))
         .alert(
             String(localized: "Import Failed"),
             isPresented: Binding(
@@ -63,12 +61,8 @@ struct TaskListView: View {
             Text(store.importError ?? "")
         }
 
-        if isInSplitView {
+        NavigationStack {
             content
-        } else {
-            NavigationStack {
-                content
-            }
         }
     }
 
@@ -142,11 +136,6 @@ struct TaskListView: View {
                         onRecurrenceChanged: { rule in
                             store.send(.recurrenceChanged(task.id, rule))
                         }
-                    )
-                    .listRowBackground(
-                        isInSplitView && store.selectedTaskID == task.id
-                            ? Color.accentColor.opacity(0.1)
-                            : nil
                     )
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         Button {
@@ -359,21 +348,16 @@ struct TaskListView: View {
 
 // MARK: - Task Detail Sheet (shared)
 
-/// Presents the task detail as a sheet on compact size class (iPhone).
-/// On regular size class (iPad), detail is shown inline in the split view detail column.
+/// Presents the task detail as a sheet on all size classes.
+/// Uniform behavior across iPhone and iPad (portrait + landscape).
 struct TaskDetailSheetModifier: ViewModifier {
     @Bindable var store: StoreOf<TaskListFeature>
-    let isCompact: Bool
 
     func body(content: Content) -> some View {
-        if isCompact {
-            content.sheet(
-                item: $store.scope(state: \.detail, action: \.detail)
-            ) { detailStore in
-                TaskDetailView(store: detailStore)
-            }
-        } else {
-            content
+        content.sheet(
+            item: $store.scope(state: \.detail, action: \.detail)
+        ) { detailStore in
+            TaskDetailView(store: detailStore)
         }
     }
 }

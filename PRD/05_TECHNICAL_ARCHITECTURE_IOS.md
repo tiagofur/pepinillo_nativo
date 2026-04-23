@@ -101,9 +101,8 @@ ios/
 ├── App/
 │   ├── PepinilloApp.swift              # @main, root Store creation, ModelContainer
 │   ├── AppFeature.swift                # Root reducer: coordinates shell tabs, auth/profile sheets, Watch listener, WebSocket lifecycle
-│   ├── AppView.swift                   # Root view with TabView / NavigationSplitView; iPhone runtime shell is Focus / Plan / Dashboard / More
-│   ├── DrawerView.swift                # Side drawer (iPad/Mac)
-│   ├── iPadSplitView.swift             # Adaptive iPad Split View + Stage Manager layout
+│   ├── AppView.swift                   # Root routing: iPhone TabView, iPad portrait/landscape via GeometryReader
+│   ├── iPadSplitView.swift             # iPad layouts: iPadLandscapeLayout (sidebar+detail), iPadPortraitLayout (top menu + content)
 │   ├── MacCommands.swift               # Menu commands for Mac (Catalyst)
 │   └── DemoDataSeeder.swift            # Demo data for previews and testing
 │
@@ -173,7 +172,7 @@ ios/
 │   │
 │   ├── Analytics/
 │   │   ├── AnalyticsFeature.swift      # Reducer: productivity dashboard
-│   │   ├── AnalyticsView.swift         # Charts by mode, trends
+│   │   ├── Components/                 # DashboardHeroSection, ...ChartsContent, ...StatCards, ...ReflectionActions, DashboardSharedComponents (SummaryCard, PatternCard, StreakCard, ModeShareRow, AnalyticsPlaceholder)
 │   │   ├── WeeklyReviewFeature.swift   # Reducer: weekly review comparison
 │   │   ├── WeeklyReviewView.swift      # Week-over-week comparison
 │   │   ├── MonthlyReviewFeature.swift  # Reducer: monthly review
@@ -1286,7 +1285,7 @@ Minimal data collection for the App Store listing.
 | Platform           | Adaptation                                                                                                                                              |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **iPhone**         | Main target. All features available.                                                                                                                    |
-| **iPad**           | Split View (`iPadSplitView.swift`), Stage Manager, adaptive layouts, physical keyboard shortcuts. Adaptive-size sheets (`iPadSheetModifier`).           |
+| **iPad**           | Responsive parity with iPhone: **landscape** → `NavigationSplitView` (sidebar + detail), **portrait** → top-menu `Picker` + `NavigationStack` content. Portrait/landscape detected via root `GeometryReader` (width vs height) since size classes report `.regular` in both orientations. Adaptive-size sheets (`iPadSheetModifier`). Stage Manager + physical keyboard shortcuts. |
 | **Mac (Catalyst)** | Menu bar commands (`MacCommands.swift`), full window, sandbox entitlement. `#if os(macOS)` for platform-specific code.                                  |
 | **watchOS**        | Simplified feature set: timer, tasks, dashboard, complications. Communication via WCSession. `ExtendedRuntimeSession` for alarm haptics.                |
 

@@ -191,7 +191,7 @@
 | Feature gating enforcement | ✅ Done   | Legacy single-pro gating is in place; entitlement names updated for new tiers |
 | Xcode setup (non-code)              | P0       | App Group, CloudKit container, StoreKit config, targets, SPM, Info.plist, audio assets, localization |
 | macOS target                        | P2       | Included in roadmap but not implemented                                                                |
-| iPad layouts                        | P2       | NavigationSplitView parity baseline is implemented; Stage Manager and keyboard shortcuts remain        |
+| iPad layouts                        | ✅ Done  | Full parity with iPhone: landscape uses NavigationSplitView (sidebar + detail), portrait uses top-menu Picker; same 4 tabs as iPhone (Focus/Plan/Dashboard/Account). Responsive Dashboard (1-col compact, 2-col regular). Task detail always in sheet. Stage Manager + keyboard shortcuts remain. |
 
 ---
 
