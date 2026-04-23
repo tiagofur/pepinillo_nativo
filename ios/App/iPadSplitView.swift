@@ -175,11 +175,13 @@ struct iPadPortraitLayout: View {
 
 private extension View {
     /// Centers the view within the available width, capped at `maxWidth`.
-    /// Outer frame still expands so backgrounds fill the full screen width.
+    /// A full-width systemBackground fills the gap on the sides so the empty
+    /// area matches the app's base background instead of showing white.
     func constrainedWidth(_ maxWidth: CGFloat) -> some View {
         self
             .frame(maxWidth: maxWidth)
             .frame(maxWidth: .infinity)
+            .background(Color(.systemBackground).ignoresSafeArea())
     }
 }
 
