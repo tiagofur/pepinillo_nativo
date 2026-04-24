@@ -22,6 +22,7 @@ struct TaskListFeature {
         var newTaskTitle: String = ""
         var importError: String?
         var selectedTaskID: UUID?
+        var selectedPlanFilter: PlanFilter = .today
         var recentlyDeletedTask: TaskItemState?
         var successMessage: String?
         var isProUser: Bool = false
@@ -138,6 +139,7 @@ struct TaskListFeature {
         case onAppear
         case tasksLoaded([TaskItemState])
         case filterChanged(TaskFilter)
+        case planFilterSelected(PlanFilter)
         case energyFilterChanged(EnergyFilter)
         case sortOrderChanged(SortOrder)
         case newTaskTitleChanged(String)
@@ -203,6 +205,15 @@ struct TaskListFeature {
 
             case .filterChanged(let filter):
                 state.filter = filter
+                return .none
+
+            case .planFilterSelected(let filter):
+                state.selectedPlanFilter = filter
+                // Clear detail column selection when switching filters
+                if state.detail != nil {
+                    state.detail = nil
+                    state.selectedTaskID = nil
+                }
                 return .none
 
             case .energyFilterChanged(let filter):

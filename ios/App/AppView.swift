@@ -192,9 +192,7 @@ struct AppView: View {
                 systemImage: AppFeature.Tab.plan.systemImage,
                 value: AppFeature.Tab.plan
             ) {
-                NavigationStack {
-                    PlanView(store: store.scope(state: \.tasks, action: \.tasks))
-                }
+                PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
             }
 
             Tab(
@@ -248,9 +246,7 @@ struct AppView: View {
             }
 
         case .plan:
-            NavigationStack {
-                PlanView(store: store.scope(state: \.tasks, action: \.tasks))
-            }
+            PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
 
         case .dashboard:
             NavigationStack {
