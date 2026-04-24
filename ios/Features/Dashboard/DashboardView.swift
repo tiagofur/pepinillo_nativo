@@ -2,12 +2,12 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Dashboard tab — the reflection engine.
-// Same 1-column layout on iPhone, iPad portrait, and iPad landscape.
+// Adaptive LazyVGrid: 1 col iPhone, 2 cols iPad portrait, 3 cols iPad landscape/13".
 // Composes shared components from Analytics/Components/:
-//   • DashboardHeroSection       — streak + sessions + focus time
-//   • DashboardReflectionActions — Weekly/Monthly Review entry points
-//   • DashboardStatCards         — period summary stat row
-//   • DashboardChartsContent     — bar chart + patterns + breakdown + streaks
+//   • DashboardHeroSection       — streak + sessions + focus time  (spans 2 cols)
+//   • DashboardReflectionActions — Weekly/Monthly Review entry points  (spans 2 cols)
+//   • SummaryCard                — KPI tiles (1 col each, tile naturally)
+//   • DashboardChartsContent     — bar chart + patterns + breakdown + streaks  (spans 2 cols)
 //
 // Toolbar exposes Weekly Review, Monthly Review, and AI Report (if enabled)
 // across all platforms.
@@ -22,24 +22,28 @@ struct DashboardView: View {
     var body: some View {
         ZStack {
             ScrollView {
-                VStack(spacing: 20) {
+                LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+                    // Hero — full width on iPad (spans both cols)
+                    // HeroStatCard sub-components carry their own .pepinilloGlass chrome.
                     DashboardHeroSection(
                         streakDays: store.currentStreakDays,
                         sessionsCompleted: store.sessionsCompleted,
                         totalFocusMinutes: store.totalFocusMinutes
                     )
-                    .padding(.horizontal, 16)
+                    .gridCellColumns(2)
 
+                    // Reflection CTAs — full width on iPad
+                    // ReflectionCard sub-components carry their own .pepinilloGlass chrome.
                     DashboardReflectionActions(
                         onWeeklyReview:  { store.send(.weeklyReviewTapped) },
                         onMonthlyReview: { store.send(.monthlyReviewTapped) }
                     )
-                    .padding(.horizontal, 16)
+                    .gridCellColumns(2)
 
                     if store.isLoading {
                         AnalyticsPlaceholder()
                             .redacted(reason: .placeholder)
-                            .padding(.horizontal, 16)
+                            .gridCellColumns(2)
                     } else if store.chartData.isEmpty && store.sessionsCompleted == 0 {
                         ContentUnavailableView(
                             String(localized: "No Data Yet"),
@@ -47,21 +51,40 @@ struct DashboardView: View {
                             description: Text(String(localized: "Complete your first focus session to see your analytics here."))
                         )
                         .padding(.top, 40)
+                        .gridCellColumns(2)
                     } else {
+                        // Analytics period header — full width
                         analyticsSectionHeader
                             .padding(.horizontal, 16)
+                            .gridCellColumns(2)
 
-                        DashboardStatCards(
-                            formattedTotalTime: formattedTotalTime,
-                            sessionsCompleted: store.sessionsCompleted,
-                            currentStreakDays: store.currentStreakDays
+                        // KPI stat cards — tile individually (1 col each)
+                        SummaryCard(
+                            title: String(localized: "Focus Time"),
+                            value: formattedTotalTime,
+                            icon: "brain.head.profile",
+                            color: theme.pomodoroColor
                         )
-                        .padding(.horizontal, 16)
+                        SummaryCard(
+                            title: String(localized: "Sessions"),
+                            value: "\(store.sessionsCompleted)",
+                            icon: "checkmark.circle",
+                            color: theme.flowtimeColor
+                        )
+                        SummaryCard(
+                            title: String(localized: "Streak"),
+                            value: "\(store.currentStreakDays)d",
+                            icon: "flame.fill",
+                            color: theme.streakColor
+                        )
 
+                        // Charts — full width on iPad
                         DashboardChartsContent(store: store)
-                            .padding(.horizontal, 16)
+                            .gridCellColumns(2)
                     }
                 }
+                .padding(16)
+                .contentMaxWidth()
                 .padding(.bottom, 32)
             }
         }
