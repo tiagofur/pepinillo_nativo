@@ -2,12 +2,11 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Dashboard tab — the reflection engine.
-// Adaptive LazyVGrid: 1 col iPhone, 2 cols iPad portrait, 3 cols iPad landscape/13".
-// Composes shared components from Analytics/Components/:
-//   • DashboardHeroSection       — streak + sessions + focus time  (spans 2 cols)
-//   • DashboardReflectionActions — Weekly/Monthly Review entry points  (spans 2 cols)
-//   • SummaryCard                — KPI tiles (1 col each, tile naturally)
-//   • DashboardChartsContent     — bar chart + patterns + breakdown + streaks  (spans 2 cols)
+// Layout: VStack of full-width sections (Hero, ReflectionActions, analytics header, ChartsContent).
+// Only the 3 KPI SummaryCards live in an inner LazyVGrid that reflows:
+//   1 col iPhone / 2 cols iPad portrait / 3 cols iPad landscape.
+// .gridCellColumns does NOT work reliably with adaptive LazyVGrid — items end up packed
+// in column 1. Use VStack for full-width items and nested LazyVGrid only for tiles.
 //
 // Toolbar exposes Weekly Review, Monthly Review, and AI Report (if enabled)
 // across all platforms.
@@ -22,28 +21,23 @@ struct DashboardView: View {
     var body: some View {
         ZStack {
             ScrollView {
-                LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
-                    // Hero — full width on iPad (spans both cols)
-                    // HeroStatCard sub-components carry their own .pepinilloGlass chrome.
+                VStack(spacing: 16) {
+                    // Hero — always full width
                     DashboardHeroSection(
                         streakDays: store.currentStreakDays,
                         sessionsCompleted: store.sessionsCompleted,
                         totalFocusMinutes: store.totalFocusMinutes
                     )
-                    .gridCellColumns(2)
 
-                    // Reflection CTAs — full width on iPad
-                    // ReflectionCard sub-components carry their own .pepinilloGlass chrome.
+                    // Reflection CTAs — always full width
                     DashboardReflectionActions(
                         onWeeklyReview:  { store.send(.weeklyReviewTapped) },
                         onMonthlyReview: { store.send(.monthlyReviewTapped) }
                     )
-                    .gridCellColumns(2)
 
                     if store.isLoading {
                         AnalyticsPlaceholder()
                             .redacted(reason: .placeholder)
-                            .gridCellColumns(2)
                     } else if store.chartData.isEmpty && store.sessionsCompleted == 0 {
                         ContentUnavailableView(
                             String(localized: "No Data Yet"),
@@ -51,36 +45,35 @@ struct DashboardView: View {
                             description: Text(String(localized: "Complete your first focus session to see your analytics here."))
                         )
                         .padding(.top, 40)
-                        .gridCellColumns(2)
                     } else {
                         // Analytics period header — full width
                         analyticsSectionHeader
                             .padding(.horizontal, 16)
-                            .gridCellColumns(2)
 
-                        // KPI stat cards — tile individually (1 col each)
-                        SummaryCard(
-                            title: String(localized: "Focus Time"),
-                            value: formattedTotalTime,
-                            icon: "brain.head.profile",
-                            color: theme.pomodoroColor
-                        )
-                        SummaryCard(
-                            title: String(localized: "Sessions"),
-                            value: "\(store.sessionsCompleted)",
-                            icon: "checkmark.circle",
-                            color: theme.flowtimeColor
-                        )
-                        SummaryCard(
-                            title: String(localized: "Streak"),
-                            value: "\(store.currentStreakDays)d",
-                            icon: "flame.fill",
-                            color: theme.streakColor
-                        )
+                        // KPI stat tiles: 1 col iPhone / 2 cols iPad portrait / 3 cols iPad landscape
+                        LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+                            SummaryCard(
+                                title: String(localized: "Focus Time"),
+                                value: formattedTotalTime,
+                                icon: "brain.head.profile",
+                                color: theme.pomodoroColor
+                            )
+                            SummaryCard(
+                                title: String(localized: "Sessions"),
+                                value: "\(store.sessionsCompleted)",
+                                icon: "checkmark.circle",
+                                color: theme.flowtimeColor
+                            )
+                            SummaryCard(
+                                title: String(localized: "Streak"),
+                                value: "\(store.currentStreakDays)d",
+                                icon: "flame.fill",
+                                color: theme.streakColor
+                            )
+                        }
 
-                        // Charts — full width on iPad
+                        // Charts — always full width
                         DashboardChartsContent(store: store)
-                            .gridCellColumns(2)
                     }
                 }
                 .padding(16)
