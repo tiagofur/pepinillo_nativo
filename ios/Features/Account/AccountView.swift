@@ -17,20 +17,15 @@ struct AccountView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                PepinilloLiquidBackground()
-                    .ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 20) {
-                        userSection
-                        subscriptionSection
-                        configurationSection
-                        supportSection
-                        accountSection
-                    }
-                    .padding(.vertical, 20)
+            ScrollView {
+                VStack(spacing: 20) {
+                    userSection
+                    subscriptionSection
+                    configurationSection
+                    supportSection
+                    accountSection
                 }
+                .padding(.vertical, 20)
             }
             .navigationTitle(String(localized: "More"))
             .background(Color.clear)

@@ -30,9 +30,6 @@ struct AppView: View {
 
     var body: some View {
         ZStack {
-            PepinilloLiquidBackground()
-                .ignoresSafeArea()
-
             Group {
                 if !store.hasCompletedOnboarding {
                     OnboardingView { selectedMode in
@@ -207,7 +204,7 @@ struct AppView: View {
                 value: AppFeature.Tab.plan
             ) {
                 PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
-                    .withAmbientBackground()
+                    .systemContentBackground(grouped: true)
             }
 
             Tab(
@@ -217,8 +214,8 @@ struct AppView: View {
             ) {
                 NavigationStack {
                     DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
-                        .withAmbientBackground()
                 }
+                .systemContentBackground(grouped: true)
             }
 
             Tab(
@@ -227,6 +224,7 @@ struct AppView: View {
                 value: AppFeature.Tab.account
             ) {
                 AccountView(store: store)
+                    .systemContentBackground(grouped: true)
             }
         }
         .tabViewStyle(.sidebarAdaptable)
@@ -271,16 +269,17 @@ struct AppView: View {
 
         case .plan:
             PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
-                .withAmbientBackground()
+                .systemContentBackground(grouped: true)
 
         case .dashboard:
             NavigationStack {
                 DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
-                    .withAmbientBackground()
             }
+            .systemContentBackground(grouped: true)
 
         case .account:
             AccountView(store: store)
+                .systemContentBackground(grouped: true)
         }
     }
 }

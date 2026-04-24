@@ -52,12 +52,6 @@ struct HelpSupportView: View {
             }
         }
         .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background(Color.clear)
-        .background {
-            PepinilloLiquidBackground()
-                .ignoresSafeArea()
-        }
         .navigationTitle(String(localized: "Help & Support"))
         .navigationBarTitleDisplayMode(.inline)
     }

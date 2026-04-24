@@ -131,6 +131,18 @@ extension View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+
+    #if !os(watchOS)
+    /// Apple-native content background for non-atmospheric screens.
+    /// Use systemGroupedBackground for grouped lists/Forms (Plan, Dashboard, More, Settings family).
+    /// Use systemBackground for plain content (Onboarding, Paywall, detail views).
+    func systemContentBackground(grouped: Bool = false) -> some View {
+        self.background(
+            grouped ? Color(.systemGroupedBackground) : Color(.systemBackground),
+            ignoresSafeAreaEdges: .all
+        )
+    }
+    #endif
 }
 
 // MARK: - Ambient Background (PepinilloLiquidBackground)
@@ -162,7 +174,7 @@ struct PepinilloLiquidBackground: View {
         .ignoresSafeArea()
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.smooth(duration: 10).repeatForever(autoreverses: true)) {
+            withAnimation(.smooth(duration: 20).repeatForever(autoreverses: true)) {
                 phase = 1
             }
         }
@@ -185,7 +197,7 @@ struct PepinilloLiquidBackground: View {
     }
 
     private var atmosphereOpacity: Double {
-        colorScheme == .dark ? 0.85 : 0.7
+        colorScheme == .dark ? 0.5 : 0.35
     }
 
     @ViewBuilder

@@ -105,12 +105,6 @@ struct AboutView: View {
             }
         }
         .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background(Color.clear)
-        .background {
-            PepinilloLiquidBackground()
-                .ignoresSafeArea()
-        }
         .navigationTitle(String(localized: "About"))
         .navigationBarTitleDisplayMode(.inline)
     }
