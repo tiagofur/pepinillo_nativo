@@ -210,6 +210,24 @@ struct AppFeature {
             SettingsFeature()
         }
         Reduce { state, action in
+            let pushTasksToWatch: (State) -> Effect<Action> = { [watchClient] state in
+                let watchTasks = state.tasks.tasks
+                    .filter { $0.scheduledForToday }
+                    .map { task in
+                        WatchTaskItem(
+                            id: task.id,
+                            title: task.title,
+                            isCompleted: task.isCompleted,
+                            priority: task.priority.rawValue,
+                            estimatedPomodoros: task.estimatedPomodoros,
+                            completedPomodoros: task.completedPomodoros
+                        )
+                    }
+                return .run { _ in
+                    await watchClient.sendTasks(watchTasks)
+                }
+            }
+
             switch action {
 
             case .tabSelected(let tab):
@@ -796,11 +814,18 @@ struct AppFeature {
                     }()
                 )
 
+            // MARK: - Watch Tasks Bridge (iOS → Watch)
+
+            case .tasks(.undoTimerExpired),
+                 .tasks(.taskScheduledForToday),
+                 .tasks(.taskMoved):
+                return pushTasksToWatch(state)
+
             // MARK: - Cross-feature: Tasks → Focus
 
             case .tasks(.tasksLoaded):
                 state.focus.availableTasks = state.tasks.tasks
-                return .none
+                return pushTasksToWatch(state)
 
             case .tasks(.startFocusOnTask(let taskID)):
                 if let task = state.tasks.tasks[id: taskID] {
@@ -894,7 +919,7 @@ struct AppFeature {
                  .tasks(.detail(.presented(.delegate(.taskDeleted)))):
                 // Keep focus task list in sync after mutations
                 state.focus.availableTasks = state.tasks.tasks
-                return .none
+                return pushTasksToWatch(state)
 
             case .focus, .tasks, .analytics, .settings:
                 return .none

@@ -5,7 +5,7 @@
 //
 // iPad landscape: VStack(pills) + HStack(list 40% | detail 60%). No sheet.
 // iPad portrait:  VStack(pills) + HStack(list 50% | detail 50%). No sheet.
-// iPhone:         NavigationStack + sheet for detail.
+// iPhone:         pills top + NavigationStack + sheet for detail.
 //
 // IMPORTANT: size-class branching happens at THIS level. All sheet/inline decisions
 // are made here — never inside child views.
@@ -97,15 +97,27 @@ struct PlanSplitView: View {
         }
     }
 
-    // MARK: - iPhone: NavigationStack + sheet for detail
+    // MARK: - iPhone: pills top + NavigationStack + sheet for detail
 
     @ViewBuilder
     private var iPhoneContent: some View {
         NavigationStack {
-            PlanTaskList(
-                store: store,
-                filter: store.selectedPlanFilter
-            )
+            VStack(spacing: 0) {
+                PlanFilterPills(
+                    selection: Binding(
+                        get: { store.selectedPlanFilter },
+                        set: { store.send(.planFilterSelected($0)) }
+                    )
+                )
+                Divider()
+                PlanTaskList(
+                    store: store,
+                    filter: store.selectedPlanFilter,
+                    showsTitle: false
+                )
+                .navigationTitle(store.selectedPlanFilter.title)
+                .navigationBarTitleDisplayMode(.inline)
+            }
         }
         .sheet(
             item: $store.scope(state: \.detail, action: \.detail)
