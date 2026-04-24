@@ -342,7 +342,9 @@ struct AppFeature {
                     }
                     .cancellable(id: CancelID.watchCommandListener),
                     // Load tasks early so they are available for focus linking
-                    .send(.tasks(.onAppear))
+                    .send(.tasks(.onAppear)),
+                    // Load analytics early so the Focus companion cards have data on first Focus visit
+                    .send(.analytics(.onAppear))
                 )
 
             case .requestNotificationPermission:
