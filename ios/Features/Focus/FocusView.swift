@@ -65,6 +65,8 @@ struct FocusView: View {
                 focusCoreContainer
             }
         }
+        .background(Color.clear)
+        .scrollContentBackground(.hidden)
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.isRunning)
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.selectedMode)
         .conditionalAnimation(.easeInOut(duration: 0.2), value: store.selectedSoundscape)
