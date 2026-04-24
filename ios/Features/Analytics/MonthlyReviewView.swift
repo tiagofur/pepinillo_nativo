@@ -157,7 +157,7 @@ struct MonthlyReviewView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Best Week
@@ -181,7 +181,7 @@ struct MonthlyReviewView: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .pepinilloGlass(cornerRadius: 20)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
     }
@@ -208,7 +208,7 @@ struct MonthlyReviewView: View {
                     }
                 }
                 .padding(16)
-                .pepinilloGlass(cornerRadius: 20)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
     }
@@ -233,7 +233,7 @@ struct MonthlyReviewView: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .pepinilloGlass(cornerRadius: 20)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
     }
@@ -260,7 +260,7 @@ struct MonthlyReviewView: View {
                     }
                 }
                 .padding(16)
-                .pepinilloGlass(cornerRadius: 20)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
     }
@@ -304,7 +304,7 @@ struct MonthlyTrendCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private var trendIcon: String {

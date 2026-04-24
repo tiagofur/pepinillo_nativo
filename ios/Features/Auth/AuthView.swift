@@ -151,7 +151,7 @@ struct AuthView: View {
                     }
                 }
                 .padding(18)
-                .pepinilloGlass(cornerRadius: 22)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 .overlay {
                     RoundedRectangle(cornerRadius: 22, style: .continuous)
                         .stroke(theme.pomodoroColor.opacity(colorScheme == .dark ? 0.22 : 0.16), lineWidth: 1)

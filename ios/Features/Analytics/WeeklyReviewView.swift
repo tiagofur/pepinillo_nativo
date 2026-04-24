@@ -167,7 +167,7 @@ struct WeeklyReviewView: View {
             .frame(height: 160)
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Dominant Mode
@@ -190,7 +190,7 @@ struct WeeklyReviewView: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .pepinilloGlass(cornerRadius: 20)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
     }
@@ -216,7 +216,7 @@ struct WeeklyReviewView: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity)
-                .pepinilloGlass(cornerRadius: 20)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
     }
@@ -243,7 +243,7 @@ struct WeeklyReviewView: View {
                     }
                 }
                 .padding(16)
-                .pepinilloGlass(cornerRadius: 20)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
     }
@@ -267,7 +267,7 @@ struct WeeklyReviewView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Helpers
@@ -309,7 +309,7 @@ struct TrendCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private var trendIcon: String {

@@ -32,7 +32,7 @@ struct SummaryCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .pepinilloGlass(cornerRadius: 16)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title), \(value)")
     }
@@ -104,7 +104,7 @@ struct PatternCard: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 14)
         .padding(.horizontal, 8)
-        .pepinilloGlass(cornerRadius: 12)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")
     }
@@ -136,7 +136,7 @@ struct StreakCard: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity)
-        .pepinilloGlass(cornerRadius: 16)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title) streak, \(days) days")
     }
@@ -158,7 +158,7 @@ struct AnalyticsPlaceholder: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(16)
-                    .pepinilloGlass(cornerRadius: 16)
+                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 }
             }
 
@@ -178,7 +178,7 @@ struct AnalyticsPlaceholder: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(16)
-                    .pepinilloGlass(cornerRadius: 16)
+                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 }
             }
         }

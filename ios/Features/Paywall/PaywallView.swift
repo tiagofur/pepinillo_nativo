@@ -156,7 +156,7 @@ struct PaywallPepinilloPlusSection: View {
             }
         }
         .padding(20)
-        .pepinilloGlass(cornerRadius: 24)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 }
 
@@ -193,7 +193,7 @@ struct PaywallEverywhereSection: View {
             }
         }
         .padding(20)
-        .pepinilloGlass(cornerRadius: 24)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 }
 

@@ -30,7 +30,7 @@ struct AchievementsSection: View {
             }
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 16)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 }
 

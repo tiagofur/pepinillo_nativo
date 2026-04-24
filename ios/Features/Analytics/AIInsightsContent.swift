@@ -284,7 +284,7 @@ struct AIReportContentView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .padding(.horizontal, 16)
     }
 
@@ -313,7 +313,7 @@ struct AIReportContentView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .padding(.horizontal, 16)
     }
 
@@ -338,7 +338,7 @@ struct AIReportContentView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .padding(.horizontal, 16)
     }
 

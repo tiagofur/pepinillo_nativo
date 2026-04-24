@@ -224,7 +224,7 @@ struct FocusView: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .pepinilloGlass(cornerRadius: 16)
+                        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(localized: "Linked task: \(taskTitle). Tap to change or unlink."))
@@ -280,7 +280,7 @@ struct FocusView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .pepinilloGlass(cornerRadius: 20)
+                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 }
                 .buttonStyle(.plain)
             }
@@ -371,7 +371,7 @@ struct FocusView: View {
                     Image(systemName: "stop.fill")
                         .font(.title2)
                         .frame(width: 56, height: 56)
-                        .pepinilloGlass(cornerRadius: 28)
+                        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
                 }
                 .accessibilityLabel(String(localized: "Stop session"))
 
@@ -402,7 +402,7 @@ struct FocusView: View {
                         Image(systemName: "forward.fill")
                             .font(.title2)
                             .frame(width: 56, height: 56)
-                            .pepinilloGlass(cornerRadius: 28)
+                            .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
                     }
                     .accessibilityLabel(String(localized: "Skip to next phase"))
                 }
@@ -538,7 +538,7 @@ struct ModePickerView: View {
                             }
                         }
                     )
-                    .pepinilloGlass(cornerRadius: 16)
+                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay {
                         if !mode.isFreeTier && !isProUser {

@@ -93,7 +93,7 @@ struct HeroStatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
-        .pepinilloGlass(cornerRadius: 14)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
     }
 }
 

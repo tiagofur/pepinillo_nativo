@@ -205,7 +205,7 @@ struct PlanTaskList: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .pepinilloGlass(cornerRadius: 32)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }
@@ -232,7 +232,7 @@ struct PlanTaskList: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .pepinilloGlass(cornerRadius: 12)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
         .padding(.horizontal, 16)
     }

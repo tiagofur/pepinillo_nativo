@@ -67,7 +67,7 @@ struct ReflectionCard: View {
                     .accessibilityHidden(true)
             }
             .padding(14)
-            .pepinilloGlass(cornerRadius: 14)
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         }
         .buttonStyle(.plain)
     }

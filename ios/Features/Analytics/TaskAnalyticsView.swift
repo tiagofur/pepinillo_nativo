@@ -147,7 +147,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Estimation Accuracy
@@ -194,7 +194,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Mode Distribution
@@ -250,7 +250,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Peak Hour
@@ -283,7 +283,7 @@ struct TaskAnalyticsView: View {
             Spacer()
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "Peak focus hour, \(peakLabel)"))
     }
@@ -313,7 +313,7 @@ struct TaskAnalyticsView: View {
             Spacer()
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "Average satisfaction, \(String(format: "%.1f", avgRating)) out of 5"))
     }
@@ -357,7 +357,7 @@ private struct TaskAnalyticsPlaceholder: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(16)
-                    .pepinilloGlass(cornerRadius: 20)
+                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 }
             }
 
@@ -377,7 +377,7 @@ private struct TaskAnalyticsPlaceholder: View {
                 }
             }
             .padding(16)
-            .pepinilloGlass(cornerRadius: 20)
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 }

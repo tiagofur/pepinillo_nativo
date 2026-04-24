@@ -94,7 +94,7 @@ struct CalendarView: View {
             }
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 16)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private func dayCell(for date: Date) -> some View {
@@ -208,7 +208,7 @@ struct CalendarView: View {
             }
         }
         .padding(16)
-        .pepinilloGlass(cornerRadius: 16)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private func summaryItem(icon: String, value: String, label: String) -> some View {

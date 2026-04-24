@@ -48,7 +48,7 @@ struct ModeIntelligenceBanner: View {
             .buttonStyle(.plain)
         }
         .padding(12)
-        .pepinilloGlass(cornerRadius: 12)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
         .transition(.move(edge: .top).combined(with: .opacity))
     }
