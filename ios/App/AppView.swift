@@ -219,6 +219,7 @@ struct AppView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .animation(.snappy(duration: 0.25), value: store.selectedTab)
         .focusedValue(\.appStore, store)
     }
 
@@ -237,6 +238,7 @@ struct AppView: View {
                     .tag(tab)
             }
         }
+        .animation(.snappy(duration: 0.25), value: store.selectedTab)
         .focusedValue(\.appStore, store)
     }
 
