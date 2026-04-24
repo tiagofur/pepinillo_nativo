@@ -3,14 +3,12 @@
 //
 // Adaptive layout wrapper for the Plan tab.
 //
-// iPad landscape: 3-column NavigationSplitView (sidebar → task list → detail column).
-// iPad portrait:  2-column HStack (pills + task list | inline detail column). No sheet.
+// iPad landscape: VStack(pills) + HStack(list 40% | detail 60%). No sheet.
+// iPad portrait:  VStack(pills) + HStack(list 50% | detail 50%). No sheet.
 // iPhone:         NavigationStack + sheet for detail.
 //
-// IMPORTANT: size-class branching happens at THIS level, NOT inside NavigationSplitView
-// columns. SwiftUI may report .compact for narrow NSV content columns even on iPad,
-// making horizontalSizeClass unreliable inside them — that was the root cause of the
-// duplicate-sheet bug. All sheet/inline decisions are made here.
+// IMPORTANT: size-class branching happens at THIS level. All sheet/inline decisions
+// are made here — never inside child views.
 
 import SwiftUI
 import ComposableArchitecture
@@ -33,28 +31,36 @@ struct PlanSplitView: View {
         }
     }
 
-    // MARK: - iPad Landscape: 3-column NavigationSplitView
+    // MARK: - iPad Landscape: pills top + HStack(list 40% | detail 60%)
 
     @ViewBuilder
     private var landscapeContent: some View {
-        NavigationSplitView {
-            PlanSidebar(
+        VStack(spacing: 0) {
+            PlanFilterPills(
                 selection: Binding(
                     get: { store.selectedPlanFilter },
                     set: { store.send(.planFilterSelected($0)) }
                 )
             )
-            .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
-        } content: {
-            // NO sheet modifier here — detail column handles it inline.
-            PlanTaskList(
-                store: store,
-                filter: store.selectedPlanFilter
-            )
-        } detail: {
-            detailPane
+            Divider()
+            HStack(spacing: 0) {
+                NavigationStack {
+                    PlanTaskList(
+                        store: store,
+                        filter: store.selectedPlanFilter,
+                        showsTitle: false
+                    )
+                    .navigationTitle(store.selectedPlanFilter.title)
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+                .frame(minWidth: 360, maxWidth: 520)
+
+                Divider()
+
+                NavigationStack { detailPane }
+                    .frame(maxWidth: .infinity)
+            }
         }
-        .navigationSplitViewStyle(.automatic)
     }
 
     // MARK: - iPad Portrait: 2-column HStack (pills top, list | detail bottom)

@@ -13,6 +13,7 @@ import ComposableArchitecture
 struct PlanTaskList: View {
     @Bindable var store: StoreOf<TaskListFeature>
     let filter: PlanFilter
+    var showsTitle: Bool = true
     @State private var collapsedSections: Set<PlanFilter> = []
     @State private var taskToDelete: UUID?
 
@@ -51,13 +52,31 @@ struct PlanTaskList: View {
                 }
                 .animation(.spring(), value: store.recentlyDeletedTask != nil)
         }
-        .navigationTitle(filter.title)
+        .navigationTitle(showsTitle ? filter.title : "")
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                importMenu
-            }
             ToolbarItem(placement: .topBarTrailing) {
-                sortMenu
+                Menu {
+                    Section(String(localized: "Sort by")) {
+                        ForEach(TaskListFeature.SortOrder.allCases, id: \.self) { order in
+                            Button { store.send(.sortOrderChanged(order)) } label: {
+                                if store.sortOrder == order {
+                                    Label(order.displayName, systemImage: "checkmark")
+                                } else {
+                                    Text(order.displayName)
+                                }
+                            }
+                        }
+                    }
+                    Divider()
+                    Button {
+                        store.send(.importFromRemindersTapped)
+                    } label: {
+                        Label(String(localized: "Import from Reminders"), systemImage: "square.and.arrow.down")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                }
+                .accessibilityLabel(String(localized: "More options"))
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -218,38 +237,4 @@ struct PlanTaskList: View {
         .padding(.horizontal, 16)
     }
 
-    // MARK: - Toolbar Menus
-
-    private var importMenu: some View {
-        Menu {
-            Button {
-                store.send(.importFromRemindersTapped)
-            } label: {
-                Label(String(localized: "Import from Reminders"), systemImage: "list.bullet.rectangle")
-            }
-        } label: {
-            Image(systemName: "square.and.arrow.down")
-        }
-        .accessibilityLabel(String(localized: "Import tasks"))
-    }
-
-    private var sortMenu: some View {
-        Menu {
-            ForEach(TaskListFeature.SortOrder.allCases, id: \.self) { order in
-                Button {
-                    store.send(.sortOrderChanged(order))
-                } label: {
-                    HStack {
-                        Label(order.displayName, systemImage: order.icon)
-                        if store.sortOrder == order {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-            }
-        } label: {
-            Image(systemName: "arrow.up.arrow.down")
-        }
-        .accessibilityLabel(String(localized: "Sort tasks"))
-    }
 }
