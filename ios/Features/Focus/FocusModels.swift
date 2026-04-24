@@ -73,7 +73,7 @@ public enum TimerDirection: String, Codable, Sendable {
 
 /// The current phase within a focus session.
 /// Different modes use different subsets of phases.
-public enum FocusPhase: Codable, Sendable, Equatable {
+public enum FocusPhase: Codable, Sendable, Equatable, Hashable {
     // Pomodoro phases
     case work(number: Int, total: Int)   // e.g., work(number: 3, total: 4)
     case shortBreak

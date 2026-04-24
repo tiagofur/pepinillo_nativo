@@ -203,18 +203,23 @@ struct FocusView: View {
 
             Spacer()
 
-            // Timer Display (center) — capped at 280pt so it never inflates on iPad
+            // Timer Display (center) — capped at 280pt so it never inflates on iPad.
+            // .animation(value: store.phase) orchestrates ring gradient color shift,
+            // mode glyph swap (via .id + .transition inside timerCircle), and phase label together.
             timerCircle
                 .frame(maxWidth: 280, maxHeight: 280)
                 .padding(.horizontal, 40)
+                .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
 
-            // Phase label
+            // Phase label — crossfades with a bottom-edge slide on phase change
             Text(store.phaseLabel.uppercased())
                 .font(.system(.subheadline, design: .rounded))
                 .fontWeight(.bold)
                 .tracking(2)
                 .foregroundStyle(.secondary)
                 .padding(.top, 16)
+                .id(store.phaseLabel)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
 
             // Linked task (only in single-column / iPhone layout — companion pane handles it on iPad)
             if sizeClass != .regular {
@@ -330,7 +335,8 @@ struct FocusView: View {
 
             // Center content
             VStack(spacing: 8) {
-                // Mode icon — emoji glyphs use scaleEffect-based breath while running
+                // Mode icon — emoji glyphs use scaleEffect-based breath while running.
+                // .id(store.phase) triggers an id-based swap transition on phase changes.
                 Text(store.modeIcon)
                     .font(.system(size: 40))
                     .scaleEffect(breatheScale)
@@ -338,6 +344,11 @@ struct FocusView: View {
                     .onChange(of: store.isRunning) { _, running in
                         breatheScale = running ? 1.06 : 1.0
                     }
+                    .id(store.phase)
+                    .transition(.asymmetric(
+                        insertion: .scale(scale: 0.7).combined(with: .opacity),
+                        removal: .scale(scale: 1.3).combined(with: .opacity)
+                    ))
 
                 // Time display
                 Text(store.displayTime)
