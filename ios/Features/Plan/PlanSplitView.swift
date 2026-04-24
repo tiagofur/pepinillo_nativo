@@ -135,11 +135,7 @@ struct PlanSplitView: View {
     private var detailPane: some View {
         if let presentedStore = store.scope(state: \.detail, action: \.detail) {
             let childStore = presentedStore.scope(state: \.self, action: \.presented)
-            ZStack {
-                PepinilloLiquidBackground()
-                    .ignoresSafeArea()
-                TaskDetailView(store: childStore, isSheet: false)
-            }
+            TaskDetailView(store: childStore, isSheet: false)
         } else {
             ContentUnavailableView(
                 String(localized: "No Task Selected"),

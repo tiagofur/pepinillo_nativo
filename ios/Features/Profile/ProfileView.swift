@@ -13,55 +13,51 @@ struct ProfileView: View {
     @Bindable var store: StoreOf<ProfileFeature>
 
     var body: some View {
-        ZStack {
-            PepinilloLiquidBackground()
+        Form {
+            // Hero header section: avatar + name
+            Section {
+                userCard
+            }
 
-            Form {
-                // Hero header section: avatar + name
-                Section {
-                    userCard
-                }
+            // Stats section
+            Section(String(localized: "profile.lifetimeStats", defaultValue: "Lifetime Stats")) {
+                statsMiniRow
+            }
 
-                // Stats section
-                Section(String(localized: "profile.lifetimeStats", defaultValue: "Lifetime Stats")) {
-                    statsMiniRow
-                }
-
-                // Account section
-                if store.user != nil {
-                    Section(String(localized: "profile.account.section", defaultValue: "Account")) {
-                        Button {
-                            store.send(.signOutTapped)
-                        } label: {
-                            HStack(spacing: 14) {
-                                Label(String(localized: "profile.signout.button", defaultValue: "Sign Out"),
-                                      systemImage: "arrow.right.square")
-                                if store.isLoading {
-                                    Spacer()
-                                    ProgressView()
-                                }
+            // Account section
+            if store.user != nil {
+                Section(String(localized: "profile.account.section", defaultValue: "Account")) {
+                    Button {
+                        store.send(.signOutTapped)
+                    } label: {
+                        HStack(spacing: 14) {
+                            Label(String(localized: "profile.signout.button", defaultValue: "Sign Out"),
+                                  systemImage: "arrow.right.square")
+                            if store.isLoading {
+                                Spacer()
+                                ProgressView()
                             }
-                            .foregroundStyle(.primary)
                         }
-                        .disabled(store.isLoading)
-                        .accessibilityLabel(String(localized: "a11y.account.signout.label", defaultValue: "Sign out"))
-                        .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
+                        .foregroundStyle(.primary)
                     }
-                }
-
-                // Footer
-                Section {
-                    Text("Pepinillo v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .listRowBackground(Color.clear)
+                    .disabled(store.isLoading)
+                    .accessibilityLabel(String(localized: "a11y.account.signout.label", defaultValue: "Sign out"))
+                    .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
                 }
             }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-            .background(Color.clear)
+
+            // Footer
+            Section {
+                Text("Pepinillo v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowBackground(Color.clear)
+            }
         }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
         .sheet(item: $store.scope(state: \.editProfile, action: \.editProfile)) { editStore in

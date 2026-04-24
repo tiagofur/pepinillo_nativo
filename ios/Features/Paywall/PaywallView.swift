@@ -14,36 +14,33 @@ struct PaywallView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                PepinilloLiquidBackground()
-                
-                ScrollView {
-                    VStack(spacing: 32) {
-                        PaywallHeaderSection()
-                            .readableContent(maxWidth: 672)
-
-                        // Feature tier cards — adaptive grid: 1 col iPhone, 2 cols iPad portrait, 3 cols landscape
-                        LazyVGrid(columns: adaptiveCardColumns, spacing: 20) {
-                            PaywallPepinilloPlusSection()
-                            PaywallEverywhereSection()
-                        }
-                        .contentMaxWidth(900)
-
-                        PaywallProductCardsSection(store: store)
-                            .readableContent(maxWidth: 672)
-
-                        VStack(spacing: 20) {
-                            PaywallPurchaseButton(store: store)
-                            PaywallLegalFooter(store: store)
-                        }
+            ScrollView {
+                VStack(spacing: 32) {
+                    PaywallHeaderSection()
                         .readableContent(maxWidth: 672)
+
+                    // Feature tier cards — adaptive grid: 1 col iPhone, 2 cols iPad portrait, 3 cols landscape
+                    LazyVGrid(columns: adaptiveCardColumns, spacing: 20) {
+                        PaywallPepinilloPlusSection()
+                        PaywallEverywhereSection()
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .padding(.bottom, 40)
+                    .contentMaxWidth(900)
+
+                    PaywallProductCardsSection(store: store)
+                        .readableContent(maxWidth: 672)
+
+                    VStack(spacing: 20) {
+                        PaywallPurchaseButton(store: store)
+                        PaywallLegalFooter(store: store)
+                    }
+                    .readableContent(maxWidth: 672)
                 }
-                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 40)
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
             .navigationTitle(String(localized: "Upgrade to Pro"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

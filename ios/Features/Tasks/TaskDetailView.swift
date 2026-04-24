@@ -14,27 +14,24 @@ struct TaskDetailView: View {
     enum Field: Hashable { case title, subtask, notes }
 
     var body: some View {
-        ZStack {
-            PepinilloLiquidBackground()
-            
-            Group {
-                if isSheet {
-                    NavigationStack {
-                        formContent
-                            .toolbar {
-                                ToolbarItem(placement: .confirmationAction) {
-                                    Button(String(localized: "Done")) {
-                                        focusedField = nil
-                                        store.send(.dismissTapped)
-                                    }
+        Group {
+            if isSheet {
+                NavigationStack {
+                    formContent
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button(String(localized: "Done")) {
+                                    focusedField = nil
+                                    store.send(.dismissTapped)
                                 }
                             }
-                    }
-                } else {
-                    formContent
+                        }
                 }
+            } else {
+                formContent
             }
         }
+        .background(Color.clear)
     }
 
     private var formContent: some View {

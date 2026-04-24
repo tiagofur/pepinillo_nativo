@@ -13,39 +13,35 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                PepinilloLiquidBackground()
-                
-                Form {
-                    pomodoroSection
-                    timeBlockSection
-                    flowtimeSection
-                    generalSection
-                    themeSection
-                    notificationsSection
-                    healthSection
-                    streakSection
-                    aboutSection
-                }
-                .formStyle(.grouped)
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
-                .navigationTitle(String(localized: "Settings"))
-                .navigationDestination(item: $store.scope(state: \.about, action: \.about)) { aboutStore in
-                    AboutView(store: aboutStore)
-                }
-                .onAppear { store.send(.onAppear) }
-                .alert(
-                    String(localized: "Health Access Denied"),
-                    isPresented: Binding(
-                        get: { store.showHealthDeniedAlert },
-                        set: { if !$0 { store.send(.healthDeniedAlertDismissed) } }
-                    )
-                ) {
-                    Button(String(localized: "OK")) { store.send(.healthDeniedAlertDismissed) }
-                } message: {
-                    Text(String(localized: "To log Mindful Minutes, enable Health access for Pepinillo in Settings > Health > Data Access & Devices."))
-                }
+            Form {
+                pomodoroSection
+                timeBlockSection
+                flowtimeSection
+                generalSection
+                themeSection
+                notificationsSection
+                healthSection
+                streakSection
+                aboutSection
+            }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+            .navigationTitle(String(localized: "Settings"))
+            .navigationDestination(item: $store.scope(state: \.about, action: \.about)) { aboutStore in
+                AboutView(store: aboutStore)
+            }
+            .onAppear { store.send(.onAppear) }
+            .alert(
+                String(localized: "Health Access Denied"),
+                isPresented: Binding(
+                    get: { store.showHealthDeniedAlert },
+                    set: { if !$0 { store.send(.healthDeniedAlertDismissed) } }
+                )
+            ) {
+                Button(String(localized: "OK")) { store.send(.healthDeniedAlertDismissed) }
+            } message: {
+                Text(String(localized: "To log Mindful Minutes, enable Health access for Pepinillo in Settings > Health > Data Access & Devices."))
             }
         }
     }

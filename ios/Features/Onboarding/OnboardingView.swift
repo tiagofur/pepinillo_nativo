@@ -20,9 +20,6 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
-            // Animated Liquid Background
-            PepinilloLiquidBackground()
-            
             // Page content
             TabView(selection: $currentPage) {
                 ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
