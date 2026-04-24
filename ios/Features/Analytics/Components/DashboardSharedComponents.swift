@@ -158,14 +158,13 @@ struct AnalyticsPlaceholder: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(16)
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .pepinilloGlass(cornerRadius: 16)
                 }
             }
 
             // Chart placeholder
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.secondarySystemBackground))
+                .fill(.regularMaterial)
                 .frame(height: 200)
 
             // Pattern cards placeholder
@@ -179,8 +178,7 @@ struct AnalyticsPlaceholder: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(16)
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .pepinilloGlass(cornerRadius: 16)
                 }
             }
         }

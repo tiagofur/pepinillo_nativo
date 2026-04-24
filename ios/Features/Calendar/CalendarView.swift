@@ -94,8 +94,7 @@ struct CalendarView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 16)
     }
 
     private func dayCell(for date: Date) -> some View {
@@ -209,8 +208,7 @@ struct CalendarView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 16)
     }
 
     private func summaryItem(icon: String, value: String, label: String) -> some View {

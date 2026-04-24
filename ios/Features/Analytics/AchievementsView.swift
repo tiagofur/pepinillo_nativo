@@ -30,8 +30,7 @@ struct AchievementsSection: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 16)
     }
 }
 

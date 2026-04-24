@@ -211,7 +211,7 @@ struct TaskListView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(.bar)
+        .background(.regularMaterial)
     }
 
     // MARK: - Undo Banner
