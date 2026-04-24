@@ -9,135 +9,48 @@ import ComposableArchitecture
 
 struct FocusView: View {
     @Bindable var store: StoreOf<FocusFeature>
+    let streakDays: Int
+    let sessionsToday: Int
+    let totalFocusMinutesToday: Int
+
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showStopConfirmation = false
+
+    init(
+        store: StoreOf<FocusFeature>,
+        streakDays: Int = 0,
+        sessionsToday: Int = 0,
+        totalFocusMinutesToday: Int = 0
+    ) {
+        self.store = store
+        self.streakDays = streakDays
+        self.sessionsToday = sessionsToday
+        self.totalFocusMinutesToday = totalFocusMinutesToday
+    }
 
     var body: some View {
         ZStack {
-            VStack(spacing: 0) {
-                // MARK: - Mode Selector (top)
-                if !store.isRunning {
-                    ModePickerView(
-                        selectedMode: store.selectedMode,
-                        isProUser: store.isProUser,
-                        onSelect: { store.send(.modeSelected($0)) }
+            if sizeClass == .regular {
+                // MARK: - iPad: 2-column layout
+                HStack(alignment: .top, spacing: 24) {
+                    focusCoreColumn
+                        .frame(maxWidth: 420)
+                    FocusCompanionView(
+                        store: store,
+                        streakDays: streakDays,
+                        sessionsToday: sessionsToday,
+                        totalFocusMinutesToday: totalFocusMinutesToday
                     )
-                    .padding(.top, 16)
-                    .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
+                    .frame(maxWidth: .infinity)
                 }
-
-            if let suggestion = store.modeSuggestion {
-                ModeIntelligenceBanner(
-                    suggestion: suggestion,
-                    onAccept: { store.send(.modeSuggestionAccepted) },
-                    onDismiss: { store.send(.modeSuggestionDismissed) }
-                )
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-            }
-
-            Spacer()
-
-            // MARK: - Timer Display (center)
-            timerCircle
-                .padding(.horizontal, 40)
-
-            // Phase label
-            Text(store.phaseLabel.uppercased())
-                .font(.system(.subheadline, design: .rounded))
-                .fontWeight(.bold)
-                .tracking(2)
-                .foregroundStyle(.secondary)
-                .padding(.top, 16)
-
-            // Linked task (tappable to change/unlink)
-            if let taskTitle = store.linkedTaskTitle {
-                Button {
-                    store.send(.taskPickerTapped)
-                } label: {
-                    HStack(spacing: 8) {
-                        if let emoji = store.linkedTaskEmoji {
-                            Text(emoji)
-                                .font(.title3)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.subheadline)
-                        }
-                        
-                        Text(taskTitle)
-                            .font(.callout.weight(.semibold))
-                            .lineLimit(1)
-                        
-                        Image(systemName: "chevron.down")
-                            .font(.caption)
-                    }
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .pepinilloGlass(cornerRadius: 16)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String(localized: "Linked task: \(taskTitle). Tap to change or unlink."))
-                .padding(.top, 8)
+                .padding(.horizontal, 24)
+                .contentMaxWidth()
             } else {
-                Button {
-                    store.send(.taskPickerTapped)
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.subheadline)
-                        Text(String(localized: "Link Task"))
-                            .font(.callout.weight(.medium))
-                    }
-                    .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(String(localized: "Link a task to this session"))
-                .padding(.top, 8)
+                // MARK: - iPhone: single-column layout (existing behavior)
+                focusCoreColumn
             }
-
-            Spacer()
-
-            // Custom duration for Time Block (only when idle)
-            if !store.isRunning && store.selectedMode == .timeBlock {
-                durationPicker
-                    .padding(.bottom, 12)
-                    .transition(.opacity)
-            }
-
-            // MARK: - Controls (bottom)
-            controlButtons
-                .padding(.bottom, 24)
-
-            // Soundscape shortcut
-            HStack(spacing: 24) {
-                Button {
-                    store.send(.soundscapePickerTapped)
-                } label: {
-                    HStack(spacing: 8) {
-                        Text(store.selectedSoundscape.emoji)
-                            .font(.title3)
-                        if store.selectedSoundscape != .none && store.isRunning {
-                            AudioBarsView()
-                                .frame(width: 16, height: 12)
-                        }
-                        Text(store.selectedSoundscape == .none
-                             ? String(localized: "Sounds")
-                             : store.selectedSoundscape.displayName)
-                            .font(.subheadline.weight(.medium))
-                    }
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .pepinilloGlass(cornerRadius: 20)
-                }
-                .buttonStyle(.plain)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 40)
-            .padding(.bottom, 16)
-        }
         }
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.isRunning)
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.selectedMode)
@@ -199,6 +112,138 @@ struct FocusView: View {
         }
         .sheet(item: $store.scope(state: \.journal, action: \.journal)) { journalStore in
             SessionJournalView(store: journalStore)
+        }
+    }
+
+    // MARK: - Focus Core Column (mode picker + ring + picker + start)
+
+    @ViewBuilder
+    private var focusCoreColumn: some View {
+        VStack(spacing: 0) {
+            // Mode Selector (top)
+            if !store.isRunning {
+                ModePickerView(
+                    selectedMode: store.selectedMode,
+                    isProUser: store.isProUser,
+                    onSelect: { store.send(.modeSelected($0)) }
+                )
+                .padding(.top, 16)
+                .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
+            }
+
+            if let suggestion = store.modeSuggestion {
+                ModeIntelligenceBanner(
+                    suggestion: suggestion,
+                    onAccept: { store.send(.modeSuggestionAccepted) },
+                    onDismiss: { store.send(.modeSuggestionDismissed) }
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+            }
+
+            Spacer()
+
+            // Timer Display (center) — capped at 280pt so it never inflates on iPad
+            timerCircle
+                .frame(maxWidth: 280, maxHeight: 280)
+                .padding(.horizontal, 40)
+
+            // Phase label
+            Text(store.phaseLabel.uppercased())
+                .font(.system(.subheadline, design: .rounded))
+                .fontWeight(.bold)
+                .tracking(2)
+                .foregroundStyle(.secondary)
+                .padding(.top, 16)
+
+            // Linked task (only in single-column / iPhone layout — companion pane handles it on iPad)
+            if sizeClass != .regular {
+                if let taskTitle = store.linkedTaskTitle {
+                    Button {
+                        store.send(.taskPickerTapped)
+                    } label: {
+                        HStack(spacing: 8) {
+                            if let emoji = store.linkedTaskEmoji {
+                                Text(emoji)
+                                    .font(.title3)
+                            } else {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.subheadline)
+                            }
+
+                            Text(taskTitle)
+                                .font(.callout.weight(.semibold))
+                                .lineLimit(1)
+
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .pepinilloGlass(cornerRadius: 16)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "Linked task: \(taskTitle). Tap to change or unlink."))
+                    .padding(.top, 8)
+                } else {
+                    Button {
+                        store.send(.taskPickerTapped)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.subheadline)
+                            Text(String(localized: "Link Task"))
+                                .font(.callout.weight(.medium))
+                        }
+                        .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(String(localized: "Link a task to this session"))
+                    .padding(.top, 8)
+                }
+            }
+
+            Spacer()
+
+            // Custom duration for Time Block (only when idle)
+            if !store.isRunning && store.selectedMode == .timeBlock {
+                durationPicker
+                    .padding(.bottom, 12)
+                    .transition(.opacity)
+            }
+
+            // Controls (bottom) — start/pause/stop
+            controlButtons
+                .padding(.bottom, 24)
+
+            // Soundscape shortcut
+            HStack(spacing: 24) {
+                Button {
+                    store.send(.soundscapePickerTapped)
+                } label: {
+                    HStack(spacing: 8) {
+                        Text(store.selectedSoundscape.emoji)
+                            .font(.title3)
+                        if store.selectedSoundscape != .none && store.isRunning {
+                            AudioBarsView()
+                                .frame(width: 16, height: 12)
+                        }
+                        Text(store.selectedSoundscape == .none
+                             ? String(localized: "Sounds")
+                             : store.selectedSoundscape.displayName)
+                            .font(.subheadline.weight(.medium))
+                    }
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .pepinilloGlass(cornerRadius: 20)
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 40)
+            .padding(.bottom, 16)
         }
     }
 
@@ -319,7 +364,7 @@ struct FocusView: View {
                     .accessibilityLabel(String(localized: "Skip to next phase"))
                 }
             } else {
-                // Start button
+                // Start button — capped at 280pt so it stays modest on iPad
                 Button {
                     store.send(.startTapped)
                     HapticManager.impact(.medium)
@@ -331,12 +376,11 @@ struct FocusView: View {
                     }
                     .font(.title3)
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+                    .frame(maxWidth: 280)
+                    .frame(height: 64)
                     .background(modeColor.gradient)
                     .clipShape(Capsule())
                     .shadow(color: modeColor.opacity(0.3), radius: 12, y: 6)
-                    .padding(.horizontal, 40)
                 }
                 .buttonStyle(.pressable)
                 .accessibilityHint(String(localized: "Double tap to start a focus session"))

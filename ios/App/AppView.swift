@@ -183,7 +183,12 @@ struct AppView: View {
                 value: AppFeature.Tab.focus
             ) {
                 NavigationStack {
-                    FocusView(store: store.scope(state: \.focus, action: \.focus))
+                    FocusView(
+                        store: store.scope(state: \.focus, action: \.focus),
+                        streakDays: store.analytics.currentStreakDays,
+                        sessionsToday: store.analytics.sessionsCompleted,
+                        totalFocusMinutesToday: store.analytics.totalFocusMinutes
+                    )
                 }
             }
 
@@ -242,7 +247,12 @@ struct AppView: View {
         switch tab {
         case .focus:
             NavigationStack {
-                FocusView(store: store.scope(state: \.focus, action: \.focus))
+                FocusView(
+                    store: store.scope(state: \.focus, action: \.focus),
+                    streakDays: store.analytics.currentStreakDays,
+                    sessionsToday: store.analytics.sessionsCompleted,
+                    totalFocusMinutesToday: store.analytics.totalFocusMinutes
+                )
             }
 
         case .plan:
