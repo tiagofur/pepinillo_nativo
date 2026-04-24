@@ -53,13 +53,23 @@ struct PlanSplitView: View {
                     )
                     .navigationTitle(store.selectedPlanFilter.title)
                     .navigationBarTitleDisplayMode(.inline)
+                    .background {
+                        PepinilloLiquidBackground()
+                            .ignoresSafeArea()
+                    }
                 }
                 .frame(minWidth: 360, maxWidth: 520)
 
                 Divider()
 
-                NavigationStack { detailPane }
-                    .frame(maxWidth: .infinity)
+                NavigationStack {
+                    detailPane
+                        .background {
+                            PepinilloLiquidBackground()
+                                .ignoresSafeArea()
+                        }
+                }
+                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -85,6 +95,10 @@ struct PlanSplitView: View {
                     )
                     .navigationTitle(String(localized: "Plan"))
                     .navigationBarTitleDisplayMode(.inline)
+                    .background {
+                        PepinilloLiquidBackground()
+                            .ignoresSafeArea()
+                    }
                 }
                 .frame(maxWidth: .infinity)
 
@@ -92,6 +106,10 @@ struct PlanSplitView: View {
 
                 NavigationStack {
                     detailPane
+                        .background {
+                            PepinilloLiquidBackground()
+                                .ignoresSafeArea()
+                        }
                 }
                 .frame(maxWidth: .infinity)
             }
@@ -119,6 +137,10 @@ struct PlanSplitView: View {
                 )
                 .navigationTitle(store.selectedPlanFilter.title)
                 .navigationBarTitleDisplayMode(.inline)
+            }
+            .background {
+                PepinilloLiquidBackground()
+                    .ignoresSafeArea()
             }
         }
         .sheet(
