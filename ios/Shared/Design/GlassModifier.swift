@@ -129,6 +129,7 @@ extension View {
                 .ignoresSafeArea()
             self
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -175,16 +176,16 @@ struct PepinilloLiquidBackground: View {
         #else
         Group {
             if colorScheme == .dark {
-                Color(red: 0.04, green: 0.04, blue: 0.06)  // #0A0A0F — Fitness Now Playing
+                Color(red: 0.03, green: 0.03, blue: 0.05)  // #070709 — deeper Fitness black
             } else {
-                Color(red: 0.98, green: 0.965, blue: 0.93)  // #FAF6EE — Journal cream
+                Color(red: 0.96, green: 0.935, blue: 0.89)  // #F5EEE3 — warmer cream, more visible tint
             }
         }
         #endif
     }
 
     private var atmosphereOpacity: Double {
-        colorScheme == .dark ? 0.45 : 0.35
+        colorScheme == .dark ? 0.85 : 0.7
     }
 
     @ViewBuilder
