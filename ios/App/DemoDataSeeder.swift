@@ -14,9 +14,24 @@ import SwiftData
 enum DemoDataSeeder {
 
     /// Whether debug mode should simulate a paid subscription.
-    /// Activated by `-proMode` launch argument.
+    ///
+    /// Persistence: `-proMode` and `-freeMode` launch arguments set a sticky
+    /// UserDefaults flag so Pro state survives relaunches from springboard /
+    /// Xcode without needing to pass the flag every time (useful for App Store
+    /// screenshots). Launch via `launch_demo.sh` once to enable, then launch
+    /// from anywhere — state persists until you pass `-freeMode`.
     nonisolated static var shouldSimulatePro: Bool {
-        CommandLine.arguments.contains("-proMode")
+        let defaultsKey = "pepinillo.debug.simulatePro"
+        let args = CommandLine.arguments
+        if args.contains("-proMode") {
+            UserDefaults.standard.set(true, forKey: defaultsKey)
+            return true
+        }
+        if args.contains("-freeMode") {
+            UserDefaults.standard.set(false, forKey: defaultsKey)
+            return false
+        }
+        return UserDefaults.standard.bool(forKey: defaultsKey)
     }
 
     static func seedIfNeeded(container: ModelContainer) {
