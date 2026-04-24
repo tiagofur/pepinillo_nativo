@@ -1,21 +1,42 @@
 // PlanSplitView.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// 3-column NavigationSplitView wrapper for the Plan tab.
-// Sidebar → task list → task detail (Apple Reminders pattern).
+// Adaptive layout wrapper for the Plan tab.
 //
-// iPad portrait:  sidebar overlays on demand; content + detail visible.
-// iPad landscape: all 3 columns visible simultaneously.
-// iPhone:         collapses to a single push-navigation stack automatically.
-//                 Task detail opens as a sheet (existing UX preserved).
+// iPad landscape: 3-column NavigationSplitView (sidebar → task list → detail column).
+// iPad portrait:  2-column HStack (pills + task list | inline detail column). No sheet.
+// iPhone:         NavigationStack + sheet for detail.
+//
+// IMPORTANT: size-class branching happens at THIS level, NOT inside NavigationSplitView
+// columns. SwiftUI may report .compact for narrow NSV content columns even on iPad,
+// making horizontalSizeClass unreliable inside them — that was the root cause of the
+// duplicate-sheet bug. All sheet/inline decisions are made here.
 
 import SwiftUI
 import ComposableArchitecture
 
 struct PlanSplitView: View {
     @Bindable var store: StoreOf<TaskListFeature>
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
+        if sizeClass == .regular {
+            GeometryReader { geo in
+                if geo.size.width > geo.size.height {
+                    landscapeContent
+                } else {
+                    portraitContent
+                }
+            }
+        } else {
+            iPhoneContent
+        }
+    }
+
+    // MARK: - iPad Landscape: 3-column NavigationSplitView
+
+    @ViewBuilder
+    private var landscapeContent: some View {
         NavigationSplitView {
             PlanSidebar(
                 selection: Binding(
@@ -25,27 +46,75 @@ struct PlanSplitView: View {
             )
             .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
         } content: {
+            // NO sheet modifier here — detail column handles it inline.
             PlanTaskList(
                 store: store,
                 filter: store.selectedPlanFilter
             )
-            // On iPhone (compact), NavigationSplitView collapses and the sheet is the detail.
-            // On iPad (regular), the detail column renders inline — no sheet needed.
-            .modifier(CompactOnlyDetailSheetModifier(store: store))
         } detail: {
-            detailColumn
+            detailPane
         }
         .navigationSplitViewStyle(.automatic)
     }
 
-    // MARK: - Detail Column (iPad only — iPhone uses the sheet modifier above)
+    // MARK: - iPad Portrait: 2-column HStack (pills top, list | detail bottom)
 
     @ViewBuilder
-    private var detailColumn: some View {
-        // scope(state:action:) on @Presents returns
-        // Store<TaskDetailFeature.State, PresentationAction<TaskDetailFeature.Action>>?.
-        // We strip PresentationAction by scoping to \.presented so TaskDetailView receives
-        // the plain StoreOf<TaskDetailFeature> it expects.
+    private var portraitContent: some View {
+        VStack(spacing: 0) {
+            PlanFilterPills(
+                selection: Binding(
+                    get: { store.selectedPlanFilter },
+                    set: { store.send(.planFilterSelected($0)) }
+                )
+            )
+            Divider()
+            HStack(spacing: 0) {
+                NavigationStack {
+                    PlanTaskList(
+                        store: store,
+                        filter: store.selectedPlanFilter,
+                        showsTitle: false
+                    )
+                    .navigationTitle(String(localized: "Plan"))
+                    .navigationBarTitleDisplayMode(.inline)
+                }
+                .frame(maxWidth: .infinity)
+
+                Divider()
+
+                NavigationStack {
+                    detailPane
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    // MARK: - iPhone: NavigationStack + sheet for detail
+
+    @ViewBuilder
+    private var iPhoneContent: some View {
+        NavigationStack {
+            PlanTaskList(
+                store: store,
+                filter: store.selectedPlanFilter
+            )
+        }
+        .sheet(
+            item: $store.scope(state: \.detail, action: \.detail)
+        ) { detailStore in
+            NavigationStack {
+                TaskDetailView(store: detailStore)
+            }
+            .presentationDetents([.large])
+        }
+    }
+
+    // MARK: - Shared detail pane (landscape column + portrait right column)
+
+    @ViewBuilder
+    private var detailPane: some View {
         if let presentedStore = store.scope(state: \.detail, action: \.detail) {
             let childStore = presentedStore.scope(state: \.self, action: \.presented)
             ZStack {
@@ -59,28 +128,6 @@ struct PlanSplitView: View {
                 systemImage: "checklist",
                 description: Text(String(localized: "Pick a task from the list to view its details."))
             )
-        }
-    }
-}
-
-// MARK: - Compact-Only Sheet Modifier
-//
-// Shows the TaskDetailView as a sheet only on compact (iPhone) width.
-// On regular (iPad), the detail column renders inline so no sheet is needed.
-
-private struct CompactOnlyDetailSheetModifier: ViewModifier {
-    @Bindable var store: StoreOf<TaskListFeature>
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
-    func body(content: Content) -> some View {
-        if horizontalSizeClass == .compact {
-            content.sheet(
-                item: $store.scope(state: \.detail, action: \.detail)
-            ) { detailStore in
-                TaskDetailView(store: detailStore)
-            }
-        } else {
-            content
         }
     }
 }
