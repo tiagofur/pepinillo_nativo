@@ -20,23 +20,29 @@ struct PaywallView: View {
                 ScrollView {
                     VStack(spacing: 32) {
                         PaywallHeaderSection()
-                        
-                        VStack(spacing: 24) {
+                            .readableContent(maxWidth: 672)
+
+                        // Feature tier cards — adaptive grid: 1 col iPhone, 2 cols iPad portrait, 3 cols landscape
+                        LazyVGrid(columns: adaptiveCardColumns, spacing: 20) {
                             PaywallPepinilloPlusSection()
                             PaywallEverywhereSection()
                         }
-                        
+                        .contentMaxWidth(900)
+
                         PaywallProductCardsSection(store: store)
-                        
+                            .readableContent(maxWidth: 672)
+
                         VStack(spacing: 20) {
                             PaywallPurchaseButton(store: store)
                             PaywallLegalFooter(store: store)
                         }
+                        .readableContent(maxWidth: 672)
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
                     .padding(.bottom, 40)
                 }
+                .scrollContentBackground(.hidden)
             }
             .navigationTitle(String(localized: "Upgrade to Pro"))
             .navigationBarTitleDisplayMode(.inline)
@@ -354,6 +360,8 @@ struct PaywallPurchaseButton: View {
             .foregroundStyle(.white)
             .shadow(color: Color.accentColor.opacity(0.3), radius: 10, y: 5)
         }
+        .frame(maxWidth: 480)
+        .frame(maxWidth: .infinity)
         .disabled(store.isLoading || store.subscriptionState.isPro)
         .padding(.top, 10)
     }

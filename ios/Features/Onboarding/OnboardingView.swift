@@ -60,6 +60,8 @@ struct OnboardingView: View {
             VStack {
                 Spacer()
                 continueButton
+                    .frame(maxWidth: 480)
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal, 32)
                     .padding(.bottom, 60) // Extra padding for the page index indicators
             }
@@ -108,10 +110,10 @@ struct OnboardingView: View {
                         .font(.system(size: 80))
                         .accessibilityHidden(true)
                         .shadow(radius: 10)
-                    
+
                     Text(String(localized: "Ready to focus?"))
                         .font(.largeTitle.bold())
-                    
+
                     Text(String(localized: "Choose your default focus style. You can change this later in settings."))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -119,9 +121,10 @@ struct OnboardingView: View {
                         .padding(.horizontal, 32)
                 }
                 .padding(.top, 60)
+                .readableContent(maxWidth: 672)
 
-                // Mode selector cards
-                VStack(spacing: 16) {
+                // Mode selector cards — adaptive grid: 1 col iPhone, 2+ cols iPad
+                LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
                     ForEach(FocusMode.allCases) { mode in
                         DefaultModeCard(
                             mode: mode,
@@ -133,12 +136,14 @@ struct OnboardingView: View {
                         }
                     }
                 }
+                .contentMaxWidth(900)
                 .padding(.horizontal, 24)
 
                 Spacer(minLength: 120)
             }
         }
         .scrollIndicators(.hidden)
+        .scrollContentBackground(.hidden)
     }
 }
 
@@ -234,6 +239,7 @@ struct OnboardingPageView: View {
             }
             .padding(32)
             .pepinilloGlass()
+            .readableContent(maxWidth: 672)
             .padding(.horizontal, 24)
             .offset(y: descAppeared ? 0 : 30)
 
