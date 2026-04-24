@@ -115,6 +115,23 @@ extension View {
     }
 }
 
+// MARK: - Tab Scene Background
+//
+// Wraps the view in a ZStack with PepinilloLiquidBackground at the base.
+// Use on EACH Tab's content because iOS 26's .tabViewStyle(.sidebarAdaptable)
+// renders each tab in its own scene that paints systemBackground — which
+// would otherwise hide the AppView root liquid background.
+
+extension View {
+    func withAmbientBackground() -> some View {
+        ZStack {
+            PepinilloLiquidBackground()
+                .ignoresSafeArea()
+            self
+        }
+    }
+}
+
 // MARK: - Ambient Background (PepinilloLiquidBackground)
 //
 // iOS 18+: animated MeshGradient 3×3, colors from the active AppTheme.

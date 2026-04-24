@@ -198,6 +198,7 @@ struct AppView: View {
                         totalFocusMinutesToday: store.analytics.totalFocusMinutes
                     )
                 }
+                .withAmbientBackground()
             }
 
             Tab(
@@ -206,6 +207,7 @@ struct AppView: View {
                 value: AppFeature.Tab.plan
             ) {
                 PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
+                    .withAmbientBackground()
             }
 
             Tab(
@@ -216,6 +218,7 @@ struct AppView: View {
                 NavigationStack {
                     DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
                 }
+                .withAmbientBackground()
             }
 
             Tab(
@@ -224,6 +227,7 @@ struct AppView: View {
                 value: AppFeature.Tab.account
             ) {
                 AccountView(store: store)
+                    .withAmbientBackground()
             }
         }
         .tabViewStyle(.sidebarAdaptable)
@@ -240,6 +244,7 @@ struct AppView: View {
         )) {
             ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
                 tabContent(for: tab)
+                    .withAmbientBackground()
                     .tabItem {
                         Label(tab.title, systemImage: tab.systemImage)
                     }
