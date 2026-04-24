@@ -142,7 +142,7 @@ struct PlanTaskList: View {
                                 systemImage: task.scheduledForToday ? "minus.circle" : "bolt.circle.fill"
                             )
                         }
-                        .tint(task.scheduledForToday ? .gray : .orange)
+                        .tint(task.scheduledForToday ? Color(.tertiaryLabel) : .orange)
                     }
                 }
                 .onDelete { indexSet in

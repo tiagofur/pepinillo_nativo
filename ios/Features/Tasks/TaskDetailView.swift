@@ -403,7 +403,7 @@ struct TaskDetailView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
-                .background(store.isCompleted ? Color.gray : Color.accentColor)
+                .background(store.isCompleted ? Color(.systemFill) : Color.accentColor)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: (store.isCompleted ? Color.clear : Color.accentColor.opacity(0.3)), radius: 8, y: 4)
         }
