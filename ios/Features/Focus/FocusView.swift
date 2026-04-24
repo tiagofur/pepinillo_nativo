@@ -97,6 +97,7 @@ struct FocusView: View {
                 onNeedsPro: { store.send(.paywallTapped) }
             )
             .presentationDetents([.medium])
+            .pepinilloSheetStyle()
         }
         // Task Picker sheet
         .sheet(
@@ -116,6 +117,7 @@ struct FocusView: View {
                 }
             )
             .presentationDetents([.medium])
+            .pepinilloSheetStyle()
         }
         .confirmationDialog(String(localized: "focus.endsession.title", defaultValue: "End Session?"), isPresented: $showStopConfirmation, titleVisibility: .visible) {
             Button(String(localized: "focus.endsession.button", defaultValue: "End Session"), role: .destructive) {
@@ -125,6 +127,7 @@ struct FocusView: View {
         }
         .sheet(item: $store.scope(state: \.journal, action: \.journal)) { journalStore in
             SessionJournalView(store: journalStore)
+                .pepinilloSheetStyle()
         }
     }
 

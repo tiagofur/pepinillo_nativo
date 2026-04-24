@@ -97,6 +97,24 @@ extension View {
     }
 }
 
+// MARK: - Sheet Presentation Style
+//
+// Unifies modal chrome across the app: regular material background,
+// 28pt corner radius, and visible drag indicator.
+// Apply on the ROOT content of every .sheet presentation.
+// Composes safely with .presentationDetents([...]), .iPadSheetSizing(),
+// and .interactiveDismissDisabled().
+
+extension View {
+    /// Applies standard Pepinillo sheet chrome: .regularMaterial bg, 28pt corner radius, visible drag indicator.
+    func pepinilloSheetStyle() -> some View {
+        self
+            .presentationBackground(.regularMaterial)
+            .presentationCornerRadius(28)
+            .presentationDragIndicator(.visible)
+    }
+}
+
 // MARK: - Ambient Background (PepinilloLiquidBackground)
 //
 // iOS 18+: animated MeshGradient 3×3, colors from the active AppTheme.

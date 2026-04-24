@@ -64,6 +64,7 @@ struct AppView: View {
                     deps.dismiss = DismissEffect { store.send(.focus(.paywallDismissed)) }
                 }
             )
+            .pepinilloSheetStyle()
         }
         // Calendar sheet
         .sheet(item: $store.scope(state: \.calendar, action: \.calendar)) { calendarStore in
@@ -77,6 +78,7 @@ struct AppView: View {
                         }
                     }
             }
+            .pepinilloSheetStyle()
         }
         // Weekly Review sheet
         .sheet(
@@ -84,6 +86,7 @@ struct AppView: View {
         ) { weeklyStore in
             WeeklyReviewView(store: weeklyStore, isProUser: store.subscriptionState.isPro, analyticsStore: store.scope(state: \.analytics, action: \.analytics))
                 .iPadSheetSizing()
+                .pepinilloSheetStyle()
         }
         // Monthly Review sheet
         .sheet(
@@ -91,6 +94,7 @@ struct AppView: View {
         ) { monthlyStore in
             MonthlyReviewView(store: monthlyStore, isProUser: store.subscriptionState.isPro, analyticsStore: store.scope(state: \.analytics, action: \.analytics))
                 .iPadSheetSizing()
+                .pepinilloSheetStyle()
         }
         // AI Report sheet
         .sheet(
@@ -98,6 +102,7 @@ struct AppView: View {
         ) { aiStore in
             AIReportView(store: aiStore)
                 .iPadSheetSizing()
+                .pepinilloSheetStyle()
         }
         // Auth sheet
         .sheet(item: $store.scope(state: \.auth, action: \.auth)) { authStore in
@@ -113,6 +118,7 @@ struct AppView: View {
                 )
             }
             .presentationDetents([.large])
+            .pepinilloSheetStyle()
         }
         // Profile sheet
         .sheet(item: $store.scope(state: \.profile, action: \.profile)) { profileStore in
@@ -120,6 +126,7 @@ struct AppView: View {
                 ProfileView(store: profileStore)
             }
             .presentationDetents([.large])
+            .pepinilloSheetStyle()
         }
         // Email verification sheet (shown after email/password login when not yet verified)
         .sheet(item: $store.scope(state: \.emailVerification, action: \.emailVerification)) { verificationStore in
@@ -130,6 +137,7 @@ struct AppView: View {
             }
             .presentationDetents([.large])
             .interactiveDismissDisabled()
+            .pepinilloSheetStyle()
         }
         // Celebration overlay
         .overlay {

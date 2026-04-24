@@ -129,6 +129,7 @@ struct PlanSplitView: View {
             }
             .modifier(OptionalZoomTransition(sourceID: detailStore.taskID, namespace: heroNS))
             .presentationDetents([.large])
+            .pepinilloSheetStyle()
         }
     }
 

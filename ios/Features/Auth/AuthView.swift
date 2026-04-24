@@ -293,6 +293,7 @@ struct AuthView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $store.scope(state: \.forgotPassword, action: \.forgotPassword)) { forgotPasswordStore in
             ForgotPasswordView(store: forgotPasswordStore)
+                .pepinilloSheetStyle()
         }
         .sheet(isPresented: Binding(
             get: { store.showMergeDialog },
@@ -303,6 +304,7 @@ struct AuthView: View {
                 onUseAccountOnly: { store.send(.useAccountOnlyTapped) }
             )
             .presentationDetents([.medium])
+            .pepinilloSheetStyle()
         }
         .overlay {
             if store.isSyncing {

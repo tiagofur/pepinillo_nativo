@@ -64,6 +64,7 @@ struct ProfileView: View {
             NavigationStack {
                 EditProfileView(store: editStore)
             }
+            .pepinilloSheetStyle()
         }
     }
 

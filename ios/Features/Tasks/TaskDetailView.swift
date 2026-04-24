@@ -90,6 +90,7 @@ struct TaskDetailView: View {
         .sheet(item: $store.scope(state: \.taskAnalytics, action: \.taskAnalytics)) { analyticsStore in
             TaskAnalyticsView(store: analyticsStore)
                 .presentationDetents([.large])
+                .pepinilloSheetStyle()
         }
     }
 
