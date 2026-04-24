@@ -355,8 +355,7 @@ struct FocusView: View {
 
                 // Time display
                 Text(store.displayTime)
-                    .font(.system(size: 64, weight: .medium, design: .rounded))
-                    .monospacedDigit()
+                    .font(NumericFont.timer())
                     .contentTransition(.numericText())
 
                 // Pomodoro counter

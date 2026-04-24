@@ -88,7 +88,7 @@ struct HeroStatCard: View {
                 .symbolEffect(.bounce, value: bounceValue)
                 .accessibilityHidden(true)
             Text(value)
-                .font(.title2.weight(.bold))
+                .font(NumericFont.heroStat())
                 .foregroundStyle(.primary)
             Text(label)
                 .font(.caption)

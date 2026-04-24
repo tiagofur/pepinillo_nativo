@@ -179,7 +179,7 @@ struct FocusCompanionView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(streakDays)")
-                    .font(.system(.title, design: .rounded, weight: .bold))
+                    .font(NumericFont.heroStat(size: 28))
                     .foregroundStyle(.primary)
                 Text(streakDays == 1
                      ? String(localized: "day streak")

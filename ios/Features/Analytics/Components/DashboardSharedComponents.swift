@@ -24,8 +24,7 @@ struct SummaryCard: View {
                 .foregroundStyle(color)
                 .accessibilityHidden(true)
             Text(value)
-                .font(.title3)
-                .fontWeight(.bold)
+                .font(NumericFont.kpi())
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -53,11 +52,10 @@ struct ModeShareRow: View {
                     .font(.subheadline)
                 Spacer()
                 Text("\(share.minutes)m")
-                    .font(.subheadline)
+                    .font(NumericFont.inline())
                     .foregroundStyle(.secondary)
                 Text("\(Int(share.percentage * 100))%")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                    .font(NumericFont.inline())
                     .frame(width: 40, alignment: .trailing)
             }
 
@@ -93,8 +91,7 @@ struct PatternCard: View {
                 .foregroundStyle(color)
                 .accessibilityHidden(true)
             Text(value)
-                .font(.title3)
-                .fontWeight(.bold)
+                .font(NumericFont.kpi())
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             Text(title)
@@ -129,8 +126,7 @@ struct StreakCard: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Text(String(localized: "\(days) days"))
-                    .font(.title3)
-                    .fontWeight(.bold)
+                    .font(NumericFont.kpi())
             }
             Spacer()
         }
