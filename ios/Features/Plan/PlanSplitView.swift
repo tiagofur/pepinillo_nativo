@@ -53,23 +53,20 @@ struct PlanSplitView: View {
                     )
                     .navigationTitle(store.selectedPlanFilter.title)
                     .navigationBarTitleDisplayMode(.inline)
-                    .background {
-                        PepinilloLiquidBackground()
-                            .ignoresSafeArea()
-                    }
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
                 }
                 .frame(minWidth: 360, maxWidth: 520)
+                .background(Color.clear)
 
                 Divider()
 
                 NavigationStack {
                     detailPane
-                        .background {
-                            PepinilloLiquidBackground()
-                                .ignoresSafeArea()
-                        }
+                        .background(Color.clear)
                 }
                 .frame(maxWidth: .infinity)
+                .background(Color.clear)
             }
         }
     }
@@ -95,23 +92,20 @@ struct PlanSplitView: View {
                     )
                     .navigationTitle(String(localized: "Plan"))
                     .navigationBarTitleDisplayMode(.inline)
-                    .background {
-                        PepinilloLiquidBackground()
-                            .ignoresSafeArea()
-                    }
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
                 }
                 .frame(maxWidth: .infinity)
+                .background(Color.clear)
 
                 Divider()
 
                 NavigationStack {
                     detailPane
-                        .background {
-                            PepinilloLiquidBackground()
-                                .ignoresSafeArea()
-                        }
+                        .background(Color.clear)
                 }
                 .frame(maxWidth: .infinity)
+                .background(Color.clear)
             }
         }
     }
@@ -137,11 +131,9 @@ struct PlanSplitView: View {
                 )
                 .navigationTitle(store.selectedPlanFilter.title)
                 .navigationBarTitleDisplayMode(.inline)
+                .scrollContentBackground(.hidden)
             }
-            .background {
-                PepinilloLiquidBackground()
-                    .ignoresSafeArea()
-            }
+            .background(Color.clear)
         }
         .sheet(
             item: $store.scope(state: \.detail, action: \.detail)

@@ -39,31 +39,32 @@ struct PlanFilterPills: View {
                 Text(filter.title)
                     .font(.subheadline.weight(.semibold))
             }
-            .foregroundStyle(isSelected ? filter.color : .secondary)
+            .foregroundStyle(isSelected ? filter.color : .primary)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .background(pillBackground(isSelected: isSelected, color: filter.color))
+            .background {
+                ZStack {
+                    // Always-visible glass base so pills read clearly over any gradient
+                    Capsule().fill(.regularMaterial)
+
+                    // Selected: add colored tint on top of the glass
+                    if isSelected {
+                        Capsule()
+                            .fill(filter.color.opacity(0.18))
+                            .matchedGeometryEffect(id: "pill_bg", in: namespace)
+                    }
+                }
+            }
             .clipShape(Capsule())
-            .overlay(pillBorder(isSelected: isSelected, color: filter.color))
+            .overlay {
+                Capsule()
+                    .stroke(
+                        isSelected ? filter.color.opacity(0.4) : Color.white.opacity(0.15),
+                        lineWidth: 1
+                    )
+            }
+            .shadow(color: .black.opacity(isSelected ? 0.12 : 0.06), radius: 6, y: 2)
         }
         .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    private func pillBackground(isSelected: Bool, color: Color) -> some View {
-        if isSelected {
-            Capsule()
-                .fill(color.opacity(0.12))
-                .matchedGeometryEffect(id: "pill_bg", in: namespace)
-        }
-    }
-
-    @ViewBuilder
-    private func pillBorder(isSelected: Bool, color: Color) -> some View {
-        if isSelected {
-            Capsule().stroke(color.opacity(0.3), lineWidth: 1)
-        } else {
-            Capsule().stroke(.quaternary, lineWidth: 1)
-        }
     }
 }
