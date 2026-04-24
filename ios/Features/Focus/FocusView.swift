@@ -18,6 +18,8 @@ struct FocusView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showStopConfirmation = false
     @Namespace private var glassNS
+    // C6: breathe scale for emoji mode icon (SF Symbols use .symbolEffect, emojis use scaleEffect)
+    @State private var breatheScale: CGFloat = 1.0
 
     init(
         store: StoreOf<FocusFeature>,
@@ -328,9 +330,14 @@ struct FocusView: View {
 
             // Center content
             VStack(spacing: 8) {
-                // Mode icon
+                // Mode icon — emoji glyphs use scaleEffect-based breath while running
                 Text(store.modeIcon)
                     .font(.system(size: 40))
+                    .scaleEffect(breatheScale)
+                    .conditionalAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breatheScale)
+                    .onChange(of: store.isRunning) { _, running in
+                        breatheScale = running ? 1.06 : 1.0
+                    }
 
                 // Time display
                 Text(store.displayTime)
@@ -401,6 +408,7 @@ struct FocusView: View {
                     }
                 } label: {
                     Image(systemName: store.isPaused ? "play.fill" : "pause.fill")
+                        .contentTransition(.symbolEffect(.replace.byLayer))
                         .font(.title)
                         .frame(width: 72, height: 72)
                         .foregroundStyle(.white)
