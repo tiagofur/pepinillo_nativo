@@ -15,34 +15,52 @@ struct ProfileView: View {
     var body: some View {
         ZStack {
             PepinilloLiquidBackground()
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // Header
-                    Text(String(localized: "profile.title", defaultValue: "Profile"))
-                        .font(.title.bold())
-                    Text(String(localized: "profile.subtitle", defaultValue: "Your productivity journey"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
 
-                    // User card
+            Form {
+                // Hero header section: avatar + name
+                Section {
                     userCard
+                }
 
-                    // Stats
-                    statsSection
+                // Stats section
+                Section(String(localized: "profile.lifetimeStats", defaultValue: "Lifetime Stats")) {
+                    statsMiniRow
+                }
 
-                    // Account actions
-                    accountSection
+                // Account section
+                if store.user != nil {
+                    Section(String(localized: "profile.account.section", defaultValue: "Account")) {
+                        Button {
+                            store.send(.signOutTapped)
+                        } label: {
+                            HStack(spacing: 14) {
+                                Label(String(localized: "profile.signout.button", defaultValue: "Sign Out"),
+                                      systemImage: "arrow.right.square")
+                                if store.isLoading {
+                                    Spacer()
+                                    ProgressView()
+                                }
+                            }
+                            .foregroundStyle(.primary)
+                        }
+                        .disabled(store.isLoading)
+                        .accessibilityLabel(String(localized: "a11y.account.signout.label", defaultValue: "Sign out"))
+                        .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
+                    }
+                }
 
-                    // Footer
+                // Footer
+                Section {
                     Text("Pepinillo v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowBackground(Color.clear)
                 }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
             }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
         }
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { store.send(.onAppear) }
@@ -116,8 +134,6 @@ struct ProfileView: View {
 
             Spacer()
         }
-        .padding()
-        .pepinilloGlass()
         .accessibilityElement(children: .contain)
     }
 
@@ -129,64 +145,33 @@ struct ProfileView: View {
         return date.formatted(date: .abbreviated, time: .omitted)
     }
 
-    // MARK: - Stats Section
+    // MARK: - Stats Mini Row (for Form section)
 
     @ViewBuilder
-    private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(String(localized: "profile.lifetimeStats", defaultValue: "Lifetime Stats"))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.tint)
-
-            HStack(spacing: 12) {
-                StatMiniCard(
-                    icon: "timer",
-                    value: "\(store.totalFocusMinutes / 60)h",
-                    label: "Focus time",
-                    accessibilityLabel: "Focus time: \(store.totalFocusMinutes / 60) hours"
-                )
-                StatMiniCard(
-                    icon: "checkmark.circle",
-                    value: "\(store.totalSessions)",
-                    label: "Sessions",
-                    accessibilityLabel: "Sessions: \(store.totalSessions)"
-                )
-                StatMiniCard(
-                    icon: "flame",
-                    value: "\(store.bestStreak)",
-                    label: "Best streak",
-                    accessibilityLabel: "Best streak: \(store.bestStreak) days"
-                )
-            }
-            .accessibilityLabel(String(localized: "a11y.profile.lifetimestats.label", defaultValue: "Lifetime statistics"))
+    private var statsMiniRow: some View {
+        HStack(spacing: 12) {
+            StatMiniCard(
+                icon: "timer",
+                value: "\(store.totalFocusMinutes / 60)h",
+                label: "Focus time",
+                accessibilityLabel: "Focus time: \(store.totalFocusMinutes / 60) hours"
+            )
+            StatMiniCard(
+                icon: "checkmark.circle",
+                value: "\(store.totalSessions)",
+                label: "Sessions",
+                accessibilityLabel: "Sessions: \(store.totalSessions)"
+            )
+            StatMiniCard(
+                icon: "flame",
+                value: "\(store.bestStreak)",
+                label: "Best streak",
+                accessibilityLabel: "Best streak: \(store.bestStreak) days"
+            )
         }
-    }
-
-    // MARK: - Account Section
-
-    @ViewBuilder
-    private var accountSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(String(localized: "profile.account.section", defaultValue: "Account"))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.tint)
-
-            VStack(spacing: 0) {
-                if store.user != nil {
-                    ActionRow(
-                        icon: "arrow.right.square",
-                        label: String(localized: "profile.signout.button", defaultValue: "Sign Out"),
-                        subtitle: store.user?.email ?? "",
-                        isLoading: store.isLoading
-                    ) {
-                        store.send(.signOutTapped)
-                    }
-                    .accessibilityLabel(String(localized: "a11y.account.signout.label", defaultValue: "Sign out"))
-                    .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
-                }
-            }
-            .pepinilloGlass()
-        }
+        .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+        .listRowBackground(Color.clear)
+        .accessibilityLabel(String(localized: "a11y.profile.lifetimestats.label", defaultValue: "Lifetime statistics"))
     }
 }
 
@@ -217,41 +202,3 @@ private struct StatMiniCard: View {
     }
 }
 
-// MARK: - ActionRow
-
-private struct ActionRow: View {
-    let icon: String
-    let label: String
-    let subtitle: String
-    var isLoading: Bool = false
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 14) {
-                Image(systemName: icon)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(label)
-                        .font(.body)
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if isLoading {
-                    ProgressView()
-                } else {
-                    Image(systemName: "chevron.right")
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 20)
-        }
-        .buttonStyle(.plain)
-        .disabled(isLoading)
-    }
-}

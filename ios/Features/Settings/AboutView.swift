@@ -13,10 +13,10 @@ struct AboutView: View {
     var body: some View {
         ZStack {
             PepinilloLiquidBackground()
-            
-            ScrollView {
-                VStack(spacing: 24) {
-                    // MARK: App Identity
+
+            Form {
+                // MARK: App Identity (hero header as a section)
+                Section {
                     VStack(spacing: 16) {
                         if let icon = UIImage(named: "AppIcon") {
                             Image(uiImage: icon)
@@ -36,11 +36,11 @@ struct AboutView: View {
                             Text("Pepinillo")
                                 .font(.title2.bold())
                                 .foregroundStyle(.primary)
-                            
+
                             Text(String(localized: "Deep Work Companion"))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            
+
                             Text(String(localized: "Version \(store.appVersion) (\(store.buildNumber))"))
                                 .font(.caption2.monospaced())
                                 .foregroundStyle(.tertiary)
@@ -49,98 +49,67 @@ struct AboutView: View {
                                 .background(Capsule().stroke(.tertiary, lineWidth: 0.5))
                         }
                     }
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
+                    .listRowBackground(Color.clear)
+                }
 
-                    // MARK: Subscription
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(String(localized: "Subscription"))
-                            .font(.caption.bold())
-                            .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
-                            .padding(.horizontal, 4)
-
-                        HStack {
-                            if store.isProUser {
-                                Label {
-                                    Text(String(localized: "Pepinillo Pro"))
-                                        .fontWeight(.medium)
-                                } icon: {
-                                    Image(systemName: "crown.fill")
-                                        .foregroundStyle(.yellow)
-                                }
-                                Spacer()
-                                Text(String(localized: "Active"))
-                                    .font(.subheadline.bold())
-                                    .foregroundStyle(.green)
-                            } else {
-                                Label {
-                                    Text(String(localized: "Pepinillo Free"))
-                                        .fontWeight(.medium)
-                                } icon: {
-                                    Image(systemName: "star.circle")
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                // MARK: Subscription
+                Section(String(localized: "Subscription")) {
+                    if store.isProUser {
+                        LabeledContent {
+                            Text(String(localized: "Active"))
+                                .font(.subheadline.bold())
+                                .foregroundStyle(.green)
+                        } label: {
+                            Label {
+                                Text(String(localized: "Pepinillo Pro"))
+                                    .fontWeight(.medium)
+                            } icon: {
+                                Image(systemName: "crown.fill")
+                                    .foregroundStyle(.yellow)
                             }
                         }
-                        .padding(16)
-                        .pepinilloGlass()
-                    }
-
-                    // MARK: Legal
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(String(localized: "Legal"))
-                            .font(.caption.bold())
-                            .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
-                            .padding(.horizontal, 4)
-
-                        VStack(spacing: 0) {
-                            Button {
-                                store.send(.privacyPolicyTapped)
-                            } label: {
-                                HStack {
-                                    Label(String(localized: "Privacy Policy"), systemImage: "doc.text")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
-                                }
-                                .padding(16)
-                            }
-                            .buttonStyle(.plain)
-
-                            Divider().padding(.leading, 56).opacity(0.1)
-
-                            Button {
-                                store.send(.termsOfServiceTapped)
-                            } label: {
-                                HStack {
-                                    Label(String(localized: "Terms of Service"), systemImage: "doc.plaintext")
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.caption)
-                                        .foregroundStyle(.tertiary)
-                                }
-                                .padding(16)
-                            }
-                            .buttonStyle(.plain)
+                    } else {
+                        Label {
+                            Text(String(localized: "Pepinillo Free"))
+                                .fontWeight(.medium)
+                        } icon: {
+                            Image(systemName: "star.circle")
+                                .foregroundStyle(.secondary)
                         }
-                        .pepinilloGlass()
+                    }
+                }
+
+                // MARK: Legal
+                Section(String(localized: "Legal")) {
+                    Button {
+                        store.send(.privacyPolicyTapped)
+                    } label: {
+                        Label(String(localized: "Privacy Policy"), systemImage: "doc.text")
+                            .foregroundStyle(.primary)
                     }
 
-                    Spacer(minLength: 40)
-                    
+                    Button {
+                        store.send(.termsOfServiceTapped)
+                    } label: {
+                        Label(String(localized: "Terms of Service"), systemImage: "doc.plaintext")
+                            .foregroundStyle(.primary)
+                    }
+                }
+
+                // Footer
+                Section {
                     Text("© \(Calendar.current.component(.year, from: Date())) Creapolis Dev")
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowBackground(Color.clear)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 20)
             }
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
         }
         .navigationTitle(String(localized: "About"))
         .navigationBarTitleDisplayMode(.inline)
