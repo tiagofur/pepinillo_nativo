@@ -9,10 +9,18 @@ import SwiftUI
 import ComposableArchitecture
 
 struct FocusCompanionView: View {
+
+    // MARK: - Layout
+
+    enum Layout { case stack, grid }
+
+    // MARK: - Props
+
     @Bindable var store: StoreOf<FocusFeature>
     let streakDays: Int
     let sessionsToday: Int
     let totalFocusMinutesToday: Int
+    var layout: Layout = .stack
 
     @Environment(\.appTheme) private var theme
 
@@ -25,18 +33,33 @@ struct FocusCompanionView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                activeTaskCard
-                todaySessionsCard
-                streakCard
-                if let next = nextScheduledTask {
-                    nextTaskCard(next)
+        switch layout {
+        case .stack:
+            ScrollView {
+                VStack(spacing: 16) {
+                    cards
                 }
+                .padding(.vertical, 8)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        case .grid:
+            LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+                cards
             }
             .padding(.vertical, 8)
         }
-        .scrollBounceBehavior(.basedOnSize)
+    }
+
+    // MARK: - Shared cards (reused by both layout modes)
+
+    @ViewBuilder
+    private var cards: some View {
+        activeTaskCard
+        todaySessionsCard
+        streakCard
+        if let next = nextScheduledTask {
+            nextTaskCard(next)
+        }
     }
 
     // MARK: - Active Task Card

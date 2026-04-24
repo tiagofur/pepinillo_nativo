@@ -33,20 +33,30 @@ struct FocusView: View {
     var body: some View {
         ZStack {
             if sizeClass == .regular {
-                // MARK: - iPad: 2-column layout
-                HStack(alignment: .top, spacing: 24) {
-                    focusCoreColumn
-                        .frame(maxWidth: 420)
-                    FocusCompanionView(
-                        store: store,
-                        streakDays: streakDays,
-                        sessionsToday: sessionsToday,
-                        totalFocusMinutesToday: totalFocusMinutesToday
-                    )
-                    .frame(maxWidth: .infinity)
+                // MARK: - iPad: adaptive layout (landscape ↔ portrait)
+                GeometryReader { geo in
+                    let isWide = geo.size.width > geo.size.height
+
+                    if isWide {
+                        // Landscape: side-by-side (original layout)
+                        HStack(alignment: .top, spacing: 24) {
+                            focusCoreColumn
+                                .frame(maxWidth: 420)
+                            FocusCompanionView(
+                                store: store,
+                                streakDays: streakDays,
+                                sessionsToday: sessionsToday,
+                                totalFocusMinutesToday: totalFocusMinutesToday
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 24)
+                        .contentMaxWidth()
+                    } else {
+                        // Portrait: timer on top, metrics below
+                        ipadPortraitLayout(in: geo.size)
+                    }
                 }
-                .padding(.horizontal, 24)
-                .contentMaxWidth()
             } else {
                 // MARK: - iPhone: single-column layout (existing behavior)
                 focusCoreColumn
@@ -113,6 +123,39 @@ struct FocusView: View {
         .sheet(item: $store.scope(state: \.journal, action: \.journal)) { journalStore in
             SessionJournalView(store: journalStore)
         }
+    }
+
+    // MARK: - iPad Portrait Layout (timer top, metrics bottom)
+
+    @ViewBuilder
+    private func ipadPortraitLayout(in size: CGSize) -> some View {
+        VStack(spacing: 0) {
+            // Top: Timer + controls — constrained to ~50% of screen
+            focusCoreColumn
+                .frame(maxWidth: 600, maxHeight: size.height * 0.52)
+
+            // Separator
+            Rectangle()
+                .fill(.quaternary)
+                .frame(height: 1)
+                .padding(.horizontal, 32)
+
+            // Bottom: Metrics cards in a 2-col adaptive grid
+            ScrollView {
+                FocusCompanionView(
+                    store: store,
+                    streakDays: streakDays,
+                    sessionsToday: sessionsToday,
+                    totalFocusMinutesToday: totalFocusMinutesToday,
+                    layout: .grid
+                )
+                .frame(maxWidth: 600)
+            }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(maxHeight: .infinity)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Focus Core Column (mode picker + ring + picker + start)
