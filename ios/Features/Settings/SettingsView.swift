@@ -27,6 +27,10 @@ struct SettingsView: View {
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
             .background(Color.clear)
+            .background {
+                PepinilloLiquidBackground()
+                    .ignoresSafeArea()
+            }
             .navigationTitle(String(localized: "Settings"))
             .navigationDestination(item: $store.scope(state: \.about, action: \.about)) { aboutStore in
                 AboutView(store: aboutStore)
