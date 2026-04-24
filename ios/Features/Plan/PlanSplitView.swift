@@ -16,6 +16,7 @@ import ComposableArchitecture
 struct PlanSplitView: View {
     @Bindable var store: StoreOf<TaskListFeature>
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Namespace private var heroNS
 
     var body: some View {
         if sizeClass == .regular {
@@ -113,7 +114,8 @@ struct PlanSplitView: View {
                 PlanTaskList(
                     store: store,
                     filter: store.selectedPlanFilter,
-                    showsTitle: false
+                    showsTitle: false,
+                    heroNamespace: heroNS
                 )
                 .navigationTitle(store.selectedPlanFilter.title)
                 .navigationBarTitleDisplayMode(.inline)
@@ -125,6 +127,7 @@ struct PlanSplitView: View {
             NavigationStack {
                 TaskDetailView(store: detailStore)
             }
+            .modifier(OptionalZoomTransition(sourceID: detailStore.taskID, namespace: heroNS))
             .presentationDetents([.large])
         }
     }
@@ -142,6 +145,23 @@ struct PlanSplitView: View {
                 systemImage: "checklist",
                 description: Text(String(localized: "Pick a task from the list to view its details."))
             )
+        }
+    }
+}
+
+// MARK: - Hero zoom transition helper (iOS 18+)
+
+/// Applies .navigationTransition(.zoom(sourceID:in:)) on iOS 18+.
+/// On iOS 17 falls back to no-op so the system modal animation is used.
+private struct OptionalZoomTransition: ViewModifier {
+    let sourceID: AnyHashable
+    let namespace: Namespace.ID
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, watchOS 11.0, *) {
+            content.navigationTransition(.zoom(sourceID: sourceID, in: namespace))
+        } else {
+            content
         }
     }
 }

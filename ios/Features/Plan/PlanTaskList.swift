@@ -14,6 +14,7 @@ struct PlanTaskList: View {
     @Bindable var store: StoreOf<TaskListFeature>
     let filter: PlanFilter
     var showsTitle: Bool = true
+    var heroNamespace: Namespace.ID? = nil
     @State private var collapsedSections: Set<PlanFilter> = []
     @State private var taskToDelete: UUID?
 
@@ -128,6 +129,7 @@ struct PlanTaskList: View {
                             store.send(.recurrenceChanged(task.id, rule))
                         }
                     )
+                    .modifier(OptionalMatchedSource(id: task.id, namespace: heroNamespace))
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         Button {
                             store.send(.taskScheduledForToday(task.id, !task.scheduledForToday))
@@ -237,4 +239,21 @@ struct PlanTaskList: View {
         .padding(.horizontal, 16)
     }
 
+}
+
+// MARK: - Hero transition helpers (iOS 18+)
+
+/// Applies .matchedTransitionSource when a namespace is available and iOS 18+ is running.
+/// Used on task rows in PlanTaskList so they can zoom-morph into the detail sheet.
+private struct OptionalMatchedSource: ViewModifier {
+    let id: AnyHashable
+    let namespace: Namespace.ID?
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, watchOS 11.0, *), let ns = namespace {
+            content.matchedTransitionSource(id: id, in: ns)
+        } else {
+            content
+        }
+    }
 }
