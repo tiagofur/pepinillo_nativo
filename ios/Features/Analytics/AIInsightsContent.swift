@@ -284,8 +284,7 @@ struct AIReportContentView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 20)
         .padding(.horizontal, 16)
     }
 
@@ -314,8 +313,7 @@ struct AIReportContentView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 20)
         .padding(.horizontal, 16)
     }
 
@@ -340,8 +338,7 @@ struct AIReportContentView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 20)
         .padding(.horizontal, 16)
     }
 

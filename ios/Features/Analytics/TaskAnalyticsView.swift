@@ -147,8 +147,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 20)
     }
 
     // MARK: - Estimation Accuracy
@@ -195,8 +194,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 20)
     }
 
     // MARK: - Mode Distribution
@@ -252,8 +250,7 @@ struct TaskAnalyticsView: View {
             }
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 20)
     }
 
     // MARK: - Peak Hour
@@ -286,8 +283,7 @@ struct TaskAnalyticsView: View {
             Spacer()
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 20)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "Peak focus hour, \(peakLabel)"))
     }
@@ -317,8 +313,7 @@ struct TaskAnalyticsView: View {
             Spacer()
         }
         .padding(16)
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .pepinilloGlass(cornerRadius: 20)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "Average satisfaction, \(String(format: "%.1f", avgRating)) out of 5"))
     }
@@ -362,8 +357,7 @@ private struct TaskAnalyticsPlaceholder: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(16)
-                    .background(Color(.secondarySystemBackground))
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .pepinilloGlass(cornerRadius: 20)
                 }
             }
 
@@ -383,8 +377,7 @@ private struct TaskAnalyticsPlaceholder: View {
                 }
             }
             .padding(16)
-            .background(Color(.secondarySystemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .pepinilloGlass(cornerRadius: 20)
         }
     }
 }
