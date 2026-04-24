@@ -36,64 +36,118 @@ extension View {
     }
 }
 
-// MARK: - Liquid Background
+// MARK: - Ambient Background (PepinilloLiquidBackground)
+//
+// iOS 18+: animated MeshGradient 3×3, colors from the active AppTheme.
+// iOS 17: two blurred cross-LinearGradients (same atmospheric intent).
+// Accessibility: Reduce Motion freezes the phase. Reduce Transparency
+//               falls back to a flat system background.
+//
+// Applied once at the AppView ZStack root — no per-screen duplication.
 
 struct PepinilloLiquidBackground: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.appTheme) private var theme
-    @State private var animate = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var phase: Double = 0
 
     var body: some View {
         ZStack {
-            // Base background
-            Group {
-                #if os(watchOS)
-                Color.black
-                #else
-                Color(.systemBackground)
-                #endif
+            baseLayer
+
+            if !reduceTransparency {
+                atmosphericLayer
+                    .opacity(atmosphereOpacity)
             }
-            .ignoresSafeArea()
-
-            // Animated Blobs
-            GeometryReader { geo in
-                ZStack {
-                    blob(
-                        color: theme.pomodoroColor.opacity(0.15),
-                        size: geo.size.width * 0.8,
-                        offset: animate ? CGSize(width: -20, height: -40) : CGSize(width: 20, height: 40)
-                    )
-                    .position(x: geo.size.width * 0.2, y: geo.size.height * 0.2)
-
-                    blob(
-                        color: theme.flowtimeColor.opacity(0.12),
-                        size: geo.size.width * 0.7,
-                        offset: animate ? CGSize(width: 30, height: 20) : CGSize(width: -30, height: -20)
-                    )
-                    .position(x: geo.size.width * 0.8, y: geo.size.height * 0.4)
-
-                    blob(
-                        color: theme.streakColor.opacity(0.1),
-                        size: geo.size.width * 0.9,
-                        offset: animate ? CGSize(width: -10, height: 50) : CGSize(width: 10, height: -50)
-                    )
-                    .position(x: geo.size.width * 0.4, y: geo.size.height * 0.8)
-                }
-                .blur(radius: 60)
-            }
-            .ignoresSafeArea()
         }
+        .ignoresSafeArea()
         .onAppear {
-            withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) {
-                animate.toggle()
+            guard !reduceMotion else { return }
+            withAnimation(.smooth(duration: 10).repeatForever(autoreverses: true)) {
+                phase = 1
             }
         }
     }
 
-    private func blob(color: Color, size: CGFloat, offset: CGSize) -> some View {
-        Circle()
-            .fill(color)
-            .frame(width: size, height: size)
-            .offset(offset)
+    // MARK: - Layers
+
+    private var baseLayer: some View {
+        #if os(watchOS)
+        Color.black
+        #else
+        Group {
+            if colorScheme == .dark {
+                Color(red: 0.04, green: 0.04, blue: 0.06)  // #0A0A0F — Fitness Now Playing
+            } else {
+                Color(red: 0.98, green: 0.965, blue: 0.93)  // #FAF6EE — Journal cream
+            }
+        }
+        #endif
+    }
+
+    private var atmosphereOpacity: Double {
+        colorScheme == .dark ? 0.45 : 0.35
+    }
+
+    @ViewBuilder
+    private var atmosphericLayer: some View {
+        if #available(iOS 18.0, watchOS 11.0, *) {
+            meshGradient
+        } else {
+            linearFallback
+        }
+    }
+
+    // MARK: - iOS 18+ MeshGradient
+
+    @available(iOS 18.0, watchOS 11.0, *)
+    private var meshGradient: some View {
+        let p = phase
+        return MeshGradient(
+            width: 3, height: 3,
+            points: [
+                [0.0, 0.0],                          [Float(0.5 + 0.05 * p), 0.0],       [1.0, 0.0],
+                [0.0, Float(0.5 - 0.05 * p)],        [0.5, 0.5],                           [1.0, Float(0.5 + 0.05 * p)],
+                [0.0, 1.0],                          [Float(0.5 - 0.05 * p), 1.0],        [1.0, 1.0]
+            ],
+            colors: [
+                theme.pomodoroColor.opacity(0.6),  theme.streakColor.opacity(0.5),    theme.flowtimeColor.opacity(0.55),
+                theme.flowtimeColor.opacity(0.5),  theme.pomodoroColor.opacity(0.4),  theme.timeBlockColor.opacity(0.5),
+                theme.timeBlockColor.opacity(0.55), theme.flowtimeColor.opacity(0.5), theme.streakColor.opacity(0.5)
+            ]
+        )
+    }
+
+    // MARK: - iOS 17 fallback
+
+    private var linearFallback: some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    theme.pomodoroColor.opacity(0.4),
+                    Color.clear,
+                    theme.flowtimeColor.opacity(0.35)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .blur(radius: 70)
+            .offset(x: phase * 20, y: phase * -10)
+
+            LinearGradient(
+                colors: [
+                    theme.streakColor.opacity(0.3),
+                    Color.clear,
+                    theme.timeBlockColor.opacity(0.3)
+                ],
+                startPoint: .topTrailing,
+                endPoint: .bottomLeading
+            )
+            .blur(radius: 70)
+            .offset(x: phase * -20, y: phase * 15)
+        }
     }
 }
 
