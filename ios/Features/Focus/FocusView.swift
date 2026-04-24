@@ -17,6 +17,7 @@ struct FocusView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showStopConfirmation = false
+    @Namespace private var glassNS
 
     init(
         store: StoreOf<FocusFeature>,
@@ -40,7 +41,7 @@ struct FocusView: View {
                     if isWide {
                         // Landscape: side-by-side (original layout)
                         HStack(alignment: .top, spacing: 24) {
-                            focusCoreColumn
+                            focusCoreContainer
                                 .frame(maxWidth: 420)
                             FocusCompanionView(
                                 store: store,
@@ -59,7 +60,7 @@ struct FocusView: View {
                 }
             } else {
                 // MARK: - iPhone: single-column layout (existing behavior)
-                focusCoreColumn
+                focusCoreContainer
             }
         }
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.isRunning)
@@ -131,7 +132,7 @@ struct FocusView: View {
     private func ipadPortraitLayout(in size: CGSize) -> some View {
         VStack(spacing: 0) {
             // Top: Timer + controls — constrained to ~50% of screen
-            focusCoreColumn
+            focusCoreContainer
                 .frame(maxWidth: 600, maxHeight: size.height * 0.52)
 
             // Separator
@@ -158,6 +159,19 @@ struct FocusView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    // MARK: - Focus Core Container (wraps core column in GlassEffectContainer on iOS 26+)
+
+    @ViewBuilder
+    private var focusCoreContainer: some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 12) {
+                focusCoreColumn
+            }
+        } else {
+            focusCoreColumn
+        }
+    }
+
     // MARK: - Focus Core Column (mode picker + ring + picker + start)
 
     @ViewBuilder
@@ -168,7 +182,8 @@ struct FocusView: View {
                 ModePickerView(
                     selectedMode: store.selectedMode,
                     isProUser: store.isProUser,
-                    onSelect: { store.send(.modeSelected($0)) }
+                    onSelect: { store.send(.modeSelected($0)) },
+                    glassNamespace: glassNS
                 )
                 .padding(.top, 16)
                 .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
@@ -224,7 +239,7 @@ struct FocusView: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
-                        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+                        .adaptiveGlassCapsule(id: "linked-task-button", namespace: glassNS)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(localized: "Linked task: \(taskTitle). Tap to change or unlink."))
@@ -280,7 +295,7 @@ struct FocusView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+                    .adaptiveGlassCapsule(id: "soundscape-button", namespace: glassNS)
                 }
                 .buttonStyle(.plain)
             }
@@ -371,7 +386,7 @@ struct FocusView: View {
                     Image(systemName: "stop.fill")
                         .font(.title2)
                         .frame(width: 56, height: 56)
-                        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
+                        .adaptiveGlassCapsule(id: "stop-button", namespace: glassNS)
                 }
                 .accessibilityLabel(String(localized: "Stop session"))
 
@@ -402,7 +417,7 @@ struct FocusView: View {
                         Image(systemName: "forward.fill")
                             .font(.title2)
                             .frame(width: 56, height: 56)
-                            .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
+                            .adaptiveGlassCapsule(id: "skip-button", namespace: glassNS)
                     }
                     .accessibilityLabel(String(localized: "Skip to next phase"))
                 }
@@ -424,6 +439,7 @@ struct FocusView: View {
                     .background(modeColor.gradient)
                     .clipShape(Capsule())
                     .shadow(color: modeColor.opacity(0.3), radius: 12, y: 6)
+                    .startButtonGlassID(namespace: glassNS)
                 }
                 .buttonStyle(.pressable)
                 .accessibilityHint(String(localized: "Double tap to start a focus session"))
@@ -509,6 +525,7 @@ struct ModePickerView: View {
     let selectedMode: FocusMode
     let isProUser: Bool
     let onSelect: (FocusMode) -> Void
+    var glassNamespace: Namespace.ID? = nil
     @Namespace private var namespace
 
     var body: some View {
@@ -538,7 +555,7 @@ struct ModePickerView: View {
                             }
                         }
                     )
-                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+                    .modeChipGlass(mode: mode, glassNamespace: glassNamespace)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .overlay {
                         if !mode.isFreeTier && !isProUser {
@@ -554,5 +571,20 @@ struct ModePickerView: View {
             }
         }
         .padding(.horizontal, 16)
+    }
+}
+
+// MARK: - Mode chip glass helper (avoids passing Namespace.ID? through ViewModifier directly)
+
+private extension View {
+    @ViewBuilder
+    func modeChipGlass(mode: FocusMode, glassNamespace: Namespace.ID?) -> some View {
+        if #available(iOS 26.0, *), let ns = glassNamespace {
+            self
+                .glassEffect(.regular, in: .rect(cornerRadius: GlassCornerRadius.card))
+                .glassEffectID("mode-chip-\(mode.id)", in: ns)
+        } else {
+            self.pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        }
     }
 }

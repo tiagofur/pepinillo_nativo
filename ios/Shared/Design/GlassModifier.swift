@@ -36,6 +36,67 @@ extension View {
     }
 }
 
+// MARK: - Adaptive Glass Capsule (iOS 26+ interactive, iOS 17-25 ultraThinMaterial)
+//
+// On iOS 26+: applies .glassEffect(.interactive, in: .capsule) with a shared
+// glassEffectID so multiple controls inside a GlassEffectContainer morph
+// fluidly together (connected refraction between state changes).
+// On iOS 17-25: falls back to .ultraThinMaterial in a Capsule shape.
+//
+// Usage: add .adaptiveGlassCapsule(id: "unique-id", namespace: glassNS)
+// to each interactive control inside the Focus core column.
+
+private struct AdaptiveGlassCapsuleModifier: ViewModifier {
+    let id: String
+    let namespace: Namespace.ID
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+            content
+                .glassEffect(.regular, in: .capsule)
+                .glassEffectID(id, in: namespace)
+        } else {
+            content
+                .background(.ultraThinMaterial, in: Capsule())
+        }
+    }
+}
+
+extension View {
+    /// On iOS 26+: interactive capsule glass with glassEffectID for fluid morphing inside a GlassEffectContainer.
+    /// On iOS 17-25: ultraThinMaterial capsule fallback.
+    func adaptiveGlassCapsule(id: String, namespace: Namespace.ID) -> some View {
+        modifier(AdaptiveGlassCapsuleModifier(id: id, namespace: namespace))
+    }
+}
+
+// MARK: - Glass Effect ID only (for controls with their own styled background)
+//
+// Use when a control already has a fully styled background (e.g. colored gradient + clipShape)
+// and should participate in GlassEffectContainer morphing without replacing its background.
+
+private struct GlassEffectIDModifier: ViewModifier {
+    let id: String
+    let namespace: Namespace.ID
+
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
+            content
+                .glassEffectID(id, in: namespace)
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// On iOS 26+: register this view in the shared glass namespace for morphing, without applying a glass background.
+    /// Use for controls that already have a custom styled background (colored gradient, etc.).
+    func startButtonGlassID(namespace: Namespace.ID) -> some View {
+        modifier(GlassEffectIDModifier(id: "start-button", namespace: namespace))
+    }
+}
+
 // MARK: - Ambient Background (PepinilloLiquidBackground)
 //
 // iOS 18+: animated MeshGradient 3×3, colors from the active AppTheme.
