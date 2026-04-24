@@ -172,8 +172,10 @@ struct FocusCompanionView: View {
 
     private var streakCard: some View {
         HStack(spacing: 12) {
-            Text("🔥")
+            Image(systemName: "flame.fill")
                 .font(.largeTitle)
+                .foregroundStyle(.orange)
+                .symbolEffect(.bounce, value: streakDays)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(streakDays)")

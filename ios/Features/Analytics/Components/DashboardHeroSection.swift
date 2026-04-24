@@ -23,7 +23,8 @@ struct DashboardHeroSection: View {
                 icon: "flame.fill",
                 value: streakDays > 0 ? "\(streakDays)" : "—",
                 label: String(localized: "day streak"),
-                color: theme.streakColor
+                color: theme.streakColor,
+                bounceValue: streakDays
             )
             .accessibilityElement(children: .combine)
             .accessibilityLabel(
@@ -77,12 +78,14 @@ struct HeroStatCard: View {
     let value: String
     let label: String
     let color: Color
+    var bounceValue: Int = 0
 
     var body: some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(color)
+                .symbolEffect(.bounce, value: bounceValue)
                 .accessibilityHidden(true)
             Text(value)
                 .font(.title2.weight(.bold))

@@ -35,6 +35,7 @@ struct PlanFilterPills: View {
             HStack(spacing: 6) {
                 Image(systemName: filter.systemImage)
                     .font(.caption)
+                    .symbolEffect(.bounce, value: isSelected)
                 Text(filter.title)
                     .font(.subheadline.weight(.semibold))
             }
