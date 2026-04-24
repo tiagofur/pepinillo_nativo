@@ -99,6 +99,8 @@ struct TaskRow: View {
             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
                 .foregroundStyle(task.isCompleted ? .green : .secondary)
+                .symbolEffect(.bounce, value: task.isCompleted)
+                .contentTransition(.symbolEffect(.replace))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(task.isCompleted
@@ -114,11 +116,13 @@ struct TaskRow: View {
                     Image(systemName: "exclamationmark")
                         .font(.caption2.weight(.bold))
                         .foregroundStyle(.red)
+                        .symbolEffect(.bounce, value: task.isCompleted)
                         .accessibilityLabel(String(localized: "High priority"))
                 } else if task.priority == .medium {
                     Image(systemName: "arrow.up")
                         .font(.caption2)
                         .foregroundStyle(.orange)
+                        .symbolEffect(.bounce, value: task.isCompleted)
                         .accessibilityLabel(String(localized: "Medium priority"))
                 }
                 Text(task.title)
