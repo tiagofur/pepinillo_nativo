@@ -53,20 +53,17 @@ struct PlanSplitView: View {
                     )
                     .navigationTitle(store.selectedPlanFilter.title)
                     .navigationBarTitleDisplayMode(.inline)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
                 }
                 .frame(minWidth: 360, maxWidth: 520)
-                .background(Color.clear)
 
                 Divider()
 
                 NavigationStack {
                     detailPane
-                        .background(Color.clear)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color(.systemGroupedBackground))
                 }
                 .frame(maxWidth: .infinity)
-                .background(Color.clear)
             }
         }
     }
@@ -92,20 +89,17 @@ struct PlanSplitView: View {
                     )
                     .navigationTitle(String(localized: "Plan"))
                     .navigationBarTitleDisplayMode(.inline)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
                 }
                 .frame(maxWidth: .infinity)
-                .background(Color.clear)
 
                 Divider()
 
                 NavigationStack {
                     detailPane
-                        .background(Color.clear)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color(.systemGroupedBackground))
                 }
                 .frame(maxWidth: .infinity)
-                .background(Color.clear)
             }
         }
     }
@@ -131,9 +125,8 @@ struct PlanSplitView: View {
                 )
                 .navigationTitle(store.selectedPlanFilter.title)
                 .navigationBarTitleDisplayMode(.inline)
-                .scrollContentBackground(.hidden)
             }
-            .background(Color.clear)
+            .background(Color(.systemGroupedBackground))
         }
         .sheet(
             item: $store.scope(state: \.detail, action: \.detail)
