@@ -174,7 +174,7 @@ struct PepinilloLiquidBackground: View {
         .ignoresSafeArea()
         .onAppear {
             guard !reduceMotion else { return }
-            withAnimation(.smooth(duration: 20).repeatForever(autoreverses: true)) {
+            withAnimation(.smooth(duration: 30).repeatForever(autoreverses: true)) {
                 phase = 1
             }
         }
@@ -186,18 +186,15 @@ struct PepinilloLiquidBackground: View {
         #if os(watchOS)
         Color.black
         #else
-        Group {
-            if colorScheme == .dark {
-                Color(red: 0.03, green: 0.03, blue: 0.05)  // #070709 — deeper Fitness black
-            } else {
-                Color(red: 0.96, green: 0.935, blue: 0.89)  // #F5EEE3 — warmer cream, more visible tint
-            }
-        }
+        // Match systemBackground so Focus feels visually continuous with the
+        // other neutral-bg screens — only a hint of atmosphere on top.
+        Color(.systemBackground)
         #endif
     }
 
     private var atmosphereOpacity: Double {
-        colorScheme == .dark ? 0.5 : 0.35
+        // Very subtle: barely visible tint. Mindfulness-level calm.
+        colorScheme == .dark ? 0.22 : 0.12
     }
 
     @ViewBuilder
