@@ -195,6 +195,7 @@ struct FocusView: View {
                     glassNamespace: glassNS
                 )
                 .padding(.top, 16)
+                .padding(.bottom, 32)
                 .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
             }
 
