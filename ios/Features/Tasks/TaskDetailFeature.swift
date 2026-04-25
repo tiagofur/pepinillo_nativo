@@ -117,6 +117,7 @@ struct TaskDetailFeature {
         enum Delegate: Equatable {
             case startFocus(UUID, String)
             case taskDeleted(UUID)
+            case taskCompletionChanged(UUID, Bool)
         }
     }
 
@@ -185,7 +186,12 @@ struct TaskDetailFeature {
 
             case .completionToggled:
                 state.isCompleted.toggle()
-                return save(state)
+                let id = state.taskID
+                let isCompleted = state.isCompleted
+                return .merge(
+                    save(state),
+                    .send(.delegate(.taskCompletionChanged(id, isCompleted)))
+                )
 
             case .newSubtaskTitleChanged(let title):
                 state.newSubtaskTitle = title
@@ -226,7 +232,11 @@ struct TaskDetailFeature {
             case .allSubtasksCompletedConfirmed:
                 state.showAllSubtasksCompletedPrompt = false
                 state.isCompleted = true
-                return save(state)
+                let allSubtasksID = state.taskID
+                return .merge(
+                    save(state),
+                    .send(.delegate(.taskCompletionChanged(allSubtasksID, true)))
+                )
 
             case .subtaskDeleted(let id):
                 state.subtasks.remove(id: id)

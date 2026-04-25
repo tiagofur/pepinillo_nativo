@@ -278,6 +278,10 @@ struct TaskListFeature {
             case .taskCompleted(let id):
                 state.tasks[id: id]?.isCompleted.toggle()
                 let isNowCompleted = state.tasks[id: id]?.isCompleted ?? false
+                // Sync the detail column if it's currently showing this task
+                if state.detail?.taskID == id {
+                    state.detail?.isCompleted = isNowCompleted
+                }
                 return .run { _ in
                     let items = try await persistence.fetchTasks()
                     if let item = items.first(where: { $0.id == id }) {
@@ -415,6 +419,11 @@ struct TaskListFeature {
             case .detail(.presented(.delegate(.taskDeleted(let id)))):
                 state.tasks.remove(id: id)
                 state.detail = nil
+                return .none
+
+            case .detail(.presented(.delegate(.taskCompletionChanged(let id, let isCompleted)))):
+                // Detail is the source of truth — sync the list row
+                state.tasks[id: id]?.isCompleted = isCompleted
                 return .none
 
             case .detail(.dismiss):
