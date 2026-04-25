@@ -140,7 +140,8 @@ struct FocusView: View {
         VStack(spacing: 0) {
             // Top: Timer + controls — 65% of usable height, snug to the tab bar above
             focusCoreContainer
-                .frame(maxWidth: 600, maxHeight: size.height * 0.65)
+                .frame(maxWidth: 600)
+                .frame(height: size.height * 0.65)
                 .padding(.top, 4)
 
             // Separator
@@ -216,8 +217,8 @@ struct FocusView: View {
             // gradient color shift, mode glyph swap, and phase label together.
             timerCircle
                 .frame(
-                    maxWidth: sizeClass == .regular ? 420 : 280,
-                    maxHeight: sizeClass == .regular ? 420 : 280
+                    maxWidth: sizeClass == .regular ? 540 : 280,
+                    maxHeight: sizeClass == .regular ? 540 : 280
                 )
                 .padding(.horizontal, 24)
                 .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
@@ -282,8 +283,8 @@ struct FocusView: View {
 
             Spacer()
 
-            // Custom duration for Time Block (only when idle)
-            if !store.isRunning && store.selectedMode == .timeBlock {
+            // Custom duration for Time Block (only when idle, iPhone only — companion handles it on iPad)
+            if !store.isRunning && store.selectedMode == .timeBlock && sizeClass != .regular {
                 durationPicker
                     .padding(.bottom, 12)
                     .transition(.opacity)

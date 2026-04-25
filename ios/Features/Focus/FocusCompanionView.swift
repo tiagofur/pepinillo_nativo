@@ -37,6 +37,10 @@ struct FocusCompanionView: View {
         case .stack:
             ScrollView {
                 VStack(spacing: 16) {
+                    if !store.isRunning && store.selectedMode == .timeBlock {
+                        durationControlRow
+                            .transition(.opacity)
+                    }
                     cards
                 }
                 .padding(.vertical, 8)
@@ -44,10 +48,40 @@ struct FocusCompanionView: View {
             .scrollBounceBehavior(.basedOnSize)
         case .grid:
             LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+                if !store.isRunning && store.selectedMode == .timeBlock {
+                    durationControlRow
+                        .transition(.opacity)
+                }
                 cards
             }
             .padding(.vertical, 8)
         }
+    }
+
+    // MARK: - Duration Control Row (Time Block, iPad only — mirrors FocusView.durationPicker)
+
+    @ViewBuilder
+    private var durationControlRow: some View {
+        HStack {
+            Label(String(localized: "Duration:"), systemImage: "timer")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Stepper(
+                "\(store.customDurationMinutes) min",
+                value: Binding(
+                    get: { store.customDurationMinutes },
+                    set: { store.send(.customDurationChanged($0)) }
+                ),
+                in: 5...480,
+                step: 5
+            )
+            .font(.subheadline)
+        }
+        .padding(16)
+        .background(.regularMaterial, in: .rect(cornerRadius: 20))
     }
 
     // MARK: - Shared cards (reused by both layout modes)
