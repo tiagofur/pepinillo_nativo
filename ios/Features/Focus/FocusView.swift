@@ -138,17 +138,19 @@ struct FocusView: View {
     @ViewBuilder
     private func ipadPortraitLayout(in size: CGSize) -> some View {
         VStack(spacing: 0) {
-            // Top: Timer + controls — constrained to ~50% of screen
+            // Top: Timer + controls — 60% of usable height with breathing room above the mode chips
             focusCoreContainer
-                .frame(maxWidth: 600, maxHeight: size.height * 0.52)
+                .frame(maxWidth: 600, maxHeight: size.height * 0.60)
+                .padding(.top, 16)
 
             // Separator
             Rectangle()
                 .fill(.quaternary)
                 .frame(height: 1)
                 .padding(.horizontal, 32)
+                .padding(.vertical, 12)
 
-            // Bottom: Metrics cards in a 2-col adaptive grid
+            // Bottom: Metrics cards in a 2-col adaptive grid — 40% remaining
             ScrollView {
                 FocusCompanionView(
                     store: store,
