@@ -41,22 +41,8 @@ struct FocusView: View {
                     let isWide = geo.size.width > geo.size.height
 
                     if isWide {
-                        // Landscape: side-by-side (original layout)
-                        HStack(alignment: .top, spacing: 24) {
-                            focusCoreContainer
-                                .frame(maxWidth: 420)
-                            FocusCompanionView(
-                                store: store,
-                                streakDays: streakDays,
-                                sessionsToday: sessionsToday,
-                                totalFocusMinutesToday: totalFocusMinutesToday
-                            )
-                            .frame(maxWidth: .infinity)
-                        }
-                        .padding(.horizontal, 24)
-                        .contentMaxWidth()
+                        ipadLandscapeLayout(in: geo.size)
                     } else {
-                        // Portrait: timer on top, metrics below
                         ipadPortraitLayout(in: geo.size)
                     }
                 }
@@ -138,10 +124,10 @@ struct FocusView: View {
     @ViewBuilder
     private func ipadPortraitLayout(in size: CGSize) -> some View {
         VStack(spacing: 0) {
-            // Top: Timer + controls — 65% of usable height, snug to the tab bar above
+            // Top: Timer + controls — 55% of usable height, snug to the tab bar above
             focusCoreContainer
                 .frame(maxWidth: 600)
-                .frame(height: size.height * 0.65)
+                .frame(height: size.height * 0.55)
                 .padding(.top, 4)
 
             // Separator
@@ -169,6 +155,46 @@ struct FocusView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    // MARK: - iPad Landscape Layout (mode chips header on top, two columns below)
+
+    @ViewBuilder
+    private func ipadLandscapeLayout(in size: CGSize) -> some View {
+        VStack(spacing: 12) {
+            modePickerHeader
+                .frame(maxWidth: 720)
+                .frame(maxWidth: .infinity)
+
+            HStack(alignment: .top, spacing: 32) {
+                landscapeFocusColumn
+                    .frame(maxWidth: 540)
+                    .frame(maxWidth: .infinity)
+
+                FocusCompanionView(
+                    store: store,
+                    streakDays: streakDays,
+                    sessionsToday: sessionsToday,
+                    totalFocusMinutesToday: totalFocusMinutesToday
+                )
+                .frame(maxWidth: 380)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 8)
+        .contentMaxWidth()
+    }
+
+    @ViewBuilder
+    private var landscapeFocusColumn: some View {
+        if #available(iOS 26.0, *) {
+            GlassEffectContainer(spacing: 12) {
+                focusCoreBody(timerMaxSize: 500)
+            }
+        } else {
+            focusCoreBody(timerMaxSize: 500)
+        }
+    }
+
     // MARK: - Focus Core Container (wraps core column in GlassEffectContainer on iOS 26+)
 
     @ViewBuilder
@@ -182,12 +208,23 @@ struct FocusView: View {
         }
     }
 
-    // MARK: - Focus Core Column (mode picker + ring + picker + start)
+    // MARK: - Focus Core Column (composed of mode picker header + body)
 
     @ViewBuilder
     private var focusCoreColumn: some View {
         VStack(spacing: 0) {
-            // Mode Selector (top)
+            modePickerHeader
+            focusCoreBody(timerMaxSize: sizeClass == .regular ? 540 : 280)
+        }
+    }
+
+    // MARK: - Mode Picker Header
+    // Extracted so iPad landscape can render it as a top-of-screen header,
+    // outside the timer column.
+
+    @ViewBuilder
+    private var modePickerHeader: some View {
+        VStack(spacing: 0) {
             if !store.isRunning {
                 ModePickerView(
                     selectedMode: store.selectedMode,
@@ -209,21 +246,21 @@ struct FocusView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
             }
+        }
+    }
 
+    // MARK: - Focus Core Body (timer + phase + controls + sounds, no header)
+
+    @ViewBuilder
+    private func focusCoreBody(timerMaxSize: CGFloat) -> some View {
+        VStack(spacing: 0) {
             Spacer()
 
-            // Timer Display (center) — 420pt on iPad (genuinely large hero ring),
-            // 280pt on iPhone compact. .animation(value: store.phase) orchestrates ring
-            // gradient color shift, mode glyph swap, and phase label together.
             timerCircle
-                .frame(
-                    maxWidth: sizeClass == .regular ? 540 : 280,
-                    maxHeight: sizeClass == .regular ? 540 : 280
-                )
+                .frame(maxWidth: timerMaxSize, maxHeight: timerMaxSize)
                 .padding(.horizontal, 24)
                 .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
 
-            // Phase label — crossfades with a bottom-edge slide on phase change
             Text(store.phaseLabel.uppercased())
                 .font(.system(.subheadline, design: .rounded))
                 .fontWeight(.bold)
@@ -283,15 +320,9 @@ struct FocusView: View {
 
             Spacer()
 
-            // Custom duration for Time Block (only when idle, iPhone only — companion handles it on iPad)
-            if !store.isRunning && store.selectedMode == .timeBlock && sizeClass != .regular {
-                durationPicker
-                    .padding(.bottom, 12)
-                    .transition(.opacity)
-            }
-
-            // Controls (bottom) — start/pause/stop
+            // Controls (bottom) — start/pause/stop (with ± duration flanking start in TimeBlock idle)
             controlButtons
+                .padding(.horizontal, 16)
                 .padding(.bottom, 24)
 
             // Soundscape shortcut
@@ -406,7 +437,7 @@ struct FocusView: View {
 
     @ViewBuilder
     private var controlButtons: some View {
-        HStack(spacing: 32) {
+        HStack(spacing: 12) {
             if store.isRunning {
                 // Stop button
                 Button {
@@ -452,6 +483,12 @@ struct FocusView: View {
                     .accessibilityLabel(String(localized: "Skip to next phase"))
                 }
             } else {
+                // − duration (TimeBlock only)
+                if store.selectedMode == .timeBlock {
+                    durationStepButton(systemName: "minus", delta: -5)
+                        .transition(.scale.combined(with: .opacity))
+                }
+
                 // Start button — capped at 280pt so it stays modest on iPad
                 Button {
                     store.send(.startTapped)
@@ -473,31 +510,40 @@ struct FocusView: View {
                 }
                 .buttonStyle(.pressable)
                 .accessibilityHint(String(localized: "Double tap to start a focus session"))
+
+                // + duration (TimeBlock only)
+                if store.selectedMode == .timeBlock {
+                    durationStepButton(systemName: "plus", delta: 5)
+                        .transition(.scale.combined(with: .opacity))
+                }
             }
         }
     }
 
-    // MARK: - Duration Picker (Time Block)
+    // MARK: - Duration Step Button (TimeBlock idle, flanks Start)
 
     @ViewBuilder
-    private var durationPicker: some View {
-        HStack {
-            Text(String(localized: "Duration:"))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            Stepper(
-                "\(store.customDurationMinutes) min",
-                value: Binding(
-                    get: { store.customDurationMinutes },
-                    set: { store.send(.customDurationChanged($0)) }
-                ),
-                in: 5...480,
-                step: 5
-            )
-            .font(.subheadline)
+    private func durationStepButton(systemName: String, delta: Int) -> some View {
+        let projected = store.customDurationMinutes + delta
+        let isAtBoundary = projected < 5 || projected > 480
+        Button {
+            let target = store.customDurationMinutes + delta
+            guard target >= 5, target <= 480 else { return }
+            store.send(.customDurationChanged(target))
+            HapticManager.selection()
+        } label: {
+            Image(systemName: systemName)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(.primary)
+                .frame(width: 56, height: 56)
+                .contentShape(Capsule())
+                .adaptiveGlassCapsule(id: "duration-\(systemName)-button", namespace: glassNS)
         }
-        .padding(.horizontal, 40)
+        .opacity(isAtBoundary ? 0.4 : 1)
+        .disabled(isAtBoundary)
+        .accessibilityLabel(delta < 0
+            ? String(localized: "Decrease duration by 5 minutes")
+            : String(localized: "Increase duration by 5 minutes"))
     }
 
     // MARK: - Mode Theming

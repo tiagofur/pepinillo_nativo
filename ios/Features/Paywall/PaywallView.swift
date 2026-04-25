@@ -19,10 +19,9 @@ struct PaywallView: View {
                     PaywallHeaderSection()
                         .readableContent(maxWidth: 672)
 
-                    // Feature tier cards — adaptive grid: 1 col iPhone, 2 cols iPad portrait, 3 cols landscape
+                    // Feature tier cards
                     LazyVGrid(columns: adaptiveCardColumns, spacing: 20) {
                         PaywallPepinilloPlusSection()
-                        PaywallEverywhereSection()
                     }
                     .contentMaxWidth(900)
 
@@ -160,42 +159,6 @@ struct PaywallPepinilloPlusSection: View {
     }
 }
 
-struct PaywallEverywhereSection: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Label(String(localized: "Everywhere/AI+"), systemImage: "globe")
-                    .font(.headline)
-                    .foregroundStyle(Color.accentColor)
-                
-                Spacer()
-                
-                Text(String(localized: "Pro"))
-                    .font(.caption2.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.accentColor.opacity(0.2), in: Capsule())
-                    .foregroundStyle(Color.accentColor)
-            }
-            
-            VStack(alignment: .leading, spacing: 12) {
-                FeatureRow(icon: "plus.circle", title: "Everything in Pepinillo+", subtitle: "Plus cloud-powered features")
-                FeatureRow(icon: "person.wave.2", title: "AI Productivity Coach", subtitle: "Personalized habit building")
-                FeatureRow(icon: "arrow.triangle.2.circlepath", title: "Full Web & Android Sync", subtitle: "Access your focus anywhere")
-            }
-            
-            HStack {
-                Spacer()
-                Text("Coming soon in 2024")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.secondary.opacity(0.6))
-                    .textCase(.uppercase)
-            }
-        }
-        .padding(20)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
-    }
-}
 
 struct FeatureRow: View {
     let icon: String
@@ -406,20 +369,14 @@ struct PaywallLegalFooter: View {
 #Preview {
     PaywallView(
         store: Store(initialState: PaywallFeature.State(
-            products: PepinilloProduct.allCases.map { product in
+            products: PepinilloProduct.currentProducts.map { product in
                 switch product {
-                case .monthly:
-                    return ProductInfo(id: product.rawValue, displayName: "Everywhere/AI+",
-                                       description: "Monthly access to all features.", displayPrice: "$4.99",
-                                       billingPeriod: "month")
-                case .annual:
-                    return ProductInfo(id: product.rawValue, displayName: "Everywhere/AI+",
-                                       description: "Best value — cancel anytime.", displayPrice: "$34.99",
-                                       billingPeriod: "year", isFeatured: true)
                 case .lifetime:
                     return ProductInfo(id: product.rawValue, displayName: "Pepinillo+",
                                        description: "One-time purchase for life.", displayPrice: "$19.99",
                                        billingPeriod: "once")
+                default:
+                    return ProductInfo(id: product.rawValue, displayName: "Unknown", description: "", displayPrice: "", billingPeriod: "")
                 }
             }
         )) { PaywallFeature() }

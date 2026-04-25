@@ -55,7 +55,7 @@ packages:
 settings:
   base:
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "1"
+    CURRENT_PROJECT_VERSION: "3"
     SWIFT_VERSION: "6.0"
     CODE_SIGN_STYLE: Automatic
     ENABLE_BITCODE: "NO"
@@ -114,12 +114,10 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        # Background modes required for soundscape playback, push-driven sync,
-        # and BGTaskScheduler-driven recurrence/offline-sync jobs.
+        # Background modes required for soundscape playback and push-driven sync.
         UIBackgroundModes:
           - audio
           - remote-notification
-          - processing
         # Exposed from xcconfig into Info.plist so runtime code (APIClient,
         # WebSocketClient) can read the per-environment base URL via Bundle.
         API_BASE_URL: "$(API_BASE_URL)"

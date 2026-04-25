@@ -1,0 +1,680 @@
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodiOSAppStoreDistribution: 0xc532bdf50> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodTVOSAppStoreDistribution: 0xc532be000> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodAppStoreDistributionVisionOS: 0xc532be050> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodMacAppStoreDistribution: 0xc532be110> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodAdHocVisionOS: 0xc532bdf60> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodWatchOSAdHoc: 0xc532be040> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodMacAdHoc: 0xc532be070> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodTVOSAdHoc: 0xc532be0a0> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodiOSAdHoc: 0xc532be0f0> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodTVOSEnterprise: 0xc532bdf90> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodWatchOSEnterprise: 0xc532bdb90> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodEnterpriseVisionOS: 0xc532bdfc0> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodiOSEnterprise: 0xc532be100> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodDevelopmentSigned: 0xc532bdf70> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodDevelopmentSignedVisionOS: 0xc532bdfa0> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodWatchOSDevelopmentSigned: 0xc532be010> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodTVOSDevelopmentSigned: 0xc532be060> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodDeveloperIDNotarizedApp: 0xc532bdf80> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodDeveloperID: 0xc532be080> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodSaveBuiltProducts: 0xc532be020> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodDevelopmentSignedMac: 0xc532be0d0> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodMacApplication: 0xc532be0c0> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodAppStoreValidationVisionOS: 0xc532bdfb0> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodTVOSAppStoreValidation: 0xc532be090> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodMacAppStoreValidation: 0xc532be0b0> because it doesn't support distributing archive
+2026-04-25 04:07:52 +0000 [MT] Accepted distribution method <IDEDistributionMethodiOSAppStoreValidation: 0xc532be0e0>
+2026-04-25 04:07:52 +0000 [MT] Rejected distribution method <IDEDistributionMethodExportArchive: 0xc532be030> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodiOSAppStoreDistribution: 0xc532bdf50> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSAppStoreDistribution: 0xc532be000> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodAppStoreDistributionVisionOS: 0xc532be050> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodMacAppStoreDistribution: 0xc532be110> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodAdHocVisionOS: 0xc532bdf60> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodWatchOSAdHoc: 0xc532be040> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodMacAdHoc: 0xc532be070> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSAdHoc: 0xc532be0a0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodiOSAdHoc: 0xc532be0f0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSEnterprise: 0xc532bdf90> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodWatchOSEnterprise: 0xc532bdb90> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodEnterpriseVisionOS: 0xc532bdfc0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodiOSEnterprise: 0xc532be100> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDevelopmentSigned: 0xc532bdf70> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDevelopmentSignedVisionOS: 0xc532bdfa0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodWatchOSDevelopmentSigned: 0xc532be010> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSDevelopmentSigned: 0xc532be060> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDeveloperIDNotarizedApp: 0xc532bdf80> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDeveloperID: 0xc532be080> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodSaveBuiltProducts: 0xc532be020> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDevelopmentSignedMac: 0xc532be0d0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodMacApplication: 0xc532be0c0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodAppStoreValidationVisionOS: 0xc532bdfb0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSAppStoreValidation: 0xc532be090> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodMacAppStoreValidation: 0xc532be0b0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Accepted distribution method <IDEDistributionMethodiOSAppStoreValidation: 0xc532be0e0>
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodExportArchive: 0xc532be030> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Available distribution methods: {(
+    <IDEDistributionMethodiOSAppStoreValidation: 0xc532be0e0>
+)}
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodiOSAppStoreDistribution: 0xc532bdf50> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSAppStoreDistribution: 0xc532be000> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodAppStoreDistributionVisionOS: 0xc532be050> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodMacAppStoreDistribution: 0xc532be110> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodAdHocVisionOS: 0xc532bdf60> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodWatchOSAdHoc: 0xc532be040> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodMacAdHoc: 0xc532be070> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSAdHoc: 0xc532be0a0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodiOSAdHoc: 0xc532be0f0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSEnterprise: 0xc532bdf90> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodWatchOSEnterprise: 0xc532bdb90> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodEnterpriseVisionOS: 0xc532bdfc0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodiOSEnterprise: 0xc532be100> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDevelopmentSigned: 0xc532bdf70> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDevelopmentSignedVisionOS: 0xc532bdfa0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodWatchOSDevelopmentSigned: 0xc532be010> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSDevelopmentSigned: 0xc532be060> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDeveloperIDNotarizedApp: 0xc532bdf80> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDeveloperID: 0xc532be080> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodSaveBuiltProducts: 0xc532be020> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodDevelopmentSignedMac: 0xc532be0d0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodMacApplication: 0xc532be0c0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodAppStoreValidationVisionOS: 0xc532bdfb0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodTVOSAppStoreValidation: 0xc532be090> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodMacAppStoreValidation: 0xc532be0b0> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Accepted distribution method <IDEDistributionMethodiOSAppStoreValidation: 0xc532be0e0>
+2026-04-25 04:07:54 +0000  Rejected distribution method <IDEDistributionMethodExportArchive: 0xc532be030> because it doesn't support distributing archive
+2026-04-25 04:07:54 +0000  Available distribution methods: {(
+    <IDEDistributionMethodiOSAppStoreValidation: 0xc532be0e0>
+)}
+2026-04-25 04:07:54 +0000  IDEDistributionItem init <DVTFilePath:0xc2d5e7e20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework'>
+2026-04-25 04:07:54 +0000  IDEDistributionItem init <DVTFilePath:0xc2d5d8bd0:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app'>
+2026-04-25 04:07:54 +0000  IDEDistributionItem init <DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app'>
+2026-04-25 04:07:54 +0000  Set distributionItems on context: (
+    "<IDEDistributionItem: 0xc631608a0; bundleID='com.pepinillo.app', path='<DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07\U202fp.m..xcarchive/Products/Applications/Pepinillo.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160060; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc283c98c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(\n    \"1.2.840.113635.100.6.1.12\",\n    \"1.2.840.113635.100.6.1.2\"\n), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{\n    \"application-identifier\" = \"T5SKULSP2M.com.pepinillo.app\";\n    \"aps-environment\" = development;\n    \"com.apple.developer.applesignin\" =     (\n        Default\n    );\n    \"com.apple.developer.healthkit\" = 1;\n    \"com.apple.developer.icloud-container-identifiers\" =     (\n        \"iCloud.com.pepinillo.app\"\n    );\n    \"com.apple.developer.icloud-services\" =     (\n        CloudKit\n    );\n    \"com.apple.developer.siri\" = 1;\n    \"com.apple.developer.team-identifier\" = T5SKULSP2M;\n    \"com.apple.developer.usernotifications.communication\" = 1;\n    \"com.apple.security.application-groups\" =     (\n        \"group.com.pepinillo.app\"\n    );\n    \"get-task-allow\" = 1;\n}', teamID='T5SKULSP2M', identifier='com.pepinillo.app', executablePath='<DVTFilePath:0xc41e3ab20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07\U202fp.m..xcarchive/Products/Applications/Pepinillo.app/Pepinillo'>', hardenedRuntime='0'>'>"
+)
+2026-04-25 04:07:54 +0000  Archs to thin for item /Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app are []
+2026-04-25 04:07:54 +0000  Archs to thin for item /Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework are []
+2026-04-25 04:07:54 +0000  Archs to thin for item /Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app are []
+2026-04-25 04:07:54 +0000  [OPTIONAL] Found platform <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>> and cert <DVTSigningCertificate: 0xc283c98c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''> for <DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app'>
+2026-04-25 04:07:54 +0000  [OPTIONAL] Profile <DVTEmbeddedProvisioningProfile 0xc283c98c0: name: iOS Team Provisioning Profile: com.pepinillo.app, UUID: f3fafe48-6d4a-4472-9772-9dee0446ced4, teamName: Tiago David Furtado, teamIdentifierPrefixes: (
+    T5SKULSP2M
+), entitlements: {
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app";
+    "aps-environment" = development;
+    "com.apple.developer.applesignin" =     (
+        Default
+    );
+    "com.apple.developer.healthkit" = 1;
+    "com.apple.developer.healthkit.access" =     (
+        "health-records"
+    );
+    "com.apple.developer.healthkit.background-delivery" = 1;
+    "com.apple.developer.icloud-container-development-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-container-environment" =     (
+        Production,
+        Development
+    );
+    "com.apple.developer.icloud-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-services" = "*";
+    "com.apple.developer.siri" = 1;
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.developer.ubiquity-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.ubiquity-kvstore-identifier" = "T5SKULSP2M.*";
+    "com.apple.developer.usernotifications.communication" = 1;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+    "keychain-access-groups" =     (
+        "T5SKULSP2M.*",
+        "com.apple.token"
+    );
+}, appIdentifierName: XC com pepinillo app, applicationIdentifierPrefixes: (
+    T5SKULSP2M
+), dateCreated: 2026-04-16 23:37:12 +0000, dateExpired: 2027-04-16 23:37:12 +0000, certificateKinds: {(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+)}, certificateSHA1Hashes: {(
+    5871B2B51E65809744676BA5A06754984172DFF8,
+    AC99F683A95F2ED7654EE7F8230E62BB3B17A53D
+)}, supportedUDIDs: {(
+    "00008112-001620d1015a201e",
+    "00006050-001808343a31401c",
+    "00008130-000e19e00cdb803a"
+)}, isUniversal: 0, isXcodeManaged: 1, platforms: {(
+    <DVTPlatform:0xc3ef78300:'com.apple.platform.xros':<DVTFilePath:0xc3f0292c0:'/Applications/Xcode.app/Contents/Developer/Platforms/XROS.platform'>>,
+    <DVTPlatform:0xc3ef78280:'com.apple.platform.watchos':<DVTFilePath:0xc3eeb44d0:'/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform'>>,
+    <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>
+)}, filePath: <DVTFilePath:0xc2af03870:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/embedded.mobileprovision'>> for <DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app'> was an automatic profile
+2026-04-25 04:07:54 +0000  [OPTIONAL] Found platform <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>> and cert <DVTSigningCertificate: 0xc283c98c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''> for <DVTFilePath:0xc2d5e7e20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework'>
+2026-04-25 04:07:54 +0000  [OPTIONAL] Found platform <DVTPlatform:0xc3ef78280:'com.apple.platform.watchos':<DVTFilePath:0xc3eeb44d0:'/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform'>> and cert <DVTSigningCertificate: 0xc283c98c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''> for <DVTFilePath:0xc2d5d8bd0:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app'>
+2026-04-25 04:07:54 +0000  [OPTIONAL] Profile <DVTEmbeddedProvisioningProfile 0xc283c98c0: name: iOS Team Provisioning Profile: com.pepinillo.app.watch, UUID: b41a2045-3180-40b3-9867-c6dc3ed383f1, teamName: Tiago David Furtado, teamIdentifierPrefixes: (
+    T5SKULSP2M
+), entitlements: {
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app.watch";
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+    "keychain-access-groups" =     (
+        "T5SKULSP2M.*",
+        "com.apple.token"
+    );
+}, appIdentifierName: XC com pepinillo app watch, applicationIdentifierPrefixes: (
+    T5SKULSP2M
+), dateCreated: 2026-04-21 22:32:15 +0000, dateExpired: 2027-04-21 22:32:15 +0000, certificateKinds: {(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+)}, certificateSHA1Hashes: {(
+    5871B2B51E65809744676BA5A06754984172DFF8,
+    AC99F683A95F2ED7654EE7F8230E62BB3B17A53D
+)}, supportedUDIDs: {(
+    "00008112-001620d1015a201e",
+    "00006050-001808343a31401c",
+    "00008130-000e19e00cdb803a"
+)}, isUniversal: 0, isXcodeManaged: 1, platforms: {(
+    <DVTPlatform:0xc3ef78300:'com.apple.platform.xros':<DVTFilePath:0xc3f0292c0:'/Applications/Xcode.app/Contents/Developer/Platforms/XROS.platform'>>,
+    <DVTPlatform:0xc3ef78280:'com.apple.platform.watchos':<DVTFilePath:0xc3eeb44d0:'/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform'>>,
+    <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>
+)}, filePath: <DVTFilePath:0xc2d5d9420:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app/embedded.mobileprovision'>> for <DVTFilePath:0xc2d5d8bd0:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app'> was an automatic profile
+2026-04-25 04:07:54 +0000  Distributable's provisioning style is Automatic
+2026-04-25 04:07:55 +0000  App Store Connect request for store configuration response: <DVTITunesConnectConfigurationResponse: 0xc46390c00; isSuccessful='1', configuration='{
+    T5SKULSP2M =     {
+        "com.apple.platform.appletvos" =         {
+            architectures =             {
+                defaultArch =                 {
+                    defaultProductType =                     {
+                        format =                         {
+                            bitCode =                             {
+                                supportLevel = unsupported;
+                            };
+                            compiledCode =                             {
+                                supportLevel = required;
+                            };
+                        };
+                    };
+                };
+            };
+            iconSource =             {
+                largeAppIcon = carInBinary;
+                primaryIcons = carInBinary;
+            };
+            onDemandResources =             {
+                sizeLimits =                 {
+                    assetPack = 512000000;
+                    prioritizedTotal = 2000000000;
+                    total = 20000000000;
+                };
+                supportLevel = supported;
+            };
+        };
+        "com.apple.platform.iphoneos" =         {
+            architectures =             {
+                defaultArch =                 {
+                    defaultProductType =                     {
+                        format =                         {
+                            bitCode =                             {
+                                supportLevel = unsupported;
+                            };
+                            compiledCode =                             {
+                                supportLevel = required;
+                            };
+                        };
+                    };
+                };
+            };
+            iconSource =             {
+                largeAppIcon = unsupported;
+                primaryIcons = pngInBinary;
+            };
+            onDemandResources =             {
+                sizeLimits =                 {
+                    assetPack = 512000000;
+                    total = 20000000000;
+                };
+                supportLevel = supported;
+            };
+        };
+        "com.apple.platform.macosx" =         {
+            architectures =             {
+                defaultArch =                 {
+                    defaultProductType =                     {
+                        format =                         {
+                            bitCode =                             {
+                                supportLevel = unsupported;
+                            };
+                            compiledCode =                             {
+                                supportLevel = required;
+                            };
+                        };
+                    };
+                };
+            };
+            iconSource =             {
+                largeAppIcon = pngInBinary;
+                primaryIcons = pngInBinary;
+            };
+            onDemandResources =             {
+                supportLevel = unsupported;
+            };
+        };
+        "com.apple.platform.watchos" =         {
+            architectures =             {
+                defaultArch =                 {
+                    defaultProductType =                     {
+                        format =                         {
+                            bitCode =                             {
+                                supportLevel = unsupported;
+                            };
+                            compiledCode =                             {
+                                supportLevel = required;
+                            };
+                        };
+                    };
+                };
+            };
+            iconSource =             {
+                largeAppIcon = unsupported;
+                primaryIcons = pngInBinary;
+            };
+            onDemandResources =             {
+                supportLevel = unsupported;
+            };
+        };
+        "com.apple.platform.xros" =         {
+            architectures =             {
+                defaultArch =                 {
+                    defaultProductType =                     {
+                        format =                         {
+                            bitCode =                             {
+                                supportLevel = unsupported;
+                            };
+                            compiledCode =                             {
+                                supportLevel = required;
+                            };
+                        };
+                    };
+                };
+            };
+            iconSource =             {
+                largeAppIcon = carInBinary;
+                primaryIcons = carInBinary;
+            };
+            onDemandResources =             {
+                supportLevel = unsupported;
+            };
+        };
+        configModelVersion = "1.1";
+    };
+    preflight =     (
+        T5SKULSP2M
+    );
+}', alertMessage='(null)', errors='(null)', warnings='(null)', infoMessages='(null)'>
+2026-04-25 04:07:55 +0000  App Store Connect team IDs for account (null) are (
+    T5SKULSP2M
+)
+2026-04-25 04:07:57 +0000  Starting evaluation for distribution items:
+(
+    "<IDEDistributionItem: 0xc631608a0; bundleID='com.pepinillo.app', path='<DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07\U202fp.m..xcarchive/Products/Applications/Pepinillo.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160060; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc283ca700; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(\n    \"1.2.840.113635.100.6.1.12\",\n    \"1.2.840.113635.100.6.1.2\"\n), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{\n    \"application-identifier\" = \"T5SKULSP2M.com.pepinillo.app\";\n    \"aps-environment\" = development;\n    \"com.apple.developer.applesignin\" =     (\n        Default\n    );\n    \"com.apple.developer.healthkit\" = 1;\n    \"com.apple.developer.icloud-container-identifiers\" =     (\n        \"iCloud.com.pepinillo.app\"\n    );\n    \"com.apple.developer.icloud-services\" =     (\n        CloudKit\n    );\n    \"com.apple.developer.siri\" = 1;\n    \"com.apple.developer.team-identifier\" = T5SKULSP2M;\n    \"com.apple.developer.usernotifications.communication\" = 1;\n    \"com.apple.security.application-groups\" =     (\n        \"group.com.pepinillo.app\"\n    );\n    \"get-task-allow\" = 1;\n}', teamID='T5SKULSP2M', identifier='com.pepinillo.app', executablePath='<DVTFilePath:0xc41e3ab20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07\U202fp.m..xcarchive/Products/Applications/Pepinillo.app/Pepinillo'>', hardenedRuntime='0'>'>"
+)
+2026-04-25 04:07:57 +0000 [MT] Evaluating <IDEDistributionItemProvisionable: 0xc2c852a00; distributionItem='<IDEDistributionItem: 0xc631608a0; bundleID='com.pepinillo.app', path='<DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160060; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc283caa00; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app";
+    "aps-environment" = development;
+    "com.apple.developer.applesignin" =     (
+        Default
+    );
+    "com.apple.developer.healthkit" = 1;
+    "com.apple.developer.icloud-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-services" =     (
+        CloudKit
+    );
+    "com.apple.developer.siri" = 1;
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.developer.usernotifications.communication" = 1;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app', executablePath='<DVTFilePath:0xc41e3ab20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Pepinillo'>', hardenedRuntime='0'>'>', team='<IDEProvisioningDisambiguatableBasicTeam: 0xc44bfea40; teamID='T5SKULSP2M', teamName='Tiago David Furtado', teamType='Individual', username='tiagofur@gmail.com', isFreeProvisioningTeam='0'>', method='<IDEDistributionMethodiOSAppStoreValidation: 0xc532be0e0>', provisioningStyle='0', entitlementsProcessors='(
+    "<IDEiCloudEntitlementsProcessor: 0xc5fc806c0>",
+    "<IDEAppAttestEnvironmentEntitlementsProcessor: 0xc5fc822b0>",
+    "<IDEClassKitEntitlementsProcessor: 0xc5fc80db0>",
+    "<IDEAppIdentifierPrefixedEntitlementsProcessor: 0xc5fc835a0>"
+)'> with overrides <IDEProvisionableOverrides 0xc283ca940: configuration: Default, profileSupport: <IDEProvisioningProfileSupport: 0xc630e7620>, provisioningStyle: (null), certificateSigningStyle: (null), provisioningPurpose: app-store, team: (null), platform: <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>, sdk: (null), sdkVariant: (null), profileSpecifier: (null), certificateIdentifier: (null), bundleIdentifier: (null), entitlements: (null), entitlementsFile: (null), baseEntitlements: (null), entitlementsExpansion: (null), entitlementsDestination: (null), allowSigningWithoutTeamSelection: (null), signingRequiresTeam: (null), appIDFeatures: (null)>
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc631608a0; bundleID='com.pepinillo.app', path='<DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160060; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc283caa00; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app";
+    "aps-environment" = development;
+    "com.apple.developer.applesignin" =     (
+        Default
+    );
+    "com.apple.developer.healthkit" = 1;
+    "com.apple.developer.icloud-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-services" =     (
+        CloudKit
+    );
+    "com.apple.developer.siri" = 1;
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.developer.usernotifications.communication" = 1;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app', executablePath='<DVTFilePath:0xc41e3ab20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Pepinillo'>', hardenedRuntime='0'>'> from <IDEiCloudEntitlementsProcessor: 0xc5fc806c0>: {
+    "com.apple.developer.icloud-container-development-container-identifiers" = "<IDEEntitlementsWhiteOutMarker: 0xc6070d4a0>";
+    "com.apple.developer.icloud-container-environment" = Production;
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc631608a0; bundleID='com.pepinillo.app', path='<DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160060; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc283caa00; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app";
+    "aps-environment" = development;
+    "com.apple.developer.applesignin" =     (
+        Default
+    );
+    "com.apple.developer.healthkit" = 1;
+    "com.apple.developer.icloud-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-services" =     (
+        CloudKit
+    );
+    "com.apple.developer.siri" = 1;
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.developer.usernotifications.communication" = 1;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app', executablePath='<DVTFilePath:0xc41e3ab20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Pepinillo'>', hardenedRuntime='0'>'> from <IDEAppAttestEnvironmentEntitlementsProcessor: 0xc5fc822b0>: {
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc631608a0; bundleID='com.pepinillo.app', path='<DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160060; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc283caa00; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app";
+    "aps-environment" = development;
+    "com.apple.developer.applesignin" =     (
+        Default
+    );
+    "com.apple.developer.healthkit" = 1;
+    "com.apple.developer.icloud-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-services" =     (
+        CloudKit
+    );
+    "com.apple.developer.siri" = 1;
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.developer.usernotifications.communication" = 1;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app', executablePath='<DVTFilePath:0xc41e3ab20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Pepinillo'>', hardenedRuntime='0'>'> from <IDEClassKitEntitlementsProcessor: 0xc5fc80db0>: {
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc631608a0; bundleID='com.pepinillo.app', path='<DVTFilePath:0xc57fb1680:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160060; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc283caa00; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app";
+    "aps-environment" = development;
+    "com.apple.developer.applesignin" =     (
+        Default
+    );
+    "com.apple.developer.healthkit" = 1;
+    "com.apple.developer.icloud-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-services" =     (
+        CloudKit
+    );
+    "com.apple.developer.siri" = 1;
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.developer.usernotifications.communication" = 1;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app', executablePath='<DVTFilePath:0xc41e3ab20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Pepinillo'>', hardenedRuntime='0'>'> from <IDEAppIdentifierPrefixedEntitlementsProcessor: 0xc5fc835a0>: {
+    "application-identifier" = "$(AppIdentifierPrefix)com.pepinillo.app";
+}
+2026-04-25 04:07:57 +0000 [MT] Evaluating <IDEDistributionItemProvisionable: 0xc2c853700; distributionItem='<IDEDistributionItem: 0xc63160420; bundleID='com.pepinillo.app.watch', path='<DVTFilePath:0xc2d5d8bd0:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160000; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c603c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app.watch";
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app.watch', executablePath='<DVTFilePath:0xc630c0540:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app/PepinilloWatch'>', hardenedRuntime='0'>'>', team='<IDEProvisioningDisambiguatableBasicTeam: 0xc44bfea40; teamID='T5SKULSP2M', teamName='Tiago David Furtado', teamType='Individual', username='tiagofur@gmail.com', isFreeProvisioningTeam='0'>', method='<IDEDistributionMethodiOSAppStoreValidation: 0xc532be0e0>', provisioningStyle='0', entitlementsProcessors='(
+    "<IDEiCloudEntitlementsProcessor: 0xc5fc82d00>",
+    "<IDEAppAttestEnvironmentEntitlementsProcessor: 0xc5fc81bc0>",
+    "<IDEClassKitEntitlementsProcessor: 0xc5fc826d0>",
+    "<IDEAppIdentifierPrefixedEntitlementsProcessor: 0xc5fc62af0>"
+)'> with overrides <IDEProvisionableOverrides 0xc27c61380: configuration: Default, profileSupport: <IDEProvisioningProfileSupport: 0xc630e53f0>, provisioningStyle: (null), certificateSigningStyle: (null), provisioningPurpose: app-store, team: (null), platform: <DVTPlatform:0xc3ef78280:'com.apple.platform.watchos':<DVTFilePath:0xc3eeb44d0:'/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform'>>, sdk: (null), sdkVariant: (null), profileSpecifier: (null), certificateIdentifier: (null), bundleIdentifier: (null), entitlements: (null), entitlementsFile: (null), baseEntitlements: (null), entitlementsExpansion: (null), entitlementsDestination: (null), allowSigningWithoutTeamSelection: (null), signingRequiresTeam: (null), appIDFeatures: (null)>
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc63160420; bundleID='com.pepinillo.app.watch', path='<DVTFilePath:0xc2d5d8bd0:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160000; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c603c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app.watch";
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app.watch', executablePath='<DVTFilePath:0xc630c0540:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app/PepinilloWatch'>', hardenedRuntime='0'>'> from <IDEiCloudEntitlementsProcessor: 0xc5fc82d00>: {
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc63160420; bundleID='com.pepinillo.app.watch', path='<DVTFilePath:0xc2d5d8bd0:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160000; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c603c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app.watch";
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app.watch', executablePath='<DVTFilePath:0xc630c0540:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app/PepinilloWatch'>', hardenedRuntime='0'>'> from <IDEAppAttestEnvironmentEntitlementsProcessor: 0xc5fc81bc0>: {
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc63160420; bundleID='com.pepinillo.app.watch', path='<DVTFilePath:0xc2d5d8bd0:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160000; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c603c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app.watch";
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app.watch', executablePath='<DVTFilePath:0xc630c0540:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app/PepinilloWatch'>', hardenedRuntime='0'>'> from <IDEClassKitEntitlementsProcessor: 0xc5fc826d0>: {
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc63160420; bundleID='com.pepinillo.app.watch', path='<DVTFilePath:0xc2d5d8bd0:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc63160000; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c603c0; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='{
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app.watch";
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 1;
+}', teamID='T5SKULSP2M', identifier='com.pepinillo.app.watch', executablePath='<DVTFilePath:0xc630c0540:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Watch/PepinilloWatch.app/PepinilloWatch'>', hardenedRuntime='0'>'> from <IDEAppIdentifierPrefixedEntitlementsProcessor: 0xc5fc62af0>: {
+    "application-identifier" = "$(AppIdentifierPrefix)com.pepinillo.app.watch";
+}
+2026-04-25 04:07:57 +0000 [MT] Evaluating <IDEDistributionItemProvisionable: 0xc2c853600; distributionItem='<IDEDistributionItem: 0xc63160540; bundleID='io.sentry.Sentry', path='<DVTFilePath:0xc2d5e7e20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc631605a0; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c79200; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='(null)', teamID='T5SKULSP2M', identifier='io.sentry.Sentry', executablePath='<DVTFilePath:0xc60c90d20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework/Sentry'>', hardenedRuntime='0'>'>', team='<IDEProvisioningDisambiguatableBasicTeam: 0xc44bfea40; teamID='T5SKULSP2M', teamName='Tiago David Furtado', teamType='Individual', username='tiagofur@gmail.com', isFreeProvisioningTeam='0'>', method='<IDEDistributionMethodiOSAppStoreValidation: 0xc532be0e0>', provisioningStyle='0', entitlementsProcessors='(
+    "<IDEiCloudEntitlementsProcessor: 0xc5fc82940>",
+    "<IDEAppAttestEnvironmentEntitlementsProcessor: 0xc5fc826a0>",
+    "<IDEClassKitEntitlementsProcessor: 0xc5fc83c00>",
+    "<IDEAppIdentifierPrefixedEntitlementsProcessor: 0xc5fc81650>"
+)'> with overrides <IDEProvisionableOverrides 0xc27c78600: configuration: Default, profileSupport: <IDEProvisioningProfileSupport: 0xc630e5e40>, provisioningStyle: (null), certificateSigningStyle: (null), provisioningPurpose: app-store, team: (null), platform: <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>, sdk: (null), sdkVariant: (null), profileSpecifier: (null), certificateIdentifier: (null), bundleIdentifier: (null), entitlements: (null), entitlementsFile: (null), baseEntitlements: (null), entitlementsExpansion: (null), entitlementsDestination: (null), allowSigningWithoutTeamSelection: (null), signingRequiresTeam: (null), appIDFeatures: (null)>
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc63160540; bundleID='io.sentry.Sentry', path='<DVTFilePath:0xc2d5e7e20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc631605a0; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c79200; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='(null)', teamID='T5SKULSP2M', identifier='io.sentry.Sentry', executablePath='<DVTFilePath:0xc60c90d20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework/Sentry'>', hardenedRuntime='0'>'> from <IDEiCloudEntitlementsProcessor: 0xc5fc82940>: {
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc63160540; bundleID='io.sentry.Sentry', path='<DVTFilePath:0xc2d5e7e20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc631605a0; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c79200; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='(null)', teamID='T5SKULSP2M', identifier='io.sentry.Sentry', executablePath='<DVTFilePath:0xc60c90d20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework/Sentry'>', hardenedRuntime='0'>'> from <IDEAppAttestEnvironmentEntitlementsProcessor: 0xc5fc826a0>: {
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc63160540; bundleID='io.sentry.Sentry', path='<DVTFilePath:0xc2d5e7e20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc631605a0; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c79200; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='(null)', teamID='T5SKULSP2M', identifier='io.sentry.Sentry', executablePath='<DVTFilePath:0xc60c90d20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework/Sentry'>', hardenedRuntime='0'>'> from <IDEClassKitEntitlementsProcessor: 0xc5fc83c00>: {
+}
+2026-04-25 04:07:57 +0000 [MT] Applying entitlements delta for <IDEDistributionItem: 0xc63160540; bundleID='io.sentry.Sentry', path='<DVTFilePath:0xc2d5e7e20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework'>', codeSigningInfo='<_DVTCodeSigningInformation_Path: 0xc631605a0; isSigned='1', isAdHocSigned='0', signingCertificate='<DVTSigningCertificate: 0xc27c79200; name='Apple Development: Tiago David Furtado (52GX7G8V6K)', hash='AC99F683A95F2ED7654EE7F8230E62BB3B17A53D', serialNumber='73B1AA661940BA221CE726AC1D2AC413', certificateKinds='(
+    "1.2.840.113635.100.6.1.12",
+    "1.2.840.113635.100.6.1.2"
+), issueDate='2026-04-07 05:15:12 +0000''>', entitlements='(null)', teamID='T5SKULSP2M', identifier='io.sentry.Sentry', executablePath='<DVTFilePath:0xc60c90d20:'/Users/tiagofur/Library/Developer/Xcode/Archives/2026-04-24/Pepinillo Dev 24-04-26, 10.07 p.m..xcarchive/Products/Applications/Pepinillo.app/Frameworks/Sentry.framework/Sentry'>', hardenedRuntime='0'>'> from <IDEAppIdentifierPrefixedEntitlementsProcessor: 0xc5fc81650>: {
+}
+2026-04-25 04:07:58 +0000 [MT] Evaluation for Pepinillo.app is <IDEProvisionableStatusEvaluation 0xc2ad5a610: inputs: <IDEProvisionableStatusEvalutorInputs 0xc41004cd0: provisionableSnapshot: <IDEProvisionableSnapshot 0xc4c2ac060: name: Pepinillo.app, configurations: {
+    Default = "<_IDEProvisionableConfigurationSnapshot 0xc3fd3fde0: name: Default, provisioningStyle: 0, certificateSigningStyle: 2, team: <IDEProvisioningDisambiguatableBasicTeam: 0xc44bfea40; teamID='T5SKULSP2M', teamName='Tiago David Furtado', teamType='Individual', username='tiagofur@gmail.com', isFreeProvisioningTeam='0'>, profileSupport: <IDEProvisioningProfileSupport: 0xc630e5680>, platform: <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>, sdk: (null), sdkVariant: (null), bundleIdentifier: com.pepinillo.app, profileSpecifier: (null), certificateIdentifier: iPhone Distribution, entitlementsFilePath: (null), baseEntitlements: <IDEProvisionableEntitlements: 0xc2832d6c0; signedEntitlements='{\n    \"application-identifier\" = \"$(AppIdentifierPrefix)com.pepinillo.app\";\n    \"aps-environment\" = development;\n    \"com.apple.developer.applesignin\" =     (\n        Default\n    );\n    \"com.apple.developer.healthkit\" = 1;\n    \"com.apple.developer.icloud-container-environment\" = Production;\n    \"com.apple.developer.icloud-container-identifiers\" =     (\n        \"iCloud.com.pepinillo.app\"\n    );\n    \"com.apple.developer.icloud-services\" =     (\n        CloudKit\n    );\n    \"com.apple.developer.siri\" = 1;\n    \"com.apple.developer.team-identifier\" = T5SKULSP2M;\n    \"com.apple.developer.usernotifications.communication\" = 1;\n    \"com.apple.security.application-groups\" =     (\n        \"group.com.pepinillo.app\"\n    );\n}', simulatedEntitlements='(null)'>, entitlementsExpansion: <IDEDistributionProvisioningEntitlementsExpansion: 0xc630e5940>, entitlementsDestination: 1, allowSigningWithoutTeamSelection: 0, signingRequiresTeam: 0, appIDFeatures: <DVTPortalAppIDFeatures 0xc283940a0: Features: {\n    \"<DVTPortalProfileFeature: 0xc2d5e08c0; id='APP_GROUPS', userDescription='App Groups', platforms='.iphoneos, .macosx, .appletvos, .xros, .watchos'>\" = 1;\n    \"<DVTPortalProfileFeature: 0xc3c284ee0; id='APPLE_ID_AUTH', userDescription='Sign In with Apple', platforms='.xros, .appletvos, .iphoneos, .macosx, .watchos'>\" = 1;\n    \"<DVTPortalProfileFeature: 0xc2d609c70; id='ICLOUD', userDescription='iCloud', platforms='.xros, .macosx, .watchos, .iphoneos, .appletvos'>\" = 1;\n    \"<DVTPortalProfileFeature: 0xc36d9d960; id='HEALTHKIT', userDescription='HealthKit', platforms='.watchos, .iphoneos, .xros'>\" = 1;\n    \"<DVTPortalProfileFeature: 0xc37b8f800; id='USERNOTIFICATIONS_COMMUNICATION', userDescription='Communication Notifications', platforms='.xros, .macosx, .iphoneos, .watchos'>\" = 1;\n    \"<DVTPortalProfileFeature: 0xc3c285110; id='SIRIKIT', userDescription='Siri', platforms='.xros, .appletvos, .watchos, .iphoneos'>\" = 1;\n    \"<DVTPortalProfileFeature: 0xc327fbc60; id='PUSH_NOTIFICATIONS', userDescription='Push Notifications', platforms='.xros, .macosx, .watchos, .iphoneos, .appletvos'>\" = 1;\n}, Containers: {\n    \"Xcode.Portal.Container.Type.CloudKit\" = \"{(\\n    \\\"iCloud.com.pepinillo.app\\\"\\n)}\";\n    \"Xcode.Portal.Container.Type.AppGroup\" = \"{(\\n    \\\"group.com.pepinillo.app\\\"\\n)}\";\n}>, provisioningPurpose: app-store, supportsIOSMac: 0, areFeaturesUpToDate: 0>";
+}, overrides: <IDEProvisionableOverrides 0xc283ca940: configuration: Default, profileSupport: <IDEProvisioningProfileSupport: 0xc630e7620>, provisioningStyle: (null), certificateSigningStyle: (null), provisioningPurpose: app-store, team: (null), platform: <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>, sdk: (null), sdkVariant: (null), profileSpecifier: (null), certificateIdentifier: (null), bundleIdentifier: (null), entitlements: (null), entitlementsFile: (null), baseEntitlements: (null), entitlementsExpansion: (null), entitlementsDestination: (null), allowSigningWithoutTeamSelection: (null), signingRequiresTeam: (null), appIDFeatures: (null)>>>, configuration: Default, codesignParameterSnapshot: <IDECodesignParameterSnapshot: 0xc5fc60780>:
+Profile:  <DVTEmbeddedProvisioningProfile 0xc29753840: name: iOS Team Store Provisioning Profile: com.pepinillo.app, UUID: 3a3f8fa2-f361-482d-9f63-2f789971e4c2, teamName: Tiago David Furtado, teamIdentifierPrefixes: (
+    T5SKULSP2M
+), entitlements: {
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app";
+    "aps-environment" = production;
+    "beta-reports-active" = 1;
+    "com.apple.developer.applesignin" =     (
+        Default
+    );
+    "com.apple.developer.healthkit" = 1;
+    "com.apple.developer.healthkit.access" =     (
+        "health-records"
+    );
+    "com.apple.developer.healthkit.background-delivery" = 1;
+    "com.apple.developer.icloud-container-development-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-container-environment" =     (
+        Production,
+        Development
+    );
+    "com.apple.developer.icloud-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.icloud-services" = "*";
+    "com.apple.developer.siri" = 1;
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.developer.ubiquity-container-identifiers" =     (
+        "iCloud.com.pepinillo.app"
+    );
+    "com.apple.developer.ubiquity-kvstore-identifier" = "T5SKULSP2M.*";
+    "com.apple.developer.usernotifications.communication" = 1;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 0;
+    "keychain-access-groups" =     (
+        "T5SKULSP2M.*",
+        "com.apple.token"
+    );
+}, appIdentifierName: XC com pepinillo app, applicationIdentifierPrefixes: (
+    T5SKULSP2M
+), dateCreated: 2026-04-25 03:55:56 +0000, dateExpired: 2027-03-17 04:07:08 +0000, certificateKinds: {(
+    "1.2.840.113635.100.6.1.4",
+    "1.2.840.113635.100.6.1.7"
+)}, certificateSHA1Hashes: {(
+    D9BF906D8F2855BF415EC03AE5DA35FA32435873
+)}, supportedUDIDs: {(
+)}, isUniversal: 0, isXcodeManaged: 1, platforms: {(
+    <DVTPlatform:0xc3ef78300:'com.apple.platform.xros':<DVTFilePath:0xc3f0292c0:'/Applications/Xcode.app/Contents/Developer/Platforms/XROS.platform'>>,
+    <DVTPlatform:0xc3ef78280:'com.apple.platform.watchos':<DVTFilePath:0xc3eeb44d0:'/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform'>>,
+    <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>
+)}, filePath: <DVTFilePath:0xc544490e0:'/Users/tiagofur/Library/Developer/Xcode/UserData/Provisioning Profiles/3a3f8fa2-f361-482d-9f63-2f789971e4c2.mobileprovision'>>
+Identity: D9BF906D8F2855BF415EC03AE5DA35FA32435873
+Certificate <DVTSigningCertificate: 0xc2975c300; name='Apple Distribution: Tiago David Furtado (T5SKULSP2M)', hash='D9BF906D8F2855BF415EC03AE5DA35FA32435873', serialNumber='73993BF924AAE89DE34B5388FD8A4BB5', certificateKinds='(
+    "1.2.840.113635.100.6.1.7",
+    "1.2.840.113635.100.6.1.4"
+), issueDate='2026-03-17 04:07:09 +0000''>>, errors: (null)>
+2026-04-25 04:07:58 +0000 [MT] Evaluation for PepinilloWatch.app is <IDEProvisionableStatusEvaluation 0xc2e600070: inputs: <IDEProvisionableStatusEvalutorInputs 0xc41005ef0: provisionableSnapshot: <IDEProvisionableSnapshot 0xc4c2adda0: name: PepinilloWatch.app, configurations: {
+    Default = "<_IDEProvisionableConfigurationSnapshot 0xc5f562580: name: Default, provisioningStyle: 0, certificateSigningStyle: 2, team: <IDEProvisioningDisambiguatableBasicTeam: 0xc44bfea40; teamID='T5SKULSP2M', teamName='Tiago David Furtado', teamType='Individual', username='tiagofur@gmail.com', isFreeProvisioningTeam='0'>, profileSupport: <IDEProvisioningProfileSupport: 0xc630e5e10>, platform: <DVTPlatform:0xc3ef78280:'com.apple.platform.watchos':<DVTFilePath:0xc3eeb44d0:'/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform'>>, sdk: (null), sdkVariant: (null), bundleIdentifier: com.pepinillo.app.watch, profileSpecifier: (null), certificateIdentifier: iPhone Distribution, entitlementsFilePath: (null), baseEntitlements: <IDEProvisionableEntitlements: 0xc283949e0; signedEntitlements='{\n    \"application-identifier\" = \"$(AppIdentifierPrefix)com.pepinillo.app.watch\";\n    \"com.apple.developer.team-identifier\" = T5SKULSP2M;\n    \"com.apple.security.application-groups\" =     (\n        \"group.com.pepinillo.app\"\n    );\n}', simulatedEntitlements='(null)'>, entitlementsExpansion: <IDEDistributionProvisioningEntitlementsExpansion: 0xc630e55d0>, entitlementsDestination: 1, allowSigningWithoutTeamSelection: 0, signingRequiresTeam: 0, appIDFeatures: <DVTPortalAppIDFeatures 0xc27c718a0: Features: {\n    \"<DVTPortalProfileFeature: 0xc2e0c2ca0; id='APP_GROUPS', userDescription='App Groups', platforms='.macosx, .appletvos, .watchos, .xros, .iphoneos'>\" = 1;\n}, Containers: {\n    \"Xcode.Portal.Container.Type.AppGroup\" = \"{(\\n    \\\"group.com.pepinillo.app\\\"\\n)}\";\n}>, provisioningPurpose: app-store, supportsIOSMac: 0, areFeaturesUpToDate: 0>";
+}, overrides: <IDEProvisionableOverrides 0xc27c61380: configuration: Default, profileSupport: <IDEProvisioningProfileSupport: 0xc630e53f0>, provisioningStyle: (null), certificateSigningStyle: (null), provisioningPurpose: app-store, team: (null), platform: <DVTPlatform:0xc3ef78280:'com.apple.platform.watchos':<DVTFilePath:0xc3eeb44d0:'/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform'>>, sdk: (null), sdkVariant: (null), profileSpecifier: (null), certificateIdentifier: (null), bundleIdentifier: (null), entitlements: (null), entitlementsFile: (null), baseEntitlements: (null), entitlementsExpansion: (null), entitlementsDestination: (null), allowSigningWithoutTeamSelection: (null), signingRequiresTeam: (null), appIDFeatures: (null)>>>, configuration: Default, codesignParameterSnapshot: <IDECodesignParameterSnapshot: 0xc5fc0dc50>:
+Profile:  <DVTEmbeddedProvisioningProfile 0xc29752b80: name: iOS Team Store Provisioning Profile: com.pepinillo.app.watch, UUID: ba44207b-6a1b-4c53-8b62-60c0a57d4a53, teamName: Tiago David Furtado, teamIdentifierPrefixes: (
+    T5SKULSP2M
+), entitlements: {
+    "application-identifier" = "T5SKULSP2M.com.pepinillo.app.watch";
+    "beta-reports-active" = 1;
+    "com.apple.developer.team-identifier" = T5SKULSP2M;
+    "com.apple.security.application-groups" =     (
+        "group.com.pepinillo.app"
+    );
+    "get-task-allow" = 0;
+    "keychain-access-groups" =     (
+        "T5SKULSP2M.*",
+        "com.apple.token"
+    );
+}, appIdentifierName: XC com pepinillo app watch, applicationIdentifierPrefixes: (
+    T5SKULSP2M
+), dateCreated: 2026-04-25 03:55:57 +0000, dateExpired: 2027-03-17 04:07:08 +0000, certificateKinds: {(
+    "1.2.840.113635.100.6.1.4",
+    "1.2.840.113635.100.6.1.7"
+)}, certificateSHA1Hashes: {(
+    D9BF906D8F2855BF415EC03AE5DA35FA32435873
+)}, supportedUDIDs: {(
+)}, isUniversal: 0, isXcodeManaged: 1, platforms: {(
+    <DVTPlatform:0xc3ef78300:'com.apple.platform.xros':<DVTFilePath:0xc3f0292c0:'/Applications/Xcode.app/Contents/Developer/Platforms/XROS.platform'>>,
+    <DVTPlatform:0xc3ef78280:'com.apple.platform.watchos':<DVTFilePath:0xc3eeb44d0:'/Applications/Xcode.app/Contents/Developer/Platforms/WatchOS.platform'>>,
+    <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>
+)}, filePath: <DVTFilePath:0xc5f556e40:'/Users/tiagofur/Library/Developer/Xcode/UserData/Provisioning Profiles/ba44207b-6a1b-4c53-8b62-60c0a57d4a53.mobileprovision'>>
+Identity: D9BF906D8F2855BF415EC03AE5DA35FA32435873
+Certificate <DVTSigningCertificate: 0xc2975c780; name='Apple Distribution: Tiago David Furtado (T5SKULSP2M)', hash='D9BF906D8F2855BF415EC03AE5DA35FA32435873', serialNumber='73993BF924AAE89DE34B5388FD8A4BB5', certificateKinds='(
+    "1.2.840.113635.100.6.1.7",
+    "1.2.840.113635.100.6.1.4"
+), issueDate='2026-03-17 04:07:09 +0000''>>, errors: (null)>
+2026-04-25 04:07:58 +0000 [MT] Evaluation for Sentry.framework is <IDEProvisionableStatusEvaluation 0xc2e602df0: inputs: <IDEProvisionableStatusEvalutorInputs 0xc410041e0: provisionableSnapshot: <IDEProvisionableSnapshot 0xc4c2ad200: name: Sentry.framework, configurations: {
+    Default = "<_IDEProvisionableConfigurationSnapshot 0xc5f432bc0: name: Default, provisioningStyle: 0, certificateSigningStyle: 2, team: <IDEProvisioningDisambiguatableBasicTeam: 0xc44bfea40; teamID='T5SKULSP2M', teamName='Tiago David Furtado', teamType='Individual', username='tiagofur@gmail.com', isFreeProvisioningTeam='0'>, profileSupport: <IDEProvisioningProfileSupport: 0xc630e5ee0>, platform: <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>, sdk: (null), sdkVariant: (null), bundleIdentifier: io.sentry.Sentry, profileSpecifier: (null), certificateIdentifier: iPhone Distribution, entitlementsFilePath: (null), baseEntitlements: <IDEProvisionableEntitlements: 0xc27c709a0; signedEntitlements='{\n}', simulatedEntitlements='(null)'>, entitlementsExpansion: <IDEDistributionProvisioningEntitlementsExpansion: 0xc630e63a0>, entitlementsDestination: 1, allowSigningWithoutTeamSelection: 0, signingRequiresTeam: 0, appIDFeatures: <DVTPortalAppIDFeatures 0xc27c94c20: Features: {\n}, Containers: {\n}>, provisioningPurpose: app-store, supportsIOSMac: 0, areFeaturesUpToDate: 0>";
+}, overrides: <IDEProvisionableOverrides 0xc27c78600: configuration: Default, profileSupport: <IDEProvisioningProfileSupport: 0xc630e5e40>, provisioningStyle: (null), certificateSigningStyle: (null), provisioningPurpose: app-store, team: (null), platform: <DVTPlatform:0xc3ef78180:'com.apple.platform.iphoneos':<DVTFilePath:0xc3eeb43f0:'/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform'>>, sdk: (null), sdkVariant: (null), profileSpecifier: (null), certificateIdentifier: (null), bundleIdentifier: (null), entitlements: (null), entitlementsFile: (null), baseEntitlements: (null), entitlementsExpansion: (null), entitlementsDestination: (null), allowSigningWithoutTeamSelection: (null), signingRequiresTeam: (null), appIDFeatures: (null)>>>, configuration: Default, codesignParameterSnapshot: <IDECodesignParameterSnapshot: 0xc4b5956e0>:
+Identity: D9BF906D8F2855BF415EC03AE5DA35FA32435873
+Certificate <DVTSigningCertificate: 0xc282f8840; name='Apple Distribution: Tiago David Furtado (T5SKULSP2M)', hash='D9BF906D8F2855BF415EC03AE5DA35FA32435873', serialNumber='73993BF924AAE89DE34B5388FD8A4BB5', certificateKinds='(
+    "1.2.840.113635.100.6.1.7",
+    "1.2.840.113635.100.6.1.4"
+), issueDate='2026-03-17 04:07:09 +0000''>>, errors: (null)>
+2026-04-25 04:08:03 +0000  Validating Pepinillo Dev
+2026-04-25 04:09:24 +0000  Distribution record info for archive: <IDEArchiveDistributionRecord: 0xc283cbc00; task='1', distributionDestination='2', uploadDestination='1', teamID='T5SKULSP2M', signingCertificateSHA1='D9BF906D8F2855BF415EC03AE5DA35FA32435873', uniqueIdentifier='36a657c7-584d-4822-9b4c-029cabd8847d', packagePath='(null)', preparationEvent='<IDEArchiveDistributionEvent: 0xc630dc780; title='Prepared archive for validation', shortTitle='Prepared', date='2026-04-25 04:07:52 +0000', errors='(
+)', warnings='(
+)', infoMessages='(
+)', state='2'>', uploadEvent='(null)', validationEvent='<IDEArchiveDistributionEvent: 0xc630dc370; title='Validation failed', shortTitle='Validation failed', date='2026-04-25 04:09:24 +0000', errors='(
+    "Error Domain=ContentDelivery Code=90717 \"Invalid large app icon. The large app icon in the asset catalog in \U201cPepinillo.app\U201d can\U2019t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons.\" UserInfo={IDEDistributionIssueSeverity=3, NSLocalizedDescription=Invalid large app icon. The large app icon in the asset catalog in \U201cPepinillo.app\U201d can\U2019t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons., NSLocalizedRecoverySuggestion=The server\U2019s response was: \U2018{\n    code = 90717;\n    description = \"Invalid large app icon. The large app icon in the asset catalog in \\U201cPepinillo.app\\U201d can\\U2019t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons.\";\n}\U2019.}"
+)', warnings='(
+)', infoMessages='(
+)', state='5'>', processingCompletedEvent='(null)'>
+2026-04-25 04:09:24 +0000  Step failed: <IDEDistributionResultStep: 0xc293b8820>: Error Domain=IDEDistributionResultStepErrorDomain Code=-1 "Validation failed with errors" UserInfo={NSLocalizedDescription=Validation failed with errors, IDEDistributionUnderlyingErrors=(
+    "Error Domain=ContentDelivery Code=90717 \"error: Invalid large app icon. The large app icon in the asset catalog in \U201cPepinillo.app\U201d can\U2019t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons. The server\U2019s response was: \U2018{\n    code = 90717;\n    description = \"Invalid large app icon. The large app icon in the asset catalog in \\U201cPepinillo.app\\U201d can\\U2019t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons.\";\n}\U2019.\" UserInfo={NSLocalizedDescription=error: Invalid large app icon. The large app icon in the asset catalog in \U201cPepinillo.app\U201d can\U2019t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons. The server\U2019s response was: \U2018{\n    code = 90717;\n    description = \"Invalid large app icon. The large app icon in the asset catalog in \\U201cPepinillo.app\\U201d can\\U2019t be transparent or contain an alpha channel. For details, visit: https://developer.apple.com/design/human-interface-guidelines/app-icons.\";\n}\U2019.}",
+    "Error Domain=IDEDistributionSymbolsStepError Code=1 \"warning: Upload Symbols Failed. The archive did not include a dSYM for the Pepinillo.app with the UUIDs [0594D1E1-4C9F-371F-AAEC-974E509EA75F]. Ensure that the archive's dSYM folder includes a DWARF file for Pepinillo.app with the expected UUIDs.\" UserInfo={NSLocalizedDescription=warning: Upload Symbols Failed. The archive did not include a dSYM for the Pepinillo.app with the UUIDs [0594D1E1-4C9F-371F-AAEC-974E509EA75F]. Ensure that the archive's dSYM folder includes a DWARF file for Pepinillo.app with the expected UUIDs.}",
+    "Error Domain=IDEDistributionSymbolsStepError Code=1 \"warning: Upload Symbols Failed. The archive did not include a dSYM for the Sentry.framework with the UUIDs [E3DFBEE2-FCE1-3A1F-A117-44FC3419BC9D]. Ensure that the archive's dSYM folder includes a DWARF file for Sentry.framework with the expected UUIDs.\" UserInfo={NSLocalizedDescription=warning: Upload Symbols Failed. The archive did not include a dSYM for the Sentry.framework with the UUIDs [E3DFBEE2-FCE1-3A1F-A117-44FC3419BC9D]. Ensure that the archive's dSYM folder includes a DWARF file for Sentry.framework with the expected UUIDs.}",
+    "Error Domain=IDEDistributionSymbolsStepError Code=1 \"warning: Upload Symbols Failed. The archive did not include a dSYM for the PepinilloWatch.app with the UUIDs [457E5D8E-6306-31D1-A355-A04AC18B4B0C, 2B0C3D88-4047-30D7-BF4E-4649A5CFC1B4]. Ensure that the archive's dSYM folder includes a DWARF file for PepinilloWatch.app with the expected UUIDs.\" UserInfo={NSLocalizedDescription=warning: Upload Symbols Failed. The archive did not include a dSYM for the PepinilloWatch.app with the UUIDs [457E5D8E-6306-31D1-A355-A04AC18B4B0C, 2B0C3D88-4047-30D7-BF4E-4649A5CFC1B4]. Ensure that the archive's dSYM folder includes a DWARF file for PepinilloWatch.app with the expected UUIDs.}"
+)}
+2026-04-25 04:09:24 +0000 [MT] Displaying Validation result for archive Pepinillo Dev

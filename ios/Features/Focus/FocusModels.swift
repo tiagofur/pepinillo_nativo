@@ -22,7 +22,7 @@ public enum FocusMode: String, Codable, CaseIterable, Sendable, Identifiable {
         switch self {
         case .pomodoro:  return String(localized: "Pomodoro")
         case .flowtime:  return String(localized: "Flowtime")
-        case .timeBlock: return String(localized: "Time Block")
+        case .timeBlock: return String(localized: "Block")
         case .stopwatch: return String(localized: "Stopwatch")
         }
     }

@@ -31,7 +31,7 @@ enum PepinilloProduct: String, CaseIterable, Sendable {
 
     /// Products shown in paywall.
     static var currentProducts: [PepinilloProduct] {
-        allCases
+        [.lifetime] // Only show Pepinillo+ for now to comply with App Store review
     }
 }
 

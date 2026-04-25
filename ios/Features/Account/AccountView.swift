@@ -466,7 +466,6 @@ private struct PaywallContent: View {
             VStack(spacing: 24) {
                 PaywallHeaderSection()
                 PaywallPepinilloPlusSection()
-                PaywallEverywhereSection()
                 PaywallProductCardsSection(store: store)
                 PaywallPurchaseButton(store: store)
                 PaywallLegalFooter(store: store)
