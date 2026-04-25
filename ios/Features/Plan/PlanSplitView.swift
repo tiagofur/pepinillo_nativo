@@ -53,6 +53,8 @@ struct PlanSplitView: View {
                     )
                     .navigationTitle(store.selectedPlanFilter.title)
                     .navigationBarTitleDisplayMode(.inline)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
                 }
                 .frame(minWidth: 360, maxWidth: 520)
 
@@ -89,6 +91,8 @@ struct PlanSplitView: View {
                     )
                     .navigationTitle(String(localized: "Plan"))
                     .navigationBarTitleDisplayMode(.inline)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemGroupedBackground))
                 }
                 .frame(maxWidth: .infinity)
 
