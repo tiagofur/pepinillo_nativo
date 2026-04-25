@@ -148,16 +148,25 @@ struct PlanSplitView: View {
 
     @ViewBuilder
     private var detailPane: some View {
-        if let presentedStore = store.scope(state: \.detail, action: \.detail) {
-            let childStore = presentedStore.scope(state: \.self, action: \.presented)
-            TaskDetailView(store: childStore, isSheet: false)
-        } else {
-            ContentUnavailableView(
-                String(localized: "No Task Selected"),
-                systemImage: "checklist",
-                description: Text(String(localized: "Pick a task from the list to view its details."))
-            )
+        Group {
+            if let presentedStore = store.scope(state: \.detail, action: \.detail) {
+                let childStore = presentedStore.scope(state: \.self, action: \.presented)
+                TaskDetailView(store: childStore, isSheet: false)
+                    .id(presentedStore.taskID)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .trailing)),
+                        removal: .opacity
+                    ))
+            } else {
+                ContentUnavailableView(
+                    String(localized: "No Task Selected"),
+                    systemImage: "checklist",
+                    description: Text(String(localized: "Pick a task from the list to view its details."))
+                )
+                .transition(.opacity)
+            }
         }
+        .conditionalAnimation(.smooth(duration: 0.32), value: store.detail?.taskID)
     }
 }
 
