@@ -211,15 +211,15 @@ struct FocusView: View {
 
             Spacer()
 
-            // Timer Display (center) — capped at 340pt on iPad (more breathing room),
+            // Timer Display (center) — 420pt on iPad (genuinely large hero ring),
             // 280pt on iPhone compact. .animation(value: store.phase) orchestrates ring
             // gradient color shift, mode glyph swap, and phase label together.
             timerCircle
                 .frame(
-                    maxWidth: sizeClass == .regular ? 340 : 280,
-                    maxHeight: sizeClass == .regular ? 340 : 280
+                    maxWidth: sizeClass == .regular ? 420 : 280,
+                    maxHeight: sizeClass == .regular ? 420 : 280
                 )
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 24)
                 .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
 
             // Phase label — crossfades with a bottom-edge slide on phase change
