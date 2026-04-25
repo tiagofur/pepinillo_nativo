@@ -138,10 +138,10 @@ struct FocusView: View {
     @ViewBuilder
     private func ipadPortraitLayout(in size: CGSize) -> some View {
         VStack(spacing: 0) {
-            // Top: Timer + controls — 60% of usable height with breathing room above the mode chips
+            // Top: Timer + controls — 65% of usable height, snug to the tab bar above
             focusCoreContainer
-                .frame(maxWidth: 600, maxHeight: size.height * 0.60)
-                .padding(.top, 16)
+                .frame(maxWidth: 600, maxHeight: size.height * 0.65)
+                .padding(.top, 4)
 
             // Separator
             Rectangle()
@@ -194,7 +194,7 @@ struct FocusView: View {
                     onSelect: { store.send(.modeSelected($0)) },
                     glassNamespace: glassNS
                 )
-                .padding(.top, 16)
+                .padding(.top, 4)
                 .padding(.bottom, 32)
                 .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
             }
@@ -211,11 +211,14 @@ struct FocusView: View {
 
             Spacer()
 
-            // Timer Display (center) — capped at 280pt so it never inflates on iPad.
-            // .animation(value: store.phase) orchestrates ring gradient color shift,
-            // mode glyph swap (via .id + .transition inside timerCircle), and phase label together.
+            // Timer Display (center) — capped at 340pt on iPad (more breathing room),
+            // 280pt on iPhone compact. .animation(value: store.phase) orchestrates ring
+            // gradient color shift, mode glyph swap, and phase label together.
             timerCircle
-                .frame(maxWidth: 280, maxHeight: 280)
+                .frame(
+                    maxWidth: sizeClass == .regular ? 340 : 280,
+                    maxHeight: sizeClass == .regular ? 340 : 280
+                )
                 .padding(.horizontal, 40)
                 .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
 
