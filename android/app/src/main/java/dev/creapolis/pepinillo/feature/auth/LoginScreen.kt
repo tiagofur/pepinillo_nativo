@@ -97,7 +97,7 @@ fun LoginScreen(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Timer,
-                    contentDescription = null,
+                    contentDescription = "Pepinillo logo",
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )

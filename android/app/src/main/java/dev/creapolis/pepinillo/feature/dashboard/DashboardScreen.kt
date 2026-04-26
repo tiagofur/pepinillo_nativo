@@ -597,7 +597,7 @@ private fun EmptyDashboardState(
     ) {
         Icon(
             imageVector = Icons.Rounded.PlayArrow,
-            contentDescription = null,
+            contentDescription = "Start empty focus",
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
         )
@@ -621,7 +621,7 @@ private fun EmptyDashboardState(
         ) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = null,
+                contentDescription = "Start first focus",
                 modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
