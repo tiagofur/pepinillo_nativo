@@ -47,3 +47,4 @@ updated: 2026-04-21
 | Estado global de producto | [[../00_DASHBOARD|Dashboard]] |
 | Fuente de alcance funcional | [[../PRD/README|PRD Index]] |
 | Decision de rollout Apple-first | [[../Cross-Platform/ADR-001 - Monetizacion Apple First|ADR-001]] |
+| Audit App Store (produccion) | [[Audit App Store iOS]] |
