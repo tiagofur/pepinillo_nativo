@@ -53,7 +53,7 @@ fun EmailVerificationScreen(
         ) {
             Icon(
                 imageVector = Icons.Rounded.MarkEmailRead,
-                contentDescription = null,
+                contentDescription = "Email sent",
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.primary,
             )

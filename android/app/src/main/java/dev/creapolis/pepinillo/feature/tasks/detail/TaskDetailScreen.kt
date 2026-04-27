@@ -266,7 +266,7 @@ fun TaskDetailScreen(
                         enabled = !task.isCompleted,
                         shape = RoundedCornerShape(16.dp),
                     ) {
-                        Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Rounded.PlayArrow, contentDescription = "Start Focus Session", modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Start Focus Session")
                     }
@@ -277,7 +277,7 @@ fun TaskDetailScreen(
                     ) {
                         Icon(
                             Icons.Rounded.Delete,
-                            contentDescription = null,
+                            contentDescription = "Delete Task",
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.error,
                         )
@@ -365,7 +365,7 @@ private fun CompletionCheckbox(
         contentAlignment = Alignment.Center,
     ) {
         if (isCompleted) {
-            Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onPrimary)
+            Icon(Icons.Rounded.Check, contentDescription = "Task completed", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }
@@ -526,7 +526,7 @@ private fun SchedulingSection(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Today, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.Rounded.Today, contentDescription = "Scheduled for today", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text("Focus Today", style = MaterialTheme.typography.bodyLarge)
                 }
@@ -547,7 +547,7 @@ private fun SchedulingSection(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Rounded.CalendarMonth,
-                        contentDescription = null,
+                        contentDescription = "Calendar",
                         modifier = Modifier.size(20.dp),
                         tint = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -767,7 +767,7 @@ private fun RecurrenceSection(
                             expanded = false
                         },
                         trailingIcon = if (currentOption == option) {
-                            { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                            { Icon(Icons.Rounded.Check, contentDescription = "Selected", modifier = Modifier.size(18.dp)) }
                         } else null,
                     )
                 }
