@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pepinillo iOS Monetization Guide</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">Pepinillo iOS · Apple First</p>
+      <h1>Guia Visual de Cierre<br />Apple Developer + RevenueCat</h1>
+      <p class="subhead">
+        Checklist operativo para cerrar monetizacion v3.1 sin perderte en tabs.
+        Marca tareas, guarda evidencia y segui el orden recomendado.
+      </p>
+      <div class="hero-meta">
+        <span>Fecha de referencia: 22/04/2026</span>
+        <span>Scope: iOS + backend webhooks</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="blocker card">
+        <h2>Bloqueador Critico</h2>
+        <p>
+          RevenueCat sigue con credenciales revocadas. Hasta resolver esto, los
+          productos pueden aparecer como <strong>Could not check</strong>.
+        </p>
+        <div class="keys">
+          <article>
+            <h3>Claves activas esperadas</h3>
+            <ul>
+              <li>App Store Connect API Key ID: <code>22YZT9D55J</code></li>
+              <li>In-App Purchase Key ID: <code>Z95PS2LD73</code></li>
+            </ul>
+          </article>
+          <article>
+            <h3>Accion inmediata</h3>
+            <ul>
+              <li>Subir .p8 correcto en RevenueCat</li>
+              <li>Actualizar Key ID + Issuer ID</li>
+              <li>Verificar que los 3 productos iOS pasen a estado OK</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="progress card">
+        <div class="progress-top">
+          <h2>Progreso General</h2>
+          <button id="resetBtn" class="ghost">Resetear checks</button>
+        </div>
+        <div class="meter" aria-label="Progreso total">
+          <div class="meter-fill" id="meterFill"></div>
+        </div>
+        <p id="meterLabel">0% completado</p>
+      </section>
+
+      <section class="controls card">
+        <h2>Vista</h2>
+        <div class="chips" role="group" aria-label="Filtrar por owner">
+          <button class="chip active" data-filter="all">Todo</button>
+          <button class="chip" data-filter="apple">Apple Developer</button>
+          <button class="chip" data-filter="rc">RevenueCat</button>
+          <button class="chip" data-filter="backend">Backend</button>
+        </div>
+      </section>
+
+      <section class="steps" id="stepsRoot">
+        <article class="step card" data-owner="rc">
+          <div class="step-head">
+            <p class="step-index">Paso 1</p>
+            <h3>Reparar conexion RevenueCat ↔ App Store Connect</h3>
+            <span class="badge rc">RevenueCat</span>
+          </div>
+          <ul class="checklist">
+            <li><label><input type="checkbox" data-id="s1-1" /> Confirmar que tenes los .p8 actuales o regenerarlos en App Store Connect</label></li>
+            <li><label><input type="checkbox" data-id="s1-2" /> Cargar Key ID 22YZT9D55J + Issuer ID en RevenueCat</label></li>
+            <li><label><input type="checkbox" data-id="s1-3" /> Cargar In-App Purchase Key ID Z95PS2LD73 en RevenueCat</label></li>
+            <li><label><input type="checkbox" data-id="s1-4" /> Validar que desaparece el warning de credenciales y estado pasa a saludable</label></li>
+          </ul>
+        </article>
+
+        <article class="step card" data-owner="apple">
+          <div class="step-head">
+            <p class="step-index">Paso 2</p>
+            <h3>Completar metadata en App Store Connect</h3>
+            <span class="badge apple">Apple</span>
+          </div>
+          <ul class="checklist">
+            <li><label><input type="checkbox" data-id="s2-1" /> Product ID com.pepinillo.app.pro.lifetime: nombre visible Pepinillo+ y precio 19.99 USD</label></li>
+            <li><label><input type="checkbox" data-id="s2-2" /> Product ID com.pepinillo.app.pro.monthly: nombre Everywhere/AI+ Monthly y precio 4.99 USD</label></li>
+            <li><label><input type="checkbox" data-id="s2-3" /> Product ID com.pepinillo.app.pro.annual: nombre Everywhere/AI+ Annual y precio 34.99 USD</label></li>
+            <li><label><input type="checkbox" data-id="s2-4" /> Completar localizaciones EN/ES/PT + screenshot de review + notas para reviewer</label></li>
+          </ul>
+        </article>
+
+        <article class="step card" data-owner="rc">
+          <div class="step-head">
+            <p class="step-index">Paso 3</p>
+            <h3>Configurar entitlements y offerings v3.1</h3>
+            <span class="badge rc">RevenueCat</span>
+          </div>
+          <ul class="checklist">
+            <li><label><input type="checkbox" data-id="s3-1" /> Crear entitlement pepinillo_plus y asociar pro.lifetime</label></li>
+            <li><label><input type="checkbox" data-id="s3-2" /> Crear entitlement everywhere_plus y asociar pro.monthly + pro.annual</label></li>
+            <li><label><input type="checkbox" data-id="s3-3" /> Crear offering Pepinillo+ con package de compra unica</label></li>
+            <li><label><input type="checkbox" data-id="s3-4" /> Crear offering Everywhere/AI+ con packages monthly y annual</label></li>
+            <li><label><input type="checkbox" data-id="s3-5" /> Mantener premium/pro solo como fallback de migracion, no como fuente canonica nueva</label></li>
+          </ul>
+        </article>
+
+        <article class="step card" data-owner="backend">
+          <div class="step-head">
+            <p class="step-index">Paso 4</p>
+            <h3>Server to Server Notifications y validacion backend</h3>
+            <span class="badge backend">Backend</span>
+          </div>
+          <ul class="checklist">
+            <li><label><input type="checkbox" data-id="s4-1" /> Configurar App Store Server Notifications apuntando al webhook de RevenueCat</label></li>
+            <li><label><input type="checkbox" data-id="s4-2" /> Verificar en RevenueCat que llega al menos 1 evento de prueba</label></li>
+            <li><label><input type="checkbox" data-id="s4-3" /> Confirmar que backend acepta webhooks con Bearer Token configurado</label></li>
+          </ul>
+        </article>
+
+        <article class="step card" data-owner="apple">
+          <div class="step-head">
+            <p class="step-index">Paso 5</p>
+            <h3>Gate de salida antes de enviar review</h3>
+            <span class="badge apple">Apple</span>
+          </div>
+          <ul class="checklist">
+            <li><label><input type="checkbox" data-id="s5-1" /> Ejecutar compra sandbox de Pepinillo+ y validar unlock local</label></li>
+            <li><label><input type="checkbox" data-id="s5-2" /> Ejecutar compra sandbox mensual/anual y validar estado everywhere_plus</label></li>
+            <li><label><input type="checkbox" data-id="s5-3" /> Validar restore purchases en iPhone y propagacion a Apple Watch</label></li>
+            <li><label><input type="checkbox" data-id="s5-4" /> Confirmar paywall final con naming v3.1 sin referencias legacy</label></li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="notes card">
+        <div class="notes-head">
+          <h2>Evidencia Rapida</h2>
+          <button id="copyBtn">Copiar resumen para ticket</button>
+        </div>
+        <p>
+          Guardá links, IDs, capturas o mensajes de estado. Se guarda localmente
+          en tu navegador.
+        </p>
+        <textarea id="notesBox" rows="8" placeholder="Ejemplo: RevenueCat ya muestra healthy status para iOS app. Offering Everywhere/AI+ creado. Falta S2S en App Store Connect."></textarea>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <p>Objetivo: llevar monetizacion iOS a estado release-ready, sin deuda de configuracion externa.</p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
