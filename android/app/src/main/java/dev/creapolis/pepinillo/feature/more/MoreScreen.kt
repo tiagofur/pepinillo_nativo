@@ -24,6 +24,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Button
@@ -56,6 +57,7 @@ fun MoreScreen(
     onSubscriptionClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
     onAppSetupClick: () -> Unit = {},
+    onExportClick: () -> Unit = {},
     onHelpClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
 ) {
@@ -131,6 +133,12 @@ fun MoreScreen(
                     title = "App Setup",
                     subtitle = "Permissions and device reliability",
                     onClick = onAppSetupClick,
+                )
+                MoreActionRow(
+                    icon = Icons.Rounded.FileDownload,
+                    title = "Export Data",
+                    subtitle = "Request and manage your data export",
+                    onClick = onExportClick,
                 )
             }
         }
@@ -226,7 +234,7 @@ private fun SignedInCard(
                         color = MaterialTheme.colorScheme.primary,
                     ) {
                         Text(
-                            text = "PRO",
+                            text = "+",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),

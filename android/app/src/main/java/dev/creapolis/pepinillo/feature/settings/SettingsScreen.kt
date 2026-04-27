@@ -56,6 +56,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -90,6 +92,9 @@ import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
+
+private const val PRIVACY_POLICY_URL = "https://creapolis.dev/privacy-policy/"
+private const val TERMS_OF_USE_URL = "https://creapolis.dev/terms-of-use/"
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -223,7 +228,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Upgrade to Pro",
+                            text = "Upgrade to Pepinillo+",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -259,14 +264,19 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Pepinillo Pro",
+                            text = when (uiState.subscriptionTier) {
+                                SubscriptionTier.EVERYWHERE_MONTHLY,
+                                SubscriptionTier.EVERYWHERE_ANNUAL,
+                                SubscriptionTier.EVERYWHERE_LIFETIME -> "Everywhere / AI+"
+                                else -> "Pepinillo+"
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             text = when (uiState.subscriptionTier) {
-                                SubscriptionTier.PEPINILLO_PLUS -> "Pepinillo+ access"
+                                SubscriptionTier.PEPINILLO_PLUS -> "Lifetime access"
                                 SubscriptionTier.EVERYWHERE_MONTHLY -> "Monthly subscription"
                                 SubscriptionTier.EVERYWHERE_ANNUAL -> "Annual subscription"
                                 SubscriptionTier.EVERYWHERE_LIFETIME -> "Lifetime access"
@@ -762,9 +772,15 @@ fun SettingsScreen(
                 NavigationRow(label = "App Setup", onClick = onNavigateToAppSetup)
             }
             SettingsDivider()
-            NavigationRow(label = "Privacy Policy")
+                NavigationRow(
+                    label = "Privacy Policy",
+                    onClick = { openExternalUrl(context, PRIVACY_POLICY_URL) },
+                )
             SettingsDivider()
-            NavigationRow(label = "Terms of Service")
+                NavigationRow(
+                    label = "Terms of Service",
+                    onClick = { openExternalUrl(context, TERMS_OF_USE_URL) },
+                )
             SettingsDivider()
             NavigationRow(label = "Open Source Licenses")
         }
@@ -1092,6 +1108,15 @@ private fun formatLastSyncTime(lastSyncAt: Long?): String {
         diffMinutes < 60 -> "$diffMinutes min ago"
         diffHours < 24 -> "$diffHours hr ago"
         else -> "$diffDays days ago"
+    }
+}
+private fun openExternalUrl(context: Context, url: String) {
+    runCatching {
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+        )
     }
 }
 

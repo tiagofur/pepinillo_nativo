@@ -52,6 +52,7 @@ class FocusTileService : TileService() {
         val state = WearSnapshotStore.readTimerState(this)
         val stats = WearSnapshotStore.readStats(this)
         val colors = WearSnapshotStore.readThemeColors(this)
+        val isPro = WearSnapshotStore.readIsPro(this)
 
         // When running, recalculate displayTime and progress from the end epoch
         val liveState = if (state.status == "Running" && state.phaseEndEpochMs > 0 && state.totalDurationMs > 0) {
@@ -78,7 +79,7 @@ class FocusTileService : TileService() {
         val root = when (liveState.status) {
             "Running" -> buildRunningLayout(liveState, colors)
             "Paused" -> buildPausedLayout(liveState, colors)
-            else -> buildIdleLayout(liveState, stats, colors)
+            else -> buildIdleLayout(liveState, stats, colors, isPro)
         }
 
         return TileBuilders.Tile.Builder()
@@ -155,9 +156,14 @@ class FocusTileService : TileService() {
         state: WearTimerState,
         stats: dev.creapolis.pepinillo.data.WearStatsState,
         colors: WearThemeColors,
+        isPro: Boolean = false,
     ): LayoutElementBuilders.LayoutElement {
         val emoji = modeEmoji(state.mode)
-        val statsText = "${stats.totalMinutes} min \u00b7 \uD83D\uDD25 ${stats.streak}d"
+        val statsText = if (isPro) {
+            "${stats.totalMinutes} min \u00b7 \uD83D\uDD25 ${stats.streak}d"
+        } else {
+            "Unlock full stats with Pepinillo+"
+        }
 
         return LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())

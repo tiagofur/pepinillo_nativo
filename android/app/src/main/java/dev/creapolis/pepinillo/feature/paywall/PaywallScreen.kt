@@ -114,7 +114,7 @@ fun PaywallScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Upgrade to Pro",
+                text = "Get Pepinillo+",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,

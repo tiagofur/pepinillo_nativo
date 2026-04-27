@@ -70,7 +70,7 @@ fun StatsScreen(
                 )
                 androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Unlock detailed stats with Pepinillo Pro",
+                    text = "Unlock detailed stats with Pepinillo+",
                     style = MaterialTheme.typography.caption2,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colors.onSurface,
