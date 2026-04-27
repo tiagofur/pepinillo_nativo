@@ -51,7 +51,12 @@ class TasksTileService : TileService() {
     private fun buildTile(): TileBuilders.Tile {
         val tasks = WearSnapshotStore.readTasks(this)
         val stats = WearSnapshotStore.readStats(this)
-        val root = buildLayout(tasks, stats.completedTasks, tasks.size)
+        val isPro = WearSnapshotStore.readIsPro(this)
+        val root = if (isPro) {
+            buildLayout(tasks, stats.completedTasks, tasks.size)
+        } else {
+            buildLockedLayout()
+        }
 
         return TileBuilders.Tile.Builder()
             .setResourcesVersion(RESOURCES_VERSION)
@@ -154,4 +159,23 @@ class TasksTileService : TileService() {
             .addContent(text(rowText, 13f, color = 0xFFCCCCCC.toInt()))
             .build()
     }
+
+    private fun buildLockedLayout(): LayoutElementBuilders.LayoutElement =
+        LayoutElementBuilders.Box.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
+            .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
+            .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+            .setModifiers(clickableModifiers())
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+                    .addContent(text("Pepinillo+", 18f, bold = true))
+                    .addContent(spacer(6f))
+                    .addContent(text("Unlock Tasks tile", 14f, color = 0xFFCCCCCC.toInt()))
+                    .addContent(spacer(6f))
+                    .addContent(text("Upgrade in the app", 13f, color = 0xFF888888.toInt()))
+                    .build(),
+            )
+            .build()
 }

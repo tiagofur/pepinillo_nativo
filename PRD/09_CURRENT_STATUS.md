@@ -225,10 +225,10 @@
 ### Android Ecosystem ✅
 
 - **Wear OS app:** timer, task list, stats, diagnostics
-- **Wear Focus Timer Tile:** enhanced `FocusTileService` with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1.
-- **Wear Tasks Tile:** `TasksTileService` showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header.
+- **Wear Focus Timer Tile:** enhanced `FocusTileService` with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1. Free users now see a locked Pepinillo+ state sourced from synced `isPro` snapshot data.
+- **Wear Tasks Tile:** `TasksTileService` showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header. Free users now see a locked Pepinillo+ state sourced from synced `isPro` snapshot data.
 - **WearSnapshotStore extended:** now persists linkedTaskId, linkedTaskName, completedSessions, and theme colors for tile access.
-- **Wear Complication:** `FocusComplicationDataSource` (SHORT_TEXT + LONG_TEXT)
+- **Wear Complication:** `FocusComplicationDataSource` (SHORT_TEXT + LONG_TEXT + ranged value), with locked fallback for free users based on synced `isPro` snapshot data.
 - **Wear Data Layer sync:** bidirectional (phone-watch) with local fallback
 - **Glance widgets:** FocusTimerWidget, DailyStatsWidget (Home Screen)
 - **Lock Screen widget:** LockScreenTimerWidget (Android 14+, category KEYGUARD)
@@ -307,7 +307,7 @@
 | ------------------------------ | -------- | ---------------------------------------------------------------------------- |
 | Product reset IA + screen ownership | P0    | Active runtime parity phase uses `Focus / Plan / Dashboard / More`; final 3-surface IA remains target-state |
 | More hub parity closures       | P0       | Complete dedicated Android equivalents for Help/Support, About, Export, and final profile/account ownership |
-| Feature gating enforcement     | P0       | Subtasks & recurrence are gated; analytics, widgets, and themes still need gating |
+| Feature gating enforcement     | P0       | Subtasks, recurrence, export, themes, and Wear premium surfaces are gated; analytics and widgets still need capability-based gating |
 | Complete paywall UI            | P0       | Subscription screen is functional but not complete                           |
 | Firebase Analytics/Crashlytics | P1       | Plugins commented out; missing `google-services.json`                        |
 | CI/CD pipeline                 | P1       | GitHub Actions (build + lint + tests)                                        |

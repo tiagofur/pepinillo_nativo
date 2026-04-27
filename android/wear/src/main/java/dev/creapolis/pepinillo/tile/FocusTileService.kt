@@ -76,10 +76,14 @@ class FocusTileService : TileService() {
         val isActive = liveState.status == "Running"
         val refreshMs = if (isActive) REFRESH_ACTIVE_MS else REFRESH_IDLE_MS
 
-        val root = when (liveState.status) {
-            "Running" -> buildRunningLayout(liveState, colors)
-            "Paused" -> buildPausedLayout(liveState, colors)
-            else -> buildIdleLayout(liveState, stats, colors, isPro)
+        val root = if (!isPro) {
+            buildLockedLayout(modeColor(liveState.mode, colors).toInt())
+        } else {
+            when (liveState.status) {
+                "Running" -> buildRunningLayout(liveState, colors)
+                "Paused" -> buildPausedLayout(liveState, colors)
+                else -> buildIdleLayout(liveState, stats, colors)
+            }
         }
 
         return TileBuilders.Tile.Builder()
@@ -156,14 +160,9 @@ class FocusTileService : TileService() {
         state: WearTimerState,
         stats: dev.creapolis.pepinillo.data.WearStatsState,
         colors: WearThemeColors,
-        isPro: Boolean = false,
     ): LayoutElementBuilders.LayoutElement {
         val emoji = modeEmoji(state.mode)
-        val statsText = if (isPro) {
-            "${stats.totalMinutes} min \u00b7 \uD83D\uDD25 ${stats.streak}d"
-        } else {
-            "Unlock full stats with Pepinillo+"
-        }
+        val statsText = "${stats.totalMinutes} min \u00b7 \uD83D\uDD25 ${stats.streak}d"
 
         return LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())
@@ -183,6 +182,27 @@ class FocusTileService : TileService() {
             )
             .build()
     }
+
+    private fun buildLockedLayout(
+        accentColor: Int,
+    ): LayoutElementBuilders.LayoutElement =
+        LayoutElementBuilders.Box.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
+            .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
+            .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+            .setModifiers(clickableModifiers())
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+                    .addContent(text("Pepinillo+", 20f, bold = true, color = accentColor))
+                    .addContent(spacer(6f))
+                    .addContent(text("Unlock Focus tile", 14f, color = 0xFFCCCCCC.toInt()))
+                    .addContent(spacer(6f))
+                    .addContent(text("Open the app to upgrade", 13f, color = 0xFF888888.toInt()))
+                    .build(),
+            )
+            .build()
 
     private fun buildRunningLayout(
         state: WearTimerState,

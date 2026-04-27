@@ -16,6 +16,10 @@ class FocusComplicationDataSource : SuspendingComplicationDataSourceService() {
         buildData(type, displayTime = "25:00", mode = "Pomodoro", progress = 1f)
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
+        if (!WearSnapshotStore.readIsPro(this)) {
+            return buildLockedData(request.complicationType)
+        }
+
         val state = WearSnapshotStore.readTimerState(this)
 
         // When running, recalculate from the stored end epoch for a live countdown
@@ -41,6 +45,37 @@ class FocusComplicationDataSource : SuspendingComplicationDataSourceService() {
             mode = state.mode,
             progress = liveProgress,
         )
+    }
+
+    private fun buildLockedData(type: ComplicationType): ComplicationData? {
+        val description = PlainComplicationText.Builder("Pepinillo+ required").build()
+        return when (type) {
+            ComplicationType.SHORT_TEXT ->
+                ShortTextComplicationData.Builder(
+                    text = PlainComplicationText.Builder("Lock").build(),
+                    contentDescription = description,
+                )
+                    .setTitle(PlainComplicationText.Builder("Plus").build())
+                    .build()
+
+            ComplicationType.LONG_TEXT ->
+                LongTextComplicationData.Builder(
+                    text = PlainComplicationText.Builder("Pepinillo+ required").build(),
+                    contentDescription = description,
+                ).build()
+
+            ComplicationType.RANGED_VALUE ->
+                RangedValueComplicationData.Builder(
+                    value = 0f,
+                    min = 0f,
+                    max = 1f,
+                    contentDescription = description,
+                )
+                    .setText(PlainComplicationText.Builder("Lock").build())
+                    .build()
+
+            else -> null
+        }
     }
 
     private fun buildData(

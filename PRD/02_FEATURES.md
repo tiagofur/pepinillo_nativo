@@ -246,9 +246,9 @@ Complete Wear OS app:
 | Mode Selection   | All 4 focus modes available                                                                                                                                                                                 | PRO  |
 | Task List        | Today's tasks with mark-complete                                                                                                                                                                            | PRO  |
 | Stats            | Daily summary of focus time and sessions                                                                                                                                                                    | PRO  |
-| Focus Timer Tile | Enhanced tile with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1. | PRO  |
-| Tasks Tile       | Second tile showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header.                                                                                        | PRO  |
-| Complication     | Focus data in watch face                                                                                                                                                                                    | PRO  |
+| Focus Timer Tile | Enhanced tile with progress arc (colored by mode), timer display, phase label, session counter, linked task name. Distinct idle/running/paused states. Built with Tiles 1.4.1 + ProtoLayout Material 1.2.1. Free users see a locked state and upgrade CTA. | PEPINILLO+ / EVERYWHERE/AI+ |
+| Tasks Tile       | Second tile showing top 4 tasks with energy emoji, truncated title, pomodoro progress, and completed/total header. Free users see a locked state and upgrade CTA.                                                                                    | PEPINILLO+ / EVERYWHERE/AI+ |
+| Complication     | Focus data in watch face. Free users receive a locked fallback instead of live premium timer data.                                                                                                                                             | PEPINILLO+ / EVERYWHERE/AI+ |
 | Sync             | Data Layer API for communication with phone                                                                                                                                                                 | PRO  |
 
 ---
