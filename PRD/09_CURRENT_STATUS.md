@@ -306,8 +306,8 @@
 | Item                           | Priority | Notes                                                                        |
 | ------------------------------ | -------- | ---------------------------------------------------------------------------- |
 | Product reset IA + screen ownership | P0    | Active runtime parity phase uses `Focus / Plan / Dashboard / More`; final 3-surface IA remains target-state |
-| More hub parity closures       | P0       | Complete dedicated Android equivalents for Help/Support, About, Export, and final profile/account ownership |
-| Feature gating enforcement     | P0       | Subtasks, recurrence, export, themes, and Wear premium surfaces are gated; analytics and widgets still need capability-based gating |
+| More hub parity closures       | P0       | ✅ Help/Support, About, Export, Profile all have dedicated screens wired in nav |
+| Feature gating enforcement     | P0       | ✅ All features gated: modes, tasks, subtasks, recurrence, export, themes, analytics (periods/reviews/AI), widgets (focus+stats), Wear tiles/complications, task analytics |
 | Complete paywall UI            | P0       | ✅ v3.1 two-tier design: Pepinillo+ (one-time) + Everywhere/AI+ (subscription) cards, dynamic CTA |
 | Firebase Analytics/Crashlytics | P1       | Plugins commented out; missing `google-services.json`                        |
 | CI/CD pipeline                 | P1       | GitHub Actions (build + lint + tests)                                        |
