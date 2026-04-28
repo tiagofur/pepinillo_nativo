@@ -168,7 +168,7 @@ private fun StatsContent() {
                     )
                     Spacer(modifier = GlanceModifier.height(4.dp))
                     Text(
-                        text = "PRO",
+                        text = "Pepinillo+",
                         style = TextStyle(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,

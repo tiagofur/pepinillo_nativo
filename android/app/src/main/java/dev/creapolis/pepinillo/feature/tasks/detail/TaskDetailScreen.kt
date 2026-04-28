@@ -249,7 +249,7 @@ fun TaskDetailScreen(
                     FocusHistorySection(
                         totalTime = uiState.totalFocusTimeFormatted,
                         pomodoroCount = uiState.focusPomodoroCount,
-                        onViewAnalytics = { onViewAnalytics(task.id) },
+                        onViewAnalytics = { if (isPro) onViewAnalytics(task.id) else onNavigateToPaywall() },
                     )
                 }
             }
