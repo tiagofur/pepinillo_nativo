@@ -24,14 +24,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Analytics
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Watch
 import androidx.compose.material.icons.rounded.Widgets
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -130,15 +134,35 @@ fun PaywallScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // ── FEATURE LIST ──
-        ProFeatureRow(Icons.Rounded.AccessTime, "All focus modes", "Flowtime, Time Blocks & more")
-        ProFeatureRow(Icons.Rounded.TaskAlt, "Unlimited tasks", "Subtasks, recurrence & scheduling")
-        ProFeatureRow(Icons.Rounded.MusicNote, "Premium soundscapes", "Binaural beats, lo-fi, ocean & more")
-        ProFeatureRow(Icons.Rounded.Analytics, "Full analytics", "Complete history & weekly reviews")
-        ProFeatureRow(Icons.Rounded.Widgets, "All widgets", "Stats, tasks & lock screen widgets")
-        ProFeatureRow(Icons.Rounded.Watch, "Wear OS", "Full smartwatch app & complications")
-        ProFeatureRow(Icons.Rounded.CloudSync, "Cloud sync", "Seamless backup across devices")
-        ProFeatureRow(Icons.Rounded.LocalFireDepartment, "Streak protection", "One free skip per week")
+        // ── TIER CARDS ──
+        TierCard(
+            tierName = "Pepinillo+",
+            badge = "One-time",
+            badgeGreen = true,
+            features = listOf(
+                Triple(Icons.Rounded.AccessTime, "All focus modes", "Flowtime, Time Blocks & more"),
+                Triple(Icons.Rounded.TaskAlt, "Unlimited tasks", "Subtasks, recurrence & scheduling"),
+                Triple(Icons.Rounded.MusicNote, "Premium soundscapes", "Binaural beats, lo-fi & more"),
+                Triple(Icons.Rounded.Analytics, "Full analytics", "Complete history & reviews"),
+                Triple(Icons.Rounded.Widgets, "All widgets", "Home screen & lock screen"),
+                Triple(Icons.Rounded.Watch, "Wear OS", "Full smartwatch app & complications"),
+            ),
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        TierCard(
+            tierName = "Everywhere / AI+",
+            badge = "Subscription",
+            badgeGreen = false,
+            features = listOf(
+                Triple(Icons.Rounded.Star, "Everything in Pepinillo+", "All local features included"),
+                Triple(Icons.Rounded.CloudSync, "Cloud sync", "Backup & sync across devices"),
+                Triple(Icons.Rounded.AutoAwesome, "AI Focus Reports", "Personalized insights"),
+                Triple(Icons.Rounded.Sync, "Multi-device", "Available anywhere, anytime"),
+            ),
+            comingSoonIndices = setOf(2, 3),
+        )
 
         Spacer(modifier = Modifier.height(28.dp))
 
@@ -205,8 +229,14 @@ fun PaywallScreen(
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
+                val buttonLabel = when (uiState.selectedProductId) {
+                    PepinilloProducts.PEPINILLO_PLUS -> "Get Pepinillo+"
+                    PepinilloProducts.EVERYWHERE_MONTHLY, PepinilloProducts.EVERYWHERE_ANNUAL -> "Start Subscription"
+                    PepinilloProducts.EVERYWHERE_LIFETIME -> "Get Lifetime Access"
+                    else -> "Continue"
+                }
                 Text(
-                    text = "Continue",
+                    text = buttonLabel,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -251,6 +281,128 @@ fun PaywallScreen(
         )
 
         Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun TierCard(
+    tierName: String,
+    badge: String,
+    badgeGreen: Boolean,
+    features: List<Triple<ImageVector, String, String>>,
+    comingSoonIndices: Set<Int> = emptySet(),
+) {
+    val accentColor = if (badgeGreen) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
+    val badgeBg = if (badgeGreen) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.primaryContainer
+    val badgeFg = if (badgeGreen) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onPrimaryContainer
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+            .background(accentColor.copy(alpha = 0.04f))
+            .padding(16.dp),
+    ) {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = accentColor,
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = tierName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = accentColor,
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = badge,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = badgeFg,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(badgeBg)
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider(color = accentColor.copy(alpha = 0.15f))
+            Spacer(modifier = Modifier.height(12.dp))
+            features.forEachIndexed { index, (icon, title, subtitle) ->
+                TierFeatureRow(
+                    icon = icon,
+                    title = title,
+                    subtitle = subtitle,
+                    comingSoon = index in comingSoonIndices,
+                    accentColor = accentColor,
+                )
+                if (index < features.lastIndex) Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun TierFeatureRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    comingSoon: Boolean,
+    accentColor: androidx.compose.ui.graphics.Color,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(accentColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = accentColor,
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (comingSoon) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Soon",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
     }
 }
 

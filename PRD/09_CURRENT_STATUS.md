@@ -308,7 +308,7 @@
 | Product reset IA + screen ownership | P0    | Active runtime parity phase uses `Focus / Plan / Dashboard / More`; final 3-surface IA remains target-state |
 | More hub parity closures       | P0       | Complete dedicated Android equivalents for Help/Support, About, Export, and final profile/account ownership |
 | Feature gating enforcement     | P0       | Subtasks, recurrence, export, themes, and Wear premium surfaces are gated; analytics and widgets still need capability-based gating |
-| Complete paywall UI            | P0       | Subscription screen is functional but not complete                           |
+| Complete paywall UI            | P0       | ✅ v3.1 two-tier design: Pepinillo+ (one-time) + Everywhere/AI+ (subscription) cards, dynamic CTA |
 | Firebase Analytics/Crashlytics | P1       | Plugins commented out; missing `google-services.json`                        |
 | CI/CD pipeline                 | P1       | GitHub Actions (build + lint + tests)                                        |
 | Play Store listing             | P1       | Screenshots, ASO, description                                                |
