@@ -16,8 +16,8 @@
 | Language         | Swift 6 (strict concurrency)             | Xcode 16+           |
 | UI               | SwiftUI                                  | iOS 17 / watchOS 10 |
 | Architecture     | TCA (swift-composable-architecture)      | 1.17+               |
-| Persistence      | SwiftData + CloudKit                     | iOS 17              |
-| Synchronization  | NSPersistentCloudKitContainer            | iOS 17              |
+| Persistence      | SwiftData local App Group store          | iOS 17              |
+| Synchronization  | Backend REST/WebSocket; CloudKit deferred | iOS 17             |
 | Widgets          | WidgetKit                                | iOS 17              |
 | Dynamic Island   | ActivityKit                              | iOS 16.1+           |
 | Siri / Shortcuts | App Intents                              | iOS 17              |
@@ -33,7 +33,7 @@
 ### Key Decisions
 
 - **RevenueCat SDK v5+:** Wraps native StoreKit 2 for centralized subscription, entitlement, and webhook handling. Supports 3 products (monthly, annual, lifetime) with unified `pro` entitlement.
-- **No Firebase:** Private CloudKit for data, TelemetryDeck for anonymous analytics, Sign in with Apple for authentication.
+- **No Firebase:** Local SwiftData for user data in the 1.0 release, TelemetryDeck for anonymous analytics, Sign in with Apple for authentication. CloudKit is deferred until non-blocking launch behavior is validated.
 - **Swift 6 strict concurrency:** All code compiles under strict concurrency mode. Actors (`FocusEngine`, `SoundscapeManager`, `SubscriptionManager`) guarantee thread safety without manual locks.
 
 ---
@@ -45,7 +45,7 @@
 TCA was chosen over MVVM, VIPER, and Clean Architecture for the following reasons:
 
 1. **Unidirectional data flow** -- Predictable state, ideal for a timer app with complex states (running, paused, break, interruption, phase transition).
-2. **Integrated side-effect management** -- perfect for timer ticks, notifications, CloudKit sync, Watch connectivity, and Live Activities.
+2. **Integrated side-effect management** -- perfect for timer ticks, notifications, backend sync, Watch connectivity, and Live Activities.
 3. **Testability** -- every reducer is a pure function; every effect is injectable and testable with `TestStore`.
 4. **Composability** -- features compose into parent features, mirroring Pepinillo's modular structure.
 5. **Active maintenance** -- Point-Free actively maintains it, extensive documentation, compatible with Swift 6.
@@ -321,7 +321,7 @@ ios/
 
 ## 4. Data Models (SwiftData)
 
-All models use the `@Model` macro from SwiftData and sync automatically via CloudKit (private database). The shared container via App Group (`group.com.pepinillo.app`) allows access from widgets, intents, and the Watch app.
+All models use the `@Model` macro from SwiftData and persist to the local App Group store (`PepinilloLocal.sqlite`). The shared container via App Group (`group.com.pepinillo.app`) allows access from widgets, intents, and companion surfaces. The legacy CloudKit-backed `Pepinillo.sqlite` store is not opened during app launch.
 
 ### 4.1 TaskItem
 
@@ -480,7 +480,7 @@ public final class ProductivityReport {
 
 ### 4.5 UserPreferences
 
-User preferences synced via CloudKit. A single record per user.
+User preferences stored locally in SwiftData and synced through the backend only after the user authenticates. A single record per user.
 
 ```swift
 @Model
@@ -886,7 +886,7 @@ CoreSpotlight indexes all tasks for system search. The index is updated on task 
 
 ### Sync Architecture (Implemented 2026-03-24)
 
-The iOS sync system is built with TCA dependency clients and follows an **offline-first** design where SwiftData is always the source of truth. The Go backend provides cross-platform sync while CloudKit is retained as a secondary layer for Apple-to-Apple device sync.
+The iOS sync system is built with TCA dependency clients and follows an **offline-first** design where SwiftData is always the source of truth. The Go backend provides cross-platform sync. CloudKit is deferred from 1.0 and must not participate in app launch.
 
 #### Core Design Principles
 
@@ -1000,22 +1000,15 @@ New DTOs added to support sync communication with the Go backend, including pref
 - V1: entire record is replaced by whichever version has the latest `updatedAt`
 - V2 (future): individual fields compared and merged independently, reducing data loss on concurrent edits
 
-### CloudKit (Secondary Sync Layer)
+### CloudKit (Deferred)
 
-CloudKit is retained as a secondary sync layer for Apple-to-Apple device sync:
+CloudKit is disabled for the 1.0 release after real-device launch testing showed SwiftData + CloudKit can block before the first SwiftUI frame.
 
-- **Private database**: only user data, encrypted at rest by Apple.
-- **Automatic sync**: SwiftData configured with `cloudKitContainerIdentifier: "iCloud.com.pepinillo.app"`. No manual sync code.
-- **Offline operation**: All operations write to the local SwiftData store first (instant). CloudKit syncs opportunistically when network is available.
-- **Pending changes**: queued in `CKOperationGroup` until network is available.
-
-### CloudKit Conflict Resolution
-
-| Data type                       | Strategy                                                            |
-| ------------------------------- | ------------------------------------------------------------------- |
-| Scalar fields (title, status)   | Last-write-wins                                                     |
-| Collections (subtasks)          | Additive merge (never delete remotely)                              |
-| Automatic                       | SwiftData/CloudKit handles most via `CKRecord` merge policies       |
+- The app target has no CloudKit entitlement in the 1.0 release build.
+- SwiftData containers are configured with `cloudKitDatabase: .none`.
+- The active App Group store is `PepinilloLocal.sqlite`.
+- The legacy CloudKit-backed `Pepinillo.sqlite` file is preserved but not opened during launch; future recovery/migration must be asynchronous and timeout-bound after the UI is visible.
+- Apple-to-Apple sync may return only after the non-blocking gates in the roadmap pass.
 
 ### App Group
 
@@ -1171,7 +1164,7 @@ Swift Testing (`@Test` macro) para todos los tests. Compatible con Xcode 16+.
 | ----------------------- | ------------------------------------ |
 | Timer precision         | <= 100ms drift in 25 minutes         |
 | Cold start              | < 1s on iPhone 14+                   |
-| CloudKit sync           | < 10s for 100 tasks (Wi-Fi)          |
+| Local store open        | Must not open legacy CloudKit-backed `Pepinillo.sqlite` during launch |
 
 ---
 
@@ -1299,7 +1292,7 @@ Domain models (`Domain/`), TCA features (`Features/`), services, and clients are
 | ------------------ | -------------------------- |
 | Bundle ID          | `com.pepinillo.app`        |
 | App Group          | `group.com.pepinillo.app`  |
-| CloudKit Container | `iCloud.com.pepinillo.app` |
+| CloudKit Container | Deferred from 1.0 release  |
 
 ### Project Generation
 
@@ -1426,33 +1419,18 @@ Currently, `SignInWithAppleClient` stores `appleUserID` in `UserPreferences` (Cl
 3. The backend becomes the source of truth for user identity
 4. `UserPreferences.appleUserID` is kept as a local cache for quick verification
 
-### 18.3 Dual Sync Strategy
+### 18.3 Backend Sync Strategy
 
-iOS maintains **two sync layers** in parallel during the transition to the backend:
-
-#### Layer 1: SwiftData + CloudKit (Apple Sync)
-
-The existing sync via `NSPersistentCloudKitContainer` **is kept** intact:
-
-- Automatic sync between Apple devices of the same user (iPhone, iPad, Mac, Watch)
-- No manual sync code — CloudKit manages it
-- Low latency between Apple devices (~1-5 seconds)
-- Works without backend (full offline mode)
-
-#### Layer 2: Backend Sync (Cross-Platform Sync)
-
-New sync layer with the Go backend to share data with Android:
+iOS maintains a local SwiftData store and uses the Go backend for authenticated cross-platform sync. CloudKit is not active in the 1.0 release path.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        iOS App                               │
 │                                                              │
-│  SwiftData ◄──► CloudKit       SwiftData ◄──► BackendSync  │
-│  (Apple sync,   (automatic)    (same data)     (REST API    │
-│   unchanged)                                    + WebSocket) │
+│  SwiftData local App Group store ◄──► BackendSync           │
+│  (PepinilloLocal.sqlite)          (REST API + WebSocket)    │
 │                                                              │
-│  Priority: CloudKit for Apple-to-Apple sync                  │
-│            Backend for cross-platform sync                   │
+│  Priority: launch reliability first, sync after UI is live   │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼
@@ -1462,19 +1440,19 @@ New sync layer with the Go backend to share data with Android:
                     └──────────────┘
 ```
 
-#### Migration Strategy for Existing CloudKit Users
+#### Migration Strategy for Existing Legacy Store Users
 
-Users who already have data in CloudKit need a migration to the backend:
+Users who already have data in the legacy `Pepinillo.sqlite` store need a migration to the backend or the new local store after launch:
 
 | Step | Action                     | Detail                                                                     |
 | ---- | -------------------------- | -------------------------------------------------------------------------- |
 | 1    | Login with backend         | The user authenticates (Apple/email) for the first time                    |
-| 2    | Local data detection       | The app detects that data exists in SwiftData/CloudKit                     |
+| 2    | Local data detection       | The app detects that legacy SwiftData data exists without opening it during launch |
 | 3    | Initial upload             | All tasks, sessions, and stats are uploaded to the backend via batch API   |
 | 4    | ID mapping                 | The `serverId` values returned by the backend are saved in local models    |
 | 5    | Active sync                | From this point on, changes are synchronized bidirectionally               |
 
-> **Important:** CloudKit remains the primary layer for Apple-to-Apple sync. The backend is an additional "mirror" for cross-platform. CloudKit is not removed.
+> **Important:** CloudKit is deferred. Any future Apple-to-Apple migration must run after the first UI frame, be cancellable, and have a timeout/fallback path.
 
 #### WebSocket (Real-Time Sync)
 

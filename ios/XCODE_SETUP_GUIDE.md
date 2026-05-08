@@ -148,11 +148,11 @@ Para **CADA target**, ve a **Signing & Capabilities**:
    - Signing: Automatic
    - Click **+ Capability** y agrega:
      - ✅ App Groups → `group.com.pepinillo.app`
-     - ✅ iCloud → marca CloudKit → Container: `iCloud.com.pepinillo.app`
      - ✅ HealthKit
      - ✅ Siri
      - ✅ Push Notifications
      - ✅ Background Modes → marca "Background fetch" y "Remote notifications"
+   - ❌ No agregues iCloud / CloudKit para el release 1.0. CloudKit queda diferido hasta validar sync post-launch no bloqueante.
 
 2. **PepinilloWidgetExtension:**
    - Team: Selecciona tu equipo
@@ -172,17 +172,7 @@ Para **CADA target**, ve a **Signing & Capabilities**:
    - Click **+ Capability**:
      - ✅ App Groups → `group.com.pepinillo.app`
 
-### 6. Crear el iCloud Container
-
-Si al agregar CloudKit Xcode no encuentra el container:
-
-1. Ve a [developer.apple.com/account](https://developer.apple.com/account)
-2. **Certificates, Identifiers & Profiles → Identifiers**
-3. Click **+** → **iCloud Containers**
-4. Nombre: `iCloud.com.pepinillo.app`
-5. Vuelve a Xcode → Signing & Capabilities → iCloud → Refresh → selecciona el container
-
-### 7. Crear el App Group
+### 6. Crear el App Group
 
 Similar al paso anterior, si no existe:
 
@@ -190,7 +180,7 @@ Similar al paso anterior, si no existe:
 2. Click **+** → `group.com.pepinillo.app`
 3. En Xcode, refresh en cada target que lo necesite
 
-### 8. StoreKit Configuration File
+### 7. StoreKit Configuration File
 
 1. **File → New → File → StoreKit Configuration File**
 2. Nombre: `Pepinillo.storekit`
@@ -206,7 +196,7 @@ Similar al paso anterior, si no existe:
 5. Para las subscriptions, crea un **Subscription Group** llamado `Pepinillo Pro`
 6. **Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration** → selecciona `Pepinillo.storekit`
 
-### 9. Localización
+### 8. Localización
 
 1. Click en el **proyecto** (ícono azul arriba del Navigator)
 2. Pestaña **Info**
@@ -214,7 +204,7 @@ Similar al paso anterior, si no existe:
 4. Agrega: **Spanish (es)** y **Portuguese (pt-BR)**
 5. Cuando pregunte qué archivos localizar, selecciona `Localizable.xcstrings`
 
-### 10. Deployment Targets
+### 9. Deployment Targets
 
 Verifica en **Build Settings** de cada target:
 
@@ -226,7 +216,7 @@ Verifica en **Build Settings** de cada target:
 | PepinilloControlCenter | 18.0 | — |
 | PepinilloTests | 17.0 | — |
 
-### 11. Agregar Audio Files para Soundscapes
+### 10. Agregar Audio Files para Soundscapes
 
 Necesitas 8 archivos de audio (los puedes bajar de freesound.org o pixabay.com/music):
 
@@ -245,14 +235,14 @@ Necesitas 8 archivos de audio (los puedes bajar de freesound.org o pixabay.com/m
 2. Arrastra los 8 archivos ahí
 3. Asegúrate de que estén en **Target Membership → Pepinillo** (main app solamente)
 
-### 12. Assets (App Icon)
+### 11. Assets (App Icon)
 
 1. Abre `Shared/Resources/Assets.xcassets`
 2. Click en **AppIcon**
 3. Arrastra tu icono de 1024x1024 al slot principal
 4. Xcode 15+ genera automáticamente todos los tamaños
 
-### 13. Integración Backend Production (iOS)
+### 12. Integración Backend Production (iOS)
 
 Esta sección es el puente para seguir con iOS hasta release real.
 

@@ -31,8 +31,10 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
     private func buildEntry(configuration: ConfigureDashboardWidgetIntent) async -> DashboardWidgetEntry {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date.now)
-        let weekAgo = calendar.date(byAdding: .day, value: -6, to: today)!
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        guard let weekAgo = calendar.date(byAdding: .day, value: -6, to: today),
+              let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else {
+            return .empty
+        }
         
         guard AppGroupDefaults.isProUser else { return .proRequired }
         

@@ -34,6 +34,12 @@ updated: 2026-04-21
 
 El comportamiento de negocio debe coincidir con [[../iOS/Modulo Tasks|iOS Modulo Tasks]], variando solo UI nativa.
 
+## Estado de paridad (2026-04-27)
+
+- CRUD, subtareas, recurrencia y task linking: implementados en phone Android.
+- Reordenado drag-and-drop: implementado en runtime phone.
+- Companion wear: cobertura parcial de Tasks respecto a phone (scope simplificado por contexto de reloj).
+
 ## Nota comercial
 
-En Android, subtareas y recurrencia forman parte de `Everywhere`. El backend sync de Tasks solo vive dentro de esa misma oferta paga.
+En Android, subtareas y recurrencia forman parte de `Everywhere/AI+`. El backend sync de Tasks solo vive dentro de esa misma oferta paga.

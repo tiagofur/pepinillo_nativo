@@ -74,7 +74,6 @@ BEAUTIFULLY INTEGRATED WITH APPLE
 • Apple Watch — Full focus session control on your wrist with complications for quick access.
 • Siri Shortcuts — "Hey Siri, start a Pomodoro" — control your sessions hands-free.
 • Apple Health — Log Mindful Minutes automatically.
-• iCloud Sync — Your data follows you across iPhone, iPad, and Mac.
 • Control Center — Quick-start a session from iOS 18 Control Center.
 
 DESIGNED FOR YOUR BRAIN
@@ -106,7 +105,6 @@ Welcome to Pepinillo! Your new deep work companion is here.
 • 8 ambient soundscapes
 • Live Activities, widgets & Apple Watch support
 • Siri shortcuts and Apple Health integration
-• iCloud sync across all your devices
 • 4 beautiful themes
 ```
 
@@ -163,7 +161,6 @@ INTEGRACIÓN NATIVA CON APPLE
 • Apple Watch — Control completo de sesiones de enfoque desde tu muñeca con complicaciones.
 • Atajos de Siri — "Oye Siri, inicia un Pomodoro" — controla tus sesiones sin manos.
 • Apple Health — Registra Minutos de Atención Plena automáticamente.
-• Sincronización iCloud — Tus datos te siguen en iPhone, iPad y Mac.
 • Centro de Control — Inicia una sesión rápida desde el Centro de Control de iOS 18.
 
 DISEÑADO PARA TU CEREBRO
@@ -195,7 +192,6 @@ pomodoro,enfoque,timer,trabajo profundo,productividad,tareas,tdah,concentración
 • 8 paisajes sonoros ambientales
 • Actividades en Vivo, widgets y soporte para Apple Watch
 • Atajos de Siri e integración con Apple Health
-• Sincronización iCloud en todos tus dispositivos
 • 4 temas hermosos
 ```
 
@@ -213,10 +209,8 @@ pomodoro,enfoque,timer,trabajo profundo,productividad,tareas,tdah,concentración
 
 ### Data Not Collected
 
-If you do NOT use any analytics SDK and only store data locally + iCloud:
+If you do NOT use any analytics SDK and only store data locally:
 Select **"Data Not Collected"** for all other categories.
-
-**Note:** iCloud sync using CloudKit does NOT count as data collection by the developer, since the data stays in the user's personal iCloud account.
 
 ---
 

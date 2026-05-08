@@ -18,7 +18,7 @@ updated: 2026-04-27
 > [!info] Plataforma
 > **Stack**: Kotlin, Jetpack Compose, Hilt, Room, WorkManager
 > **Targets**: Android phone + Wear OS
-> **Estado**: Desarrollo activo con sincronizacion, monetizacion v2 y paridad en curso
+> **Estado**: Desarrollo activo con paridad funcional en curso contra baseline iOS
 
 ---
 
@@ -28,10 +28,12 @@ updated: 2026-04-27
 |------|-----------|
 | Capas y decisiones arquitectonicas | [[Arquitectura General]] |
 | Estado operativo Android/Wear OS | [[Estado Plataforma]] |
+| Roadmap de paridad funcional | [[Roadmap Paridad Funcional con iOS]] |
 | Shell phone + stream More parity | [[Arquitectura General#Shell phone y stream de paridad|Arquitectura General]] |
 | Integracion con backend y sync | [[../Backend/Arquitectura General|Backend Arquitectura]] |
 | Monetizacion y entitlements | [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]] |
 | Contrato de paridad | [[../Cross-Platform/Parity Matrix|Parity Matrix]] |
+| Baseline iOS de referencia | [[../iOS/Estado Plataforma|Estado iOS + watchOS]] |
 
 ## Modulos clave
 

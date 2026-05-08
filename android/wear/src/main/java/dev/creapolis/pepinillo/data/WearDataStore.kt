@@ -3,7 +3,6 @@ package dev.creapolis.pepinillo.data
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.json.JSONArray
 
 object WearDataStore {
     private val _timerState = MutableStateFlow(WearTimerState())
@@ -77,22 +76,37 @@ object WearDataStore {
 
     fun updateTasksFromJson(tasksJson: String) {
         val parsed = runCatching {
-            val arr = JSONArray(tasksJson)
-            (0 until arr.length()).map { i ->
-                val obj = arr.getJSONObject(i)
-                WearTask(
-                    id = obj.getString("id"),
-                    title = obj.getString("title"),
-                    energyEmoji = obj.optString("energyEmoji", ""),
-                    pomodoroProgress = obj.optString("pomodoroProgress", ""),
-                )
-            }
+            parseTasksJson(tasksJson)
         }.getOrElse { e ->
-            android.util.Log.w("WearDataStore", "Failed to parse tasks JSON (len=${tasksJson.length})", e)
+            System.err.println("WearDataStore: failed to parse tasks JSON (len=${tasksJson.length}) - ${e.message}")
             emptyList()
         }
-        android.util.Log.d("WearDataStore", "updateTasksFromJson: parsed ${parsed.size} tasks")
+        println("WearDataStore: parsed ${parsed.size} tasks")
         _tasks.value = parsed
+    }
+
+    private fun parseTasksJson(tasksJson: String): List<WearTask> {
+        val trimmed = tasksJson.trim()
+        if (trimmed.isBlank() || trimmed == "[]") return emptyList()
+
+        // Keep parser JVM-friendly for unit tests (no android/org.json dependencies).
+        val objectRegex = Regex("\\{[^{}]*}")
+        return objectRegex.findAll(trimmed).mapNotNull { match ->
+            val payload = match.value
+            val id = extractJsonString(payload, "id") ?: return@mapNotNull null
+            val title = extractJsonString(payload, "title") ?: return@mapNotNull null
+            WearTask(
+                id = id,
+                title = title,
+                energyEmoji = extractJsonString(payload, "energyEmoji") ?: "",
+                pomodoroProgress = extractJsonString(payload, "pomodoroProgress") ?: "",
+            )
+        }.toList()
+    }
+
+    private fun extractJsonString(input: String, key: String): String? {
+        val pattern = Regex("\"$key\"\\s*:\\s*\"([^\"]*)\"")
+        return pattern.find(input)?.groupValues?.getOrNull(1)
     }
 
     fun updateTasks(newTasks: List<WearTask>) {

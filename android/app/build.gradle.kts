@@ -16,7 +16,7 @@ android {
     defaultConfig {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 29
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 17
         versionName = "2.1.0"
 
@@ -86,6 +86,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
@@ -146,6 +147,8 @@ dependencies {
     // Wear OS (Data Layer)
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
+
+    implementation("com.google.android.material:material:1.12.0")
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

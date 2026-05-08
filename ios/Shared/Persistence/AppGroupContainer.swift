@@ -9,7 +9,8 @@
 // REQUIREMENTS (Xcode project setup):
 //   1. Add App Group capability to all three targets: "group.com.pepinillo.app"
 //   2. The store URL is inside the shared container directory so WidgetKit can read it.
-//   3. CloudKit container ID: "iCloud.com.pepinillo.app"
+//   3. The 1.0 release store is local-only. CloudKit reintroduction must not
+//      reuse the launch-critical SQLite file.
 //
 // The main app MUST use this factory instead of constructing its own ModelContainer,
 // otherwise the widget reads from a different SQLite file.
@@ -21,7 +22,8 @@ import SwiftData
 
 enum AppGroup {
     static let id = "group.com.pepinillo.app"
-    static let storeFileName = "Pepinillo.sqlite"
+    static let legacyCloudKitStoreFileName = "Pepinillo.sqlite"
+    static let storeFileName = "PepinilloLocal.sqlite"
 
     /// Shared container URL (App Group directory).
     static var containerURL: URL {
@@ -40,6 +42,11 @@ enum AppGroup {
     /// Full URL to the shared SQLite store.
     static var storeURL: URL {
         containerURL.appendingPathComponent(storeFileName)
+    }
+
+    /// Previous CloudKit-backed store kept only for future migration/recovery.
+    static var legacyCloudKitStoreURL: URL {
+        containerURL.appendingPathComponent(legacyCloudKitStoreFileName)
     }
 }
 
@@ -236,16 +243,17 @@ enum AppGroupDefaults {
 // MARK: - Shared Container Factory
 
 /// Call this from every target that needs to read/write shared SwiftData.
-/// The CloudKit sync is only activated when running in the main app process
-/// (widgets receive `.none` to avoid double-sync writes).
-@MainActor
-func makeSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelContainer {
+/// Keep this container local-only for the 1.0 release. Devices that previously
+/// opened `Pepinillo.sqlite` with CloudKit can hang while SwiftData validates or
+/// migrates that store before the first SwiftUI frame, so the launch path uses a
+/// fresh local store file and leaves the legacy file untouched for later recovery.
+func makeSharedModelContainer() throws -> ModelContainer {
     let schema = Schema(versionedSchema: SchemaV3.self)
 
     let config = ModelConfiguration(
         schema: schema,
         url: AppGroup.storeURL,
-        cloudKitDatabase: enableCloudKit ? .automatic : .none
+        cloudKitDatabase: .none
     )
 
     return try ModelContainer(

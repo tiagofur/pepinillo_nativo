@@ -104,6 +104,8 @@ struct FocusWidgetProviderTests {
         let url = AppGroup.storeURL
         #expect(url.isFileURL)
         #expect(url.lastPathComponent == AppGroup.storeFileName)
+        #expect(url.lastPathComponent == "PepinilloLocal.sqlite")
+        #expect(url.lastPathComponent != AppGroup.legacyCloudKitStoreFileName)
     }
 }
 

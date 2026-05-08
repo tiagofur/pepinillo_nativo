@@ -22,7 +22,7 @@
 # Required one-time steps after generation:
 #   1. Open in Xcode → confirm SPM resolves TCA + RevenueCat + Snapshot
 #   2. Set your Team in Config/Shared.xcconfig (DEVELOPMENT_TEAM)
-#   3. Create iCloud container "iCloud.com.pepinillo.app" in your dev portal
+#   3. Keep iCloud / CloudKit disabled for the 1.0 release build.
 #   4. StoreKit config is auto-attached to the Dev scheme for sandbox testing
 
 name: Pepinillo
@@ -134,12 +134,6 @@ targets:
         NSHealthShareUsageDescription: >
           Pepinillo reads your Mindful Minutes from Apple Health to show your
           focus history and keep your analytics accurate across devices.
-        NSRemindersUsageDescription: >
-          Pepinillo can import tasks from Reminders so you can start focusing
-          on them right away.
-        NSRemindersFullAccessUsageDescription: >
-          Pepinillo imports and updates your Reminders so you can turn them
-          into focus sessions.
         NSCalendarsUsageDescription: >
           Pepinillo reads your Calendar events so you can plan focus sessions
           around your existing schedule.
@@ -162,9 +156,6 @@ targets:
         aps-environment: "$(APS_ENVIRONMENT)"
         com.apple.developer.applesignin:
           - Default
-        com.apple.developer.icloud-services: [CloudKit]
-        com.apple.developer.icloud-container-identifiers:
-          - iCloud.com.pepinillo.app
         com.apple.security.application-groups:
           - group.com.pepinillo.app
         com.apple.developer.healthkit: true

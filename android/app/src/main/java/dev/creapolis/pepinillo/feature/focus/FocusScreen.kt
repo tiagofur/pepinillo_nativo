@@ -80,6 +80,7 @@ import dev.creapolis.pepinillo.ui.theme.colorScheme
 fun FocusScreen(
     modifier: Modifier = Modifier,
     viewModel: FocusViewModel = hiltViewModel(),
+    isPipMode: Boolean = false,
     onMoreClick: () -> Unit = {},
     onNavigateToPaywall: () -> Unit = {},
 ) {
@@ -136,38 +137,42 @@ fun FocusScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── 1. GREETING + MORE ──
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-        ) {
-            Column {
-                Text(
-                    text = uiState.greeting,
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = uiState.currentDate,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        if (!isPipMode) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column {
+                    Text(
+                        text = uiState.greeting,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = uiState.currentDate,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                // More shortcut
+                Icon(
+                    imageVector = Icons.Rounded.MoreHoriz,
+                    contentDescription = "More",
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onMoreClick),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            // More shortcut
-            Icon(
-                imageVector = Icons.Rounded.MoreHoriz,
-                contentDescription = "More",
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .clickable(onClick = onMoreClick),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        if (!isPipMode) {
+            Spacer(modifier = Modifier.height(32.dp))
+        }
 
         // ── 2. TIMER (no card, floats on background) ──
         Column(

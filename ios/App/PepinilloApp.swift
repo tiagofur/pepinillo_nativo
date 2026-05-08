@@ -13,13 +13,115 @@ import UserNotifications
 import ActivityKit
 import ComposableArchitecture
 
+private enum AppBootstrapError: Error {
+    case containerTimeout
+}
+
+@MainActor
+private final class AppBootstrap: ObservableObject {
+    enum Phase: Equatable {
+        case loading
+        case ready
+        case failed
+    }
+
+    @Published var phase: Phase = .loading
+    @Published var modelContainer: ModelContainer?
+    @Published var store: StoreOf<AppFeature>?
+
+    init() {
+        Task {
+            await bootstrap()
+        }
+    }
+
+    private func bootstrap() async {
+        phase = .loading
+        modelContainer = nil
+        store = nil
+
+        let container = await loadContainerSafely()
+        guard let container else {
+            phase = .failed
+            return
+        }
+
+        modelContainer = container
+
+        #if DEBUG
+        DemoDataSeeder.seedIfNeeded(container: container)
+        #endif
+
+        store = Store(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient = PersistenceClient.live(container: container)
+            if #available(iOS 16.2, *) {
+                $0.liveActivityClient = LiveActivityManager.makeClient()
+            }
+        }
+        phase = .ready
+    }
+
+    func retry() {
+        Task {
+            await bootstrap()
+        }
+    }
+
+    private func loadContainerSafely() async -> ModelContainer? {
+        do {
+            return try await Self.makeSharedContainerWithTimeout(seconds: 8)
+        } catch {
+            do {
+                return try Self.makeEmergencyInMemoryContainer()
+            } catch {
+                return nil
+            }
+        }
+    }
+
+    private static func makeSharedContainerWithTimeout(seconds: TimeInterval) async throws -> ModelContainer {
+        try await withThrowingTaskGroup(of: ModelContainer.self) { group in
+            group.addTask {
+                try await Task.detached(priority: .userInitiated) {
+                    try makeSharedModelContainer()
+                }.value
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(seconds))
+                throw AppBootstrapError.containerTimeout
+            }
+
+            guard let first = try await group.next() else {
+                throw AppBootstrapError.containerTimeout
+            }
+            group.cancelAll()
+            return first
+        }
+    }
+
+    private static func makeEmergencyInMemoryContainer() throws -> ModelContainer {
+        let schema = Schema(versionedSchema: SchemaV3.self)
+        let config = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none
+        )
+
+        return try ModelContainer(
+            for: schema,
+            migrationPlan: PepinilloMigrationPlan.self,
+            configurations: [config]
+        )
+    }
+}
+
 @main
 struct PepinilloApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
-
-    let modelContainer: ModelContainer?
-    let store: StoreOf<AppFeature>?
+    @StateObject private var bootstrap = AppBootstrap()
 
     @MainActor
     init() {
@@ -31,39 +133,13 @@ struct PepinilloApp: App {
         NotificationDelegate.shared.install()
         NotificationClient.registerCategories()
 
-        do {
-            // Use the shared App Group container so widgets read the same data.
-            // Requires "group.com.pepinillo.app" App Group entitlement on all targets.
-            #if targetEnvironment(simulator)
-            let container = try makeSharedModelContainer(enableCloudKit: false)
-            #else
-            let container = try makeSharedModelContainer(enableCloudKit: true)
-            #endif
-            modelContainer = container
-
-            #if DEBUG
-            DemoDataSeeder.seedIfNeeded(container: container)
-            #endif
-
-            store = Store(initialState: AppFeature.State()) {
-                AppFeature()
-            } withDependencies: {
-                $0.persistenceClient = PersistenceClient.live(container: container)
-                if #available(iOS 16.2, *) {
-                    $0.liveActivityClient = LiveActivityManager.makeClient()
-                }
-                // notificationClient, subscriptionClient, soundscapeClient, signInWithAppleClient
-                // use their liveValue automatically via @DependencyKey
-            }
-        } catch {
-            modelContainer = nil
-            store = nil
-        }
+        // Startup heavy work (SwiftData store open + migration) is performed asynchronously
+        // by AppBootstrap so first SwiftUI frame renders immediately on physical devices.
     }
 
     var body: some Scene {
         WindowGroup {
-            if let store = store, let container = modelContainer {
+            if let store = bootstrap.store, let container = bootstrap.modelContainer {
                 AppView(store: store)
                     .modelContainer(container)
                     .onChange(of: scenePhase) { _, newPhase in
@@ -89,18 +165,35 @@ struct PepinilloApp: App {
                         store.send(.dayChanged)
                     }
             } else {
-                VStack(spacing: 20) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(.red)
-                    Text("Initialization Failed")
-                        .font(.title)
-                        .bold()
-                    Text("Pepinillo could not load your local data. Please check your available storage space or restart the app.")
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+                VStack(spacing: 16) {
+                    Image("LaunchLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 96, height: 96)
+                    if bootstrap.phase == .failed {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.orange)
+                        Text("Could not initialize local data")
+                            .font(.headline)
+                        Text("Please retry. If this persists, reinstall the app to reset the local database.")
+                            .font(.subheadline)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 28)
+                        Button("Retry") {
+                            bootstrap.retry()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    } else {
+                        ProgressView()
+                        Text("Starting Pepinillo...")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                .padding()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color("LaunchBackground").ignoresSafeArea())
             }
         }
         .defaultSize(width: 1_100, height: 720)
@@ -108,7 +201,7 @@ struct PepinilloApp: App {
         .windowResizability(.contentMinSize)
         #endif
         .commands {
-            if let store = store {
+            if let store = bootstrap.store {
                 PepinilloCommands(store: store)
             } else {
                 EmptyCommands()

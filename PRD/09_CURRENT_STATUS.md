@@ -100,7 +100,7 @@
 - **Apple Focus Modes:** `FocusFilterIntent` to auto-activate/deactivate DND
 - **Apple Reminders import:** one-way import via EventKit
 - **Sign in with Apple:** native authentication
-- **CloudKit sync:** transparent sync via iCloud
+- **CloudKit sync:** deferred from 1.0; launch is local-first and uses `PepinilloLocal.sqlite` so devices with a legacy CloudKit-backed `Pepinillo.sqlite` do not block startup
 
 ### Design ✅
 

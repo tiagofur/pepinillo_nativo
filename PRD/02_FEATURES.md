@@ -812,7 +812,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | Siri Shortcuts + App Intents           | ✅  | ➖      | ➖      | ➖      | FREE |
 | Google Assistant App Actions           | ➖  | ⬜      | ➖      | ➖      | FREE |
 | **Synchronization**                    |     |         |         |         |      |
-| CloudKit sync (Apple-to-Apple)         | ✅  | ➖      | ✅      | ➖      | APPLE / EVERYWHERE  |
+| CloudKit sync (Apple-to-Apple)         | 📋  | ➖      | 📋      | ➖      | 1.1 candidate after non-blocking sync validation |
 | Backend REST API sync                  | ✅  | ✅      | ➖      | 🔄      | EVERYWHERE  |
 | **Themes and Design**                  |     |         |         |         |      |
 | Classic theme                          | ✅  | ✅      | ✅      | ✅      | FREE |

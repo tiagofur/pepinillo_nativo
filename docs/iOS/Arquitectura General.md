@@ -9,7 +9,7 @@ platform: ios
 type: architecture
 status: active
 date: 2026-04-17
-updated: 2026-04-21
+updated: 2026-04-27
 ---
 
 # iOS - Arquitectura General
@@ -23,7 +23,7 @@ updated: 2026-04-21
 |---|---|
 | UI | SwiftUI |
 | Estado | TCA 1.17+ |
-| Persistencia local | SwiftData + CloudKit |
+| Persistencia local | SwiftData local en App Group (`PepinilloLocal.sqlite`) |
 | Networking | URLSession + API client |
 | Billing | RevenueCat SDK v5+ |
 | Tiempo activo | ActivityKit / Live Activity |
@@ -41,14 +41,14 @@ updated: 2026-04-21
 | Intents | `com.pepinillo.app.intents` |
 
 **App Group:** `group.com.pepinillo.app`  
-**CloudKit container:** `iCloud.com.pepinillo.app`
+**CloudKit:** diferido para 1.1; no participa del launch path de 1.0
 
 ## Monetizacion y sync
 
 | Capability | Regla |
 |---|---|
 | Premium local Apple | `Pepinillo+` o `Everywhere/AI+` habilitan features premium locales |
-| iCloud / CloudKit | solo con `Pepinillo+` o `Everywhere/AI+` |
+| iCloud / CloudKit | diferido hasta validar sync no bloqueante post-launch |
 | Backend sync | solo con `Everywhere/AI+` |
 | watchOS | hereda estado desde iPhone companion |
 | Runtime actual | todavia usa un unico flag `pro`, pendiente capability split |
@@ -78,7 +78,7 @@ updated: 2026-04-21
 - `More` y `Profile` leen estado de auth/profile desde el root app state, no desde flows aislados.
 - Sign in with Apple solo puede aportar nombre y email cuando Apple decide compartirlos; no existe scope para fecha de nacimiento o foto.
 - El runtime actual mergea identidad restaurada de Apple con el perfil cacheado para no perder nombre/email por datos locales incompletos.
-- Edit Profile ya permite completar manualmente `name`, `email`, `birthDate` y `photo` en un flujo local-first compatible con la fase iCloud-only.
+- Edit Profile ya permite completar manualmente `name`, `email`, `birthDate` y `photo` en un flujo local-first compatible con la fase local-only de 1.0.
 - El perfil visible desde `More` debe ser honesto sobre estas limitaciones y seguir siendo util sin requerir backend.
 
 ## Principios

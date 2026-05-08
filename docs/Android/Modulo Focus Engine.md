@@ -41,4 +41,9 @@ updated: 2026-04-21
 
 ## Nota comercial
 
-En Android, Flowtime y TimeBlock forman parte de `Everywhere/AI+`. `Pepinillo+` no aplica fuera del ecosistema Apple.
+En Android, Flowtime y TimeBlock se habilitan por capability paga. Comercialmente Android prioriza `Everywhere/AI+`; `Pepinillo+` no es oferta Android.
+
+## Baseline de paridad
+
+- El comportamiento canonico del Focus Engine se toma de [[../iOS/Modulo Focus Engine|iOS Modulo Focus Engine]].
+- La validacion de paridad se hace por reglas de negocio (modos, pausas, journaling, task linking), no por layout.

@@ -268,7 +268,7 @@ struct FocusView: View {
                 .foregroundStyle(.secondary)
                 .padding(.top, 16)
                 .id(store.phaseLabel)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
 
             // Linked task (only in single-column / iPhone layout — companion pane handles it on iPad)
             if sizeClass != .regular {
@@ -381,14 +381,14 @@ struct FocusView: View {
                 // Mode icon — emoji glyphs use scaleEffect-based breath while running.
                 // .id(store.phase) triggers an id-based swap transition on phase changes.
                 Text(store.modeIcon)
-                    .font(.system(size: 40))
+                    .font(.system(.largeTitle, design: .default))
                     .scaleEffect(breatheScale)
                     .conditionalAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breatheScale)
                     .onChange(of: store.isRunning) { _, running in
                         breatheScale = running ? 1.06 : 1.0
                     }
                     .id(store.phase)
-                    .transition(.asymmetric(
+                    .transition(reduceMotion ? .opacity : .asymmetric(
                         insertion: .scale(scale: 0.7).combined(with: .opacity),
                         removal: .scale(scale: 1.3).combined(with: .opacity)
                     ))
@@ -486,7 +486,7 @@ struct FocusView: View {
                 // − duration (TimeBlock only)
                 if store.selectedMode == .timeBlock {
                     durationStepButton(systemName: "minus", delta: -5)
-                        .transition(.scale.combined(with: .opacity))
+                        .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
                 }
 
                 // Start button — capped at 280pt so it stays modest on iPad
@@ -514,7 +514,7 @@ struct FocusView: View {
                 // + duration (TimeBlock only)
                 if store.selectedMode == .timeBlock {
                     durationStepButton(systemName: "plus", delta: 5)
-                        .transition(.scale.combined(with: .opacity))
+                        .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
                 }
             }
         }

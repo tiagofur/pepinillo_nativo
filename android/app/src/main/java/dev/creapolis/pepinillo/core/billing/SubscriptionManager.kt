@@ -26,7 +26,14 @@ import kotlin.coroutines.resume
 
 private const val TAG = "SubscriptionManager"
 private const val REVENUECAT_API_KEY = BuildConfig.REVENUECAT_API_KEY
-private const val ENTITLEMENT_ID = "premium"
+
+private val SUPPORTED_ENTITLEMENT_IDS = listOf(
+    "everywhere_plus",
+    "pepinillo_plus",
+    // Legacy fallbacks while RevenueCat migration rolls out.
+    "premium",
+    "pro",
+)
 
 data class ProductInfo(
     val productId: String,
@@ -150,25 +157,21 @@ class SubscriptionManager @Inject constructor(
                         if (cont.isActive) cont.resume(Unit)
                     },
                     onSuccess = { customerInfo ->
-                        val entitlement = customerInfo.entitlements[ENTITLEMENT_ID]
-                        if (entitlement?.isActive == true) {
-                            // Find which product is active
-                            val activeProductId = customerInfo.activeSubscriptions.firstOrNull { productId ->
-                                productId in PepinilloProducts.ALL_IDS
-                            } ?: customerInfo.nonSubscriptionTransactions.map { it.productIdentifier }.firstOrNull { productId ->
-                                productId in PepinilloProducts.ALL_IDS
-                            }
-                            if (activeProductId != null) {
-                                val tier = PepinilloProducts.tierForProduct(activeProductId)
-                                _subscriptionState.value = SubscriptionState(
-                                    tier = tier,
-                                    activeProductId = activeProductId,
-                                )
-                                Log.d(TAG, "Subscription active: $tier ($activeProductId)")
-                            }
+                        val activeEntitlementId = resolveActiveEntitlementId(customerInfo)
+                        if (activeEntitlementId != null) {
+                            val activeProductId = resolveActiveProductId(customerInfo)
+                            val tier = resolveTier(activeEntitlementId, activeProductId)
+                            _subscriptionState.value = SubscriptionState(
+                                tier = tier,
+                                activeProductId = activeProductId,
+                            )
+                            Log.d(
+                                TAG,
+                                "Subscription active: entitlement=$activeEntitlementId tier=$tier product=${activeProductId ?: "n/a"}",
+                            )
                         } else {
                             _subscriptionState.value = SubscriptionState()
-                            Log.d(TAG, "No active premium entitlement")
+                            Log.d(TAG, "No active supported entitlement")
                         }
 
                         if (cont.isActive) cont.resume(Unit)
@@ -213,5 +216,33 @@ class SubscriptionManager @Inject constructor(
             tier = subscriptionTier,
             expirationDate = expiresAt,
         )
+    }
+
+    private fun resolveActiveEntitlementId(customerInfo: com.revenuecat.purchases.CustomerInfo): String? {
+        return SUPPORTED_ENTITLEMENT_IDS.firstOrNull { entitlementId ->
+            customerInfo.entitlements[entitlementId]?.isActive == true
+        }
+    }
+
+    private fun resolveActiveProductId(customerInfo: com.revenuecat.purchases.CustomerInfo): String? {
+        return customerInfo.activeSubscriptions.firstOrNull { productId ->
+            productId in PepinilloProducts.ALL_IDS
+        } ?: customerInfo.nonSubscriptionTransactions
+            .map { it.productIdentifier }
+            .firstOrNull { productId -> productId in PepinilloProducts.ALL_IDS }
+    }
+
+    private fun resolveTier(activeEntitlementId: String, activeProductId: String?): SubscriptionTier {
+        if (activeProductId != null) {
+            val mappedTier = PepinilloProducts.tierForProduct(activeProductId)
+            if (mappedTier != SubscriptionTier.FREE) return mappedTier
+        }
+
+        return when (activeEntitlementId) {
+            "everywhere_plus" -> SubscriptionTier.EVERYWHERE_MONTHLY
+            "pepinillo_plus" -> SubscriptionTier.PEPINILLO_PLUS
+            "premium", "pro" -> SubscriptionTier.PEPINILLO_PLUS
+            else -> SubscriptionTier.FREE
+        }
     }
 }

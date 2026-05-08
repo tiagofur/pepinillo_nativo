@@ -15,10 +15,10 @@ This guide ensures you have everything ready for a successful submission to Appl
 2. Register the Bundle ID: `com.pepinillo.app`.
 3. Enable Capabilities:
    - **HealthKit**
-   - **iCloud** (Select CloudKit and create a container named `iCloud.com.pepinillo.app`).
    - **Push Notifications**
    - **Siri**
    - **App Groups** (Create `group.com.pepinillo.app` and link it).
+  - Do **not** enable iCloud / CloudKit for the 1.0 release build. CloudKit sync is deferred until the non-blocking 1.1 sync architecture is validated.
 
 ---
 
@@ -47,7 +47,7 @@ When Apple asks about data collection, use these answers:
   - Linked to Identity: `No`
   - Used for Tracking: `No`
   - Purpose: `App Functionality`
-- **Other Data**: Select **"Data Not Collected"** (iCloud sync doesn't count as collection by you).
+- **Other Data**: Select **"Data Not Collected"**.
 
 ---
 
@@ -69,4 +69,4 @@ When Apple asks about data collection, use these answers:
 > 
 > To test Pro features: The app uses StoreKit 2. In the sandbox/TestFlight environment, you can subscribe to any plan to test Pro features (Flowtime mode, Time Block mode, premium soundscapes, and advanced analytics).
 > 
-> Integration: Writes Mindful Minutes to Apple Health, imports tasks from Reminders, syncs via iCloud.
+> Integration: Writes Mindful Minutes to Apple Health and imports tasks from Reminders. Data is local-first in this 1.0 build.

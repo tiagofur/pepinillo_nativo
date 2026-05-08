@@ -94,6 +94,18 @@
 
 **Milestone:** Complete ecosystem. Every Apple surface understands the 4 modes.
 
+### CloudKit Reintroduction Gate for 1.1
+
+CloudKit is deferred from the 1.0 release after real-device launch testing showed startup could freeze before the first SwiftUI screen. It may return only after all of these gates pass:
+
+- App launch remains local-first: no CloudKit entitlement, container validation, migration, or network-dependent sync work may block `App.init()` or the first render of `AppView`.
+- CloudKit setup runs after the UI is visible and is cancellable, timeout-bound, and recoverable.
+- Devices without iCloud, with disabled iCloud Drive, with poor connectivity, or with pending Apple ID actions must still reach the main UI.
+- Real-device clean-install tests must pass on iPhone and iPad with: iCloud signed in, iCloud signed out, airplane mode, first launch after uninstall, and update over a previous build.
+- Xcode Instruments / device console must show no main-thread launch stall and no watchdog termination (`0x8badf00d`).
+- User-facing sync state must expose degraded/offline status instead of freezing or showing a blocking launch error.
+- Cross-device task sync must pass iPhone -> iPad/Mac and iPad/Mac -> iPhone scenarios before App Store metadata can mention iCloud sync again.
+
 ### Phase 3: Polish & Premium (Weeks 21-27, ~196h)
 
 **Objective:** Subscription-grade quality. The features that make users pay.

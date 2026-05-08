@@ -1,0 +1,40 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Android (Kotlin, Compose, Hilt, Room, Ktor), iOS (Swift, TCA), Backend (Go/Node).
+  Architecture: Native mobile apps with shared API. Android uses Clean Architecture + Hilt.
+  Testing: Android (JUnit, Espresso, MockK), iOS (XCTest), Backend (Jest).
+  Style: Conventional Commits, Kotlin style (Ktlint).
+
+strict_tdd: true
+
+rules:
+  proposal:
+    - Identify affected modules (app, wear)
+    - Check Google Play Console compliance requirements
+  specs:
+    - Use Given/When/Then format
+  design:
+    - Document UI changes for Edge-to-Edge
+    - Define PiP lifecycle handling
+  tasks:
+    - Batch by dependency updates, UI fixes, and new features
+  apply:
+    - Use version catalogs (libs.versions.toml)
+  verify:
+    - Validate Edge-to-Edge on multiple API levels
+    - Manual verification for PiP
+
+testing:
+  strict_tdd: true
+  detected: 2026-05-08
+  runner:
+    command: "./gradlew test"
+    framework: "JUnit"
+  layers:
+    unit: true
+    integration: true
+    e2e: true
+  coverage:
+    available: true
+    command: "./gradlew koverHtmlReport"

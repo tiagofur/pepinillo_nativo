@@ -43,4 +43,13 @@ updated: 2026-04-21
 - Las acciones pause/resume/stop son confiables.
 - Android/Wear mantienen coherencia de estado y entitlement.
 
+## Baseline de paridad
+
+- Referencia funcional cruzada: [[../iOS/Widgets & Live Activity|iOS Widgets & Live Activity]].
+- La paridad se mide por capacidad equivalente (estado visible, acciones rapidas, contexto de tarea), no por implementacion visual.
+
+## Roadmap asociado
+
+- Cierre de propagacion de entitlement y hardening companion: [[Roadmap Paridad Funcional con iOS]].
+
 Ver tambien: [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]

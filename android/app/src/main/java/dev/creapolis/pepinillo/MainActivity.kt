@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
+import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
@@ -32,6 +33,8 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -60,7 +63,11 @@ import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.AIReportScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
+import dev.creapolis.pepinillo.feature.focus.FocusViewModel
 import dev.creapolis.pepinillo.feature.more.MoreScreen
+import dev.creapolis.pepinillo.feature.more.HelpSupportScreen
+import dev.creapolis.pepinillo.feature.more.AboutScreen
+import dev.creapolis.pepinillo.feature.more.ExportScreen
 import dev.creapolis.pepinillo.feature.paywall.PaywallScreen
 import dev.creapolis.pepinillo.feature.profile.ProfileScreen
 import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
@@ -75,10 +82,17 @@ import dev.creapolis.pepinillo.ui.theme.ThemeMode
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dagger.hilt.android.AndroidEntryPoint
 
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 private const val SYNC_DEBOUNCE_MS = 30_000L
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private var isPipMode by mutableStateOf(false)
+
+    private val focusViewModel: FocusViewModel by viewModels()
 
     @Inject lateinit var syncEngine: SyncEngine
     @Inject lateinit var authStore: AuthStore
@@ -135,14 +149,36 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.Dark -> true
             }
 
-            PepinilloTheme(
-                darkTheme = darkTheme,
-                dynamicColor = dynamicColor,
-                selectedThemeId = selectedTheme,
-                isPro = subscriptionState.hasLocalPremium,
-            ) {
-                PepinilloApp(prefsRepository = prefsRepository)
-            }
+                PepinilloTheme(
+                    darkTheme = darkTheme,
+                    dynamicColor = dynamicColor,
+                    selectedThemeId = selectedTheme,
+                    isPro = subscriptionState.hasLocalPremium,
+                ) {
+                    PepinilloApp(
+                        prefsRepository = prefsRepository,
+                        isPipMode = isPipMode
+                    )
+                }
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: android.content.res.Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        isPipMode = isInPictureInPictureMode
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        // Enter PiP if a focus session is active
+        val uiState = focusViewModel.uiState.value
+        if (uiState.isRunning) {
+            enterPictureInPictureMode(
+                android.app.PictureInPictureParams.Builder().build()
+            )
         }
     }
 
@@ -165,18 +201,21 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
+fun PepinilloApp(
+    prefsRepository: UserPreferencesRepository,
+    isPipMode: Boolean = false
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Hide bottom bar on non-top-level screens (like Profile, Auth)
+    // Hide bottom bar on non-top-level screens (like Profile, Auth) or when in PiP
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
-    val authRoutes = setOf("login", "register")
-    val showBottomBar = currentRoute in topLevelRoutes
+    val showBottomBar = currentRoute in topLevelRoutes && !isPipMode
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        contentWindowInsets = WindowInsets.systemBars,
         bottomBar = {
             AnimatedVisibility(
                 visible = showBottomBar,
@@ -225,6 +264,7 @@ fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
         ) {
             composable(TopLevelDestination.Focus.route) {
                 FocusScreen(
+                    isPipMode = isPipMode,
                     onMoreClick = {
                         navController.navigate(TopLevelDestination.More.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
@@ -312,9 +352,19 @@ fun PepinilloApp(prefsRepository: UserPreferencesRepository) {
                     onSubscriptionClick = { navController.navigate("paywall") },
                     onSettingsClick = { navController.navigate("settings") },
                     onAppSetupClick = { navController.navigate("app_setup") },
-                    onHelpClick = { navController.navigate("settings") },
-                    onAboutClick = { navController.navigate("settings") },
+                    onExportClick = { navController.navigate("export") },
+                    onHelpClick = { navController.navigate("help") },
+                    onAboutClick = { navController.navigate("about") },
                 )
+            }
+            composable("help") {
+                HelpSupportScreen(onBack = { navController.popBackStack() })
+            }
+            composable("about") {
+                AboutScreen(onBack = { navController.popBackStack() })
+            }
+            composable("export") {
+                ExportScreen(onBack = { navController.popBackStack() })
             }
             composable("settings") {
                 SettingsScreen(

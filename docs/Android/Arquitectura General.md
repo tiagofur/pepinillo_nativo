@@ -38,18 +38,21 @@ updated: 2026-04-21
 
 | Capability / oferta | Regla |
 |---|---|
-| Oferta paga Android | `Everywhere/AI+ Monthly` o `Everywhere/AI+ Annual` durante el rollout Apple-first |
-| Premium local Android | viene incluido dentro de `Everywhere/AI+` |
+| Oferta paga Android (go-to-market actual) | `Everywhere/AI+ Monthly` o `Everywhere/AI+ Annual` durante el rollout Apple-first |
+| Premium local Android (runtime) | habilitado para usuarios pagos reconocidos por capabilities/entitlements |
 | Backend sync | solo con `Everywhere/AI+` |
 | Wear OS | hereda estado desde Android companion |
-| Pepinillo+ | no aplica a Android / Wear OS |
-| Runtime actual | todavia usa un flag `premium` legacy, pendiente capability split |
+| Pepinillo+ (comercial) | no se comercializa en Android / Wear OS |
+| Runtime actual | conviven paths legacy (`premium`/`pro`) y canonicos (`pepinillo_plus`/`everywhere_plus`) en proceso de convergencia |
+
+- Baseline de paridad funcional: iOS/watchOS define comportamiento de negocio; Android/Wear igualan capacidades, no UI.
+- Referencia canonica: [[../iOS/Estado Plataforma|Estado iOS + watchOS]].
 
 ## Shell phone y stream de paridad
 
 | Surface | Estado de la fase 2026-04-21 |
 |---|---|
-| Bottom nav phone | migrando a `Focus` · `Plan` · `Dashboard` · `More` para igualar el baseline iPhone |
+| Bottom nav phone | `Focus` · `Plan` · `Dashboard` · `More` implementado; pendiente cierre de ownership y validacion final en device |
 | Focus | sigue siendo el hub de sesion; account shortcuts deben apuntar a `More`, no a `Profile` como owner principal |
 | Plan | reutiliza el engine de tareas existente, pero adopta naming y rol equivalentes a iOS |
 | Dashboard | mantiene analytics, calendar, reviews y AI report como flows secundarios |
@@ -64,6 +67,7 @@ updated: 2026-04-21
 
 - No se busca bottom nav parity en reloj; el impacto de esta fase en Wear OS es de ownership companion, gating y documentacion.
 - Todo cambio de account/profile/billing en phone Android debe revisar si necesita propagacion explicita al companion Wear.
+- El companion debe reflejar entitlement/capabilities de phone en vistas, tiles y complications para mantener paridad funcional.
 
 ## Principios
 
@@ -78,3 +82,7 @@ updated: 2026-04-21
 - Enforcement de `Everywhere` en app y server, con backend como autoridad final para sync e IA.
 
 Ver tambien: [[../Backend/Arquitectura General|Backend Arquitectura]] · [[../Cross-Platform/Monetizacion y Entitlements|Monetizacion y Entitlements]]
+
+## Hoja de ruta de paridad
+
+- Plan detallado por fases: [[Roadmap Paridad Funcional con iOS]].
