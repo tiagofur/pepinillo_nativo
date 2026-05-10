@@ -203,6 +203,7 @@ fun FocusScreen(
                     trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                     strokeWidth = 10.dp,
                     modifier = Modifier.size(260.dp),
+                    isRunning = uiState.isRunning,
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(

@@ -103,6 +103,11 @@ class FocusViewModel @Inject constructor(
                     ?: FocusMode.Pomodoro
                 focusEngine.selectMode(defaultMode)
             }
+            
+            // Push initial state to Wear OS
+            val currentState = focusEngine.state.value
+            val linkedTaskName = currentState.linkedTaskId?.let { taskRepository.getTaskById(it)?.title }
+            WearDataLayerHelper.pushTimer(context, currentState, linkedTaskName)
         }
 
         // Watch engine state to manage foreground service lifecycle

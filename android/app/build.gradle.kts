@@ -146,6 +146,8 @@ dependencies {
     // RevenueCat (Billing)
     implementation(libs.revenuecat.purchases)
 
+    // ML Kit GenAI (On-device AI)
+    implementation(libs.mlkit.genai.prompt)
 
     // Google Sign-In (Credential Manager)
     implementation("androidx.credentials:credentials:1.3.0")
