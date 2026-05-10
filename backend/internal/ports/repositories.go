@@ -31,6 +31,10 @@ type UserRepository interface {
 	UnlinkGoogleAccount(ctx context.Context, userID string) error
 	LinkAppleAccount(ctx context.Context, userID, appleID, email, name string) error
 	UnlinkAppleAccount(ctx context.Context, userID string) error
+
+	// AI Credits
+	ConsumeAiCredit(ctx context.Context, userID string) (bool, error)
+	RefreshAiCredits(ctx context.Context, userID string, amount int) error
 }
 
 type TaskRepository interface {

@@ -201,18 +201,17 @@ func (s *RevenueCatService) handleCancellationEvent(ctx context.Context, userID 
 	}
 
 	// For EXPIRATION, downgrade immediately
-	// For CANCELLATION, we can set an expiry date if provided
+	// For CANCELLATION, we keep the current tier but ensure the expiry date is set.
+	// RevenueCat sends EXPIRATION when the period actually ends.
 	if event.Type == "EXPIRATION" {
 		user.SubscriptionTier = "free"
 		user.SubscriptionExpiresAt = nil
 	} else if event.Type == "CANCELLATION" {
-		// Keep the tier but mark it as expired at the expiration time
-		user.SubscriptionTier = "free"
+		// Do not downgrade tier immediately; let the expiration event handle it
+		// or let the expiration date gate it in the auth middleware.
 		if event.ExpirationAtMs > 0 {
 			expiresAt := time.UnixMilli(event.ExpirationAtMs).UTC()
 			user.SubscriptionExpiresAt = &expiresAt
-		} else {
-			user.SubscriptionExpiresAt = nil
 		}
 	}
 

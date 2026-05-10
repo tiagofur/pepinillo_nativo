@@ -40,10 +40,18 @@ class DashboardViewModel @Inject constructor(
     private val featureGate: FeatureGate,
 ) : ViewModel() {
 
-    val isPro: StateFlow<Boolean> = featureGate.subscriptionState.let { flow ->
+    val hasLocalPremium: StateFlow<Boolean> = featureGate.subscriptionState.let { flow ->
         kotlinx.coroutines.flow.MutableStateFlow(flow.value.hasLocalPremium).also { mutable ->
             viewModelScope.launch {
                 flow.collect { mutable.value = it.hasLocalPremium }
+            }
+        }
+    }
+
+    val canUseAI: StateFlow<Boolean> = featureGate.subscriptionState.let { flow ->
+        kotlinx.coroutines.flow.MutableStateFlow(flow.value.canSync).also { mutable ->
+            viewModelScope.launch {
+                flow.collect { mutable.value = it.canSync }
             }
         }
     }
@@ -87,7 +95,8 @@ class DashboardViewModel @Inject constructor(
 
     fun setPeriod(period: AnalyticsPeriod) {
         // Free users can only see Week
-        if (!featureGate.canAccessFullAnalytics() && period != AnalyticsPeriod.Week) {
+        // Only users with local premium can access Month/Year analytics
+        if (!featureGate.isPro && period != AnalyticsPeriod.Week) {
             return
         }
         _selectedPeriod.value = period
@@ -396,7 +405,7 @@ class DashboardViewModel @Inject constructor(
             weekTotals[weekOfMonth] = (weekTotals[weekOfMonth] ?: 0L) + session.durationMillis
         }
         val bestWeekEntry = weekTotals.maxByOrNull { it.value }
-        val bestWeekLabel = bestWeekEntry?.let { "Week ${it.key}" }
+        val bestWeekLabel = bestWeekEntry?.let { "WEEK_LABEL:${it.key}" }
         val bestWeekMinutes = ((bestWeekEntry?.value ?: 0L) / 60_000).toInt()
 
         // Top 3 tasks by focus time

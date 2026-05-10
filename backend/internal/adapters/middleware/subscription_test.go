@@ -12,7 +12,6 @@ func TestNormalizeTier(t *testing.T) {
 		{"pepinillo_plus", "pepinillo_plus"},
 		{"everywhere_monthly", "everywhere_monthly"},
 		{"everywhere_annual", "everywhere_annual"},
-		{"everywhere_lifetime", "everywhere_lifetime"},
 		// Empty string → free.
 		{"", "free"},
 		// Unknown / legacy values → free (clean cutover, no aliases).
@@ -43,7 +42,6 @@ func TestCanSync(t *testing.T) {
 	}{
 		{"everywhere_monthly", true},
 		{"everywhere_annual", true},
-		{"everywhere_lifetime", true},
 		{"free", false},
 		{"pepinillo_plus", false},
 		{"", false},

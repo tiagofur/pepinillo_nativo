@@ -41,6 +41,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -62,6 +65,7 @@ fun ProfileScreen(
     onSignOutClick: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -280,6 +284,14 @@ fun ProfileScreen(
                         onSignOutClick()
                     },
                 )
+                ProfileDivider()
+                ActionRow(
+                    icon = Icons.Rounded.Person,
+                    label = "Delete Account",
+                    subtitle = "Irreversible data removal",
+                    isDestructive = true,
+                    onClick = { showDeleteConfirmation = true },
+                )
             }
         }
 
@@ -304,6 +316,30 @@ fun ProfileScreen(
             onDismiss = { viewModel.hideEditSheet() },
             onSave = { name -> viewModel.saveProfile(name) },
             onPhotoSelected = { uri -> viewModel.uploadPhoto(context, uri) },
+        )
+    }
+
+    if (showDeleteConfirmation) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text(stringResource(R.string.delete_account_title)) },
+            text = { Text(stringResource(R.string.delete_account_desc)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        viewModel.deleteAccount { onSignOutClick() }
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text(stringResource(R.string.delete_account_btn_forever))
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            },
         )
     }
 }
@@ -446,8 +482,11 @@ private fun ActionRow(
     icon: ImageVector,
     label: String,
     subtitle: String,
+    isDestructive: Boolean = false,
     onClick: () -> Unit = {},
 ) {
+    val labelColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -459,27 +498,27 @@ private fun ActionRow(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(22.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = labelColor,
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (isDestructive) MaterialTheme.colorScheme.error.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         Icon(
             imageVector = Icons.Rounded.ChevronRight,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            tint = if (isDestructive) MaterialTheme.colorScheme.error.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
         )
     }
 }

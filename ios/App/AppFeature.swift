@@ -12,6 +12,10 @@ import Foundation
 import ComposableArchitecture
 import WidgetKit
 
+private enum AppLaunchDefaults {
+    static let hasCompletedOnboardingKey = "pepinillo.hasCompletedOnboarding"
+}
+
 @Reducer
 struct AppFeature {
     @ObservableState
@@ -168,6 +172,7 @@ struct AppFeature {
         case signInWithAppleSucceeded(AppleUserInfo)
         case signInWithAppleFailed
         case signOutTapped
+        case deleteAccountTapped
         case appleCredentialStateChecked(String, Bool)
 
         // Day change
@@ -236,6 +241,7 @@ struct AppFeature {
 
             case .onboardingCompleted:
                 state.hasCompletedOnboarding = true
+                UserDefaults.standard.set(true, forKey: AppLaunchDefaults.hasCompletedOnboardingKey)
                 return .run { send in
                     var prefs = try await persistence.fetchPreferences()
                     prefs.hasCompletedOnboarding = true
@@ -244,6 +250,7 @@ struct AppFeature {
 
             case .onboardingCompletedWithMode(let mode):
                 state.hasCompletedOnboarding = true
+                UserDefaults.standard.set(true, forKey: AppLaunchDefaults.hasCompletedOnboardingKey)
                 state.settings.defaultMode = mode
                 state.focus.selectedMode = mode
                 return .run { [mode] send in
@@ -402,11 +409,13 @@ struct AppFeature {
                 #endif
                 state.subscriptionState = effectiveSub
                 let isPro = effectiveSub.isPro
+                let canSync = effectiveSub.isEverywhere
                 state.focus.isProUser = isPro
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
                 AppGroupDefaults.isProUser = isPro
+                AppGroupDefaults.canBackendSync = canSync
                 if isPro { state.focus.showPaywall = false }
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
@@ -420,11 +429,13 @@ struct AppFeature {
                 #endif
                 state.subscriptionState = effectiveSub
                 let isPro = effectiveSub.isPro
+                let canSync = effectiveSub.isEverywhere
                 state.focus.isProUser = isPro
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
                 AppGroupDefaults.isProUser = isPro
+                AppGroupDefaults.canBackendSync = canSync
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
                 }
@@ -663,6 +674,29 @@ struct AppFeature {
                     prefs.displayName = nil
                     prefs.userEmail = nil
                     try await persistence.savePreferences(prefs)
+                    // Reset to anonymous in RevenueCat
+                    await subscriptionClient.logOut()
+                }
+
+            case .deleteAccountTapped:
+                state.appleUserID = nil
+                state.displayName = nil
+                state.userEmail = nil
+                state.cachedUser = nil
+                webSocketClient.disconnect()
+                return .run { [keychain, apiClient, persistence] send in
+                    // Call backend to delete data
+                    try? await apiClient.deleteAccount()
+                    
+                    // Cleanup local state
+                    try? await keychain.deleteTokens()
+                    try? await persistence.deleteCachedUser()
+                    var prefs = try await persistence.fetchPreferences()
+                    prefs.appleUserID = nil
+                    prefs.displayName = nil
+                    prefs.userEmail = nil
+                    try await persistence.savePreferences(prefs)
+                    
                     // Reset to anonymous in RevenueCat
                     await subscriptionClient.logOut()
                 }

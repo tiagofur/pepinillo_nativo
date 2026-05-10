@@ -194,8 +194,8 @@ class FocusViewModelTest {
     }
 
     @Test
-    fun `selectMode with lifetime subscription allows all modes`() = runTest {
-        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_LIFETIME)
+    fun `selectMode with monthly subscription allows all modes`() = runTest {
+        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
         viewModel.selectMode(FocusMode.Flow)
         assertEquals(FocusMode.Flow, engine.state.value.mode)
         viewModel.selectMode(FocusMode.Blocks)

@@ -14,6 +14,7 @@ struct AccountView: View {
     @Bindable var store: StoreOf<AppFeature>
     @Environment(\.appTheme) private var theme
     @State private var currentAppleNonce = ""
+    @State private var showDeleteConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -29,6 +30,18 @@ struct AccountView: View {
             }
             .navigationTitle(String(localized: "More"))
             .background(Color.clear)
+            .confirmationDialog(
+                String(localized: "Delete Account?"),
+                isPresented: $showDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button(String(localized: "Delete Forever"), role: .destructive) {
+                    store.send(.deleteAccountTapped)
+                }
+                Button(String(localized: "Cancel"), role: .cancel) {}
+            } message: {
+                Text(String(localized: "This action is permanent and will delete all your tasks, sessions, and settings from our servers. This cannot be undone."))
+            }
         }
     }
 
@@ -359,6 +372,20 @@ struct AccountView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(String(localized: "a11y.account.signout.label", defaultValue: "Sign out"))
                 .accessibilityHint(String(localized: "a11y.account.signout.hint", defaultValue: "Ends your session on this device"))
+
+                Divider()
+                    .padding(.leading, 52)
+
+                Button(role: .destructive) {
+                    showDeleteConfirmation = true
+                } label: {
+                    Label(String(localized: "Delete Account"), systemImage: "person.badge.minus")
+                        .foregroundStyle(.red)
+                        .padding(.vertical, 14)
+                        .padding(.horizontal, 16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
             }
             .pepinilloGlass()
             .padding(.horizontal, 16)

@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.domain.timer
 
 import dev.creapolis.pepinillo.feature.focus.FocusMode
+import dev.creapolis.pepinillo.R
 
 /**
  * Represents the current phase within a focus session.
@@ -65,21 +66,21 @@ val FocusTimerState.progress: Float
         }
     }
 
-val FocusTimerState.phaseLabel: String
+val FocusTimerState.phaseLabelRes: Int
     get() = when {
-        phase == FocusPhase.ShortBreak -> "Short Break"
-        phase == FocusPhase.LongBreak -> "Long Break"
+        phase == FocusPhase.ShortBreak -> R.string.phase_short_break
+        phase == FocusPhase.LongBreak -> R.string.phase_long_break
         status == TimerStatus.Idle || status == TimerStatus.WaitingForNext -> when (mode) {
-            FocusMode.Pomodoro -> "Focus"
-            FocusMode.Flow -> "Flow"
-            FocusMode.Blocks -> "Block"
-            FocusMode.Chrono -> "Stopwatch"
+            FocusMode.Pomodoro -> R.string.phase_focus
+            FocusMode.Flow -> R.string.mode_flow
+            FocusMode.Blocks -> R.string.mode_blocks
+            FocusMode.Chrono -> R.string.mode_chrono
         }
         else -> when (mode) {
-            FocusMode.Pomodoro -> "Focus ${completedSessions + 1}"
-            FocusMode.Flow -> "Flowing..."
-            FocusMode.Blocks -> "Block"
-            FocusMode.Chrono -> "Timing..."
+            FocusMode.Pomodoro -> R.string.phase_focus_numbered // Context handles the number
+            FocusMode.Flow -> R.string.phase_flowing
+            FocusMode.Blocks -> R.string.mode_blocks
+            FocusMode.Chrono -> R.string.phase_timing
         }
     }
 

@@ -12,10 +12,17 @@ import SwiftData
 import UserNotifications
 import ActivityKit
 import ComposableArchitecture
+import OSLog
 
 private enum AppBootstrapError: Error {
     case containerTimeout
 }
+
+private enum AppLaunchDefaults {
+    static let hasCompletedOnboardingKey = "pepinillo.hasCompletedOnboarding"
+}
+
+private let startupLogger = Logger(subsystem: "com.pepinillo.app", category: "startup")
 
 @MainActor
 private final class AppBootstrap: ObservableObject {
@@ -30,37 +37,19 @@ private final class AppBootstrap: ObservableObject {
     @Published var store: StoreOf<AppFeature>?
 
     init() {
+        installFallbackStore()
         Task {
             await bootstrap()
         }
     }
 
     private func bootstrap() async {
-        phase = .loading
-        modelContainer = nil
-        store = nil
-
-        let container = await loadContainerSafely()
-        guard let container else {
-            phase = .failed
-            return
+        do {
+            let container = try await loadContainerSafely()
+            apply(container: container)
+        } catch {
+            startupLogger.error("App bootstrap failed: \(String(describing: error), privacy: .public)")
         }
-
-        modelContainer = container
-
-        #if DEBUG
-        DemoDataSeeder.seedIfNeeded(container: container)
-        #endif
-
-        store = Store(initialState: AppFeature.State()) {
-            AppFeature()
-        } withDependencies: {
-            $0.persistenceClient = PersistenceClient.live(container: container)
-            if #available(iOS 16.2, *) {
-                $0.liveActivityClient = LiveActivityManager.makeClient()
-            }
-        }
-        phase = .ready
     }
 
     func retry() {
@@ -69,15 +58,12 @@ private final class AppBootstrap: ObservableObject {
         }
     }
 
-    private func loadContainerSafely() async -> ModelContainer? {
+    private func loadContainerSafely() async throws -> ModelContainer {
         do {
             return try await Self.makeSharedContainerWithTimeout(seconds: 8)
         } catch {
-            do {
-                return try Self.makeEmergencyInMemoryContainer()
-            } catch {
-                return nil
-            }
+            startupLogger.error("Persistent store failed during launch, using fallback store: \(String(describing: error), privacy: .public)")
+            return try Self.makeEmergencyFallbackContainer()
         }
     }
 
@@ -101,19 +87,41 @@ private final class AppBootstrap: ObservableObject {
         }
     }
 
-    private static func makeEmergencyInMemoryContainer() throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV3.self)
-        let config = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: true,
-            cloudKitDatabase: .none
+    private func installFallbackStore() {
+        do {
+            let container = try Self.makeEmergencyFallbackContainer()
+            apply(container: container)
+        } catch {
+            startupLogger.error("Fallback store setup failed: \(String(describing: error), privacy: .public)")
+            phase = .failed
+        }
+    }
+
+    private func apply(container: ModelContainer) {
+        modelContainer = container
+
+        #if DEBUG
+        DemoDataSeeder.seedIfNeeded(container: container)
+        #endif
+
+        var initialState = AppFeature.State()
+        initialState.hasCompletedOnboarding = UserDefaults.standard.bool(
+            forKey: AppLaunchDefaults.hasCompletedOnboardingKey
         )
 
-        return try ModelContainer(
-            for: schema,
-            migrationPlan: PepinilloMigrationPlan.self,
-            configurations: [config]
-        )
+        store = Store(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient = PersistenceClient.live(container: container)
+            if #available(iOS 16.2, *) {
+                $0.liveActivityClient = LiveActivityManager.makeClient()
+            }
+        }
+        phase = .ready
+    }
+
+    private static func makeEmergencyFallbackContainer() throws -> ModelContainer {
+        try makeFallbackModelContainer()
     }
 }
 

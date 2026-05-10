@@ -177,7 +177,7 @@ class FocusTileService : TileService() {
                     .addContent(spacer(6f))
                     .addContent(text(statsText, 14f, color = 0xFFAAAAAA.toInt()))
                     .addContent(spacer(8f))
-                    .addContent(text("Toca para enfocar", 14f, color = modeColor(state.mode, colors).toInt()))
+                    .addContent(text(getString(dev.creapolis.pepinillo.R.string.tile_tap_to_focus), 14f, color = modeColor(state.mode, colors).toInt()))
                     .build(),
             )
             .build()
@@ -197,9 +197,9 @@ class FocusTileService : TileService() {
                     .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
                     .addContent(text("Pepinillo+", 20f, bold = true, color = accentColor))
                     .addContent(spacer(6f))
-                    .addContent(text("Unlock Focus tile", 14f, color = 0xFFCCCCCC.toInt()))
+                    .addContent(text(getString(dev.creapolis.pepinillo.R.string.tile_locked_focus), 14f, color = 0xFFCCCCCC.toInt()))
                     .addContent(spacer(6f))
-                    .addContent(text("Open the app to upgrade", 13f, color = 0xFF888888.toInt()))
+                    .addContent(text(getString(dev.creapolis.pepinillo.R.string.tile_upgrade_app), 13f, color = 0xFF888888.toInt()))
                     .build(),
             )
             .build()
@@ -255,7 +255,7 @@ class FocusTileService : TileService() {
                     .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
                     .addContent(text(state.displayTime, 28f, bold = true))
                     .addContent(spacer(4f))
-                    .addContent(text("\u23F8 En pausa", 14f, color = 0xFFAAAAAA.toInt()))
+                    .addContent(text("\u23F8 " + getString(dev.creapolis.pepinillo.R.string.tile_paused), 14f, color = 0xFFAAAAAA.toInt()))
                     .build(),
             )
             .build()

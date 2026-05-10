@@ -31,8 +31,8 @@ import (
 // pepinillo_plus_entitlement_at one-time purchase timestamp.
 //
 // Resolution order:
-//  1. If tier is one of the three Everywhere+ variants AND the subscription is
-//     not expired (or has no expiry, e.g. lifetime), return that tier.
+//  1. If tier is one of the two Everywhere+ variants AND the subscription is
+//     not expired, return that tier.
 //  2. If an Everywhere+ tier is expired, fall through.
 //  3. If pepinillo_plus_entitlement_at is set, return "pepinillo_plus".
 //  4. If subscription_tier is explicitly "pepinillo_plus", return "pepinillo_plus".
@@ -41,8 +41,7 @@ func EffectiveTier(u *domain.User) string {
 	now := time.Now().UTC()
 
 	switch u.SubscriptionTier {
-	case "everywhere_monthly", "everywhere_annual", "everywhere_lifetime":
-		// Lifetime has no expiry; for monthly/annual, check expiry.
+	case "everywhere_monthly", "everywhere_annual":
 		if u.SubscriptionExpiresAt == nil || u.SubscriptionExpiresAt.After(now) {
 			return u.SubscriptionTier
 		}
@@ -822,17 +821,17 @@ func mapProductToTier(productID string, expiresAt *time.Time) (string, *time.Tim
 
 	switch {
 	case strings.Contains(product, "lifetime"):
-		return "lifetime", nil, nil
+		return "pepinillo_plus", nil, nil
 	case strings.Contains(product, "annual"), strings.Contains(product, "yearly"):
 		if expiresAt == nil {
 			return "", nil, ErrInvalidReceipt
 		}
-		return "pro_yearly", expiresAt, nil
+		return "everywhere_annual", expiresAt, nil
 	case strings.Contains(product, "monthly"), strings.Contains(product, "month"):
 		if expiresAt == nil {
 			return "", nil, ErrInvalidReceipt
 		}
-		return "pro_monthly", expiresAt, nil
+		return "everywhere_monthly", expiresAt, nil
 	default:
 		return "", nil, ErrUnsupportedProductID
 	}

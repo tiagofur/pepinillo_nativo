@@ -120,7 +120,7 @@ func TestProtectedBillingEndpoint_RequiresAndAcceptsJWT(t *testing.T) {
 	protected := app.Group("", middleware.JWT(testJWTSecret))
 	protected.Post("/billing/verify-receipt", handlers.NewBillingHandler(billing).VerifyReceipt)
 
-	body := []byte(`{"platform":"android","productId":"pepinillo_pro_monthly","purchaseToken":"abc"}`)
+	body := []byte(`{"platform":"android","productId":"com.pepinillo.app.pro.monthly","purchaseToken":"abc"}`)
 	reqNoAuth := httptest.NewRequest(http.MethodPost, "/billing/verify-receipt", bytes.NewReader(body))
 	reqNoAuth.Header.Set("Content-Type", "application/json")
 	respNoAuth, err := app.Test(reqNoAuth)

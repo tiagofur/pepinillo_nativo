@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Analytics
+import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Rocket
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
@@ -35,42 +36,50 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.creapolis.pepinillo.R
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(
     val icon: ImageVector,
-    val title: String,
-    val description: String,
+    val titleRes: Int,
+    val descRes: Int,
 )
 
-private val pages = listOf(
+@Composable
+private fun onboardingPages() = listOf(
     OnboardingPage(
         icon = Icons.Rounded.Rocket,
-        title = "Welcome to Pepinillo",
-        description = "Your deep work companion. Focus better, achieve more, and discover your optimal productivity style.",
+        titleRes = R.string.onboarding_welcome_title,
+        descRes = R.string.onboarding_welcome_desc,
     ),
     OnboardingPage(
         icon = Icons.Rounded.Timer,
-        title = "4 Focus Modes",
-        description = "Pomodoro, Flow, Time Blocks, and Stopwatch. Find the technique that works best for you.",
+        titleRes = R.string.onboarding_modes_title,
+        descRes = R.string.onboarding_modes_desc,
+    ),
+    OnboardingPage(
+        icon = Icons.Rounded.CloudSync,
+        titleRes = R.string.onboarding_everywhere_title,
+        descRes = R.string.onboarding_everywhere_desc,
     ),
     OnboardingPage(
         icon = Icons.Rounded.TaskAlt,
-        title = "Smart Task Management",
-        description = "Organize tasks by energy level and priority. Link them to focus sessions to track progress.",
+        titleRes = R.string.onboarding_tasks_title,
+        descRes = R.string.onboarding_tasks_desc,
     ),
     OnboardingPage(
         icon = Icons.Rounded.Widgets,
-        title = "Widgets & Notifications",
-        description = "Control your timer from the home screen, lock screen, or notification panel.",
+        titleRes = R.string.onboarding_widgets_title,
+        descRes = R.string.onboarding_widgets_desc,
     ),
     OnboardingPage(
         icon = Icons.Rounded.Analytics,
-        title = "Ready to Focus!",
-        description = "Track your progress with detailed analytics. Let's start your first focus session.",
+        titleRes = R.string.onboarding_ready_title,
+        descRes = R.string.onboarding_ready_desc,
     ),
 )
 
@@ -81,6 +90,7 @@ fun OnboardingScreen(
     initialPage: Int = 0,
     onPageChanged: (Int) -> Unit = {},
 ) {
+    val pages = onboardingPages()
     val pagerState = rememberPagerState(
         initialPage = initialPage.coerceIn(0, pages.size - 1),
         pageCount = { pages.size },
@@ -107,7 +117,7 @@ fun OnboardingScreen(
         ) {
             if (!isLastPage) {
                 TextButton(onClick = onComplete) {
-                    Text("Skip")
+                    Text(stringResource(R.string.btn_skip))
                 }
             }
         }
@@ -141,14 +151,14 @@ fun OnboardingScreen(
                 }
                 Spacer(modifier = Modifier.height(40.dp))
                 Text(
-                    text = item.title,
+                    text = stringResource(item.titleRes),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = item.description,
+                    text = stringResource(item.descRes),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -195,7 +205,7 @@ fun OnboardingScreen(
             shape = RoundedCornerShape(16.dp),
         ) {
             Text(
-                text = if (isLastPage) "Get Started" else "Next",
+                text = if (isLastPage) stringResource(R.string.btn_get_started) else stringResource(R.string.btn_next),
                 style = MaterialTheme.typography.titleMedium,
             )
         }

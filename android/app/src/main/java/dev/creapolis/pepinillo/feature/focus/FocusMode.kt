@@ -7,32 +7,34 @@ import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.ui.graphics.vector.ImageVector
 
+import dev.creapolis.pepinillo.R
+
 enum class FocusMode(
-    val label: String,
+    val labelRes: Int,
     val icon: ImageVector,
     val defaultDisplayTime: String,
     val defaultTotalSeconds: Int?,
 ) {
     Pomodoro(
-        label = "Pomodoro",
+        labelRes = R.string.mode_pomodoro,
         icon = Icons.Rounded.Timer,
         defaultDisplayTime = "25:00",
         defaultTotalSeconds = 25 * 60,
     ),
     Flow(
-        label = "Flow",
+        labelRes = R.string.mode_flow,
         icon = Icons.Rounded.AvTimer,
         defaultDisplayTime = "\u221E",
         defaultTotalSeconds = null,
     ),
     Blocks(
-        label = "Blocks",
+        labelRes = R.string.mode_blocks,
         icon = Icons.Rounded.ViewAgenda,
         defaultDisplayTime = "60:00",
         defaultTotalSeconds = 60 * 60,
     ),
     Chrono(
-        label = "Chrono",
+        labelRes = R.string.mode_chrono,
         icon = Icons.Rounded.Speed,
         defaultDisplayTime = "00:00",
         defaultTotalSeconds = null,

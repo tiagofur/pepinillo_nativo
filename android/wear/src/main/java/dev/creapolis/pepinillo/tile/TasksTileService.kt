@@ -117,7 +117,7 @@ class TasksTileService : TileService() {
         completedCount: Int,
         totalCount: Int,
     ): LayoutElementBuilders.LayoutElement {
-        val titleText = "Tasks ($completedCount/$totalCount done)"
+        val titleText = getString(dev.creapolis.pepinillo.R.string.tile_tasks_title, completedCount, totalCount)
 
         val column = LayoutElementBuilders.Column.Builder()
             .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
@@ -126,7 +126,7 @@ class TasksTileService : TileService() {
 
         if (tasks.isEmpty()) {
             column.addContent(spacer(8f))
-            column.addContent(text("No tasks", 14f, color = 0xFF888888.toInt()))
+            column.addContent(text(getString(dev.creapolis.pepinillo.R.string.tile_no_tasks), 14f, color = 0xFF888888.toInt()))
         } else {
             val visible = tasks.take(MAX_VISIBLE_TASKS)
             for (task in visible) {
@@ -172,9 +172,9 @@ class TasksTileService : TileService() {
                     .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
                     .addContent(text("Pepinillo+", 18f, bold = true))
                     .addContent(spacer(6f))
-                    .addContent(text("Unlock Tasks tile", 14f, color = 0xFFCCCCCC.toInt()))
+                    .addContent(text(getString(dev.creapolis.pepinillo.R.string.tile_locked_tasks), 14f, color = 0xFFCCCCCC.toInt()))
                     .addContent(spacer(6f))
-                    .addContent(text("Upgrade in the app", 13f, color = 0xFF888888.toInt()))
+                    .addContent(text(getString(dev.creapolis.pepinillo.R.string.tile_upgrade_app), 13f, color = 0xFF888888.toInt()))
                     .build(),
             )
             .build()

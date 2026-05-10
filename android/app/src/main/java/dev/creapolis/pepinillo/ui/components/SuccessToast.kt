@@ -27,19 +27,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /**
  * A brief success toast that appears at the top, shows a checkmark + message,
  * and auto-dismisses after [durationMs].
- *
- * Usage: Place inside a Box with Alignment.TopCenter.
- * Control visibility by setting [message] to non-null to show, null to hide.
  */
 @Composable
 fun SuccessToast(
-    message: String?,
+    message: Any?, // Can be Int (Res ID) or String
     modifier: Modifier = Modifier,
     durationMs: Long = 1500,
     onDismiss: () -> Unit = {},
@@ -56,6 +54,12 @@ fun SuccessToast(
         } else {
             visible = false
         }
+    }
+
+    val text = when (message) {
+        is Int -> stringResource(message)
+        is String -> message
+        else -> ""
     }
 
     AnimatedVisibility(
@@ -79,7 +83,7 @@ fun SuccessToast(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = message ?: "",
+                text = text,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
             )

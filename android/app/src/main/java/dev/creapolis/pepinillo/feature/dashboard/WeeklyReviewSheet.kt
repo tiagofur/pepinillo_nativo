@@ -32,11 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.creapolis.pepinillo.feature.dashboard.components.FocusChart
 import dev.creapolis.pepinillo.feature.dashboard.model.Trend
 import dev.creapolis.pepinillo.feature.dashboard.model.WeeklyReportData
+import dev.creapolis.pepinillo.R
 import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,7 +62,7 @@ fun WeeklyReviewSheet(
                 .padding(bottom = 32.dp),
         ) {
             Text(
-                text = "Weekly Review",
+                text = stringResource(R.string.review_weekly_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -74,15 +76,15 @@ fun WeeklyReviewSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 TrendCard(
-                    title = "Focus Time",
+                    title = stringResource(R.string.review_focus_time),
                     value = formatMinutes(report.currentWeekMinutes),
                     delta = report.minutesDelta,
-                    deltaLabel = "${abs(report.minutesDelta)}m",
+                    deltaLabel = stringResource(R.string.review_delta_minutes, abs(report.minutesDelta)),
                     trend = report.minutesTrend,
                     modifier = Modifier.weight(1f),
                 )
                 TrendCard(
-                    title = "Sessions",
+                    title = stringResource(R.string.review_sessions),
                     value = "${report.currentWeekSessions}",
                     delta = report.sessionsDelta,
                     deltaLabel = "${abs(report.sessionsDelta)}",
@@ -95,7 +97,7 @@ fun WeeklyReviewSheet(
 
             // ── WEEK CHART ──
             Text(
-                text = "This Week",
+                text = stringResource(R.string.review_this_week),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -123,7 +125,7 @@ fun WeeklyReviewSheet(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Dominant Mode",
+                                text = stringResource(R.string.review_dominant_mode),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -154,7 +156,7 @@ fun WeeklyReviewSheet(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Best Day",
+                                text = stringResource(R.string.review_best_day),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -172,7 +174,7 @@ fun WeeklyReviewSheet(
             // ── MODE DISTRIBUTION ──
             if (report.modeDistribution.isNotEmpty()) {
                 Text(
-                    text = "Mode Distribution",
+                    text = stringResource(R.string.review_mode_distribution),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -219,12 +221,12 @@ fun WeeklyReviewSheet(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Current Streak",
+                            text = stringResource(R.string.review_current_streak),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            text = "${report.currentStreak} days",
+                            text = stringResource(R.string.dashboard_days_count, report.currentStreak),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )

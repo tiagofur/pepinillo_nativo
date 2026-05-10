@@ -54,12 +54,6 @@ class FeatureGateTest {
         assertTrue(gate.canUseSync())
     }
 
-    @Test
-    fun `canUseSync returns true for EVERYWHERE_LIFETIME`() {
-        val gate = buildGate(SubscriptionTier.EVERYWHERE_LIFETIME)
-        assertTrue(gate.canUseSync())
-    }
-
     // -----------------------------------------------------------------------
     // hasLocalPremium gates (all other feature gates)
     // -----------------------------------------------------------------------
@@ -125,8 +119,8 @@ class FeatureGateTest {
     }
 
     @Test
-    fun `canUseWearOS returns true for EVERYWHERE_LIFETIME tier`() {
-        val gate = buildGate(SubscriptionTier.EVERYWHERE_LIFETIME)
+    fun `canUseWearOS returns true for PEPINILLO_PLUS tier`() {
+        val gate = buildGate(SubscriptionTier.PEPINILLO_PLUS)
         assertTrue(gate.canUseWearOS())
     }
 

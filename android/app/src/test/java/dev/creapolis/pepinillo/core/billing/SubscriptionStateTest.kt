@@ -34,9 +34,9 @@ class SubscriptionStateTest {
     }
 
     @Test
-    fun `SubscriptionTier has EVERYWHERE_LIFETIME variant`() {
+    fun `SubscriptionTier does NOT have EVERYWHERE_LIFETIME variant`() {
         val values = SubscriptionTier.values().map { it.name }
-        assertTrue("EVERYWHERE_LIFETIME must exist", values.contains("EVERYWHERE_LIFETIME"))
+        assertFalse("EVERYWHERE_LIFETIME must be removed", values.contains("EVERYWHERE_LIFETIME"))
     }
 
     @Test
@@ -53,11 +53,10 @@ class SubscriptionStateTest {
 
     @Test
     fun `SubscriptionTier does NOT have LIFETIME (old name)`() {
-        // Old bare LIFETIME is replaced by EVERYWHERE_LIFETIME
         val values = SubscriptionTier.values().map { it.name }
         assertFalse("bare LIFETIME must be removed", values.contains("LIFETIME"))
     }
-
+    
     // -----------------------------------------------------------------------
     // Capability flags — FREE
     // -----------------------------------------------------------------------
@@ -147,25 +146,25 @@ class SubscriptionStateTest {
     }
 
     // -----------------------------------------------------------------------
-    // Capability flags — EVERYWHERE_LIFETIME
+    // PepinilloProducts mapping
     // -----------------------------------------------------------------------
 
     @Test
-    fun `EVERYWHERE_LIFETIME tier canSync = true`() {
-        val state = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_LIFETIME)
-        assertTrue(state.canSync)
+    fun `PepinilloProducts maps legacy lifetime SKU to PEPINILLO_PLUS`() {
+        val tier = PepinilloProducts.tierForProduct("com.pepinillo.app.pro.lifetime")
+        assertTrue("com.pepinillo.app.pro.lifetime must map to PEPINILLO_PLUS", tier == SubscriptionTier.PEPINILLO_PLUS)
     }
 
     @Test
-    fun `EVERYWHERE_LIFETIME tier hasLocalPremium = true`() {
-        val state = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_LIFETIME)
-        assertTrue(state.hasLocalPremium)
+    fun `PepinilloProducts maps legacy monthly SKU to EVERYWHERE_MONTHLY`() {
+        val tier = PepinilloProducts.tierForProduct("com.pepinillo.app.pro.monthly")
+        assertTrue("com.pepinillo.app.pro.monthly must map to EVERYWHERE_MONTHLY", tier == SubscriptionTier.EVERYWHERE_MONTHLY)
     }
 
     @Test
-    fun `EVERYWHERE_LIFETIME tier isPepinilloPlus = false`() {
-        val state = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_LIFETIME)
-        assertFalse(state.isPepinilloPlus)
+    fun `PepinilloProducts maps legacy annual SKU to EVERYWHERE_ANNUAL`() {
+        val tier = PepinilloProducts.tierForProduct("com.pepinillo.app.pro.annual")
+        assertTrue("com.pepinillo.app.pro.annual must map to EVERYWHERE_ANNUAL", tier == SubscriptionTier.EVERYWHERE_ANNUAL)
     }
 
     // -----------------------------------------------------------------------

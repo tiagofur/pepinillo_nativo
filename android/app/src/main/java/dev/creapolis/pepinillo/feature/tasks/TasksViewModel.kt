@@ -3,6 +3,7 @@ package dev.creapolis.pepinillo.feature.tasks
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
@@ -22,19 +23,19 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class TaskFilter(val label: String) {
-    Today("Today"),
-    Active("Active"),
-    Completed("Done"),
-    All("All"),
+enum class TaskFilter {
+    Today,
+    Active,
+    Completed,
+    All,
 }
 
-enum class TaskSortOption(val label: String) {
-    Custom("Custom"),
-    Priority("Priority"),
-    DueDate("Due Date"),
-    Energy("Energy"),
-    Newest("Newest"),
+enum class TaskSortOption {
+    Custom,
+    Priority,
+    DueDate,
+    Energy,
+    Newest,
 }
 
 data class TasksUiState(
@@ -103,15 +104,15 @@ class TasksViewModel @Inject constructor(
     private val _showPaywall = MutableStateFlow(false)
     val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
 
-    private val _errorEvent = MutableSharedFlow<String>()
-    val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
+    private val _errorEvent = MutableSharedFlow<Int>()
+    val errorEvent: SharedFlow<Int> = _errorEvent.asSharedFlow()
 
     private val _undoEvent = MutableStateFlow<UndoState?>(null)
     val undoEvent: StateFlow<UndoState?> = _undoEvent.asStateFlow()
     private var undoExpiryJob: Job? = null
 
-    private val _successMessage = MutableStateFlow<String?>(null)
-    val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
+    private val _successMessage = MutableStateFlow<Int?>(null)
+    val successMessage: StateFlow<Int?> = _successMessage.asStateFlow()
     fun dismissSuccessMessage() { _successMessage.value = null }
 
     val uiState: StateFlow<TasksUiState> = combine(
@@ -145,7 +146,7 @@ class TasksViewModel @Inject constructor(
 
     fun toggleTaskCompletion(taskId: String) = viewModelScope.launch {
         taskRepository.toggleCompletion(taskId).onFailure {
-            _errorEvent.emit("Failed to update task")
+            _errorEvent.emit(R.string.msg_task_update_failed)
         }
     }
 
@@ -165,9 +166,9 @@ class TasksViewModel @Inject constructor(
                     sortOrder = uiState.value.tasks.size,
                 ),
             ).onSuccess {
-                _successMessage.value = "Task added"
+                _successMessage.value = R.string.msg_task_added
             }.onFailure {
-                _errorEvent.emit("Failed to add task")
+                _errorEvent.emit(R.string.msg_task_add_failed)
             }
         }
     }
@@ -189,7 +190,7 @@ class TasksViewModel @Inject constructor(
                 }
             }
             .onFailure {
-                _errorEvent.emit("Failed to delete task")
+                _errorEvent.emit(R.string.msg_task_delete_failed)
             }
     }
 
@@ -199,7 +200,7 @@ class TasksViewModel @Inject constructor(
         _undoEvent.value = null
         viewModelScope.launch {
             taskRepository.restoreTask(state.task).onFailure {
-                _errorEvent.emit("Failed to restore task")
+                _errorEvent.emit(R.string.msg_task_restore_failed)
             }
         }
     }
@@ -218,7 +219,7 @@ class TasksViewModel @Inject constructor(
         val orderedIds = currentTasks.mapIndexed { index, task -> task.id to index }
         viewModelScope.launch {
             taskRepository.reorderTasks(orderedIds).onFailure {
-                _errorEvent.emit("Failed to reorder tasks")
+                _errorEvent.emit(R.string.msg_task_reorder_failed)
             }
         }
     }

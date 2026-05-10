@@ -318,7 +318,7 @@ func main() {
 		slog.Info("No GEMINI_API_KEY set — AI endpoints will use fallback responses")
 	}
 
-	aiService := services.NewAIService(aiRepo, taskRepo, pomodoroRepo, llmProvider, cfg.MLServiceURL)
+	aiService := services.NewAIService(userRepo, aiRepo, taskRepo, pomodoroRepo, llmProvider, cfg.MLServiceURL)
 	startRecurringTaskGenerator(taskService, pushService)
 
 	preferenceRepo := postgres.NewPreferenceRepository(db)

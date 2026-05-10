@@ -25,6 +25,7 @@ data class AIReportUiState(
     val report: AIReportResponse? = null,
     val isGenerating: Boolean = false,
     val error: String? = null,
+    val creditsLeft: Int = 0,
 )
 
 private const val TAG = "AIReportVM"
@@ -34,6 +35,7 @@ class AIReportViewModel @Inject constructor(
     private val reportDataBuilder: ReportDataBuilder,
     private val reportGenerator: ReportGenerator,
     private val reportDao: ProductivityReportDao,
+    private val userRepository: dev.creapolis.pepinillo.data.repository.UserRepository,
 ) : ViewModel() {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -43,6 +45,17 @@ class AIReportViewModel @Inject constructor(
 
     init {
         loadCachedOrGenerate()
+        observeUser()
+    }
+
+    private fun observeUser() {
+        viewModelScope.launch {
+            userRepository.observeCachedUser().collect { user ->
+                if (user != null) {
+                    _state.value = _state.value.copy(creditsLeft = user.aiCreditsBalance)
+                }
+            }
+        }
     }
 
     fun setPeriod(period: String) {

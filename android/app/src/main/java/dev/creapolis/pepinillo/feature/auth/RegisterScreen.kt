@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.auth.components.DataMergeDialog
 
 @Composable
@@ -83,13 +85,13 @@ fun RegisterScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Create Account",
+            text = stringResource(R.string.auth_register_title),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Join Pepinillo and start focusing",
+            text = stringResource(R.string.auth_register_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -99,7 +101,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = name,
             onValueChange = { name = it; viewModel.clearError() },
-            label = { Text("Name") },
+            label = { Text(stringResource(R.string.auth_label_name)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
@@ -111,7 +113,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it; viewModel.clearError() },
-            label = { Text("Email") },
+            label = { Text(stringResource(R.string.auth_label_email)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
@@ -123,7 +125,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it; viewModel.clearError() },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.auth_label_password)) },
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -132,7 +134,7 @@ fun RegisterScreen(
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
                         if (passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                        contentDescription = "Toggle password",
+                        contentDescription = stringResource(R.string.cd_toggle_password),
                     )
                 }
             },
@@ -142,7 +144,7 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Min 8 chars, with uppercase, lowercase, and a number",
+            text = stringResource(R.string.auth_password_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
@@ -173,7 +175,7 @@ fun RegisterScreen(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Create Account", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.auth_btn_register), style = MaterialTheme.typography.titleMedium)
             }
         }
 
@@ -201,14 +203,14 @@ fun RegisterScreen(
                     modifier = Modifier.height(20.dp),
                 )
             } else {
-                Text("Sign in with Google", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.auth_btn_google), style = MaterialTheme.typography.titleMedium)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         TextButton(onClick = onNavigateToLogin) {
-            Text("Already have an account? Sign in")
+            Text(stringResource(R.string.auth_already_have_account))
         }
     }
 }

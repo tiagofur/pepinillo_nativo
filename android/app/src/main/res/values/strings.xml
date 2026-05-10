@@ -17,6 +17,7 @@
     <string name="tap_to_link_task">Tap to link a task</string>
     <string name="sessions_today">sessions today</string>
     <string name="day_streak">day streak</string>
+    <string name="msg_task_linked">Task linked</string>
     <string name="btn_start_focus">Start Focus</string>
     <string name="btn_pause">Pause</string>
     <string name="btn_resume">Resume</string>
@@ -28,13 +29,21 @@
     <string name="mode_pomodoro">Pomodoro</string>
     <string name="mode_flow">Flow</string>
     <string name="mode_blocks">Blocks</string>
-    <string name="mode_chrono">Chrono</string>
+    <string name="mode_chrono">Stopwatch</string>
+
+    <!-- Focus Phases -->
+    <string name="phase_focus">Focus</string>
+    <string name="phase_short_break">Short Break</string>
+    <string name="phase_long_break">Long Break</string>
+    <string name="phase_flowing">Flowing...</string>
+    <string name="phase_timing">Timing...</string>
+    <string name="phase_focus_numbered">Focus %1$d</string>
+
+    <!-- Timer Suggestion -->
+    <string name="break_suggestion_text">You\'ve been focused for a while \u2014 consider a break!</string>
 
     <!-- Tasks Screen -->
-    <string name="tasks_title">Tasks</string>
-    <string name="filter_all">All</string>
     <string name="filter_active">Active</string>
-    <string name="filter_completed">Completed</string>
     <string name="no_tasks_yet">No tasks yet</string>
     <string name="add_task_hint">What do you need to focus on?</string>
     <string name="add_task_title">Add Task</string>
@@ -45,7 +54,6 @@
     <string name="btn_cancel">Cancel</string>
 
     <!-- Dashboard Screen -->
-    <string name="dashboard_title">Dashboard</string>
     <string name="today_focus">Today\'s Focus</string>
     <string name="this_week">This Week</string>
     <string name="minutes_short">min</string>
@@ -144,6 +152,7 @@
     <string name="ai_report_insights">Insights</string>
     <string name="ai_report_recommendations">Recommendations</string>
     <string name="ai_report_button">AI Report</string>
+    <string name="ai_credits_left">%1$d credits left this month</string>
 
     <!-- Template Report -->
     <string name="report_title_strong">A Strong %1$s of Focus</string>
@@ -172,6 +181,21 @@
     <!-- Notification -->
     <string name="notification_channel_name">Focus Timer</string>
     <string name="notification_channel_description">Shows the active focus timer</string>
+    <string name="notification_connecting">Connecting to phone...</string>
+
+    <!-- Completion Messages -->
+    <string name="msg_focus_complete_title">Focus session complete!</string>
+    <string name="msg_focus_complete_text">Great work! Time for a break.</string>
+    <string name="msg_short_break_over_title">Break is over!</string>
+    <string name="msg_short_break_over_text">Ready for your next focus session.</string>
+    <string name="msg_long_break_over_title">Long break is over!</string>
+    <string name="msg_long_break_over_text">Feeling refreshed? Let\'s go again.</string>
+    <string name="msg_block_complete_title">Time block complete!</string>
+    <string name="msg_block_complete_text">Your focused block has finished.</string>
+    <string name="msg_timer_complete_title">Timer complete!</string>
+    <string name="msg_timer_complete_text">Your session has finished.</string>
+    <string name="notification_completion_channel_name">Timer Completion</string>
+    <string name="notification_completion_channel_desc">Alerts when a focus timer completes</string>
 
     <!-- Soundscapes -->
     <string name="soundscape_title">Soundscape</string>
@@ -185,10 +209,10 @@
     <string name="soundscape_binaural">Binaural Beats</string>
     <string name="soundscape_lofi">Lo-fi</string>
     <string name="soundscape_section_free">Free Sounds</string>
-    <string name="soundscape_section_pro">Pro Sounds</string>
+    <string name="soundscape_section_pro">Everywhere/AI+ Sounds</string>
     <string name="soundscape_preview">Preview</string>
     <string name="soundscape_stop_preview">Stop preview</string>
-    <string name="soundscape_requires_pro">Requires Pro</string>
+    <string name="soundscape_requires_pro">Requires Everywhere/AI+</string>
     <string name="soundscape_choose">Choose soundscape</string>
 
     <!-- Daily Reminder -->
@@ -196,4 +220,261 @@
     <string name="daily_reminder_channel_description">Daily focus reminder notifications</string>
     <string name="daily_reminder_title">Time to focus!</string>
     <string name="daily_reminder_text">Start a focus session today and keep your streak going.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Welcome to Pepinillo</string>
+    <string name="onboarding_welcome_desc">Your deep work companion. Focus better, achieve more, and discover your optimal productivity style.</string>
+    <string name="onboarding_modes_title">4 Focus Modes</string>
+    <string name="onboarding_modes_desc">Pomodoro, Flow, Time Blocks, and Stopwatch. Find the technique that works best for you.</string>
+    <string name="onboarding_everywhere_title">Focus Everywhere</string>
+    <string name="onboarding_everywhere_desc">Sync your tasks and sessions across all your devices with Everywhere/AI+. Never lose your streak.</string>
+    <string name="onboarding_tasks_title">Smart Task Management</string>
+    <string name="onboarding_tasks_desc">Organize tasks by energy level and priority. Link them to focus sessions to track progress.</string>
+    <string name="onboarding_widgets_title">Widgets &amp; Notifications</string>
+    <string name="onboarding_widgets_desc">Control your timer from the home screen, lock screen, or notification panel.</string>
+    <string name="onboarding_ready_title">Ready to Focus!</string>
+    <string name="onboarding_ready_desc">Track your progress with detailed analytics. Let\'s start your first focus session.</string>
+    <string name="btn_skip">Skip</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_get_started">Get Started</string>
+
+    <!-- Forgot Password -->
+    <string name="forgot_password_title">Forgot Password</string>
+    <string name="forgot_password_desc">Enter your email and we\'ll send you a code to reset your password.</string>
+    <string name="forgot_password_label_email">Email</string>
+    <string name="forgot_password_btn_send">Send Code</string>
+    <string name="reset_password_title">Reset Password</string>
+    <string name="reset_password_desc">Enter the code we sent to %1$s and your new password.</string>
+    <string name="reset_password_label_code">Verification Code</string>
+    <string name="reset_password_label_new">New Password</string>
+    <string name="reset_password_label_confirm">Confirm Password</string>
+    <string name="reset_password_btn_reset">Reset Password</string>
+    <string name="reset_password_resend">Didn\'t receive the code? Resend</string>
+
+    <!-- Delete Account -->
+    <string name="delete_account_title">Delete Account?</string>
+    <string name="delete_account_desc">This action is permanent and will delete all your tasks, sessions, and settings from our servers. This cannot be undone.</string>
+    <string name="delete_account_btn_forever">Delete Forever</string>
+
+    <!-- Email Verification -->
+    <string name="email_verify_title">Verify Email</string>
+    <string name="email_verify_desc">We sent a code to %1$s. Enter it below to verify your account.</string>
+    <string name="email_verify_label_code">Verification code</string>
+    <string name="email_verify_btn_verify">Verify Email</string>
+    <string name="email_verify_btn_resend">Resend code</string>
+
+    <!-- Edit Profile -->
+    <string name="profile_edit_title">Edit Profile</string>
+    <string name="profile_edit_photo">Change photo</string>
+    <string name="profile_label_name">Name</string>
+    <string name="btn_save">Save</string>
+
+    <!-- Export -->
+    <string name="export_title">Export Data</string>
+    <string name="export_btn_csv">Export CSV</string>
+    <string name="export_premium_title">Export is a Pepinillo+ Feature</string>
+    <string name="export_premium_desc">Upgrade to Pepinillo+ to export your focus sessions and tasks.</string>
+    <string name="export_desc_csv">Sessions, Tasks, and Analytics</string>
+
+    <!-- Support & About -->
+    <string name="support_title">Help &amp; Support</string>
+    <string name="support_btn_contact">Contact Support</string>
+    <string name="support_btn_privacy">Privacy Policy</string>
+    <string name="support_desc_privacy">How we handle your data</string>
+    <string name="support_btn_terms">Terms of Use</string>
+    <string name="support_desc_terms">Review legal terms</string>
+    <string name="about_title">About Pepinillo</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_desc">Pepinillo is designed to help you regain focus and manage your productivity in a distracted world. Built natively for Android and iOS to provide the best performance and integration with your system.</string>
+    <string name="about_footer">Crafted with care by Creapolis in Argentina. \uD83C\uDDE6\uD83C\uDDF7</string>
+
+    <!-- Task Detail -->
+    <string name="task_detail_title">Task Details</string>
+    <string name="task_detail_btn_start">Start Focus Session</string>
+    <string name="task_detail_btn_delete">Delete Task</string>
+    <string name="task_delete_confirm_title">Delete Task?</string>
+    <string name="task_delete_confirm_desc">This action cannot be undone.</string>
+    <string name="task_label_priority">Priority</string>
+    <string name="task_label_energy">Energy Level</string>
+    <string name="task_label_estimate">Estimated Pomodoros</string>
+    <string name="task_label_repeat">Repeat</string>
+    <string name="task_label_notes">Notes</string>
+    <string name="task_label_notes_hint">Add notes...</string>
+    <string name="task_label_history">Focus History</string>
+    <string name="task_stat_total_time">Total Focus Time</string>
+    <string name="task_stat_completed_pomos">Completed Pomodoros</string>
+    <string name="task_focus_today">Focus Today</string>
+    <string name="task_status_active">Active</string>
+    <string name="task_status_completed">Completed</string>
+
+    <!-- Feedback Messages -->
+    <string name="msg_task_added">Task added</string>
+    <string name="msg_task_update_failed">Failed to update task</string>
+    <string name="msg_task_add_failed">Failed to add task</string>
+    <string name="msg_task_delete_failed">Failed to delete task</string>
+    <string name="msg_task_restore_failed">Failed to restore task</string>
+    <string name="msg_task_reorder_failed">Failed to reorder tasks</string>
+    <string name="msg_no_internet">No internet connection</string>
+    <string name="msg_account_deleted">Account deleted successfully</string>
+    <string name="msg_error_generic">Something went wrong</string>
+
+    <!-- Common UI -->
+    <string name="cd_toggle_password">Toggle password visibility</string>
+    <string name="cd_go_back">Go back</string>
+    <string name="cd_close">Close</string>
+
+    <!-- Paywall -->
+    <string name="paywall_title">Elevate Your Focus</string>
+    <string name="paywall_subtitle">Choose the plan that fits your workflow</string>
+    <string name="paywall_one_time">One-time</string>
+    <string name="paywall_subscription">Subscription</string>
+    <string name="paywall_monthly">Monthly</string>
+    <string name="paywall_annual">Annual</string>
+    <string name="paywall_best_value">BEST VALUE</string>
+    <string name="paywall_btn_restore">Restore Purchases</string>
+    <string name="paywall_legal">Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in Google Play settings.</string>
+    <string name="paywall_unit_month">/month</string>
+    <string name="paywall_unit_year">/year</string>
+    <string name="paywall_unit_once"> once</string>
+    <string name="paywall_btn_get_plus">Get Pepinillo+</string>
+    <string name="paywall_btn_start_sub">Start Subscription</string>
+    <string name="paywall_btn_continue">Continue</string>
+
+    <!-- Paywall Features -->
+    <string name="feature_local_premium">Local Premium</string>
+    <string name="feature_local_premium_desc">All themes, sounds &amp; widgets</string>
+    <string name="feature_adv_timer">Advanced Timer</string>
+    <string name="feature_adv_timer_desc">Flowtime &amp; Time Blocks</string>
+    <string name="feature_unlimited_tasks">Unlimited Tasks</string>
+    <string name="feature_unlimited_tasks_desc">Subtasks &amp; recurrence</string>
+    <string name="feature_wearos">Wear OS App</string>
+    <string name="feature_wearos_desc">Full smartwatch integration</string>
+    <string name="feature_adv_stats">Advanced Stats</string>
+    <string name="feature_adv_stats_desc">Complete history &amp; analytics</string>
+    <string name="feature_cloud_sync">Cloud Sync</string>
+    <string name="feature_cloud_sync_desc">Sync across all your devices</string>
+    <string name="feature_ai_reports">AI Focus Reports</string>
+    <string name="feature_ai_reports_desc">Monthly productivity insights</string>
+    <string name="feature_vps_backup">VPS Backup</string>
+    <string name="feature_vps_backup_desc">Real-time secure backup</string>
+    <string name="feature_pro_included">Pro Benefits</string>
+    <string name="feature_pro_included_desc">Everything in Pepinillo+ included</string>
+
+    <!-- Data Merge -->
+    <string name="merge_title">Local Data Found</string>
+    <string name="merge_desc">You have data on this device that hasn\'t been synced. Would you like to merge it with your account, or start fresh with your account data?</string>
+    <string name="merge_btn_merge">Merge Data</string>
+    <string name="merge_btn_account_only">Use Account Only</string>
+
+    <!-- Navigation -->
+    <string name="nav_focus">Focus</string>
+    <string name="nav_plan">Plan</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_more">More</string>
+
+    <!-- More Screen -->
+    <string name="more_sec_account">Account</string>
+    <string name="more_sec_config">Configuration</string>
+    <string name="more_sec_resources">Resources</string>
+    <string name="more_btn_profile">Open Profile</string>
+    <string name="more_btn_settings">App Settings</string>
+    <string name="more_desc_settings">Timer, sound, and appearance</string>
+    <string name="more_btn_sync">Cloud Sychronization</string>
+    <string name="more_desc_sync_active">Active and securing your data</string>
+    <string name="more_desc_sync_locked">Requires Everywhere/AI+</string>
+    <string name="more_btn_export">Export Data</string>
+    <string name="more_desc_export">Download your focus history</string>
+    <string name="more_btn_help">Help &amp; Support</string>
+    <string name="more_desc_help">Feedback and documentation</string>
+    <string name="more_btn_about">About</string>
+    <string name="more_desc_about">Version and legal info</string>
+    <string name="more_promo_title">Get Pepinillo+</string>
+    <string name="more_promo_desc">Unlock all features and cloud sync</string>
+    <string name="more_signin_desc">Sync your data across devices</string>
+    <string name="more_register_desc">Join the community</string>
+    <string name="more_footer">Made with \u2764 by Creapolis</string>
+    <string name="more_week_label">Week %1$d</string>
+
+    <!-- Review Sheets -->
+    <string name="review_weekly_title">Weekly Review</string>
+    <string name="review_monthly_title">Monthly Review</string>
+    <string name="review_focus_time">Focus Time</string>
+    <string name="review_sessions">Sessions</string>
+    <string name="review_completion_rate">Completion Rate</string>
+    <string name="review_this_week">This Week</string>
+    <string name="review_this_month">This Month</string>
+    <string name="review_dominant_mode">Dominant Mode</string>
+    <string name="review_best_day">Best Day</string>
+    <string name="review_best_week">Best Week</string>
+    <string name="review_mode_distribution">Mode Distribution</string>
+    <string name="review_current_streak">Current Streak</string>
+    <string name="review_top_tasks">Top Tasks</string>
+    <string name="review_delta_minutes">%1$dm</string>
+
+    <!-- Dashboard Content -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_subtitle">Your focus overview</string>
+    <string name="dashboard_focus_time">Focus Time</string>
+    <string name="dashboard_sessions">Sessions</string>
+    <string name="dashboard_streak">Streak</string>
+    <string name="dashboard_focus_minutes">Focus Minutes</string>
+    <string name="dashboard_patterns">Productivity Patterns</string>
+    <string name="dashboard_peak_hours">Peak Hours</string>
+    <string name="dashboard_best_day">Best Day</string>
+    <string name="dashboard_focus_score">Focus Score</string>
+    <string name="dashboard_focus_modes">Focus Modes</string>
+    <string name="dashboard_achievements">Achievements</string>
+    <string name="dashboard_current">Current</string>
+    <string name="dashboard_best">Best</string>
+    <string name="dashboard_no_sessions">No focus sessions yet</string>
+    <string name="dashboard_empty_desc">Start your first focus session to see your analytics here</string>
+    <string name="dashboard_btn_start">Start your first focus</string>
+    <string name="dashboard_days_count">%1$d days</string>
+    <string name="cd_weekly_review">Weekly Review</string>
+    <string name="cd_monthly_review">Monthly Review</string>
+    <string name="cd_calendar">Calendar</string>
+    <string name="cd_pro">Pro</string>
+
+    <!-- Tasks -->
+    <string name="tasks_title">Plan</string>
+    <string name="tasks_active_count">%1$d active</string>
+    <string name="tasks_active_limit">%1$d/%2$d active</string>
+    <string name="tasks_no_tasks">No tasks yet</string>
+    <string name="tasks_empty_desc">Type below to add your first task</string>
+    <string name="tasks_btn_create_first">Create your first task</string>
+    <string name="tasks_quick_add_today">Add task for today...</string>
+    <string name="tasks_quick_add_general">Add a task...</string>
+    <string name="tasks_deleted_msg">\"%1$s\" deleted</string>
+    <string name="btn_undo">Undo</string>
+    <string name="cd_delete">Delete</string>
+    <string name="cd_sort">Sort</string>
+    <string name="cd_add_task">Add task</string>
+
+    <!-- Task Filter Labels -->
+    <string name="filter_today">Today</string>
+    <string name="filter_upcoming">Upcoming</string>
+    <string name="filter_all">All</string>
+    <string name="filter_completed">Completed</string>
+
+    <!-- Task Sort Labels -->
+    <string name="sort_custom">Custom</string>
+    <string name="sort_priority">Priority</string>
+    <string name="sort_time">Time</string>
+    <string name="sort_energy">Energy</string>
+
+    <!-- Auth -->
+    <string name="auth_slogan">Your deep work companion</string>
+    <string name="auth_label_email">Email</string>
+    <string name="auth_label_password">Password</string>
+    <string name="auth_label_name">Name</string>
+    <string name="auth_btn_signin">Sign In</string>
+    <string name="auth_btn_register">Create Account</string>
+    <string name="auth_btn_google">Sign in with Google</string>
+    <string name="auth_btn_guest">Continue as guest</string>
+    <string name="auth_forgot_password">Forgot your password?</string>
+    <string name="auth_already_have_account">Already have an account? Sign in</string>
+    <string name="auth_register_title">Create Account</string>
+    <string name="auth_register_subtitle">Join Pepinillo and start focusing</string>
+    <string name="auth_password_hint">Min 8 chars, with uppercase, lowercase, and a number</string>
+    <string name="cd_logo">Pepinillo logo</string>
 </resources>

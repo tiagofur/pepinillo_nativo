@@ -63,6 +63,9 @@ class PepinilloApiClient @Inject constructor(
             }.body()
         }
 
+    suspend fun deleteAccount(): NetworkResult<Unit> =
+        safeCall { httpClient.delete("auth/account").body() }
+
     // ── User ──
 
     suspend fun getMe(): NetworkResult<UserDto> =
@@ -117,11 +120,11 @@ class PepinilloApiClient @Inject constructor(
     // ── Pomodoro Sessions ──
 
     suspend fun createSession(session: PomodoroSessionDto): NetworkResult<PomodoroSessionDto> =
-        safeCall { httpClient.post("pomodoro/sessions") { jsonBody(session) }.body() }
+        safeCall { httpClient.post("focus/sessions") { jsonBody(session) }.body() }
 
     suspend fun getSessionsInRange(from: String, to: String): NetworkResult<List<PomodoroSessionDto>> =
         safeCall {
-            httpClient.get("pomodoro/sessions/range") {
+            httpClient.get("focus/sessions/range") {
                 parameter("from", from)
                 parameter("to", to)
             }.body()
@@ -136,10 +139,10 @@ class PepinilloApiClient @Inject constructor(
     // ── Pomodoro Config ──
 
     suspend fun getConfig(): NetworkResult<PomodoroConfigDto> =
-        safeCall { httpClient.get("pomodoro/config").body() }
+        safeCall { httpClient.get("focus/config").body() }
 
     suspend fun updateConfig(config: PomodoroConfigDto): NetworkResult<PomodoroConfigDto> =
-        safeCall { httpClient.put("pomodoro/config") { jsonBody(config) }.body() }
+        safeCall { httpClient.put("focus/config") { jsonBody(config) }.body() }
 
     // ── Focus Config (multi-mode) ──
 
@@ -190,6 +193,11 @@ class PepinilloApiClient @Inject constructor(
                 withDeviceId()
             }.body()
         }
+
+    // ── AI ──
+
+    suspend fun generateAIReport(payload: dev.creapolis.pepinillo.domain.report.ReportPayload): NetworkResult<AIReportResponse> =
+        safeCall { httpClient.post("ai/report") { jsonBody(payload) }.body() }
 
     // ── Billing ──
 

@@ -6,6 +6,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 
+import androidx.compose.ui.res.stringResource
+import dev.creapolis.pepinillo.R
+
 @Composable
 fun DataMergeDialog(
     onMerge: () -> Unit,
@@ -16,25 +19,24 @@ fun DataMergeDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Local Data Found",
+                text = stringResource(R.string.merge_title),
                 style = MaterialTheme.typography.headlineSmall,
             )
         },
         text = {
             Text(
-                text = "You have data on this device that hasn't been synced. " +
-                    "Would you like to merge it with your account, or start fresh with your account data?",
+                text = stringResource(R.string.merge_desc),
                 style = MaterialTheme.typography.bodyMedium,
             )
         },
         confirmButton = {
             TextButton(onClick = onMerge) {
-                Text("Merge Data")
+                Text(stringResource(R.string.merge_btn_merge))
             }
         },
         dismissButton = {
             TextButton(onClick = onUseAccountOnly) {
-                Text("Use Account Only")
+                Text(stringResource(R.string.merge_btn_account_only))
             }
         },
     )

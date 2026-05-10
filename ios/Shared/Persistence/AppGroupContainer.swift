@@ -44,6 +44,27 @@ enum AppGroup {
         containerURL.appendingPathComponent(storeFileName)
     }
 
+    /// Standalone app store used as a launch-safe fallback when the shared
+    /// App Group SQLite store is unavailable on device.
+    static var fallbackStoreURL: URL {
+        let baseDirectory =
+            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
+
+        return baseDirectory.appendingPathComponent("PepinilloFallback.sqlite")
+    }
+
+    /// Related SQLite sidecar files created by WAL journaling.
+    static var storeSupportURLs: [URL] {
+        let base = storeURL
+        return [
+            base,
+            URL(fileURLWithPath: base.path + "-shm"),
+            URL(fileURLWithPath: base.path + "-wal"),
+        ]
+    }
+
     /// Previous CloudKit-backed store kept only for future migration/recovery.
     static var legacyCloudKitStoreURL: URL {
         containerURL.appendingPathComponent(legacyCloudKitStoreFileName)
@@ -59,6 +80,12 @@ enum AppGroupDefaults {
     static var isProUser: Bool {
         get { defaults?.bool(forKey: "isProUser") ?? false }
         set { defaults?.set(newValue, forKey: "isProUser") }
+    }
+
+    /// Whether the user tier allows backend VPS sync (Everywhere/AI+).
+    static var canBackendSync: Bool {
+        get { defaults?.bool(forKey: "canBackendSync") ?? false }
+        set { defaults?.set(newValue, forKey: "canBackendSync") }
     }
 
     /// Whether a focus session is currently active (read by widgets, Control Center, Siri).
@@ -248,19 +275,12 @@ enum AppGroupDefaults {
 /// migrates that store before the first SwiftUI frame, so the launch path uses a
 /// fresh local store file and leaves the legacy file untouched for later recovery.
 func makeSharedModelContainer() throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV3.self)
-
-    let config = ModelConfiguration(
-        schema: schema,
-        url: AppGroup.storeURL,
-        cloudKitDatabase: .none
-    )
-
-    return try ModelContainer(
-        for: schema,
-        migrationPlan: PepinilloMigrationPlan.self,
-        configurations: [config]
-    )
+    do {
+        return try makeModelContainer(at: AppGroup.storeURL)
+    } catch {
+        try quarantineCorruptedStoreIfPresent()
+        return try makeModelContainer(at: AppGroup.storeURL)
+    }
 }
 
 // MARK: - Widget / Extension Container (non-CloudKit, non-MainActor)
@@ -269,11 +289,23 @@ func makeSharedModelContainer() throws -> ModelContainer {
 /// WidgetKit runs in a separate process — no @MainActor, no CloudKit sync.
 /// Includes TaskItem + SubTask + FocusSessionRecord so Tasks and Dashboard widgets can read real data.
 func makeWidgetModelContainer() throws -> ModelContainer {
+    try makeModelContainer(at: AppGroup.storeURL)
+}
+
+// MARK: - Intents Extension Container (includes TaskItem for Siri queries)
+
+/// Non-isolated container for the Intents extension (Siri Shortcuts).
+/// Includes TaskItem + SubTask so Siri can suggest real user tasks.
+func makeIntentsModelContainer() throws -> ModelContainer {
+    try makeModelContainer(at: AppGroup.storeURL)
+}
+
+private func makeModelContainer(at url: URL) throws -> ModelContainer {
     let schema = Schema(versionedSchema: SchemaV3.self)
 
     let config = ModelConfiguration(
         schema: schema,
-        url: AppGroup.storeURL,
+        url: url,
         cloudKitDatabase: .none
     )
 
@@ -284,22 +316,32 @@ func makeWidgetModelContainer() throws -> ModelContainer {
     )
 }
 
-// MARK: - Intents Extension Container (includes TaskItem for Siri queries)
+func makeFallbackModelContainer() throws -> ModelContainer {
+    let fileManager = FileManager.default
+    let directory = AppGroup.fallbackStoreURL.deletingLastPathComponent()
+    if fileManager.fileExists(atPath: directory.path) == false {
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
 
-/// Non-isolated container for the Intents extension (Siri Shortcuts).
-/// Includes TaskItem + SubTask so Siri can suggest real user tasks.
-func makeIntentsModelContainer() throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV3.self)
+    return try makeModelContainer(at: AppGroup.fallbackStoreURL)
+}
 
-    let config = ModelConfiguration(
-        schema: schema,
-        url: AppGroup.storeURL,
-        cloudKitDatabase: .none
-    )
+private func quarantineCorruptedStoreIfPresent() throws {
+    let fileManager = FileManager.default
+    let existingURLs = AppGroup.storeSupportURLs.filter { fileManager.fileExists(atPath: $0.path) }
+    guard existingURLs.isEmpty == false else { return }
 
-    return try ModelContainer(
-        for: schema,
-        migrationPlan: PepinilloMigrationPlan.self,
-        configurations: [config]
-    )
+    let timestamp = ISO8601DateFormatter().string(from: .now).replacingOccurrences(of: ":", with: "-")
+
+    for sourceURL in existingURLs {
+        let recoveredURL = sourceURL.deletingLastPathComponent().appendingPathComponent(
+            "\(sourceURL.lastPathComponent).recovered-\(timestamp)"
+        )
+
+        if fileManager.fileExists(atPath: recoveredURL.path) {
+            try fileManager.removeItem(at: recoveredURL)
+        }
+
+        try fileManager.moveItem(at: sourceURL, to: recoveredURL)
+    }
 }

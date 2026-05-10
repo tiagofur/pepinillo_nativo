@@ -32,11 +32,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.creapolis.pepinillo.feature.dashboard.components.FocusChart
 import dev.creapolis.pepinillo.feature.dashboard.model.MonthlyReportData
 import dev.creapolis.pepinillo.feature.dashboard.model.Trend
+import dev.creapolis.pepinillo.R
 import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,7 +62,7 @@ fun MonthlyReviewSheet(
                 .padding(bottom = 32.dp),
         ) {
             Text(
-                text = "Monthly Review",
+                text = stringResource(R.string.review_monthly_title),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -74,15 +76,15 @@ fun MonthlyReviewSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 MonthlyTrendCard(
-                    title = "Focus Time",
+                    title = stringResource(R.string.review_focus_time),
                     value = formatMonthlyMinutes(report.currentMonthMinutes),
                     delta = report.minutesDelta,
-                    deltaLabel = "${abs(report.minutesDelta)}m",
+                    deltaLabel = stringResource(R.string.review_delta_minutes, abs(report.minutesDelta)),
                     trend = report.minutesTrend,
                     modifier = Modifier.weight(1f),
                 )
                 MonthlyTrendCard(
-                    title = "Sessions",
+                    title = stringResource(R.string.review_sessions),
                     value = "${report.currentMonthSessions}",
                     delta = report.sessionsDelta,
                     deltaLabel = "${abs(report.sessionsDelta)}",
@@ -108,7 +110,7 @@ fun MonthlyReviewSheet(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = "Completion Rate",
+                            text = stringResource(R.string.review_completion_rate),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -125,7 +127,7 @@ fun MonthlyReviewSheet(
 
             // -- MONTH CHART --
             Text(
-                text = "This Month",
+                text = stringResource(R.string.review_this_month),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -141,6 +143,13 @@ fun MonthlyReviewSheet(
 
             // -- BEST WEEK --
             if (report.bestWeekLabel != null && report.bestWeekMinutes > 0) {
+                val resolvedLabel = if (report.bestWeekLabel.startsWith("WEEK_LABEL:")) {
+                    val weekNum = report.bestWeekLabel.removePrefix("WEEK_LABEL:").toIntOrNull() ?: 0
+                    stringResource(R.string.more_week_label, weekNum)
+                } else {
+                    report.bestWeekLabel
+                }
+
                 MonthlySheetCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -155,12 +164,12 @@ fun MonthlyReviewSheet(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Best Week",
+                                text = stringResource(R.string.review_best_week),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                text = "${report.bestWeekLabel} \u2014 ${formatMonthlyMinutes(report.bestWeekMinutes)}",
+                                text = "$resolvedLabel \u2014 ${formatMonthlyMinutes(report.bestWeekMinutes)}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -173,7 +182,7 @@ fun MonthlyReviewSheet(
             // -- TOP TASKS --
             if (report.topTasks.isNotEmpty()) {
                 Text(
-                    text = "Top Tasks",
+                    text = stringResource(R.string.review_top_tasks),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -217,7 +226,7 @@ fun MonthlyReviewSheet(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Dominant Mode",
+                                text = stringResource(R.string.review_dominant_mode),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -235,7 +244,7 @@ fun MonthlyReviewSheet(
             // -- MODE DISTRIBUTION --
             if (report.modeDistribution.isNotEmpty()) {
                 Text(
-                    text = "Mode Distribution",
+                    text = stringResource(R.string.review_mode_distribution),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                 )

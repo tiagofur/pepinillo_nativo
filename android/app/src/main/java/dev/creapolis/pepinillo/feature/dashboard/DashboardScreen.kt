@@ -17,9 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -59,7 +56,6 @@ import dev.creapolis.pepinillo.feature.dashboard.components.FocusChart
 import dev.creapolis.pepinillo.feature.dashboard.components.ModeBreakdown
 import dev.creapolis.pepinillo.feature.dashboard.model.Achievement
 import dev.creapolis.pepinillo.feature.dashboard.model.AnalyticsPeriod
-import dev.creapolis.pepinillo.feature.dashboard.model.MonthlyReportData
 import dev.creapolis.pepinillo.feature.dashboard.model.isEmpty
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.components.DashboardSkeleton
@@ -80,7 +76,8 @@ fun DashboardScreen(
     val weeklyReport by viewModel.weeklyReport.collectAsState()
     val showMonthlyReview by viewModel.showMonthlyReview.collectAsState()
     val monthlyReport by viewModel.monthlyReport.collectAsState()
-    val isPro by viewModel.isPro.collectAsState()
+    val hasLocalPremium by viewModel.hasLocalPremium.collectAsState()
+    val canUseAI by viewModel.canUseAI.collectAsState()
 
     if (stats.isLoading) {
         Column(
@@ -110,21 +107,21 @@ fun DashboardScreen(
         ) {
             Column {
                 Text(
-                    text = "Dashboard",
+                    text = stringResource(R.string.dashboard_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Your focus overview",
+                    text = stringResource(R.string.dashboard_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Row {
                 IconButton(onClick = {
-                    if (isPro) onNavigateToAIReport() else onNavigateToPaywall()
+                    if (canUseAI) onNavigateToAIReport() else onNavigateToPaywall()
                 }) {
                     Icon(
                         Icons.Rounded.AutoAwesome,
@@ -133,27 +130,27 @@ fun DashboardScreen(
                     )
                 }
                 IconButton(onClick = {
-                    if (isPro) viewModel.showWeeklyReview() else onNavigateToPaywall()
+                    if (hasLocalPremium) viewModel.showWeeklyReview() else onNavigateToPaywall()
                 }) {
                     Icon(
                         Icons.Rounded.Summarize,
-                        contentDescription = "Weekly Review",
+                        contentDescription = stringResource(R.string.cd_weekly_review),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 IconButton(onClick = {
-                    if (isPro) viewModel.showMonthlyReview() else onNavigateToPaywall()
+                    if (hasLocalPremium) viewModel.showMonthlyReview() else onNavigateToPaywall()
                 }) {
                     Icon(
                         Icons.Rounded.DateRange,
-                        contentDescription = "Monthly Review",
+                        contentDescription = stringResource(R.string.cd_monthly_review),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 IconButton(onClick = onCalendarClick) {
                     Icon(
                         Icons.Rounded.CalendarMonth,
-                        contentDescription = "Calendar",
+                        contentDescription = stringResource(R.string.cd_calendar),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -177,13 +174,13 @@ fun DashboardScreen(
         PeriodPicker(
             selected = stats.selectedPeriod,
             onSelect = { period ->
-                if (!isPro && period != AnalyticsPeriod.Week) {
+                if (!hasLocalPremium && period != AnalyticsPeriod.Week) {
                     onNavigateToPaywall()
                 } else {
                     viewModel.setPeriod(period)
                 }
             },
-            isPro = isPro,
+            isPro = hasLocalPremium,
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -194,20 +191,20 @@ fun DashboardScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SummaryCard(
-                title = "Focus Time",
+                title = stringResource(R.string.dashboard_focus_time),
                 value = formatMinutes(stats.periodMinutes),
                 icon = Icons.Rounded.AccessTime,
                 modifier = Modifier.weight(1f),
             )
             SummaryCard(
-                title = "Sessions",
+                title = stringResource(R.string.dashboard_sessions),
                 value = "${stats.periodSessions}",
                 icon = Icons.Rounded.TaskAlt,
                 modifier = Modifier.weight(1f),
             )
             SummaryCard(
-                title = "Streak",
-                value = "${stats.currentStreak}d",
+                title = stringResource(R.string.dashboard_streak),
+                value = stringResource(R.string.dashboard_days_count, stats.currentStreak),
                 icon = Icons.Rounded.LocalFireDepartment,
                 modifier = Modifier.weight(1f),
             )
@@ -216,7 +213,7 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── FOCUS CHART ──
-        SectionTitle(title = "Focus Minutes")
+        SectionTitle(title = stringResource(R.string.dashboard_focus_minutes))
         Spacer(modifier = Modifier.height(12.dp))
 
         DashboardCard {
@@ -229,7 +226,7 @@ fun DashboardScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── PRODUCTIVITY PATTERNS ──
-        SectionTitle(title = "Productivity Patterns")
+        SectionTitle(title = stringResource(R.string.dashboard_patterns))
         Spacer(modifier = Modifier.height(12.dp))
 
         Row(
@@ -237,13 +234,13 @@ fun DashboardScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             PatternCard(
-                title = "Peak Hours",
+                title = stringResource(R.string.dashboard_peak_hours),
                 value = stats.peakHourRange.ifEmpty { "\u2013" },
                 icon = Icons.Rounded.AccessTime,
                 modifier = Modifier.weight(1f),
             )
             PatternCard(
-                title = "Best Day",
+                title = stringResource(R.string.dashboard_best_day),
                 value = stats.bestDayOfWeek.ifEmpty { "\u2013" },
                 icon = Icons.Rounded.Star,
                 modifier = Modifier.weight(1f),
@@ -255,7 +252,7 @@ fun DashboardScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             PatternCard(
-                title = "Focus Score",
+                title = stringResource(R.string.dashboard_focus_score),
                 value = "${stats.focusScore}",
                 icon = Icons.Rounded.EmojiEvents,
                 modifier = Modifier.weight(1f),
@@ -268,7 +265,7 @@ fun DashboardScreen(
 
         // ── MODE BREAKDOWN ──
         if (stats.modeBreakdown.isNotEmpty()) {
-            SectionTitle(title = "Focus Modes")
+            SectionTitle(title = stringResource(R.string.dashboard_focus_modes))
             Spacer(modifier = Modifier.height(12.dp))
             DashboardCard {
                 ModeBreakdown(modes = stats.modeBreakdown)
@@ -278,7 +275,7 @@ fun DashboardScreen(
 
         // ── ACHIEVEMENTS ──
         if (stats.achievements.isNotEmpty()) {
-            SectionTitle(title = "Achievements")
+            SectionTitle(title = stringResource(R.string.dashboard_achievements))
             Spacer(modifier = Modifier.height(12.dp))
             AchievementsRow(achievements = stats.achievements)
             Spacer(modifier = Modifier.height(28.dp))
@@ -290,13 +287,13 @@ fun DashboardScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             StreakCard(
-                title = "Current",
+                title = stringResource(R.string.dashboard_current),
                 days = stats.currentStreak,
                 icon = Icons.Rounded.LocalFireDepartment,
                 modifier = Modifier.weight(1f),
             )
             StreakCard(
-                title = "Best",
+                title = stringResource(R.string.dashboard_best),
                 days = stats.bestStreak,
                 icon = Icons.Rounded.EmojiEvents,
                 modifier = Modifier.weight(1f),
@@ -369,7 +366,7 @@ private fun PeriodPicker(
                 if (isLocked) {
                     Icon(
                         Icons.Rounded.Lock,
-                        contentDescription = "Pro",
+                        contentDescription = stringResource(R.string.cd_pro),
                         modifier = Modifier.size(12.dp),
                         tint = textColor,
                     )
@@ -487,7 +484,7 @@ private fun StreakCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = "$days days",
+                text = stringResource(R.string.dashboard_days_count, days),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -597,19 +594,19 @@ private fun EmptyDashboardState(
     ) {
         Icon(
             imageVector = Icons.Rounded.PlayArrow,
-            contentDescription = "Start empty focus",
+            contentDescription = null,
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No focus sessions yet",
+            text = stringResource(R.string.dashboard_no_sessions),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Start your first focus session to see your analytics here",
+            text = stringResource(R.string.dashboard_empty_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
@@ -621,11 +618,11 @@ private fun EmptyDashboardState(
         ) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
-                contentDescription = "Start first focus",
+                contentDescription = null,
                 modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Start your first focus")
+            Text(stringResource(R.string.dashboard_btn_start))
         }
     }
 }

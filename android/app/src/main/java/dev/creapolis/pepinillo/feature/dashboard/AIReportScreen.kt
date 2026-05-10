@@ -63,10 +63,20 @@ fun AIReportScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = {
-                Text(
-                    text = stringResource(R.string.ai_report_title),
-                    fontWeight = FontWeight.Bold,
-                )
+                Column {
+                    Text(
+                        text = stringResource(R.string.ai_report_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (state.report != null && !state.isGenerating) {
+                        Text(
+                            text = stringResource(R.string.ai_credits_left, state.creditsLeft),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             },
             navigationIcon = {
                 IconButton(onClick = onBack) {

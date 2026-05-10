@@ -145,7 +145,7 @@ fun FocusScreen(
             ) {
                 Column {
                     Text(
-                        text = uiState.greeting,
+                        text = stringResource(uiState.greetingRes),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -179,12 +179,20 @@ fun FocusScreen(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            val phaseLabel = if (uiState.selectedMode == FocusMode.Pomodoro && 
+                uiState.currentPhase == dev.creapolis.pepinillo.domain.timer.FocusPhase.Work &&
+                (uiState.isRunning || uiState.isPaused)) {
+                stringResource(R.string.phase_focus_numbered, uiState.completedSessions + 1)
+            } else {
+                stringResource(uiState.phaseLabelRes)
+            }
+
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(260.dp)
                     .semantics {
-                        contentDescription = "${uiState.phaseLabel}: ${uiState.displayTime}, ${uiState.selectedMode.label} mode"
+                        contentDescription = "$phaseLabel: ${uiState.displayTime}, ${stringResource(uiState.selectedMode.labelRes)} mode"
                     },
             ) {
                 CircularTimerRing(
@@ -206,7 +214,7 @@ fun FocusScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = uiState.phaseLabel,
+                        text = phaseLabel,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -323,7 +331,7 @@ fun FocusScreen(
             Column {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "You've been focused for a while — consider a break!",
+                    text = stringResource(R.string.break_suggestion_text),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,

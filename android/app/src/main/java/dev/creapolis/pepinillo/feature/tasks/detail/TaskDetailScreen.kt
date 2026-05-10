@@ -1,877 +1,382 @@
 package dev.creapolis.pepinillo.feature.tasks.detail
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.Repeat
-import androidx.compose.material.icons.rounded.Today
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
-import dev.creapolis.pepinillo.ui.theme.EnergyColors
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import dev.creapolis.pepinillo.ui.theme.priorityColor
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskDetailScreen(
     onBack: () -> Unit,
-    onStartFocus: (taskId: String) -> Unit,
-    onViewAnalytics: (taskId: String) -> Unit = {},
-    onNavigateToPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TaskDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isPro = viewModel.isPro
+    val task = uiState.task ?: return
 
-    // Paywall navigation
-    val showPaywall by viewModel.showPaywall.collectAsState()
-    if (showPaywall) {
-        viewModel.dismissPaywall()
-        onNavigateToPaywall()
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.navigateBack.collect { onBack() }
-    }
-
-    if (uiState.isLoading || uiState.task == null) {
-        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    val task = uiState.task!!
-    var showDatePicker by rememberSaveable { mutableStateOf(false) }
-
-    // Delete confirmation dialog
     if (uiState.showDeleteDialog) {
         AlertDialog(
             onDismissRequest = viewModel::dismissDeleteDialog,
-            title = { Text("Delete Task?") },
-            text = { Text("This action cannot be undone.") },
+            title = { Text(stringResource(R.string.task_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.task_delete_confirm_desc)) },
             confirmButton = {
                 TextButton(onClick = viewModel::confirmDelete) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.cd_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::dismissDeleteDialog) { Text("Cancel") }
+                TextButton(onClick = viewModel::dismissDeleteDialog) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
             },
         )
-    }
-
-    // Date picker dialog
-    if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = task.dueDate ?: System.currentTimeMillis(),
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.updateDueDate(datePickerState.selectedDateMillis)
-                    showDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
-            },
-        ) {
-            DatePicker(state = datePickerState)
-        }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Task Details") },
+                title = { Text(stringResource(R.string.task_detail_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_go_back),
+                        )
                     }
                 },
             )
         },
-    ) { innerPadding ->
-        LazyColumn(
+    ) { padding ->
+        Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp),
         ) {
-            // ── 1. Title Section ──
-            item {
-                TitleSection(
-                    title = task.title,
-                    isCompleted = task.isCompleted,
-                    onTitleChange = viewModel::updateTitle,
-                    onToggleCompletion = viewModel::toggleCompletion,
-                )
+            Spacer(Modifier.height(8.dp))
+
+            // ── Title ──
+            OutlinedTextField(
+                value = task.title,
+                onValueChange = viewModel::updateTitle,
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                placeholder = { Text("Task title") },
+                shape = RoundedCornerShape(16.dp),
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // ── Actions ──
+            Button(
+                onClick = { /* Start session logic */ },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Icon(Icons.Rounded.PlayArrow, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.task_detail_btn_start))
             }
 
-            // ── 2. Subtasks Section ──
-            item {
-                SubtasksSection(
-                    subtasks = uiState.subtasks,
-                    progress = uiState.subtaskProgress,
-                    onAddSubtask = viewModel::addSubtask,
-                    onToggleSubtask = viewModel::toggleSubtask,
-                    onDeleteSubtask = viewModel::deleteSubtask,
-                    isPro = isPro,
-                )
+            Spacer(Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = viewModel::showDeleteDialog,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Icon(Icons.Rounded.Delete, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.task_detail_btn_delete))
             }
 
-            // ── 3. Scheduling Section ──
-            item {
-                SchedulingSection(
-                    scheduledForToday = task.scheduledForToday,
-                    dueDate = task.dueDate,
-                    onToggleToday = viewModel::toggleScheduledForToday,
-                    onDateClick = { showDatePicker = true },
-                    onRemoveDate = { viewModel.updateDueDate(null) },
-                )
-            }
+            Spacer(Modifier.height(32.dp))
 
-            // ── 4. Details Section (Priority, Energy, Pomodoros) ──
-            item {
-                DetailsSection(
-                    priority = task.priority,
-                    energyLevel = task.energyLevel,
-                    estimatedPomodoros = task.estimatedPomodoros,
-                    completedPomodoros = task.completedPomodoros,
-                    onPriorityChange = viewModel::updatePriority,
-                    onEnergyChange = viewModel::updateEnergyLevel,
-                    onPomodorosChange = viewModel::updateEstimatedPomodoros,
-                )
-            }
-
-            // ── 5. Recurrence Section ──
-            item {
-                RecurrenceSection(
-                    currentRule = task.recurrenceRule,
-                    onRecurrenceChange = viewModel::updateRecurrence,
-                    isPro = isPro,
-                )
-            }
-
-            // ── 6. Notes Section ──
-            item {
-                NotesSection(
-                    notes = task.notes,
-                    onNotesChange = viewModel::updateNotes,
-                )
-            }
-
-            // ── 7. Focus History Section ──
-            if (uiState.focusSessions.isNotEmpty()) {
-                item {
-                    FocusHistorySection(
-                        totalTime = uiState.totalFocusTimeFormatted,
-                        pomodoroCount = uiState.focusPomodoroCount,
-                        onViewAnalytics = { if (isPro) onViewAnalytics(task.id) else onNavigateToPaywall() },
+            // ── Details ──
+            SectionTitle(stringResource(R.string.task_label_priority))
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TaskPriority.entries.filter { it != TaskPriority.None }.forEach { priority ->
+                    PriorityPill(
+                        priority = priority,
+                        isSelected = task.priority == priority,
+                        onClick = { viewModel.updatePriority(priority) },
                     )
                 }
             }
 
-            // ── 8. Action Buttons ──
-            item {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilledTonalButton(
-                        onClick = { onStartFocus(task.id) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = !task.isCompleted,
-                        shape = RoundedCornerShape(16.dp),
-                    ) {
-                        Icon(Icons.Rounded.PlayArrow, contentDescription = "Start Focus Session", modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Start Focus Session")
-                    }
+            Spacer(Modifier.height(24.dp))
 
-                    TextButton(
-                        onClick = viewModel::showDeleteDialog,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(
-                            Icons.Rounded.Delete,
-                            contentDescription = "Delete Task",
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Delete Task", color = MaterialTheme.colorScheme.error)
-                    }
+            SectionTitle(stringResource(R.string.task_label_energy))
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                EnergyLevel.entries.forEach { level ->
+                    EnergyPill(
+                        level = level,
+                        isSelected = task.energyLevel == level,
+                        onClick = { viewModel.updateEnergyLevel(level) },
+                    )
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(24.dp)) }
+            Spacer(Modifier.height(24.dp))
+
+            SectionTitle(stringResource(R.string.task_label_estimate))
+            Spacer(Modifier.height(12.dp))
+            PomodoroEstimateSelector(
+                estimate = task.estimatedPomodoros,
+                onValueChange = viewModel::updateEstimatedPomodoros,
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            SectionTitle(stringResource(R.string.task_label_repeat))
+            Spacer(Modifier.height(12.dp))
+            RecurrencePicker(
+                current = RecurrenceOption.fromRrule(task.recurrenceRule),
+                onSelect = viewModel::updateRecurrence,
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            SectionTitle(stringResource(R.string.task_label_notes))
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = task.notes ?: "",
+                onValueChange = viewModel::updateNotes,
+                placeholder = { Text(stringResource(R.string.task_label_notes_hint)) },
+                modifier = Modifier.fillMaxWidth().height(120.dp),
+                shape = RoundedCornerShape(16.dp),
+            )
+
+            Spacer(Modifier.height(32.dp))
+
+            SectionTitle(stringResource(R.string.task_label_history))
+            Spacer(Modifier.height(12.dp))
+            
+            DashboardCard {
+                Column {
+                    HistoryRow(
+                        label = stringResource(R.string.task_stat_total_time),
+                        value = uiState.totalFocusTimeFormatted,
+                    )
+                    HorizontalDivider(Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    HistoryRow(
+                        label = stringResource(R.string.task_stat_completed_pomos),
+                        value = "${uiState.focusPomodoroCount}",
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(40.dp))
         }
     }
 }
 
-// ── Section Composables ──
+@Composable
+private fun SectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
 
 @Composable
-private fun TitleSection(
-    title: String,
-    isCompleted: Boolean,
-    onTitleChange: (String) -> Unit,
-    onToggleCompletion: () -> Unit,
+private fun PriorityPill(
+    priority: TaskPriority,
+    isSelected: Boolean,
+    onClick: () -> Unit,
 ) {
-    var editingTitle by rememberSaveable(title) { mutableStateOf(title) }
+    val color = priority.priorityColor()
+    val bgColor = if (isSelected) color else color.copy(alpha = 0.1f)
+    val contentColor = if (isSelected) Color.White else color
 
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = bgColor,
+        modifier = Modifier.width(80.dp),
+    ) {
+        Text(
+            text = priority.name,
+            modifier = Modifier.padding(vertical = 8.dp),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.labelMedium,
+            color = contentColor,
+        )
+    }
+}
+
+@Composable
+private fun EnergyPill(
+    level: EnergyLevel,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+) {
+    val bgColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = bgColor,
+        modifier = Modifier.width(100.dp),
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.Top,
+            modifier = Modifier.padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            CompletionCheckbox(
-                isCompleted = isCompleted,
-                onClick = onToggleCompletion,
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            OutlinedTextField(
-                value = editingTitle,
-                onValueChange = { editingTitle = it },
-                modifier = Modifier.weight(1f),
-                textStyle = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    textDecoration = if (isCompleted) TextDecoration.LineThrough else null,
-                ),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                ),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = {
-                    if (editingTitle.isNotBlank() && editingTitle != title) {
-                        onTitleChange(editingTitle)
-                    }
-                }),
+            val emoji = when (level) {
+                EnergyLevel.Deep -> "\uD83D\uDD25"
+                EnergyLevel.Light -> "\uD83D\uDCA7"
+                else -> "\u26A1"
+            }
+            Text(text = emoji, fontSize = 14.sp)
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = level.name,
+                style = MaterialTheme.typography.labelMedium,
+                color = contentColor,
             )
         }
     }
 }
 
 @Composable
-private fun CompletionCheckbox(
-    isCompleted: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+private fun PomodoroEstimateSelector(
+    estimate: Int,
+    onValueChange: (Int) -> Unit,
 ) {
-    val bgColor by animateColorAsState(
-        targetValue = if (isCompleted) MaterialTheme.colorScheme.primary else Color.Transparent,
-        animationSpec = spring(),
-        label = "checkboxBg",
-    )
-    Box(
-        modifier = modifier
-            .size(28.dp)
-            .clip(CircleShape)
-            .background(bgColor)
-            .then(
-                if (!isCompleted) Modifier.border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                else Modifier,
-            )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (isCompleted) {
-            Icon(Icons.Rounded.Check, contentDescription = "Task completed", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onPrimary)
+        IconButton(onClick = { if (estimate > 1) onValueChange(estimate - 1) }) {
+            Text("-", style = MaterialTheme.typography.headlineMedium)
+        }
+        Text(
+            text = "$estimate \uD83C\uDF45",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+        )
+        IconButton(onClick = { if (estimate < 10) onValueChange(estimate + 1) }) {
+            Text("+", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
 
 @Composable
-private fun SubtasksSection(
-    subtasks: List<dev.creapolis.pepinillo.feature.tasks.model.Subtask>,
-    progress: Pair<Int, Int>,
-    onAddSubtask: (String) -> Unit,
-    onToggleSubtask: (String) -> Unit,
-    onDeleteSubtask: (String) -> Unit,
-    isPro: Boolean = true,
+private fun RecurrencePicker(
+    current: RecurrenceOption,
+    onSelect: (RecurrenceOption) -> Unit,
 ) {
-    var newSubtaskTitle by rememberSaveable { mutableStateOf("") }
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        "Subtasks",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    if (!isPro) {
-                        Text(
-                            "PRO",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onTertiary,
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.tertiary,
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
-                }
-                if (subtasks.isNotEmpty()) {
-                    Text(
-                        "${progress.first}/${progress.second}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+        RecurrenceOption.entries.take(4).forEach { recurrence ->
+            val isSelected = current == recurrence
+            val bgColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
 
-            subtasks.forEach { subtask ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Checkbox(
-                        checked = subtask.isCompleted,
-                        onCheckedChange = { onToggleSubtask(subtask.id) },
-                    )
-                    Text(
-                        text = subtask.title,
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.bodyMedium,
-                        textDecoration = if (subtask.isCompleted) TextDecoration.LineThrough else null,
-                        color = if (subtask.isCompleted) {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        },
-                    )
-                    IconButton(
-                        onClick = { onDeleteSubtask(subtask.id) },
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(
-                            Icons.Rounded.Clear,
-                            contentDescription = "Delete subtask",
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = newSubtaskTitle,
-                    onValueChange = { newSubtaskTitle = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = {
-                        Text(if (isPro) "Add subtask..." else "Upgrade to PRO to add subtasks")
-                    },
-                    singleLine = true,
-                    enabled = isPro,
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                    ),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = {
-                        if (newSubtaskTitle.isNotBlank()) {
-                            onAddSubtask(newSubtaskTitle)
-                            newSubtaskTitle = ""
-                        }
-                    }),
-                )
-                IconButton(
-                    onClick = {
-                        if (newSubtaskTitle.isNotBlank()) {
-                            onAddSubtask(newSubtaskTitle)
-                            newSubtaskTitle = ""
-                        }
-                    },
-                    enabled = isPro && newSubtaskTitle.isNotBlank(),
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "Add subtask")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SchedulingSection(
-    scheduledForToday: Boolean,
-    dueDate: Long?,
-    onToggleToday: () -> Unit,
-    onDateClick: () -> Unit,
-    onRemoveDate: () -> Unit,
-) {
-    val dateFormatter = remember { SimpleDateFormat("MMM d, yyyy", Locale.getDefault()) }
-    val isOverdue = dueDate != null && dueDate < System.currentTimeMillis()
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Focus Today toggle
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Today, contentDescription = "Scheduled for today", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("Focus Today", style = MaterialTheme.typography.bodyLarge)
-                }
-                Switch(checked = scheduledForToday, onCheckedChange = { onToggleToday() })
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            // Due date
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onDateClick)
-                    .padding(vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Rounded.CalendarMonth,
-                        contentDescription = "Calendar",
-                        modifier = Modifier.size(20.dp),
-                        tint = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    if (dueDate != null) {
-                        Text(
-                            dateFormatter.format(Date(dueDate)),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                        )
-                    } else {
-                        Text(
-                            "Add due date",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                if (dueDate != null) {
-                    IconButton(onClick = onRemoveDate, modifier = Modifier.size(32.dp)) {
-                        Icon(Icons.Rounded.Clear, contentDescription = "Remove date", modifier = Modifier.size(16.dp))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun DetailsSection(
-    priority: TaskPriority,
-    energyLevel: EnergyLevel,
-    estimatedPomodoros: Int,
-    completedPomodoros: Int,
-    onPriorityChange: (TaskPriority) -> Unit,
-    onEnergyChange: (EnergyLevel) -> Unit,
-    onPomodorosChange: (Int) -> Unit,
-) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            // Priority
-            Column {
-                Text("Priority", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    TaskPriority.entries.forEachIndexed { index, p ->
-                        SegmentedButton(
-                            selected = priority == p,
-                            onClick = { onPriorityChange(p) },
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = TaskPriority.entries.size),
-                        ) {
-                            Text(p.name, style = MaterialTheme.typography.labelMedium)
-                        }
-                    }
-                }
-            }
-
-            // Energy Level
-            Column {
-                Text("Energy Level", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    EnergyLevel.entries.forEach { energy ->
-                        val dotColor = when (energy) {
-                            EnergyLevel.Deep -> EnergyColors.deep
-                            EnergyLevel.Regular -> EnergyColors.regular
-                            EnergyLevel.Light -> EnergyColors.light
-                        }
-                        FilterChip(
-                            selected = energyLevel == energy,
-                            onClick = { onEnergyChange(energy) },
-                            label = { Text(energy.label) },
-                            leadingIcon = {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .clip(CircleShape)
-                                        .background(dotColor),
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = dotColor.copy(alpha = 0.15f),
-                            ),
-                        )
-                    }
-                }
-            }
-
-            // Estimated Pomodoros
-            Column {
-                Text("Estimated Pomodoros", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    IconButton(
-                        onClick = { onPomodorosChange(estimatedPomodoros - 1) },
-                        enabled = estimatedPomodoros > 1,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                    ) {
-                        Icon(Icons.Rounded.Remove, contentDescription = "Decrease", modifier = Modifier.size(18.dp))
-                    }
-                    Text(
-                        "$estimatedPomodoros",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    IconButton(
-                        onClick = { onPomodorosChange(estimatedPomodoros + 1) },
-                        enabled = estimatedPomodoros < 8,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                    ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "Increase", modifier = Modifier.size(18.dp))
-                    }
-                }
-                if (completedPomodoros > 0) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "$completedPomodoros/$estimatedPomodoros completed",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RecurrenceSection(
-    currentRule: String?,
-    onRecurrenceChange: (RecurrenceOption) -> Unit,
-    isPro: Boolean = true,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val currentOption = RecurrenceOption.fromRrule(currentRule)
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Box {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { expanded = true }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(Icons.Rounded.Repeat, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Repeat", style = MaterialTheme.typography.bodyLarge)
-                    if (!isPro) {
-                        Text(
-                            "PRO",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onTertiary,
-                            modifier = Modifier
-                                .background(
-                                    MaterialTheme.colorScheme.tertiary,
-                                    RoundedCornerShape(4.dp),
-                                )
-                                .padding(horizontal = 6.dp, vertical = 2.dp),
-                        )
-                    }
-                }
-                Text(
-                    currentOption.label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (currentOption != RecurrenceOption.None) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                RecurrenceOption.entries.forEach { option ->
-                    DropdownMenuItem(
-                        text = {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Text(option.label)
-                                if (!isPro && option != RecurrenceOption.None) {
-                                    Text(
-                                        "PRO",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onTertiary,
-                                        modifier = Modifier
-                                            .background(
-                                                MaterialTheme.colorScheme.tertiary,
-                                                RoundedCornerShape(4.dp),
-                                            )
-                                            .padding(horizontal = 6.dp, vertical = 2.dp),
-                                    )
-                                }
-                            }
-                        },
-                        onClick = {
-                            onRecurrenceChange(option)
-                            expanded = false
-                        },
-                        trailingIcon = if (currentOption == option) {
-                            { Icon(Icons.Rounded.Check, contentDescription = "Selected", modifier = Modifier.size(18.dp)) }
-                        } else null,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun NotesSection(
-    notes: String?,
-    onNotesChange: (String) -> Unit,
-) {
-    var editingNotes by rememberSaveable(notes) { mutableStateOf(notes ?: "") }
-
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Notes", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = editingNotes,
-                onValueChange = { editingNotes = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                placeholder = { Text("Add notes...") },
-                textStyle = MaterialTheme.typography.bodyMedium,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                    unfocusedBorderColor = Color.Transparent,
-                ),
+            Surface(
+                onClick = { onSelect(recurrence) },
                 shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                keyboardActions = KeyboardActions(onDone = {
-                    if (editingNotes != (notes ?: "")) onNotesChange(editingNotes)
-                }),
-            )
-            // Save notes on focus loss via LaunchedEffect
-            LaunchedEffect(editingNotes) {
-                // Debounced auto-save when user stops typing
-                kotlinx.coroutines.delay(1000)
-                if (editingNotes != (notes ?: "")) {
-                    onNotesChange(editingNotes)
-                }
+                color = bgColor,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = recurrence.label,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun FocusHistorySection(
-    totalTime: String,
-    pomodoroCount: Int,
-    onViewAnalytics: () -> Unit = {},
-) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+private fun HistoryRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Focus History", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text("Total Focus Time", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(totalTime, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text("Completed Pomodoros", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("$pomodoroCount", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onViewAnalytics)
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    Icons.Filled.BarChart,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    "Focus Analytics",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                )
-            }
-        }
+        Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun DashboardCard(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+            .padding(16.dp),
+    ) {
+        content()
     }
 }

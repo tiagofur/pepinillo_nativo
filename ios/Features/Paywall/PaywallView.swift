@@ -40,7 +40,7 @@ struct PaywallView: View {
             }
             .scrollContentBackground(.hidden)
             .background(Color.clear)
-            .navigationTitle(String(localized: "Upgrade to Pro"))
+            .navigationTitle(String(localized: "Upgrade to Pepinillo+"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -64,7 +64,7 @@ struct PaywallView: View {
             }
             .alert(
                 store.subscriptionState.isPro
-                    ? String(localized: "Welcome to Pepinillo Pro!")
+                    ? String(localized: "Welcome to Pepinillo+! 🎉")
                     : String(localized: "Purchase Status"),
                 isPresented: Binding(
                     get: { store.purchaseResult != nil },

@@ -13,6 +13,7 @@ data class UserEntity(
     val subscriptionTier: String = "free",
     val subscriptionExpiresAt: String? = null,
     val emailVerified: Boolean = false,
+    val aiCreditsBalance: Int = 0,
     val createdAt: String = "",
     val updatedAt: String = "",
     val cachedAt: Long = System.currentTimeMillis(),

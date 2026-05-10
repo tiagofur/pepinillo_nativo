@@ -25,4 +25,19 @@
     <string name="streak">Streak</string>
     <string name="days">%d days</string>
     <string name="completed_tasks">Completed tasks</string>
+
+    <!-- Tiles -->
+    <string name="tile_tasks_title">Tasks (%1$d/%2$d done)</string>
+    <string name="tile_no_tasks">No tasks</string>
+    <string name="tile_locked_tasks">Unlock Tasks tile</string>
+    <string name="tile_locked_focus">Unlock Focus tile</string>
+    <string name="tile_upgrade_app">Open the app to upgrade</string>
+    <string name="tile_tap_to_focus">Tap to focus</string>
+    <string name="tile_paused">Paused</string>
+
+    <!-- Complications -->
+    <string name="comp_locked_desc">Pepinillo+ required</string>
+    <string name="comp_locked_text">Lock</string>
+    <string name="comp_locked_title">Plus</string>
+    <string name="comp_timer_desc">Focus timer</string>
 </resources>

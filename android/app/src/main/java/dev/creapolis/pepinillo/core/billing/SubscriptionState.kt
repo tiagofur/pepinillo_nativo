@@ -4,8 +4,7 @@ enum class SubscriptionTier {
     FREE,
     PEPINILLO_PLUS,
     EVERYWHERE_MONTHLY,
-    EVERYWHERE_ANNUAL,
-    EVERYWHERE_LIFETIME;
+    EVERYWHERE_ANNUAL;
 
     /** True for any paid tier — both Pepinillo+ and all Everywhere+ variants. */
     val isPro: Boolean get() = this != FREE
@@ -24,7 +23,6 @@ data class SubscriptionState(
     val canSync: Boolean
         get() = tier == SubscriptionTier.EVERYWHERE_MONTHLY
             || tier == SubscriptionTier.EVERYWHERE_ANNUAL
-            || tier == SubscriptionTier.EVERYWHERE_LIFETIME
 
     /** True when the user holds a Pepinillo+ one-time entitlement (enum-based). */
     val isPepinilloPlus: Boolean
@@ -35,22 +33,24 @@ data class SubscriptionState(
 }
 
 object PepinilloProducts {
-    const val PEPINILLO_PLUS = "com.pepinillo.app.pepinillo_plus"
-    const val EVERYWHERE_MONTHLY = "com.pepinillo.app.everywhere.monthly"
-    const val EVERYWHERE_ANNUAL = "com.pepinillo.app.everywhere.annual"
-    const val EVERYWHERE_LIFETIME = "com.pepinillo.app.everywhere.lifetime"
+    const val PEPINILLO_PLUS = "com.pepinillo.app.pro.lifetime"
+    const val EVERYWHERE_MONTHLY = "com.pepinillo.app.pro.monthly"
+    const val EVERYWHERE_ANNUAL = "com.pepinillo.app.pro.annual"
 
-    val ALL_IDS = listOf(PEPINILLO_PLUS, EVERYWHERE_MONTHLY, EVERYWHERE_ANNUAL, EVERYWHERE_LIFETIME)
+    val ALL_IDS = listOf(PEPINILLO_PLUS, EVERYWHERE_MONTHLY, EVERYWHERE_ANNUAL)
 
-    fun tierForProduct(productId: String): SubscriptionTier = when {
-        productId == EVERYWHERE_LIFETIME || productId.contains("everywhere") && productId.contains("lifetime") ->
-            SubscriptionTier.EVERYWHERE_LIFETIME
-        productId == EVERYWHERE_ANNUAL || productId.contains("everywhere") && productId.contains("annual") ->
-            SubscriptionTier.EVERYWHERE_ANNUAL
-        productId == EVERYWHERE_MONTHLY || productId.contains("everywhere") && productId.contains("monthly") ->
-            SubscriptionTier.EVERYWHERE_MONTHLY
-        productId == PEPINILLO_PLUS || productId.contains("pepinillo_plus") ->
-            SubscriptionTier.PEPINILLO_PLUS
-        else -> SubscriptionTier.FREE
+    fun tierForProduct(productId: String): SubscriptionTier = when (productId) {
+        EVERYWHERE_ANNUAL -> SubscriptionTier.EVERYWHERE_ANNUAL
+        EVERYWHERE_MONTHLY -> SubscriptionTier.EVERYWHERE_MONTHLY
+        PEPINILLO_PLUS -> SubscriptionTier.PEPINILLO_PLUS
+        else -> {
+            // Fallback for string contains logic if RC returns slightly different IDs
+            when {
+                productId.contains("annual") -> SubscriptionTier.EVERYWHERE_ANNUAL
+                productId.contains("monthly") -> SubscriptionTier.EVERYWHERE_MONTHLY
+                productId.contains("lifetime") -> SubscriptionTier.PEPINILLO_PLUS
+                else -> SubscriptionTier.FREE
+            }
+        }
     }
 }

@@ -11,33 +11,35 @@ import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.ui.graphics.vector.ImageVector
 
+import dev.creapolis.pepinillo.R
+
 enum class TopLevelDestination(
     val route: String,
-    val label: String,
+    val labelRes: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector,
 ) {
     Focus(
         route = "focus",
-        label = "Focus",
+        labelRes = R.string.nav_focus,
         selectedIcon = Icons.Filled.Timer,
         unselectedIcon = Icons.Outlined.Timer,
     ),
     Plan(
         route = "plan",
-        label = "Plan",
+        labelRes = R.string.nav_plan,
         selectedIcon = Icons.Filled.CheckCircle,
         unselectedIcon = Icons.Outlined.CheckCircle,
     ),
     Dashboard(
         route = "dashboard",
-        label = "Dashboard",
+        labelRes = R.string.nav_dashboard,
         selectedIcon = Icons.Filled.BarChart,
         unselectedIcon = Icons.Outlined.BarChart,
     ),
     More(
         route = "more",
-        label = "More",
+        labelRes = R.string.nav_more,
         selectedIcon = Icons.Filled.MoreHoriz,
         unselectedIcon = Icons.Outlined.MoreHoriz,
     ),

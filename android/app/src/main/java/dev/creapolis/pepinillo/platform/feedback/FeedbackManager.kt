@@ -50,10 +50,6 @@ class FeedbackManager @Inject constructor(
         createCompletionChannel()
     }
 
-    /**
-     * Called when a countdown timer phase completes (Pomodoro work/break, Blocks).
-     * Shows a heads-up notification if enabled, otherwise falls back to manual sound/vibration.
-     */
     suspend fun onPhaseComplete(mode: FocusMode, phase: FocusPhase) {
         val prefs = prefsRepo.preferences.first()
 
@@ -65,10 +61,6 @@ class FeedbackManager @Inject constructor(
         }
     }
 
-    /**
-     * Non-completion feedback pulse (flowtime break suggestion, midpoint check-in).
-     * Always uses manual sound/vibration — never shows a notification.
-     */
     suspend fun onFeedbackPulse() {
         val prefs = prefsRepo.preferences.first()
         if (prefs.soundEnabled) playCompletionSound()
@@ -76,7 +68,9 @@ class FeedbackManager @Inject constructor(
     }
 
     private fun showCompletionNotification(mode: FocusMode, phase: FocusPhase) {
-        val (title, text) = completionMessage(mode, phase)
+        val (titleRes, textRes) = completionMessageRes(mode, phase)
+        val title = context.getString(titleRes)
+        val text = context.getString(textRes)
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -94,38 +88,37 @@ class FeedbackManager @Inject constructor(
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
 
-        notificationManager.notify(COMPLETION_NOTIFICATION_ID, notification)
+        notificationManager?.notify(COMPLETION_NOTIFICATION_ID, notification)
     }
 
-    private fun completionMessage(mode: FocusMode, phase: FocusPhase): Pair<String, String> {
+    private fun completionMessageRes(mode: FocusMode, phase: FocusPhase): Pair<Int, Int> {
         return when {
             mode == FocusMode.Pomodoro && phase == FocusPhase.Work ->
-                "Focus session complete!" to "Great work! Time for a break."
+                R.string.msg_focus_complete_title to R.string.msg_focus_complete_text
             mode == FocusMode.Pomodoro && phase == FocusPhase.ShortBreak ->
-                "Break is over!" to "Ready for your next focus session."
+                R.string.msg_short_break_over_title to R.string.msg_short_break_over_text
             mode == FocusMode.Pomodoro && phase == FocusPhase.LongBreak ->
-                "Long break is over!" to "Feeling refreshed? Let's go again."
+                R.string.msg_long_break_over_title to R.string.msg_long_break_over_text
             mode == FocusMode.Blocks ->
-                "Time block complete!" to "Your focused block has finished."
+                R.string.msg_block_complete_title to R.string.msg_block_complete_text
             else ->
-                "Timer complete!" to "Your session has finished."
+                R.string.msg_timer_complete_title to R.string.msg_timer_complete_text
         }
     }
 
     private fun createCompletionChannel() {
         val channel = NotificationChannel(
             COMPLETION_CHANNEL_ID,
-            "Timer Completion",
+            context.getString(R.string.notification_completion_channel_name),
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Alerts when a focus timer completes"
+            description = context.getString(R.string.notification_completion_channel_desc)
             enableVibration(true)
             vibrationPattern = longArrayOf(0, 200, 100, 200)
         }
-        notificationManager.createNotificationChannel(channel)
+        notificationManager?.createNotificationChannel(channel)
     }
 
     private fun playCompletionSound() {
@@ -140,21 +133,30 @@ class FeedbackManager @Inject constructor(
                 it.play()
             }
         } catch (_: Exception) {
-            // Silently fail if no default notification sound available
+            // Silently fail
         }
     }
 
     private fun vibrate() {
         try {
             if (!vibrator.hasVibrator()) return
-            // Double pulse pattern: buzz - pause - buzz
-            val effect = VibrationEffect.createWaveform(
-                longArrayOf(0, 200, 100, 200),
-                -1, // no repeat
-            )
-            vibrator.vibrate(effect)
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val composition = VibrationEffect.startComposition()
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.5f, 50)
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
+                    .compose()
+                vibrator.vibrate(composition)
+            } else {
+                val effect = VibrationEffect.createWaveform(
+                    longArrayOf(0, 200, 100, 200),
+                    -1,
+                )
+                vibrator.vibrate(effect)
+            }
         } catch (_: Exception) {
-            // Silently fail — vibration is non-critical feedback
+            // Silently fail
         }
     }
 }

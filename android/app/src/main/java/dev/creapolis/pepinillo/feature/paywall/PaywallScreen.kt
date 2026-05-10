@@ -54,10 +54,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.PepinilloProducts
 
 @Composable
@@ -91,7 +93,7 @@ fun PaywallScreen(
             IconButton(onClick = onDismiss) {
                 Icon(
                     Icons.Rounded.Close,
-                    contentDescription = "Close",
+                    contentDescription = stringResource(R.string.cd_close),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -118,14 +120,14 @@ fun PaywallScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Get Pepinillo+",
+                text = stringResource(R.string.paywall_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Unlock the full Pepinillo experience",
+                text = stringResource(R.string.paywall_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -137,15 +139,14 @@ fun PaywallScreen(
         // ── TIER CARDS ──
         TierCard(
             tierName = "Pepinillo+",
-            badge = "One-time",
+            badge = stringResource(R.string.paywall_one_time),
             badgeGreen = true,
             features = listOf(
-                Triple(Icons.Rounded.AccessTime, "All focus modes", "Flowtime, Time Blocks & more"),
-                Triple(Icons.Rounded.TaskAlt, "Unlimited tasks", "Subtasks, recurrence & scheduling"),
-                Triple(Icons.Rounded.MusicNote, "Premium soundscapes", "Binaural beats, lo-fi & more"),
-                Triple(Icons.Rounded.Analytics, "Full analytics", "Complete history & reviews"),
-                Triple(Icons.Rounded.Widgets, "All widgets", "Home screen & lock screen"),
-                Triple(Icons.Rounded.Watch, "Wear OS", "Full smartwatch app & complications"),
+                Triple(Icons.Rounded.Star, stringResource(R.string.feature_local_premium), stringResource(R.string.feature_local_premium_desc)),
+                Triple(Icons.Rounded.AccessTime, stringResource(R.string.feature_adv_timer), stringResource(R.string.feature_adv_timer_desc)),
+                Triple(Icons.Rounded.TaskAlt, stringResource(R.string.feature_unlimited_tasks), stringResource(R.string.feature_unlimited_tasks_desc)),
+                Triple(Icons.Rounded.Watch, stringResource(R.string.feature_wearos), stringResource(R.string.feature_wearos_desc)),
+                Triple(Icons.Rounded.Analytics, stringResource(R.string.feature_adv_stats), stringResource(R.string.feature_adv_stats_desc)),
             ),
         )
 
@@ -153,15 +154,15 @@ fun PaywallScreen(
 
         TierCard(
             tierName = "Everywhere / AI+",
-            badge = "Subscription",
+            badge = stringResource(R.string.paywall_subscription),
             badgeGreen = false,
             features = listOf(
-                Triple(Icons.Rounded.Star, "Everything in Pepinillo+", "All local features included"),
-                Triple(Icons.Rounded.CloudSync, "Cloud sync", "Backup & sync across devices"),
-                Triple(Icons.Rounded.AutoAwesome, "AI Focus Reports", "Personalized insights"),
-                Triple(Icons.Rounded.Sync, "Multi-device", "Available anywhere, anytime"),
+                Triple(Icons.Rounded.CloudSync, stringResource(R.string.feature_cloud_sync), stringResource(R.string.feature_cloud_sync_desc)),
+                Triple(Icons.Rounded.AutoAwesome, stringResource(R.string.feature_ai_reports), stringResource(R.string.feature_ai_reports_desc)),
+                Triple(Icons.Rounded.Sync, stringResource(R.string.feature_vps_backup), stringResource(R.string.feature_vps_backup_desc)),
+                Triple(Icons.Rounded.Star, stringResource(R.string.feature_pro_included), stringResource(R.string.feature_pro_included_desc)),
             ),
-            comingSoonIndices = setOf(2, 3),
+            comingSoonIndices = emptySet(), // AI Reports is now functional!
         )
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -173,17 +174,16 @@ fun PaywallScreen(
                 val isAnnual = product.productId == PepinilloProducts.EVERYWHERE_ANNUAL
                 ProductCard(
                     name = when {
-                        product.productId == PepinilloProducts.EVERYWHERE_MONTHLY -> "Monthly"
-                        product.productId == PepinilloProducts.EVERYWHERE_ANNUAL -> "Annual"
-                        product.productId == PepinilloProducts.EVERYWHERE_LIFETIME -> "Lifetime"
+                        product.productId == PepinilloProducts.EVERYWHERE_MONTHLY -> stringResource(R.string.paywall_monthly)
+                        product.productId == PepinilloProducts.EVERYWHERE_ANNUAL -> stringResource(R.string.paywall_annual)
                         product.productId == PepinilloProducts.PEPINILLO_PLUS -> "Pepinillo+"
                         else -> product.title
                     },
                     price = product.formattedPrice,
                     period = when (product.billingPeriod) {
-                        "P1M" -> "/month"
-                        "P1Y" -> "/year"
-                        null -> " once"
+                        "P1M" -> stringResource(R.string.paywall_unit_month)
+                        "P1Y" -> stringResource(R.string.paywall_unit_year)
+                        null -> stringResource(R.string.paywall_unit_once)
                         else -> ""
                     },
                     isSelected = isSelected,
@@ -230,10 +230,9 @@ fun PaywallScreen(
                 )
             } else {
                 val buttonLabel = when (uiState.selectedProductId) {
-                    PepinilloProducts.PEPINILLO_PLUS -> "Get Pepinillo+"
-                    PepinilloProducts.EVERYWHERE_MONTHLY, PepinilloProducts.EVERYWHERE_ANNUAL -> "Start Subscription"
-                    PepinilloProducts.EVERYWHERE_LIFETIME -> "Get Lifetime Access"
-                    else -> "Continue"
+                    PepinilloProducts.PEPINILLO_PLUS -> stringResource(R.string.paywall_btn_get_plus)
+                    PepinilloProducts.EVERYWHERE_MONTHLY, PepinilloProducts.EVERYWHERE_ANNUAL -> stringResource(R.string.paywall_btn_start_sub)
+                    else -> stringResource(R.string.paywall_btn_continue)
                 }
                 Text(
                     text = buttonLabel,
@@ -263,7 +262,7 @@ fun PaywallScreen(
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text(
-                text = "Restore Purchases",
+                text = stringResource(R.string.paywall_btn_restore),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -273,7 +272,7 @@ fun PaywallScreen(
 
         // ── LEGAL ──
         Text(
-            text = "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. Manage subscriptions in Google Play settings.",
+            text = stringResource(R.string.paywall_legal),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             textAlign = TextAlign.Center,
@@ -407,49 +406,6 @@ private fun TierFeatureRow(
 }
 
 @Composable
-private fun ProFeatureRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = MaterialTheme.colorScheme.primary,
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
 private fun ProductCard(
     name: String,
     price: String,
@@ -500,7 +456,7 @@ private fun ProductCard(
                     if (isFeatured) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "BEST VALUE",
+                            text = stringResource(R.string.paywall_best_value),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary,

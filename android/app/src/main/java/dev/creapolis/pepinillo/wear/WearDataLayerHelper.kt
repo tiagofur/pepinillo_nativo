@@ -14,7 +14,7 @@ import kotlinx.coroutines.tasks.await
 import java.nio.charset.StandardCharsets
 import dev.creapolis.pepinillo.domain.timer.FocusTimerState
 import dev.creapolis.pepinillo.domain.timer.displayTime
-import dev.creapolis.pepinillo.domain.timer.phaseLabel
+import dev.creapolis.pepinillo.domain.timer.phaseLabelRes
 import dev.creapolis.pepinillo.domain.timer.progress
 import androidx.compose.ui.graphics.toArgb
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
@@ -48,7 +48,7 @@ object WearDataLayerHelper {
             dataMap.putString("phase", state.phase.name)
             dataMap.putString("status", state.status.name)
             dataMap.putString("displayTime", state.displayTime)
-            dataMap.putString("phaseLabel", state.phaseLabel)
+            dataMap.putString("phaseLabel", context.getString(state.phaseLabelRes))
             dataMap.putFloat("progress", state.progress)
             dataMap.putLong("elapsedMillis", state.elapsedMillis)
             dataMap.putLong("totalMillis", state.totalMillis)

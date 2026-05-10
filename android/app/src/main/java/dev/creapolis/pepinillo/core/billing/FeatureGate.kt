@@ -34,6 +34,9 @@ class FeatureGate @Inject constructor(
     /** Only Everywhere+ users can sync to the backend. */
     fun canUseSync(): Boolean = subscriptionManager.subscriptionState.value.canSync
 
+    /** Only Everywhere/AI+ users can access AI focus reports. */
+    fun canUseAI(): Boolean = subscriptionManager.subscriptionState.value.canSync
+
     fun canUseWearOS(): Boolean = isPro
 
     fun canUseSoundscape(soundscape: Soundscape): Boolean = isPro || !soundscape.requiresPro

@@ -49,17 +49,17 @@ func TestBillingVerifyReceiptAndroidSuccess(t *testing.T) {
 
 	result, err := service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
 		Platform:      "android",
-		ProductID:     "pepinillo_pro_monthly",
+		ProductID:     "com.pepinillo.app.pro.monthly",
 		PurchaseToken: "purchase-token-abc",
 	})
 	if err != nil {
 		t.Fatalf("verify receipt failed: %v", err)
 	}
-	if !result.Valid || result.Source != "google_play" || result.SubscriptionTier != "pro_monthly" {
+	if !result.Valid || result.Source != "google_play" || result.SubscriptionTier != "everywhere_monthly" {
 		t.Fatalf("unexpected result: %+v", result)
 	}
 	updated, _ := repo.GetByID(context.Background(), user.ID)
-	if updated.SubscriptionTier != "pro_monthly" || updated.SubscriptionExpiresAt == nil {
+	if updated.SubscriptionTier != "everywhere_monthly" || updated.SubscriptionExpiresAt == nil {
 		t.Fatalf("user not updated: %+v", updated)
 	}
 }
@@ -85,7 +85,7 @@ func TestBillingVerifyReceiptIOSSandboxFallback(t *testing.T) {
 			"status": 0,
 			"latest_receipt_info": []map[string]any{
 				{
-					"product_id":      "pepinillo_pro_annual_ios",
+					"product_id":      "com.pepinillo.app.pro.annual",
 					"expires_date_ms": strconv.FormatInt(expiry.UnixMilli(), 10),
 				},
 			},
@@ -101,17 +101,17 @@ func TestBillingVerifyReceiptIOSSandboxFallback(t *testing.T) {
 
 	result, err := service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
 		Platform:    "ios",
-		ProductID:   "pepinillo_pro_annual_ios",
+		ProductID:   "com.pepinillo.app.pro.annual",
 		ReceiptData: "base64-receipt-data",
 	})
 	if err != nil {
 		t.Fatalf("verify receipt failed: %v", err)
 	}
-	if !result.Valid || result.Source != "app_store" || result.SubscriptionTier != "pro_yearly" {
+	if !result.Valid || result.Source != "app_store" || result.SubscriptionTier != "everywhere_annual" {
 		t.Fatalf("unexpected result: %+v", result)
 	}
 	updated, _ := repo.GetByID(context.Background(), user.ID)
-	if updated.SubscriptionTier != "pro_yearly" || updated.SubscriptionExpiresAt == nil {
+	if updated.SubscriptionTier != "everywhere_annual" || updated.SubscriptionExpiresAt == nil {
 		t.Fatalf("user not updated: %+v", updated)
 	}
 }
@@ -124,7 +124,7 @@ func TestBillingVerifyReceiptProviderNotConfigured(t *testing.T) {
 	service := NewBillingService(repo, BillingConfig{})
 	_, err := service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
 		Platform:      "android",
-		ProductID:     "pepinillo_pro_monthly",
+		ProductID:     "com.pepinillo.app.pro.monthly",
 		PurchaseToken: "token",
 	})
 	if err == nil || err != ErrBillingProviderNotConfigured {
@@ -192,13 +192,13 @@ func TestBillingVerifyReceiptAndroidServiceAccountOAuthSuccess(t *testing.T) {
 
 	result, err := service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
 		Platform:      "android",
-		ProductID:     "pepinillo_pro_monthly",
+		ProductID:     "com.pepinillo.app.pro.monthly",
 		PurchaseToken: "purchase-token-oauth",
 	})
 	if err != nil {
 		t.Fatalf("verify receipt failed: %v", err)
 	}
-	if !result.Valid || result.Source != "google_play" || result.SubscriptionTier != "pro_monthly" {
+	if !result.Valid || result.Source != "google_play" || result.SubscriptionTier != "everywhere_monthly" {
 		t.Fatalf("unexpected result: %+v", result)
 	}
 	if tokenEndpointHits != 1 {
@@ -236,7 +236,7 @@ func TestBillingVerifyReceiptIOSAppStoreServerAPISuccess(t *testing.T) {
 				{
 					"lastTransactions": []map[string]any{
 						{
-							"signedTransactionInfo": buildSignedTransactionInfo(t, appStoreKey, certB64, "pepinillo_pro_monthly_ios", expiresAt.UnixMilli()),
+							"signedTransactionInfo": buildSignedTransactionInfo(t, appStoreKey, certB64, "com.pepinillo.app.pro.monthly", expiresAt.UnixMilli()),
 						},
 					},
 				},
@@ -255,13 +255,13 @@ func TestBillingVerifyReceiptIOSAppStoreServerAPISuccess(t *testing.T) {
 
 	result, err := service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
 		Platform:      "ios",
-		ProductID:     "pepinillo_pro_monthly_ios",
+		ProductID:     "com.pepinillo.app.pro.monthly",
 		TransactionID: "1000001234567890",
 	})
 	if err != nil {
 		t.Fatalf("verify receipt failed: %v", err)
 	}
-	if !result.Valid || result.Source != "app_store_server_api" || result.SubscriptionTier != "pro_monthly" {
+	if !result.Valid || result.Source != "app_store_server_api" || result.SubscriptionTier != "everywhere_monthly" {
 		t.Fatalf("unexpected result: %+v", result)
 	}
 }
@@ -287,7 +287,7 @@ func TestBillingVerifyReceiptIOSAppStoreServerAPIInvalidSignature(t *testing.T) 
 
 	expiresAt := time.Now().UTC().Add(30 * 24 * time.Hour)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		signed := buildSignedTransactionInfo(t, appStoreKey, certB64, "pepinillo_pro_monthly_ios", expiresAt.UnixMilli())
+		signed := buildSignedTransactionInfo(t, appStoreKey, certB64, "com.pepinillo.app.pro.monthly", expiresAt.UnixMilli())
 		parts := strings.Split(signed, ".")
 		parts[1] = "A" + parts[1][1:]
 		tampered := strings.Join(parts, ".")
@@ -315,7 +315,7 @@ func TestBillingVerifyReceiptIOSAppStoreServerAPIInvalidSignature(t *testing.T) 
 
 	_, err = service.VerifyReceipt(context.Background(), user.ID, VerifyReceiptInput{
 		Platform:      "ios",
-		ProductID:     "pepinillo_pro_monthly_ios",
+		ProductID:     "com.pepinillo.app.pro.monthly",
 		TransactionID: "1000001234567890",
 	})
 	if err != ErrInvalidReceipt {
@@ -361,3 +361,52 @@ func buildSignedTransactionInfo(t *testing.T, key *ecdsa.PrivateKey, certB64, pr
 	signature := base64.RawURLEncoding.EncodeToString(joseConcatSignature(r, sigS, 32))
 	return signingInput + "." + signature
 }
+
+func joseConcatSignature(r, s *big.Int, size int) []byte {
+	rBytes := r.Bytes()
+	sBytes := s.Bytes()
+	res := make([]byte, size*2)
+	copy(res[size-len(rBytes):size], rBytes)
+	copy(res[size*2-len(sBytes):], sBytes)
+	return res
+}
+
+func strPtr(s string) *string { return &s }
+
+type fakeUserRepo struct {
+	users map[string]*domain.User
+}
+
+func newFakeUserRepo() *fakeUserRepo {
+	return &fakeUserRepo{users: make(map[string]*domain.User)}
+}
+
+func (r *fakeUserRepo) GetByID(ctx context.Context, id string) (*domain.User, error) {
+	u, ok := r.users[id]
+	if !ok {
+		return nil, nil
+	}
+	return u, nil
+}
+
+func (r *fakeUserRepo) Create(ctx context.Context, u *domain.User) error {
+	r.users[u.ID] = u
+	return nil
+}
+
+func (r *fakeUserRepo) Update(ctx context.Context, u *domain.User) error {
+	r.users[u.ID] = u
+	return nil
+}
+
+func (r *fakeUserRepo) GetByEmail(ctx context.Context, email string) (*domain.User, error)     { return nil, nil }
+func (r *fakeUserRepo) GetByGoogleID(ctx context.Context, googleID string) (*domain.User, error) { return nil, nil }
+func (r *fakeUserRepo) LinkGoogleAccount(ctx context.Context, userID, googleID string) error { return nil }
+func (r *fakeUserRepo) UnlinkGoogleAccount(ctx context.Context, userID string) error         { return nil }
+func (r *fakeUserRepo) GetByAppleID(ctx context.Context, appleID string) (*domain.User, error) { return nil, nil }
+func (r *fakeUserRepo) LinkAppleAccount(ctx context.Context, userID, appleID, email, name string) error {
+	return nil
+}
+func (r *fakeUserRepo) UnlinkAppleAccount(ctx context.Context, userID string) error { return nil }
+func (r *fakeUserRepo) ConsumeAiCredit(ctx context.Context, userID string) (bool, error)     { return true, nil }
+func (r *fakeUserRepo) RefreshAiCredits(ctx context.Context, userID string, amount int) error { return nil }

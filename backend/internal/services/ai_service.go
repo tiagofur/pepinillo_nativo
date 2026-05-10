@@ -14,6 +14,7 @@ import (
 )
 
 type AIService struct {
+	users        ports.UserRepository
 	insightRepo  ports.AIInsightRepository
 	taskRepo     ports.TaskRepository
 	pomodoroRepo ports.PomodoroRepository
@@ -28,6 +29,7 @@ type AnalyzeInput struct {
 }
 
 func NewAIService(
+	users ports.UserRepository,
 	insightRepo ports.AIInsightRepository,
 	taskRepo ports.TaskRepository,
 	pomodoroRepo ports.PomodoroRepository,
@@ -35,6 +37,7 @@ func NewAIService(
 	mlServiceURL string,
 ) *AIService {
 	return &AIService{
+		users:        users,
 		insightRepo:  insightRepo,
 		taskRepo:     taskRepo,
 		pomodoroRepo: pomodoroRepo,
@@ -194,6 +197,10 @@ Devuelve un JSON con esta estructura exacta (sin texto adicional):
 // ---------- public methods ----------
 
 func (s *AIService) GenerateDailyTip(ctx context.Context, userID string) (*domain.AIInsight, error) {
+	if err := s.ensureAiAccess(ctx, userID); err != nil {
+		return nil, err
+	}
+
 	summary, err := s.buildDataSummary(ctx, userID, 7)
 	if err != nil {
 		return nil, err
@@ -229,6 +236,44 @@ func (s *AIService) GenerateDailyTip(ctx context.Context, userID string) (*domai
 	return insight, nil
 }
 
+func (s *AIService) ensureAiAccess(ctx context.Context, userID string) error {
+	user, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if user == nil {
+		return ErrUserNotFound
+	}
+
+	tier := EffectiveTier(user)
+	isEverywhere := tier == "everywhere_monthly" || tier == "everywhere_annual"
+
+	if !isEverywhere {
+		return fmt.Errorf("tier_insufficient_for_cloud_ai")
+	}
+
+	// Monthly credit refresh (100 credits)
+	now := time.Now().UTC()
+	shouldRefresh := user.AiCreditsLastRefreshedAt == nil || now.After(user.AiCreditsLastRefreshedAt.AddDate(0, 1, 0))
+
+	if shouldRefresh {
+		if err := s.users.RefreshAiCredits(ctx, userID, 100); err != nil {
+			return err
+		}
+	}
+
+	// Consume 1 credit
+	ok, err := s.users.ConsumeAiCredit(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("insufficient_ai_credits")
+	}
+
+	return nil
+}
+
 func (s *AIService) buildFallbackTip(summary *userDataSummary) string {
 	if summary.OverdueTasks > 0 {
 		return fmt.Sprintf("Tienes %d tarea(s) atrasada(s). Prioriza las más importantes y dedica el primer pomodoro del día a avanzar en ellas.", summary.OverdueTasks)
@@ -244,6 +289,10 @@ func (s *AIService) ListInsights(ctx context.Context, userID string, limit, offs
 }
 
 func (s *AIService) GenerateWeeklyReport(ctx context.Context, userID string) (*domain.AIInsight, error) {
+	if err := s.ensureAiAccess(ctx, userID); err != nil {
+		return nil, err
+	}
+
 	summary, err := s.buildDataSummary(ctx, userID, 7)
 	if err != nil {
 		return nil, err
@@ -281,6 +330,10 @@ func (s *AIService) GenerateWeeklyReport(ctx context.Context, userID string) (*d
 }
 
 func (s *AIService) Analyze(ctx context.Context, userID string, input AnalyzeInput) (*domain.AIInsight, error) {
+	if err := s.ensureAiAccess(ctx, userID); err != nil {
+		return nil, err
+	}
+
 	if input.Days <= 0 {
 		input.Days = 30
 	}
@@ -326,6 +379,10 @@ func (s *AIService) Analyze(ctx context.Context, userID string, input AnalyzeInp
 }
 
 func (s *AIService) ProductivityPrediction(ctx context.Context, userID string) map[string]any {
+	if err := s.ensureAiAccess(ctx, userID); err != nil {
+		return map[string]any{"error": err.Error()}
+	}
+
 	summary, err := s.buildDataSummary(ctx, userID, 14)
 	if err != nil {
 		return s.fallbackPrediction()
@@ -380,6 +437,10 @@ func (s *AIService) ProductivityPredictionFromML(ctx context.Context, weekday in
 }
 
 func (s *AIService) BurnoutRisk(ctx context.Context, userID string) map[string]any {
+	if err := s.ensureAiAccess(ctx, userID); err != nil {
+		return map[string]any{"error": err.Error()}
+	}
+
 	summary, err := s.buildDataSummary(ctx, userID, 30)
 	if err != nil {
 		return s.fallbackBurnout()
@@ -401,6 +462,10 @@ func (s *AIService) BurnoutRisk(ctx context.Context, userID string) map[string]a
 }
 
 func (s *AIService) OptimalHours(ctx context.Context, userID string) map[string]any {
+	if err := s.ensureAiAccess(ctx, userID); err != nil {
+		return map[string]any{"error": err.Error()}
+	}
+
 	summary, err := s.buildDataSummary(ctx, userID, 30)
 	if err != nil {
 		return s.fallbackOptimalHours()

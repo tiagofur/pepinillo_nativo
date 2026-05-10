@@ -26,7 +26,7 @@ import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.FocusTimerState
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
-import dev.creapolis.pepinillo.domain.timer.phaseLabel
+import dev.creapolis.pepinillo.domain.timer.phaseLabelRes
 import dev.creapolis.pepinillo.domain.timer.progress
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.feature.focus.FocusMode
@@ -65,6 +65,7 @@ class FocusTimerService : Service() {
         const val ACTION_STOP = "dev.creapolis.pepinillo.STOP"
         const val ACTION_START_MODE = "dev.creapolis.pepinillo.START_MODE"
         const val ACTION_SELECT_MODE = "dev.creapolis.pepinillo.SELECT_MODE"
+        const val EXTRA_MODE = "mode"
 
         // Recovery SharedPrefs keys
         private const val RECOVERY_PREFS = "focus_timer_recovery"
@@ -291,7 +292,7 @@ class FocusTimerService : Service() {
                             selectedMode = state.mode,
                             displayTime = state.displayTime,
                             finishTimestamp = finishTimestamp,
-                            phaseLabel = state.phaseLabel,
+                            phaseLabel = this@FocusTimerService.getString(state.phaseLabelRes),
                             status = state.status,
                             progress = state.progress,
                             linkedTaskName = cachedLinkedTaskName,
@@ -358,9 +359,9 @@ class FocusTimerService : Service() {
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            CHANNEL_ID, "Focus Timer", NotificationManager.IMPORTANCE_LOW,
+            CHANNEL_ID, getString(R.string.notification_channel_name), NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Shows the active focus timer"
+            description = getString(R.string.notification_channel_description)
             setShowBadge(false)
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
@@ -373,9 +374,17 @@ class FocusTimerService : Service() {
             PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val phaseLabel = if (state.mode == FocusMode.Pomodoro && 
+            state.phase == dev.creapolis.pepinillo.domain.timer.FocusPhase.Work &&
+            (state.status == TimerStatus.Running || state.status == TimerStatus.Paused)) {
+            getString(R.string.phase_focus_numbered, state.completedSessions + 1)
+        } else {
+            getString(state.phaseLabelRes)
+        }
+
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("${state.mode.label} — ${state.phaseLabel}")
+            .setContentTitle("${getString(state.mode.labelRes)} \u2014 $phaseLabel")
             .setContentText(state.displayTime)
             .setContentIntent(openApp)
             .setOngoing(true)

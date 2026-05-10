@@ -47,6 +47,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -123,13 +124,19 @@ class MainActivity : ComponentActivity() {
     ) { /* granted or not, we continue */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        val splashScreen = installSplashScreen()
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        var isAppReady by mutableStateOf(false)
+        
+        // Keep the splash screen on-screen until the app is ready
+        splashScreen.setKeepOnScreenCondition { !isAppReady }
+        
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        requestNotificationPermissionIfNeeded()
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
 
-        // Observe subscription state and sync to Wear OS
+        // ... existing syncScope logic ...
         syncScope.launch {
             subscriptionManager.subscriptionState.collect { state ->
                 Log.d("MainActivity", "Subscription state changed: ${state.tier}, syncing to Wear OS")
@@ -138,6 +145,11 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
+            // Notify system that we are ready to draw
+            LaunchedEffect(Unit) {
+                isAppReady = true
+                requestNotificationPermissionIfNeeded()
+            }
             val subscriptionState by subscriptionManager.subscriptionState.collectAsState()
             val themeMode by ThemeController.themeMode.collectAsState()
             val dynamicColor by ThemeController.dynamicColor.collectAsState()
@@ -243,10 +255,10 @@ fun PepinilloApp(
                                     } else {
                                         destination.unselectedIcon
                                     },
-                                    contentDescription = destination.label,
+                                    contentDescription = stringResource(destination.labelRes),
                                 )
                             },
-                            label = { Text(destination.label) },
+                            label = { Text(stringResource(destination.labelRes)) },
                         )
                     }
                 }

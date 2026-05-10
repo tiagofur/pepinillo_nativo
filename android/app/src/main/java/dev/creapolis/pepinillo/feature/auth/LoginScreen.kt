@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.auth.components.DataMergeDialog
 
 @Composable
@@ -97,7 +99,7 @@ fun LoginScreen(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Timer,
-                    contentDescription = "Pepinillo logo",
+                    contentDescription = stringResource(R.string.cd_logo),
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
@@ -112,7 +114,7 @@ fun LoginScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Your deep work companion",
+            text = stringResource(R.string.auth_slogan),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -129,7 +131,7 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it; viewModel.clearError() },
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.auth_label_email)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth(),
@@ -141,7 +143,7 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it; viewModel.clearError() },
-                    label = { Text("Password") },
+                    label = { Text(stringResource(R.string.auth_label_password)) },
                     singleLine = true,
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
@@ -150,7 +152,7 @@ fun LoginScreen(
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
                                 if (passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                contentDescription = "Toggle password",
+                                contentDescription = stringResource(R.string.cd_toggle_password),
                             )
                         }
                     },
@@ -185,14 +187,14 @@ fun LoginScreen(
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Sign In", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.auth_btn_signin), style = MaterialTheme.typography.titleMedium)
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
         TextButton(onClick = onNavigateToForgotPassword) {
-            Text("Forgot your password?", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.auth_forgot_password), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -204,7 +206,7 @@ fun LoginScreen(
                 .height(52.dp),
             shape = RoundedCornerShape(16.dp),
         ) {
-            Text("Create Account", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.auth_btn_register), style = MaterialTheme.typography.titleMedium)
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -231,14 +233,14 @@ fun LoginScreen(
                     modifier = Modifier.height(20.dp),
                 )
             } else {
-                Text("Sign in with Google", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.auth_btn_google), style = MaterialTheme.typography.titleMedium)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         TextButton(onClick = { viewModel.continueAsGuest() }) {
-            Text("Continue as guest", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.auth_btn_guest), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

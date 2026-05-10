@@ -71,6 +71,7 @@ class UserRepository @Inject constructor(
         subscriptionTier = subscriptionTier,
         subscriptionExpiresAt = subscriptionExpiresAt,
         emailVerified = emailVerified,
+        aiCreditsBalance = aiCreditsBalance,
         createdAt = createdAt,
         updatedAt = updatedAt,
         cachedAt = System.currentTimeMillis(),

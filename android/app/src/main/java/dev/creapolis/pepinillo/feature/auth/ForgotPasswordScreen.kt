@@ -30,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.R
 
 @Composable
 fun ForgotPasswordScreen(
@@ -71,7 +73,7 @@ fun ForgotPasswordScreen(
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Go back",
+                    contentDescription = stringResource(R.string.cd_go_back),
                 )
             }
         }
@@ -105,7 +107,7 @@ private fun EnterEmailStep(
     onSendCode: () -> Unit,
 ) {
     Text(
-        text = "Forgot Password",
+        text = stringResource(R.string.forgot_password_title),
         style = MaterialTheme.typography.headlineLarge,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
@@ -114,7 +116,7 @@ private fun EnterEmailStep(
     Spacer(modifier = Modifier.height(8.dp))
 
     Text(
-        text = "Enter your email and we'll send you a code to reset your password.",
+        text = stringResource(R.string.forgot_password_desc),
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -124,7 +126,7 @@ private fun EnterEmailStep(
     OutlinedTextField(
         value = uiState.email,
         onValueChange = onEmailChange,
-        label = { Text("Email") },
+        label = { Text(stringResource(R.string.forgot_password_label_email)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Email,
@@ -161,7 +163,7 @@ private fun EnterEmailStep(
                 modifier = Modifier.size(24.dp),
             )
         } else {
-            Text("Send Code", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.forgot_password_btn_send), style = MaterialTheme.typography.titleMedium)
         }
     }
 }
@@ -178,7 +180,7 @@ private fun EnterCodeStep(
     onResendCode: () -> Unit,
 ) {
     Text(
-        text = "Reset Password",
+        text = stringResource(R.string.reset_password_title),
         style = MaterialTheme.typography.headlineLarge,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
@@ -187,7 +189,7 @@ private fun EnterCodeStep(
     Spacer(modifier = Modifier.height(8.dp))
 
     Text(
-        text = "Enter the code we sent to ${uiState.email} and your new password.",
+        text = stringResource(R.string.reset_password_desc, uiState.email),
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -197,7 +199,7 @@ private fun EnterCodeStep(
     OutlinedTextField(
         value = uiState.code,
         onValueChange = onCodeChange,
-        label = { Text("Verification Code") },
+        label = { Text(stringResource(R.string.reset_password_label_code)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Number,
@@ -212,7 +214,7 @@ private fun EnterCodeStep(
     OutlinedTextField(
         value = uiState.newPassword,
         onValueChange = onNewPasswordChange,
-        label = { Text("New Password") },
+        label = { Text(stringResource(R.string.reset_password_label_new)) },
         singleLine = true,
         visualTransformation = if (uiState.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(
@@ -223,7 +225,7 @@ private fun EnterCodeStep(
             IconButton(onClick = onTogglePasswordVisibility) {
                 Icon(
                     if (uiState.isPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    contentDescription = "Toggle password visibility",
+                    contentDescription = stringResource(R.string.cd_toggle_password),
                 )
             }
         },
@@ -236,7 +238,7 @@ private fun EnterCodeStep(
     OutlinedTextField(
         value = uiState.confirmPassword,
         onValueChange = onConfirmPasswordChange,
-        label = { Text("Confirm Password") },
+        label = { Text(stringResource(R.string.reset_password_label_confirm)) },
         singleLine = true,
         visualTransformation = if (uiState.isConfirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(
@@ -248,7 +250,7 @@ private fun EnterCodeStep(
             IconButton(onClick = onToggleConfirmPasswordVisibility) {
                 Icon(
                     if (uiState.isConfirmPasswordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    contentDescription = "Toggle confirm password visibility",
+                    contentDescription = stringResource(R.string.cd_toggle_password),
                 )
             }
         },
@@ -282,7 +284,7 @@ private fun EnterCodeStep(
                 modifier = Modifier.size(24.dp),
             )
         } else {
-            Text("Reset Password", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.reset_password_btn_reset), style = MaterialTheme.typography.titleMedium)
         }
     }
 
@@ -290,7 +292,7 @@ private fun EnterCodeStep(
 
     TextButton(onClick = onResendCode) {
         Text(
-            "Didn't receive the code? Resend",
+            stringResource(R.string.reset_password_resend),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

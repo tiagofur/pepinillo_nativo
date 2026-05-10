@@ -66,8 +66,14 @@ class SubscriptionManager @Inject constructor(
     private fun initializeRevenueCat() {
         if (isInitialized) return
         try {
+            // Check if already configured (by Application class)
+            if (Purchases.isConfigured) {
+                isInitialized = true
+                checkEntitlements()
+                return
+            }
             Purchases.configure(PurchasesConfiguration.Builder(context, REVENUECAT_API_KEY).build())
-            Log.d(TAG, "RevenueCat initialized")
+            Log.d(TAG, "RevenueCat initialized in Manager")
             isInitialized = true
             checkEntitlements()
         } catch (e: Exception) {
@@ -205,7 +211,6 @@ class SubscriptionManager @Inject constructor(
             "pepinillo_plus" -> SubscriptionTier.PEPINILLO_PLUS
             "everywhere_monthly" -> SubscriptionTier.EVERYWHERE_MONTHLY
             "everywhere_annual" -> SubscriptionTier.EVERYWHERE_ANNUAL
-            "everywhere_lifetime" -> SubscriptionTier.EVERYWHERE_LIFETIME
             "free", "" -> SubscriptionTier.FREE
             else -> {
                 Log.w(TAG, "Unknown tier string from server: '$tier', defaulting to FREE")

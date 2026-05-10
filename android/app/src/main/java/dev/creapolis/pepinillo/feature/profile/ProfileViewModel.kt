@@ -166,6 +166,27 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun deleteAccount(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            when (val result = apiClient.deleteAccount()) {
+                is NetworkResult.Success -> {
+                    syncWebSocketClient.disconnect()
+                    userRepository.clearCache()
+                    authStore.clearAll()
+                    _uiState.update { it.copy(isLoading = false, isLoggedIn = false, user = null) }
+                    onSuccess()
+                }
+                is NetworkResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = "Failed to delete account: ${result.message}") }
+                }
+                is NetworkResult.NetworkError -> {
+                    _uiState.update { it.copy(isLoading = false, error = "No internet connection") }
+                }
+            }
+        }
+    }
+
     fun showEditSheet() {
         val user = _uiState.value.user
         _uiState.update {

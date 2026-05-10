@@ -66,12 +66,14 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.feature.tasks.components.TaskItem
 import dev.creapolis.pepinillo.ui.components.SuccessToast
@@ -92,12 +94,12 @@ fun TasksScreen(
     val quickAddFocusRequester = remember { FocusRequester() }
 
     // Error snackbar
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var errorResId by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(Unit) {
-        viewModel.errorEvent.collect { msg ->
-            errorMessage = msg
+        viewModel.errorEvent.collect { resId ->
+            errorResId = resId
             delay(3000)
-            errorMessage = null
+            errorResId = null
         }
     }
 
@@ -126,7 +128,7 @@ fun TasksScreen(
             ) {
                 Column {
                     Text(
-                        text = "Plan",
+                        text = stringResource(R.string.tasks_title),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -134,9 +136,9 @@ fun TasksScreen(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (!uiState.isPro) {
-                            "${uiState.activeCount}/${FeatureGate.FREE_TASK_LIMIT} active"
+                            stringResource(R.string.tasks_active_limit, uiState.activeCount, FeatureGate.FREE_TASK_LIMIT)
                         } else {
-                            "${uiState.activeCount} active"
+                            stringResource(R.string.tasks_active_count, uiState.activeCount)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (!uiState.isPro && uiState.activeCount >= FeatureGate.FREE_TASK_LIMIT) {
@@ -161,8 +163,14 @@ fun TasksScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 TaskFilter.entries.forEach { filter ->
+                    val label = when (filter) {
+                        TaskFilter.Today -> stringResource(R.string.filter_today)
+                        TaskFilter.Active -> stringResource(R.string.filter_active)
+                        TaskFilter.All -> stringResource(R.string.filter_all)
+                        TaskFilter.Completed -> stringResource(R.string.filter_completed)
+                    }
                     FilterPill(
-                        label = filter.label,
+                        label = label,
                         isSelected = uiState.selectedFilter == filter,
                         onClick = { viewModel.selectFilter(filter) },
                     )
@@ -229,7 +237,7 @@ fun TasksScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.Delete,
-                                        contentDescription = "Delete",
+                                        contentDescription = stringResource(R.string.cd_delete),
                                         tint = MaterialTheme.colorScheme.onError,
                                     )
                                 }
@@ -312,7 +320,11 @@ fun TasksScreen(
             // ── 4. QUICK ADD BAR ──
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
             QuickAddBar(
-                placeholder = if (uiState.selectedFilter == TaskFilter.Today) "Add task for today..." else "Add a task...",
+                placeholder = if (uiState.selectedFilter == TaskFilter.Today) {
+                    stringResource(R.string.tasks_quick_add_today)
+                } else {
+                    stringResource(R.string.tasks_quick_add_general)
+                },
                 onAdd = viewModel::addQuickTask,
                 focusRequester = quickAddFocusRequester,
             )
@@ -332,7 +344,7 @@ fun TasksScreen(
                             contentColor = MaterialTheme.colorScheme.inversePrimary,
                         ),
                     ) {
-                        Text("Undo")
+                        Text(stringResource(R.string.btn_undo))
                     }
                 },
                 dismissAction = {
@@ -342,23 +354,23 @@ fun TasksScreen(
                             contentColor = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.7f),
                         ),
                     ) {
-                        Text("✕")
+                        Text("\u2715")
                     }
                 },
             ) {
-                Text(text = "\"${undo.task.title}\" deleted")
+                Text(text = stringResource(R.string.tasks_deleted_msg, undo.task.title))
             }
         }
 
         // ── Error Snackbar ──
-        errorMessage?.let { msg ->
+        errorResId?.let { resId ->
             if (undoState == null) {
                 Snackbar(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(16.dp),
                 ) {
-                    Text(text = msg)
+                    Text(text = stringResource(resId))
                 }
             }
         }
@@ -430,7 +442,7 @@ private fun QuickAddBar(
         ) {
             Icon(
                 Icons.Rounded.Add,
-                contentDescription = "Add task",
+                contentDescription = stringResource(R.string.cd_add_task),
                 tint = if (title.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
         }
@@ -448,16 +460,23 @@ private fun SortButton(
         IconButton(onClick = { expanded = true }) {
             Icon(
                 Icons.AutoMirrored.Rounded.Sort,
-                contentDescription = "Sort",
+                contentDescription = stringResource(R.string.cd_sort),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             TaskSortOption.entries.forEach { option ->
+                val label = when (option) {
+                    TaskSortOption.Custom -> stringResource(R.string.sort_custom)
+                    TaskSortOption.Priority -> stringResource(R.string.sort_priority)
+                    TaskSortOption.DueDate -> stringResource(R.string.sort_time)
+                    TaskSortOption.Energy -> stringResource(R.string.sort_energy)
+                    TaskSortOption.Newest -> "Newest" // To be localized if needed
+                }
                 DropdownMenuItem(
                     text = {
                         Text(
-                            option.label,
+                            label,
                             fontWeight = if (selectedSort == option) FontWeight.Bold else FontWeight.Normal,
                         )
                     },
@@ -526,13 +545,13 @@ private fun EmptyTasksState(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "No tasks yet",
+            text = stringResource(R.string.tasks_no_tasks),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Type below to add your first task",
+            text = stringResource(R.string.tasks_empty_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         )
@@ -547,7 +566,7 @@ private fun EmptyTasksState(
                 modifier = Modifier.size(18.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Create your first task")
+            Text(stringResource(R.string.tasks_btn_create_first))
         }
     }
 }

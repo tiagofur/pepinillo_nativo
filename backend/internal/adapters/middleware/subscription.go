@@ -7,11 +7,10 @@ import (
 )
 
 const (
-	FreeTier              string = "free"
-	PepinilloPlus         string = "pepinillo_plus"
-	EverywhereMonthly     string = "everywhere_monthly"
-	EverywhereAnnual      string = "everywhere_annual"
-	EverywhereLifetime    string = "everywhere_lifetime"
+	FreeTier          string = "free"
+	PepinilloPlus     string = "pepinillo_plus"
+	EverywhereMonthly string = "everywhere_monthly"
+	EverywhereAnnual  string = "everywhere_annual"
 )
 
 type SubscriptionTier string
@@ -40,7 +39,18 @@ func GetTierLimits(tier string) TierLimits {
 			CustomTimer:       false,
 			ModeSwitching:     false,
 		}
-	case PepinilloPlus, EverywhereMonthly, EverywhereAnnual, EverywhereLifetime:
+	case PepinilloPlus:
+		return TierLimits{
+			Tier:              tier,
+			MaxTasks:          10000,
+			MaxRecurrences:    500,
+			AIInsights:        false,
+			Predictions:       false,
+			AdvancedAnalytics: true,
+			CustomTimer:       true,
+			ModeSwitching:     true,
+		}
+	case EverywhereMonthly, EverywhereAnnual:
 		return TierLimits{
 			Tier:              tier,
 			MaxTasks:          10000,
@@ -65,14 +75,14 @@ func GetTierLimits(tier string) TierLimits {
 	}
 }
 
-// CanSync returns true only for the three Everywhere+ tiers that have backend
+// CanSync returns true only for the Everywhere+ tiers that have backend
 // VPS sync. Free and Pepinillo+ do not have backend sync capability.
 func CanSync(tier string) bool {
-	return tier == EverywhereMonthly || tier == EverywhereAnnual || tier == EverywhereLifetime
+	return tier == EverywhereMonthly || tier == EverywhereAnnual
 }
 
-// NormalizeTier maps a raw tier string from the database to one of the five
-// canonical tier constants. Unknown or legacy strings map to "free".
+// NormalizeTier maps a raw tier string from the database to one of the canonical
+// tier constants. Unknown or legacy strings map to "free".
 // This is a clean cutover — no legacy aliases are accepted.
 func NormalizeTier(tier string) string {
 	switch tier {
@@ -84,8 +94,6 @@ func NormalizeTier(tier string) string {
 		return EverywhereMonthly
 	case EverywhereAnnual:
 		return EverywhereAnnual
-	case EverywhereLifetime:
-		return EverywhereLifetime
 	default:
 		return FreeTier
 	}

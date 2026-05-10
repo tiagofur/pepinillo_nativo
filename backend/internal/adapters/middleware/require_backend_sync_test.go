@@ -20,7 +20,7 @@ func buildSyncTestApp(tier string, expiresAt *time.Time) *fiber.App {
 		if e, ok := err.(*fiber.Error); ok {
 			code = e.Code
 		}
-		return c.Status(code).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(code).JSON(fiber.Map{"error": err.Error(), "code": "ERR_TIER_INSUFFICIENT"})
 	}})
 
 	app.Get("/sync/full", func(c *fiber.Ctx) error {
@@ -94,15 +94,6 @@ func TestRequireBackendSync_EverywhereAnnualActive_Returns200(t *testing.T) {
 	}
 }
 
-func TestRequireBackendSync_EverywhereLifetime_Returns200(t *testing.T) {
-	// Lifetime has no expiry.
-	app := buildSyncTestApp("everywhere_lifetime", nil)
-	resp, _ := doGet(app, "/sync/full")
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected 200, got %d", resp.StatusCode)
-	}
-}
-
 func TestRequireBackendSync_ExpiredEverywhere_Returns402(t *testing.T) {
 	past := time.Now().Add(-24 * time.Hour)
 	app := buildSyncTestApp("everywhere_monthly", &past)
@@ -126,7 +117,7 @@ func TestRequireBackendSync_NoTierLocals_Returns402(t *testing.T) {
 		if e, ok := err.(*fiber.Error); ok {
 			code = e.Code
 		}
-		return c.Status(code).JSON(fiber.Map{"error": err.Error()})
+		return c.Status(code).JSON(fiber.Map{"error": err.Error(), "code": "ERR_TIER_INSUFFICIENT"})
 	}})
 	app.Get("/sync/full", NewRequireBackendSync(), func(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"ok": true})

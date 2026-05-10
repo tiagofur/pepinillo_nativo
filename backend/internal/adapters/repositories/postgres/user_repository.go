@@ -166,3 +166,24 @@ func (r *UserRepository) UnlinkAppleAccount(ctx context.Context, userID string) 
 			"updated_at":  &now,
 		}).Error
 }
+
+func (r *UserRepository) ConsumeAiCredit(ctx context.Context, userID string) (bool, error) {
+	result := r.db.WithContext(ctx).Model(&domain.User{}).
+		Where("id = ? AND ai_credits_balance > 0", userID).
+		UpdateColumn("ai_credits_balance", gorm.Expr("ai_credits_balance - 1"))
+
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return result.RowsAffected > 0, nil
+}
+
+func (r *UserRepository) RefreshAiCredits(ctx context.Context, userID string, amount int) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", userID).
+		Updates(map[string]any{
+			"ai_credits_balance":          amount,
+			"ai_credits_last_refreshed_at": &now,
+			"updated_at":                  &now,
+		}).Error
+}

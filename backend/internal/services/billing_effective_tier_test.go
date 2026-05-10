@@ -54,15 +54,6 @@ func TestEffectiveTier(t *testing.T) {
 			want: "everywhere_annual",
 		},
 		{
-			name: "everywhere_lifetime never expires",
-			user: domain.User{
-				SubscriptionTier:            "everywhere_lifetime",
-				SubscriptionExpiresAt:       nil,
-				PepinilloPlusEntitlementAt:  nil,
-			},
-			want: "everywhere_lifetime",
-		},
-		{
 			name: "everywhere_monthly expired, no entitlement → free",
 			user: domain.User{
 				SubscriptionTier:            "everywhere_monthly",

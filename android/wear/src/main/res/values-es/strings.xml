@@ -23,4 +23,19 @@
     <string name="streak">Racha</string>
     <string name="days">%d d\u00edas</string>
     <string name="completed_tasks">Tareas completadas</string>
+
+    <!-- Tiles -->
+    <string name="tile_tasks_title">Tareas (%1$d/%2$d listas)</string>
+    <string name="tile_no_tasks">Sin tareas</string>
+    <string name="tile_locked_tasks">Desbloquea el Tile de Tareas</string>
+    <string name="tile_locked_focus">Desbloquea el Tile de Enfoque</string>
+    <string name="tile_upgrade_app">Abre la app para mejorar tu plan</string>
+    <string name="tile_tap_to_focus">Toca para enfocar</string>
+    <string name="tile_paused">En pausa</string>
+
+    <!-- Complications -->
+    <string name="comp_locked_desc">Requiere Pepinillo+</string>
+    <string name="comp_locked_text">Plus</string>
+    <string name="comp_locked_title">Bloq.</string>
+    <string name="comp_timer_desc">Temporizador de enfoque</string>
 </resources>

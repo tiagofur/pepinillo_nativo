@@ -49,6 +49,7 @@ import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
+import dev.creapolis.pepinillo.feature.tasks.model.Task
 import kotlinx.coroutines.flow.first
 import org.json.JSONArray
 import org.json.JSONObject

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
@@ -15,7 +16,7 @@ import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
-import dev.creapolis.pepinillo.domain.timer.phaseLabel
+import dev.creapolis.pepinillo.domain.timer.phaseLabelRes
 import dev.creapolis.pepinillo.domain.timer.progress
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.service.FocusTimerService
@@ -38,14 +39,14 @@ data class FocusUiState(
     val selectedMode: FocusMode = FocusMode.Pomodoro,
     val displayTime: String = "25:00",
     val progress: Float = 1f,
-    val phaseLabel: String = "Focus",
+    val phaseLabelRes: Int = R.string.phase_focus,
     val currentPhase: FocusPhase = FocusPhase.Work,
     val isRunning: Boolean = false,
     val isPaused: Boolean = false,
     val linkedTaskName: String? = null,
     val sessionsToday: Int = 0,
     val currentStreak: Int = 0,
-    val greeting: String = "",
+    val greetingRes: Int = R.string.greeting_morning,
     val currentDate: String = "",
     val showTaskPicker: Boolean = false,
     val showStopConfirmation: Boolean = false,
@@ -59,6 +60,7 @@ data class FocusUiState(
     val selectedSoundscape: Soundscape? = null,
     val soundscapeVolume: Float = 0.5f,
     val showSoundscapePicker: Boolean = false,
+    val completedSessions: Int = 0,
 )
 
 @HiltViewModel
@@ -81,8 +83,8 @@ class FocusViewModel @Inject constructor(
     private val _soundscapeVolume = MutableStateFlow(0.5f)
     private val _showSoundscapePicker = MutableStateFlow(false)
     private var _lastCompletedSessionId: String? = null
-    private val _successMessage = MutableStateFlow<String?>(null)
-    val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
+    private val _successMessage = MutableStateFlow<Int?>(null)
+    val successMessage: StateFlow<Int?> = _successMessage.asStateFlow()
     val showTaskPicker: StateFlow<Boolean> = _showTaskPicker.asStateFlow()
 
     val activeTasks: StateFlow<List<Task>> = taskRepository.getActiveTasks()
@@ -200,14 +202,14 @@ class FocusViewModel @Inject constructor(
             selectedMode = combined.timerState.mode,
             displayTime = combined.timerState.displayTime,
             progress = combined.timerState.progress,
-            phaseLabel = combined.timerState.phaseLabel,
-                currentPhase = combined.timerState.phase,
+            phaseLabelRes = combined.timerState.phaseLabelRes,
+            currentPhase = combined.timerState.phase,
             isRunning = combined.timerState.status == TimerStatus.Running,
             isPaused = combined.timerState.status == TimerStatus.Paused,
             linkedTaskName = combined.linkedTaskName,
             sessionsToday = combined.todayCount,
             currentStreak = sessionRepository.calculateCurrentStreak(combined.allDays),
-            greeting = computeGreeting(),
+            greetingRes = computeGreetingRes(),
             currentDate = computeDate(),
             showTaskPicker = combined.showPicker,
             showStopConfirmation = settings.showStopConfirm,
@@ -223,9 +225,10 @@ class FocusViewModel @Inject constructor(
             selectedSoundscape = soundscape.soundscape,
             soundscapeVolume = soundscape.volume,
             showSoundscapePicker = soundscape.showPicker,
+            completedSessions = combined.timerState.completedSessions,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
-        greeting = computeGreeting(),
+        greetingRes = computeGreetingRes(),
         currentDate = computeDate(),
     ))
 
@@ -284,7 +287,7 @@ class FocusViewModel @Inject constructor(
         focusEngine.linkTask(taskId)
         _showTaskPicker.value = false
         if (taskId != null) {
-            _successMessage.value = "Task linked"
+            _successMessage.value = R.string.msg_task_linked
         }
     }
 
@@ -361,12 +364,12 @@ class FocusViewModel @Inject constructor(
         val showPicker: Boolean,
     )
 
-    private fun computeGreeting(): String {
+    private fun computeGreetingRes(): Int {
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         return when {
-            hour < 12 -> "Good morning"
-            hour < 18 -> "Good afternoon"
-            else -> "Good evening"
+            hour < 12 -> R.string.greeting_morning
+            hour < 18 -> R.string.greeting_afternoon
+            else -> R.string.greeting_evening
         }
     }
 

@@ -541,13 +541,13 @@ private fun IdleLayout(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 ModeButton(
-                    label = "Pomodoro",
+                    label = stringResource(R.string.mode_pomodoro),
                     color = WearModeColors.Pomodoro,
                     onClick = { onStartMode("Pomodoro") },
                     modifier = Modifier.weight(1f),
                 )
                 ModeButton(
-                    label = "Flow",
+                    label = stringResource(R.string.mode_flow),
                     color = WearModeColors.Flow,
                     onClick = { onStartMode("Flow") },
                     isLocked = !isPro,
@@ -562,17 +562,17 @@ private fun IdleLayout(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 ModeButton(
-                    label = "Blocks",
+                    label = stringResource(R.string.mode_blocks),
                     color = WearModeColors.Blocks,
                     onClick = { onStartMode("Blocks") },
                     isLocked = !isPro,
                     modifier = Modifier.weight(1f),
                 )
                 ModeButton(
-                    label = "Chrono",
+                    label = stringResource(R.string.mode_chrono),
                     color = WearModeColors.Chrono,
                     onClick = { onStartMode("Chrono") },
-                    isLocked = !isPro,
+                    isLocked = false, // Chrono is free per PRD v3.1
                     modifier = Modifier.weight(1f),
                 )
             }

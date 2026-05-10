@@ -31,6 +31,7 @@ public struct APIClient: Sendable {
     public var syncSessions: @Sendable (SessionSyncRequest) async throws -> SessionSyncResponse
     public var initialUpload: @Sendable (InitialUploadRequest) async throws -> InitialUploadResponse
     public var getFullSync: @Sendable (_ taskCursor: String?, _ sessionCursor: String?, _ limit: Int) async throws -> FullSyncResponse
+    public var deleteAccount: @Sendable () async throws -> Void
 }
 
 // MARK: - Live implementation
@@ -85,7 +86,8 @@ extension APIClient: DependencyKey {
                 if let tc = taskCursor { path += "&taskCursor=\(tc)" }
                 if let sc = sessionCursor { path += "&sessionCursor=\(sc)" }
                 return try await helper.authenticatedGet(path)
-            }
+            },
+            deleteAccount: { try await helper.authenticatedDeleteVoid("auth/account") }
         )
     }
 
@@ -186,6 +188,33 @@ private struct APIHelper: Sendable {
         return try await performAuthenticated(request)
     }
 
+    func authenticatedDeleteVoid(
+        _ path: String
+    ) async throws {
+        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // First attempt with current access token
+        guard let accessToken = await keychain.loadAccessToken() else {
+            throw APIClientError.sessionExpired
+        }
+
+        var authedRequest = request
+        authedRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await performRequest(authedRequest)
+
+        // If 401, try refreshing tokens and retry once
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
+            let (retryData, retryResponse) = try await refreshAndRetryRaw(originalRequest: request)
+            try validateResponse(data: retryData, response: retryResponse)
+            return
+        }
+
+        try validateResponse(data: data, response: response)
+    }
+
     // MARK: - Authenticated multipart upload
 
     func authenticatedMultipartUpload<Res: Decodable & Sendable>(
@@ -238,6 +267,14 @@ private struct APIHelper: Sendable {
     private func refreshAndRetry<Res: Decodable & Sendable>(
         originalRequest: URLRequest
     ) async throws -> Res {
+        let (data, response) = try await refreshAndRetryRaw(originalRequest: originalRequest)
+        try validateResponse(data: data, response: response)
+        return try decoder.decode(Res.self, from: data)
+    }
+
+    private func refreshAndRetryRaw(
+        originalRequest: URLRequest
+    ) async throws -> (Data, URLResponse) {
         guard let refreshToken = await keychain.loadRefreshToken() else {
             throw APIClientError.sessionExpired
         }
@@ -275,9 +312,7 @@ private struct APIHelper: Sendable {
             forHTTPHeaderField: "Authorization"
         )
 
-        let (data, response) = try await performRequest(retryRequest)
-        try validateResponse(data: data, response: response)
-        return try decoder.decode(Res.self, from: data)
+        return try await performRequest(retryRequest)
     }
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {

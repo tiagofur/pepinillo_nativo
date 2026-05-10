@@ -16,6 +16,10 @@ type User struct {
 	PendingEmail          *string    `json:"pendingEmail,omitempty" gorm:"index"`
 	EmailChangedAt        *time.Time `json:"emailChangedAt,omitempty"`
 
+	// AI Credits (Everywhere/AI+ tier)
+	AiCreditsBalance         int        `json:"aiCreditsBalance" gorm:"default:0;not null"`
+	AiCreditsLastRefreshedAt *time.Time `json:"aiCreditsLastRefreshedAt"`
+
 	// Pepinillo+ one-time purchase entitlement timestamp (set when purchase is
 	// confirmed, never cleared by Everywhere+ activation/cancellation).
 	PepinilloPlusEntitlementAt *time.Time `json:"pepinilloPlusEntitlementAt,omitempty"`

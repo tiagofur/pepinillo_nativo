@@ -117,7 +117,7 @@ docker network create pepinillo-network 2>/dev/null || true
 
 # Build and start services
 echo -e "${BLUE}Building and starting Docker services...${NC}"
-docker compose -f docker-compose.prod.yml build api
+docker compose -f docker-compose.prod.yml build
 docker compose -f docker-compose.prod.yml up -d
 
 # Wait for services to be healthy
@@ -161,6 +161,20 @@ if [ $RETRY_COUNT -eq 30 ]; then
   exit 1
 fi
 
+# Wait for Proxy (Caddy)
+echo -e "${BLUE}Waiting for Proxy (Caddy) to be ready...${NC}"
+RETRY_COUNT=0
+while [ $RETRY_COUNT -lt 15 ]; do
+  # Check if container is running
+  if docker compose -f docker-compose.prod.yml ps caddy --format json | grep -q "\"State\":\"running\""; then
+    echo -e "${GREEN}Proxy is ready${NC}"
+    break
+  fi
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+  echo "Waiting for proxy... ($RETRY_COUNT/15)"
+  sleep 1
+done
+
 # Summary
 echo ""
 echo -e "${GREEN}=== Setup Complete ===${NC}"
@@ -169,14 +183,14 @@ echo "Services running:"
 docker compose -f docker-compose.prod.yml ps
 echo ""
 echo -e "${BLUE}Next steps:${NC}"
-echo "1. Verify API is responding: curl http://localhost:8080/api/v1/health"
+echo "1. Verify API is responding: curl https://api.ppn.creapolis.dev/api/v1/health"
 echo "2. Set up automated backups for volumes: postgres_data, redis_data"
 echo "3. Configure DNS to point to this VPS IP"
 echo "4. Set up monitoring and log aggregation"
 echo "5. Enable automatic security updates (apt)"
 echo ""
 echo -e "${BLUE}Service Management:${NC}"
-echo "View logs:     docker compose -f docker-compose.prod.yml logs -f api"
+echo "View logs:     docker compose -f docker-compose.prod.yml logs -f"
 echo "Restart:       docker compose -f docker-compose.prod.yml restart"
 echo "Stop:          docker compose -f docker-compose.prod.yml down"
 echo "Update code:   cd $APP_DIR && git pull && docker compose -f docker-compose.prod.yml up -d"
