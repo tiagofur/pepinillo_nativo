@@ -62,6 +62,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -431,8 +432,9 @@ fun SettingsScreen(
                 ) {
                     FocusMode.entries.forEach { mode ->
                         val isModeLocked = !mode.isFreeTier && !uiState.isPro
+                        val modeName = stringResource(mode.labelRes)
                         OptionPill(
-                            label = if (isModeLocked) "${mode.label} \uD83D\uDD12" else mode.label,
+                            label = if (isModeLocked) "$modeName \uD83D\uDD12" else modeName,
                             isSelected = uiState.defaultMode == mode,
                             onClick = {
                                 if (!isModeLocked) {

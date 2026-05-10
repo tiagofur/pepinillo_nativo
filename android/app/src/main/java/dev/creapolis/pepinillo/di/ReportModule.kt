@@ -17,9 +17,11 @@ object ReportModule {
     @Provides
     @Singleton
     fun provideReportGenerator(
+        remoteGenerator: dev.creapolis.pepinillo.domain.report.RemoteReportGenerator,
         onDeviceGenerator: OnDeviceReportGenerator,
         templateGenerator: TemplateReportGenerator,
+        userRepository: dev.creapolis.pepinillo.data.repository.UserRepository,
     ): ReportGenerator {
-        return ReportGeneratorImpl(onDeviceGenerator, templateGenerator)
+        return ReportGeneratorImpl(remoteGenerator, onDeviceGenerator, templateGenerator, userRepository)
     }
 }

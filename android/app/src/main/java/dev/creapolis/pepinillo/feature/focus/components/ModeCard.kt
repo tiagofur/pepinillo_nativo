@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.ui.theme.colorScheme
@@ -83,7 +84,7 @@ fun ModeChip(
             ) {
                 Icon(
                     imageVector = mode.icon,
-                    contentDescription = mode.label,
+                    contentDescription = stringResource(mode.labelRes),
                     modifier = Modifier.size(24.dp),
                     tint = iconColor,
                 )
@@ -110,7 +111,7 @@ fun ModeChip(
         Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = mode.label,
+                text = stringResource(mode.labelRes),
                 style = MaterialTheme.typography.labelMedium,
                 color = labelColor,
             )

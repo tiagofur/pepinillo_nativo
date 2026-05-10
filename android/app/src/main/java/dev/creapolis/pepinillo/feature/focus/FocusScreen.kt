@@ -187,12 +187,14 @@ fun FocusScreen(
                 stringResource(uiState.phaseLabelRes)
             }
 
+            val modeLabel = stringResource(uiState.selectedMode.labelRes)
+            
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(260.dp)
                     .semantics {
-                        contentDescription = "$phaseLabel: ${uiState.displayTime}, ${stringResource(uiState.selectedMode.labelRes)} mode"
+                        contentDescription = "$phaseLabel: ${uiState.displayTime}, $modeLabel mode"
                     },
             ) {
                 CircularTimerRing(

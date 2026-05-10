@@ -85,7 +85,7 @@ fun EmailVerificationScreen(
             ),
             keyboardActions = KeyboardActions(onDone = {
                 if (code.length >= 4) {
-                    viewModel.verifyEmail(email, code)
+                    viewModel.verifyEmail(code)
                 }
             }),
             modifier = Modifier.fillMaxWidth(),
@@ -104,7 +104,7 @@ fun EmailVerificationScreen(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { viewModel.verifyEmail(email, code) },
+            onClick = { viewModel.verifyEmail(code) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -124,7 +124,7 @@ fun EmailVerificationScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(onClick = { viewModel.resendCode(email) }) {
+        TextButton(onClick = { viewModel.resendVerificationEmail() }) {
             Text(stringResource(R.string.email_verify_btn_resend))
         }
 

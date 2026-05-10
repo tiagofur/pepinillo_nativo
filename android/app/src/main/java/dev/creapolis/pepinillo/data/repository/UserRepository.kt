@@ -23,6 +23,11 @@ class UserRepository @Inject constructor(
         return userDao.observeById(userId)
     }
 
+    suspend fun getCachedUser(): UserEntity? {
+        val userId = authStore.getUserId() ?: return null
+        return userDao.getById(userId)
+    }
+
     suspend fun fetchAndCacheProfile(): Result<UserEntity> {
         return when (val result = apiClient.getMe()) {
             is NetworkResult.Success -> {

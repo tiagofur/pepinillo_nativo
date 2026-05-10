@@ -3,7 +3,9 @@ package dev.creapolis.pepinillo.feature.more
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -196,7 +198,7 @@ fun ExportScreen(
                     subtitle = "Sessions, Tasks, and Analytics",
                     icon = Icons.Rounded.Description,
                 ) {
-                    viewModel.exportCsv(context)
+                    viewModel.triggerExport(context)
                 }
             }
         } else {

@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.domain.timer
 
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -98,7 +99,7 @@ class FocusStateTest {
     @Test
     fun `phase label idle pomodoro`() {
         val state = FocusTimerState(mode = FocusMode.Pomodoro, status = TimerStatus.Idle)
-        assertEquals("Focus", state.phaseLabel)
+        assertEquals(R.string.phase_focus, state.phaseLabelRes)
     }
 
     @Test
@@ -108,7 +109,7 @@ class FocusStateTest {
             status = TimerStatus.Running,
             completedSessions = 2,
         )
-        assertEquals("Focus 3", state.phaseLabel)
+        assertEquals(R.string.phase_focus_numbered, state.phaseLabelRes)
     }
 
     @Test
@@ -118,7 +119,7 @@ class FocusStateTest {
             status = TimerStatus.Running,
             phase = FocusPhase.ShortBreak,
         )
-        assertEquals("Short Break", state.phaseLabel)
+        assertEquals(R.string.phase_short_break, state.phaseLabelRes)
     }
 
     @Test
@@ -128,19 +129,19 @@ class FocusStateTest {
             status = TimerStatus.Running,
             phase = FocusPhase.LongBreak,
         )
-        assertEquals("Long Break", state.phaseLabel)
+        assertEquals(R.string.phase_long_break, state.phaseLabelRes)
     }
 
     @Test
     fun `phase label flow running`() {
         val state = FocusTimerState(mode = FocusMode.Flow, status = TimerStatus.Running)
-        assertEquals("Flowing...", state.phaseLabel)
+        assertEquals(R.string.phase_flowing, state.phaseLabelRes)
     }
 
     @Test
     fun `phase label chrono running`() {
         val state = FocusTimerState(mode = FocusMode.Chrono, status = TimerStatus.Running)
-        assertEquals("Timing...", state.phaseLabel)
+        assertEquals(R.string.phase_timing, state.phaseLabelRes)
     }
 
     @Test

@@ -35,14 +35,14 @@ class PepinilloApiClientTest {
         val mockEngine = MockEngine { request ->
             assertEquals("/focus/sessions", request.url.encodedPath)
             respond(
-                content = """{"id": 1, "taskId": 10, "userId": "user-1", "startTime": "2024-01-01T00:00:00Z", "durationSeconds": 1500, "type": "WORK", "status": "COMPLETED"}""",
+                content = """{"id": "1", "taskId": 10, "userId": "user-1", "startTime": "2024-01-01T00:00:00Z", "durationSeconds": 1500, "type": "WORK", "status": "COMPLETED"}""",
                 status = HttpStatusCode.OK,
                 headers = headersOf("Content-Type", ContentType.Application.Json.toString())
             )
         }
         val client = createClient(mockEngine)
         
-        val result = client.createSession(PomodoroSessionDto(id = 1, taskId = 10))
+        val result = client.createSession(PomodoroSessionDto(id = "1", taskId = 10))
         
         assertTrue(result is NetworkResult.Success)
     }

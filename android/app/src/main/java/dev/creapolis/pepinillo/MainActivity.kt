@@ -304,22 +304,6 @@ fun PepinilloApp(
             composable("tasks/{taskId}") {
                 TaskDetailScreen(
                     onBack = { navController.popBackStack() },
-                    onStartFocus = { taskId ->
-                        // Navigate to focus screen (task linking can be handled via shared state)
-                        navController.navigate(TopLevelDestination.Focus.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onViewAnalytics = { taskId ->
-                        navController.navigate("tasks/$taskId/analytics")
-                    },
-                    onNavigateToPaywall = {
-                        navController.navigate("paywall")
-                    },
                 )
             }
             composable("tasks/{taskId}/analytics") {
@@ -361,12 +345,11 @@ fun PepinilloApp(
                     onProfileClick = { navController.navigate("profile") },
                     onSignInClick = { navController.navigate("login") },
                     onCreateAccountClick = { navController.navigate("register") },
-                    onSubscriptionClick = { navController.navigate("paywall") },
                     onSettingsClick = { navController.navigate("settings") },
-                    onAppSetupClick = { navController.navigate("app_setup") },
                     onExportClick = { navController.navigate("export") },
-                    onHelpClick = { navController.navigate("help") },
+                    onHelpSupportClick = { navController.navigate("help") },
                     onAboutClick = { navController.navigate("about") },
+                    onNavigateToPaywall = { navController.navigate("paywall") },
                 )
             }
             composable("help") {
@@ -444,13 +427,14 @@ fun PepinilloApp(
                 }
                 EmailVerificationScreen(
                     email = email,
-                    isLoading = uiState.isLoading,
-                    error = uiState.error,
-                    onVerify = { code -> authViewModel.verifyEmail(code) },
-                    onResend = authViewModel::resendVerificationEmail,
-                    onCancel = {
+                    onNavigateBack = {
                         authViewModel.dismissEmailVerification()
                         navController.navigate("login") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    },
+                    onVerificationSuccess = {
+                        navController.navigate(TopLevelDestination.Focus.route) {
                             popUpTo("login") { inclusive = true }
                         }
                     },
