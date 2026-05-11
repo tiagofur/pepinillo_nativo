@@ -2,12 +2,20 @@ package dev.creapolis.pepinillo.widget
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import android.os.SystemClock
+import android.os.Build
+import android.widget.RemoteViews
+import androidx.glance.appwidget.AndroidRemoteViews
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -20,6 +28,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.state.getAppWidgetState
@@ -34,30 +43,42 @@ import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
+import androidx.glance.LocalSize
+import androidx.compose.ui.unit.DpSize
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import dev.creapolis.pepinillo.ui.theme.AppTheme
+import dev.creapolis.pepinillo.ui.theme.breakVariant
+import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.service.FocusTimerService
+import androidx.glance.LocalContext
+import androidx.glance.unit.ColorProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-import androidx.glance.appwidget.action.ToggleableStateKey
 import dagger.hilt.android.EntryPointAccessors
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 
+import androidx.glance.appwidget.SizeMode
+
 class FocusTimerWidget : GlanceAppWidget() {
     override val stateDefinition = PreferencesGlanceStateDefinition
+    override val sizeMode = SizeMode.Exact
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         // Fetch fresh subscription status
@@ -76,17 +97,16 @@ class FocusTimerWidget : GlanceAppWidget() {
         }
 
         provideContent {
-            GlanceTheme {
-                val prefs = currentState<Preferences>()
-                val state = prefsToTimerState(context, prefs)
-                when (state.status) {
-                    TimerStatus.Running, TimerStatus.Paused -> RunningWidget(context, state)
-                    else -> if (state.selectedMode != null) ReadyWidget(context, state) else IdleWidget(context, state)
-                }
-            }
+            val size = LocalSize.current
+            val prefs = currentState<Preferences>()
+            val state = prefsToTimerState(context, prefs)
+            
+            DashboardWidget(context, state, size)
         }
     }
 }
+
+
 
 data class TimerWidgetState(
     val mode: FocusMode = FocusMode.Pomodoro,
@@ -98,6 +118,14 @@ data class TimerWidgetState(
     val progress: Float = 1f,
     val linkedTaskName: String? = null,
     val isPro: Boolean = false,
+    val linkedSessions: Int = 0,
+    val streak: Int = 0,
+    val sessionsToday: Int = 0,
+    val linkedTaskTitle: String? = null,
+    val themeId: String = "materialYou",
+    val phase: FocusPhase = FocusPhase.Work,
+    val elapsedMillis: Long = 0L,
+    val themeMode: String = "System",
 )
 
 suspend fun updateWidgetState(context: Context, state: TimerWidgetState) {
@@ -124,6 +152,17 @@ suspend fun updateWidgetState(context: Context, state: TimerWidgetState) {
                 } else {
                     remove(PREF_LINKED_TASK)
                 }
+                this[PREF_ELAPSED] = state.elapsedMillis.toString()
+                this[PREF_STREAK] = state.streak
+                this[PREF_SESSIONS] = state.sessionsToday
+                if (state.linkedTaskTitle != null) {
+                    this[PREF_LINKED_TASK_TITLE] = state.linkedTaskTitle
+                } else {
+                    remove(PREF_LINKED_TASK_TITLE)
+                }
+                this[PREF_THEME_ID] = state.themeId
+                this[PREF_PHASE_ENUM] = state.phase.name
+                this[PREF_THEME_MODE] = state.themeMode
             }
         }
     }
@@ -137,7 +176,14 @@ private val PREF_STATUS = stringPreferencesKey("status")
 private val PREF_PROGRESS = floatPreferencesKey("progress")
 private val PREF_FINISH_TIMESTAMP = stringPreferencesKey("finish_timestamp")
 private val PREF_LINKED_TASK = stringPreferencesKey("linked_task")
-private val PREF_FOCUS_IS_PRO = androidx.datastore.preferences.core.booleanPreferencesKey("is_pro")
+private val PREF_FOCUS_IS_PRO = booleanPreferencesKey("is_pro")
+private val PREF_ELAPSED = stringPreferencesKey("elapsed_millis")
+private val PREF_STREAK = intPreferencesKey("streak")
+private val PREF_SESSIONS = intPreferencesKey("sessions")
+private val PREF_LINKED_TASK_TITLE = stringPreferencesKey("linked_task_title")
+private val PREF_THEME_ID = stringPreferencesKey("selected_theme")
+private val PREF_PHASE_ENUM = stringPreferencesKey("phase_enum")
+private val PREF_THEME_MODE = stringPreferencesKey("theme_mode")
 
 private fun prefsToTimerState(context: Context, prefs: Preferences): TimerWidgetState {
     val mode = FocusMode.valueOf(prefs[PREF_MODE] ?: FocusMode.Pomodoro.name)
@@ -149,226 +195,302 @@ private fun prefsToTimerState(context: Context, prefs: Preferences): TimerWidget
         phaseLabel = prefs[PREF_PHASE] ?: context.getString(mode.labelRes),
         status = TimerStatus.valueOf(prefs[PREF_STATUS] ?: TimerStatus.Idle.name),
         progress = prefs[PREF_PROGRESS] ?: 1f,
-        linkedTaskName = prefs[PREF_LINKED_TASK],
         isPro = prefs[PREF_FOCUS_IS_PRO] ?: false,
+        elapsedMillis = prefs[PREF_ELAPSED]?.toLongOrNull() ?: 0L,
+        streak = prefs[PREF_STREAK] ?: 0,
+        sessionsToday = prefs[PREF_SESSIONS] ?: 0,
+        linkedTaskTitle = prefs[PREF_LINKED_TASK_TITLE],
+        themeId = prefs[PREF_THEME_ID] ?: "materialYou",
+        phase = prefs[PREF_PHASE_ENUM]?.let { FocusPhase.valueOf(it) } ?: FocusPhase.Work,
+        themeMode = prefs[PREF_THEME_MODE] ?: "System"
     )
 }
 
+// ─────────────────────────────────────────────────────────────
+// Dashboard Widget — unified for Ready / Running / Paused
+// Two-column layout matching the premium reference design
+// ─────────────────────────────────────────────────────────────
 @Composable
-private fun IdleWidget(context: Context, state: TimerWidgetState) {
-    Column(
-        modifier = GlanceModifier.fillMaxSize()
-            .background(GlanceTheme.colors.surface)
-            .padding(12.dp)
-            .clickable(actionStartActivity<MainActivity>()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = context.getString(R.string.app_name),
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-            ),
-        )
-        Spacer(GlanceModifier.height(8.dp))
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            FocusMode.values().forEach { mode ->
-                ModeChip(
-                    mode = mode,
-                    label = context.getString(mode.labelRes),
-                    selectedMode = state.selectedMode,
-                    isPro = state.isPro,
-                )
-            }
-        }
-        Spacer(GlanceModifier.height(8.dp))
-        Text(
-            text = context.getString(R.string.btn_get_started),
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurfaceVariant,
-                fontSize = 11.sp,
-                textAlign = TextAlign.Center,
-            ),
-        )
-    }
-}
-
-@Composable
-private fun ReadyWidget(context: Context, state: TimerWidgetState) {
-    val mode = state.selectedMode ?: state.mode
-    Column(
-        modifier = GlanceModifier.fillMaxSize()
-            .background(GlanceTheme.colors.surface)
-            .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = context.getString(mode.labelRes),
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurface,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
-                modifier = GlanceModifier.defaultWeight(),
-            )
-            Text(
-                text = state.displayTime,
-                style = TextStyle(
-                    color = GlanceTheme.colors.primary,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                ),
-            )
-        }
-        Spacer(GlanceModifier.height(12.dp))
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Box(
-                modifier = GlanceModifier
-                    .background(GlanceTheme.colors.primaryContainer)
-                    .cornerRadius(16.dp)
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-                    .clickable(actionRunCallback<StartAction>()),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = context.getString(R.string.btn_start_focus),
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onPrimaryContainer,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RunningWidget(context: Context, state: TimerWidgetState) {
+private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpSize) {
     val mode = state.mode
-    Column(
+    val isRunning = state.status == TimerStatus.Running
+    val isPaused = state.status == TimerStatus.Paused
+    val isActive = isRunning || isPaused
+    
+    val isDark = when (state.themeMode) {
+        "Dark" -> true
+        "Light" -> false
+        else -> (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+    }
+
+    // Calculate adaptive colors using the RESOLVED mode (from line 206)
+    // Enforce MaterialYou if not PRO
+    val themeId = (if (state.isPro) state.themeId else "materialYou").lowercase()
+    val theme = AppTheme.named(themeId)
+    val baseAccent = when (mode) {
+        FocusMode.Pomodoro -> theme.pomodoroColor
+        FocusMode.Flow -> theme.flowtimeColor
+        FocusMode.Blocks -> theme.timeBlockColor
+        FocusMode.Chrono -> theme.stopwatchColor
+    }
+    val accentColor = baseAccent.breakVariant(state.phase)
+    val accentColorProvider = ColorProvider(accentColor)
+    val onAccentColor = if (isDark) Color.Black else Color.White
+    val onAccentColorProvider = ColorProvider(onAccentColor)
+
+    // Manual theme color resolving (synced with Color.kt)
+    val surfaceColor = if (isDark) Color(0xFF12140E) else Color(0xFFF8FAF0)
+    val onSurfaceColor = if (isDark) Color(0xFFE2E3D8) else Color(0xFF1A1C18)
+    val onSurfaceVariantColor = if (isDark) Color(0xFFC3C8BB) else Color(0xFF43483E)
+    val surfaceVariantColor = if (isDark) Color(0xFF43483E) else Color(0xFFDFE4D7)
+
+    Row(
         modifier = GlanceModifier.fillMaxSize()
-            .background(GlanceTheme.colors.surface)
-            .padding(12.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .appWidgetBackground()
+            .background(ColorProvider(surfaceColor))
+            .cornerRadius(24.dp)
+            .clickable(actionStartActivity<MainActivity>()),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "${context.getString(mode.labelRes)} \u2022 ${state.phaseLabel}",
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurfaceVariant,
-                fontSize = 11.sp,
-            ),
-        )
-        Text(
-            text = state.displayTime,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-            ),
-        )
-        Spacer(GlanceModifier.height(8.dp))
-        Row(
-            modifier = GlanceModifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            val isRunning = state.status == TimerStatus.Running
-            val action = if (isRunning) FocusTimerService.ACTION_PAUSE else FocusTimerService.ACTION_RESUME
-            val label = if (isRunning) R.string.btn_pause else R.string.btn_resume
-            
+            // ── Left Side: Timer (Balanced 50% weight) ──
             Box(
-                modifier = GlanceModifier
-                    .background(GlanceTheme.colors.secondaryContainer)
-                    .cornerRadius(12.dp)
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clickable(actionRunCallback<PauseResumeAction>()),
-                contentAlignment = Alignment.Center,
+                modifier = GlanceModifier.defaultWeight().fillMaxHeight(),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = context.getString(label),
-                    style = TextStyle(color = GlanceTheme.colors.onSecondaryContainer, fontSize = 12.sp),
-                )
+                // Calculate safe ring size with 12dp breathing room on each side
+                val availableWidth = size.width / 2
+                val availableHeight = size.height
+                val maxRingSize = minOf(availableWidth, availableHeight) - 24.dp
+                val ringSize = maxRingSize.coerceAtLeast(80.dp)
+                TimerRing(context, state, mode, isRunning, isDark, ringSize, accentColor)
             }
-            Spacer(GlanceModifier.width(8.dp))
-            Box(
-                modifier = GlanceModifier
-                    .background(GlanceTheme.colors.errorContainer)
-                    .cornerRadius(12.dp)
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-                    .clickable(actionRunCallback<StopAction>()),
-                contentAlignment = Alignment.Center,
+
+            // ── Right Side: Controls (Balanced 50% weight) ──
+            Column(
+                modifier = GlanceModifier.defaultWeight().fillMaxHeight().padding(horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(
-                    text = context.getString(R.string.btn_stop),
-                    style = TextStyle(color = GlanceTheme.colors.onErrorContainer, fontSize = 12.sp),
-                )
+                // Task info
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = state.linkedTaskTitle ?: "No Task",
+                        style = TextStyle(
+                            color = ColorProvider(onSurfaceColor),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                        ),
+                        maxLines = 1,
+                    )
+                }
+
+                Spacer(GlanceModifier.height(16.dp))
+
+                // Controls row
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Primary action button matches the theme accent color
+                    val primaryIcon = if (isRunning) R.drawable.ic_pause else R.drawable.ic_play
+                    
+                    Box(
+                        modifier = GlanceModifier
+                            .background(accentColorProvider)
+                            .cornerRadius(36.dp)
+                            .size(72.dp)
+                            .clickable(
+                                if (isActive) actionRunCallback<PauseResumeAction>()
+                                else actionRunCallback<StartAction>()
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        androidx.glance.Image(
+                            provider = androidx.glance.ImageProvider(primaryIcon),
+                            contentDescription = "Play/Pause",
+                            colorFilter = androidx.glance.ColorFilter.tint(onAccentColorProvider),
+                            modifier = GlanceModifier.size(36.dp)
+                        )
+                    }
+
+                Spacer(GlanceModifier.width(16.dp))
+
+                // Stop button
+                Box(
+                    modifier = GlanceModifier
+                        .background(ColorProvider(surfaceVariantColor))
+                        .cornerRadius(20.dp)
+                        .size(40.dp)
+                        .clickable(actionRunCallback<StopAction>()),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    androidx.glance.Image(
+                        provider = androidx.glance.ImageProvider(R.drawable.ic_stop),
+                        contentDescription = "Stop",
+                        colorFilter = androidx.glance.ColorFilter.tint(ColorProvider(onSurfaceVariantColor)),
+                        modifier = GlanceModifier.size(20.dp)
+                    )
+                }
+            }
+
+            Spacer(GlanceModifier.height(8.dp))
+
+            // Stats row
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Streak
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "\uD83D\uDD25", style = TextStyle(fontSize = 16.sp))
+                    Spacer(GlanceModifier.width(4.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${state.streak}",
+                            style = TextStyle(
+                                color = ColorProvider(onSurfaceColor),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        )
+                        Text(
+                            text = "racha",
+                            style = TextStyle(
+                                color = ColorProvider(onSurfaceVariantColor),
+                                fontSize = 12.sp,
+                            ),
+                        )
+                    }
+                }
+
+                Spacer(GlanceModifier.width(12.dp))
+
+                // Sessions
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "\u2705", style = TextStyle(fontSize = 16.sp))
+                    Spacer(GlanceModifier.width(4.dp))
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${state.sessionsToday}",
+                            style = TextStyle(
+                                color = ColorProvider(onSurfaceColor),
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                        )
+                        Text(
+                            text = "sesiones",
+                            style = TextStyle(
+                                color = ColorProvider(onSurfaceVariantColor),
+                                fontSize = 12.sp,
+                            ),
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+// ─────────────────────────────────────────────────────────────
+// Timer Ring — RemoteViews-based determinate circular progress
+// ─────────────────────────────────────────────────────────────
 @Composable
-private fun ModeChip(mode: FocusMode, label: String, selectedMode: FocusMode?, isPro: Boolean) {
-    val isSelected = selectedMode == mode
-    val isLocked = !mode.isFreeTier && !isPro
+private fun TimerRing(
+    context: Context,
+    state: TimerWidgetState,
+    mode: FocusMode,
+    isRunning: Boolean,
+    isDark: Boolean,
+    size: androidx.compose.ui.unit.Dp,
+    accentColor: Color,
+) {
+    val rv = RemoteViews(context.packageName, R.layout.widget_timer_ring)
+
+    // Set determinate progress (1.0 = full ring, 0.0 = empty ring)
+    val progressValue = (state.progress * 10000).toInt().coerceIn(0, 10000)
+    rv.setProgressBar(R.id.progress_ring, 10000, progressValue, false)
     
-    Box(
-        modifier = GlanceModifier
-            .padding(horizontal = 4.dp)
-            .background(if (isSelected) GlanceTheme.colors.primary else GlanceTheme.colors.surfaceVariant)
-            .cornerRadius(8.dp)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .clickable(actionRunCallback<SelectModeAction>(actionParametersOf(PARAM_MODE to mode.name))),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = if (isLocked) "\uD83D\uDD12 $label" else label,
-            style = TextStyle(
-                color = if (isSelected) GlanceTheme.colors.onPrimary else GlanceTheme.colors.onSurfaceVariant,
-                fontSize = 10.sp,
-            ),
-        )
-    }
-}
-
-private val PARAM_MODE = ActionParameters.Key<String>("mode")
-
-class SelectModeAction : ActionCallback {
-    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        val modeName = parameters[PARAM_MODE] ?: return
-        val mode = FocusMode.valueOf(modeName)
-        
-        updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-            prefs.toMutablePreferences().apply {
-                this[PREF_SELECTED_MODE] = mode.name
-                this[PREF_DISPLAY] = mode.defaultDisplayTime
-                this[PREF_PHASE] = context.getString(mode.labelRes)
-            }
+    // Tint the progress ring using setColorStateList (API 31+) or setColorFilter (older)
+    try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            rv.setColorStateList(
+                R.id.progress_ring,
+                "setProgressTintList",
+                android.content.res.ColorStateList.valueOf(accentColor.toArgb())
+            )
+        } else {
+            // Best effort for older versions: use setInt with "setColorFilter"
+            // Note: Some ProgressBar implementations might not support this via RemoteViews
+            rv.setInt(R.id.progress_ring, "setColorFilter", accentColor.toArgb())
         }
-        FocusTimerWidget().update(context, glanceId)
+    } catch (e: Exception) {
+        // Fallback or ignore if not supported
     }
+
+    // Adapt text colors for dark/light mode
+    val textColor = if (isDark) 0xFFE6E1E5.toInt() else 0xFF1C1B1F.toInt()
+    val subtextColor = if (isDark) 0xFFCAC4D0.toInt() else 0xFF49454F.toInt()
+
+    if (isRunning) {
+        // Show native Chronometer for real-time ticking
+        rv.setViewVisibility(R.id.timer_chronometer, View.VISIBLE)
+        rv.setViewVisibility(R.id.timer_static_text, View.GONE)
+        rv.setTextColor(R.id.timer_chronometer, textColor)
+
+        val isCountDown = mode.defaultTotalSeconds != null
+        if (isCountDown && state.finishTimestamp != null) {
+            val remaining = (state.finishTimestamp - System.currentTimeMillis()).coerceAtLeast(0L)
+            rv.setChronometer(
+                R.id.timer_chronometer,
+                SystemClock.elapsedRealtime() + remaining,
+                null,
+                true,
+            )
+            rv.setChronometerCountDown(R.id.timer_chronometer, true)
+        } else {
+            rv.setChronometer(
+                R.id.timer_chronometer,
+                SystemClock.elapsedRealtime() - state.elapsedMillis,
+                null,
+                true,
+            )
+            rv.setChronometerCountDown(R.id.timer_chronometer, false)
+        }
+    } else {
+        // Show static time text (ready or paused)
+        rv.setViewVisibility(R.id.timer_chronometer, View.GONE)
+        rv.setViewVisibility(R.id.timer_static_text, View.VISIBLE)
+        rv.setTextViewText(R.id.timer_static_text, state.displayTime)
+        rv.setTextColor(R.id.timer_static_text, textColor)
+    }
+
+    // Phase label
+    rv.setTextViewText(R.id.phase_label, context.getString(mode.labelRes))
+    rv.setTextColor(R.id.phase_label, subtextColor)
+
+    // Dynamic text sizing based on the ring size
+    val timerTextSizeSp = size.value * 0.32f
+    val labelTextSizeSp = size.value * 0.14f
+    
+    rv.setTextViewTextSize(R.id.timer_chronometer, android.util.TypedValue.COMPLEX_UNIT_SP, timerTextSizeSp)
+    rv.setTextViewTextSize(R.id.timer_static_text, android.util.TypedValue.COMPLEX_UNIT_SP, timerTextSizeSp)
+    rv.setTextViewTextSize(R.id.phase_label, android.util.TypedValue.COMPLEX_UNIT_SP, labelTextSizeSp)
+
+    AndroidRemoteViews(rv, modifier = GlanceModifier.size(size))
 }
+
+// ─────────────────────────────────────────────────────────────
+// Mode Chip — for the idle widget mode selector
+// ─────────────────────────────────────────────────────────────
 
 class StartAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         // Find selected mode from prefs
         val state = getAppWidgetState<Preferences>(context, PreferencesGlanceStateDefinition, glanceId)
         val modeName = state[PREF_SELECTED_MODE] ?: FocusMode.Pomodoro.name
-        
+
         context.startService(
             Intent(context, FocusTimerService::class.java).apply {
                 action = FocusTimerService.ACTION_START_MODE
@@ -383,7 +505,7 @@ class PauseResumeAction : ActionCallback {
         val state = getAppWidgetState<Preferences>(context, PreferencesGlanceStateDefinition, glanceId)
         val isRunning = state[PREF_STATUS] == TimerStatus.Running.name
         val action = if (isRunning) FocusTimerService.ACTION_PAUSE else FocusTimerService.ACTION_RESUME
-        
+
         context.startService(
             Intent(context, FocusTimerService::class.java).apply { this.action = action },
         )
@@ -430,5 +552,3 @@ class FocusTimerWidgetReceiver : GlanceAppWidgetReceiver() {
         }
     }
 }
-
-

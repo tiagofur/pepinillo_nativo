@@ -1,96 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Dark circular background (watch screen) -->
-    <item>
-        <shape android:shape="oval">
-            <solid android:color="#FF1A1A1A" />
-            <size
-                android:width="300dp"
-                android:height="300dp" />
-        </shape>
-    </item>
-    <!-- Task line 1 -->
-    <item
-        android:left="60dp"
-        android:top="80dp"
-        android:right="60dp">
-        <shape android:shape="rectangle">
-            <solid android:color="#33FFFFFF" />
-            <size android:height="14dp" />
-            <corners android:radius="7dp" />
-        </shape>
-    </item>
-    <!-- Task line 2 -->
-    <item
-        android:left="60dp"
-        android:top="104dp"
-        android:right="80dp">
-        <shape android:shape="rectangle">
-            <solid android:color="#33FFFFFF" />
-            <size android:height="14dp" />
-            <corners android:radius="7dp" />
-        </shape>
-    </item>
-    <!-- Task line 3 -->
-    <item
-        android:left="60dp"
-        android:top="128dp"
-        android:right="70dp">
-        <shape android:shape="rectangle">
-            <solid android:color="#33FFFFFF" />
-            <size android:height="14dp" />
-            <corners android:radius="7dp" />
-        </shape>
-    </item>
-    <!-- Task line 4 -->
-    <item
-        android:left="60dp"
-        android:top="152dp"
-        android:right="90dp">
-        <shape android:shape="rectangle">
-            <solid android:color="#33FFFFFF" />
-            <size android:height="14dp" />
-            <corners android:radius="7dp" />
-        </shape>
-    </item>
-    <!-- Bullet dot 1 -->
-    <item
-        android:left="44dp"
-        android:top="83dp"
-        android:width="8dp"
-        android:height="8dp">
-        <shape android:shape="oval">
-            <solid android:color="#FF43A047" />
-        </shape>
-    </item>
-    <!-- Bullet dot 2 -->
-    <item
-        android:left="44dp"
-        android:top="107dp"
-        android:width="8dp"
-        android:height="8dp">
-        <shape android:shape="oval">
-            <solid android:color="#FF1E88E5" />
-        </shape>
-    </item>
-    <!-- Bullet dot 3 -->
-    <item
-        android:left="44dp"
-        android:top="131dp"
-        android:width="8dp"
-        android:height="8dp">
-        <shape android:shape="oval">
-            <solid android:color="#FFFB8C00" />
-        </shape>
-    </item>
-    <!-- Bullet dot 4 -->
-    <item
-        android:left="44dp"
-        android:top="155dp"
-        android:width="8dp"
-        android:height="8dp">
-        <shape android:shape="oval">
-            <solid android:color="#FF8E24AA" />
-        </shape>
-    </item>
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M50,50m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0" />
+    <path android:fillColor="#333333" android:pathData="M20,30h60v4h-60z" />
+    <path android:fillColor="#333333" android:pathData="M20,50h60v4h-60z" />
+    <path android:fillColor="#333333" android:pathData="M20,70h60v4h-60z" />
+    <path android:strokeColor="#43A047" android:strokeWidth="2" android:pathData="M12,32m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path android:strokeColor="#43A047" android:strokeWidth="2" android:pathData="M12,52m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path android:fillColor="#43A047" android:pathData="M12,72m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+</vector>

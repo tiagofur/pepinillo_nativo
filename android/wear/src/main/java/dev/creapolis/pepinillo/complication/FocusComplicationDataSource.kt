@@ -46,47 +46,47 @@ class FocusComplicationDataSource : SuspendingComplicationDataSourceService() {
             progress = liveProgress,
         )
     }
-private fun buildLockedData(type: ComplicationType): ComplicationData? {
-    val description = PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_desc)).build()
-    return when (type) {
-        ComplicationType.SHORT_TEXT ->
-            ShortTextComplicationData.Builder(
-                text = PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_text)).build(),
-                contentDescription = description,
-            )
-                .setTitle(PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_title)).build())
-                .build()
 
-        ComplicationType.LONG_TEXT ->
-            LongTextComplicationData.Builder(
-                text = PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_desc)).build(),
-                contentDescription = description,
-            ).build()
+    private fun buildLockedData(type: ComplicationType): ComplicationData? {
+        val description = PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_desc)).build()
+        return when (type) {
+            ComplicationType.SHORT_TEXT ->
+                ShortTextComplicationData.Builder(
+                    text = PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_text)).build(),
+                    contentDescription = description,
+                )
+                    .setTitle(PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_title)).build())
+                    .build()
 
-        ComplicationType.RANGED_VALUE ->
-            RangedValueComplicationData.Builder(
-                value = 0f,
-                min = 0f,
-                max = 1f,
-                contentDescription = description,
-            )
-                .setText(PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_text)).build())
-                .build()
+            ComplicationType.LONG_TEXT ->
+                LongTextComplicationData.Builder(
+                    text = PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_desc)).build(),
+                    contentDescription = description,
+                ).build()
 
-        else -> null
+            ComplicationType.RANGED_VALUE ->
+                RangedValueComplicationData.Builder(
+                    value = 0f,
+                    min = 0f,
+                    max = 1f,
+                    contentDescription = description,
+                )
+                    .setText(PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_locked_text)).build())
+                    .build()
+
+            else -> null
+        }
     }
-}
 
-private fun buildData(
-    type: ComplicationType,
-    displayTime: String,
-    mode: String,
-    progress: Float,
-): ComplicationData? {
-    val description = PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_timer_desc)).build()
-    return when (type) {
-        ComplicationType.SHORT_TEXT ->
-...
+    private fun buildData(
+        type: ComplicationType,
+        displayTime: String,
+        mode: String,
+        progress: Float,
+    ): ComplicationData? {
+        val description = PlainComplicationText.Builder(getString(dev.creapolis.pepinillo.R.string.comp_timer_desc)).build()
+        return when (type) {
+            ComplicationType.SHORT_TEXT ->
                 ShortTextComplicationData.Builder(
                     text = PlainComplicationText.Builder(displayTime).build(),
                     contentDescription = description,

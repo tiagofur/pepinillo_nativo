@@ -124,9 +124,8 @@ private fun StatsContent() {
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            modifier = GlanceModifier.fillMaxSize().padding(16.dp),
+            modifier = GlanceModifier.fillMaxSize().padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = "Hoy",
@@ -137,20 +136,25 @@ private fun StatsContent() {
                 ),
             )
 
-            Spacer(modifier = GlanceModifier.height(12.dp))
+            Spacer(modifier = GlanceModifier.defaultWeight())
 
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                Spacer(modifier = GlanceModifier.defaultWeight())
                 StatBlock(value = timeText, label = "Enfoque", emoji = "\u23F1")
-                Spacer(modifier = GlanceModifier.width(16.dp))
+                Spacer(modifier = GlanceModifier.defaultWeight())
                 StatBlock(value = "$sessions", label = "Sesiones", emoji = "\u2705")
-                Spacer(modifier = GlanceModifier.width(16.dp))
+                Spacer(modifier = GlanceModifier.defaultWeight())
                 StatBlock(value = "$streak", label = "Racha", emoji = "\uD83D\uDD25")
-                Spacer(modifier = GlanceModifier.width(16.dp))
+                Spacer(modifier = GlanceModifier.defaultWeight())
                 StatBlock(value = "$completedTasks", label = "Tareas", emoji = "\uD83D\uDCCB")
+                Spacer(modifier = GlanceModifier.defaultWeight())
             }
+
+            Spacer(modifier = GlanceModifier.defaultWeight())
         }
 
         if (!isPro) {

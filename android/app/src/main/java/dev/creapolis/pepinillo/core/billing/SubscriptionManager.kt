@@ -101,30 +101,36 @@ class SubscriptionManager @Inject constructor(
                     onSuccess = { offerings ->
                         val allProducts = mutableListOf<ProductInfo>()
 
-                        // Iterate through all offerings and their packages
-                        offerings.all.values.forEach { offering ->
-                            offering.availablePackages.forEach { pkg ->
-                                val product = pkg.product
-                                allProducts.add(
-                                    ProductInfo(
-                                        productId = product.id,
-                                        title = product.title,
-                                        description = product.description,
-                                        formattedPrice = product.price.formatted,
-                                        priceMicros = (product.price.amountMicros),
-                                        billingPeriod = when (product.period?.unit?.name) {
-                                            "MONTH" -> "P1M"
-                                            "YEAR" -> "P1Y"
-                                            else -> null
-                                        },
-                                        `package` = pkg,
-                                    ),
-                                )
+                        // Use only the current (active) offering to avoid duplicates
+                        // when the same products appear across multiple offerings.
+                        val targetOffering = offerings.current
+                            ?: offerings["default"]
+                            ?: run {
+                                Log.w(TAG, "No current or default offering found")
+                                null
                             }
+
+                        targetOffering?.availablePackages?.forEach { pkg ->
+                            val product = pkg.product
+                            allProducts.add(
+                                ProductInfo(
+                                    productId = product.id,
+                                    title = product.title,
+                                    description = product.description,
+                                    formattedPrice = product.price.formatted,
+                                    priceMicros = (product.price.amountMicros),
+                                    billingPeriod = when (product.period?.unit?.name) {
+                                        "MONTH" -> "P1M"
+                                        "YEAR" -> "P1Y"
+                                        else -> null
+                                    },
+                                    `package` = pkg,
+                                ),
+                            )
                         }
 
                         _products.value = allProducts
-                        Log.d(TAG, "Loaded ${allProducts.size} products")
+                        Log.d(TAG, "Loaded ${allProducts.size} products from offering '${targetOffering?.identifier}'")
                         if (cont.isActive) cont.resume(Unit)
                     },
                 )

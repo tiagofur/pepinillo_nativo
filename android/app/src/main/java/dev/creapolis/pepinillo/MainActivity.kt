@@ -128,12 +128,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         var isAppReady by mutableStateOf(false)
-        
+
         // Keep the splash screen on-screen until the app is ready
         splashScreen.setKeepOnScreenCondition { !isAppReady }
-        
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
 
         // ... existing syncScope logic ...

@@ -1,60 +1,27 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Background -->
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="#F5F5F5" />
-            <corners android:radius="24dp" />
-        </shape>
-    </item>
-    <!-- Green accent bar at top -->
-    <item
-        android:top="0dp"
-        android:left="0dp"
-        android:right="0dp"
-        android:bottom="92dp">
-        <shape android:shape="rectangle">
-            <solid android:color="#FF43A047" />
-            <corners
-                android:topLeftRadius="24dp"
-                android:topRightRadius="24dp"
-                android:bottomLeftRadius="0dp"
-                android:bottomRightRadius="0dp" />
-        </shape>
-    </item>
-    <!-- Center circle for timer -->
-    <item
-        android:gravity="center"
-        android:width="72dp"
-        android:height="72dp">
-        <shape android:shape="oval">
-            <solid android:color="#FFFFFF" />
-            <stroke
-                android:width="3dp"
-                android:color="#FF43A047" />
-        </shape>
-    </item>
-    <!-- Inner timer indicator -->
-    <item
-        android:gravity="center"
-        android:width="56dp"
-        android:height="56dp">
-        <shape android:shape="oval">
-            <solid android:color="@android:color/transparent" />
-            <stroke
-                android:width="1dp"
-                android:color="#E0E0E0" />
-        </shape>
-    </item>
-    <!-- Bottom button area -->
-    <item
-        android:top="88dp"
-        android:left="24dp"
-        android:right="24dp"
-        android:bottom="8dp">
-        <shape android:shape="rectangle">
-            <solid android:color="#FF43A047" />
-            <corners android:radius="20dp" />
-        </shape>
-    </item>
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="120dp"
+    android:viewportWidth="200"
+    android:viewportHeight="120">
+    <!-- Main Background -->
+    <path
+        android:fillColor="#F5F5F5"
+        android:pathData="M24,0h152c13.26,0 24,10.74 24,24v72c0,13.26 -10.74,24 -24,24h-152c-13.26,0 -24,-10.74 -24,-24v-72c0,-13.26 10.74,-24 24,-24z" />
+    <!-- Header/Accent -->
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M24,0h152c13.26,0 24,10.74 24,24v4c0,0 -200,0 -200,0v-4c0,-13.26 10.74,-24 24,-24z" />
+    <!-- Timer Circle -->
+    <path
+        android:strokeColor="#43A047"
+        android:strokeWidth="3"
+        android:pathData="M100,60m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0" />
+    <!-- Center Dot -->
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M100,60m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    <!-- Button Area -->
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M40,95h120c5.52,0 10,4.48 10,10v0c0,5.52 -4.48,10 -10,10h-120c-5.52,0 -10,-4.48 -10,-10v0c0,-5.52 4.48,-10 10,-10z" />
+</vector>

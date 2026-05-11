@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Determinate circular progress ring, rotated so it starts from top (12 o'clock) -->
+    <ProgressBar
+        android:id="@+id/progress_ring"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:progressDrawable="@drawable/widget_progress_drawable"
+        android:max="10000"
+        android:progress="10000"
+        android:rotation="-90"
+        android:indeterminate="false" />
+
+    <!-- Centered content overlay -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <!-- Native Chronometer (shown when running) -->
+        <Chronometer
+            android:id="@+id/timer_chronometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:textColor="#1C1B1F"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.02"
+            android:visibility="gone" />
+
+        <!-- Static time text (shown when ready/paused) -->
+        <TextView
+            android:id="@+id/timer_static_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            android:textColor="#1C1B1F"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.02"
+            android:visibility="visible" />
+
+        <!-- Phase label -->
+        <TextView
+            android:id="@+id/phase_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="#49454F"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+</FrameLayout>

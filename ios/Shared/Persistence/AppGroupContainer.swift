@@ -17,6 +17,9 @@
 
 import Foundation
 import SwiftData
+import OSLog
+
+private let persistenceLogger = Logger(subsystem: "com.pepinillo.app", category: "persistence")
 
 // MARK: - App Group Constants
 
@@ -275,11 +278,21 @@ enum AppGroupDefaults {
 /// migrates that store before the first SwiftUI frame, so the launch path uses a
 /// fresh local store file and leaves the legacy file untouched for later recovery.
 func makeSharedModelContainer() throws -> ModelContainer {
+    persistenceLogger.info("Opening shared ModelContainer at: \(AppGroup.storeURL.path, privacy: .public)")
     do {
         return try makeModelContainer(at: AppGroup.storeURL)
     } catch {
+        persistenceLogger.error("Failed to open shared ModelContainer: \(String(describing: error), privacy: .public)")
+        
         try quarantineCorruptedStoreIfPresent()
-        return try makeModelContainer(at: AppGroup.storeURL)
+        
+        persistenceLogger.info("Retrying shared ModelContainer after quarantine...")
+        do {
+            return try makeModelContainer(at: AppGroup.storeURL)
+        } catch {
+            persistenceLogger.fault("Critical failure: Could not open shared ModelContainer even after quarantine. Error: \(String(describing: error), privacy: .public)")
+            throw error
+        }
     }
 }
 

@@ -1,66 +1,21 @@
-<?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Dark circular background (watch screen) -->
-    <item>
-        <shape android:shape="oval">
-            <solid android:color="#FF1A1A1A" />
-            <size
-                android:width="300dp"
-                android:height="300dp" />
-        </shape>
-    </item>
-    <!-- Progress arc ring (green/Pomodoro color) -->
-    <item
-        android:left="8dp"
-        android:top="8dp"
-        android:right="8dp"
-        android:bottom="8dp">
-        <shape android:shape="oval">
-            <solid android:color="@android:color/transparent" />
-            <stroke
-                android:width="6dp"
-                android:color="#FF43A047" />
-        </shape>
-    </item>
-    <!-- Inner dark circle to mask partial arc (simulates ~65% progress) -->
-    <item
-        android:left="8dp"
-        android:top="8dp"
-        android:right="8dp"
-        android:bottom="120dp">
-        <shape android:shape="rectangle">
-            <solid android:color="#FF1A1A1A" />
-        </shape>
-    </item>
-    <!-- Center content background -->
-    <item
-        android:left="40dp"
-        android:top="40dp"
-        android:right="40dp"
-        android:bottom="40dp">
-        <shape android:shape="oval">
-            <solid android:color="#FF1A1A1A" />
-        </shape>
-    </item>
-    <!-- Center timer indicator circle -->
-    <item
-        android:gravity="center"
-        android:width="100dp"
-        android:height="100dp">
-        <shape android:shape="oval">
-            <solid android:color="@android:color/transparent" />
-            <stroke
-                android:width="2dp"
-                android:color="#33FFFFFF" />
-        </shape>
-    </item>
-    <!-- Small green dot at center to indicate "active" -->
-    <item
-        android:gravity="center"
-        android:width="12dp"
-        android:height="12dp">
-        <shape android:shape="oval">
-            <solid android:color="#FF43A047" />
-        </shape>
-    </item>
-</layer-list>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M50,50m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0" />
+    <path
+        android:strokeColor="#43A047"
+        android:strokeWidth="4"
+        android:pathData="M50,10a40,40 0,1 1 -20,6.5" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeAlpha="0.2"
+        android:strokeWidth="1"
+        android:pathData="M50,50m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0" />
+    <path
+        android:fillColor="#43A047"
+        android:pathData="M50,50m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+</vector>

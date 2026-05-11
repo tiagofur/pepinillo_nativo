@@ -215,7 +215,7 @@ private fun TasksContent() {
             .fillMaxSize()
             .background(GlanceTheme.colors.widgetBackground)
             .cornerRadius(24.dp)
-            .padding(14.dp)
+            .padding(8.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         // Header row
@@ -274,17 +274,32 @@ private fun LinkedTaskRow(task: WidgetTask) {
         )
         Spacer(modifier = GlanceModifier.width(8.dp))
         Column(modifier = GlanceModifier.defaultWeight()) {
+            Row(
+                modifier = GlanceModifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = task.title,
+                    style = TextStyle(
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ColorProvider(R.color.widget_white),
+                    ),
+                    maxLines = 1,
+                    modifier = GlanceModifier.defaultWeight()
+                )
+                if (task.pomodoroProgress.isNotEmpty()) {
+                    Text(
+                        text = task.pomodoroProgress,
+                        style = TextStyle(
+                            fontSize = 10.sp,
+                            color = ColorProvider(R.color.widget_white),
+                        ),
+                    )
+                }
+            }
             Text(
-                text = task.title,
-                style = TextStyle(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ColorProvider(R.color.widget_white),
-                ),
-                maxLines = 1,
-            )
-            Text(
-                text = "\uD83C\uDF45 En progreso${if (task.pomodoroProgress.isNotEmpty()) " \u00B7 ${task.pomodoroProgress}" else ""}",
+                text = "\uD83C\uDF45 En progreso",
                 style = TextStyle(
                     fontSize = 10.sp,
                     color = ColorProvider(R.color.widget_white),
@@ -326,7 +341,10 @@ private fun TaskRow(task: WidgetTask) {
         Spacer(modifier = GlanceModifier.width(8.dp))
 
         // Task info
-        Column(modifier = GlanceModifier.defaultWeight()) {
+        Row(
+            modifier = GlanceModifier.defaultWeight(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
                 text = "${task.energyEmoji} ${task.title}",
                 style = TextStyle(
@@ -334,6 +352,7 @@ private fun TaskRow(task: WidgetTask) {
                     color = GlanceTheme.colors.onSurface,
                 ),
                 maxLines = 1,
+                modifier = GlanceModifier.defaultWeight()
             )
             if (task.pomodoroProgress.isNotEmpty()) {
                 Text(

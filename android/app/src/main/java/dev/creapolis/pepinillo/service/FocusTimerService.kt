@@ -38,6 +38,10 @@ import dev.creapolis.pepinillo.widget.TimerWidgetState
 import dev.creapolis.pepinillo.widget.WidgetStateManager
 import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
 import dev.creapolis.pepinillo.widget.updateWidgetState
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
+import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,12 +50,21 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private data class TimerWidgetUpdateData(
+    val state: dev.creapolis.pepinillo.domain.timer.FocusTimerState,
+    val streak: Int,
+    val sessionsToday: Int,
+    val themeId: String,
+    val themeMode: String,
+)
+
 @AndroidEntryPoint
 class FocusTimerService : Service() {
 
     @Inject lateinit var focusEngine: FocusEngine
     @Inject lateinit var sessionRepository: SessionRepository
     @Inject lateinit var taskRepository: dev.creapolis.pepinillo.data.repository.TaskRepository
+    @Inject lateinit var userPreferencesRepository: UserPreferencesRepository
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isCollecting = false
@@ -242,23 +255,28 @@ class FocusTimerService : Service() {
         // Collect timer state — update notification + widget
         serviceScope.launch {
             var lastWidgetUpdate = 0L
-            var cachedLinkedTaskId: String? = null
-            var cachedLinkedTaskName: String? = null
-            var previousPhase: dev.creapolis.pepinillo.domain.timer.FocusPhase? = null
             var previousStatus: TimerStatus? = null
-            focusEngine.state.collect { state ->
+            var previousMode: dev.creapolis.pepinillo.feature.focus.FocusMode? = null
+            var previousThemeId: String? = null
+
+            combine(
+                focusEngine.state,
+                sessionRepository.getTodayStats(),
+                sessionRepository.getAllDaysWithSessions(),
+                userPreferencesRepository.preferences,
+            ) { timerState: dev.creapolis.pepinillo.domain.timer.FocusTimerState, stats: DailyStatsEntity?, allDays: List<DailyStatsEntity>, userPrefs: UserPreferences ->
+                val streak = sessionRepository.calculateCurrentStreak(allDays)
+                val sessionsToday = stats?.sessionsCompleted ?: 0
+                val themeId = userPrefs.selectedTheme
+                val themeMode = userPrefs.themeMode.name
+                
+                TimerWidgetUpdateData(timerState, streak, sessionsToday, themeId, themeMode)
+            }.collect { info: TimerWidgetUpdateData ->
+                val state = info.state
+                val streak = info.streak
+                val sessionsToday = info.sessionsToday
+                val themeId = info.themeId
                 try {
-                    // Detect phase change → notify watch to vibrate
-                    val phaseChanged = previousPhase != null && state.phase != previousPhase
-                    if (phaseChanged && state.status != TimerStatus.Idle) {
-                        WearDataLayerHelper.pushPhaseComplete(this@FocusTimerService, state.mode.name, previousPhase!!.name)
-                    }
-                    previousPhase = state.phase
-
-                    // Detect status change to bypass throttle (ensures final idle push is never skipped)
-                    val statusChanged = previousStatus != null && state.status != previousStatus
-                    previousStatus = state.status
-
                     // Update notification every tick
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                         ContextCompat.checkSelfPermission(this@FocusTimerService, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
@@ -266,18 +284,22 @@ class FocusTimerService : Service() {
                             .notify(NOTIFICATION_ID, buildNotification(state))
                     }
 
-                    // Resolve linked task name (only re-query when task changes)
-                    if (state.linkedTaskId != cachedLinkedTaskId) {
-                        cachedLinkedTaskId = state.linkedTaskId
-                        cachedLinkedTaskName = state.linkedTaskId?.let {
-                            taskRepository.getTaskById(it)?.title
-                        }
-                    }
+                    // Resolve linked task title
+                    val taskTitle = if (state.linkedTaskId != null) {
+                        taskRepository.getTaskTitle(state.linkedTaskId)
+                    } else null
 
-                    // Update widget ONLY on state changes or every 30s as fallback (not every 1s!)
-                    // This fixes P0-1: Massive Battery Drain
+                    // Detect changes to bypass throttle
                     val now = System.currentTimeMillis()
-                    val shouldUpdateWidget = statusChanged || phaseChanged || (now - lastWidgetUpdate >= 30000)
+                    val statusChanged = state.status != previousStatus
+                    val modeChanged = state.mode != previousMode
+                    val themeChanged = themeId != previousThemeId
+                    
+                    val shouldUpdateWidget = statusChanged || modeChanged || themeChanged || (now - lastWidgetUpdate >= 30000)
+                    
+                    previousStatus = state.status
+                    previousMode = state.mode
+                    previousThemeId = themeId
                     
                     if (shouldUpdateWidget) {
                         lastWidgetUpdate = now
@@ -295,14 +317,21 @@ class FocusTimerService : Service() {
                             phaseLabel = this@FocusTimerService.getString(state.phaseLabelRes),
                             status = state.status,
                             progress = state.progress,
-                            linkedTaskName = cachedLinkedTaskName,
+                            linkedTaskName = state.linkedTaskId,
+                            linkedTaskTitle = taskTitle,
+                            elapsedMillis = state.elapsedMillis,
+                            streak = streak,
+                            sessionsToday = sessionsToday,
+                            themeId = themeId,
+                            phase = state.phase,
+                            themeMode = info.themeMode,
                         )
                         updateWidgetState(this@FocusTimerService, widgetState)
                         FocusTimerWidget().updateAll(context = this@FocusTimerService)
                         
                         // Keep tasks widget in sync with linked task highlight
                         WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, state.linkedTaskId)
-                        WearDataLayerHelper.pushTimer(this@FocusTimerService, state, cachedLinkedTaskName)
+                        WearDataLayerHelper.pushTimer(this@FocusTimerService, state, taskTitle)
 
                         // Persist recovery state
                         if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused || state.status == TimerStatus.WaitingForNext) {

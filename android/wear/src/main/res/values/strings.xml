@@ -11,6 +11,12 @@
     <string name="queued">%d queued</string>
     <string name="start">Start</string>
 
+    <!-- Modes -->
+    <string name="mode_pomodoro">Pomodoro</string>
+    <string name="mode_flow">Flow</string>
+    <string name="mode_blocks">Blocks</string>
+    <string name="mode_chrono">Stopwatch</string>
+
     <!-- TasksScreen -->
     <string name="tasks_count">Tasks (%d)</string>
     <string name="in_progress">In progress</string>

@@ -37,18 +37,22 @@ private final class AppBootstrap: ObservableObject {
     @Published var store: StoreOf<AppFeature>?
 
     init() {
-        installFallbackStore()
+        // Perform purely asynchronous bootstrap to ensure immediate SwiftUI frame rendering.
+        // Synchronous ModelContainer initialization in init() blocks the main thread
+        // and keeps the system splash screen visible, leading to watchdog kills on physical devices.
         Task {
             await bootstrap()
         }
     }
 
     private func bootstrap() async {
+        phase = .loading
         do {
             let container = try await loadContainerSafely()
             apply(container: container)
         } catch {
             startupLogger.error("App bootstrap failed: \(String(describing: error), privacy: .public)")
+            phase = .failed
         }
     }
 
@@ -60,40 +64,15 @@ private final class AppBootstrap: ObservableObject {
 
     private func loadContainerSafely() async throws -> ModelContainer {
         do {
-            return try await Self.makeSharedContainerWithTimeout(seconds: 8)
+            // Now that bootstrap is purely asynchronous, we can afford to wait for heavy migrations
+            // without blocking the main thread or system splash screen.
+            // Using a fresh local store in the App Group is the primary target.
+            return try await Task.detached(priority: .userInitiated) {
+                try makeSharedModelContainer()
+            }.value
         } catch {
             startupLogger.error("Persistent store failed during launch, using fallback store: \(String(describing: error), privacy: .public)")
             return try Self.makeEmergencyFallbackContainer()
-        }
-    }
-
-    private static func makeSharedContainerWithTimeout(seconds: TimeInterval) async throws -> ModelContainer {
-        try await withThrowingTaskGroup(of: ModelContainer.self) { group in
-            group.addTask {
-                try await Task.detached(priority: .userInitiated) {
-                    try makeSharedModelContainer()
-                }.value
-            }
-            group.addTask {
-                try await Task.sleep(for: .seconds(seconds))
-                throw AppBootstrapError.containerTimeout
-            }
-
-            guard let first = try await group.next() else {
-                throw AppBootstrapError.containerTimeout
-            }
-            group.cancelAll()
-            return first
-        }
-    }
-
-    private func installFallbackStore() {
-        do {
-            let container = try Self.makeEmergencyFallbackContainer()
-            apply(container: container)
-        } catch {
-            startupLogger.error("Fallback store setup failed: \(String(describing: error), privacy: .public)")
-            phase = .failed
         }
     }
 
