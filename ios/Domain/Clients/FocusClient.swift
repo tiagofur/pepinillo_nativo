@@ -31,6 +31,8 @@ public struct FocusClient: Sendable {
     public var currentState: @Sendable () async -> FocusSessionState? = { nil }
     /// Reset engine cycle counter for a new calendar day.
     public var resetForNewDay: @Sendable () async -> Void = {}
+    /// Sync with an external state change (e.g. from a widget) to align internal timing anchors.
+    public var syncExternalState: @Sendable (TimeInterval, TimeInterval?) async -> Void = { _, _ in }
 }
 
 // MARK: - Dependency Registration
@@ -75,6 +77,9 @@ extension FocusClient: DependencyKey {
             },
             resetForNewDay: {
                 await engine.resetForNewDay()
+            },
+            syncExternalState: { elapsed, remaining in
+                await engine.syncExternalState(elapsed: elapsed, remaining: remaining)
             }
         )
         #else
@@ -89,7 +94,8 @@ extension FocusClient: DependencyKey {
             updateConfig: { _ in },
             events: { .finished },
             currentState: { nil },
-            resetForNewDay: {}
+            resetForNewDay: {},
+            syncExternalState: { _, _ in }
         )
         #endif
     }()

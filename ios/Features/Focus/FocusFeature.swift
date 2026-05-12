@@ -291,6 +291,7 @@ struct FocusFeature {
                 state.isPaused = true
                 state.phaseLabel = FocusPhase.paused.displayName
                 AppGroupDefaults.activeSessionIsPaused = true
+                AppGroupDefaults.activeSessionRemaining = state.remainingSeconds
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                 let taskTitle = state.linkedTaskTitle
@@ -305,10 +306,14 @@ struct FocusFeature {
             case .resumeTapped:
                 guard state.isRunning, state.isPaused else { return .none }
                 state.isPaused = false
-                // Don't update phaseLabel here — the engine's next tick (within 100ms)
-                // will set the correct restored phase. Setting it now would briefly
-                // show "Paused" since state.phase is still .paused from the last tick.
                 AppGroupDefaults.activeSessionIsPaused = false
+                
+                // Recalculate anchors to prevent drift after pause
+                if let remaining = state.remainingSeconds {
+                    AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(remaining)
+                }
+                AppGroupDefaults.activeSessionTimerStart = Date.now.addingTimeInterval(-state.elapsedSeconds)
+                
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                 let taskTitle = state.linkedTaskTitle
@@ -405,23 +410,29 @@ struct FocusFeature {
                     state.displayTime = formatTime(sessionState.elapsedSeconds)
                 }
 
-                let elapsed = Int(sessionState.elapsedSeconds)
+                let elapsed = sessionState.elapsedSeconds
                 let taskTitle = state.linkedTaskTitle
 
-                // Write live session state to AppGroupDefaults for widgets
-                AppGroupDefaults.activeSessionElapsed = elapsed
-                AppGroupDefaults.activeSessionRemaining = sessionState.remainingSeconds.map(Int.init)
-                AppGroupDefaults.activeSessionPhase = state.phaseLabel
-                AppGroupDefaults.activeSessionProgress = sessionState.progress
-                AppGroupDefaults.activeSessionPomodoroNumber = sessionState.pomodoroNumber
-                AppGroupDefaults.activeSessionTotalPomodoros = sessionState.totalPomodoros
-                AppGroupDefaults.activeSessionTaskTitle = taskTitle
+                // Throttled write to AppGroupDefaults for widgets (every 1.0s or state changes)
+                // We use floor to check if a second has passed since the last write
+                let lastElapsed = AppGroupDefaults.activeSessionElapsed
+                let significantChange = abs(elapsed - lastElapsed) >= 1.0 || state.isPaused
+                
+                if significantChange {
+                    AppGroupDefaults.activeSessionElapsed = elapsed
+                    AppGroupDefaults.activeSessionRemaining = sessionState.remainingSeconds
+                    AppGroupDefaults.activeSessionPhase = state.phaseLabel
+                    AppGroupDefaults.activeSessionProgress = sessionState.progress
+                    AppGroupDefaults.activeSessionPomodoroNumber = sessionState.pomodoroNumber
+                    AppGroupDefaults.activeSessionTotalPomodoros = sessionState.totalPomodoros
+                    AppGroupDefaults.activeSessionTaskTitle = taskTitle
+                }
 
                 // Update Live Activity + notification (notification every 30s)
                 let displayTime = state.displayTime
                 let modeName = mode.rawValue
                 let phaseLabel = state.phaseLabel
-                let shouldUpdateNotification = elapsed > 0 && elapsed % 30 == 0
+                let shouldUpdateNotification = Int(elapsed) > 0 && Int(elapsed) % 30 == 0 && Int(elapsed) != Int(lastElapsed)
                 return .run { [liveActivity, notificationClient] _ in
                     await liveActivity.update(sessionState, taskTitle)
                     if shouldUpdateNotification {

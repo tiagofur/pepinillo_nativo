@@ -364,16 +364,16 @@ struct FocusView: View {
             Circle()
                 .stroke(modeColor.opacity(0.15), lineWidth: 14)
 
-            // Progress ring (only for countdown modes)
-            if let progress = store.progress {
+            // Countdown modes show remaining time: full ring at start, empty at zero.
+            if let ringProgress = timerRingProgress {
                 Circle()
-                    .trim(from: 0, to: CGFloat(progress))
+                    .trim(from: 0, to: CGFloat(ringProgress))
                     .stroke(
                         modeGradient,
                         style: StrokeStyle(lineWidth: 14, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
-                    .conditionalAnimation(.linear(duration: 0.1), value: progress)
+                    .conditionalAnimation(.linear(duration: 0.1), value: ringProgress)
             }
 
             // Center content
@@ -412,6 +412,17 @@ struct FocusView: View {
         .accessibilityValue(timerAccessibilityValue)
     }
 
+    private var timerRingProgress: Double? {
+        switch currentMode.direction {
+        case .countDown:
+            let completed = store.progress.map { min(max($0, 0), 1) } ?? 0
+            return 1 - completed
+        case .countUp:
+            guard let progress = store.progress else { return nil }
+            return min(max(progress, 0), 1)
+        }
+    }
+
     private var timerAccessibilityLabel: String {
         let mode = currentMode.displayName
         if store.isRunning {
@@ -424,8 +435,14 @@ struct FocusView: View {
 
     private var timerAccessibilityValue: String {
         var parts: [String] = [store.displayTime]
-        if let progress = store.progress {
-            parts.append(String(localized: "\(Int(progress * 100)) percent complete"))
+        if let ringProgress = timerRingProgress {
+            let percentage = Int(ringProgress * 100)
+            switch currentMode.direction {
+            case .countDown:
+                parts.append(String(localized: "\(percentage) percent remaining"))
+            case .countUp:
+                parts.append(String(localized: "\(percentage) percent complete"))
+            }
         }
         if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
             parts.append(String(localized: "Pomodoro \(num) of \(store.config.pomodorosPerCycle)"))

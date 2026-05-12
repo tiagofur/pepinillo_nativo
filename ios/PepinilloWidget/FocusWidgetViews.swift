@@ -3,11 +3,11 @@
 //
 // Widget views for all 3 Home Screen sizes and Lock Screen.
 // Each size shows the appropriate amount of data with circular progress rings,
-// live countdown timers, and full Pause/Resume/Stop controls.
+// live countdowns, and quick-action buttons.
+// Design style: Liquid Glass (Premium, translucent, atmospheric).
 
 import SwiftUI
 import WidgetKit
-import AppIntents
 
 // MARK: - Reusable Progress Ring
 
@@ -16,27 +16,51 @@ private struct WidgetProgressRing<Content: View>: View {
     let modeColor: Color
     let lineWidth: CGFloat
     let isPaused: Bool
-    @ViewBuilder let content: () -> Content
+    let countsDown: Bool
+    let content: Content
+
+    init(
+        progress: Double?,
+        modeColor: Color,
+        lineWidth: CGFloat = 8,
+        isPaused: Bool = false,
+        countsDown: Bool = false,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.progress = progress
+        self.modeColor = modeColor
+        self.lineWidth = lineWidth
+        self.isPaused = isPaused
+        self.countsDown = countsDown
+        self.content = content()
+    }
 
     var body: some View {
         ZStack {
+            // Background track
             Circle()
-                .stroke(modeColor.opacity(0.2), lineWidth: lineWidth)
+                .stroke(modeColor.opacity(0.15), lineWidth: lineWidth)
+
+            // Progress bar. Countdown modes render remaining time, so they start full and empty out.
             if let progress {
+                let clamped = min(max(progress, 0), 1)
+                let visibleProgress = countsDown ? 1 - clamped : clamped
                 Circle()
-                    .trim(from: 0, to: CGFloat(min(progress, 1.0)))
+                    .trim(from: 0, to: CGFloat(visibleProgress))
                     .stroke(
-                        modeColor.opacity(isPaused ? 0.5 : 1.0),
+                        modeColor,
                         style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
+                    .animation(.spring(duration: 1.0), value: visibleProgress)
             }
-            content()
+
+            content
         }
     }
 }
 
-// MARK: - Live Timer Text Helper
+// MARK: - Live Timer Text
 
 private struct LiveTimerText: View {
     let entry: FocusWidgetEntry
@@ -44,8 +68,13 @@ private struct LiveTimerText: View {
 
     var body: some View {
         if let start = entry.timerStart, let end = entry.timerEnd, !entry.isPaused {
-            // Live countdown via system — updates every second without timeline refresh
+            // Live countdown via system — updates every second without timeline refresh.
             Text(timerInterval: start...end, countsDown: true)
+                .font(font)
+                .monospacedDigit()
+                .multilineTextAlignment(.center)
+        } else if let start = entry.timerStart, isCountUpMode, !entry.isPaused {
+            Text(timerInterval: start...Date.distantFuture, countsDown: false)
                 .font(font)
                 .monospacedDigit()
                 .multilineTextAlignment(.center)
@@ -54,6 +83,97 @@ private struct LiveTimerText: View {
                 .font(font)
                 .monospacedDigit()
         }
+    }
+
+    private var isCountUpMode: Bool {
+        entry.focusMode == "flowtime" || entry.focusMode == "stopwatch"
+    }
+}
+
+// MARK: - Mode Quick Starts
+
+private let widgetSelectableModes = ["pomodoro", "flowtime", "timeBlock", "stopwatch"]
+
+private struct WidgetModeQuickStartButton: View {
+    let mode: String
+    let selectedMode: String
+    let showsTitle: Bool
+
+    @ViewBuilder
+    var body: some View {
+        let color = ModeColors.color(for: mode)
+        if mode == selectedMode {
+            Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
+                label
+            }
+            .tint(color)
+            .buttonStyle(.borderedProminent)
+            .clipShape(Capsule())
+        } else {
+            Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
+                label
+            }
+            .tint(.secondary)
+            .buttonStyle(.bordered)
+            .clipShape(Capsule())
+        }
+    }
+
+    private var label: some View {
+        let style = WidgetModeStyle.style(for: mode)
+        return HStack(spacing: 5) {
+            Image(systemName: showsTitle ? "play.fill" : style.systemImage)
+                .font(.system(size: showsTitle ? 10 : 13, weight: .bold))
+            if showsTitle {
+                Text(modeDisplayName(mode))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            } else {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 7, weight: .black))
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: showsTitle ? 28 : 24)
+    }
+}
+
+private struct WidgetModeQuickStartGrid: View {
+    let selectedMode: String
+    let showsTitles: Bool
+
+    var body: some View {
+        LazyVGrid(
+            columns: [GridItem(.flexible(), spacing: 6), GridItem(.flexible(), spacing: 6)],
+            spacing: 6
+        ) {
+            ForEach(widgetSelectableModes, id: \.self) { mode in
+                WidgetModeQuickStartButton(mode: mode, selectedMode: selectedMode, showsTitle: showsTitles)
+            }
+        }
+    }
+}
+
+private struct WidgetPrimaryStartButton: View {
+    let mode: String
+    let compact: Bool
+
+    var body: some View {
+        Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
+            HStack(spacing: 6) {
+                Image(systemName: "play.fill")
+                Text(compact ? String(localized: "Start") : String(localized: "Start \(modeDisplayName(mode))"))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .font(.system(size: compact ? 12 : 14, weight: .bold, design: .rounded))
+            .frame(maxWidth: .infinity)
+            .frame(height: compact ? 28 : 38)
+        }
+        .tint(ModeColors.color(for: mode))
+        .buttonStyle(.borderedProminent)
+        .clipShape(Capsule())
     }
 }
 
@@ -64,34 +184,39 @@ private struct WidgetControls: View {
     let compact: Bool
 
     var body: some View {
-        HStack(spacing: compact ? 8 : 12) {
+        HStack(spacing: compact ? 10 : 14) {
             if entry.isPaused {
                 Button(intent: ResumeFocusFromWidgetIntent()) {
-                    Label(String(localized: "Resume"), systemImage: "play.fill")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: compact ? nil : .infinity)
+                    Image(systemName: "play.fill")
+                        .font(.system(size: compact ? 13 : 16, weight: .bold))
+                        .frame(width: buttonSize, height: buttonSize)
                 }
                 .tint(.green)
+                .buttonStyle(.borderedProminent)
+                .clipShape(Circle())
             } else {
                 Button(intent: PauseFocusFromWidgetIntent()) {
-                    Label(String(localized: "Pause"), systemImage: "pause.fill")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: compact ? nil : .infinity)
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: compact ? 13 : 16, weight: .bold))
+                        .frame(width: buttonSize, height: buttonSize)
                 }
                 .tint(.orange)
+                .buttonStyle(.borderedProminent)
+                .clipShape(Circle())
             }
 
             Button(intent: StopFocusFromWidgetIntent()) {
-                Label(String(localized: "Stop"), systemImage: "stop.fill")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: compact ? nil : .infinity)
+                Image(systemName: "stop.fill")
+                    .font(.system(size: compact ? 13 : 16, weight: .bold))
+                    .frame(width: buttonSize, height: buttonSize)
             }
             .tint(.red)
+            .buttonStyle(.borderedProminent)
+            .clipShape(Circle())
         }
     }
+
+    private var buttonSize: CGFloat { compact ? 34 : 44 }
 }
 
 // MARK: - Small Widget (2x2)
@@ -102,35 +227,29 @@ struct FocusWidgetSmall: View {
 
     var body: some View {
         ZStack {
-            if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
-            }
+            if entry.isSessionActive, let mode = entry.focusMode {
+                let style = WidgetModeStyle.style(for: mode)
+                let modeColor = ModeColors.color(for: mode)
 
-            if showsBackground {
-                if entry.isSessionActive, let mode = entry.focusMode {
-                    // Active session: progress ring with timer
-                    let style = WidgetModeStyle.style(for: mode)
-                    let modeColor = ModeColors.color(for: mode)
+                VStack(spacing: 6) {
+                    WidgetProgressRing(
+                        progress: entry.progress,
+                        modeColor: modeColor,
+                        lineWidth: 6,
+                        isPaused: entry.isPaused,
+                        countsDown: isCountdownMode(mode)
+                    ) {
+                        Text(style.emoji)
+                            .font(.title2)
+                    }
+                    .frame(width: 56, height: 56)
 
-                    VStack(spacing: 6) {
-                        WidgetProgressRing(
-                            progress: entry.progress,
-                            modeColor: modeColor,
-                            lineWidth: 6,
-                            isPaused: entry.isPaused
-                        ) {
-                            VStack(spacing: 2) {
-                                Text(style.emoji)
-                                    .font(.title3)
-                                LiveTimerText(
-                                    entry: entry,
-                                    font: .system(.title2, design: .rounded, weight: .bold)
-                                )
-                            }
-                        }
-                        .frame(width: 90, height: 90)
+                    LiveTimerText(
+                        entry: entry,
+                        font: .system(.headline, design: .rounded, weight: .bold)
+                    )
 
+                    HStack(spacing: 4) {
                         if entry.isPaused {
                             Text(String(localized: "Paused"))
                                 .font(.caption2)
@@ -140,99 +259,35 @@ struct FocusWidgetSmall: View {
                             Text(entry.phase ?? String(localized: "Focusing"))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-
-                        if let task = entry.linkedTaskTitle {
-                            Text(task)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
                         }
                     }
-                    .padding(10)
-                } else {
-                    // Idle state: daily stats + start button
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "brain.head.profile")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Text("Pepinillo")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                        }
-
-                        Spacer()
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(formattedMinutes(entry.todayFocusMinutes))
-                                .font(.system(.title2, design: .rounded, weight: .bold))
-
-                            Text(String(localized: "today"))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-
-                            if entry.currentStreakDays > 0 {
-                                HStack(spacing: 3) {
-                                    Image(systemName: "flame.fill")
-                                        .font(.caption2)
-                                        .foregroundStyle(ModeColors.streak)
-                                    Text("\(entry.currentStreakDays)d")
-                                        .font(.caption2)
-                                        .fontWeight(.medium)
-                                }
-                            }
-                        }
-
-                        Button(intent: StartFocusFromWidgetIntent()) {
-                            Label(String(localized: "Start"), systemImage: "play.fill")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                        }
-                        .tint(.accentColor)
-                    }
-                    .padding(12)
                 }
             } else {
-                // StandBy mode: large, high-contrast
-                VStack(spacing: 8) {
-                    if entry.isSessionActive, let mode = entry.focusMode {
-                        let style = WidgetModeStyle.style(for: mode)
-                        let modeColor = ModeColors.color(for: mode)
+                let mode = entry.preferredModeID ?? "pomodoro"
+                let style = WidgetModeStyle.style(for: mode)
+                let modeColor = ModeColors.color(for: mode)
 
-                        WidgetProgressRing(
-                            progress: entry.progress,
-                            modeColor: modeColor,
-                            lineWidth: 6,
-                            isPaused: entry.isPaused
-                        ) {
-                            VStack(spacing: 4) {
-                                Text(style.emoji)
-                                    .font(.system(size: 28))
-                                LiveTimerText(
-                                    entry: entry,
-                                    font: .system(size: 36, weight: .bold, design: .rounded)
-                                )
-                            }
-                        }
-                        .frame(width: 120, height: 120)
-
-                        if entry.isPaused {
-                            Text(String(localized: "Paused"))
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                        }
-                    } else {
-                        Text(formattedMinutes(entry.todayFocusMinutes))
-                            .font(.system(size: 48, weight: .bold, design: .rounded))
-                            .foregroundStyle(.primary)
-                        Text(String(localized: "today"))
-                            .font(.title3)
-                            .foregroundStyle(.secondary)
+                VStack(spacing: 6) {
+                    WidgetProgressRing(progress: 0, modeColor: modeColor, lineWidth: 6, countsDown: isCountdownMode(mode)) {
+                        Text(style.emoji)
+                            .font(.title2)
                     }
+                    .frame(width: 56, height: 56)
+
+                    Text(entry.preferredTimerText)
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .monospacedDigit()
+
+                    Text(modeDisplayName(mode))
+                        .font(.caption2)
+                        .foregroundStyle(modeColor)
+                        .fontWeight(.medium)
+
+                    WidgetPrimaryStartButton(mode: mode, compact: true)
+
+                    WidgetModeQuickStartGrid(selectedMode: mode, showsTitles: false)
                 }
+                .padding(8)
             }
         }
         .accessibilityElement(children: .combine)
@@ -247,182 +302,157 @@ struct FocusWidgetMedium: View {
 
     var body: some View {
         ZStack {
-            if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
-            }
-
-            if showsBackground {
-                if entry.isSessionActive, let mode = entry.focusMode {
-                    // Active session: ring + info + controls
-                    let style = WidgetModeStyle.style(for: mode)
-                    let modeColor = ModeColors.color(for: mode)
-
-                    HStack(spacing: 14) {
-                        // Progress ring with mode emoji
-                        WidgetProgressRing(
-                            progress: entry.progress,
-                            modeColor: modeColor,
-                            lineWidth: 5,
-                            isPaused: entry.isPaused
-                        ) {
-                            Text(style.emoji)
-                                .font(.title2)
-                        }
-                        .frame(width: 64, height: 64)
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            // Timer
-                            LiveTimerText(
-                                entry: entry,
-                                font: .system(.title2, design: .rounded, weight: .bold)
-                            )
-
-                            // Phase + Pomodoro counter
-                            HStack(spacing: 6) {
-                                if entry.isPaused {
-                                    Text(String(localized: "Paused"))
-                                        .font(.caption)
-                                        .foregroundStyle(.orange)
-                                        .fontWeight(.medium)
-                                } else {
-                                    Text(entry.phase ?? "")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                if let pn = entry.pomodoroNumber, let tp = entry.totalPomodoros {
-                                    Text("\(pn)/\(tp)")
-                                        .font(.caption)
-                                        .foregroundStyle(modeColor)
-                                        .fontWeight(.semibold)
-                                }
-                            }
-
-                            // Linked task
-                            if let task = entry.linkedTaskTitle {
-                                HStack(spacing: 3) {
-                                    Image(systemName: "link")
-                                        .font(.caption2)
-                                    Text(task)
-                                        .lineLimit(1)
-                                }
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            }
-
-                            Spacer(minLength: 0)
-
-                            // Controls
-                            WidgetControls(entry: entry, compact: true)
-                        }
-                    }
-                    .padding(14)
-                } else {
-                    // Idle state: stats + start button
-                    HStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "brain.head.profile")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                Text("Pepinillo")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Spacer()
-
-                            Text(formattedMinutes(entry.todayFocusMinutes))
-                                .font(.system(.title, design: .rounded, weight: .bold))
-                            Text(String(localized: "focused today"))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 10) {
-                            StatRow(icon: "checkmark.circle", label: String(localized: "Sessions"), value: "\(entry.todaySessionsCompleted)")
-                            if entry.currentStreakDays > 0 {
-                                StatRow(icon: "flame.fill", label: String(localized: "Streak"), value: String(localized: "\(entry.currentStreakDays) days"), color: ModeColors.streak)
-                            }
-                            if let dominant = entry.dominantMode {
-                                let style = WidgetModeStyle.style(for: dominant)
-                                StatRow(icon: style.systemImage, label: String(localized: "Top mode"), value: dominant.capitalized)
-                            }
-
-                            Spacer()
-
-                            Button(intent: StartFocusFromWidgetIntent()) {
-                                Label(String(localized: "Start"), systemImage: "play.fill")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .tint(.accentColor)
-                        }
-                    }
-                    .padding(14)
-                }
+            if entry.isSessionActive, let mode = entry.focusMode {
+                liquidActiveLayout(for: mode)
             } else {
-                // StandBy mode
-                HStack(spacing: 16) {
-                    if entry.isSessionActive, let mode = entry.focusMode {
-                        let style = WidgetModeStyle.style(for: mode)
-                        let modeColor = ModeColors.color(for: mode)
-
-                        WidgetProgressRing(
-                            progress: entry.progress,
-                            modeColor: modeColor,
-                            lineWidth: 6,
-                            isPaused: entry.isPaused
-                        ) {
-                            Text(style.emoji)
-                                .font(.system(size: 32))
-                        }
-                        .frame(width: 80, height: 80)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            LiveTimerText(
-                                entry: entry,
-                                font: .system(size: 56, weight: .bold, design: .rounded)
-                            )
-                            .foregroundStyle(.primary)
-
-                            if entry.isPaused {
-                                Text(String(localized: "Paused"))
-                                    .font(.title3)
-                                    .foregroundStyle(.orange)
-                            } else {
-                                Text(entry.phase ?? String(localized: "Focusing"))
-                                    .font(.title3)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    } else {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(formattedMinutes(entry.todayFocusMinutes))
-                                .font(.system(size: 56, weight: .bold, design: .rounded))
-                                .foregroundStyle(.primary)
-                            Text(String(localized: "focused today"))
-                                .font(.title3)
-                                .foregroundStyle(.secondary)
-                        }
-                        if entry.currentStreakDays > 0 {
-                            VStack(spacing: 4) {
-                                Image(systemName: "flame.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(ModeColors.streak)
-                                Text("\(entry.currentStreakDays)d")
-                                    .font(.title3)
-                                    .fontWeight(.semibold)
-                            }
-                        }
-                    }
-                }
+                liquidIdleLayout
             }
         }
         .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func liquidActiveLayout(for mode: String) -> some View {
+        let style = WidgetModeStyle.style(for: mode)
+        let modeColor = ModeColors.color(for: mode)
+
+        HStack(spacing: 0) {
+            // Left: Massive Hero Ring
+            ZStack {
+                // Background "glow" for Liquid Glass effect
+                Circle()
+                    .fill(modeColor.opacity(0.15))
+                    .blur(radius: 20)
+                    .scaleEffect(1.4)
+                
+                WidgetProgressRing(
+                    progress: entry.progress,
+                    modeColor: modeColor,
+                    lineWidth: 10,
+                    isPaused: entry.isPaused,
+                    countsDown: isCountdownMode(mode)
+                ) {
+                    Text(style.emoji)
+                        .font(.system(size: 36))
+                        .shadow(color: modeColor.opacity(0.3), radius: 4)
+                }
+            }
+            .frame(width: 140)
+            .offset(x: -16) // Dramatic asymmetric offset
+
+            VStack(alignment: .leading, spacing: 2) {
+                // Header info
+                HStack {
+                    if entry.isPaused {
+                        Label(String(localized: "Paused"), systemImage: "pause.fill")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .foregroundStyle(.orange)
+                    } else {
+                        Text(entry.phase?.uppercased() ?? String(localized: "FOCUSING"))
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundStyle(.secondary)
+                            .tracking(1)
+                    }
+                    
+                    Spacer()
+                    
+                    if let pn = entry.pomodoroNumber, let tp = entry.totalPomodoros {
+                        Text("\(pn)/\(tp)")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(modeColor.opacity(0.15), in: Capsule())
+                            .foregroundStyle(modeColor)
+                    }
+                }
+
+                // Timer
+                LiveTimerText(
+                    entry: entry,
+                    font: .system(size: 40, weight: .bold, design: .rounded)
+                )
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.top, -2)
+
+                // Task
+                if let task = entry.linkedTaskTitle {
+                    HStack(spacing: 4) {
+                        Image(systemName: "link")
+                            .font(.system(size: 10))
+                        Text(task)
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                } else {
+                    Text(String(localized: "Deep Work Session"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                }
+
+                Spacer(minLength: 8)
+
+                // Controls
+                WidgetControls(entry: entry, compact: true)
+            }
+            .padding(.trailing, 16)
+            .padding(.vertical, 14)
+        }
+    }
+
+    @ViewBuilder
+    private var liquidIdleLayout: some View {
+        let mode = entry.preferredModeID ?? "pomodoro"
+        let style = WidgetModeStyle.style(for: mode)
+        let modeColor = ModeColors.color(for: mode)
+
+        HStack(spacing: 0) {
+            ZStack {
+                Circle()
+                    .fill(modeColor.opacity(0.12))
+                    .blur(radius: 20)
+                    .scaleEffect(1.35)
+
+                WidgetProgressRing(progress: 0, modeColor: modeColor, lineWidth: 10, countsDown: isCountdownMode(mode)) {
+                    Text(style.emoji)
+                        .font(.system(size: 36))
+                        .shadow(color: modeColor.opacity(0.25), radius: 4)
+                }
+            }
+            .frame(width: 140)
+            .offset(x: -16)
+
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    Text(String(localized: "READY"))
+                        .font(.system(size: 10, weight: .black))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(formattedMinutes(entry.todayFocusMinutes))
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(.secondary)
+                }
+
+                Text(entry.preferredTimerText)
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.8)
+                    .padding(.top, -2)
+
+                Text(modeDisplayName(mode))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(modeColor)
+
+                Spacer(minLength: 6)
+
+                WidgetPrimaryStartButton(mode: mode, compact: true)
+
+                WidgetModeQuickStartGrid(selectedMode: mode, showsTitles: false)
+            }
+            .padding(.trailing, 16)
+            .padding(.vertical, 14)
+        }
     }
 }
 
@@ -434,131 +464,132 @@ struct FocusWidgetLarge: View {
 
     var body: some View {
         ZStack {
-            if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
+            if entry.isSessionActive, let mode = entry.focusMode {
+                liquidActiveLayout(for: mode)
+            } else {
+                liquidIdleLayout
             }
-
-            VStack(alignment: .leading, spacing: 12) {
-                // Header
-                HStack {
-                    Image(systemName: "brain.head.profile")
-                        .foregroundStyle(.secondary)
-                    Text("Pepinillo")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Spacer()
-                    if entry.currentStreakDays > 0 {
-                        HStack(spacing: 3) {
-                            Image(systemName: "flame.fill")
-                                .foregroundStyle(ModeColors.streak)
-                            Text("\(entry.currentStreakDays)d")
-                                .fontWeight(.semibold)
-                        }
-                        .font(.subheadline)
-                    }
-                }
-
-                // Main: session or total
-                if entry.isSessionActive, let mode = entry.focusMode {
-                    let style = WidgetModeStyle.style(for: mode)
-                    let modeColor = ModeColors.color(for: mode)
-
-                    // Progress ring centered
-                    HStack {
-                        Spacer()
-                        WidgetProgressRing(
-                            progress: entry.progress,
-                            modeColor: modeColor,
-                            lineWidth: 8,
-                            isPaused: entry.isPaused
-                        ) {
-                            VStack(spacing: 2) {
-                                Text(style.emoji)
-                                    .font(.title2)
-                                LiveTimerText(
-                                    entry: entry,
-                                    font: .system(.largeTitle, design: .rounded, weight: .bold)
-                                )
-                                if let pn = entry.pomodoroNumber, let tp = entry.totalPomodoros {
-                                    Text("\(pn)/\(tp)")
-                                        .font(.caption)
-                                        .foregroundStyle(modeColor)
-                                        .fontWeight(.semibold)
-                                }
-                            }
-                        }
-                        .frame(width: 120, height: 120)
-                        Spacer()
-                    }
-
-                    // Phase + task
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 4) {
-                            if entry.isPaused {
-                                Text(String(localized: "Paused"))
-                                    .font(.subheadline)
-                                    .foregroundStyle(.orange)
-                                    .fontWeight(.medium)
-                            } else {
-                                Text(entry.phase ?? String(localized: "Focusing"))
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                            if let task = entry.linkedTaskTitle {
-                                HStack(spacing: 3) {
-                                    Image(systemName: "link")
-                                        .font(.caption2)
-                                    Text(task)
-                                        .lineLimit(1)
-                                }
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            }
-                        }
-                        Spacer()
-                    }
-
-                    // Controls
-                    WidgetControls(entry: entry, compact: false)
-
-                } else {
-                    HStack(spacing: 16) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(formattedMinutes(entry.todayFocusMinutes))
-                                .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                            Text(String(localized: "focused today"))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button(intent: StartFocusFromWidgetIntent()) {
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 44))
-                        }
-                        .tint(.accentColor)
-                    }
-                }
-
-                // Mode breakdown (both states)
-                if !entry.modeMinutes.isEmpty {
-                    Divider()
-
-                    Text(String(localized: "Time by mode"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
-
-                    VStack(spacing: 6) {
-                        ForEach(sortedModes, id: \.key) { mode, minutes in
-                            ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes)
-                        }
-                    }
-                }
-            }
-            .padding(16)
         }
+        .accessibilityElement(children: .combine)
+    }
+
+    @ViewBuilder
+    private func liquidActiveLayout(for mode: String) -> some View {
+        let style = WidgetModeStyle.style(for: mode)
+        let modeColor = ModeColors.color(for: mode)
+
+        VStack(spacing: 14) {
+            HStack {
+                Text(entry.isPaused ? String(localized: "PAUSED") : (entry.phase?.uppercased() ?? String(localized: "FOCUSING")))
+                    .font(.system(size: 12, weight: .black))
+                    .foregroundStyle(entry.isPaused ? .orange : .secondary)
+                Spacer()
+                if let pn = entry.pomodoroNumber, let tp = entry.totalPomodoros {
+                    Text("\(pn)/\(tp)")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(modeColor)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(modeColor.opacity(0.14), in: Capsule())
+                }
+            }
+
+            WidgetProgressRing(
+                progress: entry.progress,
+                modeColor: modeColor,
+                lineWidth: 14,
+                isPaused: entry.isPaused,
+                countsDown: isCountdownMode(mode)
+            ) {
+                VStack(spacing: 6) {
+                    Text(style.emoji)
+                        .font(.system(size: 30))
+                    LiveTimerText(
+                        entry: entry,
+                        font: .system(size: 42, weight: .bold, design: .rounded)
+                    )
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                }
+            }
+            .frame(width: 188, height: 188)
+
+            if let task = entry.linkedTaskTitle {
+                Label(task, systemImage: "link")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+
+            WidgetControls(entry: entry, compact: false)
+
+            if !entry.modeMinutes.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(sortedModes.prefix(3), id: \.key) { mode, minutes in
+                        ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes)
+                    }
+                }
+                .padding(12)
+                .background(.ultraThinMaterial.opacity(0.45), in: RoundedRectangle(cornerRadius: 14))
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(18)
+    }
+
+    @ViewBuilder
+    private var liquidIdleLayout: some View {
+        let preferredMode = entry.preferredModeID ?? "pomodoro"
+        let style = WidgetModeStyle.style(for: preferredMode)
+        let modeColor = ModeColors.color(for: preferredMode)
+
+        VStack(spacing: 18) {
+            HStack(spacing: 24) {
+                WidgetProgressRing(progress: 0, modeColor: modeColor, lineWidth: 12, countsDown: isCountdownMode(preferredMode)) {
+                    Text(style.emoji)
+                        .font(.system(size: 40))
+                }
+                .frame(width: 130, height: 130)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(String(localized: "READY"))
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundStyle(.secondary)
+
+                    Text(entry.preferredTimerText)
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .minimumScaleFactor(0.8)
+
+                    Text(modeDisplayName(preferredMode))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(modeColor)
+
+                    Text(String(localized: "Today: \(formattedMinutes(entry.todayFocusMinutes))"))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+
+            WidgetPrimaryStartButton(mode: preferredMode, compact: false)
+
+            WidgetModeQuickStartGrid(selectedMode: preferredMode, showsTitles: true)
+
+            if !entry.modeMinutes.isEmpty {
+                VStack(spacing: 8) {
+                    ForEach(sortedModes, id: \.key) { mode, minutes in
+                        ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes)
+                    }
+                }
+                .padding(14)
+                .background(.ultraThinMaterial.opacity(0.3), in: RoundedRectangle(cornerRadius: 20))
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(20)
     }
 
     private var sortedModes: [(key: String, value: Int)] {
@@ -576,8 +607,8 @@ struct FocusWidgetAccessoryCircular: View {
 
     var body: some View {
         ZStack {
-            if entry.isSessionActive, let progress = entry.progress {
-                Gauge(value: progress) { EmptyView() }
+            if entry.isSessionActive, let progress = entry.progress, let mode = entry.focusMode {
+                Gauge(value: widgetVisibleProgress(progress, mode: mode)) { EmptyView() }
                     .gaugeStyle(.accessoryCircularCapacity)
             }
             if entry.isSessionActive && entry.isPaused {
@@ -713,3 +744,22 @@ private func formattedMinutes(_ minutes: Int) -> String {
     }
     return "\(minutes)m"
 }
+private func modeDisplayName(_ mode: String) -> String {
+    switch mode {
+    case "pomodoro": return String(localized: "Pomodoro")
+    case "flowtime": return String(localized: "Flowtime")
+    case "timeBlock": return String(localized: "Time Block")
+    case "stopwatch": return String(localized: "Stopwatch")
+    default: return String(localized: "Focus")
+    }
+}
+
+private func isCountdownMode(_ mode: String) -> Bool {
+    mode == "pomodoro" || mode == "timeBlock"
+}
+
+private func widgetVisibleProgress(_ progress: Double, mode: String) -> Double {
+    let clamped = min(max(progress, 0), 1)
+    return isCountdownMode(mode) ? 1 - clamped : clamped
+}
+

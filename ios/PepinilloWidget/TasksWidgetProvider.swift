@@ -30,7 +30,6 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
     // MARK: - Entry Construction
 
     private func buildEntry(configuration: ConfigureTasksWidgetIntent) async -> TasksWidgetEntry {
-        guard AppGroupDefaults.isProUser else { return .proRequired }
         do {
             let container = try makeWidgetModelContainer()
             let context = ModelContext(container)

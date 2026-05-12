@@ -12,6 +12,7 @@
 
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - Control Center Toggle
 
@@ -22,20 +23,20 @@ struct PepinilloFocusToggle: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: Self.kind) {
             ControlWidgetToggle(
-                String(localized: "Focus"),
+                "Focus",
                 isOn: FocusToggleValueProvider.shared.isActive,
                 action: ToggleFocusIntent()
             ) { isOn in
                 Label {
-                    Text(isOn ? String(localized: "Focusing") : String(localized: "Start Focus"))
+                    Text(isOn ? "Focusing" : "Start Focus")
                 } icon: {
                     Image(systemName: isOn ? "brain.head.profile.fill" : "brain.head.profile")
                 }
             }
             .tint(.purple)
         }
-        .displayName(String(localized: "Pepinillo Focus"))
-        .description(String(localized: "Start or stop a focus session."))
+        .displayName("Pepinillo Focus")
+        .description("Start or stop a focus session.")
     }
 }
 
@@ -55,10 +56,13 @@ struct FocusToggleValueProvider {
 // MARK: - Toggle Intent
 
 @available(iOS 18.0, *)
-struct ToggleFocusIntent: ControlWidgetToggleIntent {
-    static var title: LocalizedStringResource = "Toggle Focus Session"
+struct ToggleFocusIntent: SetValueIntent {
+    static let title: LocalizedStringResource = "Toggle Focus Session"
 
-    func perform(value: Bool) async throws {
+    @Parameter(title: "Is On")
+    var value: Bool
+
+    func perform() async throws -> some IntentResult {
         // Write the desired state to App Group UserDefaults.
         // The main app observes this key and starts/stops the session accordingly.
         let defaults = UserDefaults(suiteName: AppGroup.id)
@@ -66,7 +70,9 @@ struct ToggleFocusIntent: ControlWidgetToggleIntent {
         defaults?.set(value, forKey: "isSessionActive")
 
         // Reload the Control Center widget to reflect the new state
-        ControlCenter.shared.reloadControls(ofKind: PepinilloFocusToggle.kind)
+        ControlCenter.shared.reloadControls(ofKind: "com.pepinillo.control-center.focus-toggle")
+        
+        return .result()
     }
 }
 

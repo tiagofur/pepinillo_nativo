@@ -141,9 +141,7 @@ struct AIReportContentView: View {
     // MARK: - Report Content
 
     private func reportContent(_ report: ProductivityReportDTO) -> some View {
-        let grouped = groupedInsights(report.insights)
-
-        return VStack(spacing: 20) {
+        VStack(spacing: 20) {
             // Headline
             headlineSection(report)
 

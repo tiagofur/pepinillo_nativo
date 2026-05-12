@@ -13,6 +13,10 @@ struct FocusWidgetEntry: TimelineEntry {
     let date: Date
     let isProUser: Bool
 
+    // Configuration
+    let preferredModeID: String?
+    let preferredTimerText: String
+
     // Session state (nil if no active session)
     let isSessionActive: Bool
     let isPaused: Bool
@@ -41,6 +45,8 @@ struct FocusWidgetEntry: TimelineEntry {
     static let placeholder = FocusWidgetEntry(
         date: Date(),
         isProUser: true,
+        preferredModeID: "pomodoro",
+        preferredTimerText: "25:00",
         isSessionActive: false,
         isPaused: false,
         focusMode: nil,
@@ -62,6 +68,8 @@ struct FocusWidgetEntry: TimelineEntry {
     static let idle = FocusWidgetEntry(
         date: Date(),
         isProUser: false,
+        preferredModeID: "pomodoro",
+        preferredTimerText: "25:00",
         isSessionActive: false,
         isPaused: false,
         focusMode: nil,

@@ -6,6 +6,7 @@
 // with the main app via App Group UserDefaults.
 
 import AppIntents
+import Foundation
 import SwiftData
 import WidgetKit
 
@@ -16,9 +17,19 @@ struct StartFocusFromWidgetIntent: AppIntent {
     static let description = IntentDescription("Start a focus session from the widget.")
     static let openAppWhenRun: Bool = true
 
+    @Parameter(title: "Mode ID")
+    var modeID: String?
+
+    init() {}
+
+    init(modeID: String?) {
+        self.modeID = modeID
+    }
+
     func perform() async throws -> some IntentResult {
+        AppGroupDefaults.requestedMode = modeID
         AppGroupDefaults.externalStartRequested = true
-        AppGroupDefaults.isSessionActive = true
+
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -28,11 +39,22 @@ struct StartFocusFromWidgetIntent: AppIntent {
 
 struct PauseFocusFromWidgetIntent: AppIntent {
     static let title: LocalizedStringResource = "Pause Focus"
-    static let description = IntentDescription("Pause or resume the active focus session.")
+    static let description = IntentDescription("Pause the active focus session.")
     static let openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult {
+        // Calculate and freeze remaining/elapsed time before pausing
+        if let start = AppGroupDefaults.activeSessionTimerStart {
+            let now = Date.now
+            AppGroupDefaults.activeSessionElapsed = now.timeIntervalSince(start)
+            
+            if let end = AppGroupDefaults.activeSessionTimerEnd {
+                AppGroupDefaults.activeSessionRemaining = max(0, end.timeIntervalSince(now))
+            }
+        }
+        
         AppGroupDefaults.externalPauseRequested = true
+        AppGroupDefaults.activeSessionIsPaused = true
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -46,6 +68,12 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
     static let openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult {
+        // Recalculate anchors before resuming
+        if let remaining = AppGroupDefaults.activeSessionRemaining {
+            AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(remaining)
+            AppGroupDefaults.activeSessionTimerStart = Date.now.addingTimeInterval(-AppGroupDefaults.activeSessionElapsed)
+        }
+        
         AppGroupDefaults.externalResumeRequested = true
         AppGroupDefaults.activeSessionIsPaused = false
         WidgetCenter.shared.reloadAllTimelines()
@@ -63,6 +91,7 @@ struct StopFocusFromWidgetIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         AppGroupDefaults.externalStopRequested = true
         AppGroupDefaults.isSessionActive = false
+        AppGroupDefaults.activeSessionIsPaused = false
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -87,7 +116,6 @@ struct StartFocusWithTaskIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         AppGroupDefaults.externalStartRequested = true
         AppGroupDefaults.requestedTaskID = taskID
-        AppGroupDefaults.isSessionActive = true
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }

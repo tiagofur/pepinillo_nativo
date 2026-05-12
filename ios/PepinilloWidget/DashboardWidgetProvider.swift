@@ -36,7 +36,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             return .empty
         }
         
-        guard AppGroupDefaults.isProUser else { return .proRequired }
+        guard AppGroupDefaults.isProUser else { return .pepinilloPlusRequired }
         
         do {
             let container = try makeWidgetModelContainer()

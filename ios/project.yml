@@ -186,9 +186,11 @@ targets:
       - package: ComposableArchitecture
       - package: Sentry
         product: Sentry
-      # Embed extensions (embed: false because they're app extensions, not frameworks)
+      # Embed extensions so they are included in the app bundle's PlugIns directory
       - target: PepinilloWidgetExtension
-        embed: false
+        embed: true
+      - target: PepinilloControlCenter
+        embed: true
       - target: PepinilloWatch
         embed: true
         buildPhase: embedWatchContent
@@ -215,6 +217,8 @@ targets:
       path: PepinilloWidget/Info.plist
       properties:
         CFBundleDisplayName: PepinilloWidget
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
         # Live Activities entitlement (enabled via capability)
@@ -323,6 +327,8 @@ targets:
       path: ControlCenterExtension/Info.plist
       properties:
         CFBundleDisplayName: Pepinillo Focus
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 

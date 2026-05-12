@@ -184,6 +184,7 @@ struct AppFeature {
     }
 
     @Dependency(\.persistenceClient) var persistence
+    @Dependency(\.focusClient) var focusClient
     @Dependency(\.subscriptionClient) var subscriptionClient
     @Dependency(\.notificationClient) var notificationClient
     @Dependency(\.watchConnectivityClient) var watchClient
@@ -362,33 +363,47 @@ struct AppFeature {
             case .appBecameActive:
                 // Check for external commands from Siri, widgets, or Control Center
                 if AppGroupDefaults.externalStartRequested && !state.focus.isRunning {
-                    if let modeID = AppGroupDefaults.requestedMode,
+                    let requestedModeID = AppGroupDefaults.requestedMode
+                    AppGroupDefaults.clearExternalCommands()
+                    
+                    if let modeID = requestedModeID,
                        let mode = FocusMode(rawValue: modeID) {
-                        AppGroupDefaults.clearExternalCommands()
-                        return .merge(
+                        guard mode.isFreeTier || state.focus.isProUser else {
+                            return .send(.focus(.modeSelected(mode)))
+                        }
+                        return .concatenate(
                             .send(.focus(.modeSelected(mode))),
                             .send(.focus(.startTapped))
                         )
                     }
-                    AppGroupDefaults.clearExternalCommands()
                     return .send(.focus(.startTapped))
                 }
+                
                 if AppGroupDefaults.externalStopRequested && state.focus.isRunning {
                     AppGroupDefaults.clearExternalCommands()
                     return .send(.focus(.stopTapped))
                 }
+                
                 if AppGroupDefaults.externalResumeRequested && state.focus.isRunning && state.focus.isPaused {
                     AppGroupDefaults.clearExternalCommands()
                     return .send(.focus(.resumeTapped))
                 }
+                
                 if AppGroupDefaults.externalPauseRequested && state.focus.isRunning {
+                    let frozenElapsed = AppGroupDefaults.activeSessionElapsed
+                    let frozenRemaining = AppGroupDefaults.activeSessionRemaining
                     AppGroupDefaults.clearExternalCommands()
-                    if state.focus.isPaused {
-                        return .send(.focus(.resumeTapped))
-                    } else {
-                        return .send(.focus(.pauseTapped))
+                    
+                    return .run { [isPaused = state.focus.isPaused, frozenElapsed, frozenRemaining, focusClient] send in
+                        if isPaused {
+                            await send(.focus(.resumeTapped))
+                        } else {
+                            await send(.focus(.pauseTapped))
+                            await focusClient.syncExternalState(frozenElapsed, frozenRemaining)
+                        }
                     }
                 }
+                
                 AppGroupDefaults.clearExternalCommands()
                 // Reconnect WebSocket if authenticated
                 return .run { [keychain, webSocketClient] _ in
@@ -607,7 +622,7 @@ struct AppFeature {
                 state.userEmail = info.email ?? state.userEmail
                 let fallbackUser = state.profileSummaryUser
                 return .merge(
-                    .run { [info, resolvedName, fallbackUser] send in
+                    .run { [info, fallbackUser] send in
                         var prefs = try await persistence.fetchPreferences()
                         prefs.appleUserID = info.userID
                         if let name = info.displayName { prefs.displayName = name }

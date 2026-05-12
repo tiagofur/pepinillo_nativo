@@ -40,12 +40,6 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Pepinillo logs your focus sessions as Mindful Minutes in Apple Health to help you track your wellbeing alongside your productivity.
 </string>
-	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>Pepinillo imports and updates your Reminders so you can turn them into focus sessions.
-</string>
-	<key>NSRemindersUsageDescription</key>
-	<string>Pepinillo can import tasks from Reminders so you can start focusing on them right away.
-</string>
 	<key>NSSiriUsageDescription</key>
 	<string>Pepinillo uses Siri so you can start and stop focus sessions with your voice.
 </string>

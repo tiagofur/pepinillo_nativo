@@ -140,16 +140,16 @@ enum AppGroupDefaults {
     }
 
     /// Active session elapsed seconds (written periodically by main app, read by Shortcuts).
-    static var activeSessionElapsed: Int {
-        get { defaults?.integer(forKey: "activeSessionElapsed") ?? 0 }
+    static var activeSessionElapsed: Double {
+        get { defaults?.double(forKey: "activeSessionElapsed") ?? 0 }
         set { defaults?.set(newValue, forKey: "activeSessionElapsed") }
     }
 
     /// Active session remaining seconds (for countdown modes, written by main app, read by widgets).
-    static var activeSessionRemaining: Int? {
+    static var activeSessionRemaining: Double? {
         get {
             let val = defaults?.object(forKey: "activeSessionRemaining")
-            return val as? Int
+            return val as? Double
         }
         set {
             if let v = newValue {

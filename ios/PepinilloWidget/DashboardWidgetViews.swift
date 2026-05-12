@@ -23,7 +23,7 @@ struct ProWidgetOverlay: View {
                 .fontWeight(.bold)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Text(String(localized: "Pepinillo Pro required"))
+            Text(String(localized: "Pepinillo+ required"))
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
                 .textCase(.uppercase)

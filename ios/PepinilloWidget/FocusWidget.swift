@@ -20,7 +20,21 @@ struct FocusHomeScreenWidget: Widget {
             provider: FocusWidgetProvider()
         ) { entry in
             FocusWidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(for: .widget) {
+                    ZStack {
+                        Color(.systemBackground)
+                        let mode = entry.focusMode ?? entry.preferredModeID
+                        if let mode {
+                            let color = ModeColors.color(for: mode)
+                            color.opacity(0.1)
+                            LinearGradient(
+                                colors: [color.opacity(0.15), .clear],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        }
+                    }
+                }
         }
         .configurationDisplayName("Focus Timer")
         .description("See your daily focus progress and active timer.")

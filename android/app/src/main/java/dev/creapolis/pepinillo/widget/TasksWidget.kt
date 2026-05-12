@@ -224,7 +224,7 @@ private fun TasksContent() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "\uD83D\uDCCB Tareas (${tasks.size})",
+                text = "\uD83D\uDCCB Plan (${tasks.size})",
                 style = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -299,7 +299,7 @@ private fun LinkedTaskRow(task: WidgetTask) {
                 }
             }
             Text(
-                text = "\uD83C\uDF45 En progreso",
+                text = "\u23F1\uFE0F En progreso",
                 style = TextStyle(
                     fontSize = 10.sp,
                     color = ColorProvider(R.color.widget_white),
@@ -318,22 +318,21 @@ private fun TaskRow(task: WidgetTask) {
         // Complete button
         Box(
             modifier = GlanceModifier
-                .background(ColorProvider(R.color.widget_stop_bg))
+                .background(GlanceTheme.colors.secondaryContainer)
                 .cornerRadius(12.dp)
                 .clickable(
                     actionRunCallback<CompleteTaskWidgetAction>(
                         actionParametersOf(taskIdParam to task.id),
                     ),
                 )
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "\u2713",
+                text = "\u25CB", // Circle outline
                 style = TextStyle(
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = ColorProvider(R.color.widget_stop_text),
+                    fontSize = 16.sp,
+                    color = GlanceTheme.colors.onSecondaryContainer,
                 ),
             )
         }

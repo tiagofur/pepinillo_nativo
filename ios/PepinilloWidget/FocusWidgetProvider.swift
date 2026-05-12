@@ -72,12 +72,17 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 if watchMins > 0 { modeMinutes["stopwatch"] = watchMins }
             }
 
-            _ = prefs // reserved for future per-user widget customization
+            let configuredMode = configuration.preferredMode.rawValue
+            let preferredModeID = prefs?.defaultMode ?? configuredMode
+            let preferredTimerText = Self.idleTimerText(for: preferredModeID, preferences: prefs)
 
-            // Check AppGroupDefaults for active session state
-            let isActive = AppGroupDefaults.isSessionActive
+            // Check AppGroupDefaults for active session state.
+            // A widget start tap is only a request until the app starts the engine, so
+            // require a concrete active mode before rendering the live timer layout.
+            let activeModeName = AppGroupDefaults.activeModeName
+            let isActive = AppGroupDefaults.isSessionActive && activeModeName != nil
             let isPaused = isActive ? AppGroupDefaults.activeSessionIsPaused : false
-            let activeMode = isActive ? AppGroupDefaults.activeModeName : nil
+            let activeMode = isActive ? activeModeName : nil
             let activePhase = isActive ? AppGroupDefaults.activeSessionPhase : nil
             let activeProgress = isActive ? AppGroupDefaults.activeSessionProgress : nil
             let activePomodoroNumber = isActive ? AppGroupDefaults.activeSessionPomodoroNumber : nil
@@ -90,11 +95,12 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             let timerText: String?
             if isActive {
                 if let remaining = AppGroupDefaults.activeSessionRemaining {
-                    let m = remaining / 60
-                    let s = remaining % 60
+                    let totalSeconds = Int(remaining)
+                    let m = totalSeconds / 60
+                    let s = totalSeconds % 60
                     timerText = String(format: "%d:%02d", m, s)
                 } else {
-                    let elapsed = AppGroupDefaults.activeSessionElapsed
+                    let elapsed = Int(AppGroupDefaults.activeSessionElapsed)
                     let m = elapsed / 60
                     let s = elapsed % 60
                     timerText = String(format: "%d:%02d", m, s)
@@ -107,6 +113,8 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             let entry = FocusWidgetEntry(
                 date: Date(),
                 isProUser: isPro,
+                preferredModeID: preferredModeID,
+                preferredTimerText: preferredTimerText,
                 isSessionActive: isActive,
                 isPaused: isPaused,
                 focusMode: activeMode,
@@ -129,6 +137,30 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             // SwiftData read failed (first launch / store not yet created) — show idle
             return .idle
         }
+    }
+
+    // MARK: - Idle Timer
+
+    private static func idleTimerText(for modeID: String, preferences: UserPreferences?) -> String {
+        let seconds: TimeInterval
+        switch modeID {
+        case "pomodoro":
+            seconds = preferences?.pomodoroDuration ?? FocusConfig.default.pomodoroDuration
+        case "timeBlock":
+            seconds = preferences?.defaultBlockDuration ?? FocusConfig.default.defaultBlockDuration
+        case "flowtime", "stopwatch":
+            seconds = 0
+        default:
+            seconds = FocusConfig.default.pomodoroDuration
+        }
+        return formatTimer(seconds)
+    }
+
+    private static func formatTimer(_ seconds: TimeInterval) -> String {
+        let totalSeconds = Int(max(0, seconds))
+        let minutes = totalSeconds / 60
+        let remainingSeconds = totalSeconds % 60
+        return String(format: "%d:%02d", minutes, remainingSeconds)
     }
 
     // MARK: - Streak Calculation
@@ -164,9 +196,29 @@ struct ConfigureFocusWidgetIntent: WidgetConfigurationIntent {
     static let title: LocalizedStringResource = "Configure Focus Widget"
     static let description = IntentDescription("Customize what Pepinillo shows on your Home Screen.")
 
+    @Parameter(title: "Preferred Mode", default: .pomodoro)
+    var preferredMode: WidgetFocusMode
+
     @Parameter(title: "Show Streak", default: true)
     var showStreak: Bool
 
     @Parameter(title: "Show Mode Breakdown", default: false)
     var showModeBreakdown: Bool
+}
+
+// MARK: - Mode Entity for Configuration
+
+enum WidgetFocusMode: String, AppEnum {
+    case pomodoro
+    case flowtime
+    case timeBlock
+    case stopwatch
+
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Focus Mode"
+    static let caseDisplayRepresentations: [WidgetFocusMode: DisplayRepresentation] = [
+        .pomodoro: "Pomodoro",
+        .flowtime: "Flowtime",
+        .timeBlock: "Time Block",
+        .stopwatch: "Stopwatch"
+    ]
 }

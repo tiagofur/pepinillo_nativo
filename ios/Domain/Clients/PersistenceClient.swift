@@ -764,12 +764,12 @@ extension PersistenceClient: DependencyKey {
                 }
             },
             getLastSyncTimestamp: {
-                try await MainActor.run {
+                await MainActor.run {
                     service.getLastSyncTimestamp()
                 }
             },
             saveLastSyncTimestamp: { timestamp in
-                try await MainActor.run {
+                await MainActor.run {
                     service.saveLastSyncTimestamp(timestamp)
                 }
             },

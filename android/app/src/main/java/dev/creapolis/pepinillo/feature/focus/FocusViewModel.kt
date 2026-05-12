@@ -294,6 +294,11 @@ class FocusViewModel @Inject constructor(
         if (taskId != null) {
             _successMessage.value = R.string.msg_task_linked
         }
+        
+        // Sync with widgets immediately
+        viewModelScope.launch {
+            dev.creapolis.pepinillo.widget.WidgetTaskStateManager.updateLinkedTaskId(context, taskId)
+        }
     }
 
     fun dismissSuccessMessage() {

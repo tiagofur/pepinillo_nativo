@@ -251,6 +251,25 @@ public actor FocusEngine {
         currentPomodoroNumber = 1
     }
 
+    /// Sync with an external state change (e.g. from a widget) to align internal timing anchors.
+    public func syncExternalState(elapsed: TimeInterval, remaining: TimeInterval?) {
+        guard var current = state, current.isPaused else { return }
+        
+        if let start = phaseStartDate {
+            let now = Date.now
+            // effectiveElapsed = now - start - totalPausedDuration
+            // totalPausedDuration = now - start - effectiveElapsed
+            self.totalPausedDuration = now.timeIntervalSince(start) - elapsed
+            current.elapsedSeconds = elapsed
+            current.remainingSeconds = remaining
+            if let target = current.targetDuration, let rem = remaining {
+                current.progress = 1.0 - (rem / target)
+            }
+            self.state = current
+            emit(.tick(current))
+        }
+    }
+
     // MARK: - Private: Timing Loop
 
     private func startTicking() {
