@@ -15,7 +15,7 @@ import WidgetKit
 struct StartFocusFromWidgetIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Focus"
     static let description = IntentDescription("Start a focus session from the widget.")
-    static let openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Mode ID")
     var modeID: String?
@@ -27,9 +27,46 @@ struct StartFocusFromWidgetIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        AppGroupDefaults.requestedMode = modeID
-        AppGroupDefaults.externalStartRequested = true
+        let selectedMode = modeID ?? AppGroupDefaults.widgetSelectedMode ?? "pomodoro"
+        let isPro = AppGroupDefaults.isProUser
+        try? WidgetPreferencesCache.refreshDurationsFromSharedStore()
+        
+        // Pro modes: flowtime, timeBlock
+        let isProMode = (selectedMode == "flowtime" || selectedMode == "timeBlock")
+        
+        if isPro || !isProMode {
+            AppGroupDefaults.startWidgetSession(modeID: selectedMode)
+        } else {
+            AppGroupDefaults.externalCommandID = UUID().uuidString
+            AppGroupDefaults.externalCommandIssuedAt = .now
+            AppGroupDefaults.requestedMode = selectedMode
+            AppGroupDefaults.requestedTaskID = nil
+            AppGroupDefaults.externalStartRequested = true
+        }
 
+        WidgetCenter.shared.reloadAllTimelines()
+        return .result()
+    }
+}
+
+// MARK: - Select Focus Mode from Widget
+
+struct SelectFocusModeFromWidgetIntent: AppIntent {
+    static let title: LocalizedStringResource = "Select Focus Mode"
+    static let description = IntentDescription("Change the selected focus mode in the widget.")
+    static let openAppWhenRun: Bool = false
+
+    @Parameter(title: "Mode ID")
+    var modeID: String
+
+    init() {}
+
+    init(modeID: String) {
+        self.modeID = modeID
+    }
+
+    func perform() async throws -> some IntentResult {
+        AppGroupDefaults.widgetSelectedMode = modeID
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -40,21 +77,29 @@ struct StartFocusFromWidgetIntent: AppIntent {
 struct PauseFocusFromWidgetIntent: AppIntent {
     static let title: LocalizedStringResource = "Pause Focus"
     static let description = IntentDescription("Pause the active focus session.")
-    static let openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
-        // Calculate and freeze remaining/elapsed time before pausing
-        if let start = AppGroupDefaults.activeSessionTimerStart {
-            let now = Date.now
-            AppGroupDefaults.activeSessionElapsed = now.timeIntervalSince(start)
-            
-            if let end = AppGroupDefaults.activeSessionTimerEnd {
-                AppGroupDefaults.activeSessionRemaining = max(0, end.timeIntervalSince(now))
-            }
+        guard AppGroupDefaults.isSessionActive, !AppGroupDefaults.activeSessionIsPaused else {
+            return .result()
         }
-        
+
+        // Calculate and freeze remaining/elapsed time before pausing.
+        let now = Date.now
+        let elapsed = AppGroupDefaults.activeSessionLiveElapsed(at: now)
+        let remaining = AppGroupDefaults.activeSessionLiveRemaining(at: now)
+        AppGroupDefaults.activeSessionElapsed = elapsed
+        AppGroupDefaults.activeSessionRemaining = remaining
+
+        if let remaining {
+            let duration = max(elapsed + remaining, 1)
+            AppGroupDefaults.activeSessionProgress = min(max(elapsed / duration, 0), 1)
+        }
+
+        AppGroupDefaults.externalResumeRequested = false
         AppGroupDefaults.externalPauseRequested = true
         AppGroupDefaults.activeSessionIsPaused = true
+        AppGroupDefaults.activeSessionPausedAt = now
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -65,17 +110,31 @@ struct PauseFocusFromWidgetIntent: AppIntent {
 struct ResumeFocusFromWidgetIntent: AppIntent {
     static let title: LocalizedStringResource = "Resume Focus"
     static let description = IntentDescription("Resume the paused focus session.")
-    static let openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
-        // Recalculate anchors before resuming
-        if let remaining = AppGroupDefaults.activeSessionRemaining {
-            AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(remaining)
-            AppGroupDefaults.activeSessionTimerStart = Date.now.addingTimeInterval(-AppGroupDefaults.activeSessionElapsed)
+        guard AppGroupDefaults.isSessionActive, AppGroupDefaults.activeSessionIsPaused else {
+            return .result()
         }
-        
+
+        // Recalculate anchors before resuming.
+        let now = Date.now
+        if let remaining = AppGroupDefaults.activeSessionRemaining {
+            let elapsed = AppGroupDefaults.activeSessionElapsed
+            let duration = max(elapsed + remaining, 1)
+            AppGroupDefaults.activeSessionTimerEnd = now.addingTimeInterval(remaining)
+            AppGroupDefaults.activeSessionTimerStart = now.addingTimeInterval(-elapsed)
+            AppGroupDefaults.activeSessionProgress = min(max(elapsed / duration, 0), 1)
+            AppGroupDefaults.activeSessionRemaining = nil
+        } else {
+            AppGroupDefaults.activeSessionTimerStart = now.addingTimeInterval(-AppGroupDefaults.activeSessionElapsed)
+        }
+
+        AppGroupDefaults.activeSessionElapsed = AppGroupDefaults.activeSessionLiveElapsed(at: now)
+        AppGroupDefaults.externalPauseRequested = false
         AppGroupDefaults.externalResumeRequested = true
         AppGroupDefaults.activeSessionIsPaused = false
+        AppGroupDefaults.activeSessionPausedAt = nil
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -86,12 +145,13 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
 struct StopFocusFromWidgetIntent: AppIntent {
     static let title: LocalizedStringResource = "Stop Focus"
     static let description = IntentDescription("Stop the active focus session.")
-    static let openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
+        AppGroupDefaults.externalPauseRequested = false
+        AppGroupDefaults.externalResumeRequested = false
         AppGroupDefaults.externalStopRequested = true
-        AppGroupDefaults.isSessionActive = false
-        AppGroupDefaults.activeSessionIsPaused = false
+        AppGroupDefaults.clearActiveSession()
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -102,7 +162,7 @@ struct StopFocusFromWidgetIntent: AppIntent {
 struct StartFocusWithTaskIntent: AppIntent {
     static let title: LocalizedStringResource = "Start Focus with Task"
     static let description = IntentDescription("Start a focus session linked to a specific task.")
-    static let openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = false
 
     @Parameter(title: "Task ID")
     var taskID: String
@@ -114,10 +174,41 @@ struct StartFocusWithTaskIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        AppGroupDefaults.externalStartRequested = true
-        AppGroupDefaults.requestedTaskID = taskID
+        let selectedMode = AppGroupDefaults.widgetSelectedMode ?? "pomodoro"
+        try? WidgetPreferencesCache.refreshDurationsFromSharedStore()
+        let taskTitle = try? Self.taskTitle(for: taskID)
+        AppGroupDefaults.startWidgetSession(
+            modeID: selectedMode,
+            taskID: taskID,
+            taskTitle: taskTitle
+        )
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
+    }
+
+    private static func taskTitle(for taskID: String) throws -> String? {
+        guard let uuid = UUID(uuidString: taskID) else { return nil }
+        let container = try makeWidgetModelContainer()
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<TaskItem>()
+        let tasks = try context.fetch(descriptor)
+        return tasks.first(where: { $0.id == uuid })?.title
+    }
+}
+
+private enum WidgetPreferencesCache {
+    static func refreshDurationsFromSharedStore() throws {
+        let container = try makeWidgetModelContainer()
+        let context = ModelContext(container)
+        let descriptor = FetchDescriptor<UserPreferences>()
+        guard let preferences = try context.fetch(descriptor).first else { return }
+
+        if preferences.pomodoroDuration > 0 {
+            AppGroupDefaults.pomodoroDuration = preferences.pomodoroDuration
+        }
+        if preferences.defaultBlockDuration > 0 {
+            AppGroupDefaults.blockDuration = preferences.defaultBlockDuration
+        }
     }
 }
 
@@ -144,8 +235,11 @@ struct CompleteTaskFromWidgetIntent: AppIntent {
         let descriptor = FetchDescriptor<TaskItem>()
         let tasks = try context.fetch(descriptor)
         if let task = tasks.first(where: { $0.id == uuid }) {
+            let now = Date.now
             task.isCompleted = true
-            task.completedAt = Date.now
+            task.completedAt = now
+            task.updatedAt = now
+            task.isDirty = true
             try context.save()
         }
         WidgetCenter.shared.reloadAllTimelines()

@@ -28,12 +28,7 @@ struct TasksWidgetSmall: View {
     @Environment(\.showsWidgetContainerBackground) var showsBackground
 
     var body: some View {
-        ZStack {
-            if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
-            }
-
+        Group {
             if showsBackground {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
@@ -44,9 +39,14 @@ struct TasksWidgetSmall: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                         Spacer()
+                        if entry.isSessionActive {
+                            Image(systemName: "timer")
+                                .font(.caption2)
+                                .foregroundStyle(Color.accentColor)
+                        }
                     }
 
-                    Spacer()
+                    Spacer(minLength: 4)
 
                     if entry.tasks.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
@@ -61,7 +61,6 @@ struct TasksWidgetSmall: View {
                                 .foregroundStyle(.secondary)
                         }
                     } else {
-                        // Task count
                         Text("\(entry.tasks.count)")
                             .font(.system(.largeTitle, design: .rounded, weight: .bold))
 
@@ -71,7 +70,6 @@ struct TasksWidgetSmall: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
-                        // Next task preview
                         if let first = entry.tasks.first {
                             HStack(spacing: 4) {
                                 Text(energyEmoji(for: first.energyIcon))
@@ -83,7 +81,7 @@ struct TasksWidgetSmall: View {
                         }
                     }
                 }
-                .padding(12)
+                .padding(0)
             } else {
                 // StandBy mode
                 VStack(spacing: 8) {
@@ -122,15 +120,10 @@ struct TasksWidgetMedium: View {
     }
 
     var body: some View {
-        ZStack {
+        Group {
             if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
-            }
-
-            if showsBackground {
-                VStack(alignment: .leading, spacing: 5) {
-                    HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
                         Image(systemName: "checklist")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -138,15 +131,23 @@ struct TasksWidgetMedium: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Spacer()
+                        if !entry.isSessionActive, !entry.tasks.isEmpty {
+                            Button(intent: StartFocusFromWidgetIntent()) {
+                                Image(systemName: "play.fill")
+                                    .font(.caption2)
+                            }
+                            .buttonStyle(.plain)
+                            .tint(.accentColor)
+                        }
                     }
 
                     if entry.tasks.isEmpty {
-                        Spacer()
+                        Spacer(minLength: 4)
                         HStack {
                             Spacer()
-                            VStack(spacing: 6) {
+                            VStack(spacing: 5) {
                                 Image(systemName: "checkmark.circle")
-                                    .font(.title)
+                                    .font(.title2)
                                     .foregroundStyle(.green)
                                 Text(String(localized: "All done!"))
                                     .font(.subheadline)
@@ -154,16 +155,14 @@ struct TasksWidgetMedium: View {
                             }
                             Spacer()
                         }
-                        Spacer()
+                        Spacer(minLength: 4)
                     } else {
-                        // Linked task chip (Wear-style primary chip)
                         if let linked = linkedTask {
                             LinkedTaskChip(task: linked)
                         }
 
-                        // Other tasks
                         ForEach(Array(otherTasks.prefix(maxOtherRows))) { task in
-                            TaskRowCompact(task: task)
+                            TaskRowCompact(task: task, canStartFocus: !entry.isSessionActive)
                         }
 
                         let remaining = otherTasks.count - maxOtherRows
@@ -174,7 +173,7 @@ struct TasksWidgetMedium: View {
                         }
                     }
                 }
-                .padding(14)
+                .padding(0)
             } else {
                 // StandBy mode
                 VStack(alignment: .leading, spacing: 8) {
@@ -188,7 +187,7 @@ struct TasksWidgetMedium: View {
                         .font(.title3)
                         .foregroundStyle(.secondary)
                 }
-                .padding()
+                .padding(0)
             }
         }
         .accessibilityElement(children: .combine)
@@ -216,74 +215,71 @@ struct TasksWidgetLarge: View {
     }
 
     var body: some View {
-        ZStack {
-            if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                // Header
-                HStack {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                HStack(spacing: 6) {
                     Image(systemName: "checklist")
                         .foregroundStyle(.secondary)
                     Text(String(localized: "Tasks (\(entry.tasks.count))"))
                         .font(.subheadline)
                         .fontWeight(.medium)
-                    Spacer()
                 }
-
-                if entry.tasks.isEmpty {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        VStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle")
-                                .font(.largeTitle)
-                                .foregroundStyle(.green)
-                            Text(String(localized: "All done!"))
-                                .font(.headline)
-                            Text(String(localized: "No pending tasks"))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                    }
-                    Spacer()
-                } else {
-                    // Linked task chip (Wear-style primary chip)
-                    if let linked = linkedTask {
-                        LinkedTaskChip(task: linked)
-                    }
-
-                    // Other tasks with interactive completion
-                    ForEach(Array(otherTasks.prefix(maxOtherRows))) { task in
-                        TaskRowInteractive(task: task)
-                    }
-
-                    let remaining = otherTasks.count - maxOtherRows
-                    if remaining > 0 {
-                        Text(String(localized: "+\(remaining) more"))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    // Start focus button
-                    if !AppGroupDefaults.isSessionActive {
-                        Button(intent: StartFocusFromWidgetIntent()) {
-                            Label(String(localized: "Start Focus"), systemImage: "play.fill")
-                                .font(.caption)
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
-                        }
-                        .tint(.accentColor)
-                    }
+                Spacer()
+                if entry.isSessionActive {
+                    Label(String(localized: "Running"), systemImage: "timer")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
-            .padding(16)
+
+            if entry.tasks.isEmpty {
+                Spacer()
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle")
+                            .font(.largeTitle)
+                            .foregroundStyle(.green)
+                        Text(String(localized: "All done!"))
+                            .font(.headline)
+                        Text(String(localized: "No pending tasks"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }
+                Spacer()
+            } else {
+                if let linked = linkedTask {
+                    LinkedTaskChip(task: linked)
+                }
+
+                ForEach(Array(otherTasks.prefix(maxOtherRows))) { task in
+                    TaskRowInteractive(task: task, canStartFocus: !entry.isSessionActive)
+                }
+
+                let remaining = otherTasks.count - maxOtherRows
+                if remaining > 0 {
+                    Text(String(localized: "+\(remaining) more"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                if !entry.isSessionActive {
+                    Button(intent: StartFocusFromWidgetIntent()) {
+                        Label(String(localized: "Start Focus"), systemImage: "play.fill")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .tint(.accentColor)
+                }
+            }
         }
+        .padding(0)
     }
 }
 
@@ -294,23 +290,27 @@ private struct LinkedTaskChip: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Text("▶")
+            Image(systemName: "timer")
                 .font(.caption)
+                .foregroundStyle(.white)
+                .frame(width: 18)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(task.title)
                     .font(.caption)
                     .fontWeight(.semibold)
+                    .foregroundStyle(.white)
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
-                    Text("🍅")
-                        .font(.caption2)
                     Text(String(localized: "In progress"))
                         .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
                     if task.estimatedPomodoros > 0 {
                         Text("· \(task.completedPomodoros)/\(task.estimatedPomodoros)")
                             .font(.caption2)
+                            .foregroundStyle(.white)
                             .monospacedDigit()
                     }
                 }
@@ -319,13 +319,9 @@ private struct LinkedTaskChip: View {
 
             Spacer(minLength: 0)
         }
-        .foregroundStyle(.white)
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.accentColor)
-        )
+        .padding(.vertical, 7)
+        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -333,9 +329,19 @@ private struct LinkedTaskChip: View {
 
 private struct TaskRowCompact: View {
     let task: TasksWidgetEntry.WidgetTask
+    let canStartFocus: Bool
 
     var body: some View {
         HStack(spacing: 6) {
+            if canStartFocus {
+                Button(intent: StartFocusWithTaskIntent(taskID: task.id)) {
+                    Image(systemName: "play.fill")
+                        .font(.caption2)
+                }
+                .buttonStyle(.plain)
+                .tint(.accentColor)
+            }
+
             Text(energyEmoji(for: task.energyIcon))
                 .font(.caption2)
                 .frame(width: 16)
@@ -360,6 +366,7 @@ private struct TaskRowCompact: View {
 
 private struct TaskRowInteractive: View {
     let task: TasksWidgetEntry.WidgetTask
+    let canStartFocus: Bool
 
     var body: some View {
         HStack(spacing: 8) {
@@ -382,6 +389,15 @@ private struct TaskRowInteractive: View {
                 .lineLimit(1)
 
             Spacer(minLength: 4)
+
+            if canStartFocus {
+                Button(intent: StartFocusWithTaskIntent(taskID: task.id)) {
+                    Image(systemName: "play.fill")
+                        .font(.caption)
+                }
+                .buttonStyle(.plain)
+                .tint(.accentColor)
+            }
 
             // Pomodoro progress
             if task.estimatedPomodoros > 0 {

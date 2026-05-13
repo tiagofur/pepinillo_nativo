@@ -24,6 +24,6 @@ struct WidgetProRequiredView: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(12)
+        .padding(0)
     }
 }

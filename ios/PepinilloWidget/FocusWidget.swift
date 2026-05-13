@@ -35,6 +35,7 @@ struct FocusHomeScreenWidget: Widget {
                         }
                     }
                 }
+                .widgetURL(URL(string: "pepinillo://focus"))
         }
         .configurationDisplayName("Focus Timer")
         .description("See your daily focus progress and active timer.")
@@ -54,6 +55,7 @@ struct FocusLockScreenWidget: Widget {
         ) { entry in
             FocusAccessoryEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+                .widgetURL(URL(string: "pepinillo://focus"))
         }
         .configurationDisplayName("Focus")
         .description("Quick glance at your focus session.")

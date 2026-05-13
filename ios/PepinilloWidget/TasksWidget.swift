@@ -20,6 +20,7 @@ struct TasksHomeScreenWidget: Widget {
         ) { entry in
             TasksWidgetEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+                .widgetURL(URL(string: "pepinillo://plan"))
         }
         .configurationDisplayName("Tasks")
         .description("See your active tasks and mark them complete.")
@@ -53,6 +54,7 @@ struct TasksWidgetEntry: TimelineEntry {
     let date: Date
     let tasks: [WidgetTask]
     let activeTaskID: String?
+    let isSessionActive: Bool
 
     struct WidgetTask: Identifiable {
         let id: String
@@ -71,13 +73,15 @@ struct TasksWidgetEntry: TimelineEntry {
             WidgetTask(id: "2", title: "Review PRs", isCompleted: false, energyIcon: "tray", completedPomodoros: 0, estimatedPomodoros: 2, priorityValue: 2),
             WidgetTask(id: "3", title: "Update docs", isCompleted: false, energyIcon: "folder", completedPomodoros: 1, estimatedPomodoros: 1, priorityValue: 1),
         ],
-        activeTaskID: "1"
+        activeTaskID: "1",
+        isSessionActive: true
     )
 
     static let empty = TasksWidgetEntry(
         date: Date(),
         tasks: [],
-        activeTaskID: nil
+        activeTaskID: nil,
+        isSessionActive: false
     )
 }
 

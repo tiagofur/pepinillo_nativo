@@ -17,6 +17,8 @@ private struct WidgetProgressRing<Content: View>: View {
     let lineWidth: CGFloat
     let isPaused: Bool
     let countsDown: Bool
+    let timerStart: Date?
+    let timerEnd: Date?
     let content: Content
 
     init(
@@ -25,6 +27,8 @@ private struct WidgetProgressRing<Content: View>: View {
         lineWidth: CGFloat = 8,
         isPaused: Bool = false,
         countsDown: Bool = false,
+        timerStart: Date? = nil,
+        timerEnd: Date? = nil,
         @ViewBuilder content: () -> Content
     ) {
         self.progress = progress
@@ -32,31 +36,47 @@ private struct WidgetProgressRing<Content: View>: View {
         self.lineWidth = lineWidth
         self.isPaused = isPaused
         self.countsDown = countsDown
+        self.timerStart = timerStart
+        self.timerEnd = timerEnd
         self.content = content()
     }
 
     var body: some View {
         ZStack {
-            // Background track
             Circle()
                 .stroke(modeColor.opacity(0.15), lineWidth: lineWidth)
 
-            // Progress bar. Countdown modes render remaining time, so they start full and empty out.
-            if let progress {
-                let clamped = min(max(progress, 0), 1)
-                let visibleProgress = countsDown ? 1 - clamped : clamped
-                Circle()
-                    .trim(from: 0, to: CGFloat(visibleProgress))
-                    .stroke(
-                        modeColor,
-                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(-90))
-                    .animation(.spring(duration: 1.0), value: visibleProgress)
+            if let start = timerStart, let end = timerEnd, !isPaused {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    ringStroke(visibleProgress: liveVisibleProgress(at: context.date, start: start, end: end))
+                }
+            } else if let progress {
+                ringStroke(visibleProgress: visibleProgress(from: progress))
             }
 
             content
         }
+    }
+
+    private func ringStroke(visibleProgress: Double) -> some View {
+        Circle()
+            .trim(from: 0, to: CGFloat(min(max(visibleProgress, 0), 1)))
+            .stroke(
+                modeColor,
+                style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
+            )
+            .rotationEffect(.degrees(-90))
+    }
+
+    private func visibleProgress(from progress: Double) -> Double {
+        let clamped = min(max(progress, 0), 1)
+        return countsDown ? 1 - clamped : clamped
+    }
+
+    private func liveVisibleProgress(at date: Date, start: Date, end: Date) -> Double {
+        let duration = max(end.timeIntervalSince(start), 1)
+        let completed = min(max(date.timeIntervalSince(start) / duration, 0), 1)
+        return countsDown ? 1 - completed : completed
     }
 }
 
@@ -98,50 +118,94 @@ private struct WidgetModeQuickStartButton: View {
     let mode: String
     let selectedMode: String
     let showsTitle: Bool
+    let isProUser: Bool
 
     @ViewBuilder
     var body: some View {
+        let isProMode = (mode == "flowtime" || mode == "timeBlock")
+        let isLocked = isProMode && !isProUser
         let color = ModeColors.color(for: mode)
-        if mode == selectedMode {
-            Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
-                label
+        
+        if isLocked {
+            label(isLocked: true)
+                .foregroundStyle(.secondary)
+                .background(.secondary.opacity(0.10), in: Capsule())
+        } else if mode == selectedMode {
+            Button(intent: SelectFocusModeFromWidgetIntent(modeID: mode)) {
+                label(isLocked: false)
             }
-            .tint(color)
-            .buttonStyle(.borderedProminent)
-            .clipShape(Capsule())
+            .buttonStyle(.plain)
+            .foregroundStyle(.white)
+            .background(color, in: Capsule())
         } else {
-            Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
-                label
+            Button(intent: SelectFocusModeFromWidgetIntent(modeID: mode)) {
+                label(isLocked: false)
             }
-            .tint(.secondary)
-            .buttonStyle(.bordered)
-            .clipShape(Capsule())
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .background(.secondary.opacity(0.10), in: Capsule())
         }
     }
 
-    private var label: some View {
+    private func label(isLocked: Bool) -> some View {
         let style = WidgetModeStyle.style(for: mode)
         return HStack(spacing: 5) {
-            Image(systemName: showsTitle ? "play.fill" : style.systemImage)
-                .font(.system(size: showsTitle ? 10 : 13, weight: .bold))
+            Image(systemName: isLocked ? "lock.fill" : style.systemImage)
+                .font(.system(size: 11, weight: .bold))
             if showsTitle {
                 Text(modeDisplayName(mode))
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
-            } else {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 7, weight: .black))
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: showsTitle ? 28 : 24)
+        .frame(height: showsTitle ? 26 : 22)
+    }
+}
+
+private struct WidgetModeIconStartRow: View {
+    let selectedMode: String
+    let isProUser: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(widgetSelectableModes, id: \.self) { mode in
+                let style = WidgetModeStyle.style(for: mode)
+                let color = ModeColors.color(for: mode)
+                let isProMode = (mode == "flowtime" || mode == "timeBlock")
+                let isLocked = isProMode && !isProUser
+                
+                if isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 24)
+                        .background(.secondary.opacity(0.10), in: Capsule())
+                } else {
+                    Button(intent: SelectFocusModeFromWidgetIntent(modeID: mode)) {
+                        Image(systemName: style.systemImage)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(mode == selectedMode ? .white : color)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 24)
+                            .background(
+                                mode == selectedMode ? color : color.opacity(0.12),
+                                in: Capsule()
+                            )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
     }
 }
 
 private struct WidgetModeQuickStartGrid: View {
     let selectedMode: String
     let showsTitles: Bool
+    let isProUser: Bool
 
     var body: some View {
         LazyVGrid(
@@ -149,7 +213,7 @@ private struct WidgetModeQuickStartGrid: View {
             spacing: 6
         ) {
             ForEach(widgetSelectableModes, id: \.self) { mode in
-                WidgetModeQuickStartButton(mode: mode, selectedMode: selectedMode, showsTitle: showsTitles)
+                WidgetModeQuickStartButton(mode: mode, selectedMode: selectedMode, showsTitle: showsTitles, isProUser: isProUser)
             }
         }
     }
@@ -158,26 +222,69 @@ private struct WidgetModeQuickStartGrid: View {
 private struct WidgetPrimaryStartButton: View {
     let mode: String
     let compact: Bool
+    let isProUser: Bool
 
+    @ViewBuilder
     var body: some View {
-        Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
+        let isProMode = (mode == "flowtime" || mode == "timeBlock")
+        let isLocked = isProMode && !isProUser
+
+        if isLocked {
             HStack(spacing: 6) {
-                Image(systemName: "play.fill")
-                Text(compact ? String(localized: "Start") : String(localized: "Start \(modeDisplayName(mode))"))
+                Image(systemName: "lock.fill")
+                Text(String(localized: "Pepinillo+"))
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
             .font(.system(size: compact ? 12 : 14, weight: .bold, design: .rounded))
             .frame(maxWidth: .infinity)
             .frame(height: compact ? 28 : 38)
+            .foregroundStyle(.secondary)
+            .background(.secondary.opacity(0.12), in: Capsule())
+        } else {
+            Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
+                HStack(spacing: 6) {
+                    Image(systemName: "play.fill")
+                    Text(compact ? String(localized: "Start") : String(localized: "Start \(modeDisplayName(mode))"))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .font(.system(size: compact ? 12 : 14, weight: .bold, design: .rounded))
+                .frame(maxWidth: .infinity)
+                .frame(height: compact ? 28 : 38)
+            }
+            .tint(ModeColors.color(for: mode))
+            .buttonStyle(.borderedProminent)
+            .clipShape(Capsule())
         }
-        .tint(ModeColors.color(for: mode))
-        .buttonStyle(.borderedProminent)
-        .clipShape(Capsule())
     }
 }
 
 // MARK: - Pause/Resume + Stop Controls
+
+private struct WidgetMetric: View {
+    let icon: String
+    let value: Int
+    let label: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(color)
+            VStack(alignment: .leading, spacing: -1) {
+                Text("\(value)")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.primary)
+                Text(label)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+}
 
 private struct WidgetControls: View {
     let entry: FocusWidgetEntry
@@ -187,36 +294,39 @@ private struct WidgetControls: View {
         HStack(spacing: compact ? 10 : 14) {
             if entry.isPaused {
                 Button(intent: ResumeFocusFromWidgetIntent()) {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: compact ? 13 : 16, weight: .bold))
-                        .frame(width: buttonSize, height: buttonSize)
+                    controlIcon("play.fill", color: .green)
                 }
-                .tint(.green)
-                .buttonStyle(.borderedProminent)
-                .clipShape(Circle())
+                .buttonStyle(.plain)
+                .contentShape(Circle())
             } else {
                 Button(intent: PauseFocusFromWidgetIntent()) {
-                    Image(systemName: "pause.fill")
-                        .font(.system(size: compact ? 13 : 16, weight: .bold))
-                        .frame(width: buttonSize, height: buttonSize)
+                    controlIcon("pause.fill", color: .orange)
                 }
-                .tint(.orange)
-                .buttonStyle(.borderedProminent)
-                .clipShape(Circle())
+                .buttonStyle(.plain)
+                .contentShape(Circle())
             }
 
             Button(intent: StopFocusFromWidgetIntent()) {
-                Image(systemName: "stop.fill")
-                    .font(.system(size: compact ? 13 : 16, weight: .bold))
-                    .frame(width: buttonSize, height: buttonSize)
+                controlIcon("stop.fill", color: .red)
             }
-            .tint(.red)
-            .buttonStyle(.borderedProminent)
-            .clipShape(Circle())
+            .buttonStyle(.plain)
+            .contentShape(Circle())
         }
     }
 
-    private var buttonSize: CGFloat { compact ? 34 : 44 }
+    private var buttonSize: CGFloat { compact ? 36 : 44 }
+
+    private func controlIcon(_ systemName: String, color: Color) -> some View {
+        ZStack {
+            Circle()
+                .fill(color)
+            Image(systemName: systemName)
+                .font(.system(size: compact ? 13 : 16, weight: .bold))
+                .foregroundStyle(.white)
+        }
+        .frame(width: buttonSize, height: buttonSize)
+        .shadow(color: color.opacity(0.18), radius: 6, y: 3)
+    }
 }
 
 // MARK: - Small Widget (2x2)
@@ -237,7 +347,9 @@ struct FocusWidgetSmall: View {
                         modeColor: modeColor,
                         lineWidth: 6,
                         isPaused: entry.isPaused,
-                        countsDown: isCountdownMode(mode)
+                        countsDown: isCountdownMode(mode),
+                        timerStart: entry.timerStart,
+                        timerEnd: entry.timerEnd
                     ) {
                         Text(style.emoji)
                             .font(.title2)
@@ -250,16 +362,7 @@ struct FocusWidgetSmall: View {
                     )
 
                     HStack(spacing: 4) {
-                        if entry.isPaused {
-                            Text(String(localized: "Paused"))
-                                .font(.caption2)
-                                .foregroundStyle(.orange)
-                                .fontWeight(.medium)
-                        } else {
-                            Text(entry.phase ?? String(localized: "Focusing"))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
+                        WidgetControls(entry: entry, compact: true)
                     }
                 }
             } else {
@@ -283,14 +386,11 @@ struct FocusWidgetSmall: View {
                         .foregroundStyle(modeColor)
                         .fontWeight(.medium)
 
-                    WidgetPrimaryStartButton(mode: mode, compact: true)
-
-                    WidgetModeQuickStartGrid(selectedMode: mode, showsTitles: false)
+                    WidgetPrimaryStartButton(mode: mode, compact: true, isProUser: entry.isProUser)
                 }
-                .padding(8)
+                .padding(0)
             }
         }
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -308,97 +408,78 @@ struct FocusWidgetMedium: View {
                 liquidIdleLayout
             }
         }
-        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
     private func liquidActiveLayout(for mode: String) -> some View {
         let style = WidgetModeStyle.style(for: mode)
         let modeColor = ModeColors.color(for: mode)
+        let taskTitle = entry.linkedTaskTitle ?? String(localized: "No task linked")
 
-        HStack(spacing: 0) {
-            // Left: Massive Hero Ring
+        HStack(alignment: .center, spacing: 18) {
             ZStack {
-                // Background "glow" for Liquid Glass effect
                 Circle()
-                    .fill(modeColor.opacity(0.15))
-                    .blur(radius: 20)
-                    .scaleEffect(1.4)
-                
+                    .fill(modeColor.opacity(0.08))
+                    .blur(radius: 10)
+                    .scaleEffect(1.08)
+
                 WidgetProgressRing(
                     progress: entry.progress,
                     modeColor: modeColor,
-                    lineWidth: 10,
+                    lineWidth: 9,
                     isPaused: entry.isPaused,
-                    countsDown: isCountdownMode(mode)
+                    countsDown: isCountdownMode(mode),
+                    timerStart: entry.timerStart,
+                    timerEnd: entry.timerEnd
                 ) {
-                    Text(style.emoji)
-                        .font(.system(size: 36))
-                        .shadow(color: modeColor.opacity(0.3), radius: 4)
+                    VStack(spacing: 5) {
+                        Text(style.emoji)
+                            .font(.system(size: 22))
+                            .shadow(color: modeColor.opacity(0.22), radius: 3)
+                        LiveTimerText(
+                            entry: entry,
+                            font: .system(size: 25, weight: .bold, design: .rounded)
+                        )
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    }
                 }
             }
-            .frame(width: 140)
-            .offset(x: -16) // Dramatic asymmetric offset
+            .frame(width: 118, height: 118)
 
-            VStack(alignment: .leading, spacing: 2) {
-                // Header info
-                HStack {
-                    if entry.isPaused {
-                        Label(String(localized: "Paused"), systemImage: "pause.fill")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .foregroundStyle(.orange)
-                    } else {
-                        Text(entry.phase?.uppercased() ?? String(localized: "FOCUSING"))
-                            .font(.system(size: 10, weight: .black))
-                            .foregroundStyle(.secondary)
-                            .tracking(1)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(taskTitle)
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundStyle(entry.linkedTaskTitle == nil ? .secondary : .primary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.78)
                     }
-                    
-                    Spacer()
-                    
+
+                    Spacer(minLength: 8)
+
                     if let pn = entry.pomodoroNumber, let tp = entry.totalPomodoros {
                         Text("\(pn)/\(tp)")
                             .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(modeColor.opacity(0.15), in: Capsule())
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(modeColor.opacity(0.16), in: Capsule())
                             .foregroundStyle(modeColor)
                     }
                 }
 
-                // Timer
-                LiveTimerText(
-                    entry: entry,
-                    font: .system(size: 40, weight: .bold, design: .rounded)
-                )
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-                .padding(.top, -2)
+                WidgetControls(entry: entry, compact: false)
+                    .padding(.top, -1)
 
-                // Task
-                if let task = entry.linkedTaskTitle {
-                    HStack(spacing: 4) {
-                        Image(systemName: "link")
-                            .font(.system(size: 10))
-                        Text(task)
-                            .font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                } else {
-                    Text(String(localized: "Deep Work Session"))
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.tertiary)
+                HStack(spacing: 18) {
+                    WidgetMetric(icon: "flame.fill", value: entry.currentStreakDays, label: String(localized: "streak"), color: ModeColors.streak)
+                    WidgetMetric(icon: "checkmark.circle.fill", value: entry.todaySessionsCompleted, label: String(localized: "sessions"), color: .secondary)
                 }
-
-                Spacer(minLength: 8)
-
-                // Controls
-                WidgetControls(entry: entry, compact: true)
             }
-            .padding(.trailing, 16)
-            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .padding(0)
     }
 
     @ViewBuilder
@@ -446,12 +527,11 @@ struct FocusWidgetMedium: View {
 
                 Spacer(minLength: 6)
 
-                WidgetPrimaryStartButton(mode: mode, compact: true)
+                WidgetPrimaryStartButton(mode: mode, compact: true, isProUser: entry.isProUser)
 
-                WidgetModeQuickStartGrid(selectedMode: mode, showsTitles: false)
+                WidgetModeIconStartRow(selectedMode: mode, isProUser: entry.isProUser)
             }
-            .padding(.trailing, 16)
-            .padding(.vertical, 14)
+            .padding(0)
         }
     }
 }
@@ -470,7 +550,6 @@ struct FocusWidgetLarge: View {
                 liquidIdleLayout
             }
         }
-        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
@@ -499,7 +578,9 @@ struct FocusWidgetLarge: View {
                 modeColor: modeColor,
                 lineWidth: 14,
                 isPaused: entry.isPaused,
-                countsDown: isCountdownMode(mode)
+                countsDown: isCountdownMode(mode),
+                timerStart: entry.timerStart,
+                timerEnd: entry.timerEnd
             ) {
                 VStack(spacing: 6) {
                     Text(style.emoji)
@@ -532,10 +613,8 @@ struct FocusWidgetLarge: View {
                 .padding(12)
                 .background(.ultraThinMaterial.opacity(0.45), in: RoundedRectangle(cornerRadius: 14))
             }
-
-            Spacer(minLength: 0)
         }
-        .padding(18)
+        .padding(0)
     }
 
     @ViewBuilder
@@ -573,9 +652,9 @@ struct FocusWidgetLarge: View {
                 Spacer()
             }
 
-            WidgetPrimaryStartButton(mode: preferredMode, compact: false)
+            WidgetPrimaryStartButton(mode: preferredMode, compact: false, isProUser: entry.isProUser)
 
-            WidgetModeQuickStartGrid(selectedMode: preferredMode, showsTitles: true)
+            WidgetModeQuickStartGrid(selectedMode: preferredMode, showsTitles: true, isProUser: entry.isProUser)
 
             if !entry.modeMinutes.isEmpty {
                 VStack(spacing: 8) {
@@ -589,7 +668,7 @@ struct FocusWidgetLarge: View {
 
             Spacer(minLength: 0)
         }
-        .padding(20)
+        .padding(0)
     }
 
     private var sortedModes: [(key: String, value: Int)] {
@@ -614,8 +693,8 @@ struct FocusWidgetAccessoryCircular: View {
             if entry.isSessionActive && entry.isPaused {
                 Image(systemName: "pause.fill")
                     .font(.caption2)
-            } else {
-                Image(systemName: "brain.head.profile")
+                } else {
+                Image(systemName: WidgetModeStyle.style(for: entry.focusMode ?? entry.preferredModeID ?? "pomodoro").systemImage)
                     .font(.caption)
             }
         }
@@ -627,7 +706,7 @@ struct FocusWidgetAccessoryRectangular: View {
 
     var body: some View {
         HStack {
-            Image(systemName: "brain.head.profile")
+            Image(systemName: WidgetModeStyle.style(for: entry.focusMode ?? entry.preferredModeID ?? "pomodoro").systemImage)
                 .font(.subheadline)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -643,6 +722,13 @@ struct FocusWidgetAccessoryRectangular: View {
                             .foregroundStyle(.secondary)
                     } else if let start = entry.timerStart, let end = entry.timerEnd {
                         Text(timerInterval: start...end, countsDown: true)
+                            .font(.headline)
+                            .monospacedDigit()
+                        Text(entry.phase ?? String(localized: "Focusing"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if let start = entry.timerStart {
+                        Text(timerInterval: start...Date.distantFuture, countsDown: false)
                             .font(.headline)
                             .monospacedDigit()
                         Text(entry.phase ?? String(localized: "Focusing"))
@@ -762,4 +848,3 @@ private func widgetVisibleProgress(_ progress: Double, mode: String) -> Double {
     let clamped = min(max(progress, 0), 1)
     return isCountdownMode(mode) ? 1 - clamped : clamped
 }
-

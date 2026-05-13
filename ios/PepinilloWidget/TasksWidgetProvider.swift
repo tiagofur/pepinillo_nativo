@@ -50,7 +50,8 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
 
             let tasks = try context.fetch(descriptor)
 
-            let activeTaskID = AppGroupDefaults.activeTaskID
+            let isSessionActive = AppGroupDefaults.isSessionActive
+            let activeTaskID = isSessionActive ? AppGroupDefaults.activeTaskID : nil
 
             let widgetTasks = tasks.map { task in
                 TasksWidgetEntry.WidgetTask(
@@ -67,7 +68,8 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
             return TasksWidgetEntry(
                 date: Date.now,
                 tasks: widgetTasks,
-                activeTaskID: activeTaskID
+                activeTaskID: activeTaskID,
+                isSessionActive: isSessionActive
             )
         } catch {
             // If SwiftData fetch fails, return empty state

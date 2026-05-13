@@ -73,7 +73,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             }
 
             let configuredMode = configuration.preferredMode.rawValue
-            let preferredModeID = prefs?.defaultMode ?? configuredMode
+            let preferredModeID = AppGroupDefaults.widgetSelectedMode ?? prefs?.defaultMode ?? configuredMode
             let preferredTimerText = Self.idleTimerText(for: preferredModeID, preferences: prefs)
 
             // Check AppGroupDefaults for active session state.
@@ -84,26 +84,28 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             let isPaused = isActive ? AppGroupDefaults.activeSessionIsPaused : false
             let activeMode = isActive ? activeModeName : nil
             let activePhase = isActive ? AppGroupDefaults.activeSessionPhase : nil
-            let activeProgress = isActive ? AppGroupDefaults.activeSessionProgress : nil
+            let liveElapsed = isActive ? AppGroupDefaults.activeSessionLiveElapsed() : 0
+            let liveRemaining = isActive ? AppGroupDefaults.activeSessionLiveRemaining() : nil
+            let activeProgress: Double?
+            if isActive, let remaining = liveRemaining {
+                let duration = max(liveElapsed + remaining, 1)
+                activeProgress = min(max(liveElapsed / duration, 0), 1)
+            } else {
+                activeProgress = isActive ? AppGroupDefaults.activeSessionProgress : nil
+            }
             let activePomodoroNumber = isActive ? AppGroupDefaults.activeSessionPomodoroNumber : nil
             let activeTotalPomodoros = isActive ? AppGroupDefaults.activeSessionTotalPomodoros : nil
             let activeTaskTitle = isActive ? AppGroupDefaults.activeSessionTaskTitle : nil
             let timerStart = isActive ? AppGroupDefaults.activeSessionTimerStart : nil
             let timerEnd = isActive ? AppGroupDefaults.activeSessionTimerEnd : nil
 
-            // Build timer text from elapsed/remaining
+            // Build a snapshot timer string. Live widget text uses timerStart/timerEnd where possible.
             let timerText: String?
             if isActive {
-                if let remaining = AppGroupDefaults.activeSessionRemaining {
-                    let totalSeconds = Int(remaining)
-                    let m = totalSeconds / 60
-                    let s = totalSeconds % 60
-                    timerText = String(format: "%d:%02d", m, s)
+                if let remaining = liveRemaining {
+                    timerText = Self.formatTimer(remaining)
                 } else {
-                    let elapsed = Int(AppGroupDefaults.activeSessionElapsed)
-                    let m = elapsed / 60
-                    let s = elapsed % 60
-                    timerText = String(format: "%d:%02d", m, s)
+                    timerText = Self.formatTimer(liveElapsed)
                 }
             } else {
                 timerText = nil

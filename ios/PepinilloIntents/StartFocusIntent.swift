@@ -73,43 +73,57 @@ struct StopFocusIntent: AppIntent {
 
 // MARK: - Focus Mode Entity
 
-struct FocusModeEntity: AppEntity {
-    static let defaultQuery = FocusModeQuery()
+enum FocusModeEntity: String, AppEnum, CaseIterable {
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Focus Mode")
 
-    var id: String
-    var displayName: String
-    var icon: String
+    case pomodoro
+    case flowtime
+    case timeBlock
+    case stopwatch
 
-    var displayRepresentation: DisplayRepresentation {
-        DisplayRepresentation(
-            title: "\(displayName)",
-            subtitle: "",
-            image: .init(systemName: iconSystemName)
-        )
-    }
+    static let caseDisplayRepresentations: [FocusModeEntity: DisplayRepresentation] = [
+        .pomodoro: DisplayRepresentation(title: "Pomodoro", image: .init(systemName: "timer")),
+        .flowtime: DisplayRepresentation(title: "Flowtime", image: .init(systemName: "wind")),
+        .timeBlock: DisplayRepresentation(title: "Time Block", image: .init(systemName: "rectangle.split.3x1")),
+        .stopwatch: DisplayRepresentation(title: "Stopwatch", image: .init(systemName: "stopwatch"))
+    ]
 
-    var iconSystemName: String {
-        switch id {
-        case "pomodoro":  return "timer"
-        case "flowtime":  return "wind"
-        case "timeBlock": return "rectangle.split.3x1"
-        case "stopwatch": return "stopwatch"
-        default:          return "timer"
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .pomodoro: return "Pomodoro"
+        case .flowtime: return "Flowtime"
+        case .timeBlock: return "Time Block"
+        case .stopwatch: return "Stopwatch"
         }
     }
 
-    static let pomodoro  = FocusModeEntity(id: "pomodoro",  displayName: "Pomodoro",  icon: "🍅")
-    static let flowtime  = FocusModeEntity(id: "flowtime",  displayName: "Flowtime",  icon: "🌊")
-    static let timeBlock = FocusModeEntity(id: "timeBlock", displayName: "Time Block", icon: "📦")
-    static let stopwatch = FocusModeEntity(id: "stopwatch", displayName: "Stopwatch", icon: "⏱️")
+    var icon: String {
+        switch self {
+        case .pomodoro: return "🍅"
+        case .flowtime: return "🌊"
+        case .timeBlock: return "📦"
+        case .stopwatch: return "⏱️"
+        }
+    }
 
-    static let allModes: [FocusModeEntity] = [.pomodoro, .flowtime, .timeBlock, .stopwatch]
+    var iconSystemName: String {
+        switch self {
+        case .pomodoro: return "timer"
+        case .flowtime: return "wind"
+        case .timeBlock: return "rectangle.split.3x1"
+        case .stopwatch: return "stopwatch"
+        }
+    }
+
+    static let allModes: [FocusModeEntity] = allCases
 }
 
-struct FocusModeQuery: EntityQuery {
+struct FocusModeQuery {
     func entities(for identifiers: [String]) async throws -> [FocusModeEntity] {
-        FocusModeEntity.allModes.filter { identifiers.contains($0.id) }
+        let idSet = Set(identifiers)
+        return FocusModeEntity.allModes.filter { idSet.contains($0.id) }
     }
 
     func suggestedEntities() async throws -> [FocusModeEntity] {

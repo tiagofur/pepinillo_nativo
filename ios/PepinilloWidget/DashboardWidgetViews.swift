@@ -41,12 +41,7 @@ struct DashboardWidgetSmall: View {
     @Environment(\.showsWidgetContainerBackground) var showsBackground
 
     var body: some View {
-        ZStack {
-            if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
-            }
-
+        Group {
             if showsBackground {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 6) {
@@ -94,8 +89,7 @@ struct DashboardWidgetSmall: View {
                         }
                     }
                 }
-                .padding(12)
-                .blur(radius: entry.isProUser ? 0 : 3)
+                .padding(0)
             } else {
                 // StandBy mode
                 VStack(spacing: 8) {
@@ -112,11 +106,6 @@ struct DashboardWidgetSmall: View {
                         .font(.title3)
                     }
                 }
-                .blur(radius: entry.isProUser ? 0 : 5)
-            }
-
-            if !entry.isProUser {
-                ProWidgetOverlay(title: String(localized: "Weekly Stats"))
             }
         }
         .accessibilityElement(children: .combine)
@@ -130,12 +119,7 @@ struct DashboardWidgetMedium: View {
     @Environment(\.showsWidgetContainerBackground) var showsBackground
 
     var body: some View {
-        ZStack {
-            if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
-            }
-
+        Group {
             if showsBackground {
                 HStack(spacing: 14) {
                     // Left: today's stats
@@ -188,8 +172,7 @@ struct DashboardWidgetMedium: View {
                         }
                     }
                 }
-                .padding(14)
-                .blur(radius: entry.isProUser ? 0 : 3)
+                .padding(0)
             } else {
                 // StandBy
                 HStack(spacing: 20) {
@@ -212,11 +195,6 @@ struct DashboardWidgetMedium: View {
                         }
                     }
                 }
-                .blur(radius: entry.isProUser ? 0 : 5)
-            }
-
-            if !entry.isProUser {
-                ProWidgetOverlay(title: String(localized: "Productivity Insights"))
             }
         }
         .accessibilityElement(children: .combine)
@@ -230,13 +208,7 @@ struct DashboardWidgetLarge: View {
     @Environment(\.showsWidgetContainerBackground) var showsBackground
 
     var body: some View {
-        ZStack {
-            if showsBackground {
-                ContainerRelativeShape()
-                    .fill(Color(.systemBackground))
-            }
-
-            VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 12) {
                 // Header
                 HStack {
                     Image(systemName: "chart.bar.fill")
@@ -328,14 +300,8 @@ struct DashboardWidgetLarge: View {
                     }
                     Spacer()
                 }
-            }
-            .padding(16)
-            .blur(radius: entry.isProUser ? 0 : 4)
-
-            if !entry.isProUser {
-                ProWidgetOverlay(title: String(localized: "Advanced Performance Analytics"))
-            }
         }
+        .padding(0)
     }
 }
 
