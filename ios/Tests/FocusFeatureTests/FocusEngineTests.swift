@@ -76,7 +76,7 @@ struct FocusEngineStartTests {
         #expect(state?.mode == .timeBlock)
         #expect(state?.phase == .block)
         #expect(state?.isPaused == false)
-        #expect(state?.targetDuration == 60 * 60) // default 1 hour
+        #expect(state?.targetDuration == TimeInterval(60 * 60)) // default 1 hour
     }
 
     @Test func startStopwatchCreatesActiveState() async throws {
@@ -293,6 +293,36 @@ struct FocusEnginePauseResumeTests {
         let state = await engine.currentState()
         #expect(state?.totalPausedDuration ?? 0 > 0)
     }
+
+    @Test func externalPauseUsesWidgetTapTimestampWhenAppWakesLater() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro)
+        try await Task.sleep(for: .milliseconds(200))
+
+        let pauseTapState = try #require(await engine.currentState())
+        let elapsedAtTap = pauseTapState.elapsedSeconds
+        let remainingAtTap = pauseTapState.remainingSeconds
+        let pausedAt = Date.now
+
+        // Simulates tapping pause in the widget while the app is suspended,
+        // then opening the app later. The pause must apply at pausedAt.
+        try await Task.sleep(for: .milliseconds(300))
+        await engine.applyExternalPause(
+            elapsed: elapsedAtTap,
+            remaining: remainingAtTap,
+            pausedAt: pausedAt
+        )
+        await engine.resume()
+        try await Task.sleep(for: .milliseconds(200))
+
+        let resumedState = try #require(await engine.currentState())
+        #expect(resumedState.isPaused == false)
+        #expect(resumedState.totalPausedDuration >= 0.25)
+        #expect(
+            resumedState.elapsedSeconds < elapsedAtTap + 0.45,
+            "Elapsed time should not include the suspended wait after the widget pause tap"
+        )
+    }
 }
 
 // MARK: - Stop
@@ -425,7 +455,7 @@ struct FocusEngineCustomDurationTests {
 
         let state = await engine.currentState()
         // Pomodoro should use its default 25-minute duration, not the custom one
-        #expect(state?.targetDuration == 25 * 60)
+        #expect(state?.targetDuration == TimeInterval(25 * 60))
     }
 }
 
@@ -562,7 +592,7 @@ struct FocusEngineConfigTests {
         try await Task.sleep(for: .milliseconds(200))
 
         let state = await engine.currentState()
-        #expect(state?.targetDuration == 50 * 60)
+        #expect(state?.targetDuration == TimeInterval(50 * 60))
         #expect(state?.totalPomodoros == 2)
 
         if case .work(let number, let total) = state?.phase {
@@ -579,7 +609,7 @@ struct FocusEngineConfigTests {
         try await Task.sleep(for: .milliseconds(200))
 
         let state = await engine.currentState()
-        #expect(state?.targetDuration == 25 * 60)
+        #expect(state?.targetDuration == TimeInterval(25 * 60))
         #expect(state?.totalPomodoros == 4)
     }
 }

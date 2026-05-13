@@ -89,23 +89,17 @@ struct SentryServiceTests {
     }
 }
 
-// Lightweight Bundle stub. We subclass Bundle and override the two methods
-// SentryService uses. Works on iOS and macOS alike.
-private final class StubBundle: Bundle, @unchecked Sendable {
+// Lightweight bundle stub for SentryService's Info.plist reads.
+private struct StubBundle: BundleInfoProviding, @unchecked Sendable {
     private let info: [String: Any]
-    private let identifier: String?
+    let bundleIdentifier: String?
 
     init(info: [String: Any], identifier: String? = nil) {
         self.info = info
-        self.identifier = identifier
-        super.init(url: Bundle.main.bundleURL)!
+        self.bundleIdentifier = identifier
     }
 
-    override func object(forInfoDictionaryKey key: String) -> Any? {
+    func object(forInfoDictionaryKey key: String) -> Any? {
         info[key]
-    }
-
-    override var bundleIdentifier: String? {
-        identifier ?? super.bundleIdentifier
     }
 }

@@ -73,17 +73,18 @@ struct FocusFeatureReducerTests {
         ) {
             FocusFeature()
         } withDependencies: {
-            $0.focusClient.start = { _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
         }
 
         store.exhaustivity = .off
 
-        await store.send(.startTapped) {
+        await store.send(.startTapped()) {
             $0.isRunning = true
             $0.isPaused = false
             $0.activeMode = .pomodoro
@@ -105,7 +106,7 @@ struct FocusFeatureReducerTests {
         let store = TestStore(initialState: state) {
             FocusFeature()
         } withDependencies: {
-            $0.focusClient.start = { _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -115,7 +116,7 @@ struct FocusFeatureReducerTests {
 
         store.exhaustivity = .off
 
-        await store.send(.startTapped) {
+        await store.send(.startTapped()) {
             $0.isRunning = true
             $0.isPaused = false
             $0.activeMode = .flowtime
@@ -138,7 +139,7 @@ struct FocusFeatureReducerTests {
         let store = TestStore(initialState: state) {
             FocusFeature()
         } withDependencies: {
-            $0.focusClient.start = { _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -148,7 +149,7 @@ struct FocusFeatureReducerTests {
 
         store.exhaustivity = .off
 
-        await store.send(.startTapped) {
+        await store.send(.startTapped()) {
             $0.isRunning = true
             $0.activeMode = .timeBlock
             $0.phase = .block

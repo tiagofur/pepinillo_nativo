@@ -28,7 +28,9 @@ struct AnalyticsFeatureTests {
 
     @Test func periodChangeUpdatesState() async {
         let prefs = emptyPrefs()
-        let store = TestStore(initialState: AnalyticsFeature.State()) {
+        var state = AnalyticsFeature.State()
+        state.isProUser = true
+        let store = TestStore(initialState: state) {
             AnalyticsFeature()
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
@@ -95,7 +97,10 @@ struct AnalyticsFeatureTests {
     }
 
     @Test func weeklyReviewTappedSetsShowFlag() async {
-        let store = TestStore(initialState: AnalyticsFeature.State()) {
+        var state = AnalyticsFeature.State()
+        state.isProUser = true
+
+        let store = TestStore(initialState: state) {
             AnalyticsFeature()
         }
 
@@ -118,7 +123,10 @@ struct AnalyticsFeatureTests {
     }
 
     @Test func weeklyReviewTappedThenDismissedRestoresState() async {
-        let store = TestStore(initialState: AnalyticsFeature.State()) {
+        var state = AnalyticsFeature.State()
+        state.isProUser = true
+
+        let store = TestStore(initialState: state) {
             AnalyticsFeature()
         }
 

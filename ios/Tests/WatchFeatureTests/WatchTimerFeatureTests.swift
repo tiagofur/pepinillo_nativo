@@ -282,8 +282,12 @@ struct WatchTimerFeatureTests {
         }
 
         for mode in FocusMode.allCases {
-            await store.send(.modeSelected(mode)) {
-                $0.selectedMode = mode
+            if store.state.selectedMode == mode {
+                await store.send(.modeSelected(mode))
+            } else {
+                await store.send(.modeSelected(mode)) {
+                    $0.selectedMode = mode
+                }
             }
         }
     }

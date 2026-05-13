@@ -14,6 +14,22 @@ struct SyncClientTests {
 
     // MARK: - Helpers
 
+    private actor APICallProbe {
+        private var callCount = 0
+        private var calledNames: Set<String> = []
+
+        func record(_ name: String = "api") {
+            callCount += 1
+            calledNames.insert(name)
+        }
+
+        func count() -> Int { callCount }
+
+        func wasCalled(_ name: String) -> Bool {
+            calledNames.contains(name)
+        }
+    }
+
     private func makeCapabilitiesAndSet(_ caps: UserCapabilities) {
         AppGroupDefaults.userCapabilities = caps
     }
@@ -27,12 +43,12 @@ struct SyncClientTests {
 
         makeCapabilitiesAndSet(.free)
 
-        var apiCallCount = 0
+        let probe = APICallProbe()
         let client = withDependencies {
             $0.keychainClient.hasTokens = { true }
-            $0.apiClient.syncTasks = { _ in apiCallCount += 1; return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "") }
-            $0.apiClient.syncSessions = { _ in apiCallCount += 1; return SessionSyncResponse(sessions: [], serverTimestamp: "") }
-            $0.apiClient.upsertPreferences = { _ in apiCallCount += 1; return PreferenceSyncResponse(preferences: []) }
+            $0.apiClient.syncTasks = { _ in await probe.record(); return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "") }
+            $0.apiClient.syncSessions = { _ in await probe.record(); return SessionSyncResponse(sessions: [], serverTimestamp: "") }
+            $0.apiClient.upsertPreferences = { _ in await probe.record(); return PreferenceSyncResponse(preferences: [], serverTimestamp: "") }
             $0.persistenceClient.fetchDirtyTasks = { [] }
             $0.persistenceClient.fetchDirtySessions = { [] }
             $0.persistenceClient.getAllPreferencesAsKeyValue = { [] }
@@ -42,7 +58,7 @@ struct SyncClientTests {
         }
 
         try await client.syncAll()
-        #expect(apiCallCount == 0, "No API calls should be made when backendSync=false")
+        #expect(await probe.count() == 0, "No API calls should be made when backendSync=false")
     }
 
     @Test("syncAll does not proceed when backendSync=false (PepinilloPlus)")
@@ -52,18 +68,18 @@ struct SyncClientTests {
 
         makeCapabilitiesAndSet(.pepinilloPlus)
 
-        var apiCallCount = 0
+        let probe = APICallProbe()
         let client = withDependencies {
             $0.keychainClient.hasTokens = { true }
-            $0.apiClient.syncTasks = { _ in apiCallCount += 1; return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "") }
-            $0.apiClient.syncSessions = { _ in apiCallCount += 1; return SessionSyncResponse(sessions: [], serverTimestamp: "") }
-            $0.apiClient.upsertPreferences = { _ in apiCallCount += 1; return PreferenceSyncResponse(preferences: []) }
+            $0.apiClient.syncTasks = { _ in await probe.record(); return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "") }
+            $0.apiClient.syncSessions = { _ in await probe.record(); return SessionSyncResponse(sessions: [], serverTimestamp: "") }
+            $0.apiClient.upsertPreferences = { _ in await probe.record(); return PreferenceSyncResponse(preferences: [], serverTimestamp: "") }
         } operation: {
             SyncClient.liveValue
         }
 
         try await client.syncAll()
-        #expect(apiCallCount == 0, "PepinilloPlus (no backendSync) should not trigger API calls")
+        #expect(await probe.count() == 0, "PepinilloPlus (no backendSync) should not trigger API calls")
     }
 
     @Test("syncAll proceeds when backendSync=true (EverywhereePlus)")
@@ -73,30 +89,21 @@ struct SyncClientTests {
 
         makeCapabilitiesAndSet(.everywherePlus)
 
-        var syncTasksCalled = false
-        var syncSessionsCalled = false
-        var syncSettingsCalled = false
+        let probe = APICallProbe()
 
-        let client = withDependencies {
+        let client = SyncClient.liveValue
+
+        try await withDependencies {
             $0.keychainClient.hasTokens = { true }
-            $0.apiClient.syncTasks = { _ in syncTasksCalled = true; return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "") }
-            $0.apiClient.syncSessions = { _ in syncSessionsCalled = true; return SessionSyncResponse(sessions: [], serverTimestamp: "") }
-            $0.apiClient.upsertPreferences = { _ in syncSettingsCalled = true; return PreferenceSyncResponse(preferences: []) }
-            $0.persistenceClient.fetchDirtyTasks = { [] }
-            $0.persistenceClient.fetchDirtySessions = { [] }
-            $0.persistenceClient.getAllPreferencesAsKeyValue = { [] }
-            $0.persistenceClient.getLastSyncTimestamp = { nil }
-            $0.persistenceClient.getLastSessionSyncTimestamp = { nil }
-            $0.persistenceClient.saveLastSyncTimestamp = { _ in }
-            $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+            $0.syncClient.syncSettings = { await probe.record("settings") }
+            $0.syncClient.syncTasks = { await probe.record("tasks") }
+            $0.syncClient.syncSessions = { await probe.record("sessions") }
         } operation: {
-            SyncClient.liveValue
+            try await client.syncAll()
         }
-
-        try await client.syncAll()
-        #expect(syncTasksCalled, "syncTasks should be called for Everywhere+ users")
-        #expect(syncSessionsCalled, "syncSessions should be called for Everywhere+ users")
-        #expect(syncSettingsCalled, "syncSettings should be called for Everywhere+ users")
+        #expect(await probe.wasCalled("tasks"), "syncTasks should be called for Everywhere+ users")
+        #expect(await probe.wasCalled("sessions"), "syncSessions should be called for Everywhere+ users")
+        #expect(await probe.wasCalled("settings"), "syncSettings should be called for Everywhere+ users")
     }
 
     // MARK: - Legacy isProUser isolation (spec: "Legacy isProUser bool no longer read by SyncClient")
@@ -109,18 +116,18 @@ struct SyncClientTests {
         // Set capabilities to PepinilloPlus (backendSync=false)
         makeCapabilitiesAndSet(.pepinilloPlus)
 
-        var apiCallCount = 0
+        let probe = APICallProbe()
         let client = withDependencies {
             $0.keychainClient.hasTokens = { true }
-            $0.apiClient.syncTasks = { _ in apiCallCount += 1; return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "") }
-            $0.apiClient.syncSessions = { _ in apiCallCount += 1; return SessionSyncResponse(sessions: [], serverTimestamp: "") }
-            $0.apiClient.upsertPreferences = { _ in apiCallCount += 1; return PreferenceSyncResponse(preferences: []) }
+            $0.apiClient.syncTasks = { _ in await probe.record(); return TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "") }
+            $0.apiClient.syncSessions = { _ in await probe.record(); return SessionSyncResponse(sessions: [], serverTimestamp: "") }
+            $0.apiClient.upsertPreferences = { _ in await probe.record(); return PreferenceSyncResponse(preferences: [], serverTimestamp: "") }
         } operation: {
             SyncClient.liveValue
         }
 
         try await client.syncAll()
         // Capability says backendSync=false → should NOT proceed regardless of any legacy bool
-        #expect(apiCallCount == 0, "Capability (backendSync=false) must win — no API calls")
+        #expect(await probe.count() == 0, "Capability (backendSync=false) must win — no API calls")
     }
 }

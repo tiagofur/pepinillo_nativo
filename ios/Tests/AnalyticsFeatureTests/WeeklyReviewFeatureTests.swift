@@ -286,15 +286,13 @@ struct WeeklyReviewFeatureTests {
             WeeklyReviewFeature()
         }
 
-        await store.send(.dataLoaded(data)) {
-            $0.isLoading = false
-            $0.minutesDelta = 0
-            $0.sessionsDelta = 0
-            $0.minutesTrend = .neutral
-            $0.sessionsTrend = .neutral
-            $0.currentWeekDominantMode = nil
-            $0.bestDayName == nil
-        }
+        await store.send(.dataLoaded(data))
+        #expect(store.state.minutesDelta == 0)
+        #expect(store.state.sessionsDelta == 0)
+        #expect(store.state.minutesTrend == .neutral)
+        #expect(store.state.sessionsTrend == .neutral)
+        #expect(store.state.currentWeekDominantMode == nil)
+        #expect(store.state.bestDayName == nil)
     }
 
     // MARK: - Streak

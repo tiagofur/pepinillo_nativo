@@ -634,7 +634,7 @@ struct SettingsFeatureTests {
         await store.receive(.settingsSaved)
 
         #expect(savedPrefs != nil)
-        #expect(savedPrefs?.pomodoroDuration == 45 * 60)
+        #expect(savedPrefs?.pomodoroDuration == TimeInterval(45 * 60))
     }
 
     // MARK: - About

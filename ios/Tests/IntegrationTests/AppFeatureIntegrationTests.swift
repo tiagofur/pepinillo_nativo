@@ -30,6 +30,22 @@ struct AppFeatureIntegrationTests {
         }
     }
 
+    @Test func widgetDeepLinksSelectExpectedTabs() async throws {
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+        }
+
+        await store.send(.appURLReceived(try #require(URL(string: "pepinillo://plan")))) {
+            $0.selectedTab = .plan
+        }
+
+        await store.send(.appURLReceived(try #require(URL(string: "pepinillo://focus")))) {
+            $0.selectedTab = .focus
+        }
+    }
+
     @Test func onboardingCompletedSetsFlag() async {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
@@ -70,6 +86,10 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.soundscapeClient.play = { _, _ in }
+            $0.watchConnectivityClient.sendSessionState = { _ in }
         }
 
         store.exhaustivity = .off
@@ -96,13 +116,18 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchPreferences = { completedPrefs }
             $0.persistenceClient.savePreferences = { _ in }
             $0.persistenceClient.fetchCachedUser = { nil }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.generateRecurringTasks = { }
+            $0.persistenceClient.fetchTasks = { [] }
             $0.subscriptionClient.checkEntitlement = { .free }
             $0.subscriptionClient.listenForTransactionUpdates = { AsyncStream { $0.finish() } }
             $0.notificationClient.requestAuthorization = { false }
             $0.notificationClient.observeActions = { .finished }
             $0.watchConnectivityClient.isSupported = { false }
+            $0.watchConnectivityClient.sendTasks = { _ in }
             $0.signInWithAppleClient.checkCredentialState = { _ in false }
             $0.keychainClient.hasTokens = { false }
+            $0.spotlightClient.indexTasks = { _ in }
         }
 
         store.exhaustivity = .off
@@ -121,13 +146,18 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.persistenceClient.fetchCachedUser = { nil }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.generateRecurringTasks = { }
+            $0.persistenceClient.fetchTasks = { [] }
             $0.subscriptionClient.checkEntitlement = { .free }
             $0.subscriptionClient.listenForTransactionUpdates = { AsyncStream { $0.finish() } }
             $0.notificationClient.requestAuthorization = { false }
             $0.notificationClient.observeActions = { .finished }
             $0.watchConnectivityClient.isSupported = { false }
+            $0.watchConnectivityClient.sendTasks = { _ in }
             $0.signInWithAppleClient.checkCredentialState = { _ in false }
             $0.keychainClient.hasTokens = { false }
+            $0.spotlightClient.indexTasks = { _ in }
         }
 
         store.exhaustivity = .off
@@ -282,7 +312,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.watchConnectivityClient.sendSessionState = { _ in }
-            $0.focusClient.start = { _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -293,7 +323,7 @@ struct AppFeatureIntegrationTests {
 
         await store.send(.watchCommandReceived(.startSession(mode: "pomodoro")))
         await store.receive(.focus(.modeSelected(.pomodoro)))
-        await store.receive(.focus(.startTapped))
+        await store.receive(.focus(.startTapped()))
     }
 
     @Test func watchCommandStartSessionWithUnknownModeUsesCurrentMode() async {
@@ -305,7 +335,7 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.watchConnectivityClient.sendSessionState = { _ in }
-            $0.focusClient.start = { _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -316,7 +346,133 @@ struct AppFeatureIntegrationTests {
 
         await store.send(.watchCommandReceived(.startSession(mode: "unknown_mode")))
         await store.receive(.focus(.modeSelected(.flowtime)))
-        await store.receive(.focus(.startTapped))
+        await store.receive(.focus(.startTapped()))
+    }
+
+    // MARK: - Widget Command Reconciliation
+
+    @Test func appBecameActiveConsumesWidgetStartedSessionWithAnchors() async throws {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.pomodoroDuration = 25 * 60
+        let issuedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
+        let timerStart = try #require(AppGroupDefaults.activeSessionTimerStart)
+        let timerEnd = try #require(AppGroupDefaults.activeSessionTimerEnd)
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.appBecameActive)
+        await store.receive(.consumeExternalCommands)
+        await store.receive(.focus(.modeSelected(.pomodoro)))
+        await store.receive(.focus(.startTapped(timerStart: timerStart, timerEnd: timerEnd)))
+
+        #expect(AppGroupDefaults.externalStartRequested == false)
+        #expect(AppGroupDefaults.externalCommandID == nil)
+    }
+
+    @Test func widgetStartedTaskSessionWaitsForTasksBeforeStartingFocus() async throws {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.pomodoroDuration = 25 * 60
+        let taskID = UUID()
+        let issuedAt = Date(timeIntervalSince1970: 1_800_000_100)
+        AppGroupDefaults.startWidgetSession(
+            modeID: "pomodoro",
+            taskID: taskID.uuidString,
+            taskTitle: "Review widget polish",
+            issuedAt: issuedAt
+        )
+        let timerStart = try #require(AppGroupDefaults.activeSessionTimerStart)
+        let timerEnd = try #require(AppGroupDefaults.activeSessionTimerEnd)
+
+        let task = TaskListFeature.TaskItemState(
+            id: taskID,
+            title: "Review widget polish",
+            isCompleted: false,
+            priority: .medium,
+            energyLevel: .deep,
+            estimatedPomodoros: 2,
+            completedPomodoros: 0,
+            subtaskProgress: .init(completed: 0, total: 0),
+            isRecurringTemplate: false,
+            scheduledForToday: true,
+            sortOrder: 0,
+            createdAt: .now
+        )
+        let taskDTO = TaskItemDTO(
+            id: taskID,
+            title: task.title,
+            isCompleted: task.isCompleted,
+            priority: task.priority,
+            energyLevel: task.energyLevel,
+            estimatedPomodoros: task.estimatedPomodoros,
+            completedPomodoros: task.completedPomodoros,
+            sortOrder: task.sortOrder,
+            scheduledForToday: task.scheduledForToday,
+            createdAt: task.createdAt
+        )
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.fetchTasks = { [taskDTO] }
+            $0.persistenceClient.generateRecurringTasks = { }
+            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendTasks = { _ in }
+            $0.spotlightClient.indexTasks = { _ in }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.consumeExternalCommands) {
+            $0.pendingExternalStartModeID = "pomodoro"
+            $0.pendingExternalStartTaskID = taskID.uuidString
+            $0.pendingExternalStartTimerStart = timerStart
+            $0.pendingExternalStartTimerEnd = timerEnd
+        }
+        await store.receive(.tasks(.onAppear)) {
+            $0.tasks.isLoading = true
+        }
+
+        await store.receive(.tasks(.tasksLoaded([task]))) {
+            $0.tasks.tasks = [task]
+            $0.tasks.isLoading = false
+            $0.focus.availableTasks = [task]
+            $0.pendingExternalStartModeID = nil
+            $0.pendingExternalStartTaskID = nil
+            $0.pendingExternalStartTimerStart = nil
+            $0.pendingExternalStartTimerEnd = nil
+        }
+        await store.receive(.focus(.linkTask(taskID, "Review widget polish", "🧠")))
+        await store.receive(.focus(.modeSelected(.pomodoro)))
+        await store.receive(.focus(.startTapped(timerStart: timerStart, timerEnd: timerEnd)))
     }
 
     // MARK: - Celebration Milestones
@@ -484,6 +640,9 @@ struct AppFeatureIntegrationTests {
         store.exhaustivity = .off
 
         await store.send(.settings(.themeChanged("ocean")))
+        await store.receive(.settings(.upgradeTapped)) {
+            $0.focus.showPaywall = true
+        }
         // Settings emits upgradeTapped; AppFeature translates to focus.showPaywall = true
         #expect(store.state.focus.showPaywall == true)
         #expect(store.state.settings.themeName == "default")
