@@ -10,8 +10,10 @@
 
 import Foundation
 import ComposableArchitecture
+#if canImport(WatchConnectivity)
 import WatchConnectivity
 import os.log
+#endif
 
 // MARK: - Shared Value Types
 
@@ -133,6 +135,7 @@ extension DependencyValues {
 
 extension WatchConnectivityClient {
     static let live: WatchConnectivityClient = {
+#if canImport(WatchConnectivity)
         let manager = WatchConnectivityManager.shared
         return WatchConnectivityClient(
             receiveMessages:  { manager.messageStream() },
@@ -143,11 +146,15 @@ extension WatchConnectivityClient {
             sendDashboardStats: { stats in await manager.sendDashboardStats(stats) },
             isSupported:      { WCSession.isSupported() }
         )
+#else
+        return WatchConnectivityClient()
+#endif
     }()
 }
 
 // MARK: - WatchConnectivityManager
 
+#if canImport(WatchConnectivity)
 final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Sendable {
     static let shared = WatchConnectivityManager()
 
@@ -398,3 +405,4 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         )
     }
 }
+#endif

@@ -4,5 +4,5 @@
 import Foundation
 
 enum AppConfig {
-    static let aiInsightsEnabled: Bool = true
+    static let aiInsightsEnabled: Bool = false
 }

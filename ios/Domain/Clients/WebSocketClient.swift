@@ -62,6 +62,7 @@ private final class WebSocketManager: @unchecked Sendable {
     private let syncAll: @Sendable () async throws -> Void
     private var webSocketTask: URLSessionWebSocketTask?
     private var isConnected = false
+    private var isConnecting = false
     private var retryCount = 0
     private var shouldReconnect = false
 
@@ -108,6 +109,7 @@ private final class WebSocketManager: @unchecked Sendable {
             let currentTask = webSocketTask
             webSocketTask = nil
             isConnected = false
+            isConnecting = false
             return currentTask
         }
 
@@ -115,24 +117,37 @@ private final class WebSocketManager: @unchecked Sendable {
     }
 
     private func performConnect() async {
-        guard let token = await loadAccessToken() else { return }
+        let canStart = lock.withLock { () -> Bool in
+            if isConnecting || webSocketTask?.state == .running {
+                return false
+            }
+            isConnecting = true
+            return true
+        }
+        guard canStart else { return }
+
+        guard let token = await loadAccessToken() else {
+            lock.withLock { isConnecting = false }
+            return
+        }
         let deviceId = getOrCreateDeviceId()
 
-        guard let url = URL(string: "\(Self.baseWSURL)?token=\(token)&deviceId=\(deviceId)") else { return }
+        guard let url = URL(string: "\(Self.baseWSURL)?token=\(token)&deviceId=\(deviceId)") else {
+            lock.withLock { isConnecting = false }
+            return
+        }
 
         let session = URLSession(configuration: .default)
         let task = session.webSocketTask(with: url)
 
         lock.withLock {
             webSocketTask = task
-        }
-
-        task.resume()
-
-        lock.withLock {
+            isConnecting = false
             isConnected = true
             retryCount = 0
         }
+
+        task.resume()
 
         await receiveMessages(task: task)
     }
@@ -145,6 +160,10 @@ private final class WebSocketManager: @unchecked Sendable {
             } catch {
                 let shouldRetry = lock.withLock { () -> Bool in
                     isConnected = false
+                    isConnecting = false
+                    if webSocketTask === task {
+                        webSocketTask = nil
+                    }
                     return shouldReconnect
                 }
 
@@ -157,6 +176,10 @@ private final class WebSocketManager: @unchecked Sendable {
 
         let shouldRetry = lock.withLock { () -> Bool in
             isConnected = false
+            isConnecting = false
+            if webSocketTask === task {
+                webSocketTask = nil
+            }
             return shouldReconnect
         }
 

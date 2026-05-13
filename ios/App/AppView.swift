@@ -47,6 +47,9 @@ struct AppView: View {
         .onAppear {
             store.send(.appLaunched)
         }
+        .onOpenURL { url in
+            store.send(.appURLReceived(url))
+        }
         // Paywall sheet
         .sheet(
             isPresented: Binding(

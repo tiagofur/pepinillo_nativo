@@ -46,6 +46,10 @@ struct AppFeature {
         var userEmail: String? = nil
         var cachedUser: CachedUserDTO? = nil
         var isSignedIn: Bool { cachedUser != nil || appleUserID != nil }
+        var pendingExternalStartModeID: String?
+        var pendingExternalStartTaskID: String?
+        var pendingExternalStartTimerStart: Date?
+        var pendingExternalStartTimerEnd: Date?
         var profileSummaryUser: CachedUserDTO? {
             func normalized(_ value: String?) -> String? {
                 guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
@@ -86,7 +90,7 @@ struct AppFeature {
                 birthDate: cachedUser?.birthDate,
                 subscriptionTier: normalized(cachedUser?.subscriptionTier) ?? subscriptionState.capabilities.tierIdentifier,
                 subscriptionExpiresAt: cachedUser?.subscriptionExpiresAt,
-                emailVerified: cachedUser?.emailVerified ?? false,
+                emailVerified: cachedUser?.emailVerified ?? (restoredEmail != nil),
                 appleId: resolvedAppleID,
                 createdAt: cachedUser?.createdAt ?? "",
                 updatedAt: cachedUser?.updatedAt ?? ""
@@ -130,6 +134,8 @@ struct AppFeature {
         case appLaunched
         case appBecameActive
         case appWentToBackground
+        case consumeExternalCommands
+        case appURLReceived(URL)
 
         // Subscription
         case subscriptionStateLoaded(SubscriptionState)
@@ -233,6 +239,42 @@ struct AppFeature {
                     await watchClient.sendTasks(watchTasks)
                 }
             }
+            
+            let startFromExternalRequest: (inout State, String?, String?, Date?, Date?, Bool) -> Effect<Action> = { state, requestedModeID, requestedTaskID, timerStart, timerEnd, canDeferForTaskLoad in
+                state.selectedTab = .focus
+
+                var effects: [Effect<Action>] = []
+                var shouldClearLinkedTask = requestedTaskID != nil
+
+                if let taskIDString = requestedTaskID,
+                   let taskID = UUID(uuidString: taskIDString) {
+                    if let task = state.tasks.tasks[id: taskID] {
+                        shouldClearLinkedTask = false
+                        effects.append(.send(.focus(.linkTask(task.id, task.title, task.energyLevel.emoji))))
+                    } else if canDeferForTaskLoad && state.tasks.tasks.isEmpty {
+                        state.pendingExternalStartModeID = requestedModeID
+                        state.pendingExternalStartTaskID = requestedTaskID
+                        state.pendingExternalStartTimerStart = timerStart
+                        state.pendingExternalStartTimerEnd = timerEnd
+                        return .send(.tasks(.onAppear))
+                    }
+                }
+
+                if shouldClearLinkedTask {
+                    effects.append(.send(.focus(.linkTask(nil, nil, nil))))
+                }
+
+                if let modeID = requestedModeID,
+                   let mode = FocusMode(rawValue: modeID) {
+                    guard mode.isFreeTier || state.focus.isProUser else {
+                        return .send(.focus(.modeSelected(mode)))
+                    }
+                    effects.append(.send(.focus(.modeSelected(mode))))
+                }
+
+                effects.append(.send(.focus(.startTapped(timerStart: timerStart, timerEnd: timerEnd))))
+                return .concatenate(effects)
+            }
 
             switch action {
 
@@ -335,9 +377,13 @@ struct AppFeature {
                     // Connect WebSocket if authenticated
                     .run { [keychain, webSocketClient] _ in
                         guard await keychain.hasTokens() else { return }
-                        await webSocketClient.connect()
+                        await withTaskCancellationHandler {
+                            await webSocketClient.connect()
+                        } onCancel: {
+                            webSocketClient.disconnect()
+                        }
                     }
-                    .cancellable(id: CancelID.webSocket),
+                    .cancellable(id: CancelID.webSocket, cancelInFlight: true),
                     // Watch: listen for commands from the Watch
                     .run { [watchClient] send in
                         guard watchClient.isSupported() else { return }
@@ -352,7 +398,9 @@ struct AppFeature {
                     // Load tasks early so they are available for focus linking
                     .send(.tasks(.onAppear)),
                     // Load analytics early so the Focus companion cards have data on first Focus visit
-                    .send(.analytics(.onAppear))
+                    .send(.analytics(.onAppear)),
+                    // Reconcile widget/intent commands even if they arrived before bootstrap finished.
+                    .send(.consumeExternalCommands)
                 )
 
             case .requestNotificationPermission:
@@ -361,56 +409,105 @@ struct AppFeature {
                 }
 
             case .appBecameActive:
+                return .send(.consumeExternalCommands)
+
+            case .appURLReceived(let url):
+                guard url.scheme == "pepinillo" else { return .none }
+                switch url.host?.lowercased() {
+                case "plan", "tasks":
+                    state.selectedTab = .plan
+                case "focus":
+                    state.selectedTab = .focus
+                case "dashboard", "analytics":
+                    state.selectedTab = .dashboard
+                default:
+                    break
+                }
+                return .none
+
+            case .consumeExternalCommands:
                 // Check for external commands from Siri, widgets, or Control Center
-                if AppGroupDefaults.externalStartRequested && !state.focus.isRunning {
-                    let requestedModeID = AppGroupDefaults.requestedMode
-                    AppGroupDefaults.clearExternalCommands()
+                if AppGroupDefaults.externalStartRequested {
+                    let requestedModeID = AppGroupDefaults.requestedMode ?? AppGroupDefaults.activeModeName
+                    let requestedTaskID = AppGroupDefaults.requestedTaskID
+                    let timerStart = AppGroupDefaults.activeSessionTimerStart
+                    let timerEnd = AppGroupDefaults.activeSessionTimerEnd
                     
-                    if let modeID = requestedModeID,
-                       let mode = FocusMode(rawValue: modeID) {
-                        guard mode.isFreeTier || state.focus.isProUser else {
-                            return .send(.focus(.modeSelected(mode)))
-                        }
+                    AppGroupDefaults.clearExternalCommands()
+                    state.pendingExternalStartModeID = nil
+                    state.pendingExternalStartTaskID = nil
+                    
+                    if state.focus.isRunning {
+                        // Stop current session before starting a new one from an external request
                         return .concatenate(
-                            .send(.focus(.modeSelected(mode))),
-                            .send(.focus(.startTapped))
+                            .send(.focus(.stopTapped)),
+                            startFromExternalRequest(&state, requestedModeID, requestedTaskID, timerStart, timerEnd, true)
                         )
+                    } else {
+                        return startFromExternalRequest(&state, requestedModeID, requestedTaskID, timerStart, timerEnd, true)
                     }
-                    return .send(.focus(.startTapped))
                 }
                 
-                if AppGroupDefaults.externalStopRequested && state.focus.isRunning {
+                if AppGroupDefaults.externalStopRequested {
                     AppGroupDefaults.clearExternalCommands()
-                    return .send(.focus(.stopTapped))
+                    return state.focus.isRunning ? .send(.focus(.stopTapped)) : .none
                 }
                 
-                if AppGroupDefaults.externalResumeRequested && state.focus.isRunning && state.focus.isPaused {
+                if AppGroupDefaults.externalResumeRequested {
+                    let liveElapsed = AppGroupDefaults.activeSessionLiveElapsed()
+                    let liveRemaining = AppGroupDefaults.activeSessionLiveRemaining()
                     AppGroupDefaults.clearExternalCommands()
-                    return .send(.focus(.resumeTapped))
+                    guard state.focus.isRunning else { return .none }
+                    return .send(.focus(.externalResumeApplied(
+                        elapsed: liveElapsed,
+                        remaining: liveRemaining
+                    )))
                 }
                 
-                if AppGroupDefaults.externalPauseRequested && state.focus.isRunning {
-                    let frozenElapsed = AppGroupDefaults.activeSessionElapsed
-                    let frozenRemaining = AppGroupDefaults.activeSessionRemaining
+                if AppGroupDefaults.externalPauseRequested {
+                    let frozenElapsed = AppGroupDefaults.activeSessionLiveElapsed()
+                    let frozenRemaining = AppGroupDefaults.activeSessionLiveRemaining()
+                    let pausedAt = AppGroupDefaults.activeSessionPausedAt ?? Date.now
                     AppGroupDefaults.clearExternalCommands()
-                    
-                    return .run { [isPaused = state.focus.isPaused, frozenElapsed, frozenRemaining, focusClient] send in
-                        if isPaused {
-                            await send(.focus(.resumeTapped))
-                        } else {
-                            await send(.focus(.pauseTapped))
-                            await focusClient.syncExternalState(frozenElapsed, frozenRemaining)
-                        }
-                    }
+                    guard state.focus.isRunning else { return .none }
+
+                    return .send(.focus(.externalPauseApplied(
+                        elapsed: frozenElapsed,
+                        remaining: frozenRemaining,
+                        pausedAt: pausedAt
+                    )))
                 }
                 
                 AppGroupDefaults.clearExternalCommands()
-                // Reconnect WebSocket if authenticated
-                return .run { [keychain, webSocketClient] _ in
-                    guard await keychain.hasTokens() else { return }
-                    await webSocketClient.connect()
+                
+                // Sync idle mode selection from widget to app if no session is running
+                if !state.focus.isRunning, let widgetModeID = AppGroupDefaults.widgetSelectedMode,
+                   let widgetMode = FocusMode(rawValue: widgetModeID),
+                   widgetMode != state.focus.selectedMode {
+                    return .send(.focus(.modeSelected(widgetMode)))
                 }
-                .cancellable(id: CancelID.webSocket)
+
+                // Reconnect WebSocket if authenticated
+                let timerSync: Effect<Action> = {
+                    guard state.focus.isRunning, AppGroupDefaults.isSessionActive else { return .none }
+                    let liveElapsed = AppGroupDefaults.activeSessionLiveElapsed()
+                    let liveRemaining = AppGroupDefaults.activeSessionLiveRemaining()
+                    return .run { [focusClient] _ in
+                        await focusClient.syncExternalState(liveElapsed, liveRemaining)
+                    }
+                }()
+                return .merge(
+                    timerSync,
+                    .run { [keychain, webSocketClient] _ in
+                        guard await keychain.hasTokens() else { return }
+                        await withTaskCancellationHandler {
+                            await webSocketClient.connect()
+                        } onCancel: {
+                            webSocketClient.disconnect()
+                        }
+                    }
+                    .cancellable(id: CancelID.webSocket, cancelInFlight: true)
+                )
 
             case .appWentToBackground:
                 webSocketClient.disconnect()
@@ -429,6 +526,7 @@ struct AppFeature {
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
+                AppGroupDefaults.userCapabilities = effectiveSub.capabilities
                 AppGroupDefaults.isProUser = isPro
                 AppGroupDefaults.canBackendSync = canSync
                 if isPro { state.focus.showPaywall = false }
@@ -449,8 +547,10 @@ struct AppFeature {
                 state.settings.isProUser = isPro
                 state.analytics.isProUser = isPro
                 state.tasks.isProUser = isPro
+                AppGroupDefaults.userCapabilities = effectiveSub.capabilities
                 AppGroupDefaults.isProUser = isPro
                 AppGroupDefaults.canBackendSync = canSync
+                if isPro { state.focus.showPaywall = false }
                 return .run { _ in
                     WidgetCenter.shared.reloadAllTimelines()
                 }
@@ -726,7 +826,7 @@ struct AppFeature {
                         await notificationClient.scheduleBreakEnd(breakMinutes)
                     }
                 case .startSession:
-                    return .send(.focus(.startTapped))
+                    return .send(.focus(.startTapped()))
                 case .pauseSession:
                     if state.focus.isPaused {
                         return .send(.focus(.resumeTapped))
@@ -745,9 +845,9 @@ struct AppFeature {
                 switch command {
                 case .startSession(let modeID):
                     let mode = FocusMode(rawValue: modeID) ?? state.focus.selectedMode
-                    return .merge(
+                    return .concatenate(
                         .send(.focus(.modeSelected(mode))),
-                        .send(.focus(.startTapped))
+                        .send(.focus(.startTapped()))
                     )
                 case .pauseSession:
                     return .send(.focus(.pauseTapped))
@@ -826,7 +926,8 @@ struct AppFeature {
                     await watchClient.sendSessionState(watchState)
                 }
 
-            case .focus(.pauseTapped), .focus(.resumeTapped):
+            case .focus(.pauseTapped), .focus(.resumeTapped),
+                 .focus(.externalPauseApplied), .focus(.externalResumeApplied):
                 let watchState = WatchSessionState(from: state.focus)
                 return .run { [watchClient, watchState] _ in
                     await watchClient.sendSessionState(watchState)
@@ -876,6 +977,22 @@ struct AppFeature {
 
             case .tasks(.tasksLoaded):
                 state.focus.availableTasks = state.tasks.tasks
+                if state.pendingExternalStartModeID != nil || state.pendingExternalStartTaskID != nil {
+                    let requestedModeID = state.pendingExternalStartModeID
+                    let requestedTaskID = state.pendingExternalStartTaskID
+                    let timerStart = state.pendingExternalStartTimerStart
+                    let timerEnd = state.pendingExternalStartTimerEnd
+                    
+                    state.pendingExternalStartModeID = nil
+                    state.pendingExternalStartTaskID = nil
+                    state.pendingExternalStartTimerStart = nil
+                    state.pendingExternalStartTimerEnd = nil
+                    
+                    return .merge(
+                        pushTasksToWatch(state),
+                        startFromExternalRequest(&state, requestedModeID, requestedTaskID, timerStart, timerEnd, false)
+                    )
+                }
                 return pushTasksToWatch(state)
 
             case .tasks(.startFocusOnTask(let taskID)):
@@ -883,7 +1000,7 @@ struct AppFeature {
                     state.selectedTab = .focus
                     return .merge(
                         .send(.focus(.linkTask(taskID, task.title, task.energyLevel.emoji))),
-                        .send(.focus(.startTapped))
+                        .send(.focus(.startTapped()))
                     )
                 }
                 return .none
@@ -951,9 +1068,9 @@ struct AppFeature {
                     state.selectedTab = .focus
                     var effects: [Effect<Action>] = [.send(.focus(.modeSelected(mode)))]
                     if isRunning && !state.focus.isRunning {
-                        effects.append(.send(.focus(.startTapped)))
+                        effects.append(.send(.focus(.startTapped())))
                     }
-                    return .merge(effects)
+                    return .concatenate(effects)
                 }
                 state.selectedTab = .focus
                 return .none
@@ -971,6 +1088,10 @@ struct AppFeature {
                 // Keep focus task list in sync after mutations
                 state.focus.availableTasks = state.tasks.tasks
                 return pushTasksToWatch(state)
+
+            case .tasks(.delegate(.showPaywall)):
+                state.focus.showPaywall = true
+                return .none
 
             case .focus, .tasks, .analytics, .settings:
                 return .none

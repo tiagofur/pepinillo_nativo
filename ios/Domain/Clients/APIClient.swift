@@ -82,9 +82,11 @@ extension APIClient: DependencyKey {
                 try await helper.authenticatedPost("sync/initial-upload", body: request)
             },
             getFullSync: { taskCursor, sessionCursor, limit in
-                var path = "sync/full?limit=\(limit)"
-                if let tc = taskCursor { path += "&taskCursor=\(tc)" }
-                if let sc = sessionCursor { path += "&sessionCursor=\(sc)" }
+                let path = APIHelper.fullSyncPath(
+                    taskCursor: taskCursor,
+                    sessionCursor: sessionCursor,
+                    limit: limit
+                )
                 return try await helper.authenticatedGet(path)
             },
             deleteAccount: { try await helper.authenticatedDeleteVoid("auth/account") }
@@ -111,6 +113,28 @@ private struct APIHelper: Sendable {
         return "https://api.ppn.creapolis.dev/api/v1"
     }()
 
+    static func fullSyncPath(taskCursor: String?, sessionCursor: String?, limit: Int) -> String {
+        var components = URLComponents()
+        components.path = "sync/full"
+        components.queryItems = [
+            URLQueryItem(name: "limit", value: String(limit))
+        ]
+        if let taskCursor {
+            components.queryItems?.append(URLQueryItem(name: "taskCursor", value: taskCursor))
+        }
+        if let sessionCursor {
+            components.queryItems?.append(URLQueryItem(name: "sessionCursor", value: sessionCursor))
+        }
+        return components.string ?? "sync/full?limit=\(limit)"
+    }
+
+    private func makeURL(_ path: String) throws -> URL {
+        guard let url = URL(string: "\(Self.baseURL)/\(path)") else {
+            throw APIClientError.invalidURL
+        }
+        return url
+    }
+
     private var encoder: JSONEncoder {
         let encoder = JSONEncoder()
         encoder.keyEncodingStrategy = .convertToSnakeCase
@@ -129,7 +153,7 @@ private struct APIHelper: Sendable {
         _ path: String,
         body: Req
     ) async throws -> Res {
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        var request = URLRequest(url: try makeURL(path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try encoder.encode(body)
@@ -143,7 +167,7 @@ private struct APIHelper: Sendable {
         _ path: String,
         body: Req
     ) async throws {
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        var request = URLRequest(url: try makeURL(path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try encoder.encode(body)
@@ -157,7 +181,7 @@ private struct APIHelper: Sendable {
     func authenticatedGet<Res: Decodable & Sendable>(
         _ path: String
     ) async throws -> Res {
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        var request = URLRequest(url: try makeURL(path))
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -168,7 +192,7 @@ private struct APIHelper: Sendable {
         _ path: String,
         body: Req
     ) async throws -> Res {
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        var request = URLRequest(url: try makeURL(path))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try encoder.encode(body)
@@ -180,7 +204,7 @@ private struct APIHelper: Sendable {
         _ path: String,
         body: Req
     ) async throws -> Res {
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        var request = URLRequest(url: try makeURL(path))
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try encoder.encode(body)
@@ -191,7 +215,7 @@ private struct APIHelper: Sendable {
     func authenticatedDeleteVoid(
         _ path: String
     ) async throws {
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        var request = URLRequest(url: try makeURL(path))
         request.httpMethod = "DELETE"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -224,7 +248,7 @@ private struct APIHelper: Sendable {
         mimeType: String
     ) async throws -> Res {
         let boundary = "Boundary-\(UUID().uuidString)"
-        var request = URLRequest(url: URL(string: "\(Self.baseURL)/\(path)")!)
+        var request = URLRequest(url: try makeURL(path))
         request.httpMethod = "POST"
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 

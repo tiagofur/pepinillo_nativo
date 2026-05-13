@@ -82,6 +82,7 @@ extension SyncClient: DependencyKey {
                 @Dependency(\.syncClient) var syncClient
                 try await syncClient.syncSettings()
                 try await syncClient.syncTasks()
+                try await syncClient.syncSessions()
 
             },
             syncTasks: {

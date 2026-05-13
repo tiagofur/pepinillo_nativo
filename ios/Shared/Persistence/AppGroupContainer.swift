@@ -78,6 +78,7 @@ enum AppGroup {
 
 enum AppGroupDefaults {
     private static var defaults: UserDefaults? { UserDefaults(suiteName: AppGroup.id) }
+    private static let userCapabilitiesKey = "userCapabilities"
 
     /// Whether the user has an active Pro subscription (read by widgets, extensions).
     static var isProUser: Bool {
@@ -91,6 +92,28 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "canBackendSync") }
     }
 
+    /// Full capability payload shared with widgets and extensions.
+    static var userCapabilities: UserCapabilities? {
+        get {
+            guard let data = defaults?.data(forKey: userCapabilitiesKey) else { return nil }
+            return try? JSONDecoder().decode(UserCapabilities.self, from: data)
+        }
+        set {
+            guard let newValue else {
+                defaults?.removeObject(forKey: userCapabilitiesKey)
+                isProUser = false
+                canBackendSync = false
+                return
+            }
+
+            if let data = try? JSONEncoder().encode(newValue) {
+                defaults?.set(data, forKey: userCapabilitiesKey)
+            }
+            isProUser = newValue.hasAnyPremium
+            canBackendSync = newValue.backendSync
+        }
+    }
+
     /// Whether a focus session is currently active (read by widgets, Control Center, Siri).
     static var isSessionActive: Bool {
         get { defaults?.bool(forKey: "isSessionActive") ?? false }
@@ -101,6 +124,30 @@ enum AppGroupDefaults {
     static var externalStartRequested: Bool {
         get { defaults?.bool(forKey: "externalStartRequested") ?? false }
         set { defaults?.set(newValue, forKey: "externalStartRequested") }
+    }
+
+    /// Unique command identifier used to avoid losing or double-consuming widget commands.
+    static var externalCommandID: String? {
+        get { defaults?.string(forKey: "externalCommandID") }
+        set {
+            if let newValue {
+                defaults?.set(newValue, forKey: "externalCommandID")
+            } else {
+                defaults?.removeObject(forKey: "externalCommandID")
+            }
+        }
+    }
+
+    /// Timestamp for the latest external command.
+    static var externalCommandIssuedAt: Date? {
+        get { defaults?.object(forKey: "externalCommandIssuedAt") as? Date }
+        set {
+            if let newValue {
+                defaults?.set(newValue, forKey: "externalCommandIssuedAt")
+            } else {
+                defaults?.removeObject(forKey: "externalCommandIssuedAt")
+            }
+        }
     }
 
     /// External stop request (from Siri, widget, Control Center).
@@ -131,6 +178,31 @@ enum AppGroupDefaults {
     static var requestedTaskID: String? {
         get { defaults?.string(forKey: "requestedTaskID") }
         set { defaults?.set(newValue, forKey: "requestedTaskID") }
+    }
+
+    /// The focus mode currently selected in the widget (interactive selection).
+    static var widgetSelectedMode: String? {
+        get { defaults?.string(forKey: "widgetSelectedMode") }
+        set { defaults?.set(newValue, forKey: "widgetSelectedMode") }
+    }
+
+    /// Cached pomodoro duration for widget proactive starts.
+    static var pomodoroDuration: Double {
+        get { positiveDouble(forKey: "pomodoroDuration", defaultValue: 25 * 60) }
+        set { defaults?.set(newValue, forKey: "pomodoroDuration") }
+    }
+
+    /// Cached block duration for widget proactive starts.
+    static var blockDuration: Double {
+        get { positiveDouble(forKey: "blockDuration", defaultValue: 60 * 60) }
+        set { defaults?.set(newValue, forKey: "blockDuration") }
+    }
+
+    private static func positiveDouble(forKey key: String, defaultValue: Double) -> Double {
+        guard let value = defaults?.object(forKey: key) as? Double, value > 0 else {
+            return defaultValue
+        }
+        return value
     }
 
     /// Active session mode name (written by main app on start, read by Shortcuts).
@@ -223,6 +295,20 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "activeSessionIsPaused") }
     }
 
+    /// Whether the visible session was started optimistically by a widget before
+    /// the app reconciled it into the FocusEngine.
+    static var activeSessionStartedFromWidget: Bool {
+        get { defaults?.bool(forKey: "activeSessionStartedFromWidget") ?? false }
+        set { defaults?.set(newValue, forKey: "activeSessionStartedFromWidget") }
+    }
+
+    /// Timestamp of an externally-applied pause. The app uses this to reconcile
+    /// the engine as if the pause happened when the widget was tapped.
+    static var activeSessionPausedAt: Date? {
+        get { defaults?.object(forKey: "activeSessionPausedAt") as? Date }
+        set { defaults?.set(newValue, forKey: "activeSessionPausedAt") }
+    }
+
     /// Linked task ID for the active session (UUID string, read by Tasks widget for highlight).
     static var activeTaskID: String? {
         get { defaults?.string(forKey: "activeTaskID") }
@@ -241,6 +327,81 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "activeSessionTimerEnd") }
     }
 
+    /// Elapsed seconds derived from the current widget timer anchors.
+    static func activeSessionLiveElapsed(at date: Date = Date.now) -> TimeInterval {
+        if activeSessionIsPaused {
+            return activeSessionElapsed
+        }
+        if let start = activeSessionTimerStart {
+            return max(0, date.timeIntervalSince(start))
+        }
+        return activeSessionElapsed
+    }
+
+    /// Remaining seconds derived from the current widget timer anchors.
+    static func activeSessionLiveRemaining(at date: Date = Date.now) -> TimeInterval? {
+        if activeSessionIsPaused {
+            return activeSessionRemaining
+        }
+        if let end = activeSessionTimerEnd {
+            return max(0, end.timeIntervalSince(date))
+        }
+        return activeSessionRemaining
+    }
+
+    /// Write a complete optimistic session snapshot so widgets can switch to
+    /// running immediately, while the app later starts the real FocusEngine.
+    static func startWidgetSession(
+        modeID: String,
+        taskID: String? = nil,
+        taskTitle: String? = nil,
+        issuedAt: Date = Date.now
+    ) {
+        let duration: TimeInterval
+        switch modeID {
+        case "pomodoro":
+            duration = pomodoroDuration
+        case "timeBlock":
+            duration = blockDuration
+        default:
+            duration = 0
+        }
+
+        externalCommandID = UUID().uuidString
+        externalCommandIssuedAt = issuedAt
+        externalStopRequested = false
+        externalPauseRequested = false
+        externalResumeRequested = false
+        requestedMode = modeID
+        requestedTaskID = taskID
+
+        isSessionActive = true
+        activeSessionStartedFromWidget = true
+        activeModeName = modeID
+        widgetSelectedMode = modeID
+        activeTaskID = taskID
+        activeSessionTaskTitle = taskTitle
+        activeSessionTimerStart = issuedAt
+        activeSessionElapsed = 0
+        activeSessionIsPaused = false
+        activeSessionPausedAt = nil
+
+        if duration > 0 {
+            activeSessionTimerEnd = issuedAt.addingTimeInterval(duration)
+            activeSessionRemaining = duration
+            activeSessionProgress = 0
+        } else {
+            activeSessionTimerEnd = nil
+            activeSessionRemaining = nil
+            activeSessionProgress = nil
+        }
+
+        activeSessionPhase = nil
+        activeSessionPomodoroNumber = modeID == "pomodoro" ? 1 : nil
+        activeSessionTotalPomodoros = nil
+        externalStartRequested = true
+    }
+
     /// Clear all external command flags after processing.
     static func clearExternalCommands() {
         defaults?.set(false, forKey: "externalStartRequested")
@@ -250,6 +411,8 @@ enum AppGroupDefaults {
         defaults?.set(false, forKey: "controlCenterToggleRequested")
         defaults?.removeObject(forKey: "requestedMode")
         defaults?.removeObject(forKey: "requestedTaskID")
+        defaults?.removeObject(forKey: "externalCommandID")
+        defaults?.removeObject(forKey: "externalCommandIssuedAt")
     }
 
     /// Clear active session info when session ends.
@@ -266,6 +429,8 @@ enum AppGroupDefaults {
         defaults?.removeObject(forKey: "activeSessionTimerStart")
         defaults?.removeObject(forKey: "activeSessionTimerEnd")
         defaults?.set(false, forKey: "activeSessionIsPaused")
+        defaults?.set(false, forKey: "activeSessionStartedFromWidget")
+        defaults?.removeObject(forKey: "activeSessionPausedAt")
         defaults?.removeObject(forKey: "activeTaskID")
     }
 }

@@ -12,7 +12,7 @@ import ComposableArchitecture
 @DependencyClient
 public struct FocusClient: Sendable {
     /// Start a new focus session.
-    public var start: @Sendable (FocusMode, FocusConfig, UUID?, TimeInterval?) async -> Void
+    public var start: @Sendable (FocusMode, FocusConfig, UUID?, TimeInterval?, Date?, Date?) async -> Void
     /// Pause the active session.
     public var pause: @Sendable () async -> Void
     /// Resume a paused session.
@@ -33,6 +33,10 @@ public struct FocusClient: Sendable {
     public var resetForNewDay: @Sendable () async -> Void = {}
     /// Sync with an external state change (e.g. from a widget) to align internal timing anchors.
     public var syncExternalState: @Sendable (TimeInterval, TimeInterval?) async -> Void = { _, _ in }
+    /// Apply a pause that happened outside the app at a specific timestamp.
+    public var applyExternalPause: @Sendable (TimeInterval, TimeInterval?, Date) async -> Void = { _, _, _ in }
+    /// Apply a resume that happened outside the app and reconcile live elapsed/remaining.
+    public var applyExternalResume: @Sendable (TimeInterval, TimeInterval?) async -> Void = { _, _ in }
 }
 
 // MARK: - Dependency Registration
@@ -43,12 +47,14 @@ extension FocusClient: DependencyKey {
         let engine = FocusEngine()
 
         return FocusClient(
-            start: { mode, config, taskID, duration in
+            start: { mode, config, taskID, duration, timerStart, timerEnd in
                 await engine.start(
                     mode: mode,
                     config: config,
                     linkedTaskID: taskID,
-                    customDuration: duration
+                    customDuration: duration,
+                    timerStart: timerStart,
+                    timerEnd: timerEnd
                 )
             },
             pause: {
@@ -80,12 +86,18 @@ extension FocusClient: DependencyKey {
             },
             syncExternalState: { elapsed, remaining in
                 await engine.syncExternalState(elapsed: elapsed, remaining: remaining)
+            },
+            applyExternalPause: { elapsed, remaining, pausedAt in
+                await engine.applyExternalPause(elapsed: elapsed, remaining: remaining, pausedAt: pausedAt)
+            },
+            applyExternalResume: { elapsed, remaining in
+                await engine.applyExternalResume(elapsed: elapsed, remaining: remaining)
             }
         )
         #else
         // watchOS uses WatchConnectivity instead of local FocusEngine
         return FocusClient(
-            start: { _, _, _, _ in },
+            start: { _, _, _, _, _, _ in },
             pause: {},
             resume: {},
             stop: { _ in },
@@ -95,12 +107,18 @@ extension FocusClient: DependencyKey {
             events: { .finished },
             currentState: { nil },
             resetForNewDay: {},
-            syncExternalState: { _, _ in }
+            syncExternalState: { _, _ in },
+            applyExternalPause: { _, _, _ in },
+            applyExternalResume: { _, _ in }
         )
         #endif
     }()
 
-    public static let testValue = FocusClient()
+    public static let testValue: FocusClient = {
+        var client = FocusClient()
+        client.start = { _, _, _, _, _, _ in }
+        return client
+    }()
 }
 
 extension DependencyValues {

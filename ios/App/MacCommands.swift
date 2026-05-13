@@ -19,7 +19,7 @@ struct PepinilloCommands: Commands {
             Button(String(localized: "menu.focus.startpause", defaultValue: "Start / Pause")) {
                 let focus = store.focus
                 if !focus.isRunning {
-                    store.send(.focus(.startTapped))
+                    store.send(.focus(.startTapped()))
                 } else if focus.isPaused {
                     store.send(.focus(.resumeTapped))
                 } else {
@@ -86,7 +86,6 @@ struct PepinilloCommands: Commands {
             Button(String(localized: "menu.view.settings", defaultValue: "Settings")) {
                 store.send(.tabSelected(.account))
             }
-            .keyboardShortcut(",", modifiers: .command)
         }
     }
 }

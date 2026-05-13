@@ -18,6 +18,13 @@
 import Foundation
 import Sentry
 
+protocol BundleInfoProviding {
+    var bundleIdentifier: String? { get }
+    func object(forInfoDictionaryKey key: String) -> Any?
+}
+
+extension Bundle: BundleInfoProviding {}
+
 enum SentryService {
 
     /// Start Sentry if a DSN is available and the build isn't excluded.
@@ -48,7 +55,7 @@ enum SentryService {
 
     // MARK: - Resolution helpers (internal for testability)
 
-    static func resolveDSN(bundle: Bundle) -> String? {
+    static func resolveDSN(bundle: BundleInfoProviding) -> String? {
         guard let raw = bundle.object(forInfoDictionaryKey: "SENTRY_DSN") as? String else {
             return nil
         }
@@ -68,13 +75,13 @@ enum SentryService {
         return trimmed
     }
 
-    static func resolveEnvironment(bundle: Bundle) -> String {
+    static func resolveEnvironment(bundle: BundleInfoProviding) -> String {
         (bundle.object(forInfoDictionaryKey: "APP_ENVIRONMENT") as? String)
             .flatMap { $0.isEmpty ? nil : $0 }
             ?? "unknown"
     }
 
-    static func resolveReleaseName(bundle: Bundle) -> String {
+    static func resolveReleaseName(bundle: BundleInfoProviding) -> String {
         let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0"
         let build = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
         let identifier = bundle.bundleIdentifier ?? "com.pepinillo.app"

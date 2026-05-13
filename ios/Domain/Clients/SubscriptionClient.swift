@@ -178,7 +178,11 @@ private actor SubscriptionManager {
         guard !isConfigured else { return }
         isConfigured = true
 
+        #if DEBUG
         Purchases.logLevel = .debug
+        #else
+        Purchases.logLevel = .warn
+        #endif
         Purchases.configure(withAPIKey: apiKey, appUserID: userID)
     }
 
@@ -345,7 +349,7 @@ private actor SubscriptionManager {
             }
 
             // Legacy subscription → grandfather to Everywhere+
-            if expiryDate!.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
+            if let expiryDate, expiryDate.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
                 return SubscriptionState(
                     capabilities: .everywherePlus,
                     activeProductID: customerInfo.activeSubscriptions.first,
