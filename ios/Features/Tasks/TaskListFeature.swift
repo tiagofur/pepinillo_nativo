@@ -138,6 +138,7 @@ struct TaskListFeature {
     enum Action: Equatable {
         case onAppear
         case tasksLoaded([TaskItemState])
+        case tasksLoadFailed(String)
         case filterChanged(TaskFilter)
         case planFilterSelected(PlanFilter)
         case energyFilterChanged(EnergyFilter)
@@ -155,6 +156,15 @@ struct TaskListFeature {
         case recurrenceChanged(UUID, String?)
         case taskScheduledForToday(UUID, Bool)
         case startFocusOnTask(UUID)
+
+        // Delegation
+        case delegate(Delegate)
+        enum Delegate: Equatable {
+            case startFocus(UUID, String)
+            case taskDeleted(UUID)
+            case taskCompletionChanged(UUID, Bool)
+            case showPaywall
+        }
 
         // Task detail sheet
         case detail(PresentationAction<TaskDetailFeature.Action>)
@@ -181,10 +191,14 @@ struct TaskListFeature {
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
                 return .run { send in
-                    try await persistence.generateRecurringTasks()
-                    let items = try await persistence.fetchTasks()
-                    let states = items.map { TaskItemState.from($0) }
-                    await send(.tasksLoaded(states))
+                    do {
+                        try await persistence.generateRecurringTasks()
+                        let items = try await persistence.fetchTasks()
+                        let states = items.map { TaskItemState.from($0) }
+                        await send(.tasksLoaded(states))
+                    } catch {
+                        await send(.tasksLoadFailed(error.localizedDescription))
+                    }
                 }
 
             case .tasksLoaded(let tasks):
@@ -203,6 +217,11 @@ struct TaskListFeature {
                     try? await spotlight.indexTasks(dtos)
                 }
 
+            case .tasksLoadFailed(let message):
+                state.isLoading = false
+                state.importError = message
+                return .none
+
             case .filterChanged(let filter):
                 state.filter = filter
                 return .none
@@ -210,7 +229,8 @@ struct TaskListFeature {
             case .planFilterSelected(let filter):
                 state.selectedPlanFilter = filter
                 // Clear detail column selection when switching filters
-                if state.detail != nil {
+                if let currentDetail = state.detail {
+                    state.tasks[id: currentDetail.taskID] = TaskItemState.from(currentDetail.toDTO())
                     state.detail = nil
                     state.selectedTaskID = nil
                 }
@@ -268,6 +288,11 @@ struct TaskListFeature {
                 }
 
             case .taskTapped(let id):
+                // Sync current detail back to the list before swapping
+                if let currentDetail = state.detail {
+                    state.tasks[id: currentDetail.taskID] = TaskItemState.from(currentDetail.toDTO())
+                }
+                
                 guard let task = state.tasks[id: id] else { return .none }
                 state.selectedTaskID = id
                 var detailState = TaskDetailFeature.State(from: task)
@@ -426,6 +451,14 @@ struct TaskListFeature {
                 state.tasks[id: id]?.isCompleted = isCompleted
                 return .none
 
+            case .detail(.presented(.delegate(.taskUpdated(let dto)))):
+                // Sync any change from the detail back to the list row
+                state.tasks[id: dto.id] = TaskItemState.from(dto)
+                return .none
+
+            case .detail(.presented(.delegate(.showPaywall))):
+                return .send(.delegate(.showPaywall))
+
             case .detail(.dismiss):
                 // Reload to reflect all changes made in the detail sheet
                 return .run { send in
@@ -475,6 +508,9 @@ struct TaskListFeature {
 
             case .importErrorDismissed:
                 state.importError = nil
+                return .none
+
+            case .delegate:
                 return .none
             }
         }

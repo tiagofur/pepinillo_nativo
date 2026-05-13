@@ -101,6 +101,8 @@ struct TaskDetailFeature {
         case allSubtasksCompletedPromptDismissed
         case allSubtasksCompletedConfirmed
 
+        case paywallTapped
+
         // Task Analytics
         case viewAnalyticsTapped
         case taskAnalytics(PresentationAction<TaskAnalyticsFeature.Action>)
@@ -118,6 +120,8 @@ struct TaskDetailFeature {
             case startFocus(UUID, String)
             case taskDeleted(UUID)
             case taskCompletionChanged(UUID, Bool)
+            case taskUpdated(TaskItemDTO)
+            case showPaywall
         }
     }
 
@@ -180,7 +184,9 @@ struct TaskDetailFeature {
 
             case .recurrenceChanged(let rule):
                 // Recurrence is a Pro feature
-                guard state.isProUser || rule == nil else { return .none }
+                if rule != nil && !state.isProUser {
+                    return .send(.delegate(.showPaywall))
+                }
                 state.recurrenceRule = rule
                 return save(state)
 
@@ -242,9 +248,14 @@ struct TaskDetailFeature {
                 state.subtasks.remove(id: id)
                 return .run { _ in try await persistence.deleteSubtask(id) }
 
+            case .paywallTapped:
+                return .send(.delegate(.showPaywall))
+
             case .viewAnalyticsTapped:
                 // Task analytics are a Pro feature
-                guard state.isProUser else { return .none }
+                guard state.isProUser else {
+                    return .send(.delegate(.showPaywall))
+                }
                 state.taskAnalytics = TaskAnalyticsFeature.State(
                     taskID: state.taskID,
                     taskTitle: state.title
@@ -294,6 +305,9 @@ struct TaskDetailFeature {
 
     private func save(_ state: State) -> Effect<Action> {
         let dto = state.toDTO()
-        return .run { _ in try await persistence.saveTask(dto) }
+        return .merge(
+            .run { _ in try await persistence.saveTask(dto) },
+            .send(.delegate(.taskUpdated(dto)))
+        )
     }
 }

@@ -175,18 +175,36 @@ struct TaskDetailView: View {
                     }
                 }
 
-                TextField(
-                    String(localized: "Add subtask…"),
-                    text: Binding(
-                        get: { store.newSubtaskTitle },
-                        set: { store.send(.newSubtaskTitleChanged($0)) }
+                if store.isProUser {
+                    TextField(
+                        String(localized: "Add subtask…"),
+                        text: Binding(
+                            get: { store.newSubtaskTitle },
+                            set: { store.send(.newSubtaskTitleChanged($0)) }
+                        )
                     )
-                )
-                .focused($focusedField, equals: .subtask)
-                .submitLabel(.done)
-                .onSubmit { store.send(.addSubtaskTapped) }
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
+                    .focused($focusedField, equals: .subtask)
+                    .submitLabel(.done)
+                    .onSubmit { store.send(.addSubtaskTapped) }
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
+                } else {
+                    Button {
+                        store.send(.paywallTapped)
+                    } label: {
+                        HStack {
+                            Image(systemName: "lock.fill")
+                                .font(.caption2)
+                            Text(String(localized: "Subtasks (Pepinillo+)"))
+                                .font(.body)
+                            Spacer()
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 8)
+                        .padding(.top, 4)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
             .padding(16)
             .pepinilloGlass()
@@ -318,6 +336,7 @@ struct TaskDetailView: View {
                         .foregroundStyle(.red)
                     }
                 } else {
+                if store.isProUser {
                     Menu {
                         ForEach(RecurrencePreset.allCases, id: \.self) { preset in
                             Button {
@@ -330,6 +349,22 @@ struct TaskDetailView: View {
                         Label(String(localized: "Set Repeat"), systemImage: "arrow.clockwise")
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                } else {
+                    Button {
+                        store.send(.paywallTapped)
+                    } label: {
+                        HStack {
+                            Label(String(localized: "Set Repeat (Pepinillo+)"), systemImage: "arrow.clockwise")
+                            Spacer()
+                            Image(systemName: "lock.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                }
                 }
             }
             .padding(16)
@@ -351,6 +386,8 @@ struct TaskDetailView: View {
                 )
             )
             .focused($focusedField, equals: .notes)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
             .frame(minHeight: 120)
             .padding(12)
             .pepinilloGlass()
