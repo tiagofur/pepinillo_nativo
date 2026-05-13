@@ -409,6 +409,7 @@ public enum APIClientError: Error, Equatable, Sendable {
     case invalidRefreshToken
     case sessionExpired
     case networkError
+    case invalidURL
     case serverError(Int)
     case unknown(String)
     case invalidResetCode
@@ -423,6 +424,7 @@ public enum APIClientError: Error, Equatable, Sendable {
         case .missingRequiredFields: return "Please fill in all fields"
         case .invalidRefreshToken, .sessionExpired: return "Session expired. Please sign in again."
         case .networkError: return "No internet connection. You can still use the app offline."
+        case .invalidURL: return "Unable to connect to the server. Please try again later."
         case .serverError: return "Server error. Please try again later."
         case .unknown(let msg): return msg
         case .invalidResetCode: return "Invalid reset code. Please check and try again."

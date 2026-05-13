@@ -149,6 +149,10 @@ targets:
           - com.pepinillo.app.viewAnalytics
           - com.pepinillo.app.viewTask
           - INSendMessageIntent
+        CFBundleURLTypes:
+          - CFBundleURLName: com.pepinillo.app
+            CFBundleURLSchemes:
+              - pepinillo
 
     entitlements:
       path: App/Pepinillo.entitlements
@@ -167,6 +171,7 @@ targets:
       - path: Features
       - path: Domain
       - path: Shared
+      - path: PepinilloWidget/WidgetIntents.swift
       # App Intents compile directly into the main app (no separate extension needed)
       - path: PepinilloIntents
       # Live Activity manager (ActivityKit implementation injected at app launch)
@@ -242,6 +247,10 @@ targets:
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Shared/Design/ModeColors.swift
       - path: Shared/Design/PhaseColors.swift
+
+    resources:
+      - path: Shared/Resources/Localizable.xcstrings
+        optional: true
 
     dependencies:
       - package: ComposableArchitecture
