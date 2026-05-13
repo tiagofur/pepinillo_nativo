@@ -78,9 +78,11 @@ struct FocusFeature {
     enum Action: Equatable {
         // User interactions
         case modeSelected(FocusMode)
-        case startTapped
+        case startTapped(timerStart: Date? = nil, timerEnd: Date? = nil)
         case pauseTapped
         case resumeTapped
+        case externalPauseApplied(elapsed: TimeInterval, remaining: TimeInterval?, pausedAt: Date)
+        case externalResumeApplied(elapsed: TimeInterval, remaining: TimeInterval?)
         case stopTapped
         case skipPhaseTapped
         case linkTask(UUID?, String?, String?)
@@ -158,19 +160,20 @@ struct FocusFeature {
                 state.selectedMode = mode
                 state.modeIcon = mode.icon
                 updateIdleDisplay(&state)
-                return .none
+                AppGroupDefaults.widgetSelectedMode = mode.rawValue
+                return .run { _ in WidgetCenter.shared.reloadAllTimelines() }
 
             // MARK: Session Control
 
-            case .startTapped:
+            case .startTapped(let timerStart, let timerEnd):
                 guard !state.isRunning else { return .none }
                 state.isRunning = true
                 state.isPaused = false
                 state.activeMode = state.selectedMode
 
-                // Signal extensions that a session is active
                 AppGroupDefaults.isSessionActive = true
                 AppGroupDefaults.activeModeName = state.selectedMode.rawValue
+                AppGroupDefaults.widgetSelectedMode = state.selectedMode.rawValue
                 AppGroupDefaults.activeSessionElapsed = 0
                 AppGroupDefaults.activeSessionRemaining = nil
                 AppGroupDefaults.activeSessionPhase = nil
@@ -180,13 +183,35 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionTaskTitle = state.linkedTaskTitle
                 AppGroupDefaults.activeSessionIsPaused = false
                 AppGroupDefaults.activeTaskID = state.linkedTaskID?.uuidString
-                AppGroupDefaults.activeSessionTimerStart = Date.now
-                if let target = state.selectedMode.strategy.targetDuration(config: state.config, phase: state.selectedMode.strategy.initialPhase(config: state.config)) {
-                    AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(target)
+                
+                // Adopt provided anchors (from widget) or check for recent ones in defaults
+                let now = Date.now
+                let widgetStart = timerStart ?? AppGroupDefaults.activeSessionTimerStart
+                let widgetEnd = timerEnd ?? AppGroupDefaults.activeSessionTimerEnd
+                let startedFromWidget = AppGroupDefaults.activeSessionStartedFromWidget
+                let shouldAdoptWidgetAnchors = timerStart != nil
+                    || startedFromWidget
+                    || (widgetStart.map { now.timeIntervalSince($0) < 15 } ?? false)
+                let engineTimerStart: Date?
+                let engineTimerEnd: Date?
+                
+                if shouldAdoptWidgetAnchors, let start = widgetStart {
+                    AppGroupDefaults.activeSessionTimerStart = start
+                    AppGroupDefaults.activeSessionTimerEnd = widgetEnd
+                    engineTimerStart = start
+                    engineTimerEnd = widgetEnd
                 } else {
-                    AppGroupDefaults.activeSessionTimerEnd = nil
+                    AppGroupDefaults.activeSessionTimerStart = now
+                    if let target = state.selectedMode.strategy.targetDuration(config: state.config, phase: state.selectedMode.strategy.initialPhase(config: state.config)) {
+                        AppGroupDefaults.activeSessionTimerEnd = now.addingTimeInterval(target)
+                    } else {
+                        AppGroupDefaults.activeSessionTimerEnd = nil
+                    }
+                    engineTimerStart = nil
+                    engineTimerEnd = nil
                 }
-
+                AppGroupDefaults.activeSessionStartedFromWidget = false
+                
                 let initialPhase = state.selectedMode.strategy.initialPhase(config: state.config)
                 state.phase = initialPhase
                 state.elapsedSeconds = 0
@@ -242,7 +267,7 @@ struct FocusFeature {
                     // These MUST be sequential: start() creates a fresh AsyncStream,
                     // and events() must read it after start() completes.
                     .run { [focusClient] send in
-                        await focusClient.start(mode, config, taskID, customDuration)
+                        await focusClient.start(mode, config, taskID, customDuration, engineTimerStart, engineTimerEnd)
                         let stream = await focusClient.events()
                         for await event in stream {
                             switch event {
@@ -288,10 +313,20 @@ struct FocusFeature {
 
             case .pauseTapped:
                 guard state.isRunning, !state.isPaused else { return .none }
+                let frozenElapsed = AppGroupDefaults.activeSessionLiveElapsed()
+                let frozenRemaining = AppGroupDefaults.activeSessionLiveRemaining()
                 state.isPaused = true
+                state.elapsedSeconds = frozenElapsed
+                state.remainingSeconds = frozenRemaining
                 state.phaseLabel = FocusPhase.paused.displayName
+                if let remaining = frozenRemaining {
+                    let duration = max(frozenElapsed + remaining, 1)
+                    state.progress = min(max(frozenElapsed / duration, 0), 1)
+                    AppGroupDefaults.activeSessionProgress = state.progress
+                }
+                AppGroupDefaults.activeSessionElapsed = frozenElapsed
                 AppGroupDefaults.activeSessionIsPaused = true
-                AppGroupDefaults.activeSessionRemaining = state.remainingSeconds
+                AppGroupDefaults.activeSessionRemaining = frozenRemaining
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                 let taskTitle = state.linkedTaskTitle
@@ -303,22 +338,91 @@ struct FocusFeature {
                     }
                 )
 
+            case .externalPauseApplied(let elapsed, let remaining, let pausedAt):
+                guard state.isRunning else { return .none }
+                state.isPaused = true
+                state.elapsedSeconds = max(0, elapsed)
+                state.remainingSeconds = remaining
+                state.phaseLabel = FocusPhase.paused.displayName
+                if let remaining {
+                    let duration = max(elapsed + remaining, 1)
+                    state.progress = min(max(elapsed / duration, 0), 1)
+                    AppGroupDefaults.activeSessionProgress = state.progress
+                } else {
+                    state.progress = nil
+                    AppGroupDefaults.activeSessionProgress = nil
+                }
+                AppGroupDefaults.activeSessionElapsed = max(0, elapsed)
+                AppGroupDefaults.activeSessionRemaining = remaining
+                AppGroupDefaults.activeSessionPausedAt = pausedAt
+                AppGroupDefaults.activeSessionIsPaused = true
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                let taskTitle = state.linkedTaskTitle
+                return .merge(
+                    .run { [focusClient] _ in
+                        await focusClient.applyExternalPause(elapsed, remaining, pausedAt)
+                    },
+                    .run { [liveActivity] _ in
+                        let s = await focusClient.currentState()
+                        if let s { await liveActivity.update(s, taskTitle) }
+                    }
+                )
+
             case .resumeTapped:
                 guard state.isRunning, state.isPaused else { return .none }
                 state.isPaused = false
                 AppGroupDefaults.activeSessionIsPaused = false
+                AppGroupDefaults.activeSessionPausedAt = nil
                 
                 // Recalculate anchors to prevent drift after pause
                 if let remaining = state.remainingSeconds {
                     AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(remaining)
+                    let duration = max(state.elapsedSeconds + remaining, 1)
+                    AppGroupDefaults.activeSessionProgress = min(max(state.elapsedSeconds / duration, 0), 1)
+                    AppGroupDefaults.activeSessionRemaining = nil
                 }
                 AppGroupDefaults.activeSessionTimerStart = Date.now.addingTimeInterval(-state.elapsedSeconds)
+                AppGroupDefaults.activeSessionElapsed = state.elapsedSeconds
                 
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
                     .run { _ in await focusClient.resume() },
+                    .run { [liveActivity] _ in
+                        let s = await focusClient.currentState()
+                        if let s { await liveActivity.update(s, taskTitle) }
+                    }
+                )
+
+            case .externalResumeApplied(let elapsed, let remaining):
+                guard state.isRunning else { return .none }
+                state.isPaused = false
+                state.elapsedSeconds = max(0, elapsed)
+                state.remainingSeconds = remaining
+                state.phaseLabel = state.phase.displayName
+                AppGroupDefaults.activeSessionElapsed = max(0, elapsed)
+                AppGroupDefaults.activeSessionRemaining = nil
+                AppGroupDefaults.activeSessionIsPaused = false
+                AppGroupDefaults.activeSessionPausedAt = nil
+                if let remaining {
+                    AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(remaining)
+                    let duration = max(elapsed + remaining, 1)
+                    state.progress = min(max(elapsed / duration, 0), 1)
+                    AppGroupDefaults.activeSessionProgress = state.progress
+                } else {
+                    state.progress = nil
+                    AppGroupDefaults.activeSessionProgress = nil
+                }
+                AppGroupDefaults.activeSessionTimerStart = Date.now.addingTimeInterval(-elapsed)
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                let taskTitle = state.linkedTaskTitle
+                return .merge(
+                    .run { [focusClient] _ in
+                        await focusClient.applyExternalResume(elapsed, remaining)
+                    },
                     .run { [liveActivity] _ in
                         let s = await focusClient.currentState()
                         if let s { await liveActivity.update(s, taskTitle) }
@@ -350,20 +454,29 @@ struct FocusFeature {
                 state.modeSuggestion = nil
                 AppGroupDefaults.activeTaskID = id?.uuidString
                 AppGroupDefaults.activeSessionTaskTitle = title
-                guard let taskID = id, !state.isRunning else { return .none }
-                // Query Mode Intelligence for a suggestion
-                return .run { [persistence] send in
-                    let calendar = Calendar.current
-                    let end = Date.now
-                    guard let start = calendar.date(byAdding: .day, value: -30, to: end) else {
-                        await send(.modeSuggested(nil))
-                        return
-                    }
-                    let sessions = try await persistence.fetchSessions(start, end)
-                    let service = ModeIntelligenceService()
-                    let suggestion = service.suggestMode(forTaskID: taskID, sessions: sessions)
-                    await send(.modeSuggested(suggestion))
+                
+                let reloadWidgetEffect: Effect<Action> = .run { _ in WidgetCenter.shared.reloadAllTimelines() }
+                
+                guard let taskID = id, !state.isRunning else {
+                    return reloadWidgetEffect
                 }
+                
+                // Query Mode Intelligence for a suggestion
+                return .merge(
+                    reloadWidgetEffect,
+                    .run { [persistence] send in
+                        let calendar = Calendar.current
+                        let end = Date.now
+                        guard let start = calendar.date(byAdding: .day, value: -30, to: end) else {
+                            await send(.modeSuggested(nil))
+                            return
+                        }
+                        let sessions = try await persistence.fetchSessions(start, end)
+                        let service = ModeIntelligenceService()
+                        let suggestion = service.suggestMode(forTaskID: taskID, sessions: sessions)
+                        await send(.modeSuggested(suggestion))
+                    }
+                )
 
             case .customDurationChanged(let minutes):
                 state.customDurationMinutes = max(1, min(480, minutes))
@@ -375,6 +488,11 @@ struct FocusFeature {
 
             case .configUpdated(let config):
                 state.config = config
+                
+                // Sync cached durations for widget proactive starts
+                AppGroupDefaults.pomodoroDuration = config.pomodoroDuration
+                AppGroupDefaults.blockDuration = config.defaultBlockDuration
+                
                 if state.isRunning {
                     // Propagate new config to the engine so the active timer
                     // reflects any duration changes made in Settings in real-time.
@@ -692,18 +810,28 @@ struct FocusFeature {
 
     private func updateDisplayFromPhase(_ state: inout State) {
         let strategy = state.selectedMode.strategy
-        let phase = strategy.initialPhase(config: state.config)
-
-        if let target = strategy.targetDuration(config: state.config, phase: phase) {
-            state.displayTime = formatTime(target)
-            state.remainingSeconds = target
-            state.progress = 0.0
+        let phase = state.phase
+        state.phaseLabel = phase.displayName
+        
+        if state.isRunning {
+            if strategy.direction == .countDown {
+                let remaining = state.remainingSeconds ?? 0
+                state.displayTime = formatTime(remaining)
+            } else {
+                state.displayTime = formatTime(state.elapsedSeconds)
+            }
         } else {
-            state.displayTime = "0:00"
-            state.remainingSeconds = nil
+            // Idle state: show the target for the initial phase
+            let initial = strategy.initialPhase(config: state.config)
+            if let target = strategy.targetDuration(config: state.config, phase: initial) {
+                state.displayTime = formatTime(target)
+                state.remainingSeconds = target
+            } else {
+                state.displayTime = "0:00"
+                state.remainingSeconds = nil
+            }
             state.progress = nil
         }
-        state.phaseLabel = phase.displayName
     }
 
     private func resetState(_ state: inout State) {

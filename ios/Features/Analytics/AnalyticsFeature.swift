@@ -221,6 +221,7 @@ struct AnalyticsFeature {
                 return .none
 
             case .weeklyReviewTapped:
+                guard state.isProUser else { return .send(.paywallRequested) }
                 state.weeklyReview = WeeklyReviewFeature.State()
                 return .none
 
@@ -232,6 +233,7 @@ struct AnalyticsFeature {
                 return .none
 
             case .monthlyReviewTapped:
+                guard state.isProUser else { return .send(.paywallRequested) }
                 state.monthlyReview = MonthlyReviewFeature.State()
                 return .none
 

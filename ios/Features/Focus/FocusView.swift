@@ -60,7 +60,7 @@ struct FocusView: View {
         .background {
             Group {
                 Button("") {
-                    if !store.isRunning { store.send(.startTapped) }
+                    if !store.isRunning { store.send(.startTapped()) }
                     else if store.isPaused { store.send(.resumeTapped) }
                     else { store.send(.pauseTapped) }
                 }
@@ -508,7 +508,7 @@ struct FocusView: View {
 
                 // Start button — capped at 280pt so it stays modest on iPad
                 Button {
-                    store.send(.startTapped)
+                    store.send(.startTapped())
                     HapticManager.impact(.medium)
                 } label: {
                     HStack(spacing: 8) {

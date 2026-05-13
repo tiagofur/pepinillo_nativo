@@ -65,14 +65,14 @@ public actor FocusEngine {
         mode: FocusMode,
         config: FocusConfig = .default,
         linkedTaskID: UUID? = nil,
-        customDuration: TimeInterval? = nil
+        customDuration: TimeInterval? = nil,
+        timerStart: Date? = nil,
+        timerEnd: Date? = nil
     ) {
         // Cancel any existing session
         stop(completed: false)
 
         // Create a fresh event stream for the new session.
-        // AsyncStream is single-consumer: once iterated and cancelled,
-        // it cannot be re-iterated. A new stream is needed per session.
         eventContinuation?.finish()
         let (stream, continuation) = AsyncStream<FocusEngineEvent>.makeStream()
         self.events = stream
@@ -101,21 +101,33 @@ public actor FocusEngine {
             phase = initialPhase
         }
 
+        // Calculate initial elapsed/remaining if started from widget anchors
+        let now = Date.now
+        let effectiveStart = timerStart ?? now
+        let effectiveElapsed = now.timeIntervalSince(effectiveStart)
+        let effectiveRemaining: TimeInterval?
+        if let target = targetDuration {
+            effectiveRemaining = max(0, target - effectiveElapsed)
+        } else {
+            effectiveRemaining = nil
+        }
+
         let sessionState = FocusSessionState(
             id: UUID(),
             mode: mode,
             phase: phase,
-            startedAt: Date.now,
+            startedAt: effectiveStart,
+            elapsedSeconds: max(0, effectiveElapsed),
             targetDuration: targetDuration,
-            remainingSeconds: targetDuration,
-            progress: targetDuration != nil ? 0.0 : nil,
+            remainingSeconds: effectiveRemaining,
+            progress: targetDuration != nil ? min(max(effectiveElapsed / targetDuration!, 0), 1) : nil,
             linkedTaskID: linkedTaskID,
             pomodoroNumber: mode == .pomodoro ? 1 : nil,
             totalPomodoros: mode == .pomodoro ? effectiveConfig.pomodorosPerCycle : nil
         )
 
         self.state = sessionState
-        self.phaseStartDate = Date.now
+        self.phaseStartDate = effectiveStart
         self.totalPausedDuration = 0
 
         startTicking()
@@ -253,21 +265,85 @@ public actor FocusEngine {
 
     /// Sync with an external state change (e.g. from a widget) to align internal timing anchors.
     public func syncExternalState(elapsed: TimeInterval, remaining: TimeInterval?) {
-        guard var current = state, current.isPaused else { return }
+        guard var current = state else { return }
         
         if let start = phaseStartDate {
             let now = Date.now
             // effectiveElapsed = now - start - totalPausedDuration
             // totalPausedDuration = now - start - effectiveElapsed
-            self.totalPausedDuration = now.timeIntervalSince(start) - elapsed
-            current.elapsedSeconds = elapsed
+            self.totalPausedDuration = max(0, now.timeIntervalSince(start) - elapsed)
+            current.elapsedSeconds = max(0, elapsed)
+            current.totalPausedDuration = self.totalPausedDuration
             current.remainingSeconds = remaining
             if let target = current.targetDuration, let rem = remaining {
-                current.progress = 1.0 - (rem / target)
+                current.progress = min(max(1.0 - (rem / target), 0), 1)
+            } else {
+                current.progress = nil
             }
             self.state = current
             emit(.tick(current))
         }
+    }
+
+    /// Apply an externally-triggered pause using the timestamp from the external process.
+    /// This keeps elapsed time and future resume math anchored to the widget tap,
+    /// not to the later moment when the app wakes up.
+    public func applyExternalPause(elapsed: TimeInterval, remaining: TimeInterval?, pausedAt: Date) {
+        guard var current = state else { return }
+
+        if !current.isPaused {
+            phaseBeforePause = current.phase
+            pauseCount += 1
+        }
+
+        current.isPaused = true
+        current.pausedAt = pausedAt
+        current.phase = .paused
+        current.elapsedSeconds = max(0, elapsed)
+        current.remainingSeconds = remaining
+        if let target = current.targetDuration, let remaining {
+            current.progress = min(max(1.0 - (remaining / target), 0), 1)
+        } else {
+            current.progress = nil
+        }
+
+        if let start = phaseStartDate {
+            totalPausedDuration = max(0, pausedAt.timeIntervalSince(start) - current.elapsedSeconds)
+        }
+        current.totalPausedDuration = totalPausedDuration
+
+        state = current
+        timerTask?.cancel()
+        timerTask = nil
+        emit(.tick(current))
+    }
+
+    /// Apply an externally-triggered resume and align the engine with widget anchors.
+    public func applyExternalResume(elapsed: TimeInterval, remaining: TimeInterval?) {
+        guard var current = state else { return }
+
+        if current.isPaused {
+            current.isPaused = false
+            current.pausedAt = nil
+            restorePhaseAfterPause(&current)
+        }
+
+        current.elapsedSeconds = max(0, elapsed)
+        current.remainingSeconds = remaining
+        if let target = current.targetDuration, let remaining {
+            current.progress = min(max(1.0 - (remaining / target), 0), 1)
+        } else {
+            current.progress = nil
+        }
+
+        if let start = phaseStartDate {
+            totalPausedDuration = max(0, Date.now.timeIntervalSince(start) - current.elapsedSeconds)
+        }
+        current.totalPausedDuration = totalPausedDuration
+
+        state = current
+        startTicking()
+        emit(.tick(current))
     }
 
     // MARK: - Private: Timing Loop
@@ -284,6 +360,19 @@ public actor FocusEngine {
     }
 
     private func tick() {
+        // Handle external pause requests (from widget) immediately, even in background.
+        if AppGroupDefaults.externalPauseRequested && state?.isPaused == false {
+            let elapsed = AppGroupDefaults.activeSessionElapsed
+            let remaining = AppGroupDefaults.activeSessionRemaining
+            let pausedAt = AppGroupDefaults.activeSessionPausedAt ?? Date.now
+            
+            // Clear the flag so we don't re-pause repeatedly
+            AppGroupDefaults.externalPauseRequested = false
+            
+            applyExternalPause(elapsed: elapsed, remaining: remaining, pausedAt: pausedAt)
+            return
+        }
+
         guard var current = state,
               !current.isPaused,
               let phaseStart = phaseStartDate,
