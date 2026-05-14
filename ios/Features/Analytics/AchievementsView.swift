@@ -66,7 +66,7 @@ private struct AchievementCard: View {
         .background(
             userAchievement.isUnlocked
                 ? Color.accentColor.opacity(0.12)
-                : Color(.tertiarySystemBackground)
+                : Color.pepinilloTertiarySystemBackground
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .combine)

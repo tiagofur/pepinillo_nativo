@@ -5,7 +5,11 @@
 // Handles name, birth date, and profile image upload.
 
 import Foundation
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 import ComposableArchitecture
 
 // MARK: - EditProfileFeature
@@ -217,8 +221,8 @@ struct EditProfileFeature {
     }
 
     private static func dataURIString(from data: Data) -> String? {
-        guard let image = UIImage(data: data),
-              let jpegData = image.jpegData(compressionQuality: 0.78) else {
+        guard let image = PlatformImage(data: data),
+              let jpegData = platformJPEGData(from: image, compressionQuality: 0.78) else {
             return nil
         }
         return "data:image/jpeg;base64,\(jpegData.base64EncodedString())"
@@ -258,3 +262,24 @@ struct EditProfileFeature {
         )
     }
 }
+
+#if canImport(UIKit)
+private typealias PlatformImage = UIImage
+
+private func platformJPEGData(from image: PlatformImage, compressionQuality: CGFloat) -> Data? {
+    image.jpegData(compressionQuality: compressionQuality)
+}
+#elseif canImport(AppKit)
+private typealias PlatformImage = NSImage
+
+private func platformJPEGData(from image: PlatformImage, compressionQuality: CGFloat) -> Data? {
+    guard let tiffRepresentation = image.tiffRepresentation,
+          let bitmap = NSBitmapImageRep(data: tiffRepresentation) else {
+        return nil
+    }
+    return bitmap.representation(
+        using: .jpeg,
+        properties: [.compressionFactor: compressionQuality]
+    )
+}
+#endif

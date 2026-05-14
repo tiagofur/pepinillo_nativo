@@ -243,6 +243,7 @@ private struct WidgetPrimaryStartButton: View {
             .background(.secondary.opacity(0.12), in: Capsule())
         } else {
             Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
+                let modeColor = ModeColors.color(for: mode)
                 HStack(spacing: 6) {
                     Image(systemName: "play.fill")
                     Text(compact ? String(localized: "Start") : String(localized: "Start \(modeDisplayName(mode))"))
@@ -252,10 +253,11 @@ private struct WidgetPrimaryStartButton: View {
                 .font(.system(size: compact ? 12 : 14, weight: .bold, design: .rounded))
                 .frame(maxWidth: .infinity)
                 .frame(height: compact ? 28 : 38)
+                .foregroundStyle(.white)
+                .background(modeColor.gradient, in: Capsule())
+                .contentShape(Capsule())
             }
-            .tint(ModeColors.color(for: mode))
-            .buttonStyle(.borderedProminent)
-            .clipShape(Capsule())
+            .buttonStyle(.plain)
         }
     }
 }
@@ -611,7 +613,7 @@ struct FocusWidgetLarge: View {
                     }
                 }
                 .padding(12)
-                .background(.ultraThinMaterial.opacity(0.45), in: RoundedRectangle(cornerRadius: 14))
+                .pepinilloGlass(cornerRadius: 14)
             }
         }
         .padding(0)
@@ -663,7 +665,7 @@ struct FocusWidgetLarge: View {
                     }
                 }
                 .padding(14)
-                .background(.ultraThinMaterial.opacity(0.3), in: RoundedRectangle(cornerRadius: 20))
+                .pepinilloGlass(cornerRadius: 20)
             }
 
             Spacer(minLength: 0)

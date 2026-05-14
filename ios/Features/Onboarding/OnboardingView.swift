@@ -31,8 +31,12 @@ struct OnboardingView: View {
                 getStartedPage
                     .tag(pages.count)
             }
+            #if os(macOS)
+            .tabViewStyle(.automatic)
+            #else
             .tabViewStyle(.page(indexDisplayMode: .always))
             .indexViewStyle(.page(backgroundDisplayMode: .always))
+            #endif
 
             // Skip button (top-right) — skips to final page
             VStack {

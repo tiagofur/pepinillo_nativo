@@ -19,7 +19,7 @@ struct DashboardHomeScreenWidget: Widget {
             provider: DashboardWidgetProvider()
         ) { entry in
             DashboardWidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .pepinilloWidgetBackground()
         }
         .configurationDisplayName("Dashboard")
         .description("Weekly focus stats and progress at a glance.")

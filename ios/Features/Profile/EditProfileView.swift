@@ -7,7 +7,11 @@
 import SwiftUI
 import PhotosUI
 import ComposableArchitecture
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 // MARK: - EditProfileView
 
@@ -127,8 +131,8 @@ struct EditProfileView: View {
                     .frame(width: 96, height: 96)
 
                 if let selectedImageData = store.selectedImageData,
-                   let selectedImage = UIImage(data: selectedImageData) {
-                    Image(uiImage: selectedImage)
+                   let selectedImage = PlatformImage(data: selectedImageData) {
+                    platformImage(selectedImage)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 96, height: 96)
@@ -147,7 +151,7 @@ struct EditProfileView: View {
 
                 if store.isUploading {
                     Circle()
-                        .fill(Color(.systemFill).opacity(0.7))
+                        .fill(Color.pepinilloSystemFill.opacity(0.7))
                         .frame(width: 96, height: 96)
                         .accessibilityHidden(true)
                     ProgressView().tint(.white)
@@ -191,4 +195,20 @@ struct EditProfileView: View {
             }
         }
     }
+
+    private func platformImage(_ image: PlatformImage) -> Image {
+#if canImport(UIKit)
+        Image(uiImage: image)
+#elseif canImport(AppKit)
+        Image(nsImage: image)
+#else
+        Image(systemName: "person.circle")
+#endif
+    }
 }
+
+#if canImport(UIKit)
+private typealias PlatformImage = UIImage
+#elseif canImport(AppKit)
+private typealias PlatformImage = NSImage
+#endif

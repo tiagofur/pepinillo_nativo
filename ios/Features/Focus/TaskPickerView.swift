@@ -69,7 +69,11 @@ struct TaskPickerView: View {
                     }
                 }
             }
+            #if os(macOS)
+            .listStyle(.inset)
+            #else
             .listStyle(.insetGrouped)
+            #endif
             .navigationTitle(String(localized: "Link Task"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

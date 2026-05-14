@@ -17,11 +17,12 @@ import ComposableArchitecture
 struct DashboardView: View {
     @Bindable var store: StoreOf<AnalyticsFeature>
     @Environment(\.appTheme) private var theme
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
-        ZStack {
-            ScrollView {
-                VStack(spacing: 16) {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(spacing: 14) {
                     // Hero — always full width
                     DashboardHeroSection(
                         streakDays: store.currentStreakDays,
@@ -34,24 +35,26 @@ struct DashboardView: View {
                         onWeeklyReview:  { store.send(.weeklyReviewTapped) },
                         onMonthlyReview: { store.send(.monthlyReviewTapped) }
                     )
+                }
 
-                    if store.isLoading {
-                        AnalyticsPlaceholder()
-                            .redacted(reason: .placeholder)
-                    } else if store.chartData.isEmpty && store.sessionsCompleted == 0 {
-                        ContentUnavailableView(
-                            String(localized: "No Data Yet"),
-                            systemImage: "chart.bar",
-                            description: Text(String(localized: "Complete your first focus session to see your analytics here."))
-                        )
-                        .padding(.top, 40)
-                    } else {
-                        // Analytics period header — full width
-                        analyticsSectionHeader
-                            .padding(.horizontal, 16)
+                if store.isLoading {
+                    AnalyticsPlaceholder()
+                        .redacted(reason: .placeholder)
+                } else if store.chartData.isEmpty && store.sessionsCompleted == 0 {
+                    ContentUnavailableView(
+                        String(localized: "No Data Yet"),
+                        systemImage: "chart.bar",
+                        description: Text(String(localized: "Complete your first focus session to see your analytics here."))
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 48)
+                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+                } else {
+                    // Analytics period header — full width
+                    analyticsSectionHeader
 
-                        // KPI stat tiles: 1 col iPhone / 2 cols iPad portrait / 3 cols iPad landscape
-                        LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+                    // KPI stat tiles: 1 col iPhone / 2 cols iPad portrait / 3 cols iPad landscape
+                    LazyVGrid(columns: dashboardMetricColumns, spacing: 12) {
                             SummaryCard(
                                 title: String(localized: "Focus Time"),
                                 value: formattedTotalTime,
@@ -72,16 +75,17 @@ struct DashboardView: View {
                             )
                         }
 
-                        // Charts — always full width
-                        DashboardChartsContent(store: store)
-                    }
+                    // Charts — always full width
+                    DashboardChartsContent(store: store)
                 }
-                .padding(16)
-                .contentMaxWidth()
-                .padding(.bottom, 32)
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 32)
+            .contentMaxWidth()
         }
-        .background(Color.clear)
+        .background(Color.pepinilloSystemBackground)
+        .scrollContentBackground(.hidden)
         .refreshable { store.send(.onAppear) }
         .navigationTitle(String(localized: "Dashboard"))
         .toolbar {
@@ -122,7 +126,7 @@ struct DashboardView: View {
     private var analyticsSectionHeader: some View {
         HStack {
             Text(String(localized: "Analytics"))
-                .font(.headline)
+                .font(.title3.weight(.semibold))
             Spacer()
             periodPicker
         }
@@ -138,7 +142,11 @@ struct DashboardView: View {
             }
         }
         .pickerStyle(.segmented)
-        .frame(width: 200)
+        .frame(width: sizeClass == .regular ? 220 : 180)
+    }
+
+    private var dashboardMetricColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: sizeClass == .regular ? 220 : 150), spacing: 12)]
     }
 
     // MARK: - Helpers

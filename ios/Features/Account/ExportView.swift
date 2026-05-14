@@ -24,7 +24,11 @@ struct ExportView: View {
             contentSection
             exportButtonSection
         }
+        #if os(macOS)
+        .listStyle(.inset)
+        #else
         .listStyle(.insetGrouped)
+        #endif
         .navigationTitle(String(localized: "Export Data"))
         .navigationBarTitleDisplayMode(.inline)
         .overlay {

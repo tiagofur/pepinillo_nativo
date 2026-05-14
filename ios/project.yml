@@ -1,30 +1,3 @@
-# project.yml — XcodeGen spec for Pepinillo
-#
-# Usage (on Mac):
-#   brew install xcodegen
-#   cd /path/to/pepinillo_ios
-#   xcodegen generate
-#
-# This generates Pepinillo.xcodeproj with all 5 targets configured.
-# Adjust DEVELOPMENT_TEAM in Config/Shared.xcconfig to your Apple Developer
-# Team ID before archiving. Automatic code signing is enabled.
-#
-# Build configurations:
-#   - Debug           → Config/Dev.xcconfig         (API: localhost:8080)
-#   - Staging         → Config/Staging.xcconfig     (API: staging.api.ppn.creapolis.dev)
-#   - Release         → Config/Production.xcconfig  (API: api.ppn.creapolis.dev)
-#
-# Schemes:
-#   - Pepinillo Dev         → runs Debug config
-#   - Pepinillo Staging     → runs Staging config
-#   - Pepinillo Production  → runs Release config (archive-ready)
-#
-# Required one-time steps after generation:
-#   1. Open in Xcode → confirm SPM resolves TCA + RevenueCat + Snapshot
-#   2. Set your Team in Config/Shared.xcconfig (DEVELOPMENT_TEAM)
-#   3. Keep iCloud / CloudKit disabled for the 1.0 release build.
-#   4. StoreKit config is auto-attached to the Dev scheme for sandbox testing
-
 name: Pepinillo
 
 options:
@@ -32,26 +5,26 @@ options:
   deploymentTarget:
     iOS: "17.0"
     watchOS: "10.0"
-    macOS: "14.0"
+    macOS: "15.0"
   createIntermediateGroups: true
   xcodeVersion: "16.2"
   generateEmptyDirectories: true
   defaultConfig: Debug
 
-# ── SPM Packages ────────────────────────────────────────────────────────────
-# Note: XcodeGen resolves these but Xcode may ask to re-resolve on first open.
 packages:
-  ComposableArchitecture:
+  swift-composable-architecture:
     url: https://github.com/pointfreeco/swift-composable-architecture
     from: "1.17.0"
-  SnapshotTesting:
+  swift-snapshot-testing:
     url: https://github.com/pointfreeco/swift-snapshot-testing
     from: "1.17.0"
-  Sentry:
+  sentry-cocoa:
     url: https://github.com/getsentry/sentry-cocoa
-    from: "8.36.0"
+    from: "9.12.1"
+  purchases-ios:
+    url: https://github.com/RevenueCat/purchases-ios.git
+    from: "5.0.0"
 
-# ── Build Settings (shared across all targets) ───────────────────────────────
 settings:
   base:
     MARKETING_VERSION: "1.0.0"
@@ -59,7 +32,7 @@ settings:
     SWIFT_VERSION: "6.0"
     CODE_SIGN_STYLE: Automatic
     ENABLE_BITCODE: "NO"
-    ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
     ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: "YES"
     CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: "YES"
   configs:
@@ -70,29 +43,21 @@ settings:
     Release:
       SWIFT_ACTIVE_COMPILATION_CONDITIONS: ""
 
-# ── Configs ──────────────────────────────────────────────────────────────────
-# Three build configurations mapped to xcconfig files per target (see
-# configFiles: blocks on each target below).
 configs:
   Debug: debug
   Staging: release
   Release: release
 
-# ── Targets ──────────────────────────────────────────────────────────────────
 targets:
-
-  # ── Main iOS App ─────────────────────────────────────────────────────────
   Pepinillo:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
     bundleId: com.pepinillo.app
-
     configFiles:
       Debug: Config/Dev.xcconfig
       Staging: Config/Staging.xcconfig
       Release: Config/Production.xcconfig
-
     info:
       path: App/Info.plist
       properties:
@@ -114,17 +79,13 @@ targets:
           - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        # Background modes required for soundscape playback and push-driven sync.
         UIBackgroundModes:
           - audio
           - remote-notification
-        # Exposed from xcconfig into Info.plist so runtime code (APIClient,
-        # WebSocketClient) can read the per-environment base URL via Bundle.
         API_BASE_URL: "$(API_BASE_URL)"
         WS_BASE_URL: "$(WS_BASE_URL)"
         APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
         SENTRY_DSN: "$(SENTRY_DSN)"
-        # Privacy usage descriptions (required for App Store review)
         NSUserNotificationUsageDescription: >
           Pepinillo sends reminders to start your focus sessions and notifies
           you when a Pomodoro or break is complete.
@@ -153,7 +114,6 @@ targets:
           - CFBundleURLName: com.pepinillo.app
             CFBundleURLSchemes:
               - pepinillo
-
     entitlements:
       path: App/Pepinillo.entitlements
       properties:
@@ -165,33 +125,29 @@ targets:
         com.apple.developer.healthkit: true
         com.apple.developer.siri: true
         com.apple.developer.usernotifications.communication: true
-
     sources:
       - path: App
       - path: Features
       - path: Domain
       - path: Shared
       - path: PepinilloWidget/WidgetIntents.swift
-      # App Intents compile directly into the main app (no separate extension needed)
       - path: PepinilloIntents
-      # Live Activity manager (ActivityKit implementation injected at app launch)
       - path: PepinilloLiveActivity/LiveActivityManager.swift
       - path: PepinilloLiveActivity/FocusActivityAttributes.swift
-      # Watch feature reducers (shared for testability — WatchKit calls are #if os(watchOS) guarded)
       - path: PepinilloWatch/Features
       - path: PepinilloWatch/WatchStatsKeys.swift
-
     resources:
       - path: Shared/Resources
         optional: true
       - path: App/PrivacyInfo.xcprivacy
       - path: Pepinillo.storekit
-
     dependencies:
-      - package: ComposableArchitecture
-      - package: Sentry
+      - package: swift-composable-architecture
+        product: ComposableArchitecture
+      - package: sentry-cocoa
         product: Sentry
-      # Embed extensions so they are included in the app bundle's PlugIns directory
+      - package: purchases-ios
+        product: RevenueCat
       - target: PepinilloWidgetExtension
         embed: true
       - target: PepinilloControlCenter
@@ -199,25 +155,104 @@ targets:
       - target: PepinilloWatch
         embed: true
         buildPhase: embedWatchContent
-
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app
         SWIFT_EMIT_LOC_STRINGS: "YES"
         SUPPORTS_MACCATALYST: "YES"
 
-  # ── Widget Extension (Home Screen, Lock Screen, Live Activities) ────────
+  PepinilloMac:
+    type: application
+    platform: macOS
+    deploymentTarget: "15.0"
+    bundleId: com.pepinillo.app
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Release: Config/Production.xcconfig
+    info:
+      path: Mac/Info.plist
+      properties:
+        CFBundleDisplayName: Pepinillo
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        LSApplicationCategoryType: public.app-category.productivity
+        API_BASE_URL: "$(API_BASE_URL)"
+        WS_BASE_URL: "$(WS_BASE_URL)"
+        APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
+        SENTRY_DSN: "$(SENTRY_DSN)"
+        NSUserNotificationUsageDescription: >
+          Pepinillo sends reminders to start your focus sessions and notifies
+          you when a Pomodoro or break is complete.
+        NSCalendarsUsageDescription: >
+          Pepinillo reads your Calendar events so you can plan focus sessions
+          around your existing schedule.
+        NSCalendarsFullAccessUsageDescription: >
+          Pepinillo reads and updates your Calendar so your focus sessions
+          appear alongside your existing schedule.
+        ITSAppUsesNonExemptEncryption: false
+        NSUserActivityTypes:
+          - com.pepinillo.app.focusSession
+          - com.pepinillo.app.viewAnalytics
+          - com.pepinillo.app.viewTask
+        CFBundleURLTypes:
+          - CFBundleURLName: com.pepinillo.app
+            CFBundleURLSchemes:
+              - pepinillo
+    sources:
+      - path: Mac
+      - path: App/AppFeature.swift
+      - path: App/DemoDataSeeder.swift
+      - path: App/MacCommands.swift
+      - path: Features
+      - path: Domain
+      - path: Shared
+      - path: PepinilloIntents
+        excludes:
+          - FocusFilterIntent.swift
+    resources:
+      - path: Shared/Resources
+        optional: true
+      - path: App/PrivacyInfo.xcprivacy
+      - path: Pepinillo.storekit
+    dependencies:
+      - package: swift-composable-architecture
+        product: ComposableArchitecture
+      - package: sentry-cocoa
+        product: Sentry
+      - package: purchases-ios
+        product: RevenueCat
+      - target: PepinilloWidgetMacExtension
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "$(DEVELOPMENT_TEAM)"
+        ENABLE_HARDENED_RUNTIME: "YES"
+        PROVISIONING_PROFILE_SPECIFIER: ""
+        SWIFT_EMIT_LOC_STRINGS: "YES"
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: Mac/PepinilloMacDebug.entitlements
+          CODE_SIGN_IDENTITY: "-"
+          CODE_SIGN_STYLE: Manual
+          DEVELOPMENT_TEAM: ""
+          ENABLE_HARDENED_RUNTIME: "NO"
+        Staging:
+          CODE_SIGN_ENTITLEMENTS: Mac/PepinilloMac.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: Mac/PepinilloMac.entitlements
+
   PepinilloWidgetExtension:
     type: app-extension
     platform: iOS
     deploymentTarget: "17.0"
     bundleId: com.pepinillo.app.widget
-
     configFiles:
       Debug: Config/Dev.xcconfig
       Staging: Config/Staging.xcconfig
       Release: Config/Production.xcconfig
-
     info:
       path: PepinilloWidget/Info.plist
       properties:
@@ -226,20 +261,15 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
-        # Live Activities entitlement (enabled via capability)
         NSSupportsLiveActivities: true
-
     entitlements:
       path: PepinilloWidget/PepinilloWidget.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.pepinillo.app
-
     sources:
       - path: PepinilloWidget
-      # Live Activities are part of the Widget extension in iOS 16.1+
       - path: PepinilloLiveActivity
-      # Shared types needed by widget and live activity
       - path: Features/Focus/FocusModels.swift
       - path: Domain/Clients/LiveActivityClient.swift
       - path: Domain/Models
@@ -247,32 +277,89 @@ targets:
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Shared/Design/ModeColors.swift
       - path: Shared/Design/PhaseColors.swift
-
+      - path: Shared/Design/SystemColors.swift
+      - path: Shared/Design/GlassModifiers.swift
+      - path: Shared/Design/WidgetGlassBackground.swift
     resources:
       - path: Shared/Resources/Localizable.xcstrings
         optional: true
-
     dependencies:
-      - package: ComposableArchitecture
-
+      - package: swift-composable-architecture
+        product: ComposableArchitecture
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widget
         SKIP_INSTALL: "YES"
 
-  # ── Apple Watch App ──────────────────────────────────────────────────────
-  # Single-target Watch app (Xcode 14+ / watchOS 7+ style)
+  PepinilloWidgetMacExtension:
+    type: app-extension
+    platform: macOS
+    deploymentTarget: "15.0"
+    bundleId: com.pepinillo.app.widget
+    configFiles:
+      Debug: Config/Dev.xcconfig
+      Staging: Config/Staging.xcconfig
+      Release: Config/Production.xcconfig
+    info:
+      path: PepinilloWidget/Info.plist
+      properties:
+        CFBundleDisplayName: PepinilloWidget
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        NSSupportsLiveActivities: false
+    entitlements:
+      path: PepinilloWidget/PepinilloWidget.entitlements
+    sources:
+      - path: PepinilloWidget
+      - path: PepinilloLiveActivity
+        excludes:
+          - "**/*"
+      - path: Features/Focus/FocusModels.swift
+      - path: Domain/Clients/LiveActivityClient.swift
+        excludes:
+          - "**/*"
+      - path: Domain/Models
+      - path: Shared/Persistence/AppGroupContainer.swift
+      - path: Shared/Persistence/SchemaVersioning.swift
+      - path: Shared/Design/ModeColors.swift
+      - path: Shared/Design/PhaseColors.swift
+      - path: Shared/Design/SystemColors.swift
+      - path: Shared/Design/GlassModifiers.swift
+      - path: Shared/Design/WidgetGlassBackground.swift
+    resources:
+      - path: Shared/Resources/Localizable.xcstrings
+        optional: true
+    dependencies:
+      - package: swift-composable-architecture
+        product: ComposableArchitecture
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widget
+        SKIP_INSTALL: "YES"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        PROVISIONING_PROFILE_SPECIFIER: ""
+        ENABLE_HARDENED_RUNTIME: "NO"
+        AD_HOC_CODE_SIGNING_ALLOWED: "YES"
+      configs:
+        Debug:
+          CODE_SIGN_ENTITLEMENTS: PepinilloWidget/PepinilloWidgetMacDebug.entitlements
+        Staging:
+          CODE_SIGN_ENTITLEMENTS: PepinilloWidget/PepinilloWidget.entitlements
+        Release:
+          CODE_SIGN_ENTITLEMENTS: PepinilloWidget/PepinilloWidget.entitlements
+
   PepinilloWatch:
     type: application
     platform: watchOS
     deploymentTarget: "10.0"
     bundleId: com.pepinillo.app.watch
-
     configFiles:
       Debug: Config/Dev.xcconfig
       Staging: Config/Staging.xcconfig
       Release: Config/Production.xcconfig
-
     info:
       path: PepinilloWatch/Info.plist
       properties:
@@ -282,21 +369,16 @@ targets:
         WKCompanionAppBundleIdentifier: com.pepinillo.app
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
-        # Expose the per-environment URL to the Watch app as well (used by any
-        # future direct networking; today WatchConnectivity forwards data).
         API_BASE_URL: "$(API_BASE_URL)"
         WS_BASE_URL: "$(WS_BASE_URL)"
         APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
-
     entitlements:
       path: PepinilloWatch/PepinilloWatch.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.pepinillo.app
-
     sources:
       - path: PepinilloWatch
-      # Watch needs access to shared domain models and design system
       - path: Domain/Models
       - path: Domain/Clients
         excludes:
@@ -310,28 +392,23 @@ targets:
           - "SyncClient.swift"
       - path: Features/Focus/FocusModels.swift
       - path: Shared/Design
-
     dependencies:
-      - package: ComposableArchitecture
-
+      - package: swift-composable-architecture
+        product: ComposableArchitecture
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.watch
         SWIFT_EMIT_LOC_STRINGS: "YES"
 
-  # ── Control Center Extension ─────────────────────────────────────────────
-  # Requires iOS 18+ and the "Control Center" capability in Xcode
   PepinilloControlCenter:
     type: app-extension
     platform: iOS
     deploymentTarget: "18.0"
     bundleId: com.pepinillo.app.controlcenter
-
     configFiles:
       Debug: Config/Dev.xcconfig
       Staging: Config/Staging.xcconfig
       Release: Config/Production.xcconfig
-
     info:
       path: ControlCenterExtension/Info.plist
       properties:
@@ -340,46 +417,38 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
-
     entitlements:
       path: ControlCenterExtension/PepinilloControlCenter.entitlements
       properties:
         com.apple.security.application-groups:
           - group.com.pepinillo.app
-
     sources:
       - path: ControlCenterExtension
       - path: Shared/Persistence/AppGroupContainer.swift
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Domain/Models
       - path: Features/Focus/FocusModels.swift
-
     dependencies: []
-
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.controlcenter
         SKIP_INSTALL: "YES"
 
-  # ── Unit Tests ───────────────────────────────────────────────────────────
   PepinilloTests:
     type: bundle.unit-test
     platform: iOS
     deploymentTarget: "17.0"
     bundleId: com.pepinillo.tests
-
     configFiles:
       Debug: Config/Dev.xcconfig
       Staging: Config/Staging.xcconfig
       Release: Config/Production.xcconfig
-
     sources:
       - path: Tests
-
     dependencies:
       - target: Pepinillo
-      - package: SnapshotTesting
-
+      - package: swift-snapshot-testing
+        product: SnapshotTesting
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.tests
@@ -388,10 +457,6 @@ targets:
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Pepinillo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Pepinillo"
         BUNDLE_LOADER: "$(TEST_HOST)"
 
-# ── Schemes ──────────────────────────────────────────────────────────────────
-# Three schemes so developers can toggle environment from the Xcode scheme
-# picker without touching build settings. Each scheme pins a specific
-# configuration to Run/Test/Profile/Analyze/Archive.
 schemes:
   Pepinillo Dev:
     build:
@@ -457,6 +522,53 @@ schemes:
         - name: PepinilloTests
           parallelizable: true
           randomExecutionOrder: true
+    profile:
+      config: Release
+    analyze:
+      config: Release
+    archive:
+      config: Release
+
+  PepinilloMac Dev:
+    build:
+      targets:
+        PepinilloMac: all
+        PepinilloWidgetMacExtension: [build]
+    run:
+      config: Debug
+      commandLineArguments: {}
+      storeKitConfiguration: Pepinillo.storekit
+    profile:
+      config: Debug
+    analyze:
+      config: Debug
+    archive:
+      config: Debug
+
+  PepinilloMac Staging:
+    build:
+      targets:
+        PepinilloMac: all
+        PepinilloWidgetMacExtension: [build]
+    run:
+      config: Staging
+      commandLineArguments: {}
+      storeKitConfiguration: Pepinillo.storekit
+    profile:
+      config: Staging
+    analyze:
+      config: Staging
+    archive:
+      config: Staging
+
+  PepinilloMac Production:
+    build:
+      targets:
+        PepinilloMac: all
+        PepinilloWidgetMacExtension: [build]
+    run:
+      config: Release
+      commandLineArguments: {}
     profile:
       config: Release
     analyze:

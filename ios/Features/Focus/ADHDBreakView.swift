@@ -26,35 +26,12 @@ struct ADHDBreakView: View {
 
                 LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 16) {
                     ForEach(BreakActivity.allCases) { activity in
-                        Button {
+                        BreakActivityButton(
+                            activity: activity,
+                            isSelected: selectedActivity == activity
+                        ) {
                             selectedActivity = activity
-                        } label: {
-                            VStack(spacing: 8) {
-                                Text(activity.emoji)
-                                    .font(.system(size: 36))
-                                Text(activity.title)
-                                    .font(.subheadline.bold())
-                                Text(activity.subtitle)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(selectedActivity == activity
-                                          ? Color.accentColor.opacity(0.15)
-                                          : Color(.secondarySystemBackground))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .strokeBorder(selectedActivity == activity
-                                                  ? Color.accentColor
-                                                  : .clear, lineWidth: 2)
-                            )
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .padding(.horizontal)
@@ -86,6 +63,42 @@ struct ADHDBreakView: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
+    }
+}
+
+private struct BreakActivityButton: View {
+    let activity: BreakActivity
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Text(activity.emoji)
+                    .font(.system(size: 36))
+                Text(activity.title)
+                    .font(.subheadline.bold())
+                Text(activity.subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(cardBackground)
+            .overlay(cardBorder)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.pepinilloSecondarySystemBackground)
+    }
+
+    private var cardBorder: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2)
     }
 }
 

@@ -25,6 +25,10 @@ struct SettingsView: View {
                 aboutSection
             }
             .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
+            .background(Color.pepinilloSystemBackground)
             .navigationTitle(String(localized: "Settings"))
             .navigationDestination(item: $store.scope(state: \.about, action: \.about)) { aboutStore in
                 AboutView(store: aboutStore)

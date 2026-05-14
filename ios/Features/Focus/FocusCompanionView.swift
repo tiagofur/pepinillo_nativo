@@ -55,6 +55,7 @@ struct FocusCompanionView: View {
     @ViewBuilder
     private var cards: some View {
         activeTaskCard
+        soundscapeCard
         todaySessionsCard
         streakCard
         if let next = nextScheduledTask {
@@ -65,55 +66,92 @@ struct FocusCompanionView: View {
     // MARK: - Active Task Card
 
     private var activeTaskCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label(String(localized: "Active Task"), systemImage: "checkmark.circle")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
+        Button {
+            store.send(.taskPickerTapped)
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(String(localized: "Active Task"), systemImage: "checkmark.circle")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
-            if let title = store.linkedTaskTitle {
-                Button {
-                    store.send(.taskPickerTapped)
-                } label: {
-                    HStack(spacing: 10) {
-                        if let emoji = store.linkedTaskEmoji {
-                            Text(emoji)
-                                .font(.title2)
-                        } else {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(Color.accentColor)
-                        }
-                        Text(title)
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.primary)
+                HStack(spacing: 10) {
+                    activeTaskIcon
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(store.linkedTaskTitle ?? String(localized: "Pick a task to focus on"))
+                            .font((store.linkedTaskTitle == nil ? Font.subheadline : Font.body.weight(.medium)))
+                            .foregroundStyle(store.linkedTaskTitle == nil ? .secondary : .primary)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
+
+                        if store.linkedTaskTitle != nil {
+                            Text(String(localized: "Tap to change or unlink"))
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
                     }
+
+                    Spacer(minLength: 12)
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                 }
-                .buttonStyle(.plain)
-            } else {
-                Button {
-                    store.send(.taskPickerTapped)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(Color.accentColor)
-                        Text(String(localized: "Pick a task to focus on"))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                    }
-                }
-                .buttonStyle(.plain)
             }
         }
+        .buttonStyle(.plain)
         .padding(16)
-        .background(.regularMaterial, in: .rect(cornerRadius: 20))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card))
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+    }
+
+    @ViewBuilder
+    private var activeTaskIcon: some View {
+        if let emoji = store.linkedTaskEmoji {
+            Text(emoji)
+                .font(.title2)
+        } else {
+            Image(systemName: "plus.circle.fill")
+                .font(.title3)
+                .foregroundStyle(Color.accentColor)
+        }
+    }
+
+    // MARK: - Soundscape Card
+
+    private var soundscapeCard: some View {
+        Button {
+            store.send(.soundscapePickerTapped)
+        } label: {
+            HStack(spacing: 12) {
+                Text(store.selectedSoundscape.emoji)
+                    .font(.title2)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Label(String(localized: "Sounds"), systemImage: "speaker.wave.2")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text(store.selectedSoundscape == .none
+                         ? String(localized: "Choose focus audio")
+                         : store.selectedSoundscape.displayName)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(store.selectedSoundscape == .none ? .secondary : .primary)
+                }
+
+                Spacer(minLength: 12)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card))
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Today Sessions Card
@@ -132,6 +170,7 @@ struct FocusCompanionView: View {
                     Text(String(localized: "No sessions yet today"))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                    Spacer(minLength: 0)
                 }
             } else {
                 HStack(spacing: 20) {
@@ -165,7 +204,8 @@ struct FocusCompanionView: View {
             }
         }
         .padding(16)
-        .background(.regularMaterial, in: .rect(cornerRadius: 20))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Streak Card
@@ -175,7 +215,7 @@ struct FocusCompanionView: View {
             Image(systemName: "flame.fill")
                 .font(.largeTitle)
                 .foregroundStyle(.orange)
-                .symbolEffect(.bounce, value: streakDays)
+                .contentTransition(.symbolEffect(.replace))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(streakDays)")
@@ -191,28 +231,39 @@ struct FocusCompanionView: View {
             Spacer()
         }
         .padding(16)
-        .background(.regularMaterial, in: .rect(cornerRadius: 20))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Next Scheduled Task Card
 
     private func nextTaskCard(_ task: TaskListFeature.TaskItemState) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label(String(localized: "Up Next"), systemImage: "arrow.right.circle")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
+        Button {
+            store.send(.linkTask(task.id, task.title, task.energyLevel.emoji))
+        } label: {
+            VStack(alignment: .leading, spacing: 12) {
+                Label(String(localized: "Up Next"), systemImage: "arrow.right.circle")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
-            HStack(spacing: 10) {
-                Text(task.energyLevel.emoji)
-                    .font(.title2)
-                Text(task.title)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-                Spacer()
+                HStack(spacing: 10) {
+                    Text(task.energyLevel.emoji)
+                        .font(.title2)
+                    Text(task.title)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                    Spacer(minLength: 12)
+                    Image(systemName: "link")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
             }
         }
+        .buttonStyle(.plain)
         .padding(16)
-        .background(.regularMaterial, in: .rect(cornerRadius: 20))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card))
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 }

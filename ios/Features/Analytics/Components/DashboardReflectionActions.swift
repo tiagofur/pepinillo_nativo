@@ -13,7 +13,7 @@ struct DashboardReflectionActions: View {
     let onMonthlyReview: () -> Void
 
     var body: some View {
-        VStack(spacing: 10) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 12)], spacing: 12) {
             ReflectionCard(
                 icon: "calendar.badge.clock",
                 title: String(localized: "Weekly Review"),
@@ -66,8 +66,13 @@ struct ReflectionCard: View {
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
-            .padding(14)
-            .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: GlassCornerRadius.card))
+            .overlay {
+                RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                    .stroke(.secondary.opacity(0.12), lineWidth: 1)
+            }
         }
         .buttonStyle(.plain)
     }

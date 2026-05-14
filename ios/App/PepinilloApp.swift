@@ -18,6 +18,10 @@ private enum AppBootstrapError: Error {
     case containerTimeout
 }
 
+private enum AppBootstrapTiming {
+    static let containerOpenTimeout: Duration = .seconds(8)
+}
+
 private enum AppLaunchDefaults {
     static let hasCompletedOnboardingKey = "pepinillo.hasCompletedOnboarding"
 }
@@ -67,9 +71,23 @@ private final class AppBootstrap: ObservableObject {
             // Now that bootstrap is purely asynchronous, we can afford to wait for heavy migrations
             // without blocking the main thread or system splash screen.
             // Using a fresh local store in the App Group is the primary target.
-            return try await Task.detached(priority: .userInitiated) {
-                try makeSharedModelContainer()
-            }.value
+            return try await withThrowingTaskGroup(of: ModelContainer.self) { group in
+                group.addTask(priority: .userInitiated) {
+                    try await Task.detached(priority: .userInitiated) {
+                        try makeSharedModelContainer()
+                    }.value
+                }
+                group.addTask {
+                    try await Task.sleep(for: AppBootstrapTiming.containerOpenTimeout)
+                    throw AppBootstrapError.containerTimeout
+                }
+
+                guard let container = try await group.next() else {
+                    throw AppBootstrapError.containerTimeout
+                }
+                group.cancelAll()
+                return container
+            }
         } catch {
             startupLogger.error("Persistent store failed during launch, using fallback store: \(String(describing: error), privacy: .public)")
             return try Self.makeEmergencyFallbackContainer()
@@ -100,7 +118,7 @@ private final class AppBootstrap: ObservableObject {
     }
 
     private static func makeEmergencyFallbackContainer() throws -> ModelContainer {
-        try makeFallbackModelContainer()
+        try makeFreshFallbackModelContainer()
     }
 }
 

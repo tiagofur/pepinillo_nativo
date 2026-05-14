@@ -7,7 +7,11 @@
 // - inline data URLs for Apple-local profile photos
 
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 struct ProfileAvatarImageView<Placeholder: View>: View {
     let imageReference: String?
@@ -20,7 +24,7 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
 
     var body: some View {
         if let image = resolvedInlineImage {
-            Image(uiImage: image)
+            platformImage(image)
                 .resizable()
                 .scaledToFill()
         } else if let remoteURL = remoteURL {
@@ -36,7 +40,18 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
         }
     }
 
-    private var resolvedInlineImage: UIImage? {
+    private func platformImage(_ image: PlatformImage) -> Image {
+#if canImport(UIKit)
+        Image(uiImage: image)
+#elseif canImport(AppKit)
+        Image(nsImage: image)
+#else
+        Image(systemName: "person.crop.circle")
+#endif
+    }
+
+    private var resolvedInlineImage: PlatformImage? {
+#if canImport(UIKit) || canImport(AppKit)
         guard let imageReference, !imageReference.isEmpty else {
             return nil
         }
@@ -47,13 +62,16 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
             guard let data = Data(base64Encoded: base64) else {
                 return nil
             }
-            return UIImage(data: data)
+            return PlatformImage(data: data)
         }
 
         guard let url = URL(string: imageReference), url.isFileURL else {
             return nil
         }
-        return UIImage(contentsOfFile: url.path)
+        return PlatformImage(contentsOfFile: url.path)
+#else
+        return nil
+#endif
     }
 
     private var remoteURL: URL? {
@@ -66,3 +84,11 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
         return url
     }
 }
+
+#if canImport(UIKit)
+private typealias PlatformImage = UIImage
+#elseif canImport(AppKit)
+private typealias PlatformImage = NSImage
+#else
+private struct PlatformImage {}
+#endif

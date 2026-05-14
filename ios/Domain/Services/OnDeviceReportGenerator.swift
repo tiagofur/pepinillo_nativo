@@ -16,7 +16,7 @@ struct OnDeviceReportGenerator: Sendable {
 
     func isAvailable() -> Bool {
         #if canImport(FoundationModels)
-        if #available(iOS 26, *) {
+        if #available(iOS 26, macOS 26, *) {
             let model = SystemLanguageModel.default
             switch model.availability {
             case .available:
@@ -33,7 +33,7 @@ struct OnDeviceReportGenerator: Sendable {
 
     func generate(from payload: ReportPayload) async -> AIReportResponse? {
         #if canImport(FoundationModels)
-        if #available(iOS 26, *) {
+        if #available(iOS 26, macOS 26, *) {
             guard isAvailable() else { return nil }
             return await generateWithFoundationModels(payload: payload)
         }
@@ -44,7 +44,7 @@ struct OnDeviceReportGenerator: Sendable {
     // MARK: - Foundation Models Implementation
 
     #if canImport(FoundationModels)
-    @available(iOS 26, *)
+    @available(iOS 26, macOS 26, *)
     private func generateWithFoundationModels(payload: ReportPayload) async -> AIReportResponse? {
         do {
             let session = LanguageModelSession()

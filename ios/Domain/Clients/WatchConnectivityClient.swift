@@ -108,7 +108,7 @@ struct WatchConnectivityClient: Sendable {
     var sendStats: @Sendable (_ todayMinutes: Int, _ sessions: Int, _ streak: Int) async -> Void = { _, _, _ in }
 
     /// iOS → Watch: push today's task list.
-    var sendTasks: @Sendable ([WatchTaskItem]) async -> Void = { _ in }
+    var sendTasks: @Sendable (_ tasks: [WatchTaskItem]) async -> Void = { _ in }
 
     /// iOS → Watch: push dashboard stats.
     var sendDashboardStats: @Sendable (WatchDashboardStats) async -> Void = { _ in }

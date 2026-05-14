@@ -136,7 +136,7 @@ struct SessionJournalView: View {
 
 private struct WritingToolsModifier: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 18.1, *) {
+        if #available(iOS 18.1, macOS 15.0, *) {
             content.writingToolsBehavior(.complete)
         } else {
             content

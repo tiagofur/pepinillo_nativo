@@ -173,10 +173,10 @@ extension SubscriptionClient {
 #if canImport(RevenueCat)
 private actor SubscriptionManager {
     private var isConfigured = false
+    private var configurationWaiters: [CheckedContinuation<Void, Never>] = []
 
     func configure(apiKey: String, userID: String?) async {
         guard !isConfigured else { return }
-        isConfigured = true
 
         #if DEBUG
         Purchases.logLevel = .debug
@@ -184,9 +184,16 @@ private actor SubscriptionManager {
         Purchases.logLevel = .warn
         #endif
         Purchases.configure(withAPIKey: apiKey, appUserID: userID)
+        isConfigured = true
+
+        for waiter in configurationWaiters {
+            waiter.resume()
+        }
+        configurationWaiters.removeAll()
     }
 
     func fetchProducts() async -> [ProductInfo] {
+        await ensureConfigured()
         do {
             let offerings = try await Purchases.shared.offerings()
             guard let offering = offerings.current else {
@@ -195,11 +202,11 @@ private actor SubscriptionManager {
 
             var productInfos: [ProductInfo] = []
             for pepProduct in PepinilloProduct.currentProducts {
-                if let package = offering.package(identifier: pepProduct.rawValue) ?? offering.availablePackages.first(where: { $0.product.productIdentifier == pepProduct.rawValue }) {
+                if let package = offering.package(identifier: pepProduct.rawValue) ?? offering.availablePackages.first(where: { $0.storeProduct.productIdentifier == pepProduct.rawValue }) {
                     let productInfo = ProductInfo(
                         id: pepProduct.rawValue,
-                        displayName: package.product.localizedTitle,
-                        description: package.product.localizedDescription,
+                        displayName: package.storeProduct.localizedTitle,
+                        description: package.storeProduct.localizedDescription,
                         displayPrice: package.localizedPriceString,
                         billingPeriod: billingPeriodString(for: package),
                         isFeatured: pepProduct == .annual
@@ -218,13 +225,14 @@ private actor SubscriptionManager {
     }
 
     func purchase(productID: String) async -> PurchaseResult {
+        await ensureConfigured()
         do {
             let offerings = try await Purchases.shared.offerings()
             guard let offering = offerings.current else {
                 return .failed(message: "No offerings available")
             }
 
-            guard let package = offering.package(identifier: productID) ?? offering.availablePackages.first(where: { $0.product.productIdentifier == productID }) else {
+            guard let package = offering.package(identifier: productID) ?? offering.availablePackages.first(where: { $0.storeProduct.productIdentifier == productID }) else {
                 return .failed(message: "Package not found")
             }
 
@@ -255,18 +263,20 @@ private actor SubscriptionManager {
     }
 
     func restorePurchases() async -> SubscriptionState {
+        await ensureConfigured()
         do {
             let customerInfo = try await Purchases.shared.restorePurchases()
-            return await subscriptionStateFromCustomerInfo(customerInfo)
+            return subscriptionStateFromCustomerInfo(customerInfo)
         } catch {
             return .free
         }
     }
 
     func checkEntitlement() async -> SubscriptionState {
+        await ensureConfigured()
         do {
             let customerInfo = try await Purchases.shared.customerInfo()
-            return await subscriptionStateFromCustomerInfo(customerInfo)
+            return subscriptionStateFromCustomerInfo(customerInfo)
         } catch {
             return .free
         }
@@ -275,8 +285,9 @@ private actor SubscriptionManager {
     nonisolated func customerInfoStream() -> AsyncStream<SubscriptionState> {
         AsyncStream { continuation in
             let task = Task {
+                await self.ensureConfigured()
                 for await customerInfo in Purchases.shared.customerInfoStream {
-                    let state = await subscriptionStateFromCustomerInfo(customerInfo)
+                    let state = self.subscriptionStateFromCustomerInfo(customerInfo)
                     continuation.yield(state)
                 }
                 continuation.finish()
@@ -286,6 +297,7 @@ private actor SubscriptionManager {
     }
 
     func logIn(userID: String) async {
+        await ensureConfigured()
         do {
             _ = try await Purchases.shared.logIn(userID)
         } catch {
@@ -295,6 +307,7 @@ private actor SubscriptionManager {
     }
 
     func logOut() async {
+        await ensureConfigured()
         do {
             _ = try await Purchases.shared.logOut()
         } catch {
@@ -303,7 +316,14 @@ private actor SubscriptionManager {
         }
     }
 
-    private func subscriptionStateFromCustomerInfo(_ customerInfo: CustomerInfo) -> SubscriptionState {
+    private func ensureConfigured() async {
+        if isConfigured { return }
+        await withCheckedContinuation { continuation in
+            configurationWaiters.append(continuation)
+        }
+    }
+
+    private nonisolated func subscriptionStateFromCustomerInfo(_ customerInfo: CustomerInfo) -> SubscriptionState {
         // Check for Everywhere+ entitlement first (superset of Pepinillo+)
         if let everywhereEntitlement = customerInfo.entitlements["everywhere_plus"], everywhereEntitlement.isActive {
             let expiryDate = everywhereEntitlement.expirationDate
@@ -362,8 +382,8 @@ private actor SubscriptionManager {
     }
 
     private nonisolated func billingPeriodString(for package: RevenueCat.Package) -> String {
-        if let subscription = package.product.subscription {
-            switch subscription.subscriptionPeriod.unit {
+        if let period = package.storeProduct.subscriptionPeriod {
+            switch period.unit {
             case .day: return "day"
             case .week: return "week"
             case .month: return "month"

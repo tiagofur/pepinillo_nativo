@@ -85,6 +85,7 @@ struct FocusView: View {
                 onNeedsPro: { store.send(.paywallTapped) }
             )
             .presentationDetents([.medium])
+            .focusMacSheetFrame(width: 440, height: 560)
             .pepinilloSheetStyle()
         }
         // Task Picker sheet
@@ -105,6 +106,7 @@ struct FocusView: View {
                 }
             )
             .presentationDetents([.medium])
+            .focusMacSheetFrame(width: 460, height: 560)
             .pepinilloSheetStyle()
         }
         .confirmationDialog(String(localized: "focus.endsession.title", defaultValue: "End Session?"), isPresented: $showStopConfirmation, titleVisibility: .visible) {
@@ -186,7 +188,7 @@ struct FocusView: View {
 
     @ViewBuilder
     private var landscapeFocusColumn: some View {
-        if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, macOS 26.0, *) {
             GlassEffectContainer(spacing: 12) {
                 focusCoreBody(timerMaxSize: 500)
             }
@@ -199,7 +201,7 @@ struct FocusView: View {
 
     @ViewBuilder
     private var focusCoreContainer: some View {
-        if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, macOS 26.0, *) {
             GlassEffectContainer(spacing: 12) {
                 focusCoreColumn
             }
@@ -325,33 +327,35 @@ struct FocusView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
 
-            // Soundscape shortcut
-            HStack(spacing: 24) {
-                Button {
-                    store.send(.soundscapePickerTapped)
-                } label: {
-                    HStack(spacing: 8) {
-                        Text(store.selectedSoundscape.emoji)
-                            .font(.title3)
-                        if store.selectedSoundscape != .none && store.isRunning {
-                            AudioBarsView()
-                                .frame(width: 16, height: 12)
+            // Soundscape shortcut stays compact-only; regular layouts use the companion card.
+            if sizeClass != .regular {
+                HStack(spacing: 24) {
+                    Button {
+                        store.send(.soundscapePickerTapped)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Text(store.selectedSoundscape.emoji)
+                                .font(.title3)
+                            if store.selectedSoundscape != .none && store.isRunning {
+                                AudioBarsView()
+                                    .frame(width: 16, height: 12)
+                            }
+                            Text(store.selectedSoundscape == .none
+                                 ? String(localized: "Sounds")
+                                 : store.selectedSoundscape.displayName)
+                                .font(.subheadline.weight(.medium))
                         }
-                        Text(store.selectedSoundscape == .none
-                             ? String(localized: "Sounds")
-                             : store.selectedSoundscape.displayName)
-                            .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .adaptiveGlassCapsule(id: "soundscape-button", namespace: glassNS)
                     }
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .adaptiveGlassCapsule(id: "soundscape-button", namespace: glassNS)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 40)
+                .padding(.bottom, 16)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 40)
-            .padding(.bottom, 16)
         }
     }
 
@@ -462,9 +466,12 @@ struct FocusView: View {
                 } label: {
                     Image(systemName: "stop.fill")
                         .font(.title2)
+                        .foregroundStyle(.primary)
                         .frame(width: 56, height: 56)
-                        .adaptiveGlassCapsule(id: "stop-button", namespace: glassNS)
+                        .adaptiveGlassCircle(id: "stop-button", namespace: glassNS)
                 }
+                .buttonStyle(.plain)
+                .buttonBorderShape(.circle)
                 .accessibilityLabel(String(localized: "Stop session"))
 
                 // Pause / Resume
@@ -481,10 +488,15 @@ struct FocusView: View {
                         .contentTransition(.symbolEffect(.replace.byLayer))
                         .font(.title)
                         .frame(width: 72, height: 72)
-                        .foregroundStyle(.white)
-                        .background(modeColor)
-                        .clipShape(Circle())
+                        .adaptiveGlassCircle(
+                            id: "pause-resume-button",
+                            namespace: glassNS,
+                            tint: modeColor,
+                            foreground: .white
+                        )
                 }
+                .buttonStyle(.plain)
+                .buttonBorderShape(.circle)
                 .accessibilityLabel(store.isPaused ? String(localized: "Resume session") : String(localized: "Pause session"))
 
                 // Skip phase (Pomodoro only — skip break)
@@ -494,9 +506,12 @@ struct FocusView: View {
                     } label: {
                         Image(systemName: "forward.fill")
                             .font(.title2)
+                            .foregroundStyle(.primary)
                             .frame(width: 56, height: 56)
-                            .adaptiveGlassCapsule(id: "skip-button", namespace: glassNS)
+                            .adaptiveGlassCircle(id: "skip-button", namespace: glassNS)
                     }
+                    .buttonStyle(.plain)
+                    .buttonBorderShape(.circle)
                     .accessibilityLabel(String(localized: "Skip to next phase"))
                 }
             } else {
@@ -517,13 +532,9 @@ struct FocusView: View {
                             .fontWeight(.semibold)
                     }
                     .font(.title3)
-                    .foregroundStyle(.white)
                     .frame(maxWidth: 280)
                     .frame(height: 64)
-                    .background(modeColor.gradient)
-                    .clipShape(Capsule())
-                    .shadow(color: modeColor.opacity(0.3), radius: 12, y: 6)
-                    .startButtonGlassID(namespace: glassNS)
+                    .primaryFocusActionGlass(tint: modeColor, namespace: glassNS)
                 }
                 .buttonStyle(.pressable)
                 .accessibilityHint(String(localized: "Double tap to start a focus session"))
@@ -553,9 +564,10 @@ struct FocusView: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(.primary)
                 .frame(width: 56, height: 56)
-                .contentShape(Capsule())
-                .adaptiveGlassCapsule(id: "duration-\(systemName)-button", namespace: glassNS)
+                .adaptiveGlassCircle(id: "duration-\(systemName)-button", namespace: glassNS)
         }
+        .buttonStyle(.plain)
+        .buttonBorderShape(.circle)
         .opacity(isAtBoundary ? 0.4 : 1)
         .disabled(isAtBoundary)
         .accessibilityLabel(delta < 0
@@ -575,6 +587,17 @@ struct FocusView: View {
 
     private var modeGradient: AngularGradient {
         theme.ringGradient(for: currentMode, phase: store.phase)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func focusMacSheetFrame(width: CGFloat, height: CGFloat) -> some View {
+        #if os(macOS)
+        self.frame(minWidth: width, minHeight: height)
+        #else
+        self
+        #endif
     }
 }
 
@@ -672,12 +695,37 @@ struct ModePickerView: View {
 private extension View {
     @ViewBuilder
     func modeChipGlass(mode: FocusMode, glassNamespace: Namespace.ID?) -> some View {
-        if #available(iOS 26.0, *), let ns = glassNamespace {
+        if #available(iOS 26.0, macOS 26.0, *), let ns = glassNamespace {
             self
-                .glassEffect(.regular, in: .rect(cornerRadius: GlassCornerRadius.card))
+                .glassEffect(.regular.interactive(true), in: .rect(cornerRadius: GlassCornerRadius.card))
                 .glassEffectID("mode-chip-\(mode.id)", in: ns)
         } else {
             self.pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        }
+    }
+
+    @ViewBuilder
+    func primaryFocusActionGlass(tint: Color, namespace: Namespace.ID) -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            self
+                .foregroundStyle(.primary)
+                .glassEffect(
+                    .regular
+                        .interactive(true)
+                        .tint(tint.opacity(0.24)),
+                    in: .capsule
+                )
+                .glassEffectID("start-button", in: namespace)
+                .overlay {
+                    Capsule()
+                        .stroke(tint.opacity(0.45), lineWidth: 1)
+                }
+        } else {
+            self
+                .foregroundStyle(.white)
+                .background(tint.gradient)
+                .clipShape(Capsule())
+                .shadow(color: tint.opacity(0.3), radius: 12, y: 6)
         }
     }
 }

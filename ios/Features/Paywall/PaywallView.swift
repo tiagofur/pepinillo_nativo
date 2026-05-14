@@ -11,6 +11,7 @@ import ComposableArchitecture
 
 struct PaywallView: View {
     @Bindable var store: StoreOf<PaywallFeature>
+    @Namespace private var glassNS
 
     var body: some View {
         NavigationStack {
@@ -25,11 +26,11 @@ struct PaywallView: View {
                     }
                     .contentMaxWidth(900)
 
-                    PaywallProductCardsSection(store: store)
+                    PaywallProductCardsSection(store: store, glassNamespace: glassNS)
                         .readableContent(maxWidth: 672)
 
                     VStack(spacing: 20) {
-                        PaywallPurchaseButton(store: store)
+                        PaywallPurchaseButton(store: store, glassNamespace: glassNS)
                         PaywallLegalFooter(store: store)
                     }
                     .readableContent(maxWidth: 672)
@@ -39,7 +40,7 @@ struct PaywallView: View {
                 .padding(.bottom, 40)
             }
             .scrollContentBackground(.hidden)
-            .background(Color.clear)
+            .withAmbientBackground()
             .navigationTitle(String(localized: "Upgrade to Pepinillo+"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -155,7 +156,7 @@ struct PaywallPepinilloPlusSection: View {
             }
         }
         .padding(20)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
     }
 }
 
@@ -187,13 +188,15 @@ struct FeatureRow: View {
 
 struct PaywallProductCardsSection: View {
     @Bindable var store: StoreOf<PaywallFeature>
+    let glassNamespace: Namespace.ID
 
     var body: some View {
         VStack(spacing: 12) {
             ForEach(store.products) { product in
                 PaywallProductCard(
                     product: product,
-                    isSelected: store.selectedProductID == product.id
+                    isSelected: store.selectedProductID == product.id,
+                    glassNamespace: glassNamespace
                 ) {
                     store.send(.productSelected(product.id))
                 }
@@ -205,6 +208,7 @@ struct PaywallProductCardsSection: View {
 struct PaywallProductCard: View {
     let product: ProductInfo
     let isSelected: Bool
+    let glassNamespace: Namespace.ID
     let onTap: () -> Void
 
     var body: some View {
@@ -258,21 +262,20 @@ struct PaywallProductCard: View {
                 }
             }
             .padding(18)
-            .background {
+            .background(
+                ZStack {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                            .fill(Color.accentColor.opacity(0.08))
+                            .matchedGeometryEffect(id: "selection-bg-\(product.id)", in: glassNamespace)
+                    }
+                }
+            )
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+            .overlay {
                 if isSelected {
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(Color.accentColor.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24)
-                                .stroke(Color.accentColor, lineWidth: 2)
-                        )
-                } else {
-                    RoundedRectangle(cornerRadius: 24)
-                        .fill(.ultraThinMaterial)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 24)
-                                .stroke(.white.opacity(0.2), lineWidth: 1)
-                        )
+                    RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                        .stroke(Color.accentColor, lineWidth: 2)
                 }
             }
         }
@@ -284,6 +287,7 @@ struct PaywallProductCard: View {
 
 struct PaywallPurchaseButton: View {
     @Bindable var store: StoreOf<PaywallFeature>
+    let glassNamespace: Namespace.ID
 
     private var buttonLabel: String {
         if store.subscriptionState.isPro {
@@ -312,18 +316,47 @@ struct PaywallPurchaseButton: View {
             }
             .font(.headline)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
-            .background(
-                LinearGradient(colors: [Color.accentColor, Color.accentColor.opacity(0.8)], startPoint: .top, endPoint: .bottom),
-                in: RoundedRectangle(cornerRadius: 24)
-            )
-            .foregroundStyle(.white)
-            .shadow(color: Color.accentColor.opacity(0.3), radius: 10, y: 5)
+            .frame(height: 64)
+            .paywallPrimaryActionGlass(glassNamespace: glassNamespace)
         }
         .frame(maxWidth: 480)
         .frame(maxWidth: .infinity)
+        .buttonStyle(.pressable)
         .disabled(store.isLoading || store.subscriptionState.isPro)
         .padding(.top, 10)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func paywallPrimaryActionGlass(glassNamespace: Namespace.ID) -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            self
+                .foregroundStyle(.primary)
+                .glassEffect(
+                    .regular
+                        .interactive(true)
+                        .tint(Color.accentColor.opacity(0.2)),
+                    in: .rect(cornerRadius: GlassCornerRadius.card)
+                )
+                .glassEffectID("paywall-action", in: glassNamespace)
+                .overlay {
+                    RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                        .stroke(Color.accentColor.opacity(0.4), lineWidth: 1)
+                }
+        } else {
+            self
+                .foregroundStyle(.white)
+                .background(
+                    LinearGradient(
+                        colors: [Color.accentColor, Color.accentColor.opacity(0.8)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    ),
+                    in: RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                )
+                .shadow(color: Color.accentColor.opacity(0.3), radius: 12, y: 6)
+        }
     }
 }
 

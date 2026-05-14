@@ -46,10 +46,9 @@ struct PepinilloFocusToggle: ControlWidget {
 struct FocusToggleValueProvider {
     static let shared = FocusToggleValueProvider()
 
-    /// Reads whether a session is currently active from the App Group UserDefaults.
+    /// Reads whether a session is currently active from the App Group.
     var isActive: Bool {
-        let defaults = UserDefaults(suiteName: AppGroup.id)
-        return defaults?.bool(forKey: "isSessionActive") ?? false
+        AppGroupDefaults.isSessionActive
     }
 }
 
@@ -62,15 +61,22 @@ struct ToggleFocusIntent: SetValueIntent {
     @Parameter(title: "Is On")
     var value: Bool
 
+    @MainActor
     func perform() async throws -> some IntentResult {
-        // Write the desired state to App Group UserDefaults.
-        // The main app observes this key and starts/stops the session accordingly.
-        let defaults = UserDefaults(suiteName: AppGroup.id)
-        defaults?.set(value, forKey: "controlCenterToggleRequested")
-        defaults?.set(value, forKey: "isSessionActive")
+        if value {
+            // Start session optimistically
+            // Use the last selected mode or default to pomodoro
+            let mode = AppGroupDefaults.widgetSelectedMode ?? "pomodoro"
+            AppGroupDefaults.startWidgetSession(modeID: mode)
+        } else {
+            // Stop current session
+            AppGroupDefaults.externalStopRequested = true
+            AppGroupDefaults.isSessionActive = false
+        }
 
-        // Reload the Control Center widget to reflect the new state
-        ControlCenter.shared.reloadControls(ofKind: "com.pepinillo.control-center.focus-toggle")
+        // Reload the Control Center widget and Home Screen widgets to reflect the state
+        ControlCenter.shared.reloadControls(ofKind: PepinilloFocusToggle.kind)
+        WidgetCenter.shared.reloadAllTimelines()
         
         return .result()
     }

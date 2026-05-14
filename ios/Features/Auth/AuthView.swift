@@ -12,6 +12,7 @@ struct AuthView: View {
     @Bindable var store: StoreOf<AuthFeature>
     @Environment(\.appTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
+    @Namespace private var glassNS
     let onAppleSignIn: ((AppleUserInfo) -> Void)?
     let onAppleSignInFailed: (() -> Void)?
     @State private var currentNonce: String = ""
@@ -216,36 +217,59 @@ struct AuthView: View {
                         .padding(.top, 12)
                         .accessibilityHidden(true)
 
-                        SignInWithAppleButton(.continue) { request in
-                            let nonce = AppleAuthHelper.generateNonce()
-                            currentNonce = nonce
-                            request.nonce = AppleAuthHelper.sha256Hex(nonce)
-                            request.requestedScopes = [.fullName, .email]
-                        } onCompletion: { result in
-                            switch result {
-                            case .success(let auth):
-                                guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
-                                    onAppleSignInFailed?()
-                                    return
-                                }
-                                guard !currentNonce.isEmpty else {
-                                    onAppleSignInFailed?()
-                                    return
-                                }
-                                let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
-                                onAppleSignIn?(AppleUserInfo(
-                                    userID: cred.user,
-                                    displayName: cred.fullName?.formatted(),
-                                    email: cred.email,
-                                    identityToken: identityToken,
-                                    nonce: currentNonce
-                                ))
-                            case .failure:
-                                onAppleSignInFailed?()
+                        ZStack {
+                            // Liquid Glass Background & Label (Visual Only)
+                            HStack(spacing: 8) {
+                                Image(systemName: "apple.logo")
+                                    .font(.subheadline.weight(.semibold))
+                                Text(String(localized: "Continue with Apple"))
+                                    .font(.subheadline.weight(.semibold))
                             }
+                            .foregroundStyle(.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .adaptiveGlassCapsule(id: "apple-auth-pills", namespace: glassNS)
+                            .overlay {
+                                Capsule()
+                                    .stroke(.secondary.opacity(colorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
+                            }
+                            .allowsHitTesting(false)
+
+                            // Invisible System Button (Interaction Layer)
+                            SignInWithAppleButton(.continue) { request in
+                                let nonce = AppleAuthHelper.generateNonce()
+                                currentNonce = nonce
+                                request.nonce = AppleAuthHelper.sha256Hex(nonce)
+                                request.requestedScopes = [.fullName, .email]
+                            } onCompletion: { result in
+                                switch result {
+                                case .success(let auth):
+                                    guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
+                                        onAppleSignInFailed?()
+                                        return
+                                    }
+                                    guard !currentNonce.isEmpty else {
+                                        onAppleSignInFailed?()
+                                        return
+                                    }
+                                    let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
+                                    onAppleSignIn?(AppleUserInfo(
+                                        userID: cred.user,
+                                        displayName: cred.fullName?.formatted(),
+                                        email: cred.email,
+                                        identityToken: identityToken,
+                                        nonce: currentNonce
+                                    ))
+                                case .failure:
+                                    onAppleSignInFailed?()
+                                }
+                            }
+                            .signInWithAppleButtonStyle(colorScheme == .dark ? .black : .white)
+                            .opacity(0.015)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
                         }
-                        .signInWithAppleButtonStyle(.whiteOutline)
-                        .frame(height: 46)
+                        .contentShape(Capsule())
                         .padding(.horizontal, 24)
                     }
                     .transition(.asymmetric(
@@ -309,7 +333,7 @@ struct AuthView: View {
         .overlay {
             if store.isSyncing {
                 ZStack {
-                    Color(.systemBackground).opacity(0.6)
+                    Color.pepinilloSystemBackground.opacity(0.6)
                         .ignoresSafeArea()
                         .accessibilityHidden(true)
                     VStack(spacing: 16) {

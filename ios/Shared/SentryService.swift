@@ -43,8 +43,10 @@ enum SentryService {
             options.tracesSampleRate = 0.1
 
             // Privacy-first defaults.
+            #if !os(macOS)
             options.attachScreenshot = false
             options.attachViewHierarchy = false
+            #endif
             options.sendDefaultPii = false
 
             // App hangs & slow frames tracking (cheap, high signal).

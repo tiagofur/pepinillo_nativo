@@ -43,13 +43,15 @@ struct TaskDetailView: View {
                 metadataSection
                 recurrenceSection
                 notesSection
-                if store.totalFocusSeconds > 0 {
-                    statsSection
-                }
-                actionsSection
-                deleteSection
+            if store.totalFocusSeconds > 0 {
+                statsSection
             }
-            .padding(.horizontal, 16)
+            actionsSection
+            deleteSection
+        }
+            .frame(maxWidth: 760)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 20)
             .padding(.vertical, 20)
         }
         .navigationTitle(String(localized: "Task Details"))
@@ -121,6 +123,7 @@ struct TaskDetailView: View {
                     axis: .vertical
                 )
                 .font(.title3.weight(.semibold))
+                .textFieldStyle(.plain)
                 .focused($focusedField, equals: .title)
                 .strikethrough(store.isCompleted)
                 .foregroundStyle(store.isCompleted ? .secondary : .primary)
@@ -128,7 +131,7 @@ struct TaskDetailView: View {
             .padding(.vertical, 2)
         }
         .padding(16)
-        .pepinilloGlass()
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private var subtasksSection: some View {
@@ -207,37 +210,47 @@ struct TaskDetailView: View {
                 }
             }
             .padding(16)
-            .pepinilloGlass()
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
     private var schedulingSection: some View {
-        VStack(spacing: 12) {
-            Toggle(
-                String(localized: "Focus Today"),
-                isOn: Binding(
-                    get: { store.scheduledForToday },
-                    set: { store.send(.scheduledForTodayChanged($0)) }
-                )
-            )
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle(isOn: Binding(
+                get: { store.scheduledForToday },
+                set: { store.send(.scheduledForTodayChanged($0)) }
+            )) {
+                Label(String(localized: "Focus Today"), systemImage: "bolt.fill")
+                    .font(.body.weight(.semibold))
+            }
+            .toggleStyle(.switch)
             .tint(.orange)
 
             Divider()
                 .opacity(0.1)
 
             if store.dueDate != nil {
-                DatePicker(
-                    String(localized: "Due Date"),
-                    selection: Binding(
-                        get: { store.dueDate ?? Date() },
-                        set: { store.send(.dueDateChanged($0)) }
-                    ),
-                    displayedComponents: .date
-                )
+                HStack(alignment: .center, spacing: 12) {
+                    Label(String(localized: "Due Date"), systemImage: "calendar")
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 12)
+                    DatePicker(
+                        String(localized: "Due Date"),
+                        selection: Binding(
+                            get: { store.dueDate ?? Date() },
+                            set: { store.send(.dueDateChanged($0)) }
+                        ),
+                        displayedComponents: .date
+                    )
+                    .labelsHidden()
+                }
+
                 Button(String(localized: "Remove Due Date"), role: .destructive) {
                     store.send(.dueDateChanged(nil))
                 }
-                .font(.subheadline)
+                .buttonStyle(.borderless)
+                .font(.subheadline.weight(.medium))
+                .frame(maxWidth: .infinity, alignment: .trailing)
             } else {
                 Button {
                     store.send(.dueDateChanged(Calendar.current.date(byAdding: .day, value: 1, to: .now)))
@@ -248,7 +261,8 @@ struct TaskDetailView: View {
             }
         }
         .padding(16)
-        .pepinilloGlass()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private var metadataSection: some View {
@@ -259,51 +273,60 @@ struct TaskDetailView: View {
                 .textCase(.uppercase)
                 .padding(.bottom, 4)
 
-            VStack(spacing: 16) {
-                Picker(
-                    String(localized: "Priority"),
-                    selection: Binding(
-                        get: { store.priority },
-                        set: { store.send(.priorityChanged($0)) }
-                    )
-                ) {
-                    ForEach(TaskPriority.allCases, id: \.self) { priority in
-                        HStack {
-                            if priority != .none {
-                                Image(systemName: priority.icon)
+            VStack(spacing: 14) {
+                planEditorRow(String(localized: "Priority"), systemImage: "arrow.up") {
+                    Picker(
+                        String(localized: "Priority"),
+                        selection: Binding(
+                            get: { store.priority },
+                            set: { store.send(.priorityChanged($0)) }
+                        )
+                    ) {
+                        ForEach(TaskPriority.allCases, id: \.self) { priority in
+                            HStack {
+                                if priority != .none {
+                                    Image(systemName: priority.icon)
+                                }
+                                Text(priority.displayName)
                             }
-                            Text(priority.displayName)
+                            .tag(priority)
                         }
-                        .tag(priority)
                     }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
                 }
-                .pickerStyle(.menu)
 
                 Divider().opacity(0.1)
 
-                Picker(
-                    String(localized: "Energy"),
-                    selection: Binding(
-                        get: { store.energyLevel },
-                        set: { store.send(.energyLevelChanged($0)) }
+                planEditorRow(String(localized: "Energy"), systemImage: "brain.head.profile") {
+                    Picker(
+                        String(localized: "Energy"),
+                        selection: Binding(
+                            get: { store.energyLevel },
+                            set: { store.send(.energyLevelChanged($0)) }
+                        )
+                    ) {
+                        ForEach(EnergyLevel.allCases, id: \.self) { level in
+                            Label(level.displayName, systemImage: level.icon).tag(level)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                }
+
+                Divider().opacity(0.1)
+
+                planEditorRow(String(localized: "Pomodoros"), systemImage: "timer") {
+                    Stepper(
+                        "\(store.estimatedPomodoros)",
+                        value: Binding(
+                            get: { store.estimatedPomodoros },
+                            set: { store.send(.estimatedPomodorosChanged($0)) }
+                        ),
+                        in: 1...8
                     )
-                ) {
-                    ForEach(EnergyLevel.allCases, id: \.self) { level in
-                        Label(level.displayName, systemImage: level.icon).tag(level)
-                    }
+                    .labelsHidden()
                 }
-                .pickerStyle(.menu)
-
-                Divider().opacity(0.1)
-
-                Stepper(
-                    String(localized: "Pomodoros: \(store.estimatedPomodoros)"),
-                    value: Binding(
-                        get: { store.estimatedPomodoros },
-                        set: { store.send(.estimatedPomodorosChanged($0)) }
-                    ),
-                    in: 1...8
-                )
 
                 if store.completedPomodoros > 0 {
                     LabeledContent(String(localized: "Completed")) {
@@ -313,7 +336,8 @@ struct TaskDetailView: View {
                 }
             }
             .padding(16)
-            .pepinilloGlass()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
@@ -368,7 +392,7 @@ struct TaskDetailView: View {
                 }
             }
             .padding(16)
-            .pepinilloGlass()
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
@@ -390,7 +414,7 @@ struct TaskDetailView: View {
             .background(Color.clear)
             .frame(minHeight: 120)
             .padding(12)
-            .pepinilloGlass()
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
@@ -426,7 +450,7 @@ struct TaskDetailView: View {
                 }
             }
             .padding(16)
-            .pepinilloGlass()
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
@@ -440,7 +464,7 @@ struct TaskDetailView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
-                .background(store.isCompleted ? Color(.systemFill) : Color.accentColor)
+                .background(store.isCompleted ? Color.pepinilloSystemFill : Color.accentColor)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: (store.isCompleted ? Color.clear : Color.accentColor.opacity(0.3)), radius: 8, y: 4)
         }
@@ -472,5 +496,18 @@ struct TaskDetailView: View {
             return String(localized: "\(hours)h")
         }
         return String(localized: "\(hours)h \(remainingMinutes)m")
+    }
+
+    private func planEditorRow<Content: View>(
+        _ title: String,
+        systemImage: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Label(title, systemImage: systemImage)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 12)
+            content()
+        }
     }
 }

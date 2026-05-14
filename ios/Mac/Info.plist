@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_BASE_URL</key>
+	<string>$(API_BASE_URL)</string>
+	<key>APP_ENVIRONMENT</key>
+	<string>$(APP_ENVIRONMENT)</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Pepinillo</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.pepinillo.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>pepinillo</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Pepinillo reads and updates your Calendar so your focus sessions appear alongside your existing schedule.
+</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Pepinillo reads your Calendar events so you can plan focus sessions around your existing schedule.
+</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.pepinillo.app.focusSession</string>
+		<string>com.pepinillo.app.viewAnalytics</string>
+		<string>com.pepinillo.app.viewTask</string>
+	</array>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>Pepinillo sends reminders to start your focus sessions and notifies you when a Pomodoro or break is complete.
+</string>
+	<key>SENTRY_DSN</key>
+	<string>$(SENTRY_DSN)</string>
+	<key>WS_BASE_URL</key>
+	<string>$(WS_BASE_URL)</string>
+</dict>
+</plist>

@@ -35,7 +35,7 @@ extension CalendarClient: DependencyKey {
 
         return CalendarClient(
             requestAccess: {
-                if #available(iOS 17.0, *) {
+                if #available(iOS 17.0, macOS 14.0, *) {
                     return try await store.requestFullAccessToEvents()
                 } else {
                     return try await store.requestAccess(to: .event)
@@ -43,7 +43,7 @@ extension CalendarClient: DependencyKey {
             },
             isAuthorized: {
                 let status = EKEventStore.authorizationStatus(for: .event)
-                if #available(iOS 17.0, *) {
+                if #available(iOS 17.0, macOS 14.0, *) {
                     return status == .fullAccess
                 } else {
                     return status == .authorized

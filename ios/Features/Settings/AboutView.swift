@@ -5,6 +5,11 @@
 
 import SwiftUI
 import ComposableArchitecture
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 struct AboutView: View {
     let store: StoreOf<AboutFeature>
@@ -15,8 +20,8 @@ struct AboutView: View {
             // MARK: App Identity (hero header as a section)
             Section {
                 VStack(spacing: 16) {
-                    if let icon = UIImage(named: "AppIcon") {
-                        Image(uiImage: icon)
+                    if let icon = PlatformImage(named: "AppIcon") {
+                        platformImage(icon)
                             .resizable()
                             .frame(width: 80, height: 80)
                             .clipShape(RoundedRectangle(cornerRadius: 18))
@@ -108,4 +113,20 @@ struct AboutView: View {
         .navigationTitle(String(localized: "About"))
         .navigationBarTitleDisplayMode(.inline)
     }
+
+    private func platformImage(_ image: PlatformImage) -> Image {
+#if canImport(UIKit)
+        Image(uiImage: image)
+#elseif canImport(AppKit)
+        Image(nsImage: image)
+#else
+        Image(systemName: "app.badge")
+#endif
+    }
 }
+
+#if canImport(UIKit)
+private typealias PlatformImage = UIImage
+#elseif canImport(AppKit)
+private typealias PlatformImage = NSImage
+#endif

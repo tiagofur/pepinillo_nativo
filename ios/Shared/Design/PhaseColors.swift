@@ -76,8 +76,8 @@ extension Color {
         breakVariant(for: .longBreak)
     }
 
-    #if os(watchOS)
-    /// Extract HSB components on watchOS where UIColor is unavailable.
+    #if !canImport(UIKit) || os(watchOS)
+    /// Extract HSB components where UIColor is unavailable.
     private func extractHSB() -> (hue: CGFloat, saturation: CGFloat, brightness: CGFloat, alpha: CGFloat) {
         // Resolve the color in the sRGB color space
         let resolved = self.resolve(in: EnvironmentValues())

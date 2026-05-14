@@ -58,6 +58,20 @@ enum AppGroup {
         return baseDirectory.appendingPathComponent("PepinilloFallback.sqlite")
     }
 
+    /// Per-launch fallback store. SwiftData can leave a failed persistent-store
+    /// initialization in process-local state; using a fresh URL avoids reusing the
+    /// same failed coordinator when the primary App Group store could not open.
+    static func freshFallbackStoreURL() -> URL {
+        let baseDirectory =
+            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory())
+
+        return baseDirectory
+            .appendingPathComponent("PepinilloFallbackStores", isDirectory: true)
+            .appendingPathComponent("PepinilloFallback-\(UUID().uuidString).sqlite")
+    }
+
     /// Related SQLite sidecar files created by WAL journaling.
     static var storeSupportURLs: [URL] {
         let base = storeURL
@@ -502,6 +516,18 @@ func makeFallbackModelContainer() throws -> ModelContainer {
     }
 
     return try makeModelContainer(at: AppGroup.fallbackStoreURL)
+}
+
+func makeFreshFallbackModelContainer() throws -> ModelContainer {
+    let fileManager = FileManager.default
+    let fallbackURL = AppGroup.freshFallbackStoreURL()
+    let directory = fallbackURL.deletingLastPathComponent()
+    if fileManager.fileExists(atPath: directory.path) == false {
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+
+    persistenceLogger.info("Opening fresh fallback ModelContainer at: \(fallbackURL.path, privacy: .public)")
+    return try makeModelContainer(at: fallbackURL)
 }
 
 private func quarantineCorruptedStoreIfPresent() throws {

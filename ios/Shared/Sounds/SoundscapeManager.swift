@@ -109,9 +109,13 @@ actor SoundscapeManager {
     }
 
     private func configureAudioSession() throws {
+        #if os(macOS)
+        return
+        #else
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
         try session.setActive(true)
+        #endif
     }
 
     /// Schedule a buffer from the file to loop indefinitely.

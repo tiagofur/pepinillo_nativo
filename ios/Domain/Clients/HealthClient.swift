@@ -6,7 +6,9 @@
 
 import Foundation
 import ComposableArchitecture
+#if canImport(HealthKit) && !os(macOS)
 import HealthKit
+#endif
 
 @DependencyClient
 struct HealthClient: Sendable {
@@ -22,6 +24,7 @@ struct HealthClient: Sendable {
 
 extension HealthClient: DependencyKey {
     static let liveValue: HealthClient = {
+#if canImport(HealthKit) && !os(macOS)
         let store = HKHealthStore()
         let mindfulType = HKCategoryType(.mindfulSession)
 
@@ -46,6 +49,9 @@ extension HealthClient: DependencyKey {
                 try await store.save(sample)
             }
         )
+#else
+        return HealthClient()
+#endif
     }()
 
     /// Noop fallback for tests and previews.

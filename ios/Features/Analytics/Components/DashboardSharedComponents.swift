@@ -18,19 +18,25 @@ struct SummaryCard: View {
     let color: Color
 
     var body: some View {
-        VStack(spacing: 6) {
+        HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(color)
+                .frame(width: 34, height: 34)
+                .background(color.opacity(0.12), in: Circle())
                 .accessibilityHidden(true)
-            Text(value)
-                .font(NumericFont.kpi())
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(value)
+                    .font(NumericFont.kpi(size: 24))
+                    .foregroundStyle(.primary)
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(16)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title), \(value)")
@@ -85,22 +91,26 @@ struct PatternCard: View {
     let color: Color
 
     var body: some View {
-        VStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: icon)
-                .font(.title3)
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(color)
+                .frame(width: 28, height: 28)
+                .background(color.opacity(0.12), in: Circle())
                 .accessibilityHidden(true)
-            Text(value)
-                .font(NumericFont.kpi())
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(value)
+                    .font(NumericFont.inline())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
-        .padding(.horizontal, 8)
+        .padding(12)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")

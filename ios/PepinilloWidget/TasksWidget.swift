@@ -19,7 +19,7 @@ struct TasksHomeScreenWidget: Widget {
             provider: TasksWidgetProvider()
         ) { entry in
             TasksWidgetEntryView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .pepinilloWidgetBackground()
                 .widgetURL(URL(string: "pepinillo://plan"))
         }
         .configurationDisplayName("Tasks")

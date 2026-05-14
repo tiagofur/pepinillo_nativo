@@ -286,16 +286,3 @@ struct AppView: View {
         }
     }
 }
-
-// MARK: - FocusedValue key for keyboard shortcut access
-
-private struct AppStoreKey: FocusedValueKey {
-    typealias Value = StoreOf<AppFeature>
-}
-
-extension FocusedValues {
-    var appStore: StoreOf<AppFeature>? {
-        get { self[AppStoreKey.self] }
-        set { self[AppStoreKey.self] = newValue }
-    }
-}

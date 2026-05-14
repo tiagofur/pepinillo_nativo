@@ -78,7 +78,11 @@ struct SoundscapePickerView: View {
                     .accessibilityLabel(String(localized: "Pro soundscapes, subscription required"))
                 }
             }
+            #if os(macOS)
+            .listStyle(.inset)
+            #else
             .listStyle(.insetGrouped)
+            #endif
             .navigationTitle(String(localized: "Soundscape"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

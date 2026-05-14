@@ -142,7 +142,7 @@ struct PlanTaskList: View {
                                 systemImage: task.scheduledForToday ? "minus.circle" : "bolt.circle.fill"
                             )
                         }
-                        .tint(task.scheduledForToday ? Color(.tertiaryLabel) : .orange)
+                        .tint(task.scheduledForToday ? Color.pepinilloTertiaryLabel : .orange)
                     }
                 }
                 .onDelete { indexSet in
@@ -152,7 +152,11 @@ struct PlanTaskList: View {
                     }
                 }
             }
+            #if os(macOS)
+            .listStyle(.inset)
+            #else
             .listStyle(.insetGrouped)
+            #endif
             .scrollContentBackground(.hidden)
             .background(Color.clear)
             .conditionalAnimation(.smooth(duration: 0.3), value: filteredTasks.map(\.id))
@@ -191,24 +195,30 @@ struct PlanTaskList: View {
                     set: { store.send(.newTaskTitleChanged($0)) }
                 )
             )
-            .textFieldStyle(.roundedBorder)
+            .textFieldStyle(.plain)
             .submitLabel(.done)
             .onSubmit { store.send(.addTaskTapped) }
+            .padding(.horizontal, 12)
+            .frame(height: 36)
+            .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile))
 
             Button {
                 HapticManager.impact(.light)
                 store.send(.addTaskTapped)
             } label: {
-                Image(systemName: "plus.circle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.tint)
+                Image(systemName: "plus")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(store.newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty ? Color.secondary.opacity(0.45) : Color.accentColor, in: Circle())
             }
+            .buttonStyle(.plain)
             .disabled(store.newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty)
             .accessibilityLabel(String(localized: "Add new task"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
     }
@@ -251,7 +261,7 @@ private struct OptionalMatchedSource: ViewModifier {
     let namespace: Namespace.ID?
 
     func body(content: Content) -> some View {
-        if #available(iOS 18.0, watchOS 11.0, *), let ns = namespace {
+        if #available(iOS 18.0, macOS 15.0, watchOS 11.0, *), let ns = namespace {
             content.matchedTransitionSource(id: id, in: ns)
         } else {
             content

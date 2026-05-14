@@ -304,103 +304,107 @@ struct AppFeature {
                 }
 
             case .appLaunched:
-                return .merge(
-                    // Configure RevenueCat early
+                return .concatenate(
+                    // 1. Configure RevenueCat first (blocking)
                     .run { send in
                         let prefs = try await persistence.fetchPreferences()
                         // Use Apple User ID if available, otherwise nil for anonymous
                         let userID = prefs.appleUserID
                         await subscriptionClient.configure("appl_xnChlVXXtUFhusIfJyNrNDcMGLj", userID)
                     },
-                    // Onboarding check + Apple credential state check
-                    .run { [appleClient] send in
-                        let prefs = try await persistence.fetchPreferences()
-                        if prefs.hasCompletedOnboarding {
-                            await send(.onboardingCompleted)
-                        }
-                        if let userID = prefs.appleUserID {
-                            let authorized = await appleClient.checkCredentialState(userID)
-                            await send(.appleCredentialStateChecked(userID, authorized))
-                        }
-                    },
-                    // Subscription entitlement
-                    .run { send in
-                        let sub = await subscriptionClient.checkEntitlement()
-                        await send(.subscriptionStateLoaded(sub))
-                    },
-                    // RevenueCat customer info stream
-                    .run { send in
-                        let stream = subscriptionClient.listenForTransactionUpdates()
-                        for await sub in stream {
-                            await send(.subscriptionUpdated(sub))
-                        }
-                    }
-                    .cancellable(id: CancelID.transactionListener),
-                    // Notification permission
-                    .send(.requestNotificationPermission),
-                    // Notification action taps
-                    .run { [notificationClient] send in
-                        let stream = notificationClient.observeActions()
-                        for await action in stream {
-                            await send(.notificationActionReceived(action))
-                        }
-                    }
-                    .cancellable(id: CancelID.notificationActionListener),
-                    // Load cached user from persistence
-                    .run { send in
-                        let user = try? await persistence.fetchCachedUser()
-                        await send(.cachedUserLoaded(user))
-                    },
-                    // If tokens exist, try to refresh user profile from network and sync tasks
-                    .run { [keychain, apiClient, persistence, syncClient, isPro = state.subscriptionState.isPro] send in
-                        guard await keychain.hasTokens() else { return }
-                        do {
-                            let apiUser = try await apiClient.getMe()
-                            let dto = CachedUserDTO(
-                                id: apiUser.id, email: apiUser.email, name: apiUser.name,
-                                imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
-                                subscriptionTier: apiUser.subscriptionTier,
-                                subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
-                                emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
-                                createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
-                            )
-                            try? await persistence.saveCachedUser(dto)
-                            await send(.cachedUserLoaded(dto))
-                        } catch {
-                            // Network error — use cached data silently
-                        }
-                        // Sync tasks after profile refresh if Pro
-                        if isPro {
-                            try? await syncClient.syncAll()
-                        }
-                    },
-                    // Connect WebSocket if authenticated
-                    .run { [keychain, webSocketClient] _ in
-                        guard await keychain.hasTokens() else { return }
-                        await withTaskCancellationHandler {
-                            await webSocketClient.connect()
-                        } onCancel: {
-                            webSocketClient.disconnect()
-                        }
-                    }
-                    .cancellable(id: CancelID.webSocket, cancelInFlight: true),
-                    // Watch: listen for commands from the Watch
-                    .run { [watchClient] send in
-                        guard watchClient.isSupported() else { return }
-                        let stream = await watchClient.receiveMessages()
-                        for await message in stream {
-                            if case .command(let cmd) = message {
-                                await send(.watchCommandReceived(cmd))
+                    
+                    // 2. Start other services in parallel once configured
+                    .merge(
+                        // Onboarding check + Apple credential state check
+                        .run { [appleClient] send in
+                            let prefs = try await persistence.fetchPreferences()
+                            if prefs.hasCompletedOnboarding {
+                                await send(.onboardingCompleted)
+                            }
+                            if let userID = prefs.appleUserID {
+                                let authorized = await appleClient.checkCredentialState(userID)
+                                await send(.appleCredentialStateChecked(userID, authorized))
+                            }
+                        },
+                        // Subscription entitlement
+                        .run { send in
+                            let sub = await subscriptionClient.checkEntitlement()
+                            await send(.subscriptionStateLoaded(sub))
+                        },
+                        // RevenueCat customer info stream
+                        .run { send in
+                            let stream = subscriptionClient.listenForTransactionUpdates()
+                            for await sub in stream {
+                                await send(.subscriptionUpdated(sub))
                             }
                         }
-                    }
-                    .cancellable(id: CancelID.watchCommandListener),
-                    // Load tasks early so they are available for focus linking
-                    .send(.tasks(.onAppear)),
-                    // Load analytics early so the Focus companion cards have data on first Focus visit
-                    .send(.analytics(.onAppear)),
-                    // Reconcile widget/intent commands even if they arrived before bootstrap finished.
-                    .send(.consumeExternalCommands)
+                        .cancellable(id: CancelID.transactionListener),
+                        // Notification permission
+                        .send(.requestNotificationPermission),
+                        // Notification action taps
+                        .run { [notificationClient] send in
+                            let stream = notificationClient.observeActions()
+                            for await action in stream {
+                                await send(.notificationActionReceived(action))
+                            }
+                        }
+                        .cancellable(id: CancelID.notificationActionListener),
+                        // Load cached user from persistence
+                        .run { send in
+                            let user = try? await persistence.fetchCachedUser()
+                            await send(.cachedUserLoaded(user))
+                        },
+                        // If tokens exist, try to refresh user profile from network and sync tasks
+                        .run { [keychain, apiClient, persistence, syncClient, isPro = state.subscriptionState.isPro] send in
+                            guard await keychain.hasTokens() else { return }
+                            do {
+                                let apiUser = try await apiClient.getMe()
+                                let dto = CachedUserDTO(
+                                    id: apiUser.id, email: apiUser.email, name: apiUser.name,
+                                    imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
+                                    subscriptionTier: apiUser.subscriptionTier,
+                                    subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
+                                    emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
+                                    createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
+                                )
+                                try? await persistence.saveCachedUser(dto)
+                                await send(.cachedUserLoaded(dto))
+                            } catch {
+                                // Network error — use cached data silently
+                            }
+                            // Sync tasks after profile refresh if Pro
+                            if isPro {
+                                try? await syncClient.syncAll()
+                            }
+                        },
+                        // Connect WebSocket if authenticated
+                        .run { [keychain, webSocketClient] _ in
+                            guard await keychain.hasTokens() else { return }
+                            await withTaskCancellationHandler {
+                                await webSocketClient.connect()
+                            } onCancel: {
+                                webSocketClient.disconnect()
+                            }
+                        }
+                        .cancellable(id: CancelID.webSocket, cancelInFlight: true),
+                        // Watch: listen for commands from the Watch
+                        .run { [watchClient] send in
+                            guard watchClient.isSupported() else { return }
+                            let stream = await watchClient.receiveMessages()
+                            for await message in stream {
+                                if case .command(let cmd) = message {
+                                    await send(.watchCommandReceived(cmd))
+                                }
+                            }
+                        }
+                        .cancellable(id: CancelID.watchCommandListener),
+                        // Load tasks early so they are available for focus linking
+                        .send(.tasks(.onAppear)),
+                        // Load analytics early so the Focus companion cards have data on first Focus visit
+                        .send(.analytics(.onAppear)),
+                        // Reconcile widget/intent commands even if they arrived before bootstrap finished.
+                        .send(.consumeExternalCommands)
+                    )
                 )
 
             case .requestNotificationPermission:

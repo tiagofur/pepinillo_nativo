@@ -20,21 +20,7 @@ struct FocusHomeScreenWidget: Widget {
             provider: FocusWidgetProvider()
         ) { entry in
             FocusWidgetEntryView(entry: entry)
-                .containerBackground(for: .widget) {
-                    ZStack {
-                        Color(.systemBackground)
-                        let mode = entry.focusMode ?? entry.preferredModeID
-                        if let mode {
-                            let color = ModeColors.color(for: mode)
-                            color.opacity(0.1)
-                            LinearGradient(
-                                colors: [color.opacity(0.15), .clear],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        }
-                    }
-                }
+                .pepinilloWidgetBackground(mode: entry.focusMode ?? entry.preferredModeID)
                 .widgetURL(URL(string: "pepinillo://focus"))
         }
         .configurationDisplayName("Focus Timer")
@@ -59,7 +45,11 @@ struct FocusLockScreenWidget: Widget {
         }
         .configurationDisplayName("Focus")
         .description("Quick glance at your focus session.")
+        #if os(iOS)
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
+        #else
+        .supportedFamilies([])
+        #endif
     }
 }
 
@@ -88,6 +78,7 @@ struct FocusAccessoryEntryView: View {
     let entry: FocusWidgetEntry
 
     var body: some View {
+        #if os(iOS)
         switch family {
         case .accessoryCircular:
             FocusWidgetAccessoryCircular(entry: entry)
@@ -96,6 +87,9 @@ struct FocusAccessoryEntryView: View {
         default:
             FocusWidgetAccessoryCircular(entry: entry)
         }
+        #else
+        EmptyView()
+        #endif
     }
 }
 
@@ -105,7 +99,9 @@ struct FocusAccessoryEntryView: View {
 struct PepinilloWidgetBundle: WidgetBundle {
     var body: some Widget {
         FocusHomeScreenWidget()
+        #if os(iOS)
         FocusLockScreenWidget()
+        #endif
         TasksHomeScreenWidget()
         DashboardHomeScreenWidget()
     }

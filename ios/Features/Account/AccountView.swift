@@ -13,6 +13,9 @@ import ComposableArchitecture
 struct AccountView: View {
     @Bindable var store: StoreOf<AppFeature>
     @Environment(\.appTheme) private var theme
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.colorScheme) private var currentColorScheme
+    @Namespace private var buttonNamespace
     @State private var currentAppleNonce = ""
     @State private var showDeleteConfirmation = false
 
@@ -26,10 +29,12 @@ struct AccountView: View {
                     supportSection
                     accountSection
                 }
+                .contentMaxWidth(900)
                 .padding(.vertical, 20)
             }
             .navigationTitle(String(localized: "More"))
-            .background(Color.clear)
+            .scrollContentBackground(.hidden)
+            .background(Color.pepinilloSystemBackground)
             .confirmationDialog(
                 String(localized: "Delete Account?"),
                 isPresented: $showDeleteConfirmation,
@@ -63,7 +68,7 @@ struct AccountView: View {
             }
         }
         .pepinilloGlass()
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
     }
 
     private var signedInLabel: some View {
@@ -140,7 +145,7 @@ struct AccountView: View {
     }
 
     private var guestHeader: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 14) {
                 Circle()
                     .fill(theme.pomodoroColor.opacity(0.14))
@@ -170,6 +175,34 @@ struct AccountView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(String(localized: "a11y.account.guest.label", defaultValue: "Not signed in. Set up your profile to save data across devices."))
 
+            AdaptiveLayout(isHStack: horizontalSizeClass == UserInterfaceSizeClass.regular, spacing: 12) {
+                appleSignInButton
+                emailSignInButton
+            }
+        }
+        .padding(18)
+    }
+
+    private var appleSignInButton: some View {
+        ZStack {
+            // Liquid Glass Background & Label (Visual Only)
+            HStack(spacing: 8) {
+                Image(systemName: "apple.logo")
+                    .font(.subheadline.weight(.semibold))
+                Text(String(localized: "Continue with Apple"))
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .adaptiveGlassCapsule(id: "apple-auth-account", namespace: buttonNamespace)
+            .overlay {
+                Capsule()
+                    .stroke(.secondary.opacity(currentColorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
+            }
+            .allowsHitTesting(false)
+
+            // Invisible System Button (Interaction Layer)
             SignInWithAppleButton(.continue) { request in
                 let nonce = AppleAuthHelper.generateNonce()
                 currentAppleNonce = nonce
@@ -206,21 +239,58 @@ struct AccountView: View {
                     store.send(.signInWithAppleFailed)
                 }
             }
-            .signInWithAppleButtonStyle(.whiteOutline)
-            .frame(height: 46)
-
-            Button {
-                store.send(.showAuth)
-            } label: {
-                Label(String(localized: "Use Email or Create Account"), systemImage: "envelope.badge")
-                    .font(.subheadline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
+            .signInWithAppleButtonStyle(currentColorScheme == .dark ? .black : .white)
+            .opacity(0.015)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
         }
-        .padding(18)
+        .contentShape(Capsule())
+    }
+
+    private var emailSignInButton: some View {
+        Button {
+            store.send(.showAuth)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "envelope.badge")
+                Text(String(localized: "Use Email or Create Account"))
+            }
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .contentShape(Capsule())
+            .adaptiveGlassCapsule(id: "email-login", namespace: buttonNamespace)
+            .overlay {
+                Capsule()
+                    .stroke(.secondary.opacity(currentColorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
+            }
+        }
+        .buttonStyle(PepinilloButtonStyle())
+    }
+
+    private struct AdaptiveLayout<Content: View>: View {
+        let isHStack: Bool
+        let spacing: CGFloat
+        let content: () -> Content
+
+        init(isHStack: Bool, spacing: CGFloat, @ViewBuilder content: @escaping () -> Content) {
+            self.isHStack = isHStack
+            self.spacing = spacing
+            self.content = content
+        }
+
+        var body: some View {
+            if isHStack {
+                HStack(spacing: spacing) {
+                    content()
+                }
+            } else {
+                VStack(spacing: spacing) {
+                    content()
+                }
+            }
+        }
     }
 
     // MARK: - Subscription
@@ -253,14 +323,13 @@ struct AccountView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 14)
-                .padding(.horizontal, 16)
+                .accountRowPadding()
             }
             .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.subscription.hint", defaultValue: "Opens subscription plan options"))
         }
         .pepinilloGlass()
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Configuration
@@ -278,8 +347,7 @@ struct AccountView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 14)
-                .padding(.horizontal, 16)
+                .accountRowPadding()
             }
             .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.settings.hint", defaultValue: "Opens app settings"))
@@ -300,14 +368,13 @@ struct AccountView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 14)
-                .padding(.horizontal, 16)
+                .accountRowPadding()
             }
             .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.export.hint", defaultValue: "Opens data export options"))
         }
         .pepinilloGlass()
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Support
@@ -325,8 +392,7 @@ struct AccountView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 14)
-                .padding(.horizontal, 16)
+                .accountRowPadding()
             }
             .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.help.hint", defaultValue: "Opens help and support resources"))
@@ -344,14 +410,13 @@ struct AccountView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 14)
-                .padding(.horizontal, 16)
+                .accountRowPadding()
             }
             .buttonStyle(.plain)
             .accessibilityHint(String(localized: "a11y.account.nav.about.hint", defaultValue: "Opens information about this app"))
         }
         .pepinilloGlass()
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Account
@@ -388,7 +453,7 @@ struct AccountView: View {
                 .buttonStyle(.plain)
             }
             .pepinilloGlass()
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 20)
         } else {
             EmptyView()
         }
@@ -481,26 +546,39 @@ struct AccountView: View {
     }
 }
 
+private extension View {
+    func accountRowPadding() -> some View {
+        self
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .contentShape(Rectangle())
+    }
+}
+
 // MARK: - PaywallContent
 // PaywallView inner content WITHOUT its own NavigationStack.
 // Used when pushing from AccountView's existing NavigationStack.
 
 private struct PaywallContent: View {
     @Bindable var store: StoreOf<PaywallFeature>
+    @Namespace private var glassNS
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: 32) {
                 PaywallHeaderSection()
                 PaywallPepinilloPlusSection()
-                PaywallProductCardsSection(store: store)
-                PaywallPurchaseButton(store: store)
+                PaywallProductCardsSection(store: store, glassNamespace: glassNS)
+                PaywallPurchaseButton(store: store, glassNamespace: glassNS)
                 PaywallLegalFooter(store: store)
             }
+            .contentMaxWidth(900)
             .padding(.horizontal, 20)
-            .padding(.top, 8)
-            .padding(.bottom, 32)
+            .padding(.top, 20)
+            .padding(.bottom, 40)
         }
+        .scrollContentBackground(.hidden)
+        .withAmbientBackground()
         .navigationTitle(String(localized: "Choose Your Plan"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

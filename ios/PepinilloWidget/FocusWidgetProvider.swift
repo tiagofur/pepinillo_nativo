@@ -136,9 +136,57 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             )
             return entry
         } catch {
-            // SwiftData read failed (first launch / store not yet created) — show idle
-            return .idle
+            // SwiftData may be unavailable before first launch, during migration, or
+            // while macOS debug signing uses a fallback container. Still honor the
+            // lightweight App Group snapshot so the widget can show the live timer.
+            return Self.defaultsBackedEntry(configuration: configuration)
         }
+    }
+
+    private static func defaultsBackedEntry(configuration: ConfigureFocusWidgetIntent) -> FocusWidgetEntry {
+        let preferredModeID = AppGroupDefaults.widgetSelectedMode ?? configuration.preferredMode.rawValue
+        let isActive = AppGroupDefaults.isSessionActive && AppGroupDefaults.activeModeName != nil
+        let isPaused = isActive ? AppGroupDefaults.activeSessionIsPaused : false
+        let liveElapsed = isActive ? AppGroupDefaults.activeSessionLiveElapsed() : 0
+        let liveRemaining = isActive ? AppGroupDefaults.activeSessionLiveRemaining() : nil
+
+        let activeProgress: Double?
+        if isActive, let liveRemaining {
+            let duration = max(liveElapsed + liveRemaining, 1)
+            activeProgress = min(max(liveElapsed / duration, 0), 1)
+        } else {
+            activeProgress = isActive ? AppGroupDefaults.activeSessionProgress : nil
+        }
+
+        let timerText: String?
+        if isActive {
+            timerText = formatTimer(liveRemaining ?? liveElapsed)
+        } else {
+            timerText = nil
+        }
+
+        return FocusWidgetEntry(
+            date: Date(),
+            isProUser: AppGroupDefaults.isProUser,
+            preferredModeID: preferredModeID,
+            preferredTimerText: idleTimerText(for: preferredModeID, preferences: nil),
+            isSessionActive: isActive,
+            isPaused: isPaused,
+            focusMode: isActive ? AppGroupDefaults.activeModeName : nil,
+            phase: isActive ? AppGroupDefaults.activeSessionPhase : nil,
+            timerText: timerText,
+            progress: activeProgress,
+            pomodoroNumber: isActive ? AppGroupDefaults.activeSessionPomodoroNumber : nil,
+            totalPomodoros: isActive ? AppGroupDefaults.activeSessionTotalPomodoros : nil,
+            linkedTaskTitle: isActive ? AppGroupDefaults.activeSessionTaskTitle : nil,
+            timerStart: isActive ? AppGroupDefaults.activeSessionTimerStart : nil,
+            timerEnd: isActive ? AppGroupDefaults.activeSessionTimerEnd : nil,
+            todayFocusMinutes: 0,
+            todaySessionsCompleted: 0,
+            currentStreakDays: 0,
+            dominantMode: nil,
+            modeMinutes: [:]
+        )
     }
 
     // MARK: - Idle Timer

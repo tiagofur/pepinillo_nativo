@@ -372,7 +372,7 @@ private struct TaskAnalyticsPlaceholder: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(14)
-                    .background(Color(.tertiarySystemBackground))
+                    .background(Color.pepinilloTertiarySystemBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }

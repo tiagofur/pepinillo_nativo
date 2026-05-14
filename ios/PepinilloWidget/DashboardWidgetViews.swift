@@ -29,7 +29,7 @@ struct ProWidgetOverlay: View {
                 .textCase(.uppercase)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground).opacity(0.8))
+        .background(Color.pepinilloSystemBackground.opacity(0.8))
         .containerBackground(.fill.tertiary, for: .widget)
     }
 }

@@ -18,6 +18,10 @@ struct PlanSplitView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Namespace private var heroNS
 
+    private var planBackground: Color {
+        Color.pepinilloSystemBackground
+    }
+
     var body: some View {
         if sizeClass == .regular {
             GeometryReader { geo in
@@ -54,7 +58,7 @@ struct PlanSplitView: View {
                     .navigationTitle(store.selectedPlanFilter.title)
                     .navigationBarTitleDisplayMode(.inline)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemGroupedBackground))
+                    .background(planBackground)
                 }
                 .frame(minWidth: 360, maxWidth: 520)
 
@@ -63,11 +67,12 @@ struct PlanSplitView: View {
                 NavigationStack {
                     detailPane
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color(.systemGroupedBackground))
+                        .background(planBackground)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
+        .background(planBackground)
     }
 
     // MARK: - iPad Portrait: 2-column HStack (pills top, list | detail bottom)
@@ -92,7 +97,7 @@ struct PlanSplitView: View {
                     .navigationTitle(String(localized: "Plan"))
                     .navigationBarTitleDisplayMode(.inline)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemGroupedBackground))
+                    .background(planBackground)
                 }
                 .frame(maxWidth: .infinity)
 
@@ -101,11 +106,12 @@ struct PlanSplitView: View {
                 NavigationStack {
                     detailPane
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color(.systemGroupedBackground))
+                        .background(planBackground)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
+        .background(planBackground)
     }
 
     // MARK: - iPhone: pills top + NavigationStack + sheet for detail
@@ -130,7 +136,7 @@ struct PlanSplitView: View {
                 .navigationTitle(store.selectedPlanFilter.title)
                 .navigationBarTitleDisplayMode(.inline)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(planBackground)
         }
         .sheet(
             item: $store.scope(state: \.detail, action: \.detail)
@@ -179,10 +185,14 @@ private struct OptionalZoomTransition: ViewModifier {
     let namespace: Namespace.ID
 
     func body(content: Content) -> some View {
-        if #available(iOS 18.0, watchOS 11.0, *) {
+        #if os(macOS)
+        content
+        #else
+        if #available(iOS 18.0, macOS 15.0, watchOS 11.0, *) {
             content.navigationTransition(.zoom(sourceID: sourceID, in: namespace))
         } else {
             content
         }
+        #endif
     }
 }

@@ -20,7 +20,7 @@ public struct WebSocketClient: Sendable {
 
 extension WebSocketClient: DependencyKey {
     public static var liveValue: WebSocketClient {
-#if os(iOS)
+#if os(iOS) || os(macOS)
         @Dependency(\.keychainClient) var keychain
         @Dependency(\.syncClient) var syncClient
         let manager = WebSocketManager(
