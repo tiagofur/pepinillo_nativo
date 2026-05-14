@@ -683,3 +683,15 @@ Sync implementation enhancements to improve cross-platform reliability and data 
 | Release keystore not generated| Blocks release                   | 1h                        |
 | OEM testing pending           | Bugs on Samsung/Xiaomi           | 20h                       |
 | Paywall UI incomplete         | Lower paid conversion            | 8-10h                     |
+| Backend CI failures           | ✅ FIXED (2026-05-14) | Resolved interface mismatches and redeclaration errors in test suite |
+
+---
+
+## 11. Backend CI & Stability Hardening (2026-05-14) ✅
+
+Resolved critical compilation errors in the Go backend test suite that were blocking CI:
+
+- **Interface Parity**: Updated `fakeUserRepo` (services), `MockUserRepository` (mocks), `fakeUserRepository` (handlers), and `integrationUserRepo` (tests) to implement the missing `ConsumeAiCredit` and `RefreshAiCredits` methods required by the `UserRepository` interface.
+- **Symbol Unification**: Centralized `fakeUserRepo` in `backend/internal/services/fakes_test.go` and `fakeUserRepository` in `backend/internal/adapters/handlers/fakes_test.go`, eliminating multiple redeclaration errors across test files.
+- **Cleanup**: Removed redundant/conflicting helper functions (`strPtr`, `joseConcatSignature`) and unused imports from various test files.
+- **Verification**: Successfully ran the full backend test suite (`go test ./...`), passing all 100+ tests including services, handlers, and integration flows.

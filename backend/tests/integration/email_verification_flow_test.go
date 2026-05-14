@@ -211,6 +211,14 @@ func (r *integrationUserRepo) UnlinkAppleAccount(_ context.Context, userID strin
 	return nil
 }
 
+func (r *integrationUserRepo) ConsumeAiCredit(_ context.Context, _ string) (bool, error) {
+	return true, nil
+}
+
+func (r *integrationUserRepo) RefreshAiCredits(_ context.Context, _ string, _ int) error {
+	return nil
+}
+
 func newTestAuthService(repo *integrationUserRepo, notifier *capturingNotifier) *services.AuthService {
 	return services.NewAuthService(
 		repo,

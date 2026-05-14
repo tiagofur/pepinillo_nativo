@@ -100,6 +100,16 @@ func (m *MockUserRepository) UnlinkAppleAccount(ctx context.Context, userID stri
 	return args.Error(0)
 }
 
+func (m *MockUserRepository) ConsumeAiCredit(ctx context.Context, userID string) (bool, error) {
+	args := m.Called(ctx, userID)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockUserRepository) RefreshAiCredits(ctx context.Context, userID string, amount int) error {
+	args := m.Called(ctx, userID, amount)
+	return args.Error(0)
+}
+
 // MockAuthStore is a testify mock for ports.AuthStore.
 type MockAuthStore struct {
 	mock.Mock
