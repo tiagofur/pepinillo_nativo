@@ -1257,7 +1257,7 @@
     },
     "a11y.auth.field.name.label" : {
       "comment" : "A11y — Auth name text field label",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1281,7 +1281,7 @@
     },
     "a11y.auth.field.password.hint.login" : {
       "comment" : "A11y — Auth password field hint during login",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1329,7 +1329,7 @@
     },
     "a11y.auth.field.password.label" : {
       "comment" : "A11y — Auth password field label",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1401,7 +1401,7 @@
     },
     "a11y.auth.mode.label" : {
       "comment" : "A11y — Auth segmented control label",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2488,7 +2488,7 @@
     },
     "auth.mode.picker" : {
       "comment" : "Auth mode segmented control accessibility label",
-      "extractionState" : "extracted_with_value",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {

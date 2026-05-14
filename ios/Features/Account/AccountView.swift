@@ -252,14 +252,13 @@ struct AccountView: View {
             store.send(.showAuth)
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: "envelope.badge")
+                Image(systemName: "envelope.fill")
                 Text(String(localized: "Use Email or Create Account"))
             }
-            .font(.subheadline.weight(.semibold))
+            .font(.subheadline.weight(.bold))
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
-            .contentShape(Capsule())
             .adaptiveGlassCapsule(id: "email-login", namespace: buttonNamespace)
             .overlay {
                 Capsule()
@@ -267,6 +266,7 @@ struct AccountView: View {
             }
         }
         .buttonStyle(PepinilloButtonStyle())
+        .contentShape(Capsule())
     }
 
     private struct AdaptiveLayout<Content: View>: View {

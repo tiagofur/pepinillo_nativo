@@ -30,290 +30,39 @@ struct AuthView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
+                headerSection
+                modePickerSection
+                formSection
+                
                 Spacer().frame(height: 20)
-
-                ZStack {
-                    Circle()
-                        .fill(theme.pomodoroColor.opacity(colorScheme == .dark ? 0.26 : 0.16))
-                        .frame(width: 72, height: 72)
-
-                    Image(systemName: "leaf.fill")
-                        .font(.system(size: 29, weight: .semibold))
-                        .foregroundStyle(theme.pomodoroColor)
-                }
-                .accessibilityHidden(true)
-
-                Text(String(localized: "auth.welcome.title", defaultValue: "Welcome to Pepinillo"))
-                    .font(.system(.title, design: .rounded).weight(.bold))
-                    .foregroundStyle(.primary)
-                    .padding(.top, 14)
-
-                Text(String(localized: "auth.welcome.subtitle", defaultValue: "Sign in and start your next deep work session."))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 4)
-
-                Spacer().frame(height: 20)
-
-                Picker(String(localized: "auth.mode.picker", defaultValue: "Authentication Mode"), selection: Binding(
-                    get: { store.mode },
-                    set: { store.send(.switchMode($0)) }
-                )) {
-                    Text(String(localized: "auth.mode.signin", defaultValue: "Sign In")).tag(AuthFeature.AuthMode.login)
-                    Text(String(localized: "auth.mode.register", defaultValue: "Create Account")).tag(AuthFeature.AuthMode.register)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, 24)
-                .accessibilityLabel(String(localized: "a11y.auth.mode.label", defaultValue: "Authentication mode"))
-                .accessibilityValue(store.mode == .login
-                    ? String(localized: "auth.mode.signin", defaultValue: "Sign In")
-                    : String(localized: "auth.mode.register", defaultValue: "Create Account")
-                )
-
-                Spacer().frame(height: 14)
-
-                VStack(spacing: 12) {
-                    if store.mode == .register {
-                        TextField(
-                            String(localized: "auth.field.name", defaultValue: "Name"),
-                            text: Binding(
-                                get: { store.name },
-                                set: { store.send(.nameChanged($0)) }
-                            )
-                        )
-                        .textContentType(.name)
-                        .textFieldStyle(.roundedBorder)
-                        .accessibilityLabel(String(localized: "a11y.auth.field.name.label", defaultValue: "Name"))
-                    }
-
-                    TextField(
-                        String(localized: "auth.field.email", defaultValue: "Email"),
-                        text: Binding(
-                            get: { store.email },
-                            set: { store.send(.emailChanged($0)) }
-                        )
-                    )
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled(true)
-                    .textFieldStyle(.roundedBorder)
-                    .accessibilityLabel(String(localized: "a11y.auth.field.email.label", defaultValue: "Email address"))
-
-                    HStack(spacing: 10) {
-                        Group {
-                            if store.isPasswordVisible {
-                                TextField(
-                                    String(localized: "auth.field.password", defaultValue: "Password"),
-                                    text: Binding(
-                                        get: { store.password },
-                                        set: { store.send(.passwordChanged($0)) }
-                                    )
-                                )
-                                .textContentType(store.mode == .register ? .newPassword : .password)
-                            } else {
-                                SecureField(
-                                    String(localized: "auth.field.password", defaultValue: "Password"),
-                                    text: Binding(
-                                        get: { store.password },
-                                        set: { store.send(.passwordChanged($0)) }
-                                    )
-                                )
-                                .textContentType(store.mode == .register ? .newPassword : .password)
-                            }
-                        }
-                        .accessibilityLabel(String(localized: "a11y.auth.field.password.label", defaultValue: "Password"))
-                        .accessibilityHint(store.mode == .register
-                            ? String(localized: "a11y.auth.field.password.hint.register", defaultValue: "Must be at least 8 characters with uppercase, lowercase, and a number")
-                            : String(localized: "a11y.auth.field.password.hint.login", defaultValue: "Enter your account password")
-                        )
-
-                        Button {
-                            store.send(.togglePasswordVisibility)
-                        } label: {
-                            Image(systemName: store.isPasswordVisible ? "eye.slash" : "eye")
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(store.isPasswordVisible
-                            ? String(localized: "a11y.auth.password.hide", defaultValue: "Hide password")
-                            : String(localized: "a11y.auth.password.show", defaultValue: "Show password")
-                        )
-                    }
-                    .textFieldStyle(.roundedBorder)
-
-                    if store.mode == .register {
-                        Text(String(localized: "auth.password.hint", defaultValue: "Use at least 8 characters, with uppercase, lowercase, and a number."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .accessibilityHidden(true)
-                    }
-                }
-                .padding(18)
-                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(theme.pomodoroColor.opacity(colorScheme == .dark ? 0.22 : 0.16), lineWidth: 1)
-                }
-                .padding(.horizontal, 24)
-
-                if let error = store.errorMessage {
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 10)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .accessibilityLabel(error)
-                        .accessibilityAddTraits(.isStaticText)
-                }
-
-                Spacer().frame(height: 20)
-
-                Button {
-                    if store.mode == .login {
-                        store.send(.loginTapped)
-                    } else {
-                        store.send(.registerTapped)
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        if store.isLoading {
-                            ProgressView()
-                                .tint(.white)
-                                .accessibilityHidden(true)
-                        }
-                        Text(store.mode == .login ? String(localized: "auth.mode.signin", defaultValue: "Sign In") : String(localized: "auth.mode.register", defaultValue: "Create Account"))
-                    }
-                    .font(.callout.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 46)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(theme.pomodoroColor)
-                .disabled(store.isLoading)
-                .padding(.horizontal, 24)
-                .accessibilityLabel(store.mode == .login
-                    ? String(localized: "auth.mode.signin", defaultValue: "Sign In")
-                    : String(localized: "auth.mode.register", defaultValue: "Create Account")
-                )
-
-                if store.mode == .login, onAppleSignIn != nil {
-                    VStack(spacing: 8) {
-                        HStack(spacing: 10) {
-                            Rectangle()
-                                .fill(Color.secondary.opacity(0.25))
-                                .frame(height: 1)
-                            Text("or")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                            Rectangle()
-                                .fill(Color.secondary.opacity(0.25))
-                                .frame(height: 1)
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 12)
-                        .accessibilityHidden(true)
-
-                        ZStack {
-                            // Liquid Glass Background & Label (Visual Only)
-                            HStack(spacing: 8) {
-                                Image(systemName: "apple.logo")
-                                    .font(.subheadline.weight(.semibold))
-                                Text(String(localized: "Continue with Apple"))
-                                    .font(.subheadline.weight(.semibold))
-                            }
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .adaptiveGlassCapsule(id: "apple-auth-pills", namespace: glassNS)
-                            .overlay {
-                                Capsule()
-                                    .stroke(.secondary.opacity(colorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
-                            }
-                            .allowsHitTesting(false)
-
-                            // Invisible System Button (Interaction Layer)
-                            SignInWithAppleButton(.continue) { request in
-                                let nonce = AppleAuthHelper.generateNonce()
-                                currentNonce = nonce
-                                request.nonce = AppleAuthHelper.sha256Hex(nonce)
-                                request.requestedScopes = [.fullName, .email]
-                            } onCompletion: { result in
-                                switch result {
-                                case .success(let auth):
-                                    guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
-                                        onAppleSignInFailed?()
-                                        return
-                                    }
-                                    guard !currentNonce.isEmpty else {
-                                        onAppleSignInFailed?()
-                                        return
-                                    }
-                                    let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
-                                    onAppleSignIn?(AppleUserInfo(
-                                        userID: cred.user,
-                                        displayName: cred.fullName?.formatted(),
-                                        email: cred.email,
-                                        identityToken: identityToken,
-                                        nonce: currentNonce
-                                    ))
-                                case .failure:
-                                    onAppleSignInFailed?()
-                                }
-                            }
-                            .signInWithAppleButtonStyle(colorScheme == .dark ? .black : .white)
-                            .opacity(0.015)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                        }
-                        .contentShape(Capsule())
-                        .padding(.horizontal, 24)
-                    }
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .top).combined(with: .opacity),
-                        removal: .opacity
-                    ))
-                }
-
-                if store.mode == .login {
-                    Button(String(localized: "auth.forgotpassword.button", defaultValue: "Forgot your password?")) {
-                        store.send(.forgotPasswordTapped)
-                    }
-                    .foregroundStyle(.secondary)
-                    .font(.footnote)
-                    .padding(.top, 10)
-                    .accessibilityHint(String(localized: "a11y.auth.forgotpassword.hint", defaultValue: "Opens password recovery"))
-                }
-
-                Button {
-                    store.send(.continueAsGuestTapped)
-                } label: {
-                    Text(String(localized: "auth.guest.button", defaultValue: "Continue without account"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.top, 12)
-                .accessibilityHint(String(localized: "a11y.auth.guest.hint", defaultValue: "Continue without signing in — data stays on this device"))
+                
+                actionsSection
+                footerSection
 
                 Spacer().frame(height: 24)
             }
         }
         .background {
-            LinearGradient(
-                colors: [
-                    theme.pomodoroColor.opacity(colorScheme == .dark ? 0.18 : 0.10),
-                    Color.clear,
-                ],
-                startPoint: .top,
-                endPoint: .center
-            )
+            ZStack {
+                Color.pepinilloSystemBackground.ignoresSafeArea()
+                
+                // Animated Liquid Background
+                Circle()
+                    .fill(theme.pomodoroColor.opacity(colorScheme == .dark ? 0.12 : 0.08))
+                    .frame(width: 400, height: 400)
+                    .blur(radius: 60)
+                    .offset(x: -150, y: -200)
+                
+                Circle()
+                    .fill(theme.pomodoroColor.opacity(colorScheme == .dark ? 0.08 : 0.05))
+                    .frame(width: 300, height: 300)
+                    .blur(radius: 50)
+                    .offset(x: 150, y: 150)
+            }
             .ignoresSafeArea()
         }
         .scrollDismissesKeyboard(.interactively)
-        .animation(.spring(response: 0.34, dampingFraction: 0.86), value: store.mode)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: store.mode)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $store.scope(state: \.forgotPassword, action: \.forgotPassword)) { forgotPasswordStore in
             ForgotPasswordView(store: forgotPasswordStore)
@@ -354,4 +103,343 @@ struct AuthView: View {
         }
     }
 
+    // MARK: - Sections
+
+    @ViewBuilder
+    private var headerSection: some View {
+        ZStack {
+            Circle()
+                .fill(theme.pomodoroColor.opacity(0.12))
+                .frame(width: 86, height: 86)
+                .blur(radius: 12)
+
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 32, weight: .bold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [theme.pomodoroColor, theme.pomodoroColor.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .shadow(color: theme.pomodoroColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                .adaptiveGlassCircle(id: "auth-icon", namespace: glassNS)
+                .frame(width: 72, height: 72)
+                .overlay {
+                    Circle()
+                        .stroke(theme.pomodoroColor.opacity(0.2), lineWidth: 1)
+                }
+        }
+        .padding(.top, 10)
+        .accessibilityHidden(true)
+
+        VStack(spacing: 6) {
+            Text(String(localized: "auth.welcome.title", defaultValue: "Welcome to Pepinillo"))
+                .font(.system(.title2, design: .rounded).weight(.bold))
+                .foregroundStyle(.primary)
+
+            Text(String(localized: "auth.welcome.subtitle", defaultValue: "Sign in and start your next deep work session."))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal, 40)
+        .padding(.top, 16)
+
+        Spacer().frame(height: 24)
+    }
+
+    @ViewBuilder
+    private var modePickerSection: some View {
+        HStack(spacing: 0) {
+            modeButton(title: String(localized: "auth.mode.signin", defaultValue: "Sign In"), mode: .login)
+            modeButton(title: String(localized: "auth.mode.register", defaultValue: "Create Account"), mode: .register)
+        }
+        .padding(4)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    Capsule().stroke(.primary.opacity(0.08), lineWidth: 1)
+                }
+        )
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
+    }
+
+    private func modeButton(title: String, mode: AuthFeature.AuthMode) -> some View {
+        let isSelected = store.mode == mode
+        return Button {
+            store.send(.switchMode(mode))
+        } label: {
+            Text(title)
+                .font(.subheadline.weight(isSelected ? .bold : .medium))
+                .foregroundStyle(isSelected ? .primary : .secondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
+                .background {
+                    if isSelected {
+                        Capsule()
+                            .fill(.primary.opacity(colorScheme == .dark ? 0.15 : 0.08))
+                            .matchedGeometryEffect(id: "mode-pill", in: glassNS)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var formSection: some View {
+        Spacer().frame(height: 14)
+
+        VStack(spacing: 14) {
+            if store.mode == .register {
+                AuthField(
+                    icon: "person.fill",
+                    placeholder: String(localized: "auth.field.name", defaultValue: "Name"),
+                    text: Binding(get: { store.name }, set: { store.send(.nameChanged($0)) })
+                )
+                #if os(iOS)
+                .textContentType(.name)
+                #endif
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            AuthField(
+                icon: "envelope.fill",
+                placeholder: String(localized: "auth.field.email", defaultValue: "Email"),
+                text: Binding(get: { store.email }, set: { store.send(.emailChanged($0)) })
+            )
+            #if os(iOS)
+            .textContentType(.emailAddress)
+            .keyboardType(.emailAddress)
+            #endif
+
+            AuthField(
+                icon: "lock.fill",
+                placeholder: String(localized: "auth.field.password", defaultValue: "Password"),
+                text: Binding(get: { store.password }, set: { store.send(.passwordChanged($0)) }),
+                isSecure: !store.isPasswordVisible,
+                trailingIcon: store.isPasswordVisible ? "eye.slash" : "eye",
+                onTrailingIconTap: { store.send(.togglePasswordVisibility) }
+            )
+            #if os(iOS)
+            .textContentType(store.mode == .register ? .newPassword : .password)
+            #endif
+
+            if store.mode == .register {
+                Text(String(localized: "auth.password.hint", defaultValue: "Use at least 8 characters, with uppercase, lowercase, and a number."))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary.opacity(0.8))
+                    .padding(.horizontal, 4)
+                    .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, 24)
+
+        if let error = store.errorMessage {
+            Label(error, systemImage: "exclamationmark.triangle.fill")
+                .font(.footnote)
+                .foregroundStyle(.red)
+                .padding(.horizontal, 24)
+                .padding(.top, 10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityLabel(error)
+                .accessibilityAddTraits(.isStaticText)
+        }
+    }
+
+    @ViewBuilder
+    private var actionsSection: some View {
+        Button {
+            if store.mode == .login {
+                store.send(.loginTapped)
+            } else {
+                store.send(.registerTapped)
+            }
+        } label: {
+            Text(store.mode == .login
+                ? String(localized: "auth.mode.signin", defaultValue: "Sign In")
+                : String(localized: "auth.mode.register", defaultValue: "Create Account")
+            )
+            .font(.subheadline.weight(.bold))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(
+                theme.pomodoroColor.gradient,
+                in: Capsule()
+            )
+            .shadow(color: theme.pomodoroColor.opacity(0.35), radius: 12, y: 6)
+        }
+        .buttonStyle(PepinilloButtonStyle())
+        .disabled(store.isLoading)
+        .padding(.horizontal, 24)
+        .contentShape(Capsule())
+        .accessibilityLabel(store.mode == .login
+            ? String(localized: "auth.mode.signin", defaultValue: "Sign In")
+            : String(localized: "auth.mode.register", defaultValue: "Create Account")
+        )
+
+        if store.mode == .login, onAppleSignIn != nil {
+            VStack(spacing: 8) {
+                HStack(spacing: 10) {
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.25))
+                        .frame(height: 1)
+                    Text("or")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Rectangle()
+                        .fill(Color.secondary.opacity(0.25))
+                        .frame(height: 1)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+                .accessibilityHidden(true)
+
+                appleSignInButton
+            }
+            .transition(.asymmetric(
+                insertion: .move(edge: .top).combined(with: .opacity),
+                removal: .opacity
+            ))
+        }
+    }
+
+    private var appleSignInButton: some View {
+        ZStack {
+            HStack(spacing: 8) {
+                Image(systemName: "apple.logo")
+                    .font(.subheadline.weight(.semibold))
+                Text(String(localized: "Continue with Apple"))
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(.primary)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .adaptiveGlassCapsule(id: "apple-auth-pills", namespace: glassNS)
+            .overlay {
+                Capsule()
+                    .stroke(.secondary.opacity(colorScheme == .dark ? 0.25 : 0.15), lineWidth: 1)
+            }
+            .allowsHitTesting(false)
+
+            SignInWithAppleButton(.continue) { request in
+                let nonce = AppleAuthHelper.generateNonce()
+                currentNonce = nonce
+                request.nonce = AppleAuthHelper.sha256Hex(nonce)
+                request.requestedScopes = [.fullName, .email]
+            } onCompletion: { result in
+                switch result {
+                case .success(let auth):
+                    guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
+                        onAppleSignInFailed?()
+                        return
+                    }
+                    guard !currentNonce.isEmpty else {
+                        onAppleSignInFailed?()
+                        return
+                    }
+                    let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
+                    onAppleSignIn?(AppleUserInfo(
+                        userID: cred.user,
+                        displayName: cred.fullName?.formatted(),
+                        email: cred.email,
+                        identityToken: identityToken,
+                        nonce: currentNonce
+                    ))
+                case .failure:
+                    onAppleSignInFailed?()
+                }
+            }
+            .signInWithAppleButtonStyle(colorScheme == .dark ? .black : .white)
+            .opacity(0.015)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+        }
+        .contentShape(Capsule())
+        .padding(.horizontal, 24)
+    }
+
+    @ViewBuilder
+    private var footerSection: some View {
+        if store.mode == .login {
+            Button(String(localized: "auth.forgotpassword.button", defaultValue: "Forgot your password?")) {
+                store.send(.forgotPasswordTapped)
+            }
+            .foregroundStyle(.secondary)
+            .font(.footnote)
+            .padding(.top, 10)
+            .accessibilityHint(String(localized: "a11y.auth.forgotpassword.hint", defaultValue: "Opens password recovery"))
+        }
+
+        Button {
+            store.send(.continueAsGuestTapped)
+        } label: {
+            Text(String(localized: "auth.guest.button", defaultValue: "Continue without account"))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.top, 12)
+        .accessibilityHint(String(localized: "a11y.auth.guest.hint", defaultValue: "Continue without signing in — data stays on this device"))
+    }
+}
+
+// MARK: - Helper Views
+
+struct AuthField: View {
+    let icon: String
+    let placeholder: String
+    @Binding var text: String
+    var isSecure: Bool = false
+    var trailingIcon: String? = nil
+    var onTrailingIconTap: (() -> Void)? = nil
+
+    @FocusState private var isFocused: Bool
+    @Environment(\.appTheme) private var theme
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(isFocused ? .primary : .secondary)
+                .frame(width: 24)
+
+            Group {
+                if isSecure {
+                    SecureField(placeholder, text: $text)
+                } else {
+                    TextField(placeholder, text: $text)
+                }
+            }
+            .font(.body)
+            .autocorrectionDisabled(true)
+            #if os(iOS)
+            .textInputAutocapitalization(.never)
+            #endif
+            .focused($isFocused)
+
+            if let trailingIcon {
+                Button {
+                    onTrailingIconTap?()
+                } label: {
+                    Image(systemName: trailingIcon)
+                        .foregroundStyle(.secondary)
+                        .font(.system(size: 16))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 52)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    Capsule()
+                        .stroke(isFocused ? theme.pomodoroColor.opacity(0.4) : .primary.opacity(0.12), lineWidth: 1.2)
+                }
+        )
+    }
 }
