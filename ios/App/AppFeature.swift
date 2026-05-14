@@ -305,108 +305,106 @@ struct AppFeature {
                 }
 
             case .appLaunched:
-                return .concatenate(
-                    // 1. Configure RevenueCat first (blocking)
+                // All effects run in parallel. RevenueCat SDK methods internally
+                // wait for configure() via ensureConfigured(), so there is no need
+                // to block the entire startup chain with .concatenate().
+                // Network-dependent operations (sync, WebSocket) are NOT started here —
+                // they fire from subscriptionStateLoaded once we know the user's tier.
+                return .merge(
+                    // RevenueCat: configure in parallel (SDK waits internally)
                     .run { send in
                         let prefs = try await persistence.fetchPreferences()
-                        // Use Apple User ID if available, otherwise nil for anonymous
                         let userID = prefs.appleUserID
                         await subscriptionClient.configure("appl_xnChlVXXtUFhusIfJyNrNDcMGLj", userID)
                     },
-                    
-                    // 2. Start other services in parallel once configured
-                    .merge(
-                        // Onboarding check + Apple credential state check
-                        .run { [appleClient] send in
-                            let prefs = try await persistence.fetchPreferences()
-                            if prefs.hasCompletedOnboarding {
-                                await send(.onboardingCompleted)
-                            }
-                            if let userID = prefs.appleUserID {
-                                let authorized = await appleClient.checkCredentialState(userID)
-                                await send(.appleCredentialStateChecked(userID, authorized))
-                            }
-                        },
-                        // Subscription entitlement
-                        .run { send in
-                            let sub = await subscriptionClient.checkEntitlement()
-                            await send(.subscriptionStateLoaded(sub))
-                        },
-                        // RevenueCat customer info stream
-                        .run { send in
-                            let stream = subscriptionClient.listenForTransactionUpdates()
-                            for await sub in stream {
-                                await send(.subscriptionUpdated(sub))
-                            }
+                    // Onboarding check + Apple credential state check
+                    .run { [appleClient] send in
+                        let prefs = try await persistence.fetchPreferences()
+                        if prefs.hasCompletedOnboarding {
+                            await send(.onboardingCompleted)
                         }
-                        .cancellable(id: CancelID.transactionListener),
-                        // Notification permission
-                        .send(.requestNotificationPermission),
-                        // Notification action taps
-                        .run { [notificationClient] send in
-                            let stream = notificationClient.observeActions()
-                            for await action in stream {
-                                await send(.notificationActionReceived(action))
-                            }
+                        if let userID = prefs.appleUserID {
+                            let authorized = await appleClient.checkCredentialState(userID)
+                            await send(.appleCredentialStateChecked(userID, authorized))
                         }
-                        .cancellable(id: CancelID.notificationActionListener),
-                        // Load cached user from persistence
-                        .run { send in
-                            let user = try? await persistence.fetchCachedUser()
-                            await send(.cachedUserLoaded(user))
-                        },
-                        // If tokens exist, try to refresh user profile from network and sync tasks
-                        .run { [keychain, apiClient, persistence, syncClient, canBackendSync = state.subscriptionState.capabilities.backendSync] send in
-                            guard await keychain.hasTokens() else { return }
-                            do {
-                                let apiUser = try await apiClient.getMe()
-                                let dto = CachedUserDTO(
-                                    id: apiUser.id, email: apiUser.email, name: apiUser.name,
-                                    imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
-                                    subscriptionTier: apiUser.subscriptionTier,
-                                    subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
-                                    emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
-                                    createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
-                                )
-                                try? await persistence.saveCachedUser(dto)
-                                await send(.cachedUserLoaded(dto))
-                            } catch {
-                                // Network error — use cached data silently
-                            }
-                            // VPS sync is Everywhere/AI+ only.
-                            if canBackendSync {
-                                try? await syncClient.syncAll()
-                            }
-                        },
-                        // Connect WebSocket only for backend sync users.
-                        .run { [keychain, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
-                            guard canBackendSync else { return }
-                            guard await keychain.hasTokens() else { return }
-                            await withTaskCancellationHandler {
-                                await webSocketClient.connect()
-                            } onCancel: {
-                                webSocketClient.disconnect()
-                            }
+                    },
+                    // Subscription entitlement (waits for configure internally)
+                    .run { send in
+                        let sub = await subscriptionClient.checkEntitlement()
+                        await send(.subscriptionStateLoaded(sub))
+                    },
+                    // RevenueCat customer info stream (waits for configure internally)
+                    .run { send in
+                        let stream = subscriptionClient.listenForTransactionUpdates()
+                        for await sub in stream {
+                            await send(.subscriptionUpdated(sub))
                         }
-                        .cancellable(id: CancelID.webSocket, cancelInFlight: true),
-                        // Watch: listen for commands from the Watch
-                        .run { [watchClient] send in
-                            guard watchClient.isSupported() else { return }
-                            let stream = await watchClient.receiveMessages()
-                            for await message in stream {
-                                if case .command(let cmd) = message {
-                                    await send(.watchCommandReceived(cmd))
+                    }
+                    .cancellable(id: CancelID.transactionListener),
+                    // Notification permission
+                    .send(.requestNotificationPermission),
+                    // Notification action taps
+                    .run { [notificationClient] send in
+                        let stream = notificationClient.observeActions()
+                        for await action in stream {
+                            await send(.notificationActionReceived(action))
+                        }
+                    }
+                    .cancellable(id: CancelID.notificationActionListener),
+                    // Load cached user from persistence
+                    .run { send in
+                        let user = try? await persistence.fetchCachedUser()
+                        await send(.cachedUserLoaded(user))
+                    },
+                    // Refresh user profile from network (with 10s timeout, non-blocking)
+                    .run { [keychain, apiClient, persistence] send in
+                        guard await keychain.hasTokens() else { return }
+                        do {
+                            let apiUser = try await withThrowingTaskGroup(of: APIUser.self) { group in
+                                group.addTask {
+                                    try await apiClient.getMe()
                                 }
+                                group.addTask {
+                                    try await Task.sleep(for: .seconds(10))
+                                    throw CancellationError()
+                                }
+                                guard let result = try await group.next() else {
+                                    throw CancellationError()
+                                }
+                                group.cancelAll()
+                                return result
+                            }
+                            let dto = CachedUserDTO(
+                                id: apiUser.id, email: apiUser.email, name: apiUser.name,
+                                imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
+                                subscriptionTier: apiUser.subscriptionTier,
+                                subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
+                                emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
+                                createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
+                            )
+                            try? await persistence.saveCachedUser(dto)
+                            await send(.cachedUserLoaded(dto))
+                        } catch {
+                            // Network error or timeout — use cached data silently
+                        }
+                    },
+                    // Watch: listen for commands from the Watch
+                    .run { [watchClient] send in
+                        guard watchClient.isSupported() else { return }
+                        let stream = await watchClient.receiveMessages()
+                        for await message in stream {
+                            if case .command(let cmd) = message {
+                                await send(.watchCommandReceived(cmd))
                             }
                         }
-                        .cancellable(id: CancelID.watchCommandListener),
-                        // Load tasks early so they are available for focus linking
-                        .send(.tasks(.onAppear)),
-                        // Load analytics early so the Focus companion cards have data on first Focus visit
-                        .send(.analytics(.onAppear)),
-                        // Reconcile widget/intent commands even if they arrived before bootstrap finished.
-                        .send(.consumeExternalCommands)
-                    )
+                    }
+                    .cancellable(id: CancelID.watchCommandListener),
+                    // Load tasks early so they are available for focus linking
+                    .send(.tasks(.onAppear)),
+                    // Load analytics early so the Focus companion cards have data on first Focus visit
+                    .send(.analytics(.onAppear)),
+                    // Reconcile widget/intent commands even if they arrived before bootstrap finished.
+                    .send(.consumeExternalCommands)
                 )
 
             case .requestNotificationPermission:

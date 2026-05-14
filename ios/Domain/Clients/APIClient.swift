@@ -340,8 +340,10 @@ private struct APIHelper: Sendable {
     }
 
     private func performRequest(_ request: URLRequest) async throws -> (Data, URLResponse) {
+        var timedRequest = request
+        timedRequest.timeoutInterval = 15
         do {
-            return try await URLSession.shared.data(for: request)
+            return try await URLSession.shared.data(for: timedRequest)
         } catch {
             throw APIClientError.networkError
         }

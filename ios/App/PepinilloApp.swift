@@ -52,46 +52,89 @@ private final class AppBootstrap: ObservableObject {
 
     private func bootstrap() async {
         phase = .loading
+        startupLogger.info("Starting bootstrap phase...")
         do {
-            let container = try await loadContainerSafely()
+            let container = try await loadContainerWithTimeout()
+            startupLogger.info("ModelContainer loaded successfully, applying...")
             apply(container: container)
         } catch {
-            startupLogger.error("App bootstrap failed: \(String(describing: error), privacy: .public)")
+            startupLogger.error("App bootstrap failed after timeout/error: \(String(describing: error), privacy: .public)")
             phase = .failed
         }
     }
 
     func retry() {
+        startupLogger.info("User requested bootstrap retry")
         Task {
             await bootstrap()
         }
     }
 
-    private func loadContainerSafely() async throws -> ModelContainer {
+    private func loadContainerWithTimeout() async throws -> ModelContainer {
         do {
-            // Now that bootstrap is purely asynchronous, we can afford to wait for heavy migrations
-            // without blocking the main thread or system splash screen.
-            // Using a fresh local store in the App Group is the primary target.
-            return try await withThrowingTaskGroup(of: ModelContainer.self) { group in
-                group.addTask(priority: .userInitiated) {
-                    try await Task.detached(priority: .userInitiated) {
-                        try makeSharedModelContainer()
-                    }.value
-                }
-                group.addTask {
-                    try await Task.sleep(for: AppBootstrapTiming.containerOpenTimeout)
-                    throw AppBootstrapError.containerTimeout
-                }
-
-                guard let container = try await group.next() else {
-                    throw AppBootstrapError.containerTimeout
-                }
-                group.cancelAll()
-                return container
+            startupLogger.info("Attempting to load shared ModelContainer with 8s timeout...")
+            return try await withTimeout(seconds: 8) {
+                try await self.loadSharedContainerOnBackgroundQueue()
             }
         } catch {
-            startupLogger.error("Persistent store failed during launch, using fallback store: \(String(describing: error), privacy: .public)")
-            return try Self.makeEmergencyFallbackContainer()
+            startupLogger.warning("Shared container failed or timed out, attempting emergency fallback: \(String(describing: error), privacy: .public)")
+            
+            // Second attempt: fresh fallback store with its own timeout
+            do {
+                return try await withTimeout(seconds: 8) {
+                    try await self.loadFallbackContainerOnBackgroundQueue()
+                }
+            } catch {
+                startupLogger.fault("Critical failure: Fallback container also failed/timed out: \(String(describing: error), privacy: .public)")
+                throw error
+            }
+        }
+    }
+
+    private func loadSharedContainerOnBackgroundQueue() async throws -> ModelContainer {
+        // Use GCD for the potentially blocking synchronous SwiftData init.
+        // This avoids starving the Swift Concurrency cooperative thread pool
+        // if the SQLite open/migration hangs.
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    let container = try makeSharedModelContainer()
+                    continuation.resume(returning: container)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    private func loadFallbackContainerOnBackgroundQueue() async throws -> ModelContainer {
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    let container = try Self.makeEmergencyFallbackContainer()
+                    continuation.resume(returning: container)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    private func withTimeout<T>(seconds: Double, operation: @escaping @Sendable () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw AppBootstrapError.containerTimeout
+            }
+            
+            guard let result = try await group.next() else {
+                throw AppBootstrapError.containerTimeout
+            }
+            group.cancelAll()
+            return result
         }
     }
 

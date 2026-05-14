@@ -527,10 +527,21 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.keychainClient.hasTokens = { false }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
         }
         store.exhaustivity = .off
 
-        await store.send(.subscriptionStateLoaded(.everywherePlus))
+        await store.send(.subscriptionStateLoaded(.everywherePlus)) {
+            $0.subscriptionState = .everywherePlus
+            $0.focus.isProUser = true
+            $0.settings.isProUser = true
+            $0.analytics.isProUser = true
+            $0.tasks.isProUser = true
+        }
 
         // After subscriptionStateLoaded, userCapabilities should be written to App Group
         let caps = AppGroupDefaults.userCapabilities
@@ -547,10 +558,21 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.keychainClient.hasTokens = { false }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
         }
         store.exhaustivity = .off
 
-        await store.send(.subscriptionUpdated(.pepinilloPlus))
+        await store.send(.subscriptionUpdated(.pepinilloPlus)) {
+            $0.subscriptionState = .pepinilloPlus
+            $0.focus.isProUser = true
+            $0.settings.isProUser = true
+            $0.analytics.isProUser = true
+            $0.tasks.isProUser = true
+        }
 
         let caps = AppGroupDefaults.userCapabilities
         #expect(caps?.backendSync == false)
@@ -567,10 +589,21 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.keychainClient.hasTokens = { false }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
         }
         store.exhaustivity = .off
 
-        await store.send(.subscriptionUpdated(.free))
+        await store.send(.subscriptionUpdated(.free)) {
+            $0.subscriptionState = .free
+            $0.focus.isProUser = false
+            $0.settings.isProUser = false
+            $0.analytics.isProUser = false
+            $0.tasks.isProUser = false
+        }
 
         let caps = AppGroupDefaults.userCapabilities
         #expect(caps?.backendSync == false)
@@ -582,6 +615,11 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.keychainClient.hasTokens = { false }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
         }
         store.exhaustivity = .off
 
@@ -590,6 +628,7 @@ struct AppFeatureIntegrationTests {
             $0.focus.isProUser = true
             $0.settings.isProUser = true
             $0.analytics.isProUser = true
+            $0.tasks.isProUser = true
         }
     }
 
@@ -601,6 +640,11 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.keychainClient.hasTokens = { false }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
         }
         store.exhaustivity = .off
 
@@ -609,6 +653,7 @@ struct AppFeatureIntegrationTests {
             $0.focus.isProUser = true
             $0.settings.isProUser = true
             $0.analytics.isProUser = true
+            $0.tasks.isProUser = true
             $0.focus.showPaywall = false
         }
     }
