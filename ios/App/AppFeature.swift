@@ -199,6 +199,7 @@ struct AppFeature {
     @Dependency(\.keychainClient) var keychain
     @Dependency(\.syncClient) var syncClient
     @Dependency(\.webSocketClient) var webSocketClient
+    @Dependency(\.syncModeClient) var syncModeClient
 
     private enum CancelID {
         case transactionListener
@@ -355,7 +356,7 @@ struct AppFeature {
                             await send(.cachedUserLoaded(user))
                         },
                         // If tokens exist, try to refresh user profile from network and sync tasks
-                        .run { [keychain, apiClient, persistence, syncClient, isPro = state.subscriptionState.isPro] send in
+                        .run { [keychain, apiClient, persistence, syncClient, canBackendSync = state.subscriptionState.capabilities.backendSync] send in
                             guard await keychain.hasTokens() else { return }
                             do {
                                 let apiUser = try await apiClient.getMe()
@@ -372,13 +373,14 @@ struct AppFeature {
                             } catch {
                                 // Network error — use cached data silently
                             }
-                            // Sync tasks after profile refresh if Pro
-                            if isPro {
+                            // VPS sync is Everywhere/AI+ only.
+                            if canBackendSync {
                                 try? await syncClient.syncAll()
                             }
                         },
-                        // Connect WebSocket if authenticated
-                        .run { [keychain, webSocketClient] _ in
+                        // Connect WebSocket only for backend sync users.
+                        .run { [keychain, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
+                            guard canBackendSync else { return }
                             guard await keychain.hasTokens() else { return }
                             await withTaskCancellationHandler {
                                 await webSocketClient.connect()
@@ -502,7 +504,8 @@ struct AppFeature {
                 }()
                 return .merge(
                     timerSync,
-                    .run { [keychain, webSocketClient] _ in
+                    .run { [keychain, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
+                        guard canBackendSync else { return }
                         guard await keychain.hasTokens() else { return }
                         await withTaskCancellationHandler {
                             await webSocketClient.connect()
@@ -533,8 +536,16 @@ struct AppFeature {
                 AppGroupDefaults.userCapabilities = effectiveSub.capabilities
                 AppGroupDefaults.isProUser = isPro
                 AppGroupDefaults.canBackendSync = canSync
+                AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
                 if isPro { state.focus.showPaywall = false }
-                return .run { _ in
+                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] _ in
+                    await syncModeClient.reconcile(capabilities)
+                    if capabilities.backendSync, await keychain.hasTokens() {
+                        try? await syncClient.syncAll()
+                        await webSocketClient.connect()
+                    } else {
+                        webSocketClient.disconnect()
+                    }
                     WidgetCenter.shared.reloadAllTimelines()
                 }
 
@@ -554,8 +565,16 @@ struct AppFeature {
                 AppGroupDefaults.userCapabilities = effectiveSub.capabilities
                 AppGroupDefaults.isProUser = isPro
                 AppGroupDefaults.canBackendSync = canSync
+                AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
                 if isPro { state.focus.showPaywall = false }
-                return .run { _ in
+                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] _ in
+                    await syncModeClient.reconcile(capabilities)
+                    if capabilities.backendSync, await keychain.hasTokens() {
+                        try? await syncClient.syncAll()
+                        await webSocketClient.connect()
+                    } else {
+                        webSocketClient.disconnect()
+                    }
                     WidgetCenter.shared.reloadAllTimelines()
                 }
 
@@ -624,11 +643,11 @@ struct AppFeature {
                 state.userEmail = user.email
                 state.auth = nil  // dismiss auth sheet
                 // Sync tasks and connect WebSocket after successful email login if Pro
-                return .run { [syncClient, webSocketClient, isPro = state.subscriptionState.isPro] _ in
-                    if isPro {
+                return .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
+                    if canBackendSync {
                         try? await syncClient.syncAll()
+                        await webSocketClient.connect()
                     }
-                    await webSocketClient.connect()
                 }
 
             case .auth(.presented(.delegate(.emailVerificationRequired(let email)))):
@@ -641,11 +660,11 @@ struct AppFeature {
                 state.displayName = user.name
                 state.userEmail = user.email
                 state.emailVerification = nil  // dismiss verification sheet
-                return .run { [syncClient, webSocketClient, isPro = state.subscriptionState.isPro] _ in
-                    if isPro {
+                return .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
+                    if canBackendSync {
                         try? await syncClient.syncAll()
+                        await webSocketClient.connect()
                     }
-                    await webSocketClient.connect()
                 }
 
             case .emailVerification:
@@ -742,7 +761,7 @@ struct AppFeature {
                     // Try to authenticate with backend if identity token available
                     {
                         if let idToken = info.identityToken {
-                            return .run { [apiClient, keychain, persistence, syncClient, webSocketClient, isPro = state.subscriptionState.isPro] send in
+                            return .run { [apiClient, keychain, persistence, syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] send in
                                 do {
                                     guard let nonce = info.nonce, !nonce.isEmpty else {
                                         return
@@ -759,11 +778,11 @@ struct AppFeature {
                                     )
                                     try? await persistence.saveCachedUser(dto)
                                     await send(.cachedUserLoaded(dto))
-                                    // Sync tasks and connect WebSocket after successful Apple Sign-In if Pro
-                                    if isPro {
+                                    // VPS sync is Everywhere/AI+ only.
+                                    if canBackendSync {
                                         try? await syncClient.syncAll()
+                                        await webSocketClient.connect()
                                     }
-                                    await webSocketClient.connect()
                                 } catch {
                                     // Backend auth failed — synthetic CachedUserDTO already saved above
                                 }

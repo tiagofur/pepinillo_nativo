@@ -40,6 +40,8 @@ struct AppGroupContainerTests {
         let read = AppGroupDefaults.userCapabilities
         #expect(read?.backendSync == false)
         #expect(read?.localPremium == true)
+        #expect(AppGroupDefaults.canBackendSync == false)
+        #expect(AppGroupDefaults.canAppleCloudSync == true)
     }
 
     @Test("userCapabilities stores free preset")
@@ -63,6 +65,22 @@ struct AppGroupContainerTests {
         let read = AppGroupDefaults.userCapabilities
         #expect(read?.backendSync == true)
         #expect(read?.hasAnyPremium == true)
+        #expect(AppGroupDefaults.canBackendSync == true)
+        #expect(AppGroupDefaults.canAppleCloudSync == false)
+    }
+
+    @Test("sync mode flags round-trip")
+    func syncModeFlagsRoundTrip() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.activeSyncMode = .appleCloud
+        AppGroupDefaults.syncStatus = .appleCloudUnavailable
+        AppGroupDefaults.lastAppleCloudActivationError = "iCloud unavailable"
+
+        #expect(AppGroupDefaults.activeSyncMode == .appleCloud)
+        #expect(AppGroupDefaults.syncStatus == .appleCloudUnavailable)
+        #expect(AppGroupDefaults.lastAppleCloudActivationError == "iCloud unavailable")
     }
 
     @Test("widget duration cache falls back when stored value is zero")
@@ -159,6 +177,10 @@ struct AppGroupDefaultsSnapshot {
     var userCapabilities: UserCapabilities?
     var isProUser: Bool
     var canBackendSync: Bool
+    var canAppleCloudSync: Bool
+    var activeSyncMode: AppGroupDefaults.SyncMode
+    var syncStatus: AppGroupDefaults.SyncStatus
+    var lastAppleCloudActivationError: String?
     var widgetSelectedMode: String?
     var pomodoroDuration: Double
     var blockDuration: Double
@@ -191,6 +213,10 @@ struct AppGroupDefaultsSnapshot {
             userCapabilities: AppGroupDefaults.userCapabilities,
             isProUser: AppGroupDefaults.isProUser,
             canBackendSync: AppGroupDefaults.canBackendSync,
+            canAppleCloudSync: AppGroupDefaults.canAppleCloudSync,
+            activeSyncMode: AppGroupDefaults.activeSyncMode,
+            syncStatus: AppGroupDefaults.syncStatus,
+            lastAppleCloudActivationError: AppGroupDefaults.lastAppleCloudActivationError,
             widgetSelectedMode: AppGroupDefaults.widgetSelectedMode,
             pomodoroDuration: AppGroupDefaults.pomodoroDuration,
             blockDuration: AppGroupDefaults.blockDuration,
@@ -224,6 +250,10 @@ struct AppGroupDefaultsSnapshot {
         AppGroupDefaults.userCapabilities = userCapabilities
         AppGroupDefaults.isProUser = isProUser
         AppGroupDefaults.canBackendSync = canBackendSync
+        AppGroupDefaults.canAppleCloudSync = canAppleCloudSync
+        AppGroupDefaults.activeSyncMode = activeSyncMode
+        AppGroupDefaults.syncStatus = syncStatus
+        AppGroupDefaults.lastAppleCloudActivationError = lastAppleCloudActivationError
         AppGroupDefaults.widgetSelectedMode = widgetSelectedMode
         AppGroupDefaults.pomodoroDuration = pomodoroDuration
         AppGroupDefaults.blockDuration = blockDuration

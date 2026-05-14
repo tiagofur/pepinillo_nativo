@@ -15,33 +15,10 @@ struct PaywallView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 32) {
-                    PaywallHeaderSection()
-                        .readableContent(maxWidth: 672)
-
-                    // Feature tier cards
-                    LazyVGrid(columns: adaptiveCardColumns, spacing: 20) {
-                        PaywallPepinilloPlusSection()
-                    }
-                    .contentMaxWidth(900)
-
-                    PaywallProductCardsSection(store: store, glassNamespace: glassNS)
-                        .readableContent(maxWidth: 672)
-
-                    VStack(spacing: 20) {
-                        PaywallPurchaseButton(store: store, glassNamespace: glassNS)
-                        PaywallLegalFooter(store: store)
-                    }
-                    .readableContent(maxWidth: 672)
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 40)
-            }
+            PaywallContentBody(store: store, glassNamespace: glassNS)
             .scrollContentBackground(.hidden)
             .withAmbientBackground()
-            .navigationTitle(String(localized: "Upgrade to Pepinillo+"))
+            .navigationTitle(String(localized: "Choose Your Plan"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -81,6 +58,35 @@ struct PaywallView: View {
     }
 }
 
+struct PaywallContentBody: View {
+    @Bindable var store: StoreOf<PaywallFeature>
+    let glassNamespace: Namespace.ID
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 26) {
+                PaywallHeaderSection()
+                    .readableContent(maxWidth: 720)
+
+                PaywallTierComparisonSection()
+                    .contentMaxWidth(980)
+
+                PaywallProductCardsSection(store: store, glassNamespace: glassNamespace)
+                    .readableContent(maxWidth: 720)
+
+                VStack(spacing: 18) {
+                    PaywallPurchaseButton(store: store, glassNamespace: glassNamespace)
+                    PaywallLegalFooter(store: store)
+                }
+                .readableContent(maxWidth: 720)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 42)
+        }
+    }
+}
+
 // MARK: - Header
 
 struct PaywallHeaderSection: View {
@@ -88,49 +94,43 @@ struct PaywallHeaderSection: View {
     @State private var appeared = false
 
     var body: some View {
-        VStack(spacing: 20) {
-            ZStack {
-                // Glow behind icon
-                Circle()
-                    .fill(Color.accentColor.opacity(0.15))
-                    .frame(width: 140, height: 140)
-                    .blur(radius: 25)
-                
-                VStack(spacing: -10) {
-                    Text("🧠")
-                        .font(.system(size: 80))
-                        .shadow(color: Color.accentColor.opacity(0.4), radius: 20)
-                        .offset(y: appeared ? -5 : 0)
-                        .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: appeared)
-                    Text("✨")
-                        .font(.system(size: 40))
-                        .offset(x: 35, y: appeared ? -15 : -10)
-                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(0.5), value: appeared)
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
+                Image(systemName: "timer.circle.fill")
+                    .font(.system(size: 34, weight: .semibold))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(Color.accentColor)
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(String(localized: "Pepinillo plans"))
+                        .font(.caption.weight(.semibold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(.secondary)
+                    Text(String(localized: "Apple-first focus. Sync when you need it."))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
                 }
             }
-            .scaleEffect(appeared ? 1 : 0.6)
-            .rotationEffect(.degrees(appeared ? 0 : -15))
-            .accessibilityHidden(true)
 
-            VStack(spacing: 12) {
-                Text(String(localized: "Master Your Focus"))
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.center)
-                    .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(String(localized: "Unlock the right kind of sync."))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.86)
 
-                Text(String(localized: "Join thousands reaching their peak with AI-powered focus routines."))
-                    .font(.subheadline.weight(.medium))
+                Text(String(localized: "Pepinillo+ keeps your Apple devices in sync with iCloud. Everywhere/AI+ adds the Pepinillo cloud so your data can travel beyond Apple and power server AI."))
+                    .font(.callout)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.top, 20)
+        .padding(.top, 6)
         .offset(y: appeared ? 0 : 20)
         .opacity(appeared ? 1 : 0)
         .onAppear {
             if !appeared {
-                withAnimation(.spring(response: 0.6, dampingFraction: 0.7).delay(0.1)) {
+                withAnimation(reduceMotion ? nil : .smooth(duration: 0.45).delay(0.05)) {
                     appeared = true
                 }
             }
@@ -140,50 +140,110 @@ struct PaywallHeaderSection: View {
 
 // MARK: - Features Sections
 
-struct PaywallPepinilloPlusSection: View {
+struct PaywallTierComparisonSection: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Label(String(localized: "Pepinillo+"), systemImage: "star.fill")
-                    .font(.headline)
-                    .foregroundStyle(.green)
-                
-                Spacer()
-                
-                Text(String(localized: "Lifetime"))
-                    .font(.caption2.bold())
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.green.opacity(0.2), in: Capsule())
-                    .foregroundStyle(.green)
-            }
-            
-            VStack(alignment: .leading, spacing: 12) {
-                FeatureRow(icon: "sparkles", title: "Apple Intelligence", subtitle: "AI-powered productivity insights")
-                FeatureRow(icon: "rectangle.split.3x1", title: "All Focus Modes", subtitle: "Pomodoro, Flowtime, Time Block")
-                FeatureRow(icon: "checklist", title: "Unlimited Tasks", subtitle: "Smart lists & recurring tasks")
-                FeatureRow(icon: "apple.logo", title: "Ecosystem Pro", subtitle: "All widgets & Watch companion")
-            }
+        LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+            PaywallTierCard(
+                title: String(localized: "Pepinillo+"),
+                eyebrow: String(localized: "One-time Apple unlock"),
+                icon: "apple.logo",
+                tint: .green,
+                summary: String(localized: "Best if you live on iPhone, iPad, Mac, Apple Watch, and want private Apple sync."),
+                benefits: [
+                    .init(icon: "icloud.fill", title: String(localized: "iCloud sync"), subtitle: String(localized: "Tasks, sessions, settings, analytics across Apple devices.")),
+                    .init(icon: "sparkles", title: String(localized: "On-device AI"), subtitle: String(localized: "Apple Intelligence / local reports without cloud AI credits.")),
+                    .init(icon: "checklist", title: String(localized: "Full local app"), subtitle: String(localized: "Unlimited tasks, subtasks, recurrence, themes, widgets, Watch.")),
+                    .init(icon: "square.and.arrow.up", title: String(localized: "Export access"), subtitle: String(localized: "Keep your focus history portable with data exports."))
+                ]
+            )
+
+            PaywallTierCard(
+                title: String(localized: "Everywhere/AI+"),
+                eyebrow: String(localized: "Monthly or annual subscription"),
+                icon: "network",
+                tint: .blue,
+                summary: String(localized: "Best if you want Pepinillo synced through the VPS and cloud AI on every platform."),
+                benefits: [
+                    .init(icon: "server.rack", title: String(localized: "Pepinillo cloud sync"), subtitle: String(localized: "Your VPS becomes the source of truth for future cross-platform devices.")),
+                    .init(icon: "bolt.horizontal.cloud.fill", title: String(localized: "Cloud AI credits"), subtitle: String(localized: "Server AI for deeper summaries and recommendations.")),
+                    .init(icon: "person.crop.circle.badge.checkmark", title: String(localized: "Account restore"), subtitle: String(localized: "Restore entitlement through your Pepinillo account.")),
+                    .init(icon: "plus.circle.fill", title: String(localized: "Everything in Pepinillo+"), subtitle: String(localized: "Local premium features remain included."))
+                ]
+            )
         }
-        .padding(20)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
     }
 }
 
+struct PaywallTierCard: View {
+    struct Benefit: Identifiable {
+        let id = UUID()
+        let icon: String
+        let title: String
+        let subtitle: String
+    }
+
+    let title: String
+    let eyebrow: String
+    let icon: String
+    let tint: Color
+    let summary: String
+    let benefits: [Benefit]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: icon)
+                    .font(.title3.weight(.semibold))
+                    .frame(width: 38, height: 38)
+                    .foregroundStyle(tint)
+                    .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile))
+                    .accessibilityHidden(true)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(eyebrow)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    Text(title)
+                        .font(.title3.weight(.bold))
+                }
+            }
+
+            Text(summary)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 13) {
+                ForEach(benefits) { benefit in
+                    FeatureRow(icon: benefit.icon, title: benefit.title, subtitle: benefit.subtitle, tint: tint)
+                }
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
+        .overlay {
+            RoundedRectangle(cornerRadius: GlassCornerRadius.hero)
+                .stroke(.primary.opacity(0.06), lineWidth: 1)
+        }
+    }
+}
 
 struct FeatureRow: View {
     let icon: String
-    let title: LocalizedStringKey
-    let subtitle: LocalizedStringKey
+    let title: String
+    let subtitle: String
+    var tint: Color = .accentColor
     
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 24)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(tint)
+                .frame(width: 22, height: 22)
+                .accessibilityHidden(true)
             
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                 Text(subtitle)
@@ -201,7 +261,15 @@ struct PaywallProductCardsSection: View {
     let glassNamespace: Namespace.ID
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(String(localized: "Choose how to unlock"))
+                    .font(.title3.weight(.bold))
+                Text(String(localized: "Apple handles every purchase. You can restore at any time from this screen."))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
             ForEach(store.products) { product in
                 PaywallProductCard(
                     product: product,
@@ -224,52 +292,60 @@ struct PaywallProductCard: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .strokeBorder(isSelected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: 2)
-                        .frame(width: 24, height: 24)
-                    
-                    if isSelected {
-                        Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 14, height: 14)
-                    }
-                }
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
-                        Text(product.displayName)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                        
-                        if product.isFeatured {
-                            Text(String(localized: "Popular"))
-                                .font(.system(size: 10, weight: .bold))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.accentColor, in: Capsule())
-                                .foregroundStyle(.white)
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: product.planIcon)
+                        .font(.title3.weight(.semibold))
+                        .frame(width: 34, height: 34)
+                        .foregroundStyle(product.planTint)
+                        .background(product.planTint.opacity(0.14), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile))
+                        .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Text(product.planDisplayName)
+                                .font(.headline)
+                                .foregroundStyle(.primary)
+
+                            if product.isFeatured {
+                                Text(String(localized: "Best value"))
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 3)
+                                    .foregroundStyle(Color.accentColor)
+                                    .background(Color.accentColor.opacity(0.13), in: Capsule())
+                            }
                         }
+
+                        Text(product.planSummary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    
-                    Text(product.description)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                
-                Spacer()
-                
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(product.displayPrice)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    
-                    if product.billingPeriod != "once" {
-                        Text("/ \(product.billingPeriod)")
-                            .font(.caption2.bold())
+
+                    Spacer(minLength: 8)
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(product.displayPrice)
+                            .font(.headline.weight(.bold))
+                            .foregroundStyle(.primary)
+
+                        Text(product.billingLabel)
+                            .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
                     }
+                    .layoutPriority(1)
+                }
+
+                HStack(spacing: 8) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(isSelected ? Color.accentColor : .secondary.opacity(0.42))
+                        .accessibilityHidden(true)
+
+                    Text(product.complianceLine)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
                 }
             }
             .padding(18)
@@ -285,12 +361,14 @@ struct PaywallProductCard: View {
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             .overlay {
                 RoundedRectangle(cornerRadius: GlassCornerRadius.card)
-                    .stroke(isSelected ? Color.accentColor : .primary.opacity(0.06), lineWidth: isSelected ? 2 : 1)
+                    .stroke(isSelected ? Color.accentColor.opacity(0.72) : .primary.opacity(0.06), lineWidth: isSelected ? 1.5 : 1)
             }
-            .scaleEffect(isSelected ? 1.02 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+            .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card))
+            .scaleEffect(isSelected ? 1.01 : 1.0)
+            .animation(.smooth(duration: 0.22), value: isSelected)
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -307,9 +385,9 @@ struct PaywallPurchaseButton: View {
         let selected = store.products.first { $0.id == store.selectedProductID }
         if let product = selected {
             if product.billingPeriod == "once" {
-                return String(localized: "Get Lifetime Access")
+                return String(localized: "Buy Pepinillo+")
             }
-            return String(localized: "Start My Free Trial")
+            return String(localized: "Continue with Everywhere/AI+")
         }
         return String(localized: "Continue")
     }
@@ -323,19 +401,22 @@ struct PaywallPurchaseButton: View {
                     ProgressView().tint(.white)
                 } else {
                     Text(buttonLabel)
+                    Image(systemName: "arrow.forward.circle.fill")
+                        .font(.headline)
+                        .accessibilityHidden(true)
                 }
             }
-            .font(.headline)
+            .font(.headline.weight(.semibold))
             .frame(maxWidth: .infinity)
-            .frame(height: 64)
+            .frame(height: 58)
             .paywallPrimaryActionGlass(glassNamespace: glassNamespace)
         }
         .frame(maxWidth: 480)
         .frame(maxWidth: .infinity)
         .buttonStyle(PepinilloButtonStyle())
         .disabled(store.isLoading || store.subscriptionState.isPro)
-        .padding(.top, 10)
-        .shadow(color: (store.isLoading || store.subscriptionState.isPro) ? .clear : Color.accentColor.opacity(0.3), radius: 15, y: 8)
+        .padding(.top, 4)
+        .shadow(color: (store.isLoading || store.subscriptionState.isPro) ? .clear : Color.accentColor.opacity(0.20), radius: 20, y: 10)
     }
 }
 
@@ -344,17 +425,17 @@ private extension View {
     func paywallPrimaryActionGlass(glassNamespace: Namespace.ID) -> some View {
         if #available(iOS 26.0, macOS 26.0, *) {
             self
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
                 .glassEffect(
                     .regular
                         .interactive(true)
-                        .tint(Color.accentColor.opacity(0.2)),
-                    in: .rect(cornerRadius: GlassCornerRadius.card)
+                        .tint(Color.accentColor.opacity(0.55)),
+                    in: .capsule
                 )
                 .glassEffectID("paywall-action", in: glassNamespace)
                 .overlay {
-                    RoundedRectangle(cornerRadius: GlassCornerRadius.card)
-                        .stroke(Color.accentColor.opacity(0.4), lineWidth: 1)
+                    Capsule()
+                        .stroke(.white.opacity(0.26), lineWidth: 1)
                 }
         } else {
             self
@@ -365,9 +446,8 @@ private extension View {
                         startPoint: .top,
                         endPoint: .bottom
                     ),
-                    in: RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                    in: Capsule()
                 )
-                .shadow(color: Color.accentColor.opacity(0.3), radius: 12, y: 6)
         }
     }
 }
@@ -385,7 +465,7 @@ struct PaywallLegalFooter: View {
             .font(.subheadline.bold())
             .foregroundStyle(Color.accentColor)
             
-            Text(String(localized: "Payment will be charged to your Apple ID account. Subscription automatically renews unless it is canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period."))
+            Text(String(localized: "Pepinillo+ is a one-time purchase. Everywhere/AI+ is an auto-renewing subscription. Payment is charged to your Apple ID. Subscriptions renew unless cancelled at least 24 hours before the end of the current period."))
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -406,6 +486,52 @@ struct PaywallLegalFooter: View {
             .font(.subheadline.bold())
             .foregroundStyle(Color.accentColor)
         }
+    }
+}
+
+private extension ProductInfo {
+    var isLifetime: Bool { billingPeriod == "once" || id == PepinilloProduct.lifetime.rawValue }
+    var isAnnual: Bool { billingPeriod == "year" || id == PepinilloProduct.annual.rawValue }
+
+    var planDisplayName: String {
+        isLifetime ? String(localized: "Pepinillo+") : String(localized: "Everywhere/AI+")
+    }
+
+    var planIcon: String {
+        isLifetime ? "apple.logo" : "network"
+    }
+
+    var planTint: Color {
+        isLifetime ? .green : .blue
+    }
+
+    var planSummary: String {
+        if isLifetime {
+            return String(localized: "One purchase for full local features, on-device AI, export, Apple Watch, widgets, and iCloud sync.")
+        }
+        if isAnnual {
+            return String(localized: "Everything in Pepinillo+ plus VPS sync, account restore, and cloud AI credits. Best value.")
+        }
+        return String(localized: "Everything in Pepinillo+ plus VPS sync, account restore, and cloud AI credits.")
+    }
+
+    var billingLabel: String {
+        switch billingPeriod {
+        case "once":
+            return String(localized: "once")
+        case "year":
+            return String(localized: "per year")
+        case "month":
+            return String(localized: "per month")
+        default:
+            return billingPeriod
+        }
+    }
+
+    var complianceLine: String {
+        isLifetime
+            ? String(localized: "Not a subscription. Apple-to-Apple sync uses your iCloud account.")
+            : String(localized: "Auto-renewing subscription. VPS sync is the source of truth.")
     }
 }
 

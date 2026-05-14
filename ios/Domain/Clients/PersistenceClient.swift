@@ -563,19 +563,26 @@ extension PersistenceClient: DependencyKey {
     /// Live implementation backed by SwiftData.
     @MainActor
     public static func live(container: ModelContainer) -> PersistenceClient {
-        let service = SwiftDataPersistenceService(container: container)
+        live(serviceProvider: { SwiftDataPersistenceService(container: container) })
+    }
 
+    /// Live implementation backed by a service provider so the active store can
+    /// move from local SwiftData to the Apple Cloud store after launch.
+    @MainActor
+    public static func live(
+        serviceProvider: @escaping @MainActor () -> SwiftDataPersistenceService
+    ) -> PersistenceClient {
         return PersistenceClient(
             fetchTasks: {
                 try await MainActor.run {
-                    let tasks = try service.fetchTasks()
+                    let tasks = try serviceProvider().fetchTasks()
                     // Filter out soft-deleted tasks
                     return tasks.filter { !$0.isDeleted }.map { TaskItemDTO(from: $0) }
                 }
             },
             saveTask: { taskDTO in
                 try await MainActor.run {
-                    let tasks = try service.fetchTasks()
+                    let tasks = try serviceProvider().fetchTasks()
                     if let existing = tasks.first(where: { $0.id == taskDTO.id }) {
                         existing.title = taskDTO.title
                         existing.notes = taskDTO.notes
@@ -601,7 +608,7 @@ extension PersistenceClient: DependencyKey {
                         } else if !taskDTO.isRecurringTemplate {
                             existing.nextOccurrence = nil
                         }
-                        try service.saveTask(existing)
+                        try serviceProvider().saveTask(existing)
                     } else {
                         let newTask = TaskItem(
                             title: taskDTO.title,
@@ -624,74 +631,74 @@ extension PersistenceClient: DependencyKey {
                            let preset = RecurrencePreset.from(rule: rule) {
                             newTask.nextOccurrence = preset.nextDate(after: Calendar.current.startOfDay(for: .now))
                         }
-                        try service.saveTask(newTask)
+                        try serviceProvider().saveTask(newTask)
                     }
                 }
             },
             deleteTask: { id in
-                try await MainActor.run { try service.softDeleteTask(id: id) }
+                try await MainActor.run { try serviceProvider().softDeleteTask(id: id) }
             },
             fetchSubtasks: { taskID in
                 try await MainActor.run {
-                    let subtasks = try service.fetchSubtasks(for: taskID)
+                    let subtasks = try serviceProvider().fetchSubtasks(for: taskID)
                     return subtasks.map { SubTaskDTO(from: $0) }
                 }
             },
             addSubtask: { taskID, title in
                 try await MainActor.run {
-                    let subtask = try service.addSubtask(to: taskID, title: title)
+                    let subtask = try serviceProvider().addSubtask(to: taskID, title: title)
                     return SubTaskDTO(from: subtask)
                 }
             },
             toggleSubtask: { id in
-                try await MainActor.run { try service.toggleSubtask(id: id) }
+                try await MainActor.run { try serviceProvider().toggleSubtask(id: id) }
             },
             deleteSubtask: { id in
-                try await MainActor.run { try service.deleteSubtask(id: id) }
+                try await MainActor.run { try serviceProvider().deleteSubtask(id: id) }
             },
             fetchTaskTotalFocusSeconds: { taskID in
-                try await MainActor.run { try service.fetchTaskTotalFocusSeconds(for: taskID) }
+                try await MainActor.run { try serviceProvider().fetchTaskTotalFocusSeconds(for: taskID) }
             },
             saveSession: { result in
-                try await MainActor.run { try service.saveSession(result) }
+                try await MainActor.run { try serviceProvider().saveSession(result) }
             },
             fetchSessions: { start, end in
                 try await MainActor.run {
-                    let records = try service.fetchSessions(from: start, to: end)
+                    let records = try serviceProvider().fetchSessions(from: start, to: end)
                     return records.map { SessionRecordDTO(from: $0) }
                 }
             },
             fetchSessionsForTask: { taskID in
                 try await MainActor.run {
-                    let records = try service.fetchSessionsForTask(taskID: taskID)
+                    let records = try serviceProvider().fetchSessionsForTask(taskID: taskID)
                     return records.map { SessionRecordDTO(from: $0) }
                 }
             },
             fetchTaskAnalytics: { taskID in
                 try await MainActor.run {
-                    try service.fetchTaskAnalytics(taskID: taskID)
+                    try serviceProvider().fetchTaskAnalytics(taskID: taskID)
                 }
             },
             saveJournalEntry: { sessionID, note, rating in
                 try await MainActor.run {
-                    try service.saveJournalEntry(sessionID: sessionID, note: note, rating: rating)
+                    try serviceProvider().saveJournalEntry(sessionID: sessionID, note: note, rating: rating)
                 }
             },
             fetchDailyStats: { date in
                 try await MainActor.run {
-                    guard let stats = try service.fetchDailyStats(for: date) else { return nil }
+                    guard let stats = try serviceProvider().fetchDailyStats(for: date) else { return nil }
                     return DailyStatsDTO(from: stats)
                 }
             },
             fetchPreferences: {
                 try await MainActor.run {
-                    let prefs = try service.fetchPreferences()
+                    let prefs = try serviceProvider().fetchPreferences()
                     return UserPreferencesDTO(from: prefs)
                 }
             },
             savePreferences: { prefsDTO in
                 try await MainActor.run {
-                    let prefs = try service.fetchPreferences()
+                    let prefs = try serviceProvider().fetchPreferences()
                     prefs.pomodoroDuration = prefsDTO.pomodoroDuration
                     prefs.shortBreakDuration = prefsDTO.shortBreakDuration
                     prefs.longBreakDuration = prefsDTO.longBreakDuration
@@ -720,138 +727,138 @@ extension PersistenceClient: DependencyKey {
                     prefs.appleUserID = prefsDTO.appleUserID
                     prefs.displayName = prefsDTO.displayName
                     prefs.userEmail = prefsDTO.userEmail
-                    try service.savePreferences(prefs)
+                    try serviceProvider().savePreferences(prefs)
                 }
             },
             fetchCachedUser: {
                 try await MainActor.run {
-                    guard let user = try service.fetchCachedUser() else { return nil }
+                    guard let user = try serviceProvider().fetchCachedUser() else { return nil }
                     return CachedUserDTO(from: user)
                 }
             },
             saveCachedUser: { dto in
                 try await MainActor.run {
-                    try service.saveCachedUser(dto)
+                    try serviceProvider().saveCachedUser(dto)
                 }
             },
             deleteCachedUser: {
                 try await MainActor.run {
-                    try service.deleteCachedUser()
+                    try serviceProvider().deleteCachedUser()
                 }
             },
             generateRecurringTasks: {
-                try await MainActor.run { try service.generateRecurringTasksIfNeeded() }
+                try await MainActor.run { try serviceProvider().generateRecurringTasksIfNeeded() }
             },
             fetchDirtyTasks: {
                 try await MainActor.run {
-                    let tasks = try service.fetchDirtyTasks()
+                    let tasks = try serviceProvider().fetchDirtyTasks()
                     return tasks.map { TaskItemDTO(from: $0) }
                 }
             },
             markTasksSynced: { syncIds, syncTimestamp in
                 try await MainActor.run {
-                    try service.markTasksSynced(syncIds: syncIds, syncTimestamp: syncTimestamp)
+                    try serviceProvider().markTasksSynced(syncIds: syncIds, syncTimestamp: syncTimestamp)
                 }
             },
             upsertTaskFromServer: { serverTask in
                 try await MainActor.run {
-                    try service.upsertTaskFromServer(serverTask)
+                    try serviceProvider().upsertTaskFromServer(serverTask)
                 }
             },
             purgeTaskBySyncId: { syncId in
                 try await MainActor.run {
-                    try service.purgeTaskBySyncId(syncId)
+                    try serviceProvider().purgeTaskBySyncId(syncId)
                 }
             },
             getLastSyncTimestamp: {
                 await MainActor.run {
-                    service.getLastSyncTimestamp()
+                    serviceProvider().getLastSyncTimestamp()
                 }
             },
             saveLastSyncTimestamp: { timestamp in
                 await MainActor.run {
-                    service.saveLastSyncTimestamp(timestamp)
+                    serviceProvider().saveLastSyncTimestamp(timestamp)
                 }
             },
             fetchDirtySessions: {
                 try await MainActor.run {
-                    let records = try service.fetchDirtySessions()
+                    let records = try serviceProvider().fetchDirtySessions()
                     return records.map { SessionRecordDTO(from: $0) }
                 }
             },
             markSessionsSynced: { sessionIDs in
                 try await MainActor.run {
-                    try service.markSessionsSynced(ids: sessionIDs)
+                    try serviceProvider().markSessionsSynced(ids: sessionIDs)
                 }
             },
             upsertSessionFromServer: { dto in
                 try await MainActor.run {
-                    try service.upsertSessionFromServer(dto)
+                    try serviceProvider().upsertSessionFromServer(dto)
                 }
             },
             sessionExists: { sessionId in
                 try await MainActor.run {
-                    try service.sessionExists(id: sessionId)
+                    try serviceProvider().sessionExists(id: sessionId)
                 }
             },
             fetchTaskBySyncId: { syncId in
                 try await MainActor.run {
-                    try service.fetchTaskBySyncId(syncId).map { TaskItemDTO(from: $0) }
+                    try serviceProvider().fetchTaskBySyncId(syncId).map { TaskItemDTO(from: $0) }
                 }
             },
             fetchTaskByServerId: { serverId in
                 try await MainActor.run {
-                    try service.fetchTaskByServerId(serverId).map { TaskItemDTO(from: $0) }
+                    try serviceProvider().fetchTaskByServerId(serverId).map { TaskItemDTO(from: $0) }
                 }
             },
             linkSessionToTask: { sessionId, taskId in
                 try await MainActor.run {
-                    try service.linkSessionToTask(sessionId: sessionId, taskId: taskId)
+                    try serviceProvider().linkSessionToTask(sessionId: sessionId, taskId: taskId)
                 }
             },
             getAllPreferencesAsKeyValue: {
                 await MainActor.run {
-                    (try? service.getAllPreferencesAsKeyValue()) ?? []
+                    (try? serviceProvider().getAllPreferencesAsKeyValue()) ?? []
                 }
             },
             applyServerPreference: { key, value, updatedAt in
                 await MainActor.run {
-                    try? service.applyServerPreference(key: key, value: value, updatedAt: updatedAt)
+                    try? serviceProvider().applyServerPreference(key: key, value: value, updatedAt: updatedAt)
                 }
             },
             deleteAllTasks: {
                 await MainActor.run {
-                    try? service.deleteAllTasks()
+                    try? serviceProvider().deleteAllTasks()
                 }
             },
             deleteAllSessions: {
                 await MainActor.run {
-                    try? service.deleteAllSessions()
+                    try? serviceProvider().deleteAllSessions()
                 }
             },
             deleteAllStats: {
                 await MainActor.run {
-                    try? service.deleteAllStats()
+                    try? serviceProvider().deleteAllStats()
                 }
             },
             getTaskCount: {
                 await MainActor.run {
-                    (try? service.getTaskCount()) ?? 0
+                    (try? serviceProvider().getTaskCount()) ?? 0
                 }
             },
             getSessionCount: {
                 await MainActor.run {
-                    (try? service.getSessionCount()) ?? 0
+                    (try? serviceProvider().getSessionCount()) ?? 0
                 }
             },
             getLastSessionSyncTimestamp: {
                 await MainActor.run {
-                    service.getLastSessionSyncTimestamp()
+                    serviceProvider().getLastSessionSyncTimestamp()
                 }
             },
             saveLastSessionSyncTimestamp: { timestamp in
                 await MainActor.run {
-                    service.saveLastSessionSyncTimestamp(timestamp)
+                    serviceProvider().saveLastSessionSyncTimestamp(timestamp)
                 }
             }
         )

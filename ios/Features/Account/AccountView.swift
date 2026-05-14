@@ -564,29 +564,11 @@ private struct PaywallContent: View {
     @Namespace private var glassNS
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                PaywallHeaderSection()
-                PaywallPepinilloPlusSection()
-                PaywallProductCardsSection(store: store, glassNamespace: glassNS)
-                PaywallPurchaseButton(store: store, glassNamespace: glassNS)
-                PaywallLegalFooter(store: store)
-            }
-            .contentMaxWidth(900)
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 40)
-        }
+        PaywallContentBody(store: store, glassNamespace: glassNS)
         .scrollContentBackground(.hidden)
         .withAmbientBackground()
         .navigationTitle(String(localized: "Choose Your Plan"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(String(localized: "Close")) { store.send(.closeTapped) }
-                    .foregroundStyle(.secondary)
-            }
-        }
         .overlay {
             if store.isLoading {
                 ProgressView()

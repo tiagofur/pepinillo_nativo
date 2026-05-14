@@ -231,6 +231,44 @@ public final class SwiftDataPersistenceService {
         try context.save()
     }
 
+    public func applyPreferencesDTO(_ prefsDTO: UserPreferencesDTO) throws {
+        let prefs = try fetchPreferences()
+        prefs.pomodoroDuration = prefsDTO.pomodoroDuration
+        prefs.shortBreakDuration = prefsDTO.shortBreakDuration
+        prefs.longBreakDuration = prefsDTO.longBreakDuration
+        prefs.pomodorosPerCycle = prefsDTO.pomodorosPerCycle
+        prefs.autoStartBreaks = prefsDTO.autoStartBreaks
+        prefs.autoStartWork = prefsDTO.autoStartWork
+        prefs.defaultBlockDuration = prefsDTO.defaultBlockDuration
+        prefs.blockMidpointCheckIn = prefsDTO.blockMidpointCheckIn
+        prefs.flowtimeMinSessionMinutes = prefsDTO.flowtimeMinSessionMinutes
+        prefs.flowtimeShowBreakSuggestion = prefsDTO.flowtimeShowBreakSuggestion
+        prefs.soundEnabled = prefsDTO.soundEnabled
+        prefs.hapticEnabled = prefsDTO.hapticEnabled
+        prefs.keepScreenOn = prefsDTO.keepScreenOn
+        prefs.defaultMode = prefsDTO.defaultMode
+        prefs.themeName = prefsDTO.themeName
+        prefs.followSystemAppearance = prefsDTO.followSystemAppearance
+        prefs.appearanceMode = prefsDTO.appearanceMode
+        prefs.dailyReminderEnabled = prefsDTO.dailyReminderEnabled
+        prefs.dailyReminderHour = prefsDTO.dailyReminderHour
+        prefs.dailyReminderMinute = prefsDTO.dailyReminderMinute
+        prefs.hasCompletedOnboarding = prefsDTO.hasCompletedOnboarding
+        prefs.currentStreakDays = prefsDTO.currentStreakDays
+        prefs.longestStreakDays = prefsDTO.longestStreakDays
+        prefs.lastFocusDate = prefsDTO.lastFocusDate
+        prefs.showJournalAfterSession = prefsDTO.showJournalAfterSession
+        prefs.healthLoggingEnabled = prefsDTO.healthLoggingEnabled
+        prefs.adhdFriendlyEnabled = prefsDTO.adhdFriendlyEnabled
+        prefs.calendarIntegrationEnabled = prefsDTO.calendarIntegrationEnabled
+        prefs.isProUser = prefsDTO.isProUser
+        prefs.subscriptionExpiresAt = prefsDTO.subscriptionExpiresAt
+        prefs.appleUserID = prefsDTO.appleUserID
+        prefs.displayName = prefsDTO.displayName
+        prefs.userEmail = prefsDTO.userEmail
+        try savePreferences(prefs)
+    }
+
     // MARK: - Recurring Tasks
 
     /// Generates task instances from recurring templates whose nextOccurrence <= today.
@@ -569,6 +607,25 @@ public final class SwiftDataPersistenceService {
             record.isDirty = false
             record.syncedAt = Date.now
         }
+        try context.save()
+    }
+
+    public func markAllSyncableDataDirty() throws {
+        let taskDescriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.isDeleted == false }
+        )
+        for task in try context.fetch(taskDescriptor) {
+            task.isDirty = true
+            task.syncedAt = nil
+            task.updatedAt = Date.now
+        }
+
+        let sessionDescriptor = FetchDescriptor<FocusSessionRecord>()
+        for record in try context.fetch(sessionDescriptor) {
+            record.isDirty = true
+            record.syncedAt = nil
+        }
+
         try context.save()
     }
 

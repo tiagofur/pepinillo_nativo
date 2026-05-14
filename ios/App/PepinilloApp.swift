@@ -38,6 +38,7 @@ private final class AppBootstrap: ObservableObject {
 
     @Published var phase: Phase = .loading
     @Published var modelContainer: ModelContainer?
+    @Published var persistenceRouter: PersistenceStoreRouter?
     @Published var store: StoreOf<AppFeature>?
 
     init() {
@@ -95,7 +96,9 @@ private final class AppBootstrap: ObservableObject {
     }
 
     private func apply(container: ModelContainer) {
-        modelContainer = container
+        let router = PersistenceStoreRouter(localContainer: container)
+        persistenceRouter = router
+        modelContainer = router.activeContainer
 
         #if DEBUG
         DemoDataSeeder.seedIfNeeded(container: container)
@@ -109,7 +112,13 @@ private final class AppBootstrap: ObservableObject {
         store = Store(initialState: initialState) {
             AppFeature()
         } withDependencies: {
-            $0.persistenceClient = PersistenceClient.live(container: container)
+            $0.persistenceClient = PersistenceClient.live(serviceProvider: { router.activeService() })
+            $0.syncModeClient.reconcile = { [weak self] capabilities in
+                await router.reconcile(capabilities: capabilities)
+                await MainActor.run {
+                    self?.modelContainer = router.activeContainer
+                }
+            }
             if #available(iOS 16.2, *) {
                 $0.liveActivityClient = LiveActivityManager.makeClient()
             }

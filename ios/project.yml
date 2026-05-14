@@ -122,6 +122,10 @@ targets:
           - Default
         com.apple.security.application-groups:
           - group.com.pepinillo.app
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.pepinillo.app
+        com.apple.developer.icloud-services:
+          - CloudKit
         com.apple.developer.healthkit: true
         com.apple.developer.siri: true
         com.apple.developer.usernotifications.communication: true

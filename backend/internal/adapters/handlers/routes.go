@@ -115,7 +115,11 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	tasks.Post("/", deps.Tasks.Upsert)
 	tasks.Put("/:id", deps.Tasks.Upsert)
 	tasks.Delete("/:id", deps.Tasks.Delete)
-	tasks.Post("/sync", deps.Tasks.Sync)
+	tasks.Post("/sync",
+		middleware.NewSubscriptionMiddleware(deps.UserRepository),
+		middleware.NewRequireBackendSync(),
+		deps.Tasks.Sync,
+	)
 	tasks.Get("/recurrences", deps.Tasks.ListRecurrences)
 	tasks.Post("/recurrences/generate", deps.Tasks.GenerateRecurrences)
 

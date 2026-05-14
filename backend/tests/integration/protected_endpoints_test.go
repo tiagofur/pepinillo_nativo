@@ -361,4 +361,8 @@ func TestProductionRoutes_SyncGroupHasRequireBackendSync(t *testing.T) {
 
 	assertContains(t, routesFile, "NewRequireBackendSync",
 		"routes.go must call middleware.NewRequireBackendSync() on sync/preferences routes")
+	assertContains(t, routesFile, "tasks.Post(\"/sync\"",
+		"routes.go must still register the task sync endpoint")
+	assertContains(t, routesFile, "deps.Tasks.Sync",
+		"tasks/sync must remain wired to the task sync handler after adding backend sync gating")
 }

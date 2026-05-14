@@ -184,6 +184,10 @@ struct AuthFeature {
                     state.isSyncing = false
                     return .send(.delegate(.emailVerificationRequired(email: userDTO.email)))
                 }
+                guard AppGroupDefaults.canBackendSync else {
+                    state.isSyncing = false
+                    return .send(.delegate(.authenticated(userDTO)))
+                }
                 state.isSyncing = true
                 return .run { [persistence, syncClient] send in
                     // Check if there's local data to merge

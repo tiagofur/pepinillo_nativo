@@ -25,8 +25,10 @@ private let persistenceLogger = Logger(subsystem: "com.pepinillo.app", category:
 
 enum AppGroup {
     static let id = "group.com.pepinillo.app"
+    static let cloudKitContainerIdentifier = "iCloud.com.pepinillo.app"
     static let legacyCloudKitStoreFileName = "Pepinillo.sqlite"
     static let storeFileName = "PepinilloLocal.sqlite"
+    static let appleCloudStoreFileName = "PepinilloAppleCloud.sqlite"
 
     /// Shared container URL (App Group directory).
     static var containerURL: URL {
@@ -45,6 +47,12 @@ enum AppGroup {
     /// Full URL to the shared SQLite store.
     static var storeURL: URL {
         containerURL.appendingPathComponent(storeFileName)
+    }
+
+    /// CloudKit-backed store used only for Pepinillo+ Apple-to-Apple sync.
+    /// It is intentionally separate from the launch-critical local store.
+    static var appleCloudStoreURL: URL {
+        containerURL.appendingPathComponent(appleCloudStoreFileName)
     }
 
     /// Standalone app store used as a launch-safe fallback when the shared
@@ -94,6 +102,21 @@ enum AppGroupDefaults {
     private static var defaults: UserDefaults? { UserDefaults(suiteName: AppGroup.id) }
     private static let userCapabilitiesKey = "userCapabilities"
 
+    enum SyncMode: String, Codable, Sendable {
+        case local
+        case appleCloud
+        case backend
+    }
+
+    enum SyncStatus: String, Codable, Sendable {
+        case idle
+        case activatingAppleCloud
+        case appleCloudActive
+        case appleCloudUnavailable
+        case backendActive
+        case localOnly
+    }
+
     /// Whether the user has an active Pro subscription (read by widgets, extensions).
     static var isProUser: Bool {
         get { defaults?.bool(forKey: "isProUser") ?? false }
@@ -104,6 +127,48 @@ enum AppGroupDefaults {
     static var canBackendSync: Bool {
         get { defaults?.bool(forKey: "canBackendSync") ?? false }
         set { defaults?.set(newValue, forKey: "canBackendSync") }
+    }
+
+    /// Whether the user tier allows Apple-only iCloud/CloudKit sync.
+    static var canAppleCloudSync: Bool {
+        get { defaults?.bool(forKey: "canAppleCloudSync") ?? false }
+        set { defaults?.set(newValue, forKey: "canAppleCloudSync") }
+    }
+
+    /// The sync stack currently selected by the app.
+    static var activeSyncMode: SyncMode {
+        get {
+            guard let raw = defaults?.string(forKey: "activeSyncMode"),
+                  let mode = SyncMode(rawValue: raw) else {
+                return .local
+            }
+            return mode
+        }
+        set { defaults?.set(newValue.rawValue, forKey: "activeSyncMode") }
+    }
+
+    /// Human-readable sync lifecycle state shared with widgets/extensions.
+    static var syncStatus: SyncStatus {
+        get {
+            guard let raw = defaults?.string(forKey: "syncStatus"),
+                  let status = SyncStatus(rawValue: raw) else {
+                return .idle
+            }
+            return status
+        }
+        set { defaults?.set(newValue.rawValue, forKey: "syncStatus") }
+    }
+
+    /// Last recoverable CloudKit activation error.
+    static var lastAppleCloudActivationError: String? {
+        get { defaults?.string(forKey: "lastAppleCloudActivationError") }
+        set {
+            if let newValue {
+                defaults?.set(newValue, forKey: "lastAppleCloudActivationError")
+            } else {
+                defaults?.removeObject(forKey: "lastAppleCloudActivationError")
+            }
+        }
     }
 
     /// Full capability payload shared with widgets and extensions.
@@ -117,6 +182,7 @@ enum AppGroupDefaults {
                 defaults?.removeObject(forKey: userCapabilitiesKey)
                 isProUser = false
                 canBackendSync = false
+                canAppleCloudSync = false
                 return
             }
 
@@ -125,6 +191,7 @@ enum AppGroupDefaults {
             }
             isProUser = newValue.hasAnyPremium
             canBackendSync = newValue.backendSync
+            canAppleCloudSync = newValue.appleCloudSync && !newValue.backendSync
         }
     }
 
@@ -475,6 +542,16 @@ func makeSharedModelContainer() throws -> ModelContainer {
     }
 }
 
+/// Opens the CloudKit-backed store used for Pepinillo+ Apple sync.
+/// Call this only after the first SwiftUI frame is visible.
+func makeAppleCloudModelContainer() throws -> ModelContainer {
+    persistenceLogger.info("Opening Apple Cloud ModelContainer at: \(AppGroup.appleCloudStoreURL.path, privacy: .public)")
+    return try makeModelContainer(
+        at: AppGroup.appleCloudStoreURL,
+        cloudKitDatabase: .private(AppGroup.cloudKitContainerIdentifier)
+    )
+}
+
 // MARK: - Widget / Extension Container (non-CloudKit, non-MainActor)
 
 /// Non-isolated version for WidgetKit extension process.
@@ -493,12 +570,19 @@ func makeIntentsModelContainer() throws -> ModelContainer {
 }
 
 private func makeModelContainer(at url: URL) throws -> ModelContainer {
+    try makeModelContainer(at: url, cloudKitDatabase: .none)
+}
+
+private func makeModelContainer(
+    at url: URL,
+    cloudKitDatabase: ModelConfiguration.CloudKitDatabase
+) throws -> ModelContainer {
     let schema = Schema(versionedSchema: SchemaV3.self)
 
     let config = ModelConfiguration(
         schema: schema,
         url: url,
-        cloudKitDatabase: .none
+        cloudKitDatabase: cloudKitDatabase
     )
 
     return try ModelContainer(
