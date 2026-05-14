@@ -88,34 +88,44 @@ struct PaywallHeaderSection: View {
     @State private var appeared = false
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             ZStack {
+                // Glow behind icon
                 Circle()
-                    .fill(LinearGradient(colors: [Color.accentColor, .green], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 100, height: 100)
-                    .blur(radius: 20)
-                    .opacity(0.3)
+                    .fill(Color.accentColor.opacity(0.15))
+                    .frame(width: 140, height: 140)
+                    .blur(radius: 25)
                 
-                Text("🧠✨")
-                    .font(.system(size: 64))
-                    .shadow(color: Color.accentColor.opacity(0.3), radius: 10)
+                VStack(spacing: -10) {
+                    Text("🧠")
+                        .font(.system(size: 80))
+                        .shadow(color: Color.accentColor.opacity(0.4), radius: 20)
+                        .offset(y: appeared ? -5 : 0)
+                        .animation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true), value: appeared)
+                    Text("✨")
+                        .font(.system(size: 40))
+                        .offset(x: 35, y: appeared ? -15 : -10)
+                        .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true).delay(0.5), value: appeared)
+                }
             }
-            .scaleEffect(appeared ? 1 : 0.5)
+            .scaleEffect(appeared ? 1 : 0.6)
+            .rotationEffect(.degrees(appeared ? 0 : -15))
             .accessibilityHidden(true)
 
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 Text(String(localized: "Master Your Focus"))
-                    .font(.title.bold())
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
                     .multilineTextAlignment(.center)
+                    .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
 
-                Text(String(localized: "Join thousands of users using Apple Intelligence to reach their peak productivity."))
-                    .font(.subheadline)
+                Text(String(localized: "Join thousands reaching their peak with AI-powered focus routines."))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
             }
         }
-        .padding(.top, 10)
+        .padding(.top, 20)
         .offset(y: appeared ? 0 : 20)
         .opacity(appeared ? 1 : 0)
         .onAppear {
@@ -206,6 +216,7 @@ struct PaywallProductCardsSection: View {
 }
 
 struct PaywallProductCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     let product: ProductInfo
     let isSelected: Bool
     let glassNamespace: Namespace.ID
@@ -266,18 +277,18 @@ struct PaywallProductCard: View {
                 ZStack {
                     if isSelected {
                         RoundedRectangle(cornerRadius: GlassCornerRadius.card)
-                            .fill(Color.accentColor.opacity(0.08))
-                            .matchedGeometryEffect(id: "selection-bg-\(product.id)", in: glassNamespace)
+                            .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.12 : 0.06))
+                            .matchedGeometryEffect(id: "selection-glow", in: glassNamespace)
                     }
                 }
             )
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             .overlay {
-                if isSelected {
-                    RoundedRectangle(cornerRadius: GlassCornerRadius.card)
-                        .stroke(Color.accentColor, lineWidth: 2)
-                }
+                RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                    .stroke(isSelected ? Color.accentColor : .primary.opacity(0.06), lineWidth: isSelected ? 2 : 1)
             }
+            .scaleEffect(isSelected ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         }
         .buttonStyle(.plain)
     }
@@ -321,9 +332,10 @@ struct PaywallPurchaseButton: View {
         }
         .frame(maxWidth: 480)
         .frame(maxWidth: .infinity)
-        .buttonStyle(.pressable)
+        .buttonStyle(PepinilloButtonStyle())
         .disabled(store.isLoading || store.subscriptionState.isPro)
         .padding(.top, 10)
+        .shadow(color: (store.isLoading || store.subscriptionState.isPro) ? .clear : Color.accentColor.opacity(0.3), radius: 15, y: 8)
     }
 }
 

@@ -10,7 +10,6 @@ import ComposableArchitecture
 
 // MARK: - Live Activity Client
 
-@DependencyClient
 struct LiveActivityClient: Sendable {
     /// Start a new Live Activity for the given session state.
     var start: @Sendable (FocusSessionState, String?) async -> Void = { _, _ in }

@@ -317,15 +317,21 @@ struct TaskDetailView: View {
                 Divider().opacity(0.1)
 
                 planEditorRow(String(localized: "Pomodoros"), systemImage: "timer") {
-                    Stepper(
-                        "\(store.estimatedPomodoros)",
-                        value: Binding(
-                            get: { store.estimatedPomodoros },
-                            set: { store.send(.estimatedPomodorosChanged($0)) }
-                        ),
-                        in: 1...8
-                    )
-                    .labelsHidden()
+                    HStack(spacing: 12) {
+                        Text("\(store.estimatedPomodoros)")
+                            .font(NumericFont.inline())
+                            .foregroundStyle(.primary)
+                        
+                        Stepper(
+                            "\(store.estimatedPomodoros)",
+                            value: Binding(
+                                get: { store.estimatedPomodoros },
+                                set: { store.send(.estimatedPomodorosChanged($0)) }
+                            ),
+                            in: 1...8
+                        )
+                        .labelsHidden()
+                    }
                 }
 
                 if store.completedPomodoros > 0 {

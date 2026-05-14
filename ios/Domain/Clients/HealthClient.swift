@@ -10,7 +10,6 @@ import ComposableArchitecture
 import HealthKit
 #endif
 
-@DependencyClient
 struct HealthClient: Sendable {
     /// Request authorization to write mindful session samples.
     var requestAuthorization: @Sendable () async throws -> Bool = { false }
@@ -19,7 +18,7 @@ struct HealthClient: Sendable {
     var isAuthorized: @Sendable () -> Bool = { false }
 
     /// Log a completed focus session as a mindful session in Apple Health.
-    var logMindfulMinutes: @Sendable (_ start: Date, _ end: Date) async throws -> Void
+    var logMindfulMinutes: @Sendable (_ start: Date, _ end: Date) async throws -> Void = { _, _ in }
 }
 
 extension HealthClient: DependencyKey {

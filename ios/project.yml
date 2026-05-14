@@ -235,9 +235,6 @@ targets:
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: Mac/PepinilloMacDebug.entitlements
-          CODE_SIGN_IDENTITY: "-"
-          CODE_SIGN_STYLE: Manual
-          DEVELOPMENT_TEAM: ""
           ENABLE_HARDENED_RUNTIME: "NO"
         Staging:
           CODE_SIGN_ENTITLEMENTS: Mac/PepinilloMac.entitlements
@@ -338,11 +335,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pepinillo.app.widget
         SKIP_INSTALL: "YES"
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        PROVISIONING_PROFILE_SPECIFIER: ""
+        CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: "NO"
-        AD_HOC_CODE_SIGNING_ALLOWED: "YES"
       configs:
         Debug:
           CODE_SIGN_ENTITLEMENTS: PepinilloWidget/PepinilloWidgetMacDebug.entitlements

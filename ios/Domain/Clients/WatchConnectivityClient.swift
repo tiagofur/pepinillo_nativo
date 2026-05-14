@@ -93,7 +93,6 @@ enum WatchMessage: Equatable, Sendable {
 
 // MARK: - WatchConnectivityClient
 
-@DependencyClient
 struct WatchConnectivityClient: Sendable {
     /// Infinite stream of messages from the counterpart device.
     var receiveMessages: @Sendable () async -> AsyncStream<WatchMessage> = { .finished }

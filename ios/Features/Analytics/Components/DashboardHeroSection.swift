@@ -16,8 +16,73 @@ struct DashboardHeroSection: View {
     let totalFocusMinutes: Int
 
     @Environment(\.appTheme) private var theme
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
+        Group {
+            if sizeClass == .compact {
+                compactBody
+            } else {
+                regularBody
+            }
+        }
+        .padding(20)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(String(localized: "dashboard.hero.group.label", defaultValue: "Today's Stats"))
+    }
+
+    private var compactBody: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            streakRow
+            
+            Divider()
+                .opacity(0.1)
+
+            HStack(spacing: 12) {
+                heroMetric(
+                    icon: "checkmark.circle",
+                    value: "\(sessionsCompleted)",
+                    label: String(localized: "sessions"),
+                    color: .accentColor
+                )
+                .frame(maxWidth: .infinity)
+
+                heroMetric(
+                    icon: "clock.fill",
+                    value: formattedFocusTime,
+                    label: String(localized: "focused"),
+                    color: .teal
+                )
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    private var regularBody: some View {
+        HStack(spacing: 18) {
+            streakRow
+
+            Spacer(minLength: 12)
+
+            HStack(spacing: 10) {
+                heroMetric(
+                    icon: "checkmark.circle",
+                    value: "\(sessionsCompleted)",
+                    label: String(localized: "sessions"),
+                    color: .accentColor
+                )
+                heroMetric(
+                    icon: "clock.fill",
+                    value: formattedFocusTime,
+                    label: String(localized: "focused"),
+                    color: .teal
+                )
+            }
+        }
+    }
+
+    private var streakRow: some View {
         HStack(spacing: 18) {
             Image(systemName: "flame.fill")
                 .font(.system(size: 34, weight: .semibold))
@@ -43,28 +108,7 @@ struct DashboardHeroSection: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-
-            Spacer(minLength: 12)
-
-            HStack(spacing: 10) {
-                heroMetric(
-                    icon: "checkmark.circle",
-                    value: "\(sessionsCompleted)",
-                    label: String(localized: "sessions"),
-                    color: .accentColor
-                )
-                heroMetric(
-                    icon: "clock.fill",
-                    value: formattedFocusTime,
-                    label: String(localized: "focused"),
-                    color: .teal
-                )
-            }
         }
-        .padding(20)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(String(localized: "dashboard.hero.group.label", defaultValue: "Today's Stats"))
     }
 
     // MARK: - Helpers
@@ -79,23 +123,26 @@ struct DashboardHeroSection: View {
     }
 
     private func heroMetric(icon: String, value: String, label: String, color: Color) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.subheadline.weight(.semibold))
+                .font(.title3.weight(.semibold))
                 .foregroundStyle(color)
+                .frame(width: 38, height: 38)
+                .background(color.opacity(0.12), in: Circle())
                 .accessibilityHidden(true)
+            
             VStack(alignment: .leading, spacing: 0) {
                 Text(value)
-                    .font(NumericFont.inline())
+                    .font(NumericFont.heroStat(size: 24))
                     .foregroundStyle(.primary)
                 Text(label)
-                    .font(.caption2)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 9)
-        .background(.quaternary.opacity(0.6), in: Capsule())
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label), \(value)")
     }

@@ -9,7 +9,6 @@ import Foundation
 import EventKit
 import ComposableArchitecture
 
-@DependencyClient
 struct CalendarClient: Sendable {
     /// Request calendar access.
     var requestAccess: @Sendable () async throws -> Bool = { false }
@@ -23,10 +22,10 @@ struct CalendarClient: Sendable {
         _ startDate: Date,
         _ durationMinutes: Int,
         _ mode: String
-    ) async throws -> Void
+    ) async throws -> Void = { _, _, _, _ in }
 
     /// Remove a previously created focus event by its identifier.
-    var removeFocusEvent: @Sendable (_ eventIdentifier: String) async throws -> Void
+    var removeFocusEvent: @Sendable (_ eventIdentifier: String) async throws -> Void = { _ in }
 }
 
 extension CalendarClient: DependencyKey {
