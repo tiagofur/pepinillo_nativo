@@ -209,8 +209,9 @@ struct TaskRow: View {
         return due < Calendar.current.startOfDay(for: .now)
     }
 
-    private var isScheduledForToday: Bool {
-        !task.isCompleted && task.scheduledForToday
+    private var isDueToday: Bool {
+        guard !task.isCompleted, let due = task.dueDate else { return false }
+        return Calendar.current.isDateInToday(due)
     }
 
     private var cardBackground: Color {
@@ -218,7 +219,7 @@ struct TaskRow: View {
             return Color(uiColor: .secondarySystemGroupedBackground)
         } else if isOverdue {
             return Color.red.opacity(0.05)
-        } else if isScheduledForToday {
+        } else if isDueToday {
             return Color.orange.opacity(0.05)
         } else {
             return Color(uiColor: .secondarySystemGroupedBackground)
@@ -230,7 +231,7 @@ struct TaskRow: View {
             return Color(uiColor: .separator).opacity(0.15)
         } else if isOverdue {
             return Color.red.opacity(0.3)
-        } else if isScheduledForToday {
+        } else if isDueToday {
             return Color.orange.opacity(0.3)
         } else {
             return Color(uiColor: .separator).opacity(0.3)
