@@ -106,23 +106,44 @@ fun TaskItem(
         TaskPriority.Low -> MaterialTheme.colorScheme.secondary
         TaskPriority.None -> null
     }
-    val taskAccent = when {
+
+    val isDueToday = task.dueDate?.let { dueDate ->
+        val calDue = java.util.Calendar.getInstance().apply { timeInMillis = dueDate }
+        val calToday = java.util.Calendar.getInstance()
+        calDue.get(java.util.Calendar.YEAR) == calToday.get(java.util.Calendar.YEAR) &&
+        calDue.get(java.util.Calendar.DAY_OF_YEAR) == calToday.get(java.util.Calendar.DAY_OF_YEAR)
+    } ?: false
+
+    val isOverdue = task.dueDate?.let { dueDate ->
+        dueDate < System.currentTimeMillis() && !isDueToday
+    } ?: false
+
+    val checkboxBorderColor = when {
         task.isCompleted -> MaterialTheme.colorScheme.primary
-        task.scheduledForToday -> Color(0xFFFF8A00)
-        task.dueDate != null -> Color(0xFF8E24AA)
         priorityColor != null -> priorityColor
-        task.energyLevel == EnergyLevel.Deep -> EnergyColors.deep
-        task.energyLevel == EnergyLevel.Light -> EnergyColors.light
-        else -> EnergyColors.regular
+        else -> MaterialTheme.colorScheme.outline
     }
+
     val rowBackground by animateColorAsState(
-        targetValue = if (task.isCompleted) {
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
-        } else {
-            taskAccent.copy(alpha = 0.055f)
+        targetValue = when {
+            task.isCompleted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
+            isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.06f)
+            isDueToday -> Color(0xFFFF8A00).copy(alpha = 0.06f)
+            else -> Color.Transparent
         },
         animationSpec = tween(500),
         label = "taskRowBg",
+    )
+
+    val rowBorderColor by animateColorAsState(
+        targetValue = when {
+            task.isCompleted -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
+            isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
+            isDueToday -> Color(0xFFFF8A00).copy(alpha = 0.35f)
+            else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+        },
+        animationSpec = tween(500),
+        label = "taskRowBorder",
     )
 
     Row(
@@ -132,7 +153,7 @@ fun TaskItem(
             .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp))
             .border(
                 width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                color = rowBorderColor,
                 shape = RoundedCornerShape(16.dp)
             )
             .clip(RoundedCornerShape(16.dp))
@@ -191,7 +212,7 @@ fun TaskItem(
                             if (!task.isCompleted) {
                                 Modifier.border(
                                     width = 2.dp,
-                                    color = taskAccent.copy(alpha = 0.72f),
+                                    color = checkboxBorderColor,
                                     shape = CircleShape,
                                 )
                             } else {
@@ -277,8 +298,16 @@ private fun MetadataRow(
 
     // Due date
     task.dueDate?.let { dueDate ->
-        val isOverdue = dueDate < System.currentTimeMillis()
-        val color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+        val calDue = java.util.Calendar.getInstance().apply { timeInMillis = dueDate }
+        val calToday = java.util.Calendar.getInstance()
+        val isToday = calDue.get(java.util.Calendar.YEAR) == calToday.get(java.util.Calendar.YEAR) &&
+                      calDue.get(java.util.Calendar.DAY_OF_YEAR) == calToday.get(java.util.Calendar.DAY_OF_YEAR)
+        val isOverdue = dueDate < System.currentTimeMillis() && !isToday
+        val color = when {
+            isOverdue -> MaterialTheme.colorScheme.error
+            isToday -> Color(0xFFFF8A00)
+            else -> MaterialTheme.colorScheme.onSurfaceVariant
+        }
         metadataItems.add {
             MetadataBadge(color = color) {
                 Icon(Icons.Rounded.CalendarMonth, contentDescription = "Due date", modifier = Modifier.size(14.dp), tint = color)
