@@ -81,6 +81,12 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import android.os.Bundle
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailScreen
+import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.feature.tasks.components.TaskItem
@@ -100,6 +106,7 @@ fun TasksScreen(
     val uiState by viewModel.uiState.collectAsState()
     val filteredTasks = uiState.filteredTasks
     val quickAddFocusRequester = remember { FocusRequester() }
+    var selectedTaskId by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Error snackbar
     var errorResId by remember { mutableStateOf<Int?>(null) }
@@ -261,7 +268,7 @@ fun TasksScreen(
                                 haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 viewModel.toggleTaskCompletion(task.id)
                             },
-                            onClick = { onTaskClick(task.id) },
+                            onClick = { selectedTaskId = task.id },
                             showDragHandle = isCustomSort,
                             dragHandleModifier = if (isCustomSort) {
                                 Modifier.pointerInput(Unit) {
@@ -390,6 +397,24 @@ fun TasksScreen(
                 .padding(bottom = 88.dp),
             onDismiss = { viewModel.dismissSuccessMessage() },
         )
+
+        if (selectedTaskId != null) {
+            val navBackStackEntry = LocalViewModelStoreOwner.current as? androidx.navigation.NavBackStackEntry
+            navBackStackEntry?.arguments?.putString("taskId", selectedTaskId)
+            val detailViewModel: TaskDetailViewModel = hiltViewModel(key = selectedTaskId!!)
+
+            ModalBottomSheet(
+                onDismissRequest = { selectedTaskId = null },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                containerColor = MaterialTheme.colorScheme.surface,
+            ) {
+                TaskDetailScreen(
+                    onBack = { selectedTaskId = null },
+                    onNavigateToPaywall = onNavigateToPaywall,
+                    viewModel = detailViewModel
+                )
+            }
+        }
     }
 
     // Paywall navigation

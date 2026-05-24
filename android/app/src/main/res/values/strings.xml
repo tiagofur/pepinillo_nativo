@@ -489,4 +489,9 @@
     <string name="tasks_empty_upcoming_desc">No tasks due in the next 7 days.</string>
     <string name="tasks_empty_completed_title">No Completed Tasks</string>
     <string name="tasks_empty_completed_desc">Complete a task to see it here.</string>
+    <string name="btn_done">Done</string>
+    <string name="task_detail_remove_due_date">Remove Due Date</string>
+    <string name="task_detail_add_due_date">Add Due Date</string>
+    <string name="task_detail_subtasks_pro">Subtasks (Pepinillo+)</string>
+    <string name="task_detail_repeat_pro">Set Repeat (Pepinillo+)</string>
 </resources>

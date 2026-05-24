@@ -75,7 +75,6 @@ import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
 import dev.creapolis.pepinillo.feature.settings.SettingsScreen
 import dev.creapolis.pepinillo.feature.tasks.TaskAnalyticsScreen
 import dev.creapolis.pepinillo.feature.tasks.TasksScreen
-import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailScreen
 import dev.creapolis.pepinillo.navigation.TopLevelDestination
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
@@ -291,17 +290,10 @@ fun PepinilloApp(
             }
             composable(TopLevelDestination.Plan.route) {
                 TasksScreen(
-                    onTaskClick = { taskId ->
-                        navController.navigate("tasks/$taskId")
-                    },
+                    onTaskClick = {},
                     onNavigateToPaywall = {
                         navController.navigate("paywall")
                     },
-                )
-            }
-            composable("tasks/{taskId}") {
-                TaskDetailScreen(
-                    onBack = { navController.popBackStack() },
                 )
             }
             composable("tasks/{taskId}/analytics") {

@@ -484,4 +484,9 @@
     <string name="tasks_empty_upcoming_desc">No hay tareas con fecha en los próximos 7 días.</string>
     <string name="tasks_empty_completed_title">Sin tareas completadas</string>
     <string name="tasks_empty_completed_desc">Completa una tarea para verla aquí.</string>
+    <string name="btn_done">Listo</string>
+    <string name="task_detail_remove_due_date">Eliminar Fecha Límite</string>
+    <string name="task_detail_add_due_date">Añadir Fecha Límite</string>
+    <string name="task_detail_subtasks_pro">Subtareas (Pepinillo+)</string>
+    <string name="task_detail_repeat_pro">Repetir (Pepinillo+)</string>
 </resources>
