@@ -19,27 +19,18 @@ struct TaskRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 0) {
-                if let pColor = priorityColor(for: task.priority, isCompleted: task.isCompleted) {
-                    Rectangle()
-                        .fill(pColor)
-                        .frame(width: 5)
+            HStack(spacing: 12) {
+                completionButton
+                taskInfo
+                Spacer()
+                if !task.isCompleted {
+                    focusButton
                 }
-                
-                HStack(spacing: 12) {
-                    completionButton
-                    taskInfo
-                    Spacer()
-                    if !task.isCompleted {
-                        focusButton
-                    }
-                }
-                .padding(.leading, priorityColor(for: task.priority, isCompleted: task.isCompleted) != nil ? 12 : 16)
-                .padding(.trailing, 16)
-                .padding(.vertical, 12)
             }
-            .background(cardBackground)
-            .cornerRadius(12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(cardBackgroundTint)
+            .pepinilloGlass(cornerRadius: 12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(cardBorderColor, lineWidth: 1)
@@ -131,7 +122,7 @@ struct TaskRow: View {
 
     private var taskInfo: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text(task.title)
+            taskTitleView
                 .strikethrough(task.isCompleted)
                 .foregroundStyle(task.isCompleted ? .secondary : .primary)
                 .lineLimit(2)
@@ -160,9 +151,10 @@ struct TaskRow: View {
                 // Due date
                 if let due = task.dueDate {
                     let isOverdue = due < Calendar.current.startOfDay(for: .now) && !task.isCompleted
+                    let isToday = Calendar.current.isDateInToday(due) && !task.isCompleted
                     Label(formatDueDate(due), systemImage: "calendar")
                         .font(.caption2)
-                        .foregroundStyle(isOverdue ? .red : .secondary)
+                        .foregroundStyle(isOverdue ? .red : (isToday ? .orange : .secondary))
                 }
 
                 // Today indicator
@@ -224,15 +216,15 @@ struct TaskRow: View {
         return Calendar.current.isDateInToday(due)
     }
 
-    private var cardBackground: Color {
+    private var cardBackgroundTint: Color {
         if task.isCompleted {
-            return Color(uiColor: .secondarySystemGroupedBackground)
+            return Color.clear
         } else if isOverdue {
-            return Color.red.opacity(0.05)
+            return Color.red.opacity(0.04)
         } else if isDueToday {
-            return Color.orange.opacity(0.05)
+            return Color.orange.opacity(0.04)
         } else {
-            return Color(uiColor: .secondarySystemGroupedBackground)
+            return Color.clear
         }
     }
 
@@ -240,11 +232,11 @@ struct TaskRow: View {
         if task.isCompleted {
             return Color(uiColor: .separator).opacity(0.15)
         } else if isOverdue {
-            return Color.red.opacity(0.3)
+            return Color.red.opacity(0.35)
         } else if isDueToday {
-            return Color.orange.opacity(0.3)
+            return Color.orange.opacity(0.35)
         } else {
-            return Color(uiColor: .separator).opacity(0.3)
+            return Color(uiColor: .separator).opacity(0.2)
         }
     }
 
@@ -280,7 +272,31 @@ struct TaskRow: View {
         }
     }
 
+    private func priorityPrefix(for priority: TaskPriority) -> String {
+        switch priority {
+        case .high:
+            return "!!! "
+        case .medium:
+            return "!! "
+        case .low:
+            return "! "
+        case .none:
+            return ""
+        }
+    }
 
+    private var taskTitleView: Text {
+        let prefix = priorityPrefix(for: task.priority)
+        if !prefix.isEmpty {
+            let prefixColor = task.isCompleted ? Color.secondary : (priorityColor(for: task.priority, isCompleted: false) ?? .primary)
+            return Text(prefix)
+                .font(.body.weight(.bold))
+                .foregroundStyle(prefixColor)
+            + Text(task.title)
+        } else {
+            return Text(task.title)
+        }
+    }
 
     private func priorityColor(for priority: TaskPriority, isCompleted: Bool) -> Color? {
         guard !isCompleted else { return nil }
