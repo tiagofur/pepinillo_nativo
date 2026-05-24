@@ -15,10 +15,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -125,6 +128,7 @@ fun TaskItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .height(IntrinsicSize.Max)
             .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp))
             .border(
                 width = 1.dp,
@@ -134,125 +138,131 @@ fun TaskItem(
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
             .background(rowBackground)
-            .clickable(onClick = onClick)
-            .padding(
-                start = if (priorityColor != null && !task.isCompleted) 12.dp else 16.dp,
-                end = 16.dp,
-                top = 12.dp,
-                bottom = 12.dp
-            ),
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Priority bar (left side indicator)
+        // Priority bar (left side indicator, glued to the left edge)
         if (priorityColor != null && !task.isCompleted) {
             Box(
                 modifier = Modifier
-                    .size(width = 4.dp, height = 40.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(priorityColor),
+                    .fillMaxHeight()
+                    .width(5.dp)
+                    .background(priorityColor)
             )
-            Spacer(modifier = Modifier.width(12.dp))
         }
 
-        // Circular checkbox — visual 24dp, touch target 48dp
-        Box(
+        Row(
             modifier = Modifier
-                .size(48.dp)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = null,
-                    onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onToggleCompletion()
-                    }
-                )
-                .semantics {
-                    role = Role.Checkbox
-                    contentDescription = if (task.isCompleted) "Mark ${task.title} incomplete" else "Mark ${task.title} complete"
-                },
-            contentAlignment = Alignment.Center,
+                .weight(1f)
+                .fillMaxHeight()
+                .padding(
+                    start = if (priorityColor != null && !task.isCompleted) 12.dp else 16.dp,
+                    end = 16.dp,
+                    top = 12.dp,
+                    bottom = 12.dp
+                ),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Circular checkbox — visual 24dp, touch target 48dp
             Box(
                 modifier = Modifier
-                    .size(24.dp)
-                    .scale(scale)
-                    .clip(CircleShape)
-                    .background(checkboxColor)
-                    .then(
-                        if (!task.isCompleted) {
-                            Modifier.border(
-                                width = 2.dp,
-                                color = taskAccent.copy(alpha = 0.72f),
-                                shape = CircleShape,
-                            )
-                        } else {
-                            Modifier
-                        },
-                    ),
+                    .size(48.dp)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onToggleCompletion()
+                        }
+                    )
+                    .semantics {
+                        role = Role.Checkbox
+                        contentDescription = if (task.isCompleted) "Mark ${task.title} incomplete" else "Mark ${task.title} complete"
+                    },
                 contentAlignment = Alignment.Center,
             ) {
-                if (task.isCompleted) {
-                    Icon(
-                        imageVector = Icons.Rounded.Check,
-                        contentDescription = "Completed",
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                    )
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .scale(scale)
+                        .clip(CircleShape)
+                        .background(checkboxColor)
+                        .then(
+                            if (!task.isCompleted) {
+                                Modifier.border(
+                                    width = 2.dp,
+                                    color = taskAccent.copy(alpha = 0.72f),
+                                    shape = CircleShape,
+                                )
+                            } else {
+                                Modifier
+                            },
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (task.isCompleted) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = "Completed",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(modifier = Modifier.width(4.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
-        // Task content
-        Column(modifier = Modifier.weight(1f)) {
-            val textColor by animateColorAsState(
-                targetValue = if (task.isCompleted) {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                animationSpec = tween(500),
-                label = "textColor"
-            )
+            // Task content
+            Column(modifier = Modifier.weight(1f)) {
+                val textColor by animateColorAsState(
+                    targetValue = if (task.isCompleted) {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    animationSpec = tween(500),
+                    label = "textColor"
+                )
 
-            Text(
-                text = task.title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = textColor,
-                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            // Notes snippet (first line)
-            if (!task.isCompleted && !task.notes.isNullOrBlank()) {
                 Text(
-                    text = task.notes.lineSequence().first(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    maxLines = 1,
+                    text = task.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = textColor,
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
+
+                // Notes snippet (first line)
+                if (!task.isCompleted && !task.notes.isNullOrBlank()) {
+                    Text(
+                        text = task.notes.lineSequence().first(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+
+                if (!task.isCompleted) {
+                    Spacer(modifier = Modifier.size(4.dp))
+                    MetadataRow(task = task, subtaskProgress = subtaskProgress)
+                }
             }
 
-            if (!task.isCompleted) {
-                Spacer(modifier = Modifier.size(4.dp))
-                MetadataRow(task = task, subtaskProgress = subtaskProgress)
+            // Drag handle (visible only when sort is Custom)
+            if (showDragHandle) {
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = Icons.Rounded.DragHandle,
+                    contentDescription = "Reorder task",
+                    modifier = dragHandleModifier
+                        .size(40.dp)
+                        .padding(8.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                )
             }
-        }
-
-        // Drag handle (visible only when sort is Custom)
-        if (showDragHandle) {
-            Spacer(modifier = Modifier.width(4.dp))
-            Icon(
-                imageVector = Icons.Rounded.DragHandle,
-                contentDescription = "Reorder task",
-                modifier = dragHandleModifier
-                    .size(40.dp)
-                    .padding(8.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            )
         }
     }
 }
