@@ -42,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -124,11 +125,22 @@ fun TaskItem(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                shape = RoundedCornerShape(16.dp)
+            )
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surface)
             .background(rowBackground)
             .clickable(onClick = onClick)
-            .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            .padding(
+                start = if (priorityColor != null && !task.isCompleted) 12.dp else 16.dp,
+                end = 16.dp,
+                top = 12.dp,
+                bottom = 12.dp
+            ),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Priority bar (left side indicator)

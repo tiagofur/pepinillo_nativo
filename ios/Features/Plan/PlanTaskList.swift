@@ -105,11 +105,17 @@ struct PlanTaskList: View {
             ProgressView()
                 .frame(maxHeight: .infinity)
         } else if filteredTasks.isEmpty {
-            ContentUnavailableView(
-                emptyTitle,
-                systemImage: filter.systemImage,
-                description: Text(emptyDescription)
-            )
+            ContentUnavailableView {
+                Label {
+                    Text(emptyTitle)
+                } icon: {
+                    Image(systemName: filter.systemImage)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(filter.color)
+                }
+            } description: {
+                Text(emptyDescription)
+            }
             .frame(maxHeight: .infinity)
         } else {
             List {
@@ -144,6 +150,9 @@ struct PlanTaskList: View {
                         }
                         .tint(task.scheduledForToday ? Color.pepinilloTertiaryLabel : .orange)
                     }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 }
                 .onDelete { indexSet in
                     if let index = indexSet.first {

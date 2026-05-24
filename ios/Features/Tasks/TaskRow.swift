@@ -19,15 +19,37 @@ struct TaskRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                completionButton
-                taskInfo
-                Spacer()
-                if !task.isCompleted {
-                    focusButton
+            HStack(spacing: 0) {
+                if let pColor = priorityColor(for: task.priority, isCompleted: task.isCompleted) {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(pColor)
+                        .frame(width: 4, height: 36)
+                        .padding(.leading, 12)
                 }
+                
+                HStack(spacing: 12) {
+                    completionButton
+                    taskInfo
+                    Spacer()
+                    if !task.isCompleted {
+                        focusButton
+                    }
+                }
+                .padding(.leading, priorityColor(for: task.priority, isCompleted: task.isCompleted) != nil ? 8 : 16)
+                .padding(.trailing, 16)
+                .padding(.vertical, 12)
             }
-            .padding(.vertical, 4)
+            .background(cardBackground(isCompleted: task.isCompleted), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(cardBorderColor(isCompleted: task.isCompleted), lineWidth: 1)
+            )
+            .shadow(
+                color: Color.black.opacity(task.isCompleted ? 0.01 : 0.03),
+                radius: task.isCompleted ? 1 : 3,
+                x: 0,
+                y: task.isCompleted ? 0.5 : 1.5
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -207,6 +229,32 @@ struct TaskRow: View {
     }
 
     // MARK: - Helpers
+
+    private func cardBackground(isCompleted: Bool) -> Color {
+        Color(uiColor: .secondarySystemGroupedBackground)
+    }
+
+    private func cardBorderColor(isCompleted: Bool) -> Color {
+        if isCompleted {
+            return Color(uiColor: .separator).opacity(0.15)
+        } else {
+            return Color(uiColor: .separator).opacity(0.3)
+        }
+    }
+
+    private func priorityColor(for priority: TaskPriority, isCompleted: Bool) -> Color? {
+        guard !isCompleted else { return nil }
+        switch priority {
+        case .high:
+            return .red
+        case .medium:
+            return .orange
+        case .low:
+            return .blue
+        case .none:
+            return nil
+        }
+    }
 
     private func formatDueDate(_ date: Date) -> String {
         let calendar = Calendar.current
