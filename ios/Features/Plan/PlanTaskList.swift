@@ -152,7 +152,7 @@ struct PlanTaskList: View {
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
                 }
                 .onDelete { indexSet in
                     if let index = indexSet.first {
@@ -164,7 +164,7 @@ struct PlanTaskList: View {
             #if os(macOS)
             .listStyle(.inset)
             #else
-            .listStyle(.insetGrouped)
+            .listStyle(.plain)
             #endif
             .scrollContentBackground(.hidden)
             .background(Color.clear)

@@ -19,36 +19,26 @@ struct TaskRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 0) {
-                if let pColor = priorityColor(for: task.priority, isCompleted: task.isCompleted) {
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(pColor)
-                        .frame(width: 4, height: 36)
-                        .padding(.leading, 12)
+            HStack(spacing: 12) {
+                completionButton
+                taskInfo
+                Spacer()
+                if !task.isCompleted {
+                    focusButton
                 }
-                
-                HStack(spacing: 12) {
-                    completionButton
-                    taskInfo
-                    Spacer()
-                    if !task.isCompleted {
-                        focusButton
-                    }
-                }
-                .padding(.leading, priorityColor(for: task.priority, isCompleted: task.isCompleted) != nil ? 8 : 16)
-                .padding(.trailing, 16)
-                .padding(.vertical, 12)
             }
-            .background(cardBackground(isCompleted: task.isCompleted), in: RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(cardBackground, in: RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(cardBorderColor(isCompleted: task.isCompleted), lineWidth: 1)
+                    .stroke(cardBorderColor, lineWidth: 1)
             )
             .shadow(
-                color: Color.black.opacity(task.isCompleted ? 0.01 : 0.03),
-                radius: task.isCompleted ? 1 : 3,
+                color: cardShadowColor,
+                radius: cardShadowRadius,
                 x: 0,
-                y: task.isCompleted ? 0.5 : 1.5
+                y: cardShadowOffsetY
             )
             .contentShape(Rectangle())
         }
@@ -120,7 +110,7 @@ struct TaskRow: View {
         }) {
             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                 .font(.title3)
-                .foregroundStyle(task.isCompleted ? .green : .secondary)
+                .foregroundStyle(checkboxColor)
                 .contentTransition(.symbolEffect(.replace))
         }
         .buttonStyle(.plain)
@@ -131,26 +121,10 @@ struct TaskRow: View {
 
     private var taskInfo: some View {
         VStack(alignment: .leading, spacing: 3) {
-            // Title
-            HStack(spacing: 4) {
-                if task.priority == .high {
-                    Image(systemName: "exclamationmark")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.red)
-                        .contentTransition(.symbolEffect(.replace))
-                        .accessibilityLabel(String(localized: "High priority"))
-                } else if task.priority == .medium {
-                    Image(systemName: "arrow.up")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                        .contentTransition(.symbolEffect(.replace))
-                        .accessibilityLabel(String(localized: "Medium priority"))
-                }
-                Text(task.title)
-                    .strikethrough(task.isCompleted)
-                    .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                    .lineLimit(2)
-            }
+            taskTitleView
+                .strikethrough(task.isCompleted)
+                .foregroundStyle(task.isCompleted ? .secondary : .primary)
+                .lineLimit(2)
 
             // Notes snippet
             if let notes = task.notes, !notes.isEmpty {
@@ -230,15 +204,94 @@ struct TaskRow: View {
 
     // MARK: - Helpers
 
-    private func cardBackground(isCompleted: Bool) -> Color {
-        Color(uiColor: .secondarySystemGroupedBackground)
+    private var isOverdue: Bool {
+        guard !task.isCompleted, let due = task.dueDate else { return false }
+        return due < Calendar.current.startOfDay(for: .now)
     }
 
-    private func cardBorderColor(isCompleted: Bool) -> Color {
-        if isCompleted {
+    private var isScheduledForToday: Bool {
+        !task.isCompleted && task.scheduledForToday
+    }
+
+    private var cardBackground: Color {
+        if task.isCompleted {
+            return Color(uiColor: .secondarySystemGroupedBackground)
+        } else if isOverdue {
+            return Color.red.opacity(0.05)
+        } else if isScheduledForToday {
+            return Color.orange.opacity(0.05)
+        } else {
+            return Color(uiColor: .secondarySystemGroupedBackground)
+        }
+    }
+
+    private var cardBorderColor: Color {
+        if task.isCompleted {
             return Color(uiColor: .separator).opacity(0.15)
+        } else if isOverdue {
+            return Color.red.opacity(0.3)
+        } else if isScheduledForToday {
+            return Color.orange.opacity(0.3)
         } else {
             return Color(uiColor: .separator).opacity(0.3)
+        }
+    }
+
+    private var cardShadowColor: Color {
+        if task.isCompleted {
+            return Color.black.opacity(0.01)
+        } else {
+            return Color.black.opacity(0.05)
+        }
+    }
+
+    private var cardShadowRadius: CGFloat {
+        task.isCompleted ? 1 : 5
+    }
+
+    private var cardShadowOffsetY: CGFloat {
+        task.isCompleted ? 0.5 : 2
+    }
+
+    private var checkboxColor: Color {
+        if task.isCompleted {
+            return .green
+        }
+        switch task.priority {
+        case .high:
+            return .red
+        case .medium:
+            return .orange
+        case .low:
+            return .blue
+        case .none:
+            return .secondary
+        }
+    }
+
+    private func priorityPrefix(for priority: TaskPriority) -> String {
+        switch priority {
+        case .high:
+            return "!!! "
+        case .medium:
+            return "!! "
+        case .low:
+            return "! "
+        case .none:
+            return ""
+        }
+    }
+
+    private var taskTitleView: Text {
+        let prefix = priorityPrefix(for: task.priority)
+        if !prefix.isEmpty {
+            let prefixColor = task.isCompleted ? Color.secondary : (priorityColor(for: task.priority, isCompleted: false) ?? .primary)
+            return Text(prefix)
+                .font(.body.weight(.bold))
+                .foregroundStyle(prefixColor)
+            + Text(task.title)
+        } else {
+            return Text(task.title)
         }
     }
 
