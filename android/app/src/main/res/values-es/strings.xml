@@ -472,4 +472,16 @@
     <string name="auth_register_subtitle">\u00danete a Pepinillo y empieza a enfocarte</string>
     <string name="auth_password_hint">M\u00edn. 8 caracteres, con may\u00fasculas, min\u00fasculas y un n\u00famero</string>
     <string name="cd_logo">Logo de Pepinillo</string>
+    <!-- Plan categories -->
+    <string name="filter_inbox">Inbox</string>
+    <string name="tasks_quick_add_inbox">Capturar una tarea...</string>
+    <string name="tasks_quick_add_upcoming">Planificar una tarea...</string>
+    <string name="tasks_empty_today_title">Nada para hoy</string>
+    <string name="tasks_empty_today_desc">Añade tareas abajo para planificar tu día.</string>
+    <string name="tasks_empty_inbox_title">Inbox limpio</string>
+    <string name="tasks_empty_inbox_desc">Todas las tareas capturadas están organizadas.</string>
+    <string name="tasks_empty_upcoming_title">Nada próximo</string>
+    <string name="tasks_empty_upcoming_desc">No hay tareas con fecha en los próximos 7 días.</string>
+    <string name="tasks_empty_completed_title">Sin tareas completadas</string>
+    <string name="tasks_empty_completed_desc">Completa una tarea para verla aquí.</string>
 </resources>

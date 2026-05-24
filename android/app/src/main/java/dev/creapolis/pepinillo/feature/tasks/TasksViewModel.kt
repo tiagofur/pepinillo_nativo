@@ -21,13 +21,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Calendar
 import javax.inject.Inject
 
 enum class TaskFilter {
     Today,
-    Active,
+    Inbox,
+    Upcoming,
     Completed,
-    All,
 }
 
 enum class TaskSortOption {
@@ -40,7 +41,7 @@ enum class TaskSortOption {
 
 data class TasksUiState(
     val tasks: List<Task> = emptyList(),
-    val selectedFilter: TaskFilter = TaskFilter.All,
+    val selectedFilter: TaskFilter = TaskFilter.Today,
     val selectedSort: TaskSortOption = TaskSortOption.Custom,
     val energyFilter: EnergyLevel? = null,
     val isLoading: Boolean = true,
@@ -49,12 +50,22 @@ data class TasksUiState(
 
 val TasksUiState.filteredTasks: List<Task>
     get() {
-        // 1. Status filter
+        val now = System.currentTimeMillis()
+        val todayStart = startOfDay(now)
+        val weekFromToday = todayStart + 7L * 24 * 60 * 60 * 1000
+
+        // 1. Plan category filter
         val statusFiltered = when (selectedFilter) {
             TaskFilter.Today -> tasks.filter { !it.isCompleted && it.scheduledForToday }
-            TaskFilter.Active -> tasks.filter { !it.isCompleted }
+            TaskFilter.Inbox -> tasks.filter { !it.isCompleted && !it.scheduledForToday && it.dueDate == null }
+            TaskFilter.Upcoming -> tasks.filter { task ->
+                !task.isCompleted &&
+                    !task.scheduledForToday &&
+                    task.dueDate != null &&
+                    task.dueDate > todayStart &&
+                    task.dueDate <= weekFromToday
+            }
             TaskFilter.Completed -> tasks.filter { it.isCompleted }
-            TaskFilter.All -> tasks
         }
         // 2. Energy filter
         val energyFiltered = if (energyFilter != null) {
@@ -82,6 +93,17 @@ val TasksUiState.filteredTasks: List<Task>
         }
     }
 
+private fun startOfDay(timeMillis: Long): Long {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = timeMillis
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+    return calendar.timeInMillis
+}
+
 private fun priorityOrdinal(p: TaskPriority) = when (p) {
     TaskPriority.High -> 0
     TaskPriority.Medium -> 1
@@ -98,7 +120,7 @@ class TasksViewModel @Inject constructor(
     private val featureGate: FeatureGate,
 ) : ViewModel() {
 
-    private val _selectedFilter = MutableStateFlow(TaskFilter.All)
+    private val _selectedFilter = MutableStateFlow(TaskFilter.Today)
     private val _selectedSort = MutableStateFlow(TaskSortOption.Custom)
     private val _energyFilter = MutableStateFlow<EnergyLevel?>(null)
     private val _showPaywall = MutableStateFlow(false)

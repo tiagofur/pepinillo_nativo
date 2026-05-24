@@ -70,4 +70,22 @@
     <string name="report_category_achievement">conquista</string>
     <string name="report_category_pattern">padr\u00e3o</string>
     <string name="report_category_improvement">melhoria</string>
+    <!-- Plan categories -->
+    <string name="filter_today">Hoje</string>
+    <string name="filter_inbox">Inbox</string>
+    <string name="filter_upcoming">Próximas</string>
+    <string name="filter_completed">Concluídas</string>
+    <string name="tasks_quick_add_today">Adicionar tarefa para hoje...</string>
+    <string name="tasks_quick_add_general">Adicionar uma tarefa...</string>
+    <string name="tasks_quick_add_inbox">Capturar uma tarefa...</string>
+    <string name="tasks_quick_add_upcoming">Planejar uma tarefa...</string>
+    <string name="tasks_empty_today_title">Nada para hoje</string>
+    <string name="tasks_empty_today_desc">Adicione tarefas abaixo para planejar seu dia.</string>
+    <string name="tasks_empty_inbox_title">Inbox limpo</string>
+    <string name="tasks_empty_inbox_desc">Todas as tarefas capturadas estão organizadas.</string>
+    <string name="tasks_empty_upcoming_title">Nada próximo</string>
+    <string name="tasks_empty_upcoming_desc">Nenhuma tarefa com prazo nos próximos 7 dias.</string>
+    <string name="tasks_empty_completed_title">Sem tarefas concluídas</string>
+    <string name="tasks_empty_completed_desc">Conclua uma tarefa para vê-la aqui.</string>
+    <string name="tasks_btn_create_first">Criar tarefa</string>
 </resources>

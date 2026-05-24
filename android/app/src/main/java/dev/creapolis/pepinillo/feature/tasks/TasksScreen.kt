@@ -3,7 +3,9 @@ package dev.creapolis.pepinillo.feature.tasks
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,6 +22,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -29,8 +32,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Inbox
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.SwipeToDismissBox
@@ -63,6 +69,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -158,19 +166,18 @@ fun TasksScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ── 2. FILTER CHIPS ──
+            // ── 2. PLAN CATEGORY CHIPS ──
             Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 TaskFilter.entries.forEach { filter ->
-                    val label = when (filter) {
-                        TaskFilter.Today -> stringResource(R.string.filter_today)
-                        TaskFilter.Active -> stringResource(R.string.filter_active)
-                        TaskFilter.All -> stringResource(R.string.filter_all)
-                        TaskFilter.Completed -> stringResource(R.string.filter_completed)
-                    }
                     FilterPill(
-                        label = label,
+                        label = stringResource(filter.labelRes()),
+                        icon = filter.icon(),
+                        accentColor = filter.accentColor(),
                         isSelected = uiState.selectedFilter == filter,
                         onClick = { viewModel.selectFilter(filter) },
                     )
@@ -185,6 +192,10 @@ fun TasksScreen(
             if (filteredTasks.isEmpty() && !uiState.isLoading) {
                 // Empty state
                 EmptyTasksState(
+                    title = stringResource(uiState.selectedFilter.emptyTitleRes()),
+                    description = stringResource(uiState.selectedFilter.emptyDescriptionRes()),
+                    icon = uiState.selectedFilter.icon(),
+                    tint = uiState.selectedFilter.accentColor(),
                     onCreateTaskClick = { quickAddFocusRequester.requestFocus() },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -299,7 +310,6 @@ fun TasksScreen(
                                 Modifier
                             },
                             modifier = Modifier
-                                .background(MaterialTheme.colorScheme.surface)
                                 .animateItem()
                                 .then(
                                     if (isDragging) {
@@ -320,11 +330,7 @@ fun TasksScreen(
             // ── 4. QUICK ADD BAR ──
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
             QuickAddBar(
-                placeholder = if (uiState.selectedFilter == TaskFilter.Today) {
-                    stringResource(R.string.tasks_quick_add_today)
-                } else {
-                    stringResource(R.string.tasks_quick_add_general)
-                },
+                placeholder = stringResource(uiState.selectedFilter.quickAddPlaceholderRes()),
                 onAdd = viewModel::addQuickTask,
                 focusRequester = quickAddFocusRequester,
             )
@@ -493,42 +499,62 @@ private fun SortButton(
 @Composable
 private fun FilterPill(
     label: String,
+    icon: ImageVector,
+    accentColor: Color,
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
     val bgColor by animateColorAsState(
         targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.primary
+            accentColor.copy(alpha = 0.18f)
         } else {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         },
         animationSpec = spring(),
         label = "filterPillBg",
     )
-    val textColor by animateColorAsState(
-        targetValue = if (isSelected) {
-            MaterialTheme.colorScheme.onPrimary
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
+    val contentColor by animateColorAsState(
+        targetValue = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = spring(),
-        label = "filterPillText",
+        label = "filterPillContent",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (isSelected) accentColor.copy(alpha = 0.45f) else Color.Transparent,
+        animationSpec = spring(),
+        label = "filterPillBorder",
     )
 
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelLarge,
-        color = textColor,
+    Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(22.dp))
             .background(bgColor)
+            .border(1.dp, borderColor, RoundedCornerShape(22.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 10.dp),
-    )
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(17.dp),
+            tint = contentColor,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+            color = contentColor,
+        )
+    }
 }
 
 @Composable
 private fun EmptyTasksState(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    tint: Color,
     modifier: Modifier = Modifier,
     onCreateTaskClick: () -> Unit = {},
 ) {
@@ -538,20 +564,20 @@ private fun EmptyTasksState(
         verticalArrangement = Arrangement.Center,
     ) {
         Icon(
-            imageVector = Icons.Rounded.CheckCircleOutline,
+            imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            tint = tint.copy(alpha = 0.78f),
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = stringResource(R.string.tasks_no_tasks),
+            text = title,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = stringResource(R.string.tasks_empty_desc),
+            text = description,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         )
@@ -569,4 +595,47 @@ private fun EmptyTasksState(
             Text(stringResource(R.string.tasks_btn_create_first))
         }
     }
+}
+
+private fun TaskFilter.labelRes(): Int = when (this) {
+    TaskFilter.Today -> R.string.filter_today
+    TaskFilter.Inbox -> R.string.filter_inbox
+    TaskFilter.Upcoming -> R.string.filter_upcoming
+    TaskFilter.Completed -> R.string.filter_completed
+}
+
+private fun TaskFilter.quickAddPlaceholderRes(): Int = when (this) {
+    TaskFilter.Today -> R.string.tasks_quick_add_today
+    TaskFilter.Inbox -> R.string.tasks_quick_add_inbox
+    TaskFilter.Upcoming -> R.string.tasks_quick_add_upcoming
+    TaskFilter.Completed -> R.string.tasks_quick_add_general
+}
+
+private fun TaskFilter.emptyTitleRes(): Int = when (this) {
+    TaskFilter.Today -> R.string.tasks_empty_today_title
+    TaskFilter.Inbox -> R.string.tasks_empty_inbox_title
+    TaskFilter.Upcoming -> R.string.tasks_empty_upcoming_title
+    TaskFilter.Completed -> R.string.tasks_empty_completed_title
+}
+
+private fun TaskFilter.emptyDescriptionRes(): Int = when (this) {
+    TaskFilter.Today -> R.string.tasks_empty_today_desc
+    TaskFilter.Inbox -> R.string.tasks_empty_inbox_desc
+    TaskFilter.Upcoming -> R.string.tasks_empty_upcoming_desc
+    TaskFilter.Completed -> R.string.tasks_empty_completed_desc
+}
+
+private fun TaskFilter.icon(): ImageVector = when (this) {
+    TaskFilter.Today -> Icons.Rounded.LocalFireDepartment
+    TaskFilter.Inbox -> Icons.Rounded.Inbox
+    TaskFilter.Upcoming -> Icons.Rounded.CalendarMonth
+    TaskFilter.Completed -> Icons.Rounded.CheckCircleOutline
+}
+
+@Composable
+private fun TaskFilter.accentColor(): Color = when (this) {
+    TaskFilter.Today -> Color(0xFFFF8A00)
+    TaskFilter.Inbox -> Color(0xFF1A73E8)
+    TaskFilter.Upcoming -> Color(0xFF8E24AA)
+    TaskFilter.Completed -> Color(0xFF2E7D32)
 }

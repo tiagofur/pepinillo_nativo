@@ -477,4 +477,16 @@
     <string name="auth_register_subtitle">Join Pepinillo and start focusing</string>
     <string name="auth_password_hint">Min 8 chars, with uppercase, lowercase, and a number</string>
     <string name="cd_logo">Pepinillo logo</string>
+    <!-- Plan categories -->
+    <string name="filter_inbox">Inbox</string>
+    <string name="tasks_quick_add_inbox">Capture a task...</string>
+    <string name="tasks_quick_add_upcoming">Plan a task...</string>
+    <string name="tasks_empty_today_title">Nothing for Today</string>
+    <string name="tasks_empty_today_desc">Add tasks below to plan your day.</string>
+    <string name="tasks_empty_inbox_title">Inbox Clear</string>
+    <string name="tasks_empty_inbox_desc">All captured tasks are organized.</string>
+    <string name="tasks_empty_upcoming_title">Nothing Upcoming</string>
+    <string name="tasks_empty_upcoming_desc">No tasks due in the next 7 days.</string>
+    <string name="tasks_empty_completed_title">No Completed Tasks</string>
+    <string name="tasks_empty_completed_desc">Complete a task to see it here.</string>
 </resources>

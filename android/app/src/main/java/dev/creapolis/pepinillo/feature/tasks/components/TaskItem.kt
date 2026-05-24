@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Battery3Bar
 import androidx.compose.material.icons.filled.Battery1Bar
@@ -47,10 +48,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.Task
@@ -99,13 +102,33 @@ fun TaskItem(
         TaskPriority.Low -> MaterialTheme.colorScheme.secondary
         TaskPriority.None -> null
     }
+    val taskAccent = when {
+        task.isCompleted -> MaterialTheme.colorScheme.primary
+        task.scheduledForToday -> Color(0xFFFF8A00)
+        task.dueDate != null -> Color(0xFF8E24AA)
+        priorityColor != null -> priorityColor
+        task.energyLevel == EnergyLevel.Deep -> EnergyColors.deep
+        task.energyLevel == EnergyLevel.Light -> EnergyColors.light
+        else -> EnergyColors.regular
+    }
+    val rowBackground by animateColorAsState(
+        targetValue = if (task.isCompleted) {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
+        } else {
+            taskAccent.copy(alpha = 0.055f)
+        },
+        animationSpec = tween(500),
+        label = "taskRowBg",
+    )
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .background(rowBackground)
             .clickable(onClick = onClick)
-            .padding(start = 8.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
+            .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Priority bar (left side indicator)
@@ -147,7 +170,7 @@ fun TaskItem(
                         if (!task.isCompleted) {
                             Modifier.border(
                                 width = 2.dp,
-                                color = MaterialTheme.colorScheme.outline,
+                                color = taskAccent.copy(alpha = 0.72f),
                                 shape = CircleShape,
                             )
                         } else {
@@ -235,7 +258,7 @@ private fun MetadataRow(
         val isOverdue = dueDate < System.currentTimeMillis()
         val color = if (isOverdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
         metadataItems.add {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            MetadataBadge(color = color) {
                 Icon(Icons.Rounded.CalendarMonth, contentDescription = "Due date", modifier = Modifier.size(14.dp), tint = color)
                 Text(dateFormatter.format(Date(dueDate)), style = MaterialTheme.typography.bodySmall, color = color)
             }
@@ -245,26 +268,35 @@ private fun MetadataRow(
     // Today indicator (only if no due date to avoid clutter)
     if (task.scheduledForToday && task.dueDate == null) {
         metadataItems.add {
-            Icon(Icons.Rounded.Today, contentDescription = "Scheduled for today", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.primary)
+            val color = Color(0xFFFF8A00)
+            MetadataBadge(color = color) {
+                Icon(Icons.Rounded.Today, contentDescription = "Scheduled for today", modifier = Modifier.size(14.dp), tint = color)
+                Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
+            }
         }
     }
 
     // Energy level (icon + label for accessibility — distinguishable without color)
     metadataItems.add {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        val color = energyColor(task.energyLevel)
+        MetadataBadge(color = color) {
             EnergyIcon(energyLevel = task.energyLevel)
-            Text(task.energyLevel.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(task.energyLevel.label, style = MaterialTheme.typography.bodySmall, color = color)
         }
     }
 
     // Pomodoro count
     if (task.estimatedPomodoros > 0) {
         metadataItems.add {
-            Text(
-                "${task.completedPomodoros}/${task.estimatedPomodoros}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            val color = MaterialTheme.colorScheme.secondary
+            MetadataBadge(color = color) {
+                Icon(Icons.Rounded.AccessTime, contentDescription = "Pomodoros", modifier = Modifier.size(14.dp), tint = color)
+                Text(
+                    "${task.completedPomodoros}/${task.estimatedPomodoros}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = color,
+                )
+            }
         }
     }
 
@@ -272,9 +304,10 @@ private fun MetadataRow(
     subtaskProgress?.let { (completed, total) ->
         if (total > 0) {
             metadataItems.add {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Icon(Icons.Rounded.Checklist, contentDescription = "Subtasks", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("$completed/$total", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val color = MaterialTheme.colorScheme.tertiary
+                MetadataBadge(color = color) {
+                    Icon(Icons.Rounded.Checklist, contentDescription = "Subtasks", modifier = Modifier.size(14.dp), tint = color)
+                    Text("$completed/$total", style = MaterialTheme.typography.bodySmall, color = color)
                 }
             }
         }
@@ -285,9 +318,10 @@ private fun MetadataRow(
         val option = RecurrenceOption.fromRrule(it)
         if (option != RecurrenceOption.None) {
             metadataItems.add {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    Icon(Icons.Rounded.Repeat, contentDescription = "Recurring", modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(option.label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val color = MaterialTheme.colorScheme.primary
+                MetadataBadge(color = color) {
+                    Icon(Icons.Rounded.Repeat, contentDescription = "Recurring", modifier = Modifier.size(14.dp), tint = color)
+                    Text(option.label, style = MaterialTheme.typography.bodySmall, color = color)
                 }
             }
         }
@@ -296,15 +330,27 @@ private fun MetadataRow(
     if (metadataItems.isNotEmpty()) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            metadataItems.forEachIndexed { index, item ->
-                if (index > 0) {
-                    Text("\u00B7", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                item()
-            }
+            metadataItems.forEach { item -> item() }
         }
+    }
+}
+
+@Composable
+private fun MetadataBadge(
+    color: Color,
+    content: @Composable () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(color.copy(alpha = 0.10f))
+            .padding(horizontal = 6.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        content()
     }
 }
 
@@ -313,11 +359,7 @@ private fun EnergyIcon(
     energyLevel: EnergyLevel,
     modifier: Modifier = Modifier,
 ) {
-    val color = when (energyLevel) {
-        EnergyLevel.Deep -> EnergyColors.deep
-        EnergyLevel.Regular -> EnergyColors.regular
-        EnergyLevel.Light -> EnergyColors.light
-    }
+    val color = energyColor(energyLevel)
     val icon = when (energyLevel) {
         EnergyLevel.Deep -> Icons.Filled.BatteryFull
         EnergyLevel.Regular -> Icons.Filled.Battery3Bar
@@ -329,4 +371,12 @@ private fun EnergyIcon(
         modifier = modifier.size(14.dp),
         tint = color,
     )
+}
+
+
+@Composable
+private fun energyColor(energyLevel: EnergyLevel): Color = when (energyLevel) {
+    EnergyLevel.Deep -> EnergyColors.deep
+    EnergyLevel.Regular -> EnergyColors.regular
+    EnergyLevel.Light -> EnergyColors.light
 }

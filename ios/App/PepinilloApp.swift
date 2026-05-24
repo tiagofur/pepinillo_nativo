@@ -14,16 +14,14 @@ import ActivityKit
 import ComposableArchitecture
 import OSLog
 
-private enum AppBootstrapError: Error {
-    case containerTimeout
-}
-
 private enum AppBootstrapTiming {
-    static let containerOpenTimeout: Duration = .seconds(8)
+    static let containerOpenTimeoutSeconds: TimeInterval = 8
 }
 
 private enum AppLaunchDefaults {
     static let hasCompletedOnboardingKey = "pepinillo.hasCompletedOnboarding"
+    static let bootstrapStartedAtKey = "pepinillo.bootstrap.startedAt"
+    static let bootstrapCompletedAtKey = "pepinillo.bootstrap.completedAt"
 }
 
 private let startupLogger = Logger(subsystem: "com.pepinillo.app", category: "startup")
@@ -37,6 +35,7 @@ private final class AppBootstrap: ObservableObject {
     }
 
     @Published var phase: Phase = .loading
+    @Published var statusMessage = String(localized: "Starting Pepinillo...")
     @Published var modelContainer: ModelContainer?
     @Published var persistenceRouter: PersistenceStoreRouter?
     @Published var store: StoreOf<AppFeature>?
@@ -52,11 +51,13 @@ private final class AppBootstrap: ObservableObject {
 
     private func bootstrap() async {
         phase = .loading
+        markBootstrapStarted()
         startupLogger.info("Starting bootstrap phase...")
         do {
             let container = try await loadContainerWithTimeout()
             startupLogger.info("ModelContainer loaded successfully, applying...")
             apply(container: container)
+            markBootstrapCompleted()
         } catch {
             startupLogger.error("App bootstrap failed after timeout/error: \(String(describing: error), privacy: .public)")
             phase = .failed
@@ -71,70 +72,62 @@ private final class AppBootstrap: ObservableObject {
     }
 
     private func loadContainerWithTimeout() async throws -> ModelContainer {
+        if shouldSkipSharedStoreForRecovery {
+            startupLogger.warning("Previous bootstrap did not complete; skipping shared store and opening recovery store.")
+            statusMessage = String(localized: "Repairing local data...")
+            return try await loadRecoveryContainer()
+        }
+
         do {
+            statusMessage = String(localized: "Opening local data...")
             startupLogger.info("Attempting to load shared ModelContainer with 8s timeout...")
-            return try await withTimeout(seconds: 8) {
-                try await self.loadSharedContainerOnBackgroundQueue()
-            }
+            return try await loadSharedContainerOnBackgroundQueue()
         } catch {
             startupLogger.warning("Shared container failed or timed out, attempting emergency fallback: \(String(describing: error), privacy: .public)")
-            
-            // Second attempt: fresh fallback store with its own timeout
+            statusMessage = String(localized: "Repairing local data...")
+            return try await loadRecoveryContainer()
+        }
+    }
+
+    private func loadRecoveryContainer() async throws -> ModelContainer {
+        do {
+            return try await loadFallbackContainerOnBackgroundQueue()
+        } catch {
+            startupLogger.error("Fresh fallback container failed/timed out, attempting in-memory emergency store: \(String(describing: error), privacy: .public)")
+            statusMessage = String(localized: "Opening recovery mode...")
             do {
-                return try await withTimeout(seconds: 8) {
-                    try await self.loadFallbackContainerOnBackgroundQueue()
-                }
+                return try await loadInMemoryContainerOnBackgroundQueue()
             } catch {
-                startupLogger.fault("Critical failure: Fallback container also failed/timed out: \(String(describing: error), privacy: .public)")
+                startupLogger.fault("Critical failure: in-memory emergency container failed/timed out: \(String(describing: error), privacy: .public)")
                 throw error
             }
         }
     }
 
     private func loadSharedContainerOnBackgroundQueue() async throws -> ModelContainer {
-        // Use GCD for the potentially blocking synchronous SwiftData init.
-        // This avoids starving the Swift Concurrency cooperative thread pool
-        // if the SQLite open/migration hangs.
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    let container = try makeSharedModelContainer()
-                    continuation.resume(returning: container)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+        try await openModelContainerOffMainThread(
+            label: "shared-app-group",
+            timeout: AppBootstrapTiming.containerOpenTimeoutSeconds
+        ) {
+            try makeSharedModelContainer()
         }
     }
 
     private func loadFallbackContainerOnBackgroundQueue() async throws -> ModelContainer {
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    let container = try Self.makeEmergencyFallbackContainer()
-                    continuation.resume(returning: container)
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+        try await openModelContainerOffMainThread(
+            label: "fresh-fallback",
+            timeout: AppBootstrapTiming.containerOpenTimeoutSeconds
+        ) {
+            try Self.makeEmergencyFallbackContainer()
         }
     }
 
-    private func withTimeout<T: Sendable>(seconds: Double, operation: @escaping @Sendable () async throws -> T) async throws -> T {
-        try await withThrowingTaskGroup(of: T.self) { group in
-            group.addTask {
-                try await operation()
-            }
-            group.addTask {
-                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
-                throw AppBootstrapError.containerTimeout
-            }
-            
-            guard let result = try await group.next() else {
-                throw AppBootstrapError.containerTimeout
-            }
-            group.cancelAll()
-            return result
+    private func loadInMemoryContainerOnBackgroundQueue() async throws -> ModelContainer {
+        try await openModelContainerOffMainThread(
+            label: "in-memory-emergency",
+            timeout: AppBootstrapTiming.containerOpenTimeoutSeconds
+        ) {
+            try Self.makeInMemoryEmergencyContainer()
         }
     }
 
@@ -169,8 +162,30 @@ private final class AppBootstrap: ObservableObject {
         phase = .ready
     }
 
-    private static func makeEmergencyFallbackContainer() throws -> ModelContainer {
+    nonisolated private static func makeEmergencyFallbackContainer() throws -> ModelContainer {
         try makeFreshFallbackModelContainer()
+    }
+
+    nonisolated private static func makeInMemoryEmergencyContainer() throws -> ModelContainer {
+        try makeInMemoryModelContainer()
+    }
+
+    private var shouldSkipSharedStoreForRecovery: Bool {
+        let defaults = UserDefaults.standard
+        let startedAt = defaults.double(forKey: AppLaunchDefaults.bootstrapStartedAtKey)
+        let completedAt = defaults.double(forKey: AppLaunchDefaults.bootstrapCompletedAtKey)
+        guard startedAt > completedAt else { return false }
+
+        let unfinishedAge = Date().timeIntervalSince1970 - startedAt
+        return unfinishedAge > AppBootstrapTiming.containerOpenTimeoutSeconds
+    }
+
+    private func markBootstrapStarted() {
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: AppLaunchDefaults.bootstrapStartedAtKey)
+    }
+
+    private func markBootstrapCompleted() {
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: AppLaunchDefaults.bootstrapCompletedAtKey)
     }
 }
 
@@ -244,7 +259,7 @@ struct PepinilloApp: App {
                         .buttonStyle(.borderedProminent)
                     } else {
                         ProgressView()
-                        Text("Starting Pepinillo...")
+                        Text(bootstrap.statusMessage)
                             .font(.headline)
                             .foregroundStyle(.secondary)
                     }

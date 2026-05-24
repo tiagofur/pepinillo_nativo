@@ -21,6 +21,62 @@ import OSLog
 
 private let persistenceLogger = Logger(subsystem: "com.pepinillo.app", category: "persistence")
 
+enum ModelContainerOpenTimeoutError: Error {
+    case timedOut(label: String, seconds: TimeInterval)
+}
+
+private final class ModelContainerOpenContinuationBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<ModelContainer, Error>?
+
+    init(_ continuation: CheckedContinuation<ModelContainer, Error>) {
+        self.continuation = continuation
+    }
+
+    func resume(with result: Result<ModelContainer, Error>) {
+        lock.lock()
+        guard let continuation else {
+            lock.unlock()
+            return
+        }
+        self.continuation = nil
+        lock.unlock()
+
+        switch result {
+        case .success(let container):
+            continuation.resume(returning: container)
+        case .failure(let error):
+            continuation.resume(throwing: error)
+        }
+    }
+}
+
+/// Opens a SwiftData container away from the main actor and returns on timeout
+/// without waiting for the underlying SQLite/CloudKit open to become cancellable.
+///
+/// Do not implement this with `withThrowingTaskGroup`: structured concurrency waits
+/// for cancelled children to finish before leaving the group, so a synchronous
+/// `ModelContainer` open that hangs can still block app startup forever.
+func openModelContainerOffMainThread(
+    label: String,
+    timeout seconds: TimeInterval,
+    qos: DispatchQoS.QoSClass = .userInitiated,
+    make: @escaping @Sendable () throws -> ModelContainer
+) async throws -> ModelContainer {
+    try await withCheckedThrowingContinuation { continuation in
+        let box = ModelContainerOpenContinuationBox(continuation)
+
+        DispatchQueue.global(qos: qos).async {
+            box.resume(with: Result { try make() })
+        }
+
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + seconds) {
+            persistenceLogger.error("Timed out opening ModelContainer '\(label, privacy: .public)' after \(seconds, privacy: .public)s")
+            box.resume(with: .failure(ModelContainerOpenTimeoutError.timedOut(label: label, seconds: seconds)))
+        }
+    }
+}
+
 // MARK: - App Group Constants
 
 enum AppGroup {
@@ -612,6 +668,22 @@ func makeFreshFallbackModelContainer() throws -> ModelContainer {
 
     persistenceLogger.info("Opening fresh fallback ModelContainer at: \(fallbackURL.path, privacy: .public)")
     return try makeModelContainer(at: fallbackURL)
+}
+
+func makeInMemoryModelContainer() throws -> ModelContainer {
+    let schema = Schema(versionedSchema: SchemaV3.self)
+    let config = ModelConfiguration(
+        schema: schema,
+        isStoredInMemoryOnly: true,
+        cloudKitDatabase: .none
+    )
+
+    persistenceLogger.warning("Opening in-memory emergency ModelContainer")
+    return try ModelContainer(
+        for: schema,
+        migrationPlan: PepinilloMigrationPlan.self,
+        configurations: [config]
+    )
 }
 
 private func quarantineCorruptedStoreIfPresent() throws {

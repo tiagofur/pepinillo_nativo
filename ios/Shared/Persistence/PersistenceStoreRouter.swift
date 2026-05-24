@@ -11,10 +11,6 @@ import OSLog
 
 private let syncRouterLogger = Logger(subsystem: "com.pepinillo.app", category: "sync-router")
 
-private enum PersistenceStoreRouterError: Error {
-    case containerTimeout
-}
-
 @MainActor
 final class PersistenceStoreRouter: ObservableObject {
     private(set) var localContainer: ModelContainer
@@ -102,22 +98,12 @@ final class PersistenceStoreRouter: ObservableObject {
     }
 
     private func openAppleCloudContainerWithTimeout() async throws -> ModelContainer {
-        try await withThrowingTaskGroup(of: ModelContainer.self) { group in
-            group.addTask(priority: .utility) {
-                try await Task.detached(priority: .utility) {
-                    try makeAppleCloudModelContainer()
-                }.value
-            }
-            group.addTask {
-                try await Task.sleep(for: .seconds(8))
-                throw PersistenceStoreRouterError.containerTimeout
-            }
-
-            guard let container = try await group.next() else {
-                throw PersistenceStoreRouterError.containerTimeout
-            }
-            group.cancelAll()
-            return container
+        try await openModelContainerOffMainThread(
+            label: "apple-cloud",
+            timeout: 8,
+            qos: .utility
+        ) {
+            try makeAppleCloudModelContainer()
         }
     }
 

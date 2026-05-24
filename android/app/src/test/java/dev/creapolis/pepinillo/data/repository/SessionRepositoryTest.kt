@@ -7,9 +7,11 @@ import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.util.Calendar
+import java.util.Locale
 import java.util.TimeZone
 
 // ---------------------------------------------------------------------------
@@ -53,6 +55,7 @@ private class FakeDailyStatsDao : DailyStatsDao {
 class SessionRepositoryTest {
 
     private lateinit var repo: SessionRepository
+    private lateinit var previousLocale: Locale
 
     private val oneDay = 24 * 60 * 60 * 1000L
 
@@ -84,10 +87,17 @@ class SessionRepositoryTest {
 
     @Before
     fun setUp() {
+        previousLocale = Locale.getDefault()
+        Locale.setDefault(Locale.US)
         repo = SessionRepository(
             sessionDao = FakeFocusSessionDao(),
             dailyStatsDao = FakeDailyStatsDao(),
         )
+    }
+
+    @After
+    fun tearDown() {
+        Locale.setDefault(previousLocale)
     }
 
     // -----------------------------------------------------------------------
