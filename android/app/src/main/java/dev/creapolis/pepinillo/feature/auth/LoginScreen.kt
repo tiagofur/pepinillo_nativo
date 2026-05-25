@@ -94,7 +94,7 @@ fun LoginScreen(
             contentAlignment = Alignment.Center,
         ) {
             Surface(
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Icon(
@@ -107,7 +107,7 @@ fun LoginScreen(
         }
 
         Text(
-            text = "Pepinillo",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -135,7 +135,7 @@ fun LoginScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -157,7 +157,7 @@ fun LoginScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                 )
             }
         }
@@ -179,7 +179,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.isLoading,
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(12.dp),
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
@@ -204,7 +204,7 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         ) {
             Text(stringResource(R.string.auth_btn_register), style = MaterialTheme.typography.titleMedium)
         }
@@ -221,7 +221,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.googleSignInLoading && !uiState.isLoading,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.White,
                 contentColor = Color(0xFF1F1F1F),

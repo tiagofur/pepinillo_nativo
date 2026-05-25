@@ -54,6 +54,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.creapolis.pepinillo.util.ManufacturerUtils
+import androidx.compose.ui.res.stringResource
+import dev.creapolis.pepinillo.R
 
 @Composable
 fun AppSetupScreen(
@@ -85,12 +87,12 @@ fun AppSetupScreen(
             IconButton(onClick = onBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_go_back),
                 )
             }
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "App Setup",
+                text = stringResource(R.string.setup_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -125,9 +127,13 @@ fun AppSetupScreen(
                 Column {
                     Text(
                         text = if (uiState.allConfigured) {
-                            "All set!"
+                            stringResource(R.string.setup_all_set)
                         } else {
-                            "${uiState.grantedCount} of ${uiState.totalCount} configured"
+                            stringResource(
+                                R.string.setup_configured_count,
+                                uiState.grantedCount,
+                                uiState.totalCount,
+                            )
                         },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
@@ -136,9 +142,9 @@ fun AppSetupScreen(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (uiState.allConfigured) {
-                            "Your app is configured for the best experience"
+                            stringResource(R.string.setup_all_set_sub)
                         } else {
-                            "Complete the setup below for reliable background operation"
+                            stringResource(R.string.setup_action_required_sub)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -150,17 +156,17 @@ fun AppSetupScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── PERMISSIONS ──
-        SectionHeader(icon = Icons.Rounded.Security, title = "Permissions & Settings")
+        SectionHeader(icon = Icons.Rounded.Security, title = stringResource(R.string.setup_sec_permissions))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
             // 1. Notifications
             PermissionItemRow(
                 icon = Icons.Rounded.Notifications,
-                title = "Notifications",
-                description = "Required for timer completion alerts and daily reminders",
+                title = stringResource(R.string.setup_notifications),
+                description = stringResource(R.string.setup_notifications_sub),
                 isGranted = uiState.notificationsGranted,
-                actionLabel = "Enable",
+                actionLabel = stringResource(R.string.setup_btn_enable),
                 onAction = {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -175,10 +181,10 @@ fun AppSetupScreen(
             // 2. Battery optimization
             PermissionItemRow(
                 icon = Icons.Rounded.BatterySaver,
-                title = "Battery optimization",
-                description = "Prevents the system from stopping your focus timer in the background",
+                title = stringResource(R.string.setup_battery),
+                description = stringResource(R.string.setup_battery_sub),
                 isGranted = uiState.batteryOptimizationExcluded,
-                actionLabel = "Disable restriction",
+                actionLabel = stringResource(R.string.setup_btn_disable_restriction),
                 onAction = {
                     try {
                         val intent = Intent(
@@ -192,7 +198,7 @@ fun AppSetupScreen(
                                 Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS),
                             )
                         } catch (_: ActivityNotFoundException) {
-                            Toast.makeText(context, "Could not open battery settings", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.toast_battery_settings_error), Toast.LENGTH_SHORT).show()
                         }
                     }
                 },
@@ -203,10 +209,10 @@ fun AppSetupScreen(
                 SettingsDivider()
                 PermissionItemRow(
                     icon = Icons.Rounded.Alarm,
-                    title = "Exact alarms",
-                    description = "Ensures daily reminders arrive at the exact scheduled time",
+                    title = stringResource(R.string.setup_alarms),
+                    description = stringResource(R.string.setup_alarms_sub),
                     isGranted = uiState.exactAlarmsAllowed,
-                    actionLabel = "Allow",
+                    actionLabel = stringResource(R.string.setup_btn_allow),
                     onAction = {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             try {
@@ -216,7 +222,7 @@ fun AppSetupScreen(
                                     },
                                 )
                             } catch (_: ActivityNotFoundException) {
-                                Toast.makeText(context, "Could not open alarm settings", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.toast_alarm_settings_error), Toast.LENGTH_SHORT).show()
                             }
                         }
                     },
@@ -228,11 +234,11 @@ fun AppSetupScreen(
                 SettingsDivider()
                 PermissionItemRow(
                     icon = Icons.Rounded.PhonelinkSetup,
-                    title = "Auto-start",
-                    description = "Allow Pepinillo to run in the background on ${uiState.manufacturerName} devices",
+                    title = stringResource(R.string.setup_autostart),
+                    description = stringResource(R.string.setup_autostart_sub, uiState.manufacturerName),
                     isGranted = uiState.autoStartAcknowledged,
-                    actionLabel = "Configure",
-                    grantedLabel = "Reviewed",
+                    actionLabel = stringResource(R.string.setup_btn_configure),
+                    grantedLabel = stringResource(R.string.setup_btn_reviewed),
                     onAction = {
                         val intent = ManufacturerUtils.getAutoStartIntent(context)
                         if (intent != null) {
@@ -255,7 +261,7 @@ fun AppSetupScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "These settings help Pepinillo run reliably in the background so your focus sessions complete without interruption.",
+            text = stringResource(R.string.setup_footer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(horizontal = 4.dp),
@@ -272,7 +278,7 @@ private fun PermissionItemRow(
     description: String,
     isGranted: Boolean,
     actionLabel: String,
-    grantedLabel: String = "Granted",
+    grantedLabel: String = stringResource(R.string.setup_btn_granted),
     onAction: () -> Unit,
 ) {
     Row(
@@ -381,7 +387,7 @@ private fun openAppNotificationSettings(context: Context) {
         }
         context.startActivity(intent)
     } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "Could not open notification settings", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.toast_notification_settings_error), Toast.LENGTH_SHORT).show()
     }
 }
 

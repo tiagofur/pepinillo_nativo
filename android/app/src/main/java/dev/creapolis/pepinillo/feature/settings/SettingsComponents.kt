@@ -50,11 +50,11 @@ internal fun SettingsCard(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
             )
             .padding(horizontal = 20.dp, vertical = 4.dp),
     ) {

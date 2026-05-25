@@ -90,6 +90,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.feature.focus.FocusMode
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
@@ -132,14 +133,14 @@ fun SettingsScreen(
 
         // ── HEADER ──
         Text(
-            text = "Settings",
+            text = stringResource(R.string.settings_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = "Customize your experience",
+            text = stringResource(R.string.settings_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -169,16 +170,16 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "App Setup",
+                            text = stringResource(R.string.settings_app_setup),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
                         Text(
                             text = if (hasPermissionIssues) {
-                                "Action required for best experience"
+                                stringResource(R.string.settings_action_required)
                             } else {
-                                "All permissions configured"
+                                stringResource(R.string.settings_all_configured)
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = if (hasPermissionIssues) {
@@ -214,7 +215,7 @@ fun SettingsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickable(onClick = onNavigateToPaywall)
                     .padding(20.dp),
@@ -229,13 +230,13 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Upgrade to Pepinillo+",
+                            text = stringResource(R.string.settings_upgrade_promo),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                         Text(
-                            text = "Unlock all modes, unlimited tasks & more",
+                            text = stringResource(R.string.settings_unlock_all),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                         )
@@ -267,8 +268,8 @@ fun SettingsScreen(
                         Text(
                             text = when (uiState.subscriptionTier) {
                                 SubscriptionTier.EVERYWHERE_MONTHLY,
-                                SubscriptionTier.EVERYWHERE_ANNUAL -> "Everywhere / AI+"
-                                else -> "Pepinillo+"
+                                SubscriptionTier.EVERYWHERE_ANNUAL -> stringResource(R.string.settings_tier_everywhere)
+                                else -> stringResource(R.string.settings_tier_plus)
                             },
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
@@ -276,10 +277,10 @@ fun SettingsScreen(
                         )
                         Text(
                             text = when (uiState.subscriptionTier) {
-                                SubscriptionTier.PEPINILLO_PLUS -> "Lifetime access"
-                                SubscriptionTier.EVERYWHERE_MONTHLY -> "Monthly subscription"
-                                SubscriptionTier.EVERYWHERE_ANNUAL -> "Annual subscription"
-                                else -> "Lifetime access"
+                                SubscriptionTier.PEPINILLO_PLUS -> stringResource(R.string.settings_lifetime_access)
+                                SubscriptionTier.EVERYWHERE_MONTHLY -> stringResource(R.string.settings_monthly_sub)
+                                SubscriptionTier.EVERYWHERE_ANNUAL -> stringResource(R.string.settings_annual_sub)
+                                else -> stringResource(R.string.settings_lifetime_access)
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -292,48 +293,48 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── TIMER SECTION ──
-        SectionHeader(icon = Icons.Rounded.Timer, title = "Timer")
+        SectionHeader(icon = Icons.Rounded.Timer, title = stringResource(R.string.settings_sec_timer))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
             StepperRow(
-                label = "Focus duration",
-                value = "${uiState.pomodoroMinutes} min",
+                label = stringResource(R.string.settings_focus_duration),
+                value = stringResource(R.string.minutes_format, uiState.pomodoroMinutes),
                 onDecrease = { viewModel.updatePomodoroMinutes(uiState.pomodoroMinutes - 5) },
                 onIncrease = { viewModel.updatePomodoroMinutes(uiState.pomodoroMinutes + 5) },
             )
             SettingsDivider()
             StepperRow(
-                label = "Short break",
-                value = "${uiState.shortBreakMinutes} min",
+                label = stringResource(R.string.settings_short_break),
+                value = stringResource(R.string.minutes_format, uiState.shortBreakMinutes),
                 onDecrease = { viewModel.updateShortBreakMinutes(uiState.shortBreakMinutes - 1) },
                 onIncrease = { viewModel.updateShortBreakMinutes(uiState.shortBreakMinutes + 1) },
             )
             SettingsDivider()
             StepperRow(
-                label = "Long break",
-                value = "${uiState.longBreakMinutes} min",
+                label = stringResource(R.string.settings_long_break),
+                value = stringResource(R.string.minutes_format, uiState.longBreakMinutes),
                 onDecrease = { viewModel.updateLongBreakMinutes(uiState.longBreakMinutes - 5) },
                 onIncrease = { viewModel.updateLongBreakMinutes(uiState.longBreakMinutes + 5) },
             )
             SettingsDivider()
             StepperRow(
-                label = "Sessions before long break",
+                label = stringResource(R.string.settings_sessions_before_long),
                 value = "${uiState.sessionsBeforeLongBreak}",
                 onDecrease = { viewModel.updateSessionsBeforeLongBreak(uiState.sessionsBeforeLongBreak - 1) },
                 onIncrease = { viewModel.updateSessionsBeforeLongBreak(uiState.sessionsBeforeLongBreak + 1) },
             )
             SettingsDivider()
             StepperRow(
-                label = "Time block duration",
-                value = "${uiState.timeBlockMinutes} min",
+                label = stringResource(R.string.settings_time_block_duration),
+                value = stringResource(R.string.minutes_format, uiState.timeBlockMinutes),
                 onDecrease = { viewModel.updateTimeBlockMinutes(uiState.timeBlockMinutes - 15) },
                 onIncrease = { viewModel.updateTimeBlockMinutes(uiState.timeBlockMinutes + 15) },
             )
             SettingsDivider()
             SwitchRow(
-                label = "Midpoint check-in",
-                subtitle = "Reminder at halfway through time blocks",
+                label = stringResource(R.string.settings_midpoint_checkin),
+                subtitle = stringResource(R.string.settings_midpoint_checkin_sub),
                 isChecked = uiState.midpointCheckIn,
                 onToggle = viewModel::toggleMidpointCheckIn,
             )
@@ -342,19 +343,19 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── FLOWTIME SECTION ──
-        SectionHeader(icon = Icons.Rounded.AvTimer, title = "Flowtime")
+        SectionHeader(icon = Icons.Rounded.AvTimer, title = stringResource(R.string.settings_sec_flowtime))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
             StepperRow(
-                label = "Minimum session",
-                value = "${uiState.flowtimeMinMinutes} min",
+                label = stringResource(R.string.settings_flowtime_min),
+                value = stringResource(R.string.minutes_format, uiState.flowtimeMinMinutes),
                 onDecrease = { viewModel.updateFlowtimeMinMinutes(uiState.flowtimeMinMinutes - 1) },
                 onIncrease = { viewModel.updateFlowtimeMinMinutes(uiState.flowtimeMinMinutes + 1) },
             )
         }
         Text(
-            text = "Minimum focus time before a break is suggested",
+            text = stringResource(R.string.settings_flowtime_min_sub),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp, start = 4.dp),
@@ -363,42 +364,42 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── BEHAVIOR SECTION ──
-        SectionHeader(icon = Icons.Rounded.Settings, title = "Behavior")
+        SectionHeader(icon = Icons.Rounded.Settings, title = stringResource(R.string.settings_sec_behavior))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
             SwitchRow(
-                label = "Auto-start breaks",
-                subtitle = "Start break timer automatically",
+                label = stringResource(R.string.auto_start_breaks),
+                subtitle = stringResource(R.string.settings_auto_start_breaks_sub),
                 isChecked = uiState.autoStartBreaks,
                 onToggle = viewModel::toggleAutoStartBreaks,
             )
             SettingsDivider()
             SwitchRow(
-                label = "Auto-start next session",
-                subtitle = "Continue after break ends",
+                label = stringResource(R.string.settings_auto_start_next),
+                subtitle = stringResource(R.string.settings_auto_start_next_sub),
                 isChecked = uiState.autoStartNextPomodoro,
                 onToggle = viewModel::toggleAutoStartNextPomodoro,
             )
             SettingsDivider()
             SwitchRow(
-                label = "Post-session reflection",
-                subtitle = "Show journal after each focus session",
+                label = stringResource(R.string.settings_post_session_reflection),
+                subtitle = stringResource(R.string.settings_post_session_reflection_sub),
                 isChecked = uiState.showJournalAfterSession,
                 onToggle = viewModel::toggleShowJournalAfterSession,
             )
             SettingsDivider()
             SwitchRow(
-                label = "Sound",
-                subtitle = "Play sound when timer ends",
+                label = stringResource(R.string.sound),
+                subtitle = stringResource(R.string.settings_sound_sub),
                 icon = Icons.Rounded.VolumeUp,
                 isChecked = uiState.soundEnabled,
                 onToggle = viewModel::toggleSound,
             )
             SettingsDivider()
             SwitchRow(
-                label = "Vibration",
-                subtitle = "Vibrate when timer ends",
+                label = stringResource(R.string.vibration),
+                subtitle = stringResource(R.string.settings_vibration_sub),
                 icon = Icons.Rounded.Vibration,
                 isChecked = uiState.vibrationEnabled,
                 onToggle = viewModel::toggleVibration,
@@ -408,20 +409,20 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── GENERAL SECTION ──
-        SectionHeader(icon = Icons.Rounded.Tune, title = "General")
+        SectionHeader(icon = Icons.Rounded.Tune, title = stringResource(R.string.settings_sec_general))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
             // Default mode selector
             Column(modifier = Modifier.padding(vertical = 12.dp)) {
                 Text(
-                    text = "Default mode",
+                    text = stringResource(R.string.settings_default_mode),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "Mode selected when app launches",
+                    text = stringResource(R.string.settings_default_mode_sub),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -447,8 +448,8 @@ fun SettingsScreen(
             }
             SettingsDivider()
             SwitchRow(
-                label = "Keep screen on",
-                subtitle = "Prevent screen from sleeping during focus",
+                label = stringResource(R.string.settings_keep_screen_on),
+                subtitle = stringResource(R.string.settings_keep_screen_on_sub),
                 isChecked = uiState.keepScreenOn,
                 onToggle = viewModel::toggleKeepScreenOn,
             )
@@ -457,21 +458,21 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── APPEARANCE SECTION ──
-        SectionHeader(icon = Icons.Rounded.Palette, title = "Appearance")
+        SectionHeader(icon = Icons.Rounded.Palette, title = stringResource(R.string.settings_sec_appearance))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
             // Theme picker
             Column(modifier = Modifier.padding(vertical = 12.dp)) {
                 Text(
-                    "Theme",
+                    text = stringResource(R.string.settings_theme),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Choose a color theme for your focus modes",
+                    text = stringResource(R.string.settings_theme_sub),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -483,11 +484,11 @@ fun SettingsScreen(
                 ) {
                     items(AppTheme.all) { theme ->
                         val displayName = when (theme.id) {
-                            "classic" -> "Classic"
-                            "materialYou" -> "Material You"
-                            "forest" -> "Forest"
-                            "ocean" -> "Ocean"
-                            "sunset" -> "Sunset"
+                            "classic" -> stringResource(R.string.theme_classic)
+                            "materialYou" -> stringResource(R.string.theme_material_you)
+                            "forest" -> stringResource(R.string.theme_forest)
+                            "ocean" -> stringResource(R.string.theme_ocean)
+                            "sunset" -> stringResource(R.string.theme_sunset)
                             else -> theme.id
                         }
                         val isLocked = !theme.isFree && !uiState.isPro
@@ -511,14 +512,14 @@ fun SettingsScreen(
             // Light/Dark/System selector
             Column(modifier = Modifier.padding(vertical = 12.dp)) {
                 Text(
-                    "Appearance",
+                    text = stringResource(R.string.settings_sec_appearance),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    "Choose light, dark, or system default",
+                    text = stringResource(R.string.settings_appearance_sub),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -542,20 +543,20 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── NOTIFICATIONS SECTION ──
-        SectionHeader(icon = Icons.Rounded.Notifications, title = "Notifications")
+        SectionHeader(icon = Icons.Rounded.Notifications, title = stringResource(R.string.settings_sec_notifications))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
             SwitchRow(
-                label = "Timer alerts",
-                subtitle = "Show notification when timer finishes",
+                label = stringResource(R.string.settings_timer_alerts),
+                subtitle = stringResource(R.string.settings_timer_alerts_sub),
                 isChecked = uiState.timerNotificationsEnabled,
                 onToggle = viewModel::toggleTimerNotifications,
             )
             SettingsDivider()
             SwitchRow(
-                label = "Daily reminder",
-                subtitle = "Get reminded to focus each day",
+                label = stringResource(R.string.settings_daily_reminder),
+                subtitle = stringResource(R.string.settings_daily_reminder_sub),
                 isChecked = uiState.dailyReminderEnabled,
                 onToggle = viewModel::toggleDailyReminder,
             )
@@ -574,7 +575,7 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── STREAK SECTION ──
-        SectionHeader(icon = Icons.Rounded.LocalFireDepartment, title = "Streak")
+        SectionHeader(icon = Icons.Rounded.LocalFireDepartment, title = stringResource(R.string.settings_sec_streak))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
@@ -585,13 +586,13 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Current streak",
+                    text = stringResource(R.string.settings_current_streak),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    text = "${uiState.currentStreak} days",
+                    text = stringResource(R.string.dashboard_days_count, uiState.currentStreak),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -603,7 +604,7 @@ fun SettingsScreen(
         if (uiState.isLoggedIn) {
             Spacer(modifier = Modifier.height(28.dp))
 
-            SectionHeader(icon = Icons.Rounded.Sync, title = "Sync")
+            SectionHeader(icon = Icons.Rounded.Sync, title = stringResource(R.string.settings_sec_sync))
             Spacer(modifier = Modifier.height(12.dp))
 
             SettingsCard {
@@ -626,7 +627,7 @@ fun SettingsScreen(
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = if (uiState.isOnline) "Online" else "Offline",
+                        text = if (uiState.isOnline) stringResource(R.string.settings_sync_online) else stringResource(R.string.settings_sync_offline),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
@@ -643,7 +644,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "Last synced",
+                        text = stringResource(R.string.settings_last_synced),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.weight(1f),
@@ -665,7 +666,7 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "Pending changes",
+                            text = stringResource(R.string.settings_pending_changes),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f),
@@ -727,7 +728,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Syncing...",
+                            text = stringResource(R.string.settings_syncing),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.primary,
@@ -745,7 +746,7 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Sync Now",
+                            text = stringResource(R.string.settings_sync_now),
                             style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             color = if (uiState.isOnline) {
@@ -762,34 +763,34 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── ABOUT SECTION ──
-        SectionHeader(icon = Icons.Rounded.Info, title = "About")
+        SectionHeader(icon = Icons.Rounded.Info, title = stringResource(R.string.settings_sec_about))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
-            NavigationRow(label = "Version", trailing = uiState.appVersion)
+            NavigationRow(label = stringResource(R.string.settings_version), trailing = uiState.appVersion)
             if (!hasPermissionIssues) {
                 SettingsDivider()
-                NavigationRow(label = "App Setup", onClick = onNavigateToAppSetup)
+                NavigationRow(label = stringResource(R.string.settings_app_setup), onClick = onNavigateToAppSetup)
             }
             SettingsDivider()
                 NavigationRow(
-                    label = "Privacy Policy",
+                    label = stringResource(R.string.settings_privacy),
                     onClick = { openExternalUrl(context, PRIVACY_POLICY_URL) },
                 )
             SettingsDivider()
                 NavigationRow(
-                    label = "Terms of Service",
+                    label = stringResource(R.string.settings_terms),
                     onClick = { openExternalUrl(context, TERMS_OF_USE_URL) },
                 )
             SettingsDivider()
-            NavigationRow(label = "Open Source Licenses")
+            NavigationRow(label = stringResource(R.string.settings_licenses))
         }
 
         Spacer(modifier = Modifier.height(32.dp))
 
         // Footer
         Text(
-            text = "Made with \u2764 by Creapolis",
+            text = stringResource(R.string.settings_footer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -1028,7 +1029,7 @@ private fun ReminderTimeRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "Reminder time",
+            text = stringResource(R.string.settings_reminder_time),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f),
@@ -1049,13 +1050,13 @@ private fun ReminderTimeRow(
         Dialog(onDismissRequest = { showPicker = false }) {
             Column(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Select time",
+                    text = stringResource(R.string.settings_select_time),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -1067,21 +1068,21 @@ private fun ReminderTimeRow(
                     horizontalArrangement = Arrangement.End,
                 ) {
                     Text(
-                        text = "Cancel",
+                        text = stringResource(R.string.btn_cancel),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { showPicker = false }
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "OK",
+                        text = stringResource(R.string.btn_ok),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable {
                                 onTimeSelected(timePickerState.hour, timePickerState.minute)
                                 showPicker = false
@@ -1097,17 +1098,17 @@ private fun ReminderTimeRow(
 
 @Composable
 private fun formatLastSyncTime(lastSyncAt: Long?): String {
-    if (lastSyncAt == null) return "Never"
+    if (lastSyncAt == null) return stringResource(R.string.settings_sync_never)
     val now = System.currentTimeMillis()
     val diffMs = now - lastSyncAt
     val diffMinutes = diffMs / (1000 * 60)
     val diffHours = diffMinutes / 60
     val diffDays = diffHours / 24
     return when {
-        diffMinutes < 1 -> "Just now"
-        diffMinutes < 60 -> "$diffMinutes min ago"
-        diffHours < 24 -> "$diffHours hr ago"
-        else -> "$diffDays days ago"
+        diffMinutes < 1 -> stringResource(R.string.settings_sync_just_now)
+        diffMinutes < 60 -> stringResource(R.string.settings_sync_min_ago, diffMinutes)
+        diffHours < 24 -> stringResource(R.string.settings_sync_hr_ago, diffHours)
+        else -> stringResource(R.string.settings_sync_days_ago, diffDays)
     }
 }
 private fun openExternalUrl(context: Context, url: String) {

@@ -134,7 +134,7 @@ private fun EnterEmailStep(
         ),
         keyboardActions = KeyboardActions(onDone = { onSendCode() }),
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
     )
 
     if (uiState.errorMessage != null) {
@@ -154,7 +154,7 @@ private fun EnterEmailStep(
             .fillMaxWidth()
             .height(52.dp),
         enabled = !uiState.isLoading,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
     ) {
         if (uiState.isLoading) {
             CircularProgressIndicator(
@@ -206,7 +206,7 @@ private fun EnterCodeStep(
             imeAction = ImeAction.Next,
         ),
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -230,7 +230,7 @@ private fun EnterCodeStep(
             }
         },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -255,7 +255,7 @@ private fun EnterCodeStep(
             }
         },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
     )
 
     if (uiState.errorMessage != null) {
@@ -275,7 +275,7 @@ private fun EnterCodeStep(
             .fillMaxWidth()
             .height(52.dp),
         enabled = !uiState.isLoading,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
     ) {
         if (uiState.isLoading) {
             CircularProgressIndicator(

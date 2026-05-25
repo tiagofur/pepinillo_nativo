@@ -37,7 +37,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -120,39 +124,79 @@ fun DashboardScreen(
                 )
             }
             Row {
-                IconButton(onClick = {
-                    if (canUseAI) onNavigateToAIReport() else onNavigateToPaywall()
-                }) {
-                    Icon(
-                        Icons.Rounded.AutoAwesome,
-                        contentDescription = stringResource(R.string.ai_report_button),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(stringResource(R.string.ai_report_button))
+                        }
+                    },
+                    state = rememberTooltipState()
+                ) {
+                    IconButton(onClick = {
+                        if (canUseAI) onNavigateToAIReport() else onNavigateToPaywall()
+                    }) {
+                        Icon(
+                            Icons.Rounded.AutoAwesome,
+                            contentDescription = stringResource(R.string.ai_report_button),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                IconButton(onClick = {
-                    if (hasLocalPremium) viewModel.showWeeklyReview() else onNavigateToPaywall()
-                }) {
-                    Icon(
-                        Icons.Rounded.Summarize,
-                        contentDescription = stringResource(R.string.cd_weekly_review),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(stringResource(R.string.cd_weekly_review))
+                        }
+                    },
+                    state = rememberTooltipState()
+                ) {
+                    IconButton(onClick = {
+                        if (hasLocalPremium) viewModel.showWeeklyReview() else onNavigateToPaywall()
+                    }) {
+                        Icon(
+                            Icons.Rounded.Summarize,
+                            contentDescription = stringResource(R.string.cd_weekly_review),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                IconButton(onClick = {
-                    if (hasLocalPremium) viewModel.showMonthlyReview() else onNavigateToPaywall()
-                }) {
-                    Icon(
-                        Icons.Rounded.DateRange,
-                        contentDescription = stringResource(R.string.cd_monthly_review),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(stringResource(R.string.cd_monthly_review))
+                        }
+                    },
+                    state = rememberTooltipState()
+                ) {
+                    IconButton(onClick = {
+                        if (hasLocalPremium) viewModel.showMonthlyReview() else onNavigateToPaywall()
+                    }) {
+                        Icon(
+                            Icons.Rounded.DateRange,
+                            contentDescription = stringResource(R.string.cd_monthly_review),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                IconButton(onClick = onCalendarClick) {
-                    Icon(
-                        Icons.Rounded.CalendarMonth,
-                        contentDescription = stringResource(R.string.cd_calendar),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(stringResource(R.string.cd_calendar))
+                        }
+                    },
+                    state = rememberTooltipState()
+                ) {
+                    IconButton(onClick = onCalendarClick) {
+                        Icon(
+                            Icons.Rounded.CalendarMonth,
+                            contentDescription = stringResource(R.string.cd_calendar),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }
@@ -192,7 +236,7 @@ fun DashboardScreen(
         ) {
             SummaryCard(
                 title = stringResource(R.string.dashboard_focus_time),
-                value = formatMinutes(stats.periodMinutes),
+                value = formatMinutes(stats.periodMinutes, stats.periodSessions > 0),
                 icon = Icons.Rounded.AccessTime,
                 modifier = Modifier.weight(1f),
             )
@@ -570,11 +614,11 @@ private fun DashboardCard(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
             )
             .padding(20.dp),
     ) {
@@ -627,7 +671,8 @@ private fun EmptyDashboardState(
     }
 }
 
-private fun formatMinutes(totalMinutes: Int): String {
+private fun formatMinutes(totalMinutes: Int, hasSessions: Boolean = false): String {
+    if (totalMinutes == 0 && hasSessions) return "< 1m"
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"

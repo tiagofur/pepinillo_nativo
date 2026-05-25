@@ -77,7 +77,7 @@ fun MonthlyReviewSheet(
             ) {
                 MonthlyTrendCard(
                     title = stringResource(R.string.review_focus_time),
-                    value = formatMonthlyMinutes(report.currentMonthMinutes),
+                    value = formatMonthlyMinutes(report.currentMonthMinutes, report.currentMonthSessions > 0),
                     delta = report.minutesDelta,
                     deltaLabel = stringResource(R.string.review_delta_minutes, abs(report.minutesDelta)),
                     trend = report.minutesTrend,
@@ -360,7 +360,8 @@ private fun monthlyModeEmoji(mode: String): String = when (mode) {
     else -> "\uD83C\uDFAF"
 }
 
-private fun formatMonthlyMinutes(totalMinutes: Int): String {
+private fun formatMonthlyMinutes(totalMinutes: Int, hasSessions: Boolean = false): String {
+    if (totalMinutes == 0 && hasSessions) return "< 1m"
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"

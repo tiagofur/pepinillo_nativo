@@ -66,7 +66,7 @@ fun EditProfileSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = "Edit Profile",
+                text = stringResource(R.string.profile_edit_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -109,7 +109,7 @@ fun EditProfileSheet(
                 label = { Text(stringResource(R.string.profile_label_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -119,7 +119,7 @@ fun EditProfileSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(28.dp),
+                shape = RoundedCornerShape(12.dp),
                 enabled = name.isNotBlank() && !uiState.isUploading,
             ) {
                 if (uiState.isUploading) {

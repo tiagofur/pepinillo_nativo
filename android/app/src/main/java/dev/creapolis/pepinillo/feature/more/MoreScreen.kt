@@ -82,12 +82,12 @@ fun MoreScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── 2. ACCOUNT SECTION ──
-        SectionTitle(title = "Account")
+        SectionTitle(title = stringResource(R.string.more_sec_account))
         Spacer(modifier = Modifier.height(12.dp))
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
@@ -100,7 +100,7 @@ fun MoreScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     ActionCard(
-                        title = "Sign Out",
+                        title = stringResource(R.string.more_btn_signout),
                         subtitle = uiState.user?.email ?: "",
                         icon = Icons.Rounded.ExitToApp,
                         onClick = { viewModel.logout() },
@@ -108,14 +108,14 @@ fun MoreScreen(
                 } else {
                     ActionCard(
                         title = stringResource(R.string.auth_btn_signin),
-                        subtitle = "Sync your data across devices",
+                        subtitle = stringResource(R.string.more_signin_desc),
                         icon = Icons.Rounded.Login,
                         onClick = onSignInClick,
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     ActionCard(
                         title = stringResource(R.string.auth_btn_register),
-                        subtitle = "Join the community",
+                        subtitle = stringResource(R.string.more_register_desc),
                         icon = Icons.Rounded.PersonAdd,
                         onClick = onCreateAccountClick,
                     )
@@ -126,25 +126,25 @@ fun MoreScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── 3. SETTINGS & SYNC ──
-        SectionTitle(title = "Configuration")
+        SectionTitle(title = stringResource(R.string.more_sec_config))
         Spacer(modifier = Modifier.height(12.dp))
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
                 ActionCard(
-                    title = "App Settings",
-                    subtitle = "Timer, sound, and appearance",
+                    title = stringResource(R.string.more_btn_settings),
+                    subtitle = stringResource(R.string.more_desc_settings),
                     icon = Icons.Rounded.Settings,
                     onClick = onSettingsClick,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 ActionCard(
-                    title = "Cloud Sychronization",
-                    subtitle = if (uiState.isEverywhere) "Active and securing your data" else "Requires Everywhere/AI+",
+                    title = stringResource(R.string.more_btn_sync),
+                    subtitle = if (uiState.isEverywhere) stringResource(R.string.more_desc_sync_active) else stringResource(R.string.more_desc_sync_locked),
                     icon = Icons.Rounded.CloudSync,
                     onClick = { if (!uiState.isEverywhere) onNavigateToPaywall() },
                 )
@@ -154,32 +154,32 @@ fun MoreScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         // ── 4. DATA & SUPPORT ──
-        SectionTitle(title = "Resources")
+        SectionTitle(title = stringResource(R.string.more_sec_resources))
         Spacer(modifier = Modifier.height(12.dp))
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
                 ActionCard(
-                    title = "Export Data",
-                    subtitle = "Download your focus history",
+                    title = stringResource(R.string.more_btn_export),
+                    subtitle = stringResource(R.string.more_desc_export),
                     icon = Icons.Rounded.FileDownload,
                     onClick = onExportClick,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 ActionCard(
-                    title = "Help & Support",
-                    subtitle = "Feedback and documentation",
+                    title = stringResource(R.string.more_btn_help),
+                    subtitle = stringResource(R.string.more_desc_help),
                     icon = Icons.AutoMirrored.Rounded.HelpOutline,
                     onClick = onHelpSupportClick,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 ActionCard(
-                    title = "About",
-                    subtitle = "Version and legal info",
+                    title = stringResource(R.string.more_btn_about),
+                    subtitle = stringResource(R.string.more_desc_about),
                     icon = Icons.Rounded.Info,
                     onClick = onAboutClick,
                 )
@@ -217,13 +217,13 @@ fun MoreScreen(
                     Spacer(modifier = Modifier.width(16.dp))
                     Column {
                         Text(
-                            text = "Get Pepinillo+",
+                            text = stringResource(R.string.more_promo_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                         Text(
-                            text = "Unlock all features and cloud sync",
+                            text = stringResource(R.string.more_promo_desc),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
                         )
@@ -235,7 +235,7 @@ fun MoreScreen(
 
         // ── 6. FOOTER ──
         Text(
-            text = "Made with \u2764 by Creapolis",
+            text = stringResource(R.string.more_footer),
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.labelSmall,
@@ -266,7 +266,7 @@ private fun ActionCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -274,7 +274,7 @@ private fun ActionCard(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(8.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
             contentAlignment = Alignment.Center,
         ) {

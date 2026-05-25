@@ -105,7 +105,7 @@ fun RegisterScreen(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -117,7 +117,7 @@ fun RegisterScreen(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -139,7 +139,7 @@ fun RegisterScreen(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -167,7 +167,7 @@ fun RegisterScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.isLoading,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
@@ -191,7 +191,7 @@ fun RegisterScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.googleSignInLoading && !uiState.isLoading,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = Color.White,
                 contentColor = Color(0xFF1F1F1F),

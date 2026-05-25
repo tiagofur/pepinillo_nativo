@@ -85,7 +85,7 @@ fun ProfileScreen(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = stringResource(R.string.cd_go_back),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -95,14 +95,14 @@ fun ProfileScreen(
 
         // ── HEADER ──
         Text(
-            text = "Profile",
+            text = stringResource(R.string.profile_title),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = "Your productivity journey",
+            text = stringResource(R.string.profile_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -137,7 +137,7 @@ fun ProfileScreen(
                         if (imageUrl != null) {
                             AsyncImage(
                                 model = imageUrl,
-                                contentDescription = "Profile photo",
+                                contentDescription = stringResource(R.string.profile_photo_desc),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop,
                             )
@@ -157,7 +157,7 @@ fun ProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             Text(
-                                text = uiState.user?.name ?: "Guest User",
+                                text = uiState.user?.name ?: stringResource(R.string.profile_guest_user),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -169,7 +169,7 @@ fun ProfileScreen(
                                     shape = RoundedCornerShape(6.dp),
                                 ) {
                                     Text(
-                                        text = "PRO",
+                                        text = stringResource(R.string.profile_tier_pro),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onPrimary,
                                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -187,7 +187,7 @@ fun ProfileScreen(
                     IconButton(onClick = { viewModel.showEditSheet() }) {
                         Icon(
                             imageVector = Icons.Rounded.Edit,
-                            contentDescription = "Edit profile",
+                            contentDescription = stringResource(R.string.profile_edit_desc),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -201,7 +201,7 @@ fun ProfileScreen(
 
         // ── LIFETIME STATS ──
         Text(
-            text = "Lifetime Stats",
+            text = stringResource(R.string.profile_sec_stats),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
@@ -215,19 +215,19 @@ fun ProfileScreen(
             StatMiniCard(
                 icon = Icons.Rounded.Timer,
                 value = "${uiState.totalFocusTimeMinutes / 60}h",
-                label = "Focus time",
+                label = stringResource(R.string.profile_stat_focus_time),
                 modifier = Modifier.weight(1f),
             )
             StatMiniCard(
                 icon = Icons.Rounded.TaskAlt,
                 value = "${uiState.totalSessions}",
-                label = "Sessions",
+                label = stringResource(R.string.profile_stat_sessions),
                 modifier = Modifier.weight(1f),
             )
             StatMiniCard(
                 icon = Icons.Rounded.LocalFireDepartment,
                 value = "${uiState.bestStreak}",
-                label = "Best streak",
+                label = stringResource(R.string.profile_stat_best_streak),
                 modifier = Modifier.weight(1f),
             )
         }
@@ -236,7 +236,7 @@ fun ProfileScreen(
 
         // ── ACHIEVEMENTS ──
         Text(
-            text = "Achievements",
+            text = stringResource(R.string.profile_sec_achievements),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
@@ -260,7 +260,7 @@ fun ProfileScreen(
 
         // ── ACCOUNT ACTIONS ──
         Text(
-            text = "Account",
+            text = stringResource(R.string.profile_sec_account),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.primary,
@@ -272,14 +272,14 @@ fun ProfileScreen(
             ProfileCard {
                 ActionRow(
                     icon = Icons.Rounded.Backup,
-                    label = "Backup & Sync",
-                    subtitle = "Cloud sync is active",
+                    label = stringResource(R.string.profile_btn_backup),
+                    subtitle = stringResource(R.string.profile_desc_backup_active),
                     onClick = {},
                 )
                 ProfileDivider()
                 ActionRow(
                     icon = Icons.AutoMirrored.Rounded.ExitToApp,
-                    label = "Sign Out",
+                    label = stringResource(R.string.profile_btn_signout),
                     subtitle = uiState.user?.email ?: "",
                     onClick = {
                         viewModel.logout()
@@ -289,8 +289,8 @@ fun ProfileScreen(
                 ProfileDivider()
                 ActionRow(
                     icon = Icons.Rounded.Person,
-                    label = "Delete Account",
-                    subtitle = "Irreversible data removal",
+                    label = stringResource(R.string.profile_btn_delete_account),
+                    subtitle = stringResource(R.string.profile_desc_delete_account),
                     isDestructive = true,
                     onClick = { showDeleteConfirmation = true },
                 )
@@ -301,7 +301,7 @@ fun ProfileScreen(
 
         // Footer
         Text(
-            text = "Pepinillo v1.0.0",
+            text = stringResource(R.string.profile_version_format, "1.0.0"),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.fillMaxWidth(),
@@ -353,11 +353,11 @@ private fun ProfileCard(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
             )
             .padding(horizontal = 20.dp, vertical = 4.dp),
     ) {
@@ -384,11 +384,11 @@ private fun StatMiniCard(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
             )
             .padding(vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -550,14 +550,14 @@ private fun GuestSignInCard(onSignInClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Welcome to Pepinillo",
+                text = stringResource(R.string.profile_guest_welcome),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Sign in to sync your data across devices",
+                text = stringResource(R.string.profile_guest_desc),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -567,7 +567,7 @@ private fun GuestSignInCard(onSignInClick: () -> Unit) {
                 shape = RoundedCornerShape(12.dp),
                 contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
             ) {
-                Text("Sign In", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.profile_guest_btn_signin), style = MaterialTheme.typography.labelLarge)
             }
         }
     }

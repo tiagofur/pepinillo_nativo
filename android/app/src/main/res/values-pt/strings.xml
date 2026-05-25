@@ -88,4 +88,178 @@
     <string name="tasks_empty_completed_title">Sem tarefas concluídas</string>
     <string name="tasks_empty_completed_desc">Conclua uma tarefa para vê-la aqui.</string>
     <string name="tasks_btn_create_first">Criar tarefa</string>
+
+    <!-- More Screen -->
+    <string name="more_sec_account">Conta</string>
+    <string name="more_sec_config">Configuração</string>
+    <string name="more_sec_resources">Recursos</string>
+    <string name="more_btn_profile">Ver Perfil</string>
+    <string name="more_btn_settings">Ajustes do App</string>
+    <string name="more_desc_settings">Temporizador, som e aparência</string>
+    <string name="more_btn_sync">Sincronização na Nuvem</string>
+    <string name="more_btn_signout">Sair</string>
+    <string name="more_desc_sync_active">Ativa e protegendo seus dados</string>
+    <string name="more_desc_sync_locked">Requer Everywhere/AI+</string>
+    <string name="more_btn_export">Exportar Dados</string>
+    <string name="more_desc_export">Baixe seu histórico de foco</string>
+    <string name="more_btn_help">Ajuda e Suporte</string>
+    <string name="more_desc_help">Feedback e documentação</string>
+    <string name="more_btn_about">Sobre</string>
+    <string name="more_desc_about">Versão e informações legais</string>
+    <string name="more_promo_title">Obtenha o Pepinillo+</string>
+    <string name="more_promo_desc">Desbloqueie todos os recursos e sincronização na nuvem</string>
+    <string name="more_signin_desc">Sincronize seus dados entre dispositivos</string>
+    <string name="more_register_desc">Junte-se à comunidade</string>
+    <string name="more_footer">Feito com \u2764 pela Creapolis</string>
+    <string name="more_week_label">Semana %1$d</string>
+
+    <!-- Export -->
+    <string name="export_title">Exportar Dados</string>
+    <string name="export_btn_csv">Exportar CSV</string>
+    <string name="export_premium_title">A exportação é um recurso do Pepinillo+</string>
+    <string name="export_premium_desc">Atualize para o Pepinillo+ para exportar suas sessões de foco e tarefas.</string>
+    <string name="export_desc_csv">Sessões, tarefas e análises</string>
+
+    <!-- Support & About -->
+    <string name="support_title">Ajuda e Suporte</string>
+    <string name="support_btn_contact">Contatar Suporte</string>
+    <string name="support_btn_privacy">Política de Privacidade</string>
+    <string name="support_desc_privacy">Como cuidamos dos seus dados</string>
+    <string name="support_btn_terms">Termos de Uso</string>
+    <string name="support_desc_terms">Rever termos legais</string>
+    <string name="about_title">Sobre o Pepinillo</string>
+    <string name="about_version">Versão %1$s</string>
+    <string name="about_desc">O Pepinillo foi projetado para ajudar você a recuperar o foco e gerenciar sua produtividade em um mundo cheio de distrações. Construído nativamente para Android e iOS para fornecer o melhor desempenho e integração com seu sistema.</string>
+    <string name="about_footer">Feito com carinho pela Creapolis na Argentina. \uD83C\uDDE6\uD83C\uDDF7</string>
+
+    <!-- Auth -->
+    <string name="auth_btn_signin">Entrar</string>
+    <string name="auth_btn_register">Criar Conta</string>
+
+    <!-- Paywall -->
+    <string name="paywall_btn_get_plus">Obtenha o Pepinillo+</string>
+
+    <!-- Settings Screen (Extra) -->
+    <string name="settings_subtitle">Personalize sua experiência</string>
+    <string name="settings_app_setup">Configuração do App</string>
+    <string name="settings_action_required">Ação necessária para melhor experiência</string>
+    <string name="settings_all_configured">Todas as permissões configuradas</string>
+    <string name="settings_upgrade_promo">Melhorar para Pepinillo+</string>
+    <string name="settings_unlock_all">Desbloqueie todos os modos, tarefas ilimitadas e mais</string>
+    <string name="settings_tier_everywhere">Everywhere / AI+</string>
+    <string name="settings_tier_plus">Pepinillo+</string>
+    <string name="settings_lifetime_access">Acesso vitalício</string>
+    <string name="settings_monthly_sub">Assinatura mensal</string>
+    <string name="settings_annual_sub">Assinatura anual</string>
+    <string name="settings_sec_timer">Temporizador</string>
+    <string name="settings_focus_duration">Duração do foco</string>
+    <string name="settings_short_break">Descanso curto</string>
+    <string name="settings_long_break">Descanso longo</string>
+    <string name="settings_sessions_before_long">Sessões antes do descanso longo</string>
+    <string name="settings_time_block_duration">Duração do bloco de tempo</string>
+    <string name="settings_midpoint_checkin">Check-in no ponto médio</string>
+    <string name="settings_midpoint_checkin_sub">Lembrete na metade dos blocos de tempo</string>
+    <string name="settings_sec_flowtime">Flowtime</string>
+    <string name="settings_flowtime_min">Sessão mínima</string>
+    <string name="settings_flowtime_min_sub">Tempo mínimo de foco antes de sugerir um descanso</string>
+    <string name="settings_sec_behavior">Comportamento</string>
+    <string name="settings_auto_start_breaks_sub">Iniciar temporizador de descanso automaticamente</string>
+    <string name="settings_auto_start_next">Auto-iniciar próxima sessão</string>
+    <string name="settings_auto_start_next_sub">Continuar após o fim do descanso</string>
+    <string name="settings_post_session_reflection">Reflexão pós-sessão</string>
+    <string name="settings_post_session_reflection_sub">Mostrar diário após cada sessão de foco</string>
+    <string name="settings_sound_sub">Reproduzir som quando o temporizador terminar</string>
+    <string name="settings_vibration_sub">Vibrar quando o temporizador terminar</string>
+    <string name="settings_sec_general">Geral</string>
+    <string name="settings_default_mode">Modo padrão</string>
+    <string name="settings_default_mode_sub">Modo selecionado ao iniciar o app</string>
+    <string name="settings_keep_screen_on">Manter tela ligada</string>
+    <string name="settings_keep_screen_on_sub">Evitar que a tela apague durante o foco</string>
+    <string name="settings_sec_appearance">Aparência</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_theme_sub">Escolha um tema de cores para seus modos de foco</string>
+    <string name="settings_appearance_sub">Escolha claro, escuro ou padrão do sistema</string>
+    <string name="settings_sec_notifications">Notificações</string>
+    <string name="settings_timer_alerts">Alertas de temporizador</string>
+    <string name="settings_timer_alerts_sub">Mostrar notificação quando o temporizador terminar</string>
+    <string name="settings_daily_reminder">Lembrete diário</string>
+    <string name="settings_daily_reminder_sub">Ser lembrado de focar todos os dias</string>
+    <string name="settings_sec_streak">Racha</string>
+    <string name="settings_current_streak">Racha atual</string>
+    <string name="settings_sec_sync">Sincronização</string>
+    <string name="settings_sync_online">Online</string>
+    <string name="settings_sync_offline">Offline</string>
+    <string name="settings_last_synced">Última sincronização</string>
+    <string name="settings_pending_changes">Alterações pendentes</string>
+    <string name="settings_syncing">Sincronizando...</string>
+    <string name="settings_sync_now">Sincronizar agora</string>
+    <string name="settings_sec_about">Sobre</string>
+    <string name="settings_version">Versão</string>
+    <string name="settings_privacy">Política de Privacidade</string>
+    <string name="settings_terms">Termos de Serviço</string>
+    <string name="settings_licenses">Licenças de Código Aberto</string>
+    <string name="settings_footer">Feito com \u2764 pela Creapolis</string>
+    <string name="settings_select_time">Selecionar hora</string>
+    <string name="btn_ok">OK</string>
+    <string name="settings_sync_never">Nunca</string>
+    <string name="settings_sync_just_now">Agora mesmo</string>
+    <string name="settings_sync_min_ago">Há %1$d min</string>
+    <string name="settings_sync_hr_ago">Há %1$d h</string>
+    <string name="settings_sync_days_ago">Há %1$d dias</string>
+
+    <!-- App Setup Screen -->
+    <string name="setup_title">Configuração do App</string>
+    <string name="setup_all_set">Tudo pronto!</string>
+    <string name="setup_all_set_sub">Seu app está configurado para a melhor experiência</string>
+    <string name="setup_action_required_sub">Complete a configuração abaixo para uma operação confiável em segundo plano</string>
+    <string name="setup_sec_permissions">Permissões e Configurações</string>
+    <string name="setup_notifications">Notificações</string>
+    <string name="setup_notifications_sub">Necessário para alertas de conclusão do temporizador e lembretes diários</string>
+    <string name="setup_btn_enable">Habilitar</string>
+    <string name="setup_battery">Otimização de bateria</string>
+    <string name="setup_battery_sub">Evita que o sistema pare o temporizador em segundo plano</string>
+    <string name="setup_btn_disable_restriction">Desativar restrição</string>
+    <string name="setup_alarms">Alarmes precisos</string>
+    <string name="setup_alarms_sub">Garante que os lembretes diários cheguem no horário programado exato</string>
+    <string name="setup_btn_allow">Permitir</string>
+    <string name="setup_autostart">Início automático</string>
+    <string name="setup_autostart_sub">Permitir que o Pepinillo execute em segundo plano em dispositivos %1$s</string>
+    <string name="setup_btn_configure">Configurar</string>
+    <string name="setup_btn_reviewed">Revisado</string>
+    <string name="setup_footer">Essas configurações ajudam o Pepinillo a funcionar de maneira confiável em segundo plano para que suas sessões de foco sejam concluídas sem interrupções.</string>
+    <string name="setup_configured_count">%1$d de %2$d configurados</string>
+    <string name="setup_btn_granted">Concedido</string>
+    <string name="toast_battery_settings_error">Não foi possível abrir as configurações de bateria</string>
+    <string name="toast_alarm_settings_error">Não foi possível abrir as configurações de alarme</string>
+    <string name="toast_notification_settings_error">Não foi possível abrir as configurações de notificação</string>
+
+    <!-- Profile Screen (Extra) -->
+    <string name="profile_title">Perfil</string>
+    <string name="profile_photo_desc">Foto de perfil</string>
+    <string name="profile_edit_desc">Editar perfil</string>
+    <string name="profile_subtitle">Sua jornada de produtividade</string>
+    <string name="profile_guest_user">Usuário Convidado</string>
+    <string name="profile_tier_pro">PRO</string>
+    <string name="profile_sec_stats">Estatísticas Históricas</string>
+    <string name="profile_stat_focus_time">Tempo de foco</string>
+    <string name="profile_stat_sessions">Sessões</string>
+    <string name="profile_stat_best_streak">Melhor racha</string>
+    <string name="profile_sec_achievements">Conquistas</string>
+    <string name="profile_sec_account">Conta</string>
+    <string name="profile_btn_backup">Backup e Sincronização</string>
+    <string name="profile_desc_backup_active">Sincronização na nuvem ativa</string>
+    <string name="profile_btn_signout">Sair</string>
+    <string name="profile_btn_delete_account">Excluir Conta</string>
+    <string name="profile_desc_delete_account">Remoção irreversível de dados</string>
+    <string name="profile_version_format">Pepinillo v%1$s</string>
+    <string name="profile_guest_welcome">Bem-vindo ao Pepinillo</string>
+    <string name="profile_guest_desc">Faça login para sincronizar seus dados entre dispositivos</string>
+    <string name="profile_guest_btn_signin">Entrar</string>
+    <string name="minutes_format">%1$d min</string>
+    <string name="theme_classic">Clássico</string>
+    <string name="theme_material_you">Material You</string>
+    <string name="theme_forest">Floresta</string>
+    <string name="theme_ocean">Oceano</string>
+    <string name="theme_sunset">Pôr do sol</string>
+    <string name="settings_reminder_time">Hora do lembrete</string>
 </resources>

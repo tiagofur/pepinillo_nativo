@@ -140,7 +140,6 @@ fun TaskItem(
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Max)
-            .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp))
             .border(
                 width = 1.dp,
                 color = rowBorderColor,

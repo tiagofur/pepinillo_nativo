@@ -89,7 +89,7 @@ fun EmailVerificationScreen(
                 }
             }),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         )
 
         if (uiState.error != null) {
@@ -109,7 +109,7 @@ fun EmailVerificationScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.isLoading && code.length >= 4,
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(

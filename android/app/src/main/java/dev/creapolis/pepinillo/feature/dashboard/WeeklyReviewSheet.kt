@@ -77,7 +77,7 @@ fun WeeklyReviewSheet(
             ) {
                 TrendCard(
                     title = stringResource(R.string.review_focus_time),
-                    value = formatMinutes(report.currentWeekMinutes),
+                    value = formatMinutes(report.currentWeekMinutes, report.currentWeekSessions > 0),
                     delta = report.minutesDelta,
                     deltaLabel = stringResource(R.string.review_delta_minutes, abs(report.minutesDelta)),
                     trend = report.minutesTrend,
@@ -319,7 +319,8 @@ private fun modeEmoji(mode: String): String = when (mode) {
     else -> "\uD83C\uDFAF"
 }
 
-private fun formatMinutes(totalMinutes: Int): String {
+private fun formatMinutes(totalMinutes: Int, hasSessions: Boolean = false): String {
+    if (totalMinutes == 0 && hasSessions) return "< 1m"
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"

@@ -64,12 +64,12 @@ fun HelpSupportScreen(
             .fillMaxSize()
             .padding(horizontal = 24.dp),
     ) {
-        TopBar(title = "Help & Support", onBack = onBack)
+        TopBar(title = stringResource(R.string.support_title), onBack = onBack)
 
         Spacer(modifier = Modifier.height(24.dp))
 
         ActionCard(
-            title = "Contact Support",
+            title = stringResource(R.string.support_btn_contact),
             subtitle = SUPPORT_EMAIL,
             icon = Icons.Rounded.Email,
         ) {
@@ -83,8 +83,8 @@ fun HelpSupportScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         ActionCard(
-            title = "Privacy Policy",
-            subtitle = "How we handle your data",
+            title = stringResource(R.string.support_btn_privacy),
+            subtitle = stringResource(R.string.support_desc_privacy),
             icon = Icons.Rounded.Lock,
         ) {
             openExternalUrl(context, PRIVACY_URL)
@@ -93,8 +93,8 @@ fun HelpSupportScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         ActionCard(
-            title = "Terms of Use",
-            subtitle = "Review legal terms",
+            title = stringResource(R.string.support_btn_terms),
+            subtitle = stringResource(R.string.support_desc_terms),
             icon = Icons.Rounded.Description,
         ) {
             openExternalUrl(context, TERMS_URL)
@@ -113,7 +113,7 @@ fun AboutScreen(
             .padding(horizontal = 24.dp)
             .verticalScroll(rememberScrollState()),
     ) {
-        TopBar(title = "About Pepinillo", onBack = onBack)
+        TopBar(title = stringResource(R.string.about_title), onBack = onBack)
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -123,7 +123,7 @@ fun AboutScreen(
         ) {
             Surface(
                 modifier = Modifier.size(80.dp),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -142,7 +142,7 @@ fun AboutScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = "Version 2.1.0 (17)",
+                text = stringResource(R.string.about_version, "2.1.0 (17)"),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -151,13 +151,13 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(48.dp))
 
         Text(
-            text = "Your Deep Work Companion",
+            text = stringResource(R.string.auth_slogan),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Pepinillo is designed to help you regain focus and manage your productivity in a distracted world. Built natively for Android and iOS to provide the best performance and integration with your system.",
+            text = stringResource(R.string.about_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -165,7 +165,7 @@ fun AboutScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Crafted with care by Creapolis in Argentina. 🇦🇷",
+            text = stringResource(R.string.about_footer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         )
@@ -195,7 +195,7 @@ fun ExportScreen(
             Column {
                 ActionCard(
                     title = stringResource(R.string.export_btn_csv),
-                    subtitle = "Sessions, Tasks, and Analytics",
+                    subtitle = stringResource(R.string.export_desc_csv),
                     icon = Icons.Rounded.Description,
                 ) {
                     viewModel.triggerExport(context)
@@ -206,7 +206,7 @@ fun ExportScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(20.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -234,7 +234,7 @@ fun ExportScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = onNavigateToPaywall,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(12.dp),
                 ) {
                     Text(stringResource(R.string.paywall_btn_get_plus))
                 }
@@ -286,7 +286,7 @@ private fun ActionCard(
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {

@@ -216,7 +216,7 @@ fun PaywallScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(12.dp),
             enabled = uiState.selectedProductId != null && !uiState.isPurchasing,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -397,7 +397,7 @@ private fun TierFeatureRow(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(horizontal = 6.dp, vertical = 2.dp),
             )
@@ -424,11 +424,11 @@ private fun ProductCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 color = borderColor,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
             )
             .clickable(onClick = onClick)
             .padding(16.dp),
