@@ -173,7 +173,7 @@ fun SessionJournalSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text(
                     text = stringResource(R.string.journal_save),

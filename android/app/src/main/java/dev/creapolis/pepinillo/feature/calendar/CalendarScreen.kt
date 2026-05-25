@@ -44,8 +44,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -85,10 +87,10 @@ fun CalendarScreen(
         // ── BACK + TITLE ──
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = "Back", modifier = Modifier.size(20.dp))
+                Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = stringResource(R.string.cd_go_back), modifier = Modifier.size(20.dp))
             }
             Text(
-                text = "Calendar",
+                text = stringResource(R.string.calendar_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -103,7 +105,7 @@ fun CalendarScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { viewModel.previousMonth() }) {
-                Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = "Previous month", modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = stringResource(R.string.calendar_prev_month), modifier = Modifier.size(18.dp))
             }
             Text(
                 text = monthFormat.format(displayedMonth.time),
@@ -111,7 +113,7 @@ fun CalendarScreen(
                 fontWeight = FontWeight.Bold,
             )
             IconButton(onClick = { viewModel.nextMonth() }) {
-                Icon(Icons.Rounded.ArrowForwardIos, contentDescription = "Next month", modifier = Modifier.size(18.dp))
+                Icon(Icons.Rounded.ArrowForwardIos, contentDescription = stringResource(R.string.calendar_next_month), modifier = Modifier.size(18.dp))
             }
         }
 
@@ -121,8 +123,8 @@ fun CalendarScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(20.dp))
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
                 .padding(16.dp),
         ) {
             Column {
@@ -238,8 +240,8 @@ private fun DayDetailCard(detail: DayDetail) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
             .padding(20.dp),
     ) {
         Text(
@@ -254,16 +256,16 @@ private fun DayDetailCard(detail: DayDetail) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                SummaryItem(value = "${detail.totalMinutes}", label = "min")
-                SummaryItem(value = "${detail.sessionsCompleted}", label = "sessions")
-                SummaryItem(value = "${detail.taskCount}", label = "tasks")
+                SummaryItem(value = "${detail.totalMinutes}", label = stringResource(R.string.calendar_stat_min))
+                SummaryItem(value = "${detail.sessionsCompleted}", label = stringResource(R.string.calendar_stat_sessions))
+                SummaryItem(value = "${detail.taskCount}", label = stringResource(R.string.calendar_stat_tasks))
             }
         }
 
         if (detail.sessions.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Focus Sessions",
+                text = stringResource(R.string.calendar_sec_focus_sessions),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -277,7 +279,7 @@ private fun DayDetailCard(detail: DayDetail) {
         if (detail.tasks.isNotEmpty()) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Tasks",
+                text = stringResource(R.string.calendar_sec_tasks),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -302,7 +304,7 @@ private fun DayDetailCard(detail: DayDetail) {
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "No activity",
+                    text = stringResource(R.string.calendar_no_activity),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -352,7 +354,7 @@ private fun SessionRow(session: SessionSummary) {
             )
         }
         Text(
-            text = "${session.durationMinutes} min",
+            text = stringResource(R.string.minutes_format, session.durationMinutes),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -383,7 +385,7 @@ private fun TaskRow(task: TaskSummary) {
         )
         if (task.isDue) {
             Text(
-                text = "Due",
+                text = stringResource(R.string.calendar_task_due),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.error,

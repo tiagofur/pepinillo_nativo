@@ -202,7 +202,7 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(12.dp),
         ) {
             Text(
                 text = if (isLastPage) stringResource(R.string.btn_get_started) else stringResource(R.string.btn_next),

@@ -262,4 +262,16 @@
     <string name="theme_ocean">Oceano</string>
     <string name="theme_sunset">Pôr do sol</string>
     <string name="settings_reminder_time">Hora do lembrete</string>
+
+    <!-- Calendar Screen -->
+    <string name="calendar_title">Calendário</string>
+    <string name="calendar_prev_month">Mês anterior</string>
+    <string name="calendar_next_month">Próximo mês</string>
+    <string name="calendar_stat_min">min</string>
+    <string name="calendar_stat_sessions">sessões</string>
+    <string name="calendar_stat_tasks">tarefas</string>
+    <string name="calendar_sec_focus_sessions">Sessões de Foco</string>
+    <string name="calendar_sec_tasks">Tarefas</string>
+    <string name="calendar_no_activity">Sem atividade</string>
+    <string name="calendar_task_due">Prazo</string>
 </resources>

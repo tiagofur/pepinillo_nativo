@@ -618,4 +618,16 @@
     <string name="theme_ocean">Ocean</string>
     <string name="theme_sunset">Sunset</string>
     <string name="settings_reminder_time">Reminder time</string>
+
+    <!-- Calendar Screen -->
+    <string name="calendar_title">Calendar</string>
+    <string name="calendar_prev_month">Previous month</string>
+    <string name="calendar_next_month">Next month</string>
+    <string name="calendar_stat_min">min</string>
+    <string name="calendar_stat_sessions">sessions</string>
+    <string name="calendar_stat_tasks">tasks</string>
+    <string name="calendar_sec_focus_sessions">Focus Sessions</string>
+    <string name="calendar_sec_tasks">Tasks</string>
+    <string name="calendar_no_activity">No activity</string>
+    <string name="calendar_task_due">Due</string>
 </resources>
