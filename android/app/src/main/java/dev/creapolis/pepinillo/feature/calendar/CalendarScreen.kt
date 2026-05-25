@@ -226,7 +226,7 @@ fun CalendarScreen(
             exit = fadeOut(),
         ) {
             dayDetail?.let { detail ->
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 DayDetailCard(detail)
             }
         }
