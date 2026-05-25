@@ -220,7 +220,7 @@ fun TasksScreen(
                     modifier = Modifier
                         .weight(1f)
                         .imeNestedScroll(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     itemsIndexed(
                         items = filteredTasks,
