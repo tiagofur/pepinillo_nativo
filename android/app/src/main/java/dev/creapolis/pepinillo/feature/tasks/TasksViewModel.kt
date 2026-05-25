@@ -53,9 +53,12 @@ val TasksUiState.filteredTasks: List<Task>
     get() {
         // 1. Plan category filter
         val statusFiltered = when (selectedFilter) {
-            // Today: explicitly scheduled today OR due today
+            // Today: explicitly scheduled today OR due today OR overdue
             TaskFilter.Today -> tasks.filter { task ->
-                !task.isCompleted && (task.scheduledForToday || (task.dueDate != null && isDueTodayMs(task.dueDate)))
+                !task.isCompleted && (
+                    task.scheduledForToday ||
+                    (task.dueDate != null && (isDueTodayMs(task.dueDate) || isBeforeTodayMs(task.dueDate)))
+                )
             }
             // Inbox: no due date, not scheduled today
             TaskFilter.Inbox -> tasks.filter { task ->
@@ -120,6 +123,12 @@ private fun isDueTodayMs(millis: Long): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
     val todayNorm = getNormalizedLocalDate()
     return dueNorm == todayNorm
+}
+
+private fun isBeforeTodayMs(millis: Long): Boolean {
+    val dueNorm = getNormalizedDueDate(millis)
+    val todayNorm = getNormalizedLocalDate()
+    return dueNorm.before(todayNorm)
 }
 
 private fun isUpcomingMs(millis: Long): Boolean {
