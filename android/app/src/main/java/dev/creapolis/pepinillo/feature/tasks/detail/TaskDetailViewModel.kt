@@ -1,6 +1,5 @@
 package dev.creapolis.pepinillo.feature.tasks.detail
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -12,6 +11,7 @@ import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.Subtask
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -49,14 +51,26 @@ data class TaskDetailUiState(
         get() = focusSessions.count { it.mode.equals("Pomodoro", ignoreCase = true) && (it.phase == null || it.phase == "Work") }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class TaskDetailViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
     private val taskRepository: TaskRepository,
     private val featureGate: FeatureGate,
 ) : ViewModel() {
 
-    private val taskId: String = checkNotNull(savedStateHandle["taskId"])
+    // taskId is set via initialize() after Hilt constructs the ViewModel
+    private val _taskId = MutableStateFlow<String?>(null)
+    private val taskIdFlow: StateFlow<String?> = _taskId.asStateFlow()
+
+    /** Must be called once after obtaining the ViewModel instance. */
+    fun initialize(taskId: String) {
+        if (_taskId.value == null) {
+            _taskId.value = taskId
+        }
+    }
+
+    private val currentTaskId: String
+        get() = _taskId.value ?: error("TaskDetailViewModel.initialize() was not called")
 
     private val _showDeleteDialog = MutableStateFlow(false)
 
@@ -71,20 +85,28 @@ class TaskDetailViewModel @Inject constructor(
     private val _errorEvent = MutableSharedFlow<String>()
     val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
 
-    val uiState: StateFlow<TaskDetailUiState> = combine(
-        taskRepository.getTaskByIdFlow(taskId),
-        taskRepository.getSubtasksForTask(taskId),
-        taskRepository.getSessionsForTask(taskId),
-        _showDeleteDialog,
-    ) { task, subtasks, sessions, showDelete ->
-        TaskDetailUiState(
-            task = task,
-            subtasks = subtasks,
-            focusSessions = sessions,
-            isLoading = false,
-            showDeleteDialog = showDelete,
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TaskDetailUiState())
+    val uiState: StateFlow<TaskDetailUiState> = taskIdFlow
+        .flatMapLatest { id ->
+            if (id == null) {
+                flowOf(TaskDetailUiState())
+            } else {
+                combine(
+                    taskRepository.getTaskByIdFlow(id),
+                    taskRepository.getSubtasksForTask(id),
+                    taskRepository.getSessionsForTask(id),
+                    _showDeleteDialog,
+                ) { task, subtasks, sessions, showDelete ->
+                    TaskDetailUiState(
+                        task = task,
+                        subtasks = subtasks,
+                        focusSessions = sessions,
+                        isLoading = false,
+                        showDeleteDialog = showDelete,
+                    )
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TaskDetailUiState())
 
     private inline fun updateTask(crossinline transform: (Task) -> Task) {
         val current = uiState.value.task ?: return
@@ -112,7 +134,7 @@ class TaskDetailViewModel @Inject constructor(
 
     fun toggleCompletion() {
         viewModelScope.launch {
-            taskRepository.toggleCompletion(taskId).onFailure {
+            taskRepository.toggleCompletion(currentTaskId).onFailure {
                 _errorEvent.emit("Failed to update task")
             }
         }
@@ -127,7 +149,7 @@ class TaskDetailViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            taskRepository.addSubtask(taskId, title.trim()).onFailure {
+            taskRepository.addSubtask(currentTaskId, title.trim()).onFailure {
                 _errorEvent.emit("Failed to add subtask")
             }
         }
@@ -156,7 +178,7 @@ class TaskDetailViewModel @Inject constructor(
 
     fun confirmDelete() {
         viewModelScope.launch {
-            taskRepository.deleteTask(taskId).onFailure {
+            taskRepository.deleteTask(currentTaskId).onFailure {
                 _errorEvent.emit("Failed to delete task")
             }
             _showDeleteDialog.value = false

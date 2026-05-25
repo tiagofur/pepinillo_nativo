@@ -422,7 +422,11 @@ fun TaskDetailScreen(
                 // Due date row
                 var showDatePicker by remember { mutableStateOf(false) }
                 if (task.dueDate != null) {
-                    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+                    val dateFormat = remember {
+                        SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).apply {
+                            timeZone = java.util.TimeZone.getTimeZone("UTC")
+                        }
+                    }
                     val formattedDate = dateFormat.format(Date(task.dueDate))
 
                     Row(

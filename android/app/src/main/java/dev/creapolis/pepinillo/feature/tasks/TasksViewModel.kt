@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.TimeZone
 import javax.inject.Inject
 
 enum class TaskFilter {
@@ -50,20 +51,22 @@ data class TasksUiState(
 
 val TasksUiState.filteredTasks: List<Task>
     get() {
-        val now = System.currentTimeMillis()
-        val todayStart = startOfDay(now)
-        val weekFromToday = todayStart + 7L * 24 * 60 * 60 * 1000
-
         // 1. Plan category filter
         val statusFiltered = when (selectedFilter) {
-            TaskFilter.Today -> tasks.filter { !it.isCompleted && it.scheduledForToday }
-            TaskFilter.Inbox -> tasks.filter { !it.isCompleted && !it.scheduledForToday && it.dueDate == null }
+            // Today: explicitly scheduled today OR due today
+            TaskFilter.Today -> tasks.filter { task ->
+                !task.isCompleted && (task.scheduledForToday || (task.dueDate != null && isDueTodayMs(task.dueDate)))
+            }
+            // Inbox: no due date, not scheduled today
+            TaskFilter.Inbox -> tasks.filter { task ->
+                !task.isCompleted && !task.scheduledForToday && task.dueDate == null
+            }
+            // Upcoming: due strictly after today and within 7 days
             TaskFilter.Upcoming -> tasks.filter { task ->
                 !task.isCompleted &&
                     !task.scheduledForToday &&
                     task.dueDate != null &&
-                    task.dueDate > todayStart &&
-                    task.dueDate <= weekFromToday
+                    isUpcomingMs(task.dueDate)
             }
             TaskFilter.Completed -> tasks.filter { it.isCompleted }
         }
@@ -93,15 +96,39 @@ val TasksUiState.filteredTasks: List<Task>
         }
     }
 
-private fun startOfDay(timeMillis: Long): Long {
-    val calendar = Calendar.getInstance().apply {
-        timeInMillis = timeMillis
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
+private fun getNormalizedLocalDate(): Calendar {
+    val local = Calendar.getInstance()
+    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(Calendar.YEAR, local.get(Calendar.YEAR))
+        set(Calendar.MONTH, local.get(Calendar.MONTH))
+        set(Calendar.DAY_OF_MONTH, local.get(Calendar.DAY_OF_MONTH))
     }
-    return calendar.timeInMillis
+}
+
+private fun getNormalizedDueDate(millis: Long): Calendar {
+    val due = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = millis }
+    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(Calendar.YEAR, due.get(Calendar.YEAR))
+        set(Calendar.MONTH, due.get(Calendar.MONTH))
+        set(Calendar.DAY_OF_MONTH, due.get(Calendar.DAY_OF_MONTH))
+    }
+}
+
+private fun isDueTodayMs(millis: Long): Boolean {
+    val dueNorm = getNormalizedDueDate(millis)
+    val todayNorm = getNormalizedLocalDate()
+    return dueNorm == todayNorm
+}
+
+private fun isUpcomingMs(millis: Long): Boolean {
+    val dueNorm = getNormalizedDueDate(millis)
+    val todayNorm = getNormalizedLocalDate()
+    val weekEndNorm = getNormalizedLocalDate().apply {
+        add(Calendar.DAY_OF_YEAR, 7)
+    }
+    return dueNorm.after(todayNorm) && !dueNorm.after(weekEndNorm)
 }
 
 private fun priorityOrdinal(p: TaskPriority) = when (p) {

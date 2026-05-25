@@ -21,18 +21,23 @@ struct PlanTaskList: View {
     // MARK: - Filtered tasks
 
     private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
+        let cal = Calendar.current
+        let now = Date.now
         switch filter {
         case .today:
-            return store.tasks.filter { $0.scheduledForToday && !$0.isCompleted }
+            return store.tasks.filter { task in
+                guard !task.isCompleted else { return false }
+                let isToday = task.dueDate != nil && cal.isDateInToday(task.dueDate!)
+                let isOverdue = task.dueDate != nil && task.dueDate! < cal.startOfDay(for: now)
+                return task.scheduledForToday || isToday || isOverdue
+            }
         case .inbox:
             return store.tasks.filter { !$0.isCompleted && !$0.scheduledForToday && $0.dueDate == nil }
         case .upcoming:
-            let cal = Calendar.current
-            let now = Date.now
             let weekFromNow = cal.date(byAdding: .day, value: 7, to: now) ?? now
             return store.tasks.filter { task in
                 guard !task.isCompleted, !task.scheduledForToday, let due = task.dueDate else { return false }
-                return due > cal.startOfDay(for: now) && due <= weekFromNow
+                return due > cal.startOfDay(for: now) && !cal.isDateInToday(due) && due <= weekFromNow
             }
         case .completed:
             return store.tasks.filter { $0.isCompleted }

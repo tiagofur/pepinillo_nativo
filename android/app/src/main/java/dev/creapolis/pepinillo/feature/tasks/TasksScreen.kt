@@ -81,10 +81,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
-import android.os.Bundle
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailScreen
 import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailViewModel
 import dev.creapolis.pepinillo.R
@@ -399,9 +397,10 @@ fun TasksScreen(
         )
 
         if (selectedTaskId != null) {
-            val navBackStackEntry = LocalViewModelStoreOwner.current as? androidx.navigation.NavBackStackEntry
-            navBackStackEntry?.arguments?.putString("taskId", selectedTaskId)
             val detailViewModel: TaskDetailViewModel = hiltViewModel(key = selectedTaskId!!)
+            LaunchedEffect(selectedTaskId) {
+                detailViewModel.initialize(selectedTaskId!!)
+            }
 
             ModalBottomSheet(
                 onDismissRequest = { selectedTaskId = null },

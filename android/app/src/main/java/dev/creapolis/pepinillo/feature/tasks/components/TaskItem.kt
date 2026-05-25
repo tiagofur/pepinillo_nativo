@@ -63,6 +63,7 @@ import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
 import dev.creapolis.pepinillo.ui.theme.EnergyColors
+import dev.creapolis.pepinillo.ui.theme.priorityColor
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -100,23 +101,12 @@ fun TaskItem(
         label = "checkboxBg",
     )
 
-    val priorityColor = when (task.priority) {
-        TaskPriority.High -> MaterialTheme.colorScheme.error
-        TaskPriority.Medium -> MaterialTheme.colorScheme.tertiary
-        TaskPriority.Low -> MaterialTheme.colorScheme.secondary
-        TaskPriority.None -> null
-    }
+    // Use null to mean "no priority set" — Color.Transparent would render invisible
+    val priorityColor = task.priority.priorityColor().takeIf { it != Color.Transparent }
 
-    val isDueToday = task.dueDate?.let { dueDate ->
-        val calDue = java.util.Calendar.getInstance().apply { timeInMillis = dueDate }
-        val calToday = java.util.Calendar.getInstance()
-        calDue.get(java.util.Calendar.YEAR) == calToday.get(java.util.Calendar.YEAR) &&
-        calDue.get(java.util.Calendar.DAY_OF_YEAR) == calToday.get(java.util.Calendar.DAY_OF_YEAR)
-    } ?: false
+    val isDueToday = task.dueDate != null && isDueTodayMs(task.dueDate)
 
-    val isOverdue = task.dueDate?.let { dueDate ->
-        dueDate < System.currentTimeMillis() && !isDueToday
-    } ?: false
+    val isOverdue = task.dueDate != null && isBeforeTodayMs(task.dueDate)
 
     val checkboxBorderColor = when {
         task.isCompleted -> MaterialTheme.colorScheme.primary
@@ -293,16 +283,17 @@ private fun MetadataRow(
     task: Task,
     subtaskProgress: Pair<Int, Int>?,
 ) {
-    val dateFormatter = remember { SimpleDateFormat("MMM d", Locale.getDefault()) }
+    val dateFormatter = remember {
+        SimpleDateFormat("MMM d", Locale.getDefault()).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }
+    }
     val metadataItems = mutableListOf<@Composable () -> Unit>()
 
     // Due date
     task.dueDate?.let { dueDate ->
-        val calDue = java.util.Calendar.getInstance().apply { timeInMillis = dueDate }
-        val calToday = java.util.Calendar.getInstance()
-        val isToday = calDue.get(java.util.Calendar.YEAR) == calToday.get(java.util.Calendar.YEAR) &&
-                      calDue.get(java.util.Calendar.DAY_OF_YEAR) == calToday.get(java.util.Calendar.DAY_OF_YEAR)
-        val isOverdue = dueDate < System.currentTimeMillis() && !isToday
+        val isToday = isDueTodayMs(dueDate)
+        val isOverdue = isBeforeTodayMs(dueDate)
         val color = when {
             isOverdue -> MaterialTheme.colorScheme.error
             isToday -> Color(0xFFFF8A00)
@@ -430,4 +421,36 @@ private fun energyColor(energyLevel: EnergyLevel): Color = when (energyLevel) {
     EnergyLevel.Deep -> EnergyColors.deep
     EnergyLevel.Regular -> EnergyColors.regular
     EnergyLevel.Light -> EnergyColors.light
+}
+
+private fun getNormalizedLocalDate(): java.util.Calendar {
+    val local = java.util.Calendar.getInstance()
+    return java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(java.util.Calendar.YEAR, local.get(java.util.Calendar.YEAR))
+        set(java.util.Calendar.MONTH, local.get(java.util.Calendar.MONTH))
+        set(java.util.Calendar.DAY_OF_MONTH, local.get(java.util.Calendar.DAY_OF_MONTH))
+    }
+}
+
+private fun getNormalizedDueDate(millis: Long): java.util.Calendar {
+    val due = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply { timeInMillis = millis }
+    return java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(java.util.Calendar.YEAR, due.get(java.util.Calendar.YEAR))
+        set(java.util.Calendar.MONTH, due.get(java.util.Calendar.MONTH))
+        set(java.util.Calendar.DAY_OF_MONTH, due.get(java.util.Calendar.DAY_OF_MONTH))
+    }
+}
+
+private fun isDueTodayMs(millis: Long): Boolean {
+    val dueNorm = getNormalizedDueDate(millis)
+    val todayNorm = getNormalizedLocalDate()
+    return dueNorm == todayNorm
+}
+
+private fun isBeforeTodayMs(millis: Long): Boolean {
+    val dueNorm = getNormalizedDueDate(millis)
+    val todayNorm = getNormalizedLocalDate()
+    return dueNorm.before(todayNorm)
 }
