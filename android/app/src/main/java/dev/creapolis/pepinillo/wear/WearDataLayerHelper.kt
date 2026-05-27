@@ -42,7 +42,7 @@ object WearDataLayerHelper {
     const val CMD_TASK_UNLINK = "/pepinillo/cmd/task/unlink"
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
 
-    fun pushTimer(context: Context, state: FocusTimerState, linkedTaskName: String? = null) {
+    fun pushTimer(context: Context, state: FocusTimerState, linkedTaskName: String?) {
         val request = PutDataMapRequest.create(PATH_TIMER).apply {
             dataMap.putString("mode", state.mode.name)
             dataMap.putString("phase", state.phase.name)

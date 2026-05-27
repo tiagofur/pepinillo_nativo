@@ -58,12 +58,18 @@ class FocusEngine @Inject constructor(
      */
     private fun startIdlePrefsObserver() {
         scope.launch {
+            var lastPrefs: UserPreferences? = null
             prefsRepo.preferences.collect { newPrefs ->
+                val oldPrefs = lastPrefs
+                lastPrefs = newPrefs
+                if (oldPrefs == null) return@collect
+
                 val s = _state.value
                 if (s.status != TimerStatus.Idle && s.status != TimerStatus.WaitingForNext) return@collect
 
+                val oldTotalMillis = getTotalMillis(s.mode, s.phase, oldPrefs)
                 val newTotalMillis = getTotalMillis(s.mode, s.phase, newPrefs)
-                if (newTotalMillis != s.totalMillis) {
+                if (oldTotalMillis != newTotalMillis) {
                     _state.update { it.copy(totalMillis = newTotalMillis) }
                 }
             }
@@ -261,10 +267,11 @@ class FocusEngine @Inject constructor(
                 // If we're in a timed mode (not Flow/Chrono) and the relevant duration changed,
                 // recalculate the total time and check if timer should complete
                 if (s.mode != FocusMode.Flow && s.mode != FocusMode.Chrono) {
+                    val oldTotalMillis = getTotalMillis(s.mode, s.phase, oldPrefs)
                     val newTotalMillis = getTotalMillis(s.mode, s.phase, newPrefs)
 
-                    // Only update if the total actually changed
-                    if (newTotalMillis != s.totalMillis) {
+                    // Only update if the settings duration actually changed
+                    if (oldTotalMillis != newTotalMillis) {
                         _state.update { it.copy(totalMillis = newTotalMillis) }
 
                         // If elapsed time already exceeds new duration, complete the phase immediately

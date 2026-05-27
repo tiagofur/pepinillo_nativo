@@ -14,16 +14,28 @@ import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.soundscape.SoundscapeManager
 import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
+import dev.creapolis.pepinillo.wear.WearDataLayerHelper
+import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
+import dev.creapolis.pepinillo.service.FocusTimerService
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.just
+import io.mockk.runs
+import org.junit.After
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -36,6 +48,15 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TestWatcher
 import org.junit.runner.Description
+
+import androidx.lifecycle.viewModelScope
+
+import android.os.SystemClock
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+
+import org.junit.BeforeClass
+import org.junit.AfterClass
 
 // ---------------------------------------------------------------------------
 // MainDispatcherRule -- swaps Dispatchers.Main with a test dispatcher
@@ -61,6 +82,23 @@ class MainDispatcherRule(
 @OptIn(ExperimentalCoroutinesApi::class)
 class FocusViewModelTest {
 
+    companion object {
+        private var currentTimeProvider: () -> Long = { 0L }
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic(SystemClock::class)
+            every { SystemClock.elapsedRealtime() } answers { currentTimeProvider() }
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic(SystemClock::class)
+        }
+    }
+
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
@@ -84,6 +122,17 @@ class FocusViewModelTest {
     @Before
     fun setUp() {
         testScope = TestScope(UnconfinedTestDispatcher())
+        currentTimeProvider = { testScope.testScheduler.currentTime }
+
+        mockkObject(WearDataLayerHelper)
+        every { WearDataLayerHelper.pushTimer(any(), any(), any()) } just runs
+
+        mockkObject(WidgetTaskStateManager)
+        coEvery { WidgetTaskStateManager.updateLinkedTaskId(any(), any()) } just runs
+
+        mockkObject(FocusTimerService)
+        every { FocusTimerService.start(any()) } just runs
+        every { FocusTimerService.stop(any()) } just runs
 
         // Context stub -- service calls are no-ops
         context = mockk(relaxed = true)
@@ -103,7 +152,19 @@ class FocusViewModelTest {
         // Task repository
         taskRepository = mockk(relaxed = true) {
             every { getActiveTasks() } returns flowOf(emptyList())
-            coEvery { getTaskById(any()) } returns null
+            coEvery { getTaskById(any()) } answers {
+                val id = firstArg<String>()
+                dev.creapolis.pepinillo.feature.tasks.model.Task(
+                    id = id,
+                    title = "Mock Task $id",
+                    createdAt = 0L,
+                    completedAt = null,
+                    energyLevel = dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel.Regular,
+                    estimatedPomodoros = 0,
+                    completedPomodoros = 0,
+                    priority = dev.creapolis.pepinillo.feature.tasks.model.TaskPriority.None,
+                )
+            }
         }
 
         // Feedback manager
@@ -138,6 +199,19 @@ class FocusViewModelTest {
             featureGate = featureGate,
             soundscapeManager = soundscapeManager,
         )
+
+    }
+
+    private fun TestScope.collectUiState() {
+        backgroundScope.launch { viewModel.uiState.collect {} }
+    }
+
+    @After
+    fun tearDown() {
+        viewModel.viewModelScope.cancel()
+        unmockkObject(WearDataLayerHelper)
+        unmockkObject(WidgetTaskStateManager)
+        unmockkObject(FocusTimerService)
     }
 
     // -----------------------------------------------------------------------
@@ -162,8 +236,10 @@ class FocusViewModelTest {
 
     @Test
     fun `selectMode with pro mode Flow without subscription shows paywall`() = runTest {
+        collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.FREE)
         viewModel.selectMode(FocusMode.Flow)
+        advanceUntilIdle()
         // Engine should NOT have changed mode (still the default Pomodoro)
         assertEquals(FocusMode.Pomodoro, engine.state.value.mode)
         assertTrue(viewModel.uiState.value.showPaywall)
@@ -171,34 +247,43 @@ class FocusViewModelTest {
 
     @Test
     fun `selectMode with pro mode Blocks without subscription shows paywall`() = runTest {
+        collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.FREE)
         viewModel.selectMode(FocusMode.Blocks)
+        advanceUntilIdle()
         assertEquals(FocusMode.Pomodoro, engine.state.value.mode)
         assertTrue(viewModel.uiState.value.showPaywall)
     }
 
     @Test
     fun `selectMode with pro mode Flow with subscription works`() = runTest {
+        collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
         viewModel.selectMode(FocusMode.Flow)
+        advanceUntilIdle()
         assertEquals(FocusMode.Flow, engine.state.value.mode)
         assertFalse(viewModel.uiState.value.showPaywall)
     }
 
     @Test
     fun `selectMode with pro mode Blocks with subscription works`() = runTest {
+        collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_ANNUAL)
         viewModel.selectMode(FocusMode.Blocks)
+        advanceUntilIdle()
         assertEquals(FocusMode.Blocks, engine.state.value.mode)
         assertFalse(viewModel.uiState.value.showPaywall)
     }
 
     @Test
     fun `selectMode with monthly subscription allows all modes`() = runTest {
+        collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
         viewModel.selectMode(FocusMode.Flow)
+        advanceUntilIdle()
         assertEquals(FocusMode.Flow, engine.state.value.mode)
         viewModel.selectMode(FocusMode.Blocks)
+        advanceUntilIdle()
         assertEquals(FocusMode.Blocks, engine.state.value.mode)
         assertFalse(viewModel.uiState.value.showPaywall)
     }
@@ -254,16 +339,19 @@ class FocusViewModelTest {
 
     @Test
     fun `onStopClick shows confirmation`() = runTest {
+        collectUiState()
         viewModel.onStopClick()
+        advanceUntilIdle()
         assertTrue(viewModel.uiState.value.showStopConfirmation)
     }
 
     @Test
     fun `confirmStop calls engine stop and hides confirmation`() = runTest {
+        collectUiState()
         engine.start()
         assertEquals(TimerStatus.Running, engine.state.value.status)
         viewModel.confirmStop()
-        testScope.advanceUntilIdle()
+        advanceUntilIdle()
         // After stop the engine resets to Idle
         assertEquals(TimerStatus.Idle, engine.state.value.status)
         assertFalse(viewModel.uiState.value.showStopConfirmation)
@@ -271,10 +359,13 @@ class FocusViewModelTest {
 
     @Test
     fun `dismissStopConfirmation hides dialog without stopping`() = runTest {
+        collectUiState()
         engine.start()
         viewModel.onStopClick()
+        runCurrent()
         assertTrue(viewModel.uiState.value.showStopConfirmation)
         viewModel.dismissStopConfirmation()
+        runCurrent()
         assertFalse(viewModel.uiState.value.showStopConfirmation)
         // Engine is still running
         assertEquals(TimerStatus.Running, engine.state.value.status)
@@ -311,17 +402,22 @@ class FocusViewModelTest {
 
     @Test
     fun `dismissPaywall hides paywall`() = runTest {
+        collectUiState()
         subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.FREE)
         viewModel.selectMode(FocusMode.Flow) // triggers paywall
+        advanceUntilIdle()
         assertTrue(viewModel.uiState.value.showPaywall)
         viewModel.dismissPaywall()
+        advanceUntilIdle()
         assertFalse(viewModel.uiState.value.showPaywall)
     }
 
     @Test
     fun `dismissPaywall is safe to call when paywall not showing`() = runTest {
+        collectUiState()
         assertFalse(viewModel.uiState.value.showPaywall)
         viewModel.dismissPaywall() // should not throw
+        advanceUntilIdle()
         assertFalse(viewModel.uiState.value.showPaywall)
     }
 
@@ -348,6 +444,8 @@ class FocusViewModelTest {
 
     @Test
     fun `initial uiState has sensible defaults`() = runTest {
+        collectUiState()
+        advanceUntilIdle()
         val state = viewModel.uiState.value
         assertEquals(FocusMode.Pomodoro, state.selectedMode)
         assertFalse(state.isRunning)

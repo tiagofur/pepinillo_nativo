@@ -630,4 +630,44 @@
     <string name="calendar_sec_tasks">Tasks</string>
     <string name="calendar_no_activity">No activity</string>
     <string name="calendar_task_due">Due</string>
+
+    <!-- Auth error messages -->
+    <string name="auth_error_fill_all_fields">Please fill in all fields</string>
+    <string name="auth_error_invalid_credentials">Invalid email or password</string>
+    <string name="auth_error_email_exists">An account with this email already exists</string>
+    <string name="auth_error_weak_password">Password needs 8+ chars with uppercase, lowercase, and a number</string>
+    <string name="auth_error_invalid_email">Please enter a valid email address</string>
+    <string name="auth_error_invalid_google_token">Google Sign-In failed. Please try again.</string>
+    <string name="auth_error_server">Server error. Please try again later.</string>
+    <string name="auth_error_unknown">Error: %1$s</string>
+    <string name="auth_error_session_expired">Session expired. Please log in again.</string>
+    <string name="auth_error_sync_download">Could not download account data. It will sync automatically.</string>
+    <string name="auth_error_no_google_accounts">No Google accounts available on this device</string>
+    <string name="auth_error_google_signin">Google Sign-In failed. Please try again.</string>
+    <string name="auth_error_network_unresolved">Cannot connect to server. Check your connection.</string>
+    <string name="auth_error_network_refused">Connection refused. Please try again.</string>
+    <string name="auth_error_network_timeout">Connection timed out. Please try again.</string>
+    <string name="auth_error_ssl">Secure connection failed. Please try again.</string>
+    <string name="auth_error_network_generic">Network error. Please check your connection.</string>
+    <string name="auth_error_password_min_length">Password must be at least 8 characters</string>
+    <string name="auth_error_password_uppercase">Password needs at least one uppercase letter</string>
+    <string name="auth_error_password_lowercase">Password needs at least one lowercase letter</string>
+    <string name="auth_error_password_digit">Password needs at least one number</string>
+    <string name="auth_error_invalid_code">Invalid or expired verification code</string>
+    <string name="auth_error_already_verified">Email is already verified</string>
+    <string name="auth_error_verification_failed">Verification failed. Please check the code and try again.</string>
+
+    <!-- Widget UI Strings -->
+    <string name="widget_plan_title">Plan (%1$d)</string>
+    <string name="widget_in_progress">In progress</string>
+    <string name="widget_no_active_tasks">No active tasks</string>
+    <string name="widget_new_task">+ New task</string>
+    <string name="widget_today">Today</string>
+    <string name="widget_focus_label">Focus</string>
+    <string name="widget_sessions_label">Sessions</string>
+    <string name="widget_streak_label">Streak</string>
+    <string name="widget_tasks_label">Tasks</string>
+    <string name="widget_no_task_linked">No Task</string>
+    <string name="widget_streak_indicator">streak</string>
+    <string name="widget_sessions_indicator">sessions</string>
 </resources>

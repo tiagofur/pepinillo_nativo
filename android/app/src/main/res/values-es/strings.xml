@@ -630,4 +630,44 @@
     <string name="calendar_sec_tasks">Tareas</string>
     <string name="calendar_no_activity">Sin actividad</string>
     <string name="calendar_task_due">Límite</string>
+
+    <!-- Auth error messages -->
+    <string name="auth_error_fill_all_fields">Por favor completá todos los campos</string>
+    <string name="auth_error_invalid_credentials">Email o contraseña incorrectos</string>
+    <string name="auth_error_email_exists">Ya existe una cuenta con este email</string>
+    <string name="auth_error_weak_password">La contraseña necesita 8+ caracteres con mayúscula, minúscula y un número</string>
+    <string name="auth_error_invalid_email">Por favor ingresá un email válido</string>
+    <string name="auth_error_invalid_google_token">Error en Google Sign-In. Por favor intentá de nuevo.</string>
+    <string name="auth_error_server">Error del servidor. Por favor intentá más tarde.</string>
+    <string name="auth_error_unknown">Error: %1$s</string>
+    <string name="auth_error_session_expired">Sesión expirada. Por favor iniciá sesión nuevamente.</string>
+    <string name="auth_error_sync_download">No se pudieron descargar los datos. Se sincronizarán automáticamente.</string>
+    <string name="auth_error_no_google_accounts">No hay cuentas de Google disponibles en este dispositivo</string>
+    <string name="auth_error_google_signin">Error en Google Sign-In. Por favor intentá de nuevo.</string>
+    <string name="auth_error_network_unresolved">No se puede conectar al servidor. Verificá tu conexión.</string>
+    <string name="auth_error_network_refused">Conexión rechazada. Por favor intentá de nuevo.</string>
+    <string name="auth_error_network_timeout">Tiempo de conexión agotado. Por favor intentá de nuevo.</string>
+    <string name="auth_error_ssl">Error de conexión segura. Por favor intentá de nuevo.</string>
+    <string name="auth_error_network_generic">Error de red. Verificá tu conexión.</string>
+    <string name="auth_error_password_min_length">La contraseña debe tener al menos 8 caracteres</string>
+    <string name="auth_error_password_uppercase">La contraseña necesita al menos una mayúscula</string>
+    <string name="auth_error_password_lowercase">La contraseña necesita al menos una minúscula</string>
+    <string name="auth_error_password_digit">La contraseña necesita al menos un número</string>
+    <string name="auth_error_invalid_code">Código inválido o expirado</string>
+    <string name="auth_error_already_verified">El email ya está verificado</string>
+    <string name="auth_error_verification_failed">Verificación fallida. Revisá el código e intentá de nuevo.</string>
+
+    <!-- Widget UI Strings -->
+    <string name="widget_plan_title">Plan (%1$d)</string>
+    <string name="widget_in_progress">En progreso</string>
+    <string name="widget_no_active_tasks">No hay tareas activas</string>
+    <string name="widget_new_task">+ Nueva tarea</string>
+    <string name="widget_today">Hoy</string>
+    <string name="widget_focus_label">Enfoque</string>
+    <string name="widget_sessions_label">Sesiones</string>
+    <string name="widget_streak_label">Racha</string>
+    <string name="widget_tasks_label">Tareas</string>
+    <string name="widget_no_task_linked">Sin tarea</string>
+    <string name="widget_streak_indicator">racha</string>
+    <string name="widget_sessions_indicator">sesiones</string>
 </resources>

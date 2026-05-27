@@ -22,5 +22,31 @@
     <string name="sessions">Sess\u00f5es</string>
     <string name="streak">Sequ\u00eancia</string>
     <string name="days">%d dias</string>
-    <string name="completed_tasks">Tarefas conclu\u00eddas</string>
+    <string name="completed_tasks">Tarefas concluídas</string>
+
+    <!-- Modes -->
+    <string name="mode_pomodoro">Pomodoro</string>
+    <string name="mode_flow">Tempo Fluido</string>
+    <string name="mode_blocks">Blocos de Tempo</string>
+    <string name="mode_chrono">Cronômetro</string>
+
+    <!-- Tiles -->
+    <string name="tile_tasks_title">Tarefas (%1$d/%2$d prontas)</string>
+    <string name="tile_no_tasks">Sem tarefas</string>
+    <string name="tile_locked_tasks">Desbloquear Tile de Tarefas</string>
+    <string name="tile_locked_focus">Desbloquear Tile de Foco</string>
+    <string name="tile_upgrade_app">Abra o app para atualizar seu plano</string>
+    <string name="tile_tap_to_focus">Toque para focar</string>
+    <string name="tile_paused">Pausado</string>
+
+    <!-- Complications -->
+    <string name="comp_locked_desc">Requer Pepinillo+</string>
+    <string name="comp_locked_text">Plus</string>
+    <string name="comp_locked_title">Bloq.</string>
+    <string name="comp_timer_desc">Temporizador de foco</string>
+
+    <!-- Metadata labels -->
+    <string name="tile_focus_label">Foco</string>
+    <string name="tile_tasks_label">Tarefas</string>
+    <string name="complication_focus_timer_label">Temporizador de foco</string>
 </resources>

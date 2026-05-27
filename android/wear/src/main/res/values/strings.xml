@@ -46,4 +46,9 @@
     <string name="comp_locked_text">Lock</string>
     <string name="comp_locked_title">Plus</string>
     <string name="comp_timer_desc">Focus timer</string>
+
+    <!-- Metadata labels -->
+    <string name="tile_focus_label">Focus</string>
+    <string name="tile_tasks_label">Tasks</string>
+    <string name="complication_focus_timer_label">Focus Timer</string>
 </resources>

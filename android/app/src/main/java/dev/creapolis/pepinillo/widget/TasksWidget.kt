@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
@@ -209,6 +210,7 @@ private fun TasksContent() {
     val prefs = currentState<Preferences>()
     val tasks = tasksFromJson(prefs[PREF_TASKS_JSON])
     val linkedTaskId = prefs[PREF_LINKED_TASK_ID]
+    val context = LocalContext.current
 
     Column(
         modifier = GlanceModifier
@@ -224,7 +226,7 @@ private fun TasksContent() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "\uD83D\uDCCB Plan (${tasks.size})",
+                text = "\uD83D\uDCCB " + context.getString(R.string.widget_plan_title, tasks.size),
                 style = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -299,7 +301,7 @@ private fun LinkedTaskRow(task: WidgetTask) {
                 }
             }
             Text(
-                text = "\u23F1\uFE0F En progreso",
+                text = "\u23F1\uFE0F " + LocalContext.current.getString(R.string.widget_in_progress),
                 style = TextStyle(
                     fontSize = 10.sp,
                     color = ColorProvider(R.color.widget_white),
@@ -368,13 +370,14 @@ private fun TaskRow(task: WidgetTask) {
 
 @Composable
 private fun EmptyState() {
+    val context = LocalContext.current
     Column(
         modifier = GlanceModifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = "No hay tareas activas",
+            text = context.getString(R.string.widget_no_active_tasks),
             style = TextStyle(
                 fontSize = 12.sp,
                 color = GlanceTheme.colors.onSurfaceVariant,
@@ -391,7 +394,7 @@ private fun EmptyState() {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "+ Nueva tarea",
+                text = context.getString(R.string.widget_new_task),
                 style = TextStyle(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,

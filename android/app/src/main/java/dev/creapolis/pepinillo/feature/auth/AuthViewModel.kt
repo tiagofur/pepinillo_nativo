@@ -11,7 +11,9 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.BuildConfig
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.identity.IdentityManager
 import dev.creapolis.pepinillo.core.network.AuthResponse
@@ -41,6 +43,7 @@ data class AuthUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val apiClient: PepinilloApiClient,
     private val authStore: AuthStore,
     private val userRepository: UserRepository,
@@ -57,7 +60,7 @@ class AuthViewModel @Inject constructor(
 
     fun login(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
-            _uiState.value = _uiState.value.copy(error = "Please fill in all fields")
+            _uiState.value = _uiState.value.copy(error = context.getString(R.string.auth_error_fill_all_fields))
             return
         }
         viewModelScope.launch {
@@ -83,7 +86,7 @@ class AuthViewModel @Inject constructor(
 
     fun register(name: String, email: String, password: String) {
         if (name.isBlank() || email.isBlank() || password.isBlank()) {
-            _uiState.value = _uiState.value.copy(error = "Please fill in all fields")
+            _uiState.value = _uiState.value.copy(error = context.getString(R.string.auth_error_fill_all_fields))
             return
         }
         val passwordError = validatePassword(password)
@@ -154,13 +157,13 @@ class AuthViewModel @Inject constructor(
             } catch (e: NoCredentialException) {
                 _uiState.value = _uiState.value.copy(
                     googleSignInLoading = false,
-                    error = "No Google accounts available on this device",
+                    error = context.getString(R.string.auth_error_no_google_accounts),
                 )
             } catch (e: Exception) {
                 Log.e(TAG, "Google Sign-In failed", e)
                 _uiState.value = _uiState.value.copy(
                     googleSignInLoading = false,
-                    error = "Google Sign-In failed. Please try again.",
+                    error = context.getString(R.string.auth_error_google_signin),
                 )
             }
         }
@@ -206,7 +209,7 @@ class AuthViewModel @Inject constructor(
                     Log.w(TAG, "wipeAndSync returned NotAuthenticated")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = "Session expired. Please log in again.",
+                        error = context.getString(R.string.auth_error_session_expired),
                     )
                 }
                 is InitialSyncManager.InitialSyncResult.Error -> {
@@ -215,7 +218,7 @@ class AuthViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isAuthenticated = true,
-                        error = "Could not download account data. It will sync automatically.",
+                        error = context.getString(R.string.auth_error_sync_download),
                     )
                 }
             }
@@ -336,10 +339,10 @@ class AuthViewModel @Inject constructor(
                 }
                 is NetworkResult.Error -> {
                     val msg = when {
-                        result.message == "invalid_code" -> "Invalid or expired verification code"
-                        result.message == "already_verified" -> "Email is already verified"
-                        result.code in 500..599 -> "Server error. Please try again later."
-                        else -> "Verification failed. Please check the code and try again."
+                        result.message == "invalid_code" -> context.getString(R.string.auth_error_invalid_code)
+                        result.message == "already_verified" -> context.getString(R.string.auth_error_already_verified)
+                        result.code in 500..599 -> context.getString(R.string.auth_error_server)
+                        else -> context.getString(R.string.auth_error_verification_failed)
                     }
                     _uiState.value = _uiState.value.copy(isLoading = false, error = msg)
                 }
@@ -378,31 +381,31 @@ class AuthViewModel @Inject constructor(
     // ── Helpers ──
 
     private fun mapAuthError(code: Int, message: String): String = when {
-        message == "invalid_credentials" -> "Invalid email or password"
-        message == "email_already_exists" -> "An account with this email already exists"
-        message == "weak_password" -> "Password needs 8+ chars with uppercase, lowercase, and a number"
-        message == "invalid_email" -> "Please enter a valid email address"
-        message == "missing_required_fields" -> "Please fill in all fields"
-        message == "invalid_google_token" -> "Google Sign-In failed. Please try again."
-        code == 401 -> "Invalid email or password"
-        code in 500..599 -> "Server error. Please try again later."
-        else -> "Error: $message"
+        message == "invalid_credentials" -> context.getString(R.string.auth_error_invalid_credentials)
+        message == "email_already_exists" -> context.getString(R.string.auth_error_email_exists)
+        message == "weak_password" -> context.getString(R.string.auth_error_weak_password)
+        message == "invalid_email" -> context.getString(R.string.auth_error_invalid_email)
+        message == "missing_required_fields" -> context.getString(R.string.auth_error_fill_all_fields)
+        message == "invalid_google_token" -> context.getString(R.string.auth_error_invalid_google_token)
+        code == 401 -> context.getString(R.string.auth_error_invalid_credentials)
+        code in 500..599 -> context.getString(R.string.auth_error_server)
+        else -> context.getString(R.string.auth_error_unknown, message)
     }
 
     private fun mapNetworkError(exception: Throwable): String = when (exception) {
-        is java.net.UnknownHostException -> "Cannot resolve server: ${exception.message}"
-        is java.net.ConnectException -> "Connection refused: ${exception.message}"
-        is java.net.SocketTimeoutException -> "Connection timed out"
-        is javax.net.ssl.SSLException -> "SSL error: ${exception.message}"
-        is javax.net.ssl.SSLHandshakeException -> "SSL handshake failed: ${exception.message}"
-        else -> "Network error: ${exception::class.simpleName} - ${exception.message}"
+        is java.net.UnknownHostException -> context.getString(R.string.auth_error_network_unresolved)
+        is java.net.ConnectException -> context.getString(R.string.auth_error_network_refused)
+        is java.net.SocketTimeoutException -> context.getString(R.string.auth_error_network_timeout)
+        is javax.net.ssl.SSLHandshakeException -> context.getString(R.string.auth_error_ssl)
+        is javax.net.ssl.SSLException -> context.getString(R.string.auth_error_ssl)
+        else -> context.getString(R.string.auth_error_network_generic)
     }
 
     private fun validatePassword(password: String): String? {
-        if (password.length < 8) return "Password must be at least 8 characters"
-        if (!password.any { it.isUpperCase() }) return "Password needs at least one uppercase letter"
-        if (!password.any { it.isLowerCase() }) return "Password needs at least one lowercase letter"
-        if (!password.any { it.isDigit() }) return "Password needs at least one number"
+        if (password.length < 8) return context.getString(R.string.auth_error_password_min_length)
+        if (!password.any { it.isUpperCase() }) return context.getString(R.string.auth_error_password_uppercase)
+        if (!password.any { it.isLowerCase() }) return context.getString(R.string.auth_error_password_lowercase)
+        if (!password.any { it.isDigit() }) return context.getString(R.string.auth_error_password_digit)
         return null
     }
 

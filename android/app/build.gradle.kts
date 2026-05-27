@@ -81,6 +81,10 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+        unitTests.all {
+            it.maxHeapSize = "2g"
+            it.jvmArgs("-XX:+UseG1GC")
+        }
     }
 }
 

@@ -21,7 +21,6 @@ import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.ExitToApp
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Login
@@ -97,13 +96,6 @@ fun MoreScreen(
                         subtitle = uiState.user?.name ?: uiState.user?.email ?: "",
                         icon = Icons.Rounded.Person,
                         onClick = onProfileClick,
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    ActionCard(
-                        title = stringResource(R.string.more_btn_signout),
-                        subtitle = uiState.user?.email ?: "",
-                        icon = Icons.Rounded.ExitToApp,
-                        onClick = { viewModel.logout() },
                     )
                 } else {
                     ActionCard(

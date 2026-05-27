@@ -294,7 +294,7 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
             // Task info
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = state.linkedTaskTitle ?: "No Task",
+                    text = state.linkedTaskTitle ?: context.getString(R.string.widget_no_task_linked),
                     style = TextStyle(
                         color = onSurfaceProvider,
                         fontSize = 20.sp,
@@ -374,7 +374,7 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
                                 ),
                             )
                             Text(
-                                text = "racha",
+                                text = context.getString(R.string.widget_streak_indicator),
                                 style = TextStyle(
                                     color = onSurfaceVariantProvider,
                                     fontSize = 12.sp,
@@ -399,7 +399,7 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
                                 ),
                             )
                             Text(
-                                text = "sesiones",
+                                text = context.getString(R.string.widget_sessions_indicator),
                                 style = TextStyle(
                                     color = onSurfaceVariantProvider,
                                     fontSize = 12.sp,

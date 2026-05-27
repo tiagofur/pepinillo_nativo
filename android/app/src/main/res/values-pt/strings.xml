@@ -274,4 +274,52 @@
     <string name="calendar_sec_tasks">Tarefas</string>
     <string name="calendar_no_activity">Sem atividade</string>
     <string name="calendar_task_due">Prazo</string>
+
+    <!-- Auth error messages -->
+    <string name="auth_error_fill_all_fields">Por favor preencha todos os campos</string>
+    <string name="auth_error_invalid_credentials">Email ou senha incorretos</string>
+    <string name="auth_error_email_exists">Já existe uma conta com este email</string>
+    <string name="auth_error_weak_password">A senha precisa de 8+ caracteres com maiúscula, minúscula e um número</string>
+    <string name="auth_error_invalid_email">Por favor insira um email válido</string>
+    <string name="auth_error_invalid_google_token">Erro no Google Sign-In. Por favor tente novamente.</string>
+    <string name="auth_error_server">Erro no servidor. Por favor tente mais tarde.</string>
+    <string name="auth_error_unknown">Erro: %1$s</string>
+    <string name="auth_error_session_expired">Sessão expirada. Por favor faça login novamente.</string>
+    <string name="auth_error_sync_download">Não foi possível baixar os dados. Serão sincronizados automaticamente.</string>
+    <string name="auth_error_no_google_accounts">Não há contas Google disponíveis neste dispositivo</string>
+    <string name="auth_error_google_signin">Erro no Google Sign-In. Por favor tente novamente.</string>
+    <string name="auth_error_network_unresolved">Não é possível conectar ao servidor. Verifique sua conexão.</string>
+    <string name="auth_error_network_refused">Conexão recusada. Por favor tente novamente.</string>
+    <string name="auth_error_network_timeout">Tempo de conexão esgotado. Por favor tente novamente.</string>
+    <string name="auth_error_ssl">Falha na conexão segura. Por favor tente novamente.</string>
+    <string name="auth_error_network_generic">Erro de rede. Verifique sua conexão.</string>
+    <string name="auth_error_password_min_length">A senha deve ter pelo menos 8 caracteres</string>
+    <string name="auth_error_password_uppercase">A senha precisa de pelo menos uma letra maiúscula</string>
+    <string name="auth_error_password_lowercase">A senha precisa de pelo menos uma letra minúscula</string>
+    <string name="auth_error_password_digit">A senha precisa de pelo menos um número</string>
+    <string name="auth_error_invalid_code">Código inválido ou expirado</string>
+    <string name="auth_error_already_verified">O email já está verificado</string>
+    <string name="auth_error_verification_failed">Verificação falhou. Verifique o código e tente novamente.</string>
+
+    <!-- Widgets -->
+    <string name="widget_timer_name">Temporizador de Foco</string>
+    <string name="widget_timer_description">Controle seu temporizador de foco a partir da tela inicial</string>
+    <string name="widget_stats_name">Estatísticas Diárias</string>
+    <string name="widget_stats_description">Veja suas estatísticas diárias de foco em um relance</string>
+    <string name="widget_tasks_name">Tarefas</string>
+    <string name="widget_tasks_description">Veja e complete suas tarefas ativas a partir da tela inicial</string>
+
+    <!-- Widget UI Strings -->
+    <string name="widget_plan_title">Plano (%1$d)</string>
+    <string name="widget_in_progress">Em progresso</string>
+    <string name="widget_no_active_tasks">Sem tarefas ativas</string>
+    <string name="widget_new_task">+ Nova tarefa</string>
+    <string name="widget_today">Hoje</string>
+    <string name="widget_focus_label">Foco</string>
+    <string name="widget_sessions_label">Sessões</string>
+    <string name="widget_streak_label">Sequência</string>
+    <string name="widget_tasks_label">Tarefas</string>
+    <string name="widget_no_task_linked">Sem tarefa</string>
+    <string name="widget_streak_indicator">sequência</string>
+    <string name="widget_sessions_indicator">sessões</string>
 </resources>

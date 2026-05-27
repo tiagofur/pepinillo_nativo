@@ -19,10 +19,36 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.After
 import org.junit.Test
+import android.os.SystemClock
+import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
+
+import org.junit.BeforeClass
+import org.junit.AfterClass
+
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FocusEngineTest {
+
+    companion object {
+        private var currentTimeProvider: () -> Long = { 0L }
+
+        @JvmStatic
+        @BeforeClass
+        fun beforeClass() {
+            mockkStatic(SystemClock::class)
+            every { SystemClock.elapsedRealtime() } answers { currentTimeProvider() }
+        }
+
+        @JvmStatic
+        @AfterClass
+        fun afterClass() {
+            unmockkStatic(SystemClock::class)
+        }
+    }
 
     private lateinit var sessionRepository: SessionRepository
     private lateinit var taskRepository: TaskRepository
@@ -34,6 +60,9 @@ class FocusEngineTest {
 
     @Before
     fun setUp() {
+        testScope = TestScope(UnconfinedTestDispatcher())
+        currentTimeProvider = { testScope.testScheduler.currentTime }
+
         prefsFlow = MutableStateFlow(UserPreferences())
         sessionRepository = mockk(relaxed = true)
         taskRepository = mockk(relaxed = true)
@@ -41,7 +70,6 @@ class FocusEngineTest {
             every { preferences } returns prefsFlow
         }
         feedbackManager = mockk(relaxed = true)
-        testScope = TestScope()
 
         engine = FocusEngine(
             sessionRepository = sessionRepository,
@@ -50,6 +78,10 @@ class FocusEngineTest {
             feedbackManager = feedbackManager,
             scope = testScope,
         )
+    }
+
+    @After
+    fun tearDown() {
     }
 
     // ── Default state ──
@@ -345,10 +377,10 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - 5 * 60 * 1000L,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         engine.stop()
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         coVerify(exactly = 1) {
             sessionRepository.recordSession(
@@ -358,6 +390,9 @@ class FocusEngineTest {
                 durationMillis = 5 * 60 * 1000L,
                 linkedTaskId = null,
                 phase = "Work",
+                wasCompleted = false,
+                pomodoroNumber = 1,
+                targetDurationMillis = 25 * 60 * 1000L,
             )
         }
     }
@@ -372,13 +407,13 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - 10_000L,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         // Link task after restoreState so it is present in the state
         engine.linkTask("task-99")
 
         engine.stop()
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         coVerify {
             sessionRepository.recordSession(
@@ -388,6 +423,9 @@ class FocusEngineTest {
                 durationMillis = any(),
                 linkedTaskId = "task-99",
                 phase = "Work",
+                wasCompleted = false,
+                pomodoroNumber = 1,
+                targetDurationMillis = 25 * 60 * 1000L,
             )
         }
     }
@@ -453,7 +491,7 @@ class FocusEngineTest {
             sessionStartTime = 0L,
             status = TimerStatus.WaitingForNext,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         val state = engine.state.value
         assertEquals(TimerStatus.WaitingForNext, state.status)
@@ -473,7 +511,7 @@ class FocusEngineTest {
             completedSessions = 1,
             sessionStartTime = startTime,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         val state = engine.state.value
         assertEquals(TimerStatus.Running, state.status)
@@ -494,7 +532,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis(),
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
         assertEquals(30 * 60 * 1000L, engine.state.value.totalMillis)
     }
 
@@ -509,7 +547,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis(),
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
         assertEquals(customTotal, engine.state.value.totalMillis)
     }
 
@@ -524,7 +562,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - total,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         // onPhaseComplete should have been called, transitioning to a break
         val state = engine.state.value
@@ -544,7 +582,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis(),
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         // Flow mode should remain Running, not trigger onPhaseComplete
         assertEquals(TimerStatus.Running, engine.state.value.status)
@@ -561,7 +599,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis(),
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         assertEquals(TimerStatus.Running, engine.state.value.status)
         assertEquals(FocusMode.Chrono, engine.state.value.mode)
@@ -636,7 +674,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - total,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         val state = engine.state.value
         assertEquals(FocusPhase.ShortBreak, state.phase)
@@ -699,6 +737,7 @@ class FocusEngineTest {
         prefsFlow.value = UserPreferences(
             pomodoroMinutes = 25,
             autoStartNextPomodoro = true,
+            autoStartBreaks = false,
         )
         val breakTotal = 5 * 60 * 1000L
         engine.restoreState(
@@ -709,7 +748,7 @@ class FocusEngineTest {
             completedSessions = 1,
             sessionStartTime = System.currentTimeMillis() - breakTotal,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         val state = engine.state.value
         assertEquals(FocusPhase.Work, state.phase)
@@ -816,7 +855,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - total,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         coVerify(atLeast = 1) {
             sessionRepository.recordSession(
@@ -826,6 +865,9 @@ class FocusEngineTest {
                 durationMillis = total,
                 linkedTaskId = any(),
                 phase = "Work",
+                wasCompleted = true,
+                pomodoroNumber = 1,
+                targetDurationMillis = total,
             )
         }
     }
@@ -861,12 +903,12 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - 10 * 60 * 1000L,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         // Link task while running, then stop to trigger recordSession
         engine.linkTask("task-pomo")
         engine.stop()
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         coVerify {
             taskRepository.incrementPomodoros("task-pomo")
@@ -968,7 +1010,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - workTotal,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         // Verify: now in ShortBreak, WaitingForNext
         assertEquals(FocusPhase.ShortBreak, engine.state.value.phase)
@@ -977,7 +1019,7 @@ class FocusEngineTest {
 
         // Step 2: User starts the break
         engine.start()
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
         assertEquals(TimerStatus.Running, engine.state.value.status)
         assertEquals(FocusPhase.ShortBreak, engine.state.value.phase)
 
@@ -1215,7 +1257,7 @@ class FocusEngineTest {
             completedSessions = 1,
             sessionStartTime = System.currentTimeMillis() - breakTotal,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         coVerify {
             sessionRepository.recordSession(
@@ -1225,6 +1267,9 @@ class FocusEngineTest {
                 durationMillis = breakTotal,
                 linkedTaskId = any(),
                 phase = "ShortBreak",
+                wasCompleted = true,
+                pomodoroNumber = null,
+                targetDurationMillis = breakTotal,
             )
         }
     }
@@ -1245,7 +1290,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - total,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         assertNotEquals(0L, engine.state.value.sessionStartTime)
     }
@@ -1296,6 +1341,7 @@ class FocusEngineTest {
         prefsFlow.value = UserPreferences(
             autoStartNextPomodoro = true,
             pomodoroMinutes = 25,
+            autoStartBreaks = false,
         )
         val breakTotal = 5 * 60 * 1000L
         engine.restoreState(
@@ -1306,7 +1352,7 @@ class FocusEngineTest {
             completedSessions = 1,
             sessionStartTime = System.currentTimeMillis() - breakTotal,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         assertNotEquals(0L, engine.state.value.sessionStartTime)
     }
@@ -1417,7 +1463,7 @@ class FocusEngineTest {
             completedSessions = 0,
             sessionStartTime = System.currentTimeMillis() - total,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         assertEquals(FocusPhase.ShortBreak, engine.state.value.phase)
         assertEquals(5 * 60 * 1000L, engine.state.value.totalMillis)
@@ -1435,7 +1481,7 @@ class FocusEngineTest {
             completedSessions = 3, // 4th session completes -> long break
             sessionStartTime = System.currentTimeMillis() - total,
         )
-        testScope.advanceUntilIdle()
+        testScope.testScheduler.runCurrent()
 
         assertEquals(FocusPhase.LongBreak, engine.state.value.phase)
         assertEquals(15 * 60 * 1000L, engine.state.value.totalMillis)

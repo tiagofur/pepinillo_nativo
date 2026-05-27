@@ -38,4 +38,15 @@
     <string name="comp_locked_text">Plus</string>
     <string name="comp_locked_title">Bloq.</string>
     <string name="comp_timer_desc">Temporizador de enfoque</string>
+
+    <!-- Modes -->
+    <string name="mode_pomodoro">Pomodoro</string>
+    <string name="mode_flow">Tiempo Fluido</string>
+    <string name="mode_blocks">Bloques</string>
+    <string name="mode_chrono">Cronómetro</string>
+
+    <!-- Metadata labels -->
+    <string name="tile_focus_label">Enfoque</string>
+    <string name="tile_tasks_label">Tareas</string>
+    <string name="complication_focus_timer_label">Temporizador de enfoque</string>
 </resources>
