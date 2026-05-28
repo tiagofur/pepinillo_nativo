@@ -206,6 +206,13 @@ class FocusTimerService : Service() {
             ACTION_STOP -> {
                 focusEngine.stop()
                 clearRecoveryState(this)
+                // Push idle state to watch NOW, before stopping — prevents watch from freezing
+                // on the last running timer value while the coroutine collector shuts down.
+                WearDataLayerHelper.pushIdleState(
+                    context = this,
+                    mode = focusEngine.state.value.mode.name,
+                    displayTime = focusEngine.state.value.displayTime,
+                )
                 // Clear linked task highlight from tasks widget
                 serviceScope.launch { WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, null) }
                 // Refresh tasks+stats on watch after session ends
@@ -380,6 +387,20 @@ class FocusTimerService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        if (::focusEngine.isInitialized) {
+            val state = focusEngine.state.value
+            // If the timer is idle when destroyed, push idle state so the watch UI resets.
+            // Otherwise push the current state (e.g. paused/waiting) for continuity.
+            if (state.status == TimerStatus.Idle) {
+                WearDataLayerHelper.pushIdleState(
+                    context = this,
+                    mode = state.mode.name,
+                    displayTime = state.displayTime,
+                )
+            } else {
+                WearDataLayerHelper.pushTimer(this, state, null)
+            }
+        }
         isCollecting = false
         serviceScope.cancel()
         dayChangeReceiver?.let { unregisterReceiver(it) }

@@ -16,7 +16,7 @@
 -dontwarn com.google.android.gms.wearable.**
 
 # ── Wear listener service ──
--keep class dev.creapolis.pepinillo.sync.WearSyncListenerService { *; }
+-keep class dev.creapolis.pepinillo.service.WearSyncListenerService { *; }
 
 # ── Kotlin Coroutines ──
 -dontwarn kotlinx.coroutines.**

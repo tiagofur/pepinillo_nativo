@@ -140,13 +140,39 @@ private fun TimerActiveLayout(
         }
     }
 
+    var localProgress by remember { mutableStateOf(state.progress) }
+    var localDisplayTime by remember { mutableStateOf(state.displayTime) }
+
+    // Keys: only restart the countdown loop when the phase/status fundamentally changes.
+    // Avoid displayTime/progress as keys — they update every 30s from the phone push
+    // and would restart the local tick loop unnecessarily.
+    LaunchedEffect(state.status, state.phaseEndEpochMs, state.totalDurationMs) {
+        if (state.status == "Running" && state.phaseEndEpochMs > 0 && state.totalDurationMs > 0) {
+            while (true) {
+                val now = System.currentTimeMillis()
+                val rem = (state.phaseEndEpochMs - now).coerceAtLeast(0L)
+                localProgress = (1f - (rem.toFloat() / state.totalDurationMs)).coerceIn(0f, 1f)
+                
+                val totalSeconds = (rem + 999) / 1000
+                val minutes = totalSeconds / 60
+                val seconds = totalSeconds % 60
+                localDisplayTime = String.format(java.util.Locale.US, "%02d:%02d", minutes, seconds)
+                
+                delay(100)
+            }
+        } else {
+            localProgress = state.progress
+            localDisplayTime = state.displayTime
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
         // Progress ring
         CircularProgressIndicator(
-            progress = state.progress.coerceIn(0f, 1f),
+            progress = localProgress.coerceIn(0f, 1f),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp),
@@ -174,7 +200,7 @@ private fun TimerActiveLayout(
 
             // Timer display
             Text(
-                text = state.displayTime,
+                text = localDisplayTime,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Light,
                 color = MaterialTheme.colors.onSurface,
