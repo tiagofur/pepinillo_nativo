@@ -15,13 +15,21 @@ import ComposableArchitecture
 import OSLog
 
 private enum AppBootstrapTiming {
-    static let containerOpenTimeoutSeconds: TimeInterval = 8
+    // Keep launch-critical persistence well below the iOS watchdog window.
+    // If the shared App Group store is corrupt or blocked by SQLite/SwiftData,
+    // the app must fail open into a stable recovery store instead of sitting on
+    // the splash/loading screen.
+    static let sharedStoreOpenTimeoutSeconds: TimeInterval = 3
+    static let recoveryStoreOpenTimeoutSeconds: TimeInterval = 3
+    static let inMemoryStoreOpenTimeoutSeconds: TimeInterval = 1.5
 }
 
 private enum AppLaunchDefaults {
     static let hasCompletedOnboardingKey = "pepinillo.hasCompletedOnboarding"
     static let bootstrapStartedAtKey = "pepinillo.bootstrap.startedAt"
     static let bootstrapCompletedAtKey = "pepinillo.bootstrap.completedAt"
+    static let useRecoveryStoreKey = "pepinillo.bootstrap.useRecoveryStore"
+    static let lastSharedStoreFailureKey = "pepinillo.bootstrap.lastSharedStoreFailure"
 }
 
 private let startupLogger = Logger(subsystem: "com.pepinillo.app", category: "startup")
@@ -73,17 +81,18 @@ private final class AppBootstrap: ObservableObject {
 
     private func loadContainerWithTimeout() async throws -> ModelContainer {
         if shouldSkipSharedStoreForRecovery {
-            startupLogger.warning("Previous bootstrap did not complete; skipping shared store and opening recovery store.")
+            startupLogger.warning("Recovery mode is active; skipping shared store and opening stable recovery store.")
             statusMessage = String(localized: "Repairing local data...")
             return try await loadRecoveryContainer()
         }
 
         do {
             statusMessage = String(localized: "Opening local data...")
-            startupLogger.info("Attempting to load shared ModelContainer with 8s timeout...")
+            startupLogger.info("Attempting to load shared ModelContainer with launch-safe timeout...")
             return try await loadSharedContainerOnBackgroundQueue()
         } catch {
             startupLogger.warning("Shared container failed or timed out, attempting emergency fallback: \(String(describing: error), privacy: .public)")
+            markSharedStoreFailed()
             statusMessage = String(localized: "Repairing local data...")
             return try await loadRecoveryContainer()
         }
@@ -91,15 +100,20 @@ private final class AppBootstrap: ObservableObject {
 
     private func loadRecoveryContainer() async throws -> ModelContainer {
         do {
-            return try await loadFallbackContainerOnBackgroundQueue()
+            return try await loadStableFallbackContainerOnBackgroundQueue()
         } catch {
-            startupLogger.error("Fresh fallback container failed/timed out, attempting in-memory emergency store: \(String(describing: error), privacy: .public)")
-            statusMessage = String(localized: "Opening recovery mode...")
+            startupLogger.error("Stable fallback container failed/timed out, attempting fresh fallback store: \(String(describing: error), privacy: .public)")
             do {
-                return try await loadInMemoryContainerOnBackgroundQueue()
+                return try await loadFreshFallbackContainerOnBackgroundQueue()
             } catch {
-                startupLogger.fault("Critical failure: in-memory emergency container failed/timed out: \(String(describing: error), privacy: .public)")
-                throw error
+                startupLogger.error("Fresh fallback container failed/timed out, attempting in-memory emergency store: \(String(describing: error), privacy: .public)")
+                statusMessage = String(localized: "Opening recovery mode...")
+                do {
+                    return try await loadInMemoryContainerOnBackgroundQueue()
+                } catch {
+                    startupLogger.fault("Critical failure: in-memory emergency container failed/timed out: \(String(describing: error), privacy: .public)")
+                    throw error
+                }
             }
         }
     }
@@ -107,16 +121,25 @@ private final class AppBootstrap: ObservableObject {
     private func loadSharedContainerOnBackgroundQueue() async throws -> ModelContainer {
         try await openModelContainerOffMainThread(
             label: "shared-app-group",
-            timeout: AppBootstrapTiming.containerOpenTimeoutSeconds
+            timeout: AppBootstrapTiming.sharedStoreOpenTimeoutSeconds
         ) {
             try makeSharedModelContainer()
         }
     }
 
-    private func loadFallbackContainerOnBackgroundQueue() async throws -> ModelContainer {
+    private func loadStableFallbackContainerOnBackgroundQueue() async throws -> ModelContainer {
+        try await openModelContainerOffMainThread(
+            label: "stable-fallback",
+            timeout: AppBootstrapTiming.recoveryStoreOpenTimeoutSeconds
+        ) {
+            try makeFallbackModelContainer()
+        }
+    }
+
+    private func loadFreshFallbackContainerOnBackgroundQueue() async throws -> ModelContainer {
         try await openModelContainerOffMainThread(
             label: "fresh-fallback",
-            timeout: AppBootstrapTiming.containerOpenTimeoutSeconds
+            timeout: AppBootstrapTiming.recoveryStoreOpenTimeoutSeconds
         ) {
             try Self.makeEmergencyFallbackContainer()
         }
@@ -125,7 +148,7 @@ private final class AppBootstrap: ObservableObject {
     private func loadInMemoryContainerOnBackgroundQueue() async throws -> ModelContainer {
         try await openModelContainerOffMainThread(
             label: "in-memory-emergency",
-            timeout: AppBootstrapTiming.containerOpenTimeoutSeconds
+            timeout: AppBootstrapTiming.inMemoryStoreOpenTimeoutSeconds
         ) {
             try Self.makeInMemoryEmergencyContainer()
         }
@@ -172,12 +195,16 @@ private final class AppBootstrap: ObservableObject {
 
     private var shouldSkipSharedStoreForRecovery: Bool {
         let defaults = UserDefaults.standard
+        if defaults.bool(forKey: AppLaunchDefaults.useRecoveryStoreKey) {
+            return true
+        }
+
         let startedAt = defaults.double(forKey: AppLaunchDefaults.bootstrapStartedAtKey)
         let completedAt = defaults.double(forKey: AppLaunchDefaults.bootstrapCompletedAtKey)
         guard startedAt > completedAt else { return false }
 
         let unfinishedAge = Date().timeIntervalSince1970 - startedAt
-        return unfinishedAge > AppBootstrapTiming.containerOpenTimeoutSeconds
+        return unfinishedAge > AppBootstrapTiming.sharedStoreOpenTimeoutSeconds
     }
 
     private func markBootstrapStarted() {
@@ -186,6 +213,12 @@ private final class AppBootstrap: ObservableObject {
 
     private func markBootstrapCompleted() {
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: AppLaunchDefaults.bootstrapCompletedAtKey)
+    }
+
+    private func markSharedStoreFailed() {
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: AppLaunchDefaults.useRecoveryStoreKey)
+        defaults.set(Date().timeIntervalSince1970, forKey: AppLaunchDefaults.lastSharedStoreFailureKey)
     }
 }
 

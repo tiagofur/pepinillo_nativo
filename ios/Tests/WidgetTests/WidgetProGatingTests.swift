@@ -5,7 +5,7 @@ import Testing
 import Foundation
 @testable import Pepinillo
 
-@Suite("WidgetProGating")
+@Suite("WidgetProGating", .serialized)
 struct WidgetProGatingTests {
 
     @Test("AppGroupDefaults.isProUser round-trips")

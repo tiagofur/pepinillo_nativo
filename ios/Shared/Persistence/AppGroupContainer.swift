@@ -580,6 +580,7 @@ enum AppGroupDefaults {
 /// migrates that store before the first SwiftUI frame, so the launch path uses a
 /// fresh local store file and leaves the legacy file untouched for later recovery.
 func makeSharedModelContainer() throws -> ModelContainer {
+    try ensureDirectoryExists(for: AppGroup.storeURL)
     persistenceLogger.info("Opening shared ModelContainer at: \(AppGroup.storeURL.path, privacy: .public)")
     do {
         return try makeModelContainer(at: AppGroup.storeURL)
@@ -601,6 +602,7 @@ func makeSharedModelContainer() throws -> ModelContainer {
 /// Opens the CloudKit-backed store used for Pepinillo+ Apple sync.
 /// Call this only after the first SwiftUI frame is visible.
 func makeAppleCloudModelContainer() throws -> ModelContainer {
+    try ensureDirectoryExists(for: AppGroup.appleCloudStoreURL)
     persistenceLogger.info("Opening Apple Cloud ModelContainer at: \(AppGroup.appleCloudStoreURL.path, privacy: .public)")
     return try makeModelContainer(
         at: AppGroup.appleCloudStoreURL,
@@ -649,22 +651,14 @@ private func makeModelContainer(
 }
 
 func makeFallbackModelContainer() throws -> ModelContainer {
-    let fileManager = FileManager.default
-    let directory = AppGroup.fallbackStoreURL.deletingLastPathComponent()
-    if fileManager.fileExists(atPath: directory.path) == false {
-        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-    }
-
+    try ensureDirectoryExists(for: AppGroup.fallbackStoreURL)
+    persistenceLogger.warning("Opening stable fallback ModelContainer at: \(AppGroup.fallbackStoreURL.path, privacy: .public)")
     return try makeModelContainer(at: AppGroup.fallbackStoreURL)
 }
 
 func makeFreshFallbackModelContainer() throws -> ModelContainer {
-    let fileManager = FileManager.default
     let fallbackURL = AppGroup.freshFallbackStoreURL()
-    let directory = fallbackURL.deletingLastPathComponent()
-    if fileManager.fileExists(atPath: directory.path) == false {
-        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-    }
+    try ensureDirectoryExists(for: fallbackURL)
 
     persistenceLogger.info("Opening fresh fallback ModelContainer at: \(fallbackURL.path, privacy: .public)")
     return try makeModelContainer(at: fallbackURL)
@@ -703,5 +697,13 @@ private func quarantineCorruptedStoreIfPresent() throws {
         }
 
         try fileManager.moveItem(at: sourceURL, to: recoveredURL)
+    }
+}
+
+private func ensureDirectoryExists(for storeURL: URL) throws {
+    let fileManager = FileManager.default
+    let directory = storeURL.deletingLastPathComponent()
+    if fileManager.fileExists(atPath: directory.path) == false {
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
     }
 }

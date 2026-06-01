@@ -361,7 +361,14 @@ public actor FocusEngine {
 
     private func tick() {
         // Handle external pause requests (from widget) immediately, even in background.
-        if AppGroupDefaults.externalPauseRequested && state?.isPaused == false {
+        if AppGroupDefaults.externalPauseRequested,
+           let current = state,
+           current.isPaused == false {
+            guard !isStaleExternalPauseCommand(for: current) else {
+                AppGroupDefaults.externalPauseRequested = false
+                return
+            }
+
             let elapsed = AppGroupDefaults.activeSessionElapsed
             let remaining = AppGroupDefaults.activeSessionRemaining
             let pausedAt = AppGroupDefaults.activeSessionPausedAt ?? Date.now
@@ -410,6 +417,18 @@ public actor FocusEngine {
 
         state = current
         emit(.tick(current))
+    }
+
+    private func isStaleExternalPauseCommand(for current: FocusSessionState) -> Bool {
+        if let issuedAt = AppGroupDefaults.externalCommandIssuedAt {
+            return issuedAt < current.startedAt
+        }
+
+        if let pausedAt = AppGroupDefaults.activeSessionPausedAt {
+            return pausedAt < current.startedAt
+        }
+
+        return true
     }
 
     // MARK: - Private: Phase Management

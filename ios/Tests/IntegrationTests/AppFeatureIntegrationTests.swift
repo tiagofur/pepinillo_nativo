@@ -106,6 +106,11 @@ struct AppFeatureIntegrationTests {
     }
 
     @Test func appLaunchSetsOnboardingFlagIfPreviouslyCompleted() async {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
         var prefs = UserPreferencesDTO()
         prefs.hasCompletedOnboarding = true
         let completedPrefs = prefs
@@ -128,6 +133,15 @@ struct AppFeatureIntegrationTests {
             $0.signInWithAppleClient.checkCredentialState = { _ in false }
             $0.keychainClient.hasTokens = { false }
             $0.spotlightClient.indexTasks = { _ in }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
         }
 
         store.exhaustivity = .off
@@ -140,6 +154,11 @@ struct AppFeatureIntegrationTests {
     }
 
     @Test func appLaunchDoesNotSetOnboardingFlagForNewUser() async {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
@@ -158,6 +177,15 @@ struct AppFeatureIntegrationTests {
             $0.signInWithAppleClient.checkCredentialState = { _ in false }
             $0.keychainClient.hasTokens = { false }
             $0.spotlightClient.indexTasks = { _ in }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
+            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
         }
 
         store.exhaustivity = .off

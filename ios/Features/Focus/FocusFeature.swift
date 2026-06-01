@@ -189,9 +189,7 @@ struct FocusFeature {
                 let widgetStart = timerStart ?? AppGroupDefaults.activeSessionTimerStart
                 let widgetEnd = timerEnd ?? AppGroupDefaults.activeSessionTimerEnd
                 let startedFromWidget = AppGroupDefaults.activeSessionStartedFromWidget
-                let shouldAdoptWidgetAnchors = timerStart != nil
-                    || startedFromWidget
-                    || (widgetStart.map { now.timeIntervalSince($0) < 15 } ?? false)
+                let shouldAdoptWidgetAnchors = timerStart != nil || startedFromWidget
                 let engineTimerStart: Date?
                 let engineTimerEnd: Date?
                 
@@ -214,7 +212,24 @@ struct FocusFeature {
                 
                 let initialPhase = state.selectedMode.strategy.initialPhase(config: state.config)
                 state.phase = initialPhase
-                state.elapsedSeconds = 0
+
+                let initialTarget = state.selectedMode.strategy.targetDuration(config: state.config, phase: initialPhase)
+                let initialElapsed = engineTimerStart.map { max(0, now.timeIntervalSince($0)) } ?? 0
+                state.elapsedSeconds = initialElapsed
+
+                if state.selectedMode.direction == .countDown, let initialTarget {
+                    let initialRemaining = engineTimerEnd.map { max(0, $0.timeIntervalSince(now)) }
+                        ?? max(0, initialTarget - initialElapsed)
+                    state.remainingSeconds = initialRemaining
+                    state.progress = min(max(initialElapsed / max(initialTarget, 1), 0), 1)
+                    AppGroupDefaults.activeSessionRemaining = initialRemaining
+                    AppGroupDefaults.activeSessionProgress = state.progress
+                } else {
+                    state.remainingSeconds = nil
+                    state.progress = nil
+                    AppGroupDefaults.activeSessionRemaining = nil
+                    AppGroupDefaults.activeSessionProgress = nil
+                }
 
                 // Set pomodoroNumber for Pomodoro mode — will be updated from DB in the effect below
                 if state.selectedMode == .pomodoro, case .work(_, _) = initialPhase {

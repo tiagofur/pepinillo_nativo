@@ -34,7 +34,7 @@ public final class TaskItem {
     public var preferredMode: String?  // FocusMode.rawValue — which mode works best for this task type
 
     // MARK: - Sync Metadata
-    public var syncId: String
+    public var syncId: String = UUID().uuidString
     public var serverId: Int?
     public var isDirty: Bool = true
     public var isDeleted: Bool = false

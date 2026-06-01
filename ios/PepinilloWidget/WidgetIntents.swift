@@ -96,6 +96,8 @@ struct PauseFocusFromWidgetIntent: AppIntent {
             AppGroupDefaults.activeSessionProgress = min(max(elapsed / duration, 0), 1)
         }
 
+        AppGroupDefaults.externalCommandID = UUID().uuidString
+        AppGroupDefaults.externalCommandIssuedAt = now
         AppGroupDefaults.externalResumeRequested = false
         AppGroupDefaults.externalPauseRequested = true
         AppGroupDefaults.activeSessionIsPaused = true
@@ -131,6 +133,8 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
         }
 
         AppGroupDefaults.activeSessionElapsed = AppGroupDefaults.activeSessionLiveElapsed(at: now)
+        AppGroupDefaults.externalCommandID = UUID().uuidString
+        AppGroupDefaults.externalCommandIssuedAt = now
         AppGroupDefaults.externalPauseRequested = false
         AppGroupDefaults.externalResumeRequested = true
         AppGroupDefaults.activeSessionIsPaused = false
@@ -148,6 +152,8 @@ struct StopFocusFromWidgetIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
+        AppGroupDefaults.externalCommandID = UUID().uuidString
+        AppGroupDefaults.externalCommandIssuedAt = .now
         AppGroupDefaults.externalPauseRequested = false
         AppGroupDefaults.externalResumeRequested = false
         AppGroupDefaults.externalStopRequested = true

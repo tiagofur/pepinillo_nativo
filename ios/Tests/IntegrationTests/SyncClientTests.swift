@@ -9,6 +9,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
+@Suite("SyncClient", .serialized)
 @MainActor
 struct SyncClientTests {
 

@@ -502,19 +502,37 @@ struct FocusEngineLinkedTaskTests {
 
 // MARK: - Timer Ticking
 
-@Suite("FocusEngine — Timer")
+@Suite("FocusEngine — Timer", .serialized)
 struct FocusEngineTimerTests {
 
     @Test func elapsedTimeIncreasesAfterTick() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .stopwatch)
 
-        // Wait for a few ticks
-        try await Task.sleep(for: .milliseconds(300))
-
-        let state = await engine.currentState()
+        let state = try await waitForPositiveElapsed(engine)
         #expect(state != nil)
         #expect((state?.elapsedSeconds ?? 0) > 0)
+    }
+
+    @Test func staleExternalPauseCommandDoesNotFreezeNewSession() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.externalCommandID = UUID().uuidString
+        AppGroupDefaults.externalCommandIssuedAt = Date(timeIntervalSince1970: 1)
+        AppGroupDefaults.activeSessionPausedAt = Date(timeIntervalSince1970: 1)
+        AppGroupDefaults.activeSessionElapsed = 0
+        AppGroupDefaults.externalPauseRequested = true
+
+        let engine = FocusEngine()
+        await engine.start(mode: .stopwatch)
+
+        let state = try await waitForPositiveElapsed(engine)
+        #expect(state?.isPaused == false)
+        #expect((state?.elapsedSeconds ?? 0) > 0)
+        #expect(AppGroupDefaults.externalPauseRequested == false)
     }
 
     @Test func countdownModeHasProgress() async throws {
@@ -549,6 +567,18 @@ struct FocusEngineTimerTests {
 
         // Elapsed should not have grown while paused
         #expect(elapsedAfterWait == elapsedAtPause)
+    }
+
+    private func waitForPositiveElapsed(_ engine: FocusEngine) async throws -> FocusSessionState? {
+        var state = await engine.currentState()
+        for _ in 0..<40 {
+            if (state?.elapsedSeconds ?? 0) > 0 {
+                return state
+            }
+            try await Task.sleep(for: .milliseconds(50))
+            state = await engine.currentState()
+        }
+        return state
     }
 }
 
