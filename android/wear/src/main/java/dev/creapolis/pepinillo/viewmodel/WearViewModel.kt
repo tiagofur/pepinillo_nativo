@@ -10,6 +10,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+import dev.creapolis.pepinillo.service.WearFocusService
+
 class WearViewModel(application: Application) : AndroidViewModel(application) {
     private val sender = WearMessageSender(application)
 
@@ -46,6 +48,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 phaseLabel = "Focus",
             ),
         )
+        WearFocusService.start(getApplication())
         viewModelScope.launch {
             sendSafely("start_timer") { sender.startTimer(mode) }
         }
@@ -56,6 +59,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         WearDataStore.updateTimer(
             timerState.value.copy(status = "Paused"),
         )
+        WearFocusService.start(getApplication())
         viewModelScope.launch {
             sendSafely("pause_timer") { sender.pauseTimer() }
         }
@@ -66,6 +70,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         WearDataStore.updateTimer(
             timerState.value.copy(status = "Running"),
         )
+        WearFocusService.start(getApplication())
         viewModelScope.launch {
             sendSafely("resume_timer") { sender.resumeTimer() }
         }
@@ -81,6 +86,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 phaseLabel = "Listo",
             ),
         )
+        WearFocusService.stop(getApplication())
         viewModelScope.launch {
             sendSafely("stop_timer") { sender.stopTimer() }
         }
@@ -99,6 +105,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 progress = 1f,
             ),
         )
+        WearFocusService.start(getApplication())
         viewModelScope.launch {
             sendSafely("skip_phase") { sender.skipPhase() }
         }
