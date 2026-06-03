@@ -1,6 +1,10 @@
 package dev.creapolis.pepinillo.feature.focus
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -61,6 +65,7 @@ data class FocusUiState(
     val soundscapeVolume: Float = 0.5f,
     val showSoundscapePicker: Boolean = false,
     val completedSessions: Int = 0,
+    val showBatteryWarningDialog: Boolean = false,
 )
 
 @HiltViewModel
@@ -82,6 +87,7 @@ class FocusViewModel @Inject constructor(
     private val _selectedSoundscape = MutableStateFlow<Soundscape?>(null)
     private val _soundscapeVolume = MutableStateFlow(0.5f)
     private val _showSoundscapePicker = MutableStateFlow(false)
+    private val _showBatteryWarningDialog = MutableStateFlow(false)
     private var _lastCompletedSessionId: String? = null
     private val _successMessage = MutableStateFlow<Int?>(null)
     val successMessage: StateFlow<Int?> = _successMessage.asStateFlow()
@@ -199,8 +205,9 @@ class FocusViewModel @Inject constructor(
             _selectedSoundscape,
             _soundscapeVolume,
             _showSoundscapePicker,
-        ) { soundscape, volume, showPicker ->
-            SoundscapeCombined(soundscape, volume, showPicker)
+            _showBatteryWarningDialog,
+        ) { soundscape, volume, showPicker, showBatteryWarning ->
+            SoundscapeCombined(soundscape, volume, showPicker, showBatteryWarning)
         },
     ) { combined, settings, soundscape ->
         FocusUiState(
@@ -231,6 +238,7 @@ class FocusViewModel @Inject constructor(
             soundscapeVolume = soundscape.volume,
             showSoundscapePicker = soundscape.showPicker,
             completedSessions = combined.timerState.completedSessions,
+            showBatteryWarningDialog = soundscape.showBatteryWarning,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
         greetingRes = computeGreetingRes(),
@@ -256,11 +264,53 @@ class FocusViewModel @Inject constructor(
     fun onStartStopClick() {
         val state = focusEngine.state.value
         when (state.status) {
-            TimerStatus.Idle -> focusEngine.start()
+            TimerStatus.Idle -> {
+                if (!isIgnoringBatteryOptimizations()) {
+                    _showBatteryWarningDialog.value = true
+                } else {
+                    focusEngine.start()
+                }
+            }
             TimerStatus.Running -> focusEngine.pause()
             TimerStatus.Paused -> focusEngine.start()
             TimerStatus.WaitingForNext -> focusEngine.start()
         }
+    }
+
+    fun startTimerAnyway() {
+        _showBatteryWarningDialog.value = false
+        focusEngine.start()
+    }
+
+    fun dismissBatteryWarning() {
+        _showBatteryWarningDialog.value = false
+    }
+
+    fun openBatterySettings() {
+        _showBatteryWarningDialog.value = false
+        focusEngine.start()
+
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                data = Uri.parse("package:${context.packageName}")
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            try {
+                val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(fallbackIntent)
+            } catch (ex: Exception) {
+                // Ignore if settings can't be opened
+            }
+        }
+    }
+
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        return powerManager.isIgnoringBatteryOptimizations(context.packageName)
     }
 
     fun onStopClick() {
@@ -372,6 +422,7 @@ class FocusViewModel @Inject constructor(
         val soundscape: Soundscape?,
         val volume: Float,
         val showPicker: Boolean,
+        val showBatteryWarning: Boolean,
     )
 
     private fun computeGreetingRes(): Int {
