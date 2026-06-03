@@ -41,12 +41,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.rememberDatePickerState
@@ -86,6 +88,7 @@ import java.util.Locale
 fun TaskDetailScreen(
     onBack: () -> Unit,
     onNavigateToPaywall: () -> Unit,
+    onNavigateToAnalytics: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TaskDetailViewModel = hiltViewModel(),
 ) {
@@ -953,6 +956,16 @@ fun TaskDetailScreen(
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.task_detail_btn_start))
+            }
+
+            OutlinedButton(
+                onClick = { onNavigateToAnalytics(task.id) },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Icon(Icons.Filled.BarChart, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Ver estadísticas")
             }
 
             TextButton(

@@ -291,6 +291,9 @@ fun PepinilloApp(
             composable(TopLevelDestination.Plan.route) {
                 TasksScreen(
                     onTaskClick = {},
+                    onNavigateToAnalytics = { taskId ->
+                        navController.navigate("tasks/$taskId/analytics")
+                    },
                     onNavigateToPaywall = {
                         navController.navigate("paywall")
                     },
