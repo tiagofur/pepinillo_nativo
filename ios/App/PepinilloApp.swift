@@ -49,42 +49,108 @@ private final class AppBootstrap: ObservableObject {
     @Published var store: StoreOf<AppFeature>?
 
     init() {
-        bootstrapSync()
+        // Do not open SwiftData synchronously here. On physical devices the first
+        // store open can migrate/validate SQLite and block SwiftUI from rendering,
+        // leaving the system launch screen visible long enough to feel hung.
+        Task { [weak self] in
+            await self?.bootstrap()
+        }
     }
 
-    private func bootstrapSync() {
+    private func bootstrap() async {
         phase = .loading
         markBootstrapStarted()
-        startupLogger.info("Starting synchronous bootstrap phase...")
+        startupLogger.info("Starting asynchronous bootstrap phase...")
         do {
-            let container = try loadContainerSync()
+            let container = try await loadContainerWithTimeout()
             startupLogger.info("ModelContainer loaded successfully, applying...")
             apply(container: container)
             markBootstrapCompleted()
         } catch {
-            startupLogger.error("App bootstrap failed: \(String(describing: error), privacy: .public)")
+            startupLogger.error("App bootstrap failed after timeout/error: \(String(describing: error), privacy: .public)")
             phase = .failed
         }
     }
 
     func retry() {
         startupLogger.info("User requested bootstrap retry")
-        bootstrapSync()
+        Task { [weak self] in
+            await self?.bootstrap()
+        }
     }
 
-    private func loadContainerSync() throws -> ModelContainer {
+    private func loadContainerWithTimeout() async throws -> ModelContainer {
         if shouldSkipSharedStoreForRecovery {
             startupLogger.warning("Recovery mode is active; skipping shared store and opening stable recovery store.")
-            return try makeFallbackModelContainer()
+            statusMessage = String(localized: "Repairing local data...")
+            return try await loadRecoveryContainer()
         }
 
         do {
-            startupLogger.info("Attempting to load shared ModelContainer...")
-            return try makeSharedModelContainer()
+            statusMessage = String(localized: "Opening local data...")
+            startupLogger.info("Attempting to load shared ModelContainer with launch-safe timeout...")
+            return try await loadSharedContainerOnBackgroundQueue()
         } catch {
-            startupLogger.warning("Shared container failed, attempting emergency fallback: \(String(describing: error), privacy: .public)")
+            startupLogger.warning("Shared container failed or timed out, attempting emergency fallback: \(String(describing: error), privacy: .public)")
             markSharedStoreFailed()
-            return try makeFallbackModelContainer()
+            statusMessage = String(localized: "Repairing local data...")
+            return try await loadRecoveryContainer()
+        }
+    }
+
+    private func loadRecoveryContainer() async throws -> ModelContainer {
+        do {
+            return try await loadStableFallbackContainerOnBackgroundQueue()
+        } catch {
+            startupLogger.error("Stable fallback container failed/timed out, attempting fresh fallback store: \(String(describing: error), privacy: .public)")
+            do {
+                return try await loadFreshFallbackContainerOnBackgroundQueue()
+            } catch {
+                startupLogger.error("Fresh fallback container failed/timed out, attempting in-memory emergency store: \(String(describing: error), privacy: .public)")
+                statusMessage = String(localized: "Opening recovery mode...")
+                do {
+                    return try await loadInMemoryContainerOnBackgroundQueue()
+                } catch {
+                    startupLogger.fault("Critical failure: in-memory emergency container failed/timed out: \(String(describing: error), privacy: .public)")
+                    throw error
+                }
+            }
+        }
+    }
+
+    private func loadSharedContainerOnBackgroundQueue() async throws -> ModelContainer {
+        try await openModelContainerOffMainThread(
+            label: "shared-app-group",
+            timeout: AppBootstrapTiming.sharedStoreOpenTimeoutSeconds
+        ) {
+            try makeSharedModelContainer()
+        }
+    }
+
+    private func loadStableFallbackContainerOnBackgroundQueue() async throws -> ModelContainer {
+        try await openModelContainerOffMainThread(
+            label: "stable-fallback",
+            timeout: AppBootstrapTiming.recoveryStoreOpenTimeoutSeconds
+        ) {
+            try makeFallbackModelContainer()
+        }
+    }
+
+    private func loadFreshFallbackContainerOnBackgroundQueue() async throws -> ModelContainer {
+        try await openModelContainerOffMainThread(
+            label: "fresh-fallback",
+            timeout: AppBootstrapTiming.recoveryStoreOpenTimeoutSeconds
+        ) {
+            try Self.makeEmergencyFallbackContainer()
+        }
+    }
+
+    private func loadInMemoryContainerOnBackgroundQueue() async throws -> ModelContainer {
+        try await openModelContainerOffMainThread(
+            label: "in-memory-emergency",
+            timeout: AppBootstrapTiming.inMemoryStoreOpenTimeoutSeconds
+        ) {
+            try Self.makeInMemoryEmergencyContainer()
         }
     }
 
