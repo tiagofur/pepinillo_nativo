@@ -97,6 +97,7 @@ import kotlin.math.roundToInt
 @Composable
 fun TasksScreen(
     onTaskClick: (String) -> Unit,
+    onNavigateToAnalytics: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TasksViewModel = hiltViewModel(),
     onNavigateToPaywall: () -> Unit = {},
@@ -410,7 +411,11 @@ fun TasksScreen(
                 TaskDetailScreen(
                     onBack = { selectedTaskId = null },
                     onNavigateToPaywall = onNavigateToPaywall,
-                    viewModel = detailViewModel
+                    viewModel = detailViewModel,
+                    onNavigateToAnalytics = { taskId ->
+                        selectedTaskId = null
+                        onNavigateToAnalytics(taskId)
+                    }
                 )
             }
         }
