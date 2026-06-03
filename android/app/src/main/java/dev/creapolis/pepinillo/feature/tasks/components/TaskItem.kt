@@ -91,6 +91,15 @@ fun TaskItem(
         label = "checkboxScale"
     )
 
+    val checkmarkScale by animateFloatAsState(
+        targetValue = if (task.isCompleted) 1f else 0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "checkmarkScale"
+    )
+
     val checkboxColor by animateColorAsState(
         targetValue = if (task.isCompleted) {
             MaterialTheme.colorScheme.primary
@@ -181,7 +190,6 @@ fun TaskItem(
                         interactionSource = interactionSource,
                         indication = null,
                         onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             onToggleCompletion()
                         }
                     )
@@ -210,11 +218,13 @@ fun TaskItem(
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    if (task.isCompleted) {
+                    if (checkmarkScale > 0.01f) {
                         Icon(
                             imageVector = Icons.Rounded.Check,
                             contentDescription = "Completed",
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier
+                                .size(16.dp)
+                                .scale(checkmarkScale),
                             tint = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
