@@ -5,7 +5,9 @@ import android.view.WindowManager
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -127,6 +129,21 @@ fun FocusScreen(
         targetValue = if (sessionActive) 292f else 268f,
         animationSpec = tween(500),
         label = "timerSize",
+    )
+    val buttonWidth by animateDpAsState(
+        targetValue = if (sessionActive) 72.dp else 280.dp,
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
+        label = "buttonWidth",
+    )
+    val buttonHeight by animateDpAsState(
+        targetValue = if (sessionActive) 72.dp else 60.dp,
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
+        label = "buttonHeight",
+    )
+    val buttonCornerRadius by animateDpAsState(
+        targetValue = if (sessionActive) 36.dp else 30.dp,
+        animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
+        label = "buttonCornerRadius",
     )
     val successMsg by viewModel.successMessage.collectAsState()
 
@@ -300,14 +317,8 @@ fun FocusScreen(
                         }
                         viewModel.onStartStopClick()
                     },
-                    modifier = if (sessionActive) {
-                        Modifier.size(72.dp)
-                    } else {
-                        Modifier
-                            .fillMaxWidth(0.82f)
-                            .height(60.dp)
-                    },
-                    shape = if (sessionActive) CircleShape else RoundedCornerShape(30.dp),
+                    modifier = Modifier.size(width = buttonWidth, height = buttonHeight),
+                    shape = RoundedCornerShape(buttonCornerRadius),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = animatedAccentColor,
                         contentColor = animatedOnAccentColor,
