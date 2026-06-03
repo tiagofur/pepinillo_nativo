@@ -485,6 +485,28 @@ fun FocusScreen(
             },
         )
     }
+
+    if (uiState.showBatteryWarningDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissBatteryWarning() },
+            title = { Text(stringResource(R.string.setup_battery)) },
+            text = { Text(stringResource(R.string.setup_battery_sub)) },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.openBatterySettings() },
+                ) {
+                    Text(stringResource(R.string.setup_btn_disable_restriction))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.startTimerAnyway() },
+                ) {
+                    Text(stringResource(R.string.btn_start_focus))
+                }
+            },
+        )
+    }
 }
 
 @Composable

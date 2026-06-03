@@ -52,6 +52,7 @@ import org.junit.runner.Description
 import androidx.lifecycle.viewModelScope
 
 import android.os.SystemClock
+import android.os.PowerManager
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 
@@ -134,8 +135,15 @@ class FocusViewModelTest {
         every { FocusTimerService.start(any()) } just runs
         every { FocusTimerService.stop(any()) } just runs
 
+        val powerManager = mockk<PowerManager>(relaxed = true) {
+            every { isIgnoringBatteryOptimizations(any()) } returns true
+        }
+
         // Context stub -- service calls are no-ops
-        context = mockk(relaxed = true)
+        context = mockk(relaxed = true) {
+            every { getSystemService(Context.POWER_SERVICE) } returns powerManager
+            every { packageName } returns "dev.creapolis.pepinillo"
+        }
 
         // Preferences
         prefsRepo = mockk {
@@ -297,6 +305,37 @@ class FocusViewModelTest {
         assertEquals(TimerStatus.Idle, engine.state.value.status)
         viewModel.onStartStopClick()
         assertEquals(TimerStatus.Running, engine.state.value.status)
+    }
+
+    @Test
+    fun `onStartStopClick when Idle and battery optimization active shows dialog`() = runTest {
+        collectUiState()
+        val powerManager = mockk<PowerManager>(relaxed = true) {
+            every { isIgnoringBatteryOptimizations(any()) } returns false
+        }
+        val contextWithOptimization = mockk<Context>(relaxed = true) {
+            every { getSystemService(Context.POWER_SERVICE) } returns powerManager
+            every { packageName } returns "dev.creapolis.pepinillo"
+        }
+        val localViewModel = FocusViewModel(
+            context = contextWithOptimization,
+            focusEngine = engine,
+            sessionRepository = sessionRepository,
+            taskRepository = taskRepository,
+            prefsRepo = prefsRepo,
+            featureGate = featureGate,
+            soundscapeManager = soundscapeManager,
+        )
+        backgroundScope.launch { localViewModel.uiState.collect {} }
+        
+        assertEquals(TimerStatus.Idle, engine.state.value.status)
+        assertFalse(localViewModel.uiState.value.showBatteryWarningDialog)
+        
+        localViewModel.onStartStopClick()
+        advanceUntilIdle()
+        
+        assertTrue(localViewModel.uiState.value.showBatteryWarningDialog)
+        assertEquals(TimerStatus.Idle, engine.state.value.status)
     }
 
     @Test
