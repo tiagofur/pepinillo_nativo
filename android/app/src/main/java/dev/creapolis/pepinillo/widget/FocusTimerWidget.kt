@@ -28,6 +28,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.action.actionStartService
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
@@ -313,15 +314,24 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 val primaryIcon = if (isRunning) R.drawable.ic_pause else R.drawable.ic_play
-                
+
+                val startIntent = Intent(context, FocusTimerService::class.java).apply {
+                    action = FocusTimerService.ACTION_START_MODE
+                    putExtra(FocusTimerService.EXTRA_MODE, (state.selectedMode ?: mode).name)
+                }
+
+                val pauseResumeIntent = Intent(context, FocusTimerService::class.java).apply {
+                    action = if (isRunning) FocusTimerService.ACTION_PAUSE else FocusTimerService.ACTION_RESUME
+                }
+
                 Box(
                     modifier = GlanceModifier
                         .background(accentColorProvider)
                         .cornerRadius(36.dp)
                         .size(72.dp)
                         .clickable(
-                            if (isActive) actionRunCallback<PauseResumeAction>()
-                            else actionRunCallback<StartAction>()
+                            if (isActive) actionStartService(pauseResumeIntent, isForegroundService = true)
+                            else actionStartService(startIntent, isForegroundService = true)
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
