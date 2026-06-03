@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -130,7 +131,7 @@ fun TaskItem(
             task.isCompleted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
             isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.06f)
             isDueToday -> Color(0xFFFF8A00).copy(alpha = 0.06f)
-            isScheduledToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
+            isScheduledToday -> brandGreen().copy(alpha = 0.06f)
             else -> Color.Transparent
         },
         animationSpec = tween(500),
@@ -142,7 +143,7 @@ fun TaskItem(
             task.isCompleted -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
             isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
             isDueToday -> Color(0xFFFF8A00).copy(alpha = 0.35f)
-            isScheduledToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+            isScheduledToday -> brandGreen().copy(alpha = 0.35f)
             else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
         },
         animationSpec = tween(500),
@@ -323,7 +324,7 @@ private fun MetadataRow(
     // Today indicator (only if no due date to avoid clutter)
     if (task.scheduledForToday && task.dueDate == null) {
         metadataItems.add {
-            val color = MaterialTheme.colorScheme.primary
+            val color = brandGreen()
             MetadataBadge(color = color) {
                 Icon(Icons.Rounded.Today, contentDescription = "Scheduled for today", modifier = Modifier.size(14.dp), tint = color)
                 Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
@@ -466,4 +467,11 @@ private fun isBeforeTodayMs(millis: Long): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
     val todayNorm = getNormalizedLocalDate()
     return dueNorm.before(todayNorm)
+}
+
+@Composable
+private fun brandGreen(): Color = if (isSystemInDarkTheme()) {
+    Color(0xFF9CD67D)
+} else {
+    Color(0xFF386A20)
 }
