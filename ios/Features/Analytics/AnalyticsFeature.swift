@@ -25,6 +25,7 @@ struct AnalyticsFeature {
         var achievements: [UserAchievement] = []
         var weeklyInsights: [FocusInsight] = []
         var isLoading: Bool = false
+        var hasLoadedData: Bool = false
         var isProUser: Bool = false
         @Presents var weeklyReview: WeeklyReviewFeature.State?
         @Presents var monthlyReview: MonthlyReviewFeature.State?
@@ -141,6 +142,7 @@ struct AnalyticsFeature {
             switch action {
 
             case .onAppear:
+                guard !state.isLoading, !state.hasLoadedData else { return .none }
                 state.isLoading = true
                 return .merge(
                     loadData(for: state.period),
@@ -157,6 +159,7 @@ struct AnalyticsFeature {
 
             case let .allDataLoaded(snapshots, insights, streakDays, longestStreak, achievements, weeklyInsights):
                 state.isLoading = false
+                state.hasLoadedData = true
                 state.weeklyInsights = weeklyInsights
 
                 // Build chart points (one per day, fill gaps with zeros)

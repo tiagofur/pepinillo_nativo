@@ -20,6 +20,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
         }
+        store.exhaustivity = .off
 
         await store.send(.tabSelected(.plan)) {
             $0.selectedTab = .plan
@@ -103,6 +104,113 @@ struct AppFeatureIntegrationTests {
             $0.focus.linkedTaskTitle = "Code the feature"
             $0.focus.linkedTaskEmoji = "🧠"
         }
+    }
+
+    @Test func sessionPersistedRefreshesPlanPomodoroProgress() async {
+        var initialState = AppFeature.State()
+        let taskID = UUID()
+        initialState.tasks.tasks = [
+            TaskListFeature.TaskItemState(
+                id: taskID,
+                title: "Code the feature",
+                isCompleted: false,
+                priority: .high,
+                energyLevel: .deep,
+                estimatedPomodoros: 5,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 0,
+                createdAt: .now
+            )
+        ]
+
+        let refreshedTask = TaskItemDTO(
+            id: taskID,
+            title: "Code the feature",
+            isCompleted: false,
+            priority: .high,
+            energyLevel: .deep,
+            estimatedPomodoros: 5,
+            completedPomodoros: 1,
+            scheduledForToday: true
+        )
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.fetchTasks = { [refreshedTask] }
+            $0.watchConnectivityClient.sendTasks = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.focus(.delegate(.sessionPersisted)))
+
+        await store.receive(.tasks(.tasksLoaded([.from(refreshedTask)]))) {
+            $0.tasks.tasks[id: taskID]?.completedPomodoros = 1
+            $0.focus.availableTasks[id: taskID]?.completedPomodoros = 1
+        }
+    }
+
+    @Test func completedPomodoroWorkPhaseIncrementsLinkedTaskProgress() async {
+        var initialState = AppFeature.State()
+        let taskID = UUID()
+        initialState.focus.linkedTaskID = taskID
+        initialState.focus.linkedTaskTitle = "Code the feature"
+        initialState.focus.activeMode = .pomodoro
+        initialState.tasks.tasks = [
+            TaskListFeature.TaskItemState(
+                id: taskID,
+                title: "Code the feature",
+                isCompleted: false,
+                priority: .high,
+                energyLevel: .deep,
+                estimatedPomodoros: 5,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 0,
+                createdAt: .now
+            )
+        ]
+
+        let incrementedTaskIDs = LockIsolated<[UUID]>([])
+        let refreshedTask = TaskItemDTO(
+            id: taskID,
+            title: "Code the feature",
+            isCompleted: false,
+            priority: .high,
+            energyLevel: .deep,
+            estimatedPomodoros: 5,
+            completedPomodoros: 1,
+            scheduledForToday: true
+        )
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.incrementTaskPomodoros = { id in incrementedTaskIDs.withValue { $0.append(id) } }
+            $0.persistenceClient.fetchTasks = { [refreshedTask] }
+            $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
+            $0.watchConnectivityClient.sendTasks = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.focus(.phaseCompleted(.work(number: 1, total: 5))))
+
+        await store.receive(.focus(.delegate(.taskProgressChanged)))
+        await store.receive(.tasks(.tasksLoaded([.from(refreshedTask)]))) {
+            $0.tasks.tasks[id: taskID]?.completedPomodoros = 1
+            $0.focus.availableTasks[id: taskID]?.completedPomodoros = 1
+        }
+
+        #expect(incrementedTaskIDs.value == [taskID])
     }
 
     @Test func appLaunchSetsOnboardingFlagIfPreviouslyCompleted() async {

@@ -293,6 +293,15 @@ fun PepinilloApp(
                     onNavigateToPaywall = {
                         navController.navigate("paywall")
                     },
+                    onStartFocusTask = {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
                 )
             }
             composable("tasks/{taskId}/analytics") {

@@ -177,6 +177,7 @@ struct TaskListFeature {
     }
 
     private enum _UndoTimerID: Hashable { case undoTimer }
+    private enum _SpotlightIndexID: Hashable { case indexTasks }
 
     @Dependency(\.persistenceClient) var persistence
     @Dependency(\.spotlightClient) var spotlight
@@ -192,6 +193,11 @@ struct TaskListFeature {
                 state.isLoading = true
                 return .run { send in
                     do {
+                        // Keep first app interaction local-first: show persisted tasks before
+                        // generating recurring instances or indexing Spotlight.
+                        let initialItems = try await persistence.fetchTasks()
+                        await send(.tasksLoaded(initialItems.map { TaskItemState.from($0) }))
+
                         try await persistence.generateRecurringTasks()
                         let items = try await persistence.fetchTasks()
                         let states = items.map { TaskItemState.from($0) }
@@ -214,8 +220,10 @@ struct TaskListFeature {
                     )
                 }
                 return .run { [spotlight] _ in
+                    try? await Task.sleep(for: .seconds(4))
                     try? await spotlight.indexTasks(dtos)
                 }
+                .cancellable(id: _SpotlightIndexID.indexTasks, cancelInFlight: true)
 
             case .tasksLoadFailed(let message):
                 state.isLoading = false
@@ -283,6 +291,7 @@ struct TaskListFeature {
                         scheduledForToday: newTask.scheduledForToday
                     )
                     try await persistence.saveTask(dto)
+                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     try await Task.sleep(for: .seconds(1.5))
                     await send(.successMessageDismissed)
                 }
@@ -352,6 +361,7 @@ struct TaskListFeature {
                 return .run { [spotlight] _ in
                     try await persistence.deleteTask(taskID)
                     try? await spotlight.deindexTask(taskID)
+                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                 }
 
             case .successMessageDismissed:
@@ -378,6 +388,7 @@ struct TaskListFeature {
                             try await persistence.saveTask(updated)
                         }
                     }
+                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                 }
 
             case .energyLevelChanged(let id, let level):
@@ -393,6 +404,7 @@ struct TaskListFeature {
                             dueDate: item.dueDate, scheduledForToday: item.scheduledForToday
                         )
                         try await persistence.saveTask(updated)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     }
                 }
 
@@ -411,6 +423,7 @@ struct TaskListFeature {
                             dueDate: item.dueDate, scheduledForToday: item.scheduledForToday
                         )
                         try await persistence.saveTask(updated)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     }
                 }
 
@@ -428,6 +441,7 @@ struct TaskListFeature {
                             dueDate: item.dueDate, scheduledForToday: scheduled
                         )
                         try await persistence.saveTask(updated)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     }
                 }
 

@@ -484,6 +484,7 @@ public struct PersistenceClient: Sendable {
     // Tasks
     public var fetchTasks: @Sendable () async throws -> [TaskItemDTO] = { [] }
     public var saveTask: @Sendable (TaskItemDTO) async throws -> Void
+    public var incrementTaskPomodoros: @Sendable (UUID) async throws -> Void
     public var deleteTask: @Sendable (UUID) async throws -> Void
 
     // Subtasks
@@ -634,6 +635,9 @@ extension PersistenceClient: DependencyKey {
                         try serviceProvider().saveTask(newTask)
                     }
                 }
+            },
+            incrementTaskPomodoros: { id in
+                try await MainActor.run { try serviceProvider().incrementTaskPomodoros(id: id) }
             },
             deleteTask: { id in
                 try await MainActor.run { try serviceProvider().softDeleteTask(id: id) }

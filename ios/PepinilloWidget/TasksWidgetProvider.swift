@@ -34,21 +34,34 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
             let container = try makeWidgetModelContainer()
             let context = ModelContext(container)
 
-            // Fetch all non-completed, non-template tasks
+            // Fetch active tasks, then apply the same "Today" semantics used by
+            // the Plan screen: explicitly scheduled for today, due today, or overdue.
+            // Do not fetch-limit before filtering, otherwise earlier inbox/upcoming
+            // tasks can crowd out today's tasks and make the widget look empty.
             var descriptor = FetchDescriptor<TaskItem>(
                 predicate: #Predicate<TaskItem> { task in
-                    task.isCompleted == false && task.isRecurringTemplate == false
+                    task.isCompleted == false
+                        && task.isRecurringTemplate == false
+                        && task.isDeleted == false
                 },
                 sortBy: [
                     SortDescriptor(\.sortOrder),
                     SortDescriptor(\.createdAt, order: .reverse),
                 ]
             )
-            descriptor.fetchLimit = 8
             // Avoid loading relationships in widget process
             descriptor.relationshipKeyPathsForPrefetching = []
 
+            let calendar = Calendar.current
+            let now = Date.now
+            let todayStart = calendar.startOfDay(for: now)
             let tasks = try context.fetch(descriptor)
+                .filter { task in
+                    let isDueToday = task.dueDate.map { calendar.isDateInToday($0) } ?? false
+                    let isOverdue = task.dueDate.map { $0 < todayStart } ?? false
+                    return task.scheduledForToday || isDueToday || isOverdue
+                }
+                .prefix(8)
 
             let isSessionActive = AppGroupDefaults.isSessionActive
             let activeTaskID = isSessionActive ? AppGroupDefaults.activeTaskID : nil

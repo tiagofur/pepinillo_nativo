@@ -10,11 +10,14 @@
 
 import Foundation
 import ComposableArchitecture
+import OSLog
 import WidgetKit
 
 private enum AppLaunchDefaults {
     static let hasCompletedOnboardingKey = "pepinillo.hasCompletedOnboarding"
 }
+
+private let appLaunchLogger = Logger(subsystem: "com.pepinillo.app", category: "app-launch")
 
 @Reducer
 struct AppFeature {
@@ -207,6 +210,7 @@ struct AppFeature {
         case notificationActionListener
         case externalCommandObserver
         case webSocket
+        case softSync
     }
 
     var body: some ReducerOf<Self> {
@@ -281,6 +285,9 @@ struct AppFeature {
 
             case .tabSelected(let tab):
                 state.selectedTab = tab
+                if tab == .dashboard {
+                    return .send(.analytics(.onAppear))
+                }
                 return .none
 
             case .onboardingCompleted:
@@ -305,20 +312,24 @@ struct AppFeature {
                 }
 
             case .appLaunched:
-                // All effects run in parallel. RevenueCat SDK methods internally
-                // wait for configure() via ensureConfigured(), so there is no need
-                // to block the entire startup chain with .concatenate().
-                // Network-dependent operations (sync, WebSocket) are NOT started here —
-                // they fire from subscriptionStateLoaded once we know the user's tier.
+                // Launch contract:
+                // 1. Load local data immediately so the app is useful after splash.
+                // 2. Start RevenueCat early because Pro flags gate product behavior.
+                // 3. Defer cloud/backend sync and heavyweight analytics until after
+                //    the UI has had time to become interactive.
                 return .merge(
-                    // RevenueCat: configure in parallel (SDK waits internally)
+                    // RevenueCat: configure in parallel. Entitlement checks wait
+                    // internally for configure(), but none of this blocks UI taps.
                     .run { send in
+                        let start = Date.now
                         let prefs = try await persistence.fetchPreferences()
                         let userID = prefs.appleUserID
                         await subscriptionClient.configure("appl_xnChlVXXtUFhusIfJyNrNDcMGLj", userID)
+                        appLaunchLogger.info("RevenueCat configure finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                     },
                     // Onboarding check + Apple credential state check
                     .run { [appleClient] send in
+                        let start = Date.now
                         let prefs = try await persistence.fetchPreferences()
                         if prefs.hasCompletedOnboarding {
                             await send(.onboardingCompleted)
@@ -327,10 +338,13 @@ struct AppFeature {
                             let authorized = await appleClient.checkCredentialState(userID)
                             await send(.appleCredentialStateChecked(userID, authorized))
                         }
+                        appLaunchLogger.info("Local preferences launch read finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                     },
                     // Subscription entitlement (waits for configure internally)
                     .run { send in
+                        let start = Date.now
                         let sub = await subscriptionClient.checkEntitlement()
+                        appLaunchLogger.info("RevenueCat entitlement finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                         await send(.subscriptionStateLoaded(sub))
                     },
                     // RevenueCat customer info stream (waits for configure internally)
@@ -342,7 +356,10 @@ struct AppFeature {
                     }
                     .cancellable(id: CancelID.transactionListener),
                     // Notification permission
-                    .send(.requestNotificationPermission),
+                    .run { send in
+                        try? await Task.sleep(for: .seconds(2))
+                        await send(.requestNotificationPermission)
+                    },
                     // Notification action taps
                     .run { [notificationClient] send in
                         let stream = notificationClient.observeActions()
@@ -358,6 +375,7 @@ struct AppFeature {
                     },
                     // Refresh user profile from network (with 10s timeout, non-blocking)
                     .run { [keychain, apiClient, persistence] send in
+                        try? await Task.sleep(for: .seconds(2))
                         guard await keychain.hasTokens() else { return }
                         do {
                             let apiUser = try await withThrowingTaskGroup(of: APIUser.self) { group in
@@ -401,8 +419,6 @@ struct AppFeature {
                     .cancellable(id: CancelID.watchCommandListener),
                     // Load tasks early so they are available for focus linking
                     .send(.tasks(.onAppear)),
-                    // Load analytics early so the Focus companion cards have data on first Focus visit
-                    .send(.analytics(.onAppear)),
                     // Reconcile widget/intent commands even if they arrived before bootstrap finished.
                     .send(.consumeExternalCommands)
                 )
@@ -537,6 +553,8 @@ struct AppFeature {
                 AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
                 if isPro { state.focus.showPaywall = false }
                 return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] _ in
+                    try? await Task.sleep(for: .seconds(3))
+                    let start = Date.now
                     await syncModeClient.reconcile(capabilities)
                     if capabilities.backendSync, await keychain.hasTokens() {
                         try? await syncClient.syncAll()
@@ -545,7 +563,9 @@ struct AppFeature {
                         webSocketClient.disconnect()
                     }
                     WidgetCenter.shared.reloadAllTimelines()
+                    appLaunchLogger.info("Soft sync finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                 }
+                .cancellable(id: CancelID.softSync, cancelInFlight: true)
 
             case .subscriptionUpdated(let sub):
                 #if DEBUG
@@ -566,6 +586,8 @@ struct AppFeature {
                 AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
                 if isPro { state.focus.showPaywall = false }
                 return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] _ in
+                    try? await Task.sleep(for: .seconds(3))
+                    let start = Date.now
                     await syncModeClient.reconcile(capabilities)
                     if capabilities.backendSync, await keychain.hasTokens() {
                         try? await syncClient.syncAll()
@@ -574,7 +596,9 @@ struct AppFeature {
                         webSocketClient.disconnect()
                     }
                     WidgetCenter.shared.reloadAllTimelines()
+                    appLaunchLogger.info("Soft sync update finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                 }
+                .cancellable(id: CancelID.softSync, cancelInFlight: true)
 
             case .celebrationTriggered(let milestone):
                 state.pendingCelebration = milestone
@@ -1109,6 +1133,13 @@ struct AppFeature {
                 // Keep focus task list in sync after mutations
                 state.focus.availableTasks = state.tasks.tasks
                 return pushTasksToWatch(state)
+
+            case .focus(.delegate(.sessionPersisted)),
+                 .focus(.delegate(.taskProgressChanged)):
+                return .run { [persistence] send in
+                    let items = try await persistence.fetchTasks()
+                    await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
+                }
 
             case .tasks(.delegate(.showPaywall)):
                 state.focus.showPaywall = true

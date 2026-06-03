@@ -1,14 +1,18 @@
 package dev.creapolis.pepinillo.feature.tasks
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -154,10 +158,12 @@ val TasksUiState.activeCount: Int
 class TasksViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val featureGate: FeatureGate,
+    private val focusEngine: FocusEngine,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _selectedFilter = MutableStateFlow(TaskFilter.Today)
-    private val _selectedSort = MutableStateFlow(TaskSortOption.Custom)
+    private val _selectedSort = MutableStateFlow(TaskSortOption.Newest)
     private val _energyFilter = MutableStateFlow<EnergyLevel?>(null)
     private val _showPaywall = MutableStateFlow(false)
     val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
@@ -233,6 +239,16 @@ class TasksViewModel @Inject constructor(
 
     fun dismissPaywall() {
         _showPaywall.value = false
+    }
+
+    fun startFocusOnTask(taskId: String) {
+        focusEngine.linkTask(taskId)
+        focusEngine.start()
+        _successMessage.value = R.string.msg_task_linked
+
+        viewModelScope.launch {
+            WidgetTaskStateManager.updateLinkedTaskId(context, taskId)
+        }
     }
 
     fun deleteTask(taskId: String) = viewModelScope.launch {

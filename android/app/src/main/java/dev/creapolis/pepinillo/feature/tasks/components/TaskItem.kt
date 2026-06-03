@@ -33,10 +33,11 @@ import androidx.compose.material.icons.filled.Battery3Bar
 import androidx.compose.material.icons.filled.Battery1Bar
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Checklist
-import androidx.compose.material.icons.rounded.DragHandle
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Today
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -76,8 +77,7 @@ fun TaskItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtaskProgress: Pair<Int, Int>? = null,
-    showDragHandle: Boolean = false,
-    dragHandleModifier: Modifier = Modifier,
+    onStartFocus: () -> Unit = {},
 ) {
     val haptics = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -276,17 +276,18 @@ fun TaskItem(
                 }
             }
 
-            // Drag handle (visible only when sort is Custom)
-            if (showDragHandle) {
+            if (!task.isCompleted) {
                 Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = Icons.Rounded.DragHandle,
-                    contentDescription = "Reorder task",
-                    modifier = dragHandleModifier
-                        .size(40.dp)
-                        .padding(8.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                )
+                IconButton(
+                    onClick = onStartFocus,
+                    modifier = Modifier.size(40.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PlayArrow,
+                        contentDescription = stringResource(R.string.btn_start_focus),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
         }
     }

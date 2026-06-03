@@ -6,6 +6,7 @@
 
 import Foundation
 import ComposableArchitecture
+import WidgetKit
 
 @Reducer
 struct TaskDetailFeature {
@@ -306,7 +307,10 @@ struct TaskDetailFeature {
     private func save(_ state: State) -> Effect<Action> {
         let dto = state.toDTO()
         return .merge(
-            .run { _ in try await persistence.saveTask(dto) },
+            .run { _ in
+                try await persistence.saveTask(dto)
+                WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+            },
             .send(.delegate(.taskUpdated(dto)))
         )
     }

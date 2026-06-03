@@ -127,6 +127,14 @@ struct FocusFeature {
         // Post-session journal
         case showJournalSheet(sessionID: UUID, modeName: String, actualDuration: TimeInterval)
         case journal(PresentationAction<SessionJournalFeature.Action>)
+
+        // Parent coordination
+        case delegate(Delegate)
+
+        enum Delegate: Equatable {
+            case sessionPersisted
+            case taskProgressChanged
+        }
     }
 
     // MARK: - Dependencies
@@ -598,10 +606,17 @@ struct FocusFeature {
 
                 // For Pomodoro work phases, send a phase-end notification
                 var phaseNotificationEffect: Effect<Action> = .none
+                var taskProgressEffect: Effect<Action> = .none
                 if case .work(let number, let total) = completedPhase {
                     let isLongBreak = number >= total
                     phaseNotificationEffect = .run { [notificationClient] _ in
                         await notificationClient.scheduleWorkPhaseEnd(number, isLongBreak, taskTitle)
+                    }
+                    if mode == .pomodoro, let taskID = state.linkedTaskID {
+                        taskProgressEffect = .run { [persistence] send in
+                            try await persistence.incrementTaskPomodoros(taskID)
+                            await send(.delegate(.taskProgressChanged))
+                        }
                     }
                 }
 
@@ -615,7 +630,8 @@ struct FocusFeature {
                         }
                         #endif
                     },
-                    phaseNotificationEffect
+                    phaseNotificationEffect,
+                    taskProgressEffect
                 )
 
             case .sessionCompleted(let result):
@@ -644,7 +660,10 @@ struct FocusFeature {
                     .run { [liveActivity] _ in await liveActivity.end(true) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
-                    .run { _ in try await persistence.saveSession(result) },
+                    .run { [persistence] send in
+                        try await persistence.saveSession(result)
+                        await send(.delegate(.sessionPersisted))
+                    },
                     .run { [notificationClient] _ in
                         await notificationClient.scheduleSessionComplete(modeName, taskTitle)
                     },
@@ -680,6 +699,9 @@ struct FocusFeature {
 
             case .interrupted:
                 state.interruptions += 1
+                return .none
+
+            case .delegate:
                 return .none
 
             // MARK: Task Picker

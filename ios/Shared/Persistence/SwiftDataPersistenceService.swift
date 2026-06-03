@@ -77,6 +77,18 @@ public final class SwiftDataPersistenceService {
         }
     }
 
+    public func incrementTaskPomodoros(id: UUID) throws {
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == id }
+        )
+        if let task = try context.fetch(descriptor).first {
+            task.completedPomodoros += 1
+            task.updatedAt = Date.now
+            task.isDirty = true
+            try context.save()
+        }
+    }
+
     // MARK: - Sessions
 
     public func saveSession(_ result: FocusSessionResult) throws {
@@ -89,7 +101,7 @@ public final class SwiftDataPersistenceService {
             )
             if let task = try context.fetch(taskDescriptor).first {
                 record.task = task
-                if result.wasCompleted && result.mode == .pomodoro {
+                if result.wasCompleted && result.mode == .pomodoro, case .work = result.phase {
                     task.completedPomodoros += 1
                     task.updatedAt = Date.now
                     task.isDirty = true  // Mark dirty for sync
