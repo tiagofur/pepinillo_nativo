@@ -266,10 +266,6 @@ fun PepinilloApp(
             navController = navController,
             startDestination = TopLevelDestination.Focus.route,
             modifier = Modifier.padding(innerPadding),
-            enterTransition = { fadeIn(tween(250)) },
-            exitTransition = { fadeOut(tween(250)) },
-            popEnterTransition = { fadeIn(tween(250)) },
-            popExitTransition = { fadeOut(tween(250)) },
         ) {
             composable(TopLevelDestination.Focus.route) {
                 FocusScreen(
