@@ -161,7 +161,7 @@ struct TaskRow: View {
                 if task.scheduledForToday && task.dueDate == nil {
                     Label(String(localized: "Today"), systemImage: "bolt.fill")
                         .font(.caption2)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.green)
                 }
 
                 // Energy level
@@ -223,6 +223,8 @@ struct TaskRow: View {
             return Color.red.opacity(0.04)
         } else if isDueToday {
             return Color.orange.opacity(0.04)
+        } else if task.scheduledForToday {
+            return Color.green.opacity(0.04)
         } else {
             return Color.clear
         }
@@ -235,6 +237,8 @@ struct TaskRow: View {
             return Color.red.opacity(0.35)
         } else if isDueToday {
             return Color.orange.opacity(0.35)
+        } else if task.scheduledForToday {
+            return Color.green.opacity(0.35)
         } else {
             return Color(uiColor: .separator).opacity(0.2)
         }

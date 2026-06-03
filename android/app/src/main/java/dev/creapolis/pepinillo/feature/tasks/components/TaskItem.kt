@@ -117,6 +117,8 @@ fun TaskItem(
 
     val isOverdue = task.dueDate != null && isBeforeTodayMs(task.dueDate)
 
+    val isScheduledToday = task.scheduledForToday
+
     val checkboxBorderColor = when {
         task.isCompleted -> MaterialTheme.colorScheme.primary
         priorityColor != null -> priorityColor
@@ -128,6 +130,7 @@ fun TaskItem(
             task.isCompleted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
             isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.06f)
             isDueToday -> Color(0xFFFF8A00).copy(alpha = 0.06f)
+            isScheduledToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)
             else -> Color.Transparent
         },
         animationSpec = tween(500),
@@ -139,6 +142,7 @@ fun TaskItem(
             task.isCompleted -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
             isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
             isDueToday -> Color(0xFFFF8A00).copy(alpha = 0.35f)
+            isScheduledToday -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
             else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
         },
         animationSpec = tween(500),
@@ -319,7 +323,7 @@ private fun MetadataRow(
     // Today indicator (only if no due date to avoid clutter)
     if (task.scheduledForToday && task.dueDate == null) {
         metadataItems.add {
-            val color = Color(0xFFFF8A00)
+            val color = MaterialTheme.colorScheme.primary
             MetadataBadge(color = color) {
                 Icon(Icons.Rounded.Today, contentDescription = "Scheduled for today", modifier = Modifier.size(14.dp), tint = color)
                 Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)

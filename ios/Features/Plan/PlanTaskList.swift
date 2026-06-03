@@ -153,7 +153,7 @@ struct PlanTaskList: View {
                                 systemImage: task.scheduledForToday ? "minus.circle" : "bolt.circle.fill"
                             )
                         }
-                        .tint(task.scheduledForToday ? Color.pepinilloTertiaryLabel : .orange)
+                        .tint(task.scheduledForToday ? Color.pepinilloTertiaryLabel : .green)
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
