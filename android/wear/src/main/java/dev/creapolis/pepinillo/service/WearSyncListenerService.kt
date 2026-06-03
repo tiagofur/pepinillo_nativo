@@ -159,6 +159,12 @@ class WearSyncListenerService : WearableListenerService() {
                         totalDurationMs = totalMillis,
                     )
                     processor.onTimerData(timerState)
+                    
+                    if (status == "Running" || status == "Paused") {
+                        WearFocusService.start(this@WearSyncListenerService)
+                    } else {
+                        WearFocusService.stop(this@WearSyncListenerService)
+                    }
                 }
 
                 WearDataPaths.PATH_TASKS -> {
@@ -216,6 +222,7 @@ class WearSyncListenerService : WearableListenerService() {
     override fun onPeerDisconnected(peer: com.google.android.gms.wearable.Node) {
         super.onPeerDisconnected(peer)
         processor.onPeerDisconnected(WearDataStore.timerState.value)
+        WearFocusService.stop(this)
     }
 
     override fun onDestroy() {
