@@ -61,7 +61,11 @@ extension SpotlightClient: DependencyKey {
     static let liveValue = SpotlightClient()
     #endif
 
-    static let testValue = SpotlightClient()
+    static let testValue = SpotlightClient(
+        indexTasks: { _ in },
+        deindexTask: { _ in },
+        deleteAll: {}
+    )
 }
 
 extension DependencyValues {

@@ -521,7 +521,8 @@ public struct PersistenceClient: Sendable {
     // Sync Operations
     public var fetchDirtyTasks: @Sendable () async throws -> [TaskItemDTO] = { [] }
     public var markTasksSynced: @Sendable (_ syncIds: [String], _ syncTimestamp: String) async throws -> Void
-    public var upsertTaskFromServer: @Sendable (TaskSyncDTO) async throws -> Void
+    public var upsertTaskFromServer: @Sendable (TaskSyncDTO, Bool) async throws -> Void
+    public var save: @Sendable () async throws -> Void
     public var purgeTaskBySyncId: @Sendable (String) async throws -> Void
     public var getLastSyncTimestamp: @Sendable () async throws -> String? = { nil }
     public var saveLastSyncTimestamp: @Sendable (String) async throws -> Void
@@ -529,13 +530,13 @@ public struct PersistenceClient: Sendable {
     // Session Sync Operations
     public var fetchDirtySessions: @Sendable () async throws -> [SessionRecordDTO] = { [] }
     public var markSessionsSynced: @Sendable ([UUID]) async throws -> Void
-    public var upsertSessionFromServer: @Sendable (FocusSessionSyncDTO) async throws -> Void
+    public var upsertSessionFromServer: @Sendable (FocusSessionSyncDTO, Bool) async throws -> Void
     public var sessionExists: @Sendable (String) async throws -> Bool = { _ in false }
 
     // Task-Session Link Resolution
     public var fetchTaskBySyncId: @Sendable (String) async throws -> TaskItemDTO? = { _ in nil }
     public var fetchTaskByServerId: @Sendable (Int) async throws -> TaskItemDTO? = { _ in nil }
-    public var linkSessionToTask: @Sendable (_ sessionId: UUID, _ taskId: UUID) async throws -> Void
+    public var linkSessionToTask: @Sendable (_ sessionId: UUID, _ taskId: UUID, _ saveImmediately: Bool) async throws -> Void
 
     // Settings Sync
     public var getAllPreferencesAsKeyValue: @Sendable () async -> [(key: String, value: String, updatedAt: Date)] = { [] }
@@ -764,9 +765,14 @@ extension PersistenceClient: DependencyKey {
                     try serviceProvider().markTasksSynced(syncIds: syncIds, syncTimestamp: syncTimestamp)
                 }
             },
-            upsertTaskFromServer: { serverTask in
+            upsertTaskFromServer: { serverTask, saveImmediately in
                 try await MainActor.run {
-                    try serviceProvider().upsertTaskFromServer(serverTask)
+                    try serviceProvider().upsertTaskFromServer(serverTask, saveImmediately: saveImmediately)
+                }
+            },
+            save: {
+                try await MainActor.run {
+                    try serviceProvider().save()
                 }
             },
             purgeTaskBySyncId: { syncId in
@@ -795,9 +801,9 @@ extension PersistenceClient: DependencyKey {
                     try serviceProvider().markSessionsSynced(ids: sessionIDs)
                 }
             },
-            upsertSessionFromServer: { dto in
+            upsertSessionFromServer: { dto, saveImmediately in
                 try await MainActor.run {
-                    try serviceProvider().upsertSessionFromServer(dto)
+                    try serviceProvider().upsertSessionFromServer(dto, saveImmediately: saveImmediately)
                 }
             },
             sessionExists: { sessionId in
@@ -815,9 +821,9 @@ extension PersistenceClient: DependencyKey {
                     try serviceProvider().fetchTaskByServerId(serverId).map { TaskItemDTO(from: $0) }
                 }
             },
-            linkSessionToTask: { sessionId, taskId in
+            linkSessionToTask: { sessionId, taskId, saveImmediately in
                 try await MainActor.run {
-                    try serviceProvider().linkSessionToTask(sessionId: sessionId, taskId: taskId)
+                    try serviceProvider().linkSessionToTask(sessionId: sessionId, taskId: taskId, saveImmediately: saveImmediately)
                 }
             },
             getAllPreferencesAsKeyValue: {

@@ -675,7 +675,6 @@ func makeInMemoryModelContainer() throws -> ModelContainer {
     persistenceLogger.warning("Opening in-memory emergency ModelContainer")
     return try ModelContainer(
         for: schema,
-        migrationPlan: PepinilloMigrationPlan.self,
         configurations: [config]
     )
 }

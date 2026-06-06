@@ -17,6 +17,10 @@ public final class SwiftDataPersistenceService {
         self.context = container.mainContext
     }
 
+    public func save() throws {
+        try context.save()
+    }
+
     // MARK: - Tasks
 
     public func fetchTasks() throws -> [TaskItem] {
@@ -448,7 +452,7 @@ public final class SwiftDataPersistenceService {
     }
 
     /// Insert or update a task from server data (last-write-wins merge).
-    public func upsertTaskFromServer(_ serverTask: TaskSyncDTO) throws {
+    public func upsertTaskFromServer(_ serverTask: TaskSyncDTO, saveImmediately: Bool = true) throws {
         let serverSyncId = serverTask.syncId
         let syncIdDescriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate { $0.syncId == serverSyncId }
@@ -546,7 +550,9 @@ public final class SwiftDataPersistenceService {
                 }
             }
         }
-        try context.save()
+        if saveImmediately {
+            try context.save()
+        }
     }
 
     /// Permanently delete a task by syncId (used when server reports deletion).
@@ -641,7 +647,7 @@ public final class SwiftDataPersistenceService {
         try context.save()
     }
 
-    public func upsertSessionFromServer(_ dto: FocusSessionSyncDTO) throws {
+    public func upsertSessionFromServer(_ dto: FocusSessionSyncDTO, saveImmediately: Bool = true) throws {
         // Check if session already exists by ID
         guard let sessionUUID = UUID(uuidString: dto.id) else { return }
         let descriptor = FetchDescriptor<FocusSessionRecord>(
@@ -674,7 +680,9 @@ public final class SwiftDataPersistenceService {
         record.syncedAt = Date.now
 
         context.insert(record)
-        try context.save()
+        if saveImmediately {
+            try context.save()
+        }
     }
 
     public func sessionExists(id: String) throws -> Bool {
@@ -704,7 +712,7 @@ public final class SwiftDataPersistenceService {
     }
 
     /// Link a focus session to a task by setting its SwiftData relationship.
-    public func linkSessionToTask(sessionId: UUID, taskId: UUID) throws {
+    public func linkSessionToTask(sessionId: UUID, taskId: UUID, saveImmediately: Bool = true) throws {
         let sessionDescriptor = FetchDescriptor<FocusSessionRecord>(
             predicate: #Predicate { $0.id == sessionId }
         )
@@ -716,7 +724,9 @@ public final class SwiftDataPersistenceService {
         guard let task = try context.fetch(taskDescriptor).first else { return }
 
         session.task = task
-        try context.save()
+        if saveImmediately {
+            try context.save()
+        }
     }
 
     // MARK: - Settings Sync

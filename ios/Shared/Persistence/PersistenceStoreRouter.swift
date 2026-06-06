@@ -134,7 +134,7 @@ final class PersistenceStoreRouter: ObservableObject {
                 isDeleted: false,
                 subTasks: subtasks.isEmpty ? nil : subtasks,
                 updatedAt: iso.string(from: task.updatedAt)
-            ))
+            ), saveImmediately: false)
         }
 
         let sessions = try source.fetchSessions(from: .distantPast, to: .distantFuture)
@@ -154,7 +154,7 @@ final class PersistenceStoreRouter: ObservableObject {
                 wasCompleted: session.wasCompleted,
                 createdAt: iso.string(from: session.startedAt),
                 updatedAt: iso.string(from: session.startedAt)
-            ))
+            ), saveImmediately: false)
         }
 
         let prefs = try source.fetchPreferences()
@@ -163,5 +163,7 @@ final class PersistenceStoreRouter: ObservableObject {
         if let user = try source.fetchCachedUser() {
             try target.saveCachedUser(CachedUserDTO(from: user))
         }
+
+        try target.save()
     }
 }

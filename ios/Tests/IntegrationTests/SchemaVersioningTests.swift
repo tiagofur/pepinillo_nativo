@@ -30,16 +30,19 @@ struct SchemaVersioningTests {
         #expect(modelNames.contains("CachedUser"))
     }
 
-    @Test("ModelContainer loads with versioned schema and in-memory store")
+    @Test("ModelContainer loads with versioned schema")
     func modelContainerLoadsWithVersionedSchema() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-schema-load-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let storeURL = directory.appendingPathComponent("Pepinillo.sqlite")
         let schema = Schema(versionedSchema: SchemaV3.self)
-        let config = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: true
-        )
+        let config = ModelConfiguration(schema: schema, url: storeURL, cloudKitDatabase: .none)
+        
         let container = try ModelContainer(
             for: schema,
-            migrationPlan: PepinilloMigrationPlan.self,
             configurations: [config]
         )
         #expect(container.schema.entities.isEmpty == false)

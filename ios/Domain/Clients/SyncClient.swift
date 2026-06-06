@@ -184,13 +184,15 @@ extension SyncClient: DependencyKey {
 
                 // 6. Merge server tasks into local DB
                 for serverTask in response.tasks {
-                    try await persistence.upsertTaskFromServer(serverTask)
+                    try await persistence.upsertTaskFromServer(serverTask, false)
                 }
 
                 // 7. Delete locally what server says is deleted
                 for deletedId in response.deletedSyncIds {
                     try await persistence.purgeTaskBySyncId(deletedId)
                 }
+
+                try await persistence.save()
 
                 // 8. Mark synced tasks as clean
                 let syncedIds = tasksToSync.map(\.syncId)
@@ -245,7 +247,7 @@ extension SyncClient: DependencyKey {
                 for serverSession in response.sessions {
                     let exists = try await persistence.sessionExists(serverSession.id)
                     if !exists {
-                        try await persistence.upsertSessionFromServer(serverSession)
+                        try await persistence.upsertSessionFromServer(serverSession, false)
                     }
                 }
 
@@ -254,14 +256,16 @@ extension SyncClient: DependencyKey {
                     guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
                     if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
                         if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
-                            try await persistence.linkSessionToTask(sessionUUID, task.id)
+                            try await persistence.linkSessionToTask(sessionUUID, task.id, false)
                         }
                     } else if let taskId = serverSession.taskId {
                         if let task = try await persistence.fetchTaskByServerId(taskId) {
-                            try await persistence.linkSessionToTask(sessionUUID, task.id)
+                            try await persistence.linkSessionToTask(sessionUUID, task.id, false)
                         }
                     }
                 }
+
+                try await persistence.save()
 
                 // 5. Mark dirty sessions as synced
                 if !dirtySessions.isEmpty {
@@ -401,12 +405,12 @@ extension SyncClient: DependencyKey {
 
                 // Process response
                 for serverTask in response.tasks {
-                    try await persistence.upsertTaskFromServer(serverTask)
+                    try await persistence.upsertTaskFromServer(serverTask, false)
                 }
                 for serverSession in response.sessions {
                     let exists = try await persistence.sessionExists(serverSession.id)
                     if !exists {
-                        try await persistence.upsertSessionFromServer(serverSession)
+                        try await persistence.upsertSessionFromServer(serverSession, false)
                     }
                 }
                 // Resolve inbound task links for server sessions
@@ -414,11 +418,11 @@ extension SyncClient: DependencyKey {
                     guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
                     if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
                         if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
-                            try await persistence.linkSessionToTask(sessionUUID, task.id)
+                            try await persistence.linkSessionToTask(sessionUUID, task.id, false)
                         }
                     } else if let taskId = serverSession.taskId {
                         if let task = try await persistence.fetchTaskByServerId(taskId) {
-                            try await persistence.linkSessionToTask(sessionUUID, task.id)
+                            try await persistence.linkSessionToTask(sessionUUID, task.id, false)
                         }
                     }
                 }
@@ -426,6 +430,8 @@ extension SyncClient: DependencyKey {
                     let serverDate = iso.date(from: serverPref.updatedAt) ?? Date.now
                     await persistence.applyServerPreference(serverPref.key, serverPref.value, serverDate)
                 }
+
+                try await persistence.save()
 
                 // Mark all as synced
                 try await persistence.saveLastSyncTimestamp(response.serverTimestamp)
@@ -453,14 +459,14 @@ extension SyncClient: DependencyKey {
 
                     // Process tasks
                     for serverTask in response.tasks.items {
-                        try await persistence.upsertTaskFromServer(serverTask)
+                        try await persistence.upsertTaskFromServer(serverTask, false)
                     }
 
                     // Process sessions
                     for serverSession in response.sessions.items {
                         let exists = try await persistence.sessionExists(serverSession.id)
                         if !exists {
-                            try await persistence.upsertSessionFromServer(serverSession)
+                            try await persistence.upsertSessionFromServer(serverSession, false)
                         }
                     }
                     // Resolve inbound task links for server sessions
@@ -468,11 +474,11 @@ extension SyncClient: DependencyKey {
                         guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
                         if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
                             if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
-                                try await persistence.linkSessionToTask(sessionUUID, task.id)
+                                try await persistence.linkSessionToTask(sessionUUID, task.id, false)
                             }
                         } else if let taskId = serverSession.taskId {
                             if let task = try await persistence.fetchTaskByServerId(taskId) {
-                                try await persistence.linkSessionToTask(sessionUUID, task.id)
+                                try await persistence.linkSessionToTask(sessionUUID, task.id, false)
                             }
                         }
                     }
@@ -484,6 +490,8 @@ extension SyncClient: DependencyKey {
                             await persistence.applyServerPreference(serverPref.key, serverPref.value, serverDate)
                         }
                     }
+
+                    try await persistence.save()
 
                     // Update cursors
                     taskCursor = response.tasks.nextCursor
