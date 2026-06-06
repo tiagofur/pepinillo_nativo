@@ -14,7 +14,7 @@ android {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10019
+        versionCode = 10021
         versionName = "3.0.0"
     }
 

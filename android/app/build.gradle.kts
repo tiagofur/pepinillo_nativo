@@ -25,7 +25,7 @@ android {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 29
         targetSdk = 35
-        versionCode = 18
+        versionCode = 20
         versionName = "3.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
