@@ -326,7 +326,12 @@ struct AppFeature {
                         let start = Date.now
                         let prefs = try await persistence.fetchPreferences()
                         let userID = prefs.appleUserID
-                        await subscriptionClient.configure("appl_xnChlVXXtUFhusIfJyNrNDcMGLj", userID)
+                        let revenueCatKey = Bundle.main.object(forInfoDictionaryKey: "REVENUECAT_API_KEY") as? String ?? ""
+                        guard !revenueCatKey.isEmpty, !revenueCatKey.contains("$(REVENUECAT_API_KEY)") else {
+                            appLaunchLogger.warning("RevenueCat API key not configured — skipping configure()")
+                            return
+                        }
+                        await subscriptionClient.configure(revenueCatKey, userID)
                         appLaunchLogger.info("RevenueCat configure finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                     },
                     // Onboarding check + Apple credential state check

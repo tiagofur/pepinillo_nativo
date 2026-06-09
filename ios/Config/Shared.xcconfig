@@ -18,3 +18,7 @@ SLASH_SLASH = //
 // sets its own value. Exposed through Info.plist SENTRY_DSN and read at
 // launch by SentryService. Empty value = Sentry disabled.
 SENTRY_DSN =
+
+// RevenueCat API key. Exposed through Info.plist REVENUECAT_API_KEY and read
+// at launch by AppFeature. Replace with the real key before archiving.
+REVENUECAT_API_KEY = appl_xnChlVXXtUFhusIfJyNrNDcMGLj
