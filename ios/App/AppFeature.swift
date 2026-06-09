@@ -211,6 +211,8 @@ struct AppFeature {
         case externalCommandObserver
         case webSocket
         case softSync
+        /// Deduplicates rapid-fire taskProgressChanged + sessionPersisted refreshes.
+        case sessionTaskRefresh
     }
 
     var body: some ReducerOf<Self> {
@@ -996,8 +998,12 @@ struct AppFeature {
                     },
                     {
                         if case .focus(.sessionCompleted) = action {
+                            // Task refresh after session completion is handled by the
+                            // .focus(.delegate(.sessionPersisted)) path below — which fires
+                            // reliably once the session is actually saved and has the
+                            // correct pomodoro counts. Do not send .tasks(.onAppear) here:
+                            // that path is guarded by hasLoadedData and would no-op anyway.
                             return .merge(
-                                .send(.tasks(.onAppear)),
                                 .send(.analytics(.onAppear)),
                                 Effect<Action>.run { send in
                                     if let prefs = try? await persistence.fetchPreferences(),
@@ -1136,10 +1142,14 @@ struct AppFeature {
 
             case .focus(.delegate(.sessionPersisted)),
                  .focus(.delegate(.taskProgressChanged)):
+                // Single explicit refresh path for session events. cancelInFlight ensures
+                // that when taskProgressChanged fires just before sessionPersisted (final
+                // pomodoro), only one fetch runs — the second cancels the first.
                 return .run { [persistence] send in
                     let items = try await persistence.fetchTasks()
                     await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
                 }
+                .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true)
 
             case .tasks(.delegate(.showPaywall)):
                 state.focus.showPaywall = true

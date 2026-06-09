@@ -30,8 +30,13 @@ public actor BackgroundPersistenceActor {
 
     func saveTask(_ taskDTO: TaskItemDTO) throws {
         let svc = service
-        let tasks = try svc.fetchTasks()
-        if let existing = tasks.first(where: { $0.id == taskDTO.id }) {
+        let taskID = taskDTO.id
+        var descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == taskID }
+        )
+        descriptor.fetchLimit = 1
+        let existing = try modelContext.fetch(descriptor).first
+        if let existing {
             existing.title = taskDTO.title
             existing.notes = taskDTO.notes
             if existing.isCompleted != taskDTO.isCompleted {

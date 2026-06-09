@@ -642,11 +642,21 @@ public final class SwiftDataPersistenceService {
     }
 
     public func markSessionsSynced(ids: [UUID]) throws {
-        let descriptor = FetchDescriptor<FocusSessionRecord>()
-        let allRecords = try context.fetch(descriptor)
-        for record in allRecords where ids.contains(record.id) {
-            record.isDirty = false
-            record.syncedAt = Date.now
+        // Fetch only the records we need to mark, one predicate lookup per id.
+        // #Predicate cannot capture a [UUID] array directly in SwiftData, so we
+        // iterate with a limit-1 descriptor per id — still vastly cheaper than
+        // loading the entire FocusSessionRecord table.
+        let now = Date.now
+        for id in ids {
+            let idCopy = id
+            var descriptor = FetchDescriptor<FocusSessionRecord>(
+                predicate: #Predicate { $0.id == idCopy }
+            )
+            descriptor.fetchLimit = 1
+            if let record = try context.fetch(descriptor).first {
+                record.isDirty = false
+                record.syncedAt = now
+            }
         }
         try context.save()
     }
