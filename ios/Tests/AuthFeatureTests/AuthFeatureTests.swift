@@ -47,10 +47,8 @@ struct AuthFeatureTests {
     @Test("retryWipeAndSync re-runs wipeAndSync and authenticates on success")
     func retryWipeAndSyncAuthenticatesOnSuccess() async throws {
         let fakeUser = CachedUserDTO(
-            id: 1, email: "test@example.com", name: "Test",
-            imageUrl: nil, birthDate: nil, subscriptionTier: nil,
-            subscriptionExpiresAt: nil, emailVerified: true,
-            appleId: nil, createdAt: Date(), updatedAt: Date()
+            id: "user-1", email: "test@example.com", name: "Test",
+            emailVerified: true
         )
 
         let store = TestStore(
@@ -73,10 +71,8 @@ struct AuthFeatureTests {
     @Test("dismissWipeAndSyncError continues to authenticated state")
     func dismissWipeAndSyncErrorAuthenticatesUser() async throws {
         let fakeUser = CachedUserDTO(
-            id: 1, email: "test@example.com", name: "Test",
-            imageUrl: nil, birthDate: nil, subscriptionTier: nil,
-            subscriptionExpiresAt: nil, emailVerified: true,
-            appleId: nil, createdAt: Date(), updatedAt: Date()
+            id: "user-1", email: "test@example.com", name: "Test",
+            emailVerified: true
         )
 
         let store = TestStore(
@@ -98,10 +94,8 @@ struct AuthFeatureTests {
     @Test("useAccountOnlyTapped authenticates directly when wipeAndSync succeeds")
     func useAccountOnlyTappedAuthenticatesOnSuccess() async throws {
         let fakeUser = CachedUserDTO(
-            id: 1, email: "test@example.com", name: "Test",
-            imageUrl: nil, birthDate: nil, subscriptionTier: nil,
-            subscriptionExpiresAt: nil, emailVerified: true,
-            appleId: nil, createdAt: Date(), updatedAt: Date()
+            id: "user-1", email: "test@example.com", name: "Test",
+            emailVerified: true
         )
 
         let store = TestStore(

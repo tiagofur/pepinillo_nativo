@@ -234,15 +234,15 @@ struct SyncClientTests {
 
         let taskA = TaskSyncDTO(id: 1, syncId: "task-a", title: "Task A")
         let session1 = FocusSessionSyncDTO(
-            id: UUID().uuidString, taskId: nil, startedAt: "2024-01-01T00:00:00Z",
-            endedAt: nil, mode: "pomodoro", phase: nil, durationSeconds: 1500,
-            elapsedSeconds: 1500, pauseCount: 0, totalPauseSeconds: 0, wasCompleted: true,
+            id: UUID().uuidString, startedAt: "2024-01-01T00:00:00Z",
+            mode: "pomodoro", phase: "work", durationSeconds: 1500,
+            elapsedSeconds: 1500, wasCompleted: true,
             createdAt: "2024-01-01T00:00:00Z", updatedAt: "2024-01-01T00:00:00Z"
         )
         let session2 = FocusSessionSyncDTO(
-            id: UUID().uuidString, taskId: nil, startedAt: "2024-01-02T00:00:00Z",
-            endedAt: nil, mode: "pomodoro", phase: nil, durationSeconds: 1500,
-            elapsedSeconds: 1500, pauseCount: 0, totalPauseSeconds: 0, wasCompleted: true,
+            id: UUID().uuidString, startedAt: "2024-01-02T00:00:00Z",
+            mode: "pomodoro", phase: "work", durationSeconds: 1500,
+            elapsedSeconds: 1500, wasCompleted: true,
             createdAt: "2024-01-02T00:00:00Z", updatedAt: "2024-01-02T00:00:00Z"
         )
 
@@ -253,7 +253,7 @@ struct SyncClientTests {
             settings: [],
             serverTimestamp: "2024-01-01T00:00:00Z"
         )
-        // Page 2: tasks would restart from page 1 if cursor bug was present; sessions finish
+        // Page 2: tasks would restart from page 1 if cursor bug was present; sessions finish.
         // The server is called with (taskCursor: nil, sessionCursor: "s2") — correct behavior.
         let page2 = FullSyncResponse(
             tasks: PaginatedTaskPage(items: [taskA], nextCursor: nil, hasMore: false), // server echoes task again
@@ -262,27 +262,28 @@ struct SyncClientTests {
             serverTimestamp: "2024-01-01T00:00:00Z"
         )
 
-        actor UpsertProbe {
+        actor PagedProbe {
+            var callCount = 0
             var taskUpsertCount = 0
             var upsertedSyncIds: [String] = []
+            func nextPage() -> Int { callCount += 1; return callCount }
             func recordTask(_ syncId: String) { taskUpsertCount += 1; upsertedSyncIds.append(syncId) }
-            func getCount() -> Int { taskUpsertCount }
+            func getTaskCount() -> Int { taskUpsertCount }
             func getSyncIds() -> [String] { upsertedSyncIds }
         }
-        let probe = UpsertProbe()
+        let probe = PagedProbe()
 
-        var callCount = 0
         let client = withDependencies {
             $0.keychainClient.hasTokens = { true }
             $0.apiClient.getFullSync = { _, _, _ in
-                callCount += 1
-                return callCount == 1 ? page1 : page2
+                let n = await probe.nextPage()
+                return n == 1 ? page1 : page2
             }
             $0.persistenceClient.deleteAllTasks = {}
             $0.persistenceClient.deleteAllSessions = {}
             $0.persistenceClient.deleteAllStats = {}
             $0.persistenceClient.upsertTaskFromServer = { dto, _ in
-                await probe.recordTask(dto.syncId ?? "")
+                await probe.recordTask(dto.syncId)
             }
             $0.persistenceClient.sessionExists = { _ in false }
             $0.persistenceClient.upsertSessionFromServer = { _, _ in }
@@ -295,7 +296,7 @@ struct SyncClientTests {
 
         try await client.wipeAndSync()
 
-        let count = await probe.getCount()
+        let count = await probe.getTaskCount()
         let syncIds = await probe.getSyncIds()
         #expect(count == 1, "task-a must be upserted exactly once, not duplicated across pages; got \(syncIds)")
     }
@@ -308,15 +309,15 @@ struct SyncClientTests {
 
         let taskA = TaskSyncDTO(id: 1, syncId: "task-a", title: "Task A")
         let session1 = FocusSessionSyncDTO(
-            id: UUID().uuidString, taskId: nil, startedAt: "2024-01-01T00:00:00Z",
-            endedAt: nil, mode: "pomodoro", phase: nil, durationSeconds: 1500,
-            elapsedSeconds: 1500, pauseCount: 0, totalPauseSeconds: 0, wasCompleted: true,
+            id: UUID().uuidString, startedAt: "2024-01-01T00:00:00Z",
+            mode: "pomodoro", phase: "work", durationSeconds: 1500,
+            elapsedSeconds: 1500, wasCompleted: true,
             createdAt: "2024-01-01T00:00:00Z", updatedAt: "2024-01-01T00:00:00Z"
         )
         let session2 = FocusSessionSyncDTO(
-            id: UUID().uuidString, taskId: nil, startedAt: "2024-01-02T00:00:00Z",
-            endedAt: nil, mode: "pomodoro", phase: nil, durationSeconds: 1500,
-            elapsedSeconds: 1500, pauseCount: 0, totalPauseSeconds: 0, wasCompleted: true,
+            id: UUID().uuidString, startedAt: "2024-01-02T00:00:00Z",
+            mode: "pomodoro", phase: "work", durationSeconds: 1500,
+            elapsedSeconds: 1500, wasCompleted: true,
             createdAt: "2024-01-02T00:00:00Z", updatedAt: "2024-01-02T00:00:00Z"
         )
 
@@ -333,21 +334,22 @@ struct SyncClientTests {
             serverTimestamp: "2024-01-01T00:00:00Z"
         )
 
-        actor UpsertProbe {
-            var count = 0
-            func record() { count += 1 }
-            func getCount() -> Int { count }
+        actor InitSyncProbe {
+            var callCount = 0
+            var taskUpsertCount = 0
+            func nextPage() -> Int { callCount += 1; return callCount }
+            func recordTask() { taskUpsertCount += 1 }
+            func getTaskCount() -> Int { taskUpsertCount }
         }
-        let probe = UpsertProbe()
+        let probe = InitSyncProbe()
 
-        var callCount = 0
         let client = withDependencies {
             $0.keychainClient.hasTokens = { true }
             $0.apiClient.getFullSync = { _, _, _ in
-                callCount += 1
-                return callCount == 1 ? page1 : page2
+                let n = await probe.nextPage()
+                return n == 1 ? page1 : page2
             }
-            $0.persistenceClient.upsertTaskFromServer = { _, _ in await probe.record() }
+            $0.persistenceClient.upsertTaskFromServer = { _, _ in await probe.recordTask() }
             $0.persistenceClient.sessionExists = { _ in false }
             $0.persistenceClient.upsertSessionFromServer = { _, _ in }
             $0.persistenceClient.applyServerPreference = { _, _, _ in }
@@ -360,7 +362,7 @@ struct SyncClientTests {
 
         try await client.performInitialSync()
 
-        let count = await probe.getCount()
+        let count = await probe.getTaskCount()
         #expect(count == 1, "task-a must be upserted exactly once; got \(count)")
     }
 
