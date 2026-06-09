@@ -43,6 +43,9 @@ pepinillo_ios/Pepinillo.xcodeproj
 *.provisionprofile
 authkey*.p8
 
+# iOS local secrets (copy from Secrets.xcconfig.template)
+ios/Config/Secrets.xcconfig
+
 # === Go / Backend ===
 backend/bin/
 backend/tmp/
