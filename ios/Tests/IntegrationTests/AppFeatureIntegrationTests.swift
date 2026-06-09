@@ -9,7 +9,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite(.serialized)
+@Suite(.serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct AppFeatureIntegrationTests {
 

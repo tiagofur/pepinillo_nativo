@@ -8,7 +8,7 @@ import Testing
 import Foundation
 @testable import Pepinillo
 
-@Suite("AppGroupContainerTests", .serialized)
+@Suite("AppGroupContainerTests", .serialized, .appGroupDefaultsSerialized)
 struct AppGroupContainerTests {
 
     @Test("userCapabilities round-trips through AppGroupDefaults")
@@ -281,4 +281,82 @@ struct AppGroupDefaultsSnapshot {
         AppGroupDefaults.activeSessionTimerStart = activeSessionTimerStart
         AppGroupDefaults.activeSessionTimerEnd = activeSessionTimerEnd
     }
+}
+
+// MARK: - Cross-suite serialization for shared App Group UserDefaults
+
+/// Mutual exclusion across suites that touch `AppGroupDefaults`.
+///
+/// `.serialized` only orders tests within a single suite; Swift Testing still
+/// runs different suites in parallel in the same process, and every test that
+/// touches `AppGroupDefaults` reads and writes the same real
+/// `UserDefaults(suiteName: AppGroup.id)` plist. Without this trait, a test
+/// like `widgetColdStartNoCapabilitiesDefaultsFree` can clear capabilities and
+/// then observe a value written concurrently by another suite.
+///
+/// Apply to every suite that mutates App Group state, alongside `.serialized`.
+struct AppGroupDefaultsSerialTrait: TestTrait, SuiteTrait, TestScoping {
+    var isRecursive: Bool { true }
+
+    private static let gate = Gate()
+    @TaskLocal private static var isHoldingGate = false
+
+    func provideScope(
+        for test: Test,
+        testCase: Test.Case?,
+        performing function: @Sendable () async throws -> Void
+    ) async throws {
+        // Re-entrancy guard: if the trait ends up applied at both suite and
+        // test level, the inner application must not acquire the gate again.
+        guard Self.isHoldingGate == false else {
+            try await function()
+            return
+        }
+        await Self.gate.acquire()
+        defer { Self.gate.release() }
+        try await Self.$isHoldingGate.withValue(true) {
+            try await function()
+        }
+    }
+
+    /// Minimal async mutex: suspends waiting tests instead of blocking
+    /// cooperative-pool threads (an `NSLock` held across `await` is unsafe).
+    private final class Gate: @unchecked Sendable {
+        private let lock = NSLock()
+        private var isLocked = false
+        private var waiters: [CheckedContinuation<Void, Never>] = []
+
+        func acquire() async {
+            // NSLock is unavailable directly in async contexts; the
+            // continuation closure is synchronous, so locking happens there.
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                lock.lock()
+                if isLocked == false {
+                    isLocked = true
+                    lock.unlock()
+                    continuation.resume()
+                } else {
+                    waiters.append(continuation)
+                    lock.unlock()
+                }
+            }
+        }
+
+        func release() {
+            lock.lock()
+            if waiters.isEmpty {
+                isLocked = false
+                lock.unlock()
+            } else {
+                let next = waiters.removeFirst()
+                lock.unlock()
+                next.resume()
+            }
+        }
+    }
+}
+
+extension Trait where Self == AppGroupDefaultsSerialTrait {
+    /// Serializes this suite against every other suite carrying the same trait.
+    static var appGroupDefaultsSerialized: Self { Self() }
 }

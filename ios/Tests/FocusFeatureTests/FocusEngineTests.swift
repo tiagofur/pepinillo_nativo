@@ -502,7 +502,7 @@ struct FocusEngineLinkedTaskTests {
 
 // MARK: - Timer Ticking
 
-@Suite("FocusEngine — Timer", .serialized)
+@Suite("FocusEngine — Timer", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineTimerTests {
 
     @Test func elapsedTimeIncreasesAfterTick() async throws {

@@ -9,7 +9,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite("SyncClient", .serialized)
+@Suite("SyncClient", .serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct SyncClientTests {
 
