@@ -695,3 +695,36 @@ Resolved critical compilation errors in the Go backend test suite that were bloc
 - **Symbol Unification**: Centralized `fakeUserRepo` in `backend/internal/services/fakes_test.go` and `fakeUserRepository` in `backend/internal/adapters/handlers/fakes_test.go`, eliminating multiple redeclaration errors across test files.
 - **Cleanup**: Removed redundant/conflicting helper functions (`strPtr`, `joseConcatSignature`) and unused imports from various test files.
 - **Verification**: Successfully ran the full backend test suite (`go test ./...`), passing all 100+ tests including services, handlers, and integration flows.
+
+---
+
+## 12. iOS — Optimización de Rendimiento: Capa de Persistencia en Background (2026-06-09) ✅
+
+**Branch:** `perf/ios-startup-and-reads`
+
+Resuelto un problema de rendimiento crítico en iOS donde SwiftData leía y escribía en el **hilo principal**, congelando la UI durante segundos en el arranque y en la navegación entre tabs.
+
+### Cambios implementados
+
+| Área | Cambio | Archivos afectados |
+|------|--------|--------------------|
+| `BackgroundPersistenceActor` | Nuevo `@ModelActor` en `ios/Shared/Persistence/` que posee su propio `ModelContext` de fondo. Todo el mapeo `@Model → DTO` ocurre dentro del aislamiento del actor; ningún `@Model` escapa. `PersistenceClient.live` hace `await actor` en lugar de despachar a `MainActor`. | `ios/Shared/Persistence/` |
+| Router ownership del actor | `PersistenceStoreRouter` posee y vende el actor via caja thread-safe; lo recrea en el swap local ↔ CloudKit en `reconcile`. | `ios/Shared/Persistence/` |
+| Eliminación de N+1 en `fetchTasks` | Subtask progress se batch-fetches una sola vez en `[parentTaskID: (completed, total)]` en lugar de faultar `task.subtasks` por fila. | `ios/Domain/Clients/PersistenceClient.swift` |
+| Guardia `hasLoadedData` en `TaskListFeature` | Flag que evita re-fetch en `.onAppear` pasivos y tab switches. Reloads explícitos (store swap, cambio de día, pull-to-refresh, dismiss de detalle, fin de sesión) usan `.refresh` para bypassear la guardia. | `ios/Features/Tasks/TaskListFeature.swift` |
+| Predicados en escrituras | `saveTask` y `markSessionsSynced` usan predicate fetches en lugar de full-table scans. `AuthFeature` usa `getSessionCount()` en lugar de materializar todas las sesiones. `PlanTaskList.filteredTasks` extrae invariantes de Calendar fuera del loop por ítem. | `ios/Domain/Clients/PersistenceClient.swift`, `ios/Features/Auth/AuthFeature.swift`, `ios/Features/Tasks/TaskListView.swift` |
+
+### Estado de verificación
+
+| Check | Estado |
+|-------|--------|
+| Build (simulador) | ✅ Exitoso |
+| Tests unitarios (iOS) | ✅ Pasan |
+| Medición real en dispositivo con Instruments | ⏳ Pendiente — se recomienda medir cold start con Time Profiler en iPhone real |
+
+### Pendientes de seguimiento
+
+| Item | Prioridad | Detalle |
+|------|-----------|---------|
+| Medición cold start con Instruments | P1 | Validar mejora real en dispositivo físico (iPhone 14+). No se dispone de métricas numéricas previas al cambio. |
+| Reset de `hasLoadedData` en wipe local | LOW | Si en el futuro se agrega un path que borra datos locales (logout-wipe, reset de cuenta), ese path debe resetear `hasLoadedData = false` para forzar recarga limpia. |

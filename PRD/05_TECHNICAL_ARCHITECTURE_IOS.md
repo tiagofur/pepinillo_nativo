@@ -687,17 +687,52 @@ All clients follow the TCA `@DependencyClient` pattern. They are `Sendable` stru
 
 ### SwiftData <-> TCA Bridge
 
-SwiftData `@Model` classes are not `Sendable` and are bound to `@MainActor`. The `PersistenceClient` resolves this with DTOs (Data Transfer Objects):
+SwiftData `@Model` classes are not `Sendable` y no pueden cruzar fronteras de concurrencia sin riesgo. El `PersistenceClient` resuelve esto mediante DTOs (`Sendable`, value types) que se construyen dentro del actor de persistencia antes de cruzar al contexto de TCA:
 
 ```
-@Model (SwiftData, @MainActor) --> MainActor.run { } --> DTO (Sendable, value type) --> TCA Effect
+BackgroundPersistenceActor (@ModelActor, hilo de fondo)
+  --> @Model -> DTO (mapeo dentro del aislamiento del actor)
+       --> PersistenceClient.live (await actor)
+            --> TCA Effect (DTO Sendable)
+                 --> Reducer actualiza State
+                      --> View re-render (100% DTO-driven, sin @Query)
 ```
+
+#### BackgroundPersistenceActor
+
+Introducido en junio 2026 para eliminar lecturas y escrituras SwiftData en el hilo principal que congelaban la UI durante el arranque y en la navegación entre tabs.
+
+**Ubicación:** `ios/Shared/Persistence/` (junto a `SwiftDataPersistenceService.swift`)
+
+**Principios de diseño:**
+
+- El actor es un `@ModelActor` que posee su propio `ModelContext` de fondo. Nunca comparte su contexto con `@MainActor`.
+- **Regla de aislamiento DTO:** ningún objeto `@Model` escapa del actor. Todo el mapeo `@Model → DTO` ocurre dentro del aislamiento del actor. La UI es 100% DTO-driven vía TCA sin uso de `@Query`.
+- **`PersistenceClient.live`** hace `await actor.operacion()` en lugar de despachar a `MainActor`. El hilo principal queda libre durante cualquier fetch o escritura.
+- **`PersistenceStoreRouter`** es el propietario del actor y lo vende a través de una caja thread-safe. El router recrea el actor cuando se produce el intercambio de container local ↔ CloudKit en `reconcile`, garantizando que el nuevo `ModelContext` siempre corresponda al store activo.
+
+**Optimizaciones incluidas en el mismo batch:**
+
+- **Eliminación de N+1 en `fetchTasks`:** el progreso de subtareas se batch-fetches una sola vez en un diccionario `[parentTaskID: (completed, total)]` en lugar de faultar `task.subtasks` por cada fila.
+- **Predicados en escrituras:** `saveTask` y `markSessionsSynced` usan predicados en lugar de full-table scans.
+- **`AuthFeature`** usa `getSessionCount()` en lugar de materializar todas las sesiones para verificar si el usuario tiene datos locales.
+- **`PlanTaskList.filteredTasks`** extrae invariantes de Calendar fuera del loop por ítem.
+
+#### Guardia `hasLoadedData` en `TaskListFeature`
+
+Para evitar que cada `.onAppear` y cambio de tab dispare dos `fetchTasks()` + `generateRecurringTasks()`, `TaskListFeature` incorpora un flag `hasLoadedData`:
+
+- **Primera carga:** `hasLoadedData = false` → se ejecuta el fetch completo y se marca `true`.
+- **Reloads explícitos que deben saltarse la guardia:** intercambio de store, cambio de día, pull-to-refresh, dismiss del detalle de tarea, y finalización de sesión — todos envían la acción `.refresh` que bypasea el flag.
+- **Navegación pasiva** (`.onAppear` en tab switch): respetada por la guardia → no re-fetch.
+
+> **Convención para futuros desarrolladores:** si se agrega un path que borra datos locales (wipe, logout-wipe), ese path **debe** resetear `hasLoadedData` a `false` para forzar una recarga limpia en el próximo `.onAppear`.
 
 ### Client List
 
 | #   | Client                      | Responsibility                                                                                                                                                                                |
 | --- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **PersistenceClient**       | SwiftData CRUD: Tasks, Sessions, stats, preferences. All operations via `MainActor.run {}` returning `Sendable` DTOs. Enhanced with settings sync, deleteAll, and counts.                    |
+| 1   | **PersistenceClient**       | SwiftData CRUD: Tasks, Sessions, stats, preferences. Todas las operaciones se ejecutan en `BackgroundPersistenceActor` (hilo de fondo, `@ModelActor`) y retornan DTOs `Sendable`. El hilo principal nunca toca SwiftData directamente. Enhanced con settings sync, deleteAll y counts.                    |
 | 2   | **FocusClient**             | Bridge between TCA and the `FocusEngine` actor. Starts/pauses/resumes/stops sessions. Exposes `AsyncStream<FocusEngineEvent>` for the reducer.                                               |
 | 3   | **WatchConnectivityClient** | Bidirectional `WCSession` communication. iOS sends: `WatchSessionState` (each tick), stats, tasks. Watch sends: `WatchCommand`.                                                              |
 | 4   | **AIReportClient**          | Generates productivity reports. Tries first with `OnDeviceReportGenerator` (Foundation Models, iOS 26+), fallback to `TemplateReportGenerator`.                                               |
