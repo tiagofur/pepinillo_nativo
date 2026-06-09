@@ -5,6 +5,7 @@ import dev.creapolis.pepinillo.BuildConfig
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -128,7 +129,12 @@ class SyncWebSocketClient @Inject constructor(
     }
 
     private fun handleMessage(text: String) {
-        scope.launch {
+        // Run JSON parsing + sync engine work off the main thread. The shared
+        // @ApplicationScope is confined to Dispatchers.Main (FocusEngine and
+        // SoundscapeManager rely on that single-thread guarantee), so we override
+        // the dispatcher only for this push-driven path. The only field touched
+        // here is awaitingPong, which is @Volatile and therefore thread-safe.
+        scope.launch(Dispatchers.Default) {
             try {
                 val json = JSONObject(text)
                 when (json.optString("type")) {
