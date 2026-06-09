@@ -27,6 +27,15 @@ extension Bundle: BundleInfoProviding {}
 
 enum SentryService {
 
+    /// Capture an error in Sentry with an optional human-readable context string.
+    /// No-op if Sentry was not started (e.g. missing DSN, DEBUG build).
+    static func captureError(_ error: Error, context: String? = nil) {
+        let event = Event(level: .error)
+        event.message = SentryMessage(formatted: context ?? error.localizedDescription)
+        event.exceptions = [Exception(value: error.localizedDescription, type: String(describing: type(of: error)))]
+        SentrySDK.capture(event: event)
+    }
+
     /// Start Sentry if a DSN is available and the build isn't excluded.
     /// Safe to call multiple times — the SDK itself guards against double init.
     static func start(bundle: Bundle = .main) {

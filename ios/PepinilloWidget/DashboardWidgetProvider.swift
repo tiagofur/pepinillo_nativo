@@ -7,6 +7,9 @@
 import WidgetKit
 import SwiftData
 import Foundation
+import OSLog
+
+private let widgetLogger = Logger(subsystem: "com.pepinillo.app", category: "dashboard-widget")
 
 struct DashboardWidgetProvider: AppIntentTimelineProvider {
     typealias Entry = DashboardWidgetEntry
@@ -69,7 +72,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
 
                 let stats = allStats.first { $0.date >= dayDate && $0.date < dayEnd }
                 if stats == nil {
-                    print("[DashboardWidget] No DailyStats found for \(abbrev) \(dayDate)")
+                    widgetLogger.debug("No DailyStats found for \(abbrev, privacy: .public) \(dayDate, privacy: .public)")
                 }
 
                 let pomMin = (stats?.pomodoroSeconds ?? 0) / 60
