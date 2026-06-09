@@ -554,7 +554,7 @@ struct AppFeature {
                 AppGroupDefaults.canBackendSync = canSync
                 AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
                 if isPro { state.focus.showPaywall = false }
-                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] _ in
+                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] send in
                     try? await Task.sleep(for: .seconds(3))
                     let start = Date.now
                     await syncModeClient.reconcile(capabilities)
@@ -566,6 +566,9 @@ struct AppFeature {
                     }
                     WidgetCenter.shared.reloadAllTimelines()
                     appLaunchLogger.info("Soft sync finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
+                    // Reconcile may swap the active store (local → CloudKit); refresh the task
+                    // list so in-memory state reflects the now-active container.
+                    await send(.tasks(.refresh))
                 }
                 .cancellable(id: CancelID.softSync, cancelInFlight: true)
 
@@ -587,7 +590,7 @@ struct AppFeature {
                 AppGroupDefaults.canBackendSync = canSync
                 AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
                 if isPro { state.focus.showPaywall = false }
-                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] _ in
+                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] send in
                     try? await Task.sleep(for: .seconds(3))
                     let start = Date.now
                     await syncModeClient.reconcile(capabilities)
@@ -599,6 +602,9 @@ struct AppFeature {
                     }
                     WidgetCenter.shared.reloadAllTimelines()
                     appLaunchLogger.info("Soft sync update finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
+                    // Reconcile may swap the active store (local → CloudKit); refresh the task
+                    // list so in-memory state reflects the now-active container.
+                    await send(.tasks(.refresh))
                 }
                 .cancellable(id: CancelID.softSync, cancelInFlight: true)
 
@@ -1110,7 +1116,12 @@ struct AppFeature {
             // MARK: - Day Change
 
             case .dayChanged:
-                return .send(.focus(.dayChanged))
+                // Forward to focus for its own day-change logic and also refresh the
+                // task list so recurring tasks are regenerated for the new day.
+                return .merge(
+                    .send(.focus(.dayChanged)),
+                    .send(.tasks(.refresh))
+                )
 
             // MARK: - Handoff
 
