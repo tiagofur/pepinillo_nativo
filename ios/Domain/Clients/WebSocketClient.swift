@@ -6,7 +6,10 @@
 // actions based on incoming server messages.
 
 import Foundation
+import OSLog
 import ComposableArchitecture
+
+private let wsLogger = Logger(subsystem: "com.pepinillo.app", category: "websocket")
 
 // MARK: - Client
 
@@ -22,9 +25,13 @@ extension WebSocketClient: DependencyKey {
     public static var liveValue: WebSocketClient {
 #if os(iOS) || os(macOS)
         @Dependency(\.keychainClient) var keychain
+        @Dependency(\.apiClient) var apiClient
         @Dependency(\.syncClient) var syncClient
         let manager = WebSocketManager(
             loadAccessToken: { await keychain.loadAccessToken() },
+            loadRefreshToken: { await keychain.loadRefreshToken() },
+            refreshTokens: { try await apiClient.refreshTokens($0) },
+            saveTokens: { try await keychain.saveTokens($0, $1) },
             getOrCreateDeviceId: { keychain.getOrCreateDeviceId() },
             syncTasks: { try await syncClient.syncTasks() },
             syncSessions: { try await syncClient.syncSessions() },
@@ -34,6 +41,9 @@ extension WebSocketClient: DependencyKey {
 #else
         let manager = WebSocketManager(
             loadAccessToken: { nil },
+            loadRefreshToken: { nil },
+            refreshTokens: { _ in throw URLError(.cancelled) },
+            saveTokens: { _, _ in },
             getOrCreateDeviceId: { "" },
             syncTasks: { },
             syncSessions: { },
@@ -55,6 +65,9 @@ extension WebSocketClient: DependencyKey {
 private final class WebSocketManager: @unchecked Sendable {
     private let lock = NSLock()
     private let loadAccessToken: @Sendable () async -> String?
+    private let loadRefreshToken: @Sendable () async -> String?
+    private let refreshTokens: @Sendable (RefreshRequest) async throws -> RefreshResponse
+    private let saveTokens: @Sendable (String, String) async throws -> Void
     private let getOrCreateDeviceId: @Sendable () -> String
     private let syncTasks: @Sendable () async throws -> Void
     private let syncSessions: @Sendable () async throws -> Void
@@ -65,9 +78,14 @@ private final class WebSocketManager: @unchecked Sendable {
     private var isConnecting = false
     private var retryCount = 0
     private var shouldReconnect = false
+    // Prevents concurrent token-refresh races during reconnect backoff.
+    private var isRefreshingToken = false
 
     init(
         loadAccessToken: @escaping @Sendable () async -> String?,
+        loadRefreshToken: @escaping @Sendable () async -> String?,
+        refreshTokens: @escaping @Sendable (RefreshRequest) async throws -> RefreshResponse,
+        saveTokens: @escaping @Sendable (String, String) async throws -> Void,
         getOrCreateDeviceId: @escaping @Sendable () -> String,
         syncTasks: @escaping @Sendable () async throws -> Void,
         syncSessions: @escaping @Sendable () async throws -> Void,
@@ -75,6 +93,9 @@ private final class WebSocketManager: @unchecked Sendable {
         syncAll: @escaping @Sendable () async throws -> Void
     ) {
         self.loadAccessToken = loadAccessToken
+        self.loadRefreshToken = loadRefreshToken
+        self.refreshTokens = refreshTokens
+        self.saveTokens = saveTokens
         self.getOrCreateDeviceId = getOrCreateDeviceId
         self.syncTasks = syncTasks
         self.syncSessions = syncSessions
@@ -132,13 +153,20 @@ private final class WebSocketManager: @unchecked Sendable {
         }
         let deviceId = getOrCreateDeviceId()
 
+        // Token is sent both in the query string (backward compat with current
+        // backend) AND in the Authorization header so that once the backend
+        // honours the header, we can remove the query param without a flag day.
+        // TODO: remove `?token=...` query param once backend reads the header.
         guard let url = URL(string: "\(Self.baseWSURL)?token=\(token)&deviceId=\(deviceId)") else {
             lock.withLock { isConnecting = false }
             return
         }
 
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
         let session = URLSession(configuration: .default)
-        let task = session.webSocketTask(with: url)
+        let task = session.webSocketTask(with: request)
 
         lock.withLock {
             webSocketTask = task
@@ -208,7 +236,10 @@ private final class WebSocketManager: @unchecked Sendable {
                 break
             }
         } catch {
-            print("[WebSocketClient] Failed to handle message '\(type)': \(error)")
+            wsLogger.error("Failed to handle WebSocket message '\(type, privacy: .public)': \(error, privacy: .public)")
+#if os(iOS) || os(macOS)
+            SentryService.captureError(error, context: "WebSocket message '\(type)' triggered sync failure")
+#endif
         }
     }
 
@@ -223,8 +254,33 @@ private final class WebSocketManager: @unchecked Sendable {
         try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
 
         let shouldRetry = lock.withLock { shouldReconnect }
-
         guard shouldRetry else { return }
+
+        // After the first failed attempt, try to refresh the access token before
+        // reconnecting. This breaks the infinite retry loop that occurs when the
+        // token has expired: without a refresh, every reconnect attempt gets a
+        // 401 close frame and schedules another backoff indefinitely.
+        // Single-flight guard prevents concurrent refresh races.
+        if count >= 1 {
+            let shouldRefresh = lock.withLock { () -> Bool in
+                guard !isRefreshingToken else { return false }
+                isRefreshingToken = true
+                return true
+            }
+            if shouldRefresh {
+                do {
+                    if let refreshToken = await loadRefreshToken() {
+                        let response = try await refreshTokens(RefreshRequest(refreshToken: refreshToken))
+                        try await saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
+                        wsLogger.info("WebSocket token refreshed before reconnect")
+                    }
+                } catch {
+                    wsLogger.warning("WebSocket token refresh failed before reconnect: \(error, privacy: .public)")
+                }
+                lock.withLock { isRefreshingToken = false }
+            }
+        }
+
         await performConnect()
     }
 }
