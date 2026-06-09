@@ -107,6 +107,123 @@ struct SyncClientTests {
         #expect(await probe.wasCalled("settings"), "syncSettings should be called for Everywhere+ users")
     }
 
+    // MARK: - wipeAndSync data-safety
+
+    @Test("wipeAndSync preserves local data when performInitialSync (getFullSync) fails")
+    func wipeAndSyncPreservesLocalDataOnNetworkFailure() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        makeCapabilitiesAndSet(.everywherePlus)
+
+        // Track whether the wipe methods were called
+        actor WipeProbe {
+            var deleteAllTasksCalled = false
+            var deleteAllSessionsCalled = false
+            var deleteAllStatsCalled = false
+
+            func markTasksDeleted() { deleteAllTasksCalled = true }
+            func markSessionsDeleted() { deleteAllSessionsCalled = true }
+            func markStatsDeleted() { deleteAllStatsCalled = true }
+        }
+        let wipeProbe = WipeProbe()
+
+        struct SimulatedNetworkError: Error {}
+
+        let client = withDependencies {
+            $0.keychainClient.hasTokens = { true }
+            // getFullSync throws — simulates a network failure during the fetch phase
+            $0.apiClient.getFullSync = { _, _, _ in throw SimulatedNetworkError() }
+            // Wipe methods should NOT be called before a successful fetch
+            $0.persistenceClient.deleteAllTasks = {
+                await wipeProbe.markTasksDeleted()
+            }
+            $0.persistenceClient.deleteAllSessions = {
+                await wipeProbe.markSessionsDeleted()
+            }
+            $0.persistenceClient.deleteAllStats = {
+                await wipeProbe.markStatsDeleted()
+            }
+        } operation: {
+            SyncClient.liveValue
+        }
+
+        do {
+            try await client.wipeAndSync()
+            Issue.record("wipeAndSync should have thrown when the server fetch fails")
+        } catch {
+            // Expected: getFullSync threw, so wipeAndSync must propagate the error
+        }
+
+        // Local data must not have been touched — the fetch failed before any wipe
+        let tasksDeleted = await wipeProbe.deleteAllTasksCalled
+        let sessionsDeleted = await wipeProbe.deleteAllSessionsCalled
+        let statsDeleted = await wipeProbe.deleteAllStatsCalled
+
+        #expect(!tasksDeleted, "deleteAllTasks must NOT be called when server fetch fails")
+        #expect(!sessionsDeleted, "deleteAllSessions must NOT be called when server fetch fails")
+        #expect(!statsDeleted, "deleteAllStats must NOT be called when server fetch fails")
+    }
+
+    @Test("wipeAndSync wipes and applies data when server fetch succeeds")
+    func wipeAndSyncAppliesServerDataOnSuccess() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        makeCapabilitiesAndSet(.everywherePlus)
+
+        actor SequenceProbe {
+            var events: [String] = []
+            func record(_ event: String) { events.append(event) }
+            func getEvents() -> [String] { events }
+        }
+        let seqProbe = SequenceProbe()
+
+        let fakeTask = TaskSyncDTO(id: 1, syncId: "abc", title: "Server Task")
+        let fakeResponse = FullSyncResponse(
+            tasks: PaginatedTaskPage(items: [fakeTask], nextCursor: nil, hasMore: false),
+            sessions: PaginatedSessionPage(items: [], nextCursor: nil, hasMore: false),
+            settings: [],
+            serverTimestamp: "2024-01-01T00:00:00Z"
+        )
+
+        let client = withDependencies {
+            $0.keychainClient.hasTokens = { true }
+            $0.apiClient.getFullSync = { _, _, _ in
+                await seqProbe.record("fetch")
+                return fakeResponse
+            }
+            $0.persistenceClient.deleteAllTasks = {
+                await seqProbe.record("deleteTasks")
+            }
+            $0.persistenceClient.deleteAllSessions = {
+                await seqProbe.record("deleteSessions")
+            }
+            $0.persistenceClient.deleteAllStats = {
+                await seqProbe.record("deleteStats")
+            }
+            $0.persistenceClient.upsertTaskFromServer = { _, _ in
+                await seqProbe.record("upsertTask")
+                // no-op — just recording the call order
+            }
+            $0.persistenceClient.save = { await seqProbe.record("save") }
+            $0.persistenceClient.saveLastSyncTimestamp = { _ in }
+            $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+        } operation: {
+            SyncClient.liveValue
+        }
+
+        try await client.wipeAndSync()
+
+        let events = await seqProbe.getEvents()
+        // Fetch must come before any delete
+        let fetchIdx = events.firstIndex(of: "fetch") ?? Int.max
+        let deleteTasksIdx = events.firstIndex(of: "deleteTasks") ?? Int.max
+        let upsertIdx = events.firstIndex(of: "upsertTask") ?? Int.max
+
+        #expect(fetchIdx < deleteTasksIdx, "fetch must happen before deleteAllTasks")
+        #expect(deleteTasksIdx < upsertIdx, "deleteAllTasks must happen before upsertTask")
+        #expect(events.contains("upsertTask"), "server task should be upserted after wipe")
+    }
+
     // MARK: - Legacy isProUser isolation (spec: "Legacy isProUser bool no longer read by SyncClient")
 
     @Test("SyncClient reads capabilities not legacy bool — backendSync=false wins even when capabilities say no-sync")

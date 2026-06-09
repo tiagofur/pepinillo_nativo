@@ -545,10 +545,10 @@ public struct PersistenceClient: Sendable {
     public var getAllPreferencesAsKeyValue: @Sendable () async -> [(key: String, value: String, updatedAt: Date)] = { [] }
     public var applyServerPreference: @Sendable (_ key: String, _ value: String, _ updatedAt: Date) async -> Void
 
-    // Wipe and Sync
-    public var deleteAllTasks: @Sendable () async -> Void
-    public var deleteAllSessions: @Sendable () async -> Void
-    public var deleteAllStats: @Sendable () async -> Void
+    // Wipe and Sync (throwing — callers must handle failure to avoid partial wipes)
+    public var deleteAllTasks: @Sendable () async throws -> Void
+    public var deleteAllSessions: @Sendable () async throws -> Void
+    public var deleteAllStats: @Sendable () async throws -> Void
 
     // Counts
     public var getTaskCount: @Sendable () async -> Int = { 0 }
@@ -691,13 +691,13 @@ extension PersistenceClient: DependencyKey {
                 await actorProvider().applyServerPreference(key: key, value: value, updatedAt: updatedAt)
             },
             deleteAllTasks: {
-                await actorProvider().deleteAllTasks()
+                try await actorProvider().deleteAllTasks()
             },
             deleteAllSessions: {
-                await actorProvider().deleteAllSessions()
+                try await actorProvider().deleteAllSessions()
             },
             deleteAllStats: {
-                await actorProvider().deleteAllStats()
+                try await actorProvider().deleteAllStats()
             },
             getTaskCount: {
                 await actorProvider().getTaskCount()
