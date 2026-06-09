@@ -224,6 +224,146 @@ struct SyncClientTests {
         #expect(events.contains("upsertTask"), "server task should be upserted after wipe")
     }
 
+    // MARK: - Asymmetric pagination (tasks done in 1 page, sessions need 2)
+
+    @Test("wipeAndSync does not re-request or duplicate tasks when sessions need more pages")
+    func wipeAndSyncNoDuplicateTasksOnAsymmetricPagination() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        makeCapabilitiesAndSet(.everywherePlus)
+
+        let taskA = TaskSyncDTO(id: 1, syncId: "task-a", title: "Task A")
+        let session1 = FocusSessionSyncDTO(
+            id: UUID().uuidString, taskId: nil, startedAt: "2024-01-01T00:00:00Z",
+            endedAt: nil, mode: "pomodoro", phase: nil, durationSeconds: 1500,
+            elapsedSeconds: 1500, pauseCount: 0, totalPauseSeconds: 0, wasCompleted: true,
+            createdAt: "2024-01-01T00:00:00Z", updatedAt: "2024-01-01T00:00:00Z"
+        )
+        let session2 = FocusSessionSyncDTO(
+            id: UUID().uuidString, taskId: nil, startedAt: "2024-01-02T00:00:00Z",
+            endedAt: nil, mode: "pomodoro", phase: nil, durationSeconds: 1500,
+            elapsedSeconds: 1500, pauseCount: 0, totalPauseSeconds: 0, wasCompleted: true,
+            createdAt: "2024-01-02T00:00:00Z", updatedAt: "2024-01-02T00:00:00Z"
+        )
+
+        // Page 1: tasks finish (hasMore=false), sessions have more (hasMore=true, cursor="s2")
+        let page1 = FullSyncResponse(
+            tasks: PaginatedTaskPage(items: [taskA], nextCursor: nil, hasMore: false),
+            sessions: PaginatedSessionPage(items: [session1], nextCursor: "s2", hasMore: true),
+            settings: [],
+            serverTimestamp: "2024-01-01T00:00:00Z"
+        )
+        // Page 2: tasks would restart from page 1 if cursor bug was present; sessions finish
+        // The server is called with (taskCursor: nil, sessionCursor: "s2") — correct behavior.
+        let page2 = FullSyncResponse(
+            tasks: PaginatedTaskPage(items: [taskA], nextCursor: nil, hasMore: false), // server echoes task again
+            sessions: PaginatedSessionPage(items: [session2], nextCursor: nil, hasMore: false),
+            settings: [],
+            serverTimestamp: "2024-01-01T00:00:00Z"
+        )
+
+        actor UpsertProbe {
+            var taskUpsertCount = 0
+            var upsertedSyncIds: [String] = []
+            func recordTask(_ syncId: String) { taskUpsertCount += 1; upsertedSyncIds.append(syncId) }
+            func getCount() -> Int { taskUpsertCount }
+            func getSyncIds() -> [String] { upsertedSyncIds }
+        }
+        let probe = UpsertProbe()
+
+        var callCount = 0
+        let client = withDependencies {
+            $0.keychainClient.hasTokens = { true }
+            $0.apiClient.getFullSync = { _, _, _ in
+                callCount += 1
+                return callCount == 1 ? page1 : page2
+            }
+            $0.persistenceClient.deleteAllTasks = {}
+            $0.persistenceClient.deleteAllSessions = {}
+            $0.persistenceClient.deleteAllStats = {}
+            $0.persistenceClient.upsertTaskFromServer = { dto, _ in
+                await probe.recordTask(dto.syncId ?? "")
+            }
+            $0.persistenceClient.sessionExists = { _ in false }
+            $0.persistenceClient.upsertSessionFromServer = { _, _ in }
+            $0.persistenceClient.save = {}
+            $0.persistenceClient.saveLastSyncTimestamp = { _ in }
+            $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+        } operation: {
+            SyncClient.liveValue
+        }
+
+        try await client.wipeAndSync()
+
+        let count = await probe.getCount()
+        let syncIds = await probe.getSyncIds()
+        #expect(count == 1, "task-a must be upserted exactly once, not duplicated across pages; got \(syncIds)")
+    }
+
+    @Test("performInitialSync does not re-request or duplicate tasks when sessions need more pages")
+    func performInitialSyncNoDuplicateTasksOnAsymmetricPagination() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        makeCapabilitiesAndSet(.everywherePlus)
+
+        let taskA = TaskSyncDTO(id: 1, syncId: "task-a", title: "Task A")
+        let session1 = FocusSessionSyncDTO(
+            id: UUID().uuidString, taskId: nil, startedAt: "2024-01-01T00:00:00Z",
+            endedAt: nil, mode: "pomodoro", phase: nil, durationSeconds: 1500,
+            elapsedSeconds: 1500, pauseCount: 0, totalPauseSeconds: 0, wasCompleted: true,
+            createdAt: "2024-01-01T00:00:00Z", updatedAt: "2024-01-01T00:00:00Z"
+        )
+        let session2 = FocusSessionSyncDTO(
+            id: UUID().uuidString, taskId: nil, startedAt: "2024-01-02T00:00:00Z",
+            endedAt: nil, mode: "pomodoro", phase: nil, durationSeconds: 1500,
+            elapsedSeconds: 1500, pauseCount: 0, totalPauseSeconds: 0, wasCompleted: true,
+            createdAt: "2024-01-02T00:00:00Z", updatedAt: "2024-01-02T00:00:00Z"
+        )
+
+        let page1 = FullSyncResponse(
+            tasks: PaginatedTaskPage(items: [taskA], nextCursor: nil, hasMore: false),
+            sessions: PaginatedSessionPage(items: [session1], nextCursor: "s2", hasMore: true),
+            settings: [],
+            serverTimestamp: "2024-01-01T00:00:00Z"
+        )
+        let page2 = FullSyncResponse(
+            tasks: PaginatedTaskPage(items: [taskA], nextCursor: nil, hasMore: false), // server echoes task again
+            sessions: PaginatedSessionPage(items: [session2], nextCursor: nil, hasMore: false),
+            settings: [],
+            serverTimestamp: "2024-01-01T00:00:00Z"
+        )
+
+        actor UpsertProbe {
+            var count = 0
+            func record() { count += 1 }
+            func getCount() -> Int { count }
+        }
+        let probe = UpsertProbe()
+
+        var callCount = 0
+        let client = withDependencies {
+            $0.keychainClient.hasTokens = { true }
+            $0.apiClient.getFullSync = { _, _, _ in
+                callCount += 1
+                return callCount == 1 ? page1 : page2
+            }
+            $0.persistenceClient.upsertTaskFromServer = { _, _ in await probe.record() }
+            $0.persistenceClient.sessionExists = { _ in false }
+            $0.persistenceClient.upsertSessionFromServer = { _, _ in }
+            $0.persistenceClient.applyServerPreference = { _, _, _ in }
+            $0.persistenceClient.save = {}
+            $0.persistenceClient.saveLastSyncTimestamp = { _ in }
+            $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+        } operation: {
+            SyncClient.liveValue
+        }
+
+        try await client.performInitialSync()
+
+        let count = await probe.getCount()
+        #expect(count == 1, "task-a must be upserted exactly once; got \(count)")
+    }
+
     // MARK: - Legacy isProUser isolation (spec: "Legacy isProUser bool no longer read by SyncClient")
 
     @Test("SyncClient reads capabilities not legacy bool — backendSync=false wins even when capabilities say no-sync")
