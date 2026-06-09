@@ -9,7 +9,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite("FocusFeatureReducer", .serialized)
+@Suite("FocusFeatureReducer", .serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct FocusFeatureReducerTests {
 
