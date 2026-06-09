@@ -11,6 +11,29 @@ import OSLog
 
 private let syncRouterLogger = Logger(subsystem: "com.pepinillo.app", category: "sync-router")
 
+/// Thread-safe holder for the currently-active BackgroundPersistenceActor.
+/// The router updates it on the main actor when the active store swaps; the live
+/// PersistenceClient reads it from arbitrary async contexts. The held value is
+/// itself Sendable, so only the reference swap needs synchronization.
+final class ActivePersistenceActorBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var actor: BackgroundPersistenceActor
+
+    init(_ actor: BackgroundPersistenceActor) {
+        self.actor = actor
+    }
+
+    var current: BackgroundPersistenceActor {
+        lock.lock(); defer { lock.unlock() }
+        return actor
+    }
+
+    func set(_ newActor: BackgroundPersistenceActor) {
+        lock.lock(); defer { lock.unlock() }
+        actor = newActor
+    }
+}
+
 @MainActor
 final class PersistenceStoreRouter: ObservableObject {
     private(set) var localContainer: ModelContainer
@@ -18,15 +41,31 @@ final class PersistenceStoreRouter: ObservableObject {
 
     private var appleCloudContainer: ModelContainer?
 
+    /// Background ModelActor that owns its own ModelContext for the active
+    /// container. Recreated whenever the active container swaps so persistence
+    /// always runs off the main thread against the correct store. Held in a
+    /// thread-safe box so the live PersistenceClient can read it from any
+    /// async context while the router swaps it on the main actor.
+    private let actorBox: ActivePersistenceActorBox
+
     init(localContainer: ModelContainer) {
         self.localContainer = localContainer
         self.activeContainer = localContainer
+        self.actorBox = ActivePersistenceActorBox(BackgroundPersistenceActor(modelContainer: localContainer))
         AppGroupDefaults.activeSyncMode = .local
         AppGroupDefaults.syncStatus = .localOnly
     }
 
-    func activeService() -> SwiftDataPersistenceService {
-        SwiftDataPersistenceService(container: activeContainer)
+    /// The thread-safe holder for the active background persistence actor. The
+    /// live PersistenceClient captures this box and reads `current` on every op.
+    func activeActorBox() -> ActivePersistenceActorBox {
+        actorBox
+    }
+
+    /// Point the active container (and the background actor) at a new container.
+    private func setActiveContainer(_ container: ModelContainer) {
+        activeContainer = container
+        actorBox.set(BackgroundPersistenceActor(modelContainer: container))
     }
 
     func reconcile(capabilities: UserCapabilities) async {
@@ -48,14 +87,14 @@ final class PersistenceStoreRouter: ObservableObject {
         mode: AppGroupDefaults.SyncMode = .local,
         status: AppGroupDefaults.SyncStatus = .localOnly
     ) {
-        activeContainer = localContainer
+        setActiveContainer(localContainer)
         AppGroupDefaults.activeSyncMode = mode
         AppGroupDefaults.syncStatus = status
     }
 
     private func activateAppleCloud() async {
         if let appleCloudContainer {
-            activeContainer = appleCloudContainer
+            setActiveContainer(appleCloudContainer)
             AppGroupDefaults.activeSyncMode = .appleCloud
             AppGroupDefaults.syncStatus = .appleCloudActive
             return
@@ -73,7 +112,7 @@ final class PersistenceStoreRouter: ObservableObject {
             }
 
             appleCloudContainer = container
-            activeContainer = container
+            setActiveContainer(container)
             AppGroupDefaults.activeSyncMode = .appleCloud
             AppGroupDefaults.syncStatus = .appleCloudActive
         } catch {
@@ -81,7 +120,7 @@ final class PersistenceStoreRouter: ObservableObject {
             AppGroupDefaults.activeSyncMode = .local
             AppGroupDefaults.syncStatus = .appleCloudUnavailable
             AppGroupDefaults.lastAppleCloudActivationError = String(describing: error)
-            activeContainer = localContainer
+            setActiveContainer(localContainer)
         }
     }
 

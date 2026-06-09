@@ -1,20 +1,26 @@
 // SwiftDataPersistenceService.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// @MainActor-isolated service wrapping SwiftData ModelContext.
-// Used by PersistenceClient.live(container:) to implement all data operations.
-// All methods run on MainActor because container.mainContext is @MainActor.
+// Service wrapping a SwiftData ModelContext. It is isolation-agnostic: it only
+// ever touches the injected ModelContext and is always driven from within the
+// isolation that owns that context (BackgroundPersistenceActor in the live app).
+// Used by PersistenceClient.live to implement all data operations off the main thread.
 
 import Foundation
 import SwiftData
 
-@MainActor
 public final class SwiftDataPersistenceService {
 
     private let context: ModelContext
 
+    /// Operate on an explicitly provided context (e.g. a background ModelActor context).
+    public init(context: ModelContext) {
+        self.context = context
+    }
+
+    /// Convenience for callers that want the container's main context (e.g. migration helpers).
     public init(container: ModelContainer) {
-        self.context = container.mainContext
+        self.context = ModelContext(container)
     }
 
     public func save() throws {
@@ -28,6 +34,23 @@ public final class SwiftDataPersistenceService {
             sortBy: [SortDescriptor(\.sortOrder), SortDescriptor(\.createdAt)]
         )
         return try context.fetch(descriptor)
+    }
+
+    /// One-shot batch of subtask completion counts keyed by parent task id.
+    /// Avoids the N+1 relationship fault of touching `task.subtasks` per task
+    /// when mapping a full task list to DTOs.
+    public func subtaskProgressByTask() throws -> [UUID: (completed: Int, total: Int)] {
+        let descriptor = FetchDescriptor<SubTask>()
+        let subtasks = try context.fetch(descriptor)
+        var result: [UUID: (completed: Int, total: Int)] = [:]
+        for subtask in subtasks {
+            guard let parentID = subtask.parent?.id else { continue }
+            var entry = result[parentID] ?? (completed: 0, total: 0)
+            entry.total += 1
+            if subtask.isCompleted { entry.completed += 1 }
+            result[parentID] = entry
+        }
+        return result
     }
 
     public func saveTask(_ task: TaskItem) throws {

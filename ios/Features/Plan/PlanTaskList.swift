@@ -174,7 +174,7 @@ struct PlanTaskList: View {
             .scrollContentBackground(.hidden)
             .background(Color.clear)
             .conditionalAnimation(.smooth(duration: 0.3), value: filteredTasks.map(\.id))
-            .refreshable { store.send(.onAppear) }
+            .refreshable { store.send(.refresh) }
         }
     }
 
