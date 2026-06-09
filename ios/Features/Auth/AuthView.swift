@@ -68,6 +68,23 @@ struct AuthView: View {
             ForgotPasswordView(store: forgotPasswordStore)
                 .pepinilloSheetStyle()
         }
+        .alert(
+            String(localized: "auth.wipeandsync.failure.title", defaultValue: "Data Sync Failed"),
+            isPresented: Binding(
+                get: { store.wipeAndSyncError != nil },
+                set: { if !$0 { store.send(.dismissWipeAndSyncError) } }
+            )
+        ) {
+            Button(String(localized: "auth.wipeandsync.failure.retry", defaultValue: "Retry")) {
+                store.send(.retryWipeAndSync)
+            }
+            .keyboardShortcut(.defaultAction)
+            Button(String(localized: "auth.wipeandsync.failure.continue", defaultValue: "Continue"), role: .cancel) {
+                store.send(.dismissWipeAndSyncError)
+            }
+        } message: {
+            Text(String(localized: "auth.wipeandsync.failure.message", defaultValue: "Your account data could not be synced to this device. You can retry now or continue — your account is active and sync will be attempted again later."))
+        }
         .sheet(isPresented: Binding(
             get: { store.showMergeDialog },
             set: { _ in store.send(.dismissMergeDialog) }
