@@ -672,13 +672,19 @@ struct AppFeature {
                 state.displayName = user.name
                 state.userEmail = user.email
                 state.auth = nil  // dismiss auth sheet
-                // Sync tasks and connect WebSocket after successful email login if Pro
-                return .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
-                    if canBackendSync {
-                        try? await syncClient.syncAll()
-                        await webSocketClient.connect()
+                // Reload the task list: the account-only auth path runs
+                // syncClient.wipeAndSync() (deleteAllTasks) before delegating here,
+                // which leaves the in-memory list stale. `.refresh` bypasses the
+                // hasLoadedData guard and refetches from the now-current store.
+                return .merge(
+                    .send(.tasks(.refresh)),
+                    .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
+                        if canBackendSync {
+                            try? await syncClient.syncAll()
+                            await webSocketClient.connect()
+                        }
                     }
-                }
+                )
 
             case .auth(.presented(.delegate(.emailVerificationRequired(let email)))):
                 state.auth = nil  // dismiss auth sheet
