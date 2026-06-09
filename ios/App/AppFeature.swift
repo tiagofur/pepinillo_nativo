@@ -211,6 +211,8 @@ struct AppFeature {
         case externalCommandObserver
         case webSocket
         case softSync
+        /// Deduplicates rapid-fire taskProgressChanged + sessionPersisted refreshes.
+        case sessionTaskRefresh
     }
 
     var body: some ReducerOf<Self> {
@@ -552,7 +554,7 @@ struct AppFeature {
                 AppGroupDefaults.canBackendSync = canSync
                 AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
                 if isPro { state.focus.showPaywall = false }
-                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] _ in
+                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] send in
                     try? await Task.sleep(for: .seconds(3))
                     let start = Date.now
                     await syncModeClient.reconcile(capabilities)
@@ -564,6 +566,9 @@ struct AppFeature {
                     }
                     WidgetCenter.shared.reloadAllTimelines()
                     appLaunchLogger.info("Soft sync finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
+                    // Reconcile may swap the active store (local → CloudKit); refresh the task
+                    // list so in-memory state reflects the now-active container.
+                    await send(.tasks(.refresh))
                 }
                 .cancellable(id: CancelID.softSync, cancelInFlight: true)
 
@@ -585,7 +590,7 @@ struct AppFeature {
                 AppGroupDefaults.canBackendSync = canSync
                 AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
                 if isPro { state.focus.showPaywall = false }
-                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] _ in
+                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] send in
                     try? await Task.sleep(for: .seconds(3))
                     let start = Date.now
                     await syncModeClient.reconcile(capabilities)
@@ -597,6 +602,9 @@ struct AppFeature {
                     }
                     WidgetCenter.shared.reloadAllTimelines()
                     appLaunchLogger.info("Soft sync update finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
+                    // Reconcile may swap the active store (local → CloudKit); refresh the task
+                    // list so in-memory state reflects the now-active container.
+                    await send(.tasks(.refresh))
                 }
                 .cancellable(id: CancelID.softSync, cancelInFlight: true)
 
@@ -996,8 +1004,12 @@ struct AppFeature {
                     },
                     {
                         if case .focus(.sessionCompleted) = action {
+                            // Task refresh after session completion is handled by the
+                            // .focus(.delegate(.sessionPersisted)) path below — which fires
+                            // reliably once the session is actually saved and has the
+                            // correct pomodoro counts. Do not send .tasks(.onAppear) here:
+                            // that path is guarded by hasLoadedData and would no-op anyway.
                             return .merge(
-                                .send(.tasks(.onAppear)),
                                 .send(.analytics(.onAppear)),
                                 Effect<Action>.run { send in
                                     if let prefs = try? await persistence.fetchPreferences(),
@@ -1104,7 +1116,12 @@ struct AppFeature {
             // MARK: - Day Change
 
             case .dayChanged:
-                return .send(.focus(.dayChanged))
+                // Forward to focus for its own day-change logic and also refresh the
+                // task list so recurring tasks are regenerated for the new day.
+                return .merge(
+                    .send(.focus(.dayChanged)),
+                    .send(.tasks(.refresh))
+                )
 
             // MARK: - Handoff
 
@@ -1136,10 +1153,14 @@ struct AppFeature {
 
             case .focus(.delegate(.sessionPersisted)),
                  .focus(.delegate(.taskProgressChanged)):
+                // Single explicit refresh path for session events. cancelInFlight ensures
+                // that when taskProgressChanged fires just before sessionPersisted (final
+                // pomodoro), only one fetch runs — the second cancels the first.
                 return .run { [persistence] send in
                     let items = try await persistence.fetchTasks()
                     await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
                 }
+                .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true)
 
             case .tasks(.delegate(.showPaywall)):
                 state.focus.showPaywall = true

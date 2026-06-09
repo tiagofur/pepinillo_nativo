@@ -57,6 +57,20 @@ private final class ModelContainerOpenContinuationBox: @unchecked Sendable {
 /// Do not implement this with `withThrowingTaskGroup`: structured concurrency waits
 /// for cancelled children to finish before leaving the group, so a synchronous
 /// `ModelContainer` open that hangs can still block app startup forever.
+///
+/// Double-resume safety: `ModelContainerOpenContinuationBox` uses an NSLock to
+/// guarantee the continuation is resumed exactly once. Whichever GCD block calls
+/// `box.resume(with:)` second finds `continuation == nil` and returns immediately,
+/// discarding its result without any side effect on the Swift concurrency runtime.
+///
+/// PERF/SAFETY residual: if the open loses the race (timeout fires first), the
+/// `make()` closure keeps running on the GCD thread until SQLite/CoreData returns.
+/// That thread holds an open file descriptor to the shared store for the duration.
+/// This is safe — the continuation cannot be double-resumed — but the background
+/// open may briefly contend with the fallback container's WAL on disk.
+/// Making it truly cancellable would require a `Task` with cooperative cancellation,
+/// which SwiftData's synchronous `ModelContainer` initialiser does not support.
+/// Acceptable risk for launch: the timeout path is the rare failure branch.
 func openModelContainerOffMainThread(
     label: String,
     timeout seconds: TimeInterval,

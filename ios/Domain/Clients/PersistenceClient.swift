@@ -88,7 +88,10 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         self.updatedAt = updatedAt
     }
 
-    init(from task: TaskItem) {
+    /// Maps a TaskItem to a DTO. When `subtaskProgress` is provided the subtask
+    /// relationship is NOT faulted (avoids N+1 during list mapping); when nil it
+    /// falls back to the per-task computed progress.
+    init(from task: TaskItem, subtaskProgress: (completed: Int, total: Int)? = nil) {
         self.id = task.id
         self.title = task.title
         self.notes = task.notes
@@ -98,7 +101,7 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         self.estimatedPomodoros = task.estimatedPomodoros
         self.completedPomodoros = task.completedPomodoros
         self.sortOrder = task.sortOrder
-        let progress = task.subtaskProgress
+        let progress = subtaskProgress ?? task.subtaskProgress
         self.subtasksCompleted = progress.completed
         self.subtasksTotal = progress.total
         self.recurrenceRule = task.recurrenceRule
@@ -563,313 +566,150 @@ extension PersistenceClient: DependencyKey {
     public static let testValue = PersistenceClient()
 
     /// Live implementation backed by SwiftData.
-    @MainActor
     public static func live(container: ModelContainer) -> PersistenceClient {
-        live(serviceProvider: { SwiftDataPersistenceService(container: container) })
+        let actor = BackgroundPersistenceActor(modelContainer: container)
+        return live(actorProvider: { actor })
     }
 
-    /// Live implementation backed by a service provider so the active store can
-    /// move from local SwiftData to the Apple Cloud store after launch.
-    @MainActor
+    /// Live implementation backed by an actor provider so the active store can
+    /// move from local SwiftData to the Apple Cloud store after launch. The
+    /// provider always vends the currently-active BackgroundPersistenceActor,
+    /// so every operation runs off the main thread on a background ModelContext.
     public static func live(
-        serviceProvider: @escaping @MainActor () -> SwiftDataPersistenceService
+        actorProvider: @escaping @Sendable () -> BackgroundPersistenceActor
     ) -> PersistenceClient {
         return PersistenceClient(
             fetchTasks: {
-                try await MainActor.run {
-                    let tasks = try serviceProvider().fetchTasks()
-                    // Filter out soft-deleted tasks
-                    return tasks.filter { !$0.isDeleted }.map { TaskItemDTO(from: $0) }
-                }
+                try await actorProvider().fetchTasks()
             },
             saveTask: { taskDTO in
-                try await MainActor.run {
-                    let tasks = try serviceProvider().fetchTasks()
-                    if let existing = tasks.first(where: { $0.id == taskDTO.id }) {
-                        existing.title = taskDTO.title
-                        existing.notes = taskDTO.notes
-                        if existing.isCompleted != taskDTO.isCompleted {
-                            existing.isCompleted = taskDTO.isCompleted
-                            existing.completedAt = taskDTO.isCompleted ? Date.now : nil
-                        }
-                        existing.priority = taskDTO.priority
-                        existing.energyLevel = taskDTO.energyLevel
-                        existing.estimatedPomodoros = taskDTO.estimatedPomodoros
-                        existing.completedPomodoros = taskDTO.completedPomodoros
-                        existing.sortOrder = taskDTO.sortOrder
-                        existing.recurrenceRule = taskDTO.recurrenceRule
-                        existing.isRecurringTemplate = taskDTO.isRecurringTemplate
-                        existing.dueDate = taskDTO.dueDate
-                        existing.scheduledForToday = taskDTO.scheduledForToday
-                        existing.isDirty = true  // Mark dirty for sync
-                        // Set nextOccurrence when recurrence rule is first applied
-                        if taskDTO.isRecurringTemplate, existing.nextOccurrence == nil,
-                           let rule = taskDTO.recurrenceRule,
-                           let preset = RecurrencePreset.from(rule: rule) {
-                            existing.nextOccurrence = preset.nextDate(after: Calendar.current.startOfDay(for: .now))
-                        } else if !taskDTO.isRecurringTemplate {
-                            existing.nextOccurrence = nil
-                        }
-                        try serviceProvider().saveTask(existing)
-                    } else {
-                        let newTask = TaskItem(
-                            title: taskDTO.title,
-                            notes: taskDTO.notes,
-                            priority: taskDTO.priority,
-                            energyLevel: taskDTO.energyLevel,
-                            estimatedPomodoros: taskDTO.estimatedPomodoros,
-                            sortOrder: taskDTO.sortOrder
-                        )
-                        newTask.id = taskDTO.id
-                        newTask.isCompleted = taskDTO.isCompleted
-                        newTask.completedPomodoros = taskDTO.completedPomodoros
-                        newTask.recurrenceRule = taskDTO.recurrenceRule
-                        newTask.isRecurringTemplate = taskDTO.isRecurringTemplate
-                        newTask.dueDate = taskDTO.dueDate
-                        newTask.scheduledForToday = taskDTO.scheduledForToday
-                        newTask.isDirty = true  // New tasks are dirty
-                        if taskDTO.isRecurringTemplate,
-                           let rule = taskDTO.recurrenceRule,
-                           let preset = RecurrencePreset.from(rule: rule) {
-                            newTask.nextOccurrence = preset.nextDate(after: Calendar.current.startOfDay(for: .now))
-                        }
-                        try serviceProvider().saveTask(newTask)
-                    }
-                }
+                try await actorProvider().saveTask(taskDTO)
             },
             incrementTaskPomodoros: { id in
-                try await MainActor.run { try serviceProvider().incrementTaskPomodoros(id: id) }
+                try await actorProvider().incrementTaskPomodoros(id: id)
             },
             deleteTask: { id in
-                try await MainActor.run { try serviceProvider().softDeleteTask(id: id) }
+                try await actorProvider().deleteTask(id: id)
             },
             fetchSubtasks: { taskID in
-                try await MainActor.run {
-                    let subtasks = try serviceProvider().fetchSubtasks(for: taskID)
-                    return subtasks.map { SubTaskDTO(from: $0) }
-                }
+                try await actorProvider().fetchSubtasks(for: taskID)
             },
             addSubtask: { taskID, title in
-                try await MainActor.run {
-                    let subtask = try serviceProvider().addSubtask(to: taskID, title: title)
-                    return SubTaskDTO(from: subtask)
-                }
+                try await actorProvider().addSubtask(to: taskID, title: title)
             },
             toggleSubtask: { id in
-                try await MainActor.run { try serviceProvider().toggleSubtask(id: id) }
+                try await actorProvider().toggleSubtask(id: id)
             },
             deleteSubtask: { id in
-                try await MainActor.run { try serviceProvider().deleteSubtask(id: id) }
+                try await actorProvider().deleteSubtask(id: id)
             },
             fetchTaskTotalFocusSeconds: { taskID in
-                try await MainActor.run { try serviceProvider().fetchTaskTotalFocusSeconds(for: taskID) }
+                try await actorProvider().fetchTaskTotalFocusSeconds(for: taskID)
             },
             saveSession: { result in
-                try await MainActor.run { try serviceProvider().saveSession(result) }
+                try await actorProvider().saveSession(result)
             },
             fetchSessions: { start, end in
-                try await MainActor.run {
-                    let records = try serviceProvider().fetchSessions(from: start, to: end)
-                    return records.map { SessionRecordDTO(from: $0) }
-                }
+                try await actorProvider().fetchSessions(from: start, to: end)
             },
             fetchSessionsForTask: { taskID in
-                try await MainActor.run {
-                    let records = try serviceProvider().fetchSessionsForTask(taskID: taskID)
-                    return records.map { SessionRecordDTO(from: $0) }
-                }
+                try await actorProvider().fetchSessionsForTask(taskID: taskID)
             },
             fetchTaskAnalytics: { taskID in
-                try await MainActor.run {
-                    try serviceProvider().fetchTaskAnalytics(taskID: taskID)
-                }
+                try await actorProvider().fetchTaskAnalytics(taskID: taskID)
             },
             saveJournalEntry: { sessionID, note, rating in
-                try await MainActor.run {
-                    try serviceProvider().saveJournalEntry(sessionID: sessionID, note: note, rating: rating)
-                }
+                try await actorProvider().saveJournalEntry(sessionID: sessionID, note: note, rating: rating)
             },
             fetchDailyStats: { date in
-                try await MainActor.run {
-                    guard let stats = try serviceProvider().fetchDailyStats(for: date) else { return nil }
-                    return DailyStatsDTO(from: stats)
-                }
+                try await actorProvider().fetchDailyStats(for: date)
             },
             fetchPreferences: {
-                try await MainActor.run {
-                    let prefs = try serviceProvider().fetchPreferences()
-                    return UserPreferencesDTO(from: prefs)
-                }
+                try await actorProvider().fetchPreferences()
             },
             savePreferences: { prefsDTO in
-                try await MainActor.run {
-                    let prefs = try serviceProvider().fetchPreferences()
-                    prefs.pomodoroDuration = prefsDTO.pomodoroDuration
-                    prefs.shortBreakDuration = prefsDTO.shortBreakDuration
-                    prefs.longBreakDuration = prefsDTO.longBreakDuration
-                    prefs.pomodorosPerCycle = prefsDTO.pomodorosPerCycle
-                    prefs.autoStartBreaks = prefsDTO.autoStartBreaks
-                    prefs.autoStartWork = prefsDTO.autoStartWork
-                    prefs.defaultBlockDuration = prefsDTO.defaultBlockDuration
-                    prefs.blockMidpointCheckIn = prefsDTO.blockMidpointCheckIn
-                    prefs.flowtimeMinSessionMinutes = prefsDTO.flowtimeMinSessionMinutes
-                    prefs.flowtimeShowBreakSuggestion = prefsDTO.flowtimeShowBreakSuggestion
-                    prefs.soundEnabled = prefsDTO.soundEnabled
-                    prefs.hapticEnabled = prefsDTO.hapticEnabled
-                    prefs.keepScreenOn = prefsDTO.keepScreenOn
-                    prefs.defaultMode = prefsDTO.defaultMode
-                    prefs.themeName = prefsDTO.themeName
-                    prefs.followSystemAppearance = prefsDTO.followSystemAppearance
-                    prefs.appearanceMode = prefsDTO.appearanceMode
-                    prefs.dailyReminderEnabled = prefsDTO.dailyReminderEnabled
-                    prefs.dailyReminderHour = prefsDTO.dailyReminderHour
-                    prefs.dailyReminderMinute = prefsDTO.dailyReminderMinute
-                    prefs.showJournalAfterSession = prefsDTO.showJournalAfterSession
-                    prefs.healthLoggingEnabled = prefsDTO.healthLoggingEnabled
-                    prefs.adhdFriendlyEnabled = prefsDTO.adhdFriendlyEnabled
-                    prefs.calendarIntegrationEnabled = prefsDTO.calendarIntegrationEnabled
-                    prefs.isProUser = prefsDTO.isProUser
-                    prefs.appleUserID = prefsDTO.appleUserID
-                    prefs.displayName = prefsDTO.displayName
-                    prefs.userEmail = prefsDTO.userEmail
-                    try serviceProvider().savePreferences(prefs)
-                }
+                try await actorProvider().savePreferences(prefsDTO)
             },
             fetchCachedUser: {
-                try await MainActor.run {
-                    guard let user = try serviceProvider().fetchCachedUser() else { return nil }
-                    return CachedUserDTO(from: user)
-                }
+                try await actorProvider().fetchCachedUser()
             },
             saveCachedUser: { dto in
-                try await MainActor.run {
-                    try serviceProvider().saveCachedUser(dto)
-                }
+                try await actorProvider().saveCachedUser(dto)
             },
             deleteCachedUser: {
-                try await MainActor.run {
-                    try serviceProvider().deleteCachedUser()
-                }
+                try await actorProvider().deleteCachedUser()
             },
             generateRecurringTasks: {
-                try await MainActor.run { try serviceProvider().generateRecurringTasksIfNeeded() }
+                try await actorProvider().generateRecurringTasks()
             },
             fetchDirtyTasks: {
-                try await MainActor.run {
-                    let tasks = try serviceProvider().fetchDirtyTasks()
-                    return tasks.map { TaskItemDTO(from: $0) }
-                }
+                try await actorProvider().fetchDirtyTasks()
             },
             markTasksSynced: { syncIds, syncTimestamp in
-                try await MainActor.run {
-                    try serviceProvider().markTasksSynced(syncIds: syncIds, syncTimestamp: syncTimestamp)
-                }
+                try await actorProvider().markTasksSynced(syncIds: syncIds, syncTimestamp: syncTimestamp)
             },
             upsertTaskFromServer: { serverTask, saveImmediately in
-                try await MainActor.run {
-                    try serviceProvider().upsertTaskFromServer(serverTask, saveImmediately: saveImmediately)
-                }
+                try await actorProvider().upsertTaskFromServer(serverTask, saveImmediately: saveImmediately)
             },
             save: {
-                try await MainActor.run {
-                    try serviceProvider().save()
-                }
+                try await actorProvider().save()
             },
             purgeTaskBySyncId: { syncId in
-                try await MainActor.run {
-                    try serviceProvider().purgeTaskBySyncId(syncId)
-                }
+                try await actorProvider().purgeTaskBySyncId(syncId)
             },
             getLastSyncTimestamp: {
-                await MainActor.run {
-                    serviceProvider().getLastSyncTimestamp()
-                }
+                await actorProvider().getLastSyncTimestamp()
             },
             saveLastSyncTimestamp: { timestamp in
-                await MainActor.run {
-                    serviceProvider().saveLastSyncTimestamp(timestamp)
-                }
+                await actorProvider().saveLastSyncTimestamp(timestamp)
             },
             fetchDirtySessions: {
-                try await MainActor.run {
-                    let records = try serviceProvider().fetchDirtySessions()
-                    return records.map { SessionRecordDTO(from: $0) }
-                }
+                try await actorProvider().fetchDirtySessions()
             },
             markSessionsSynced: { sessionIDs in
-                try await MainActor.run {
-                    try serviceProvider().markSessionsSynced(ids: sessionIDs)
-                }
+                try await actorProvider().markSessionsSynced(ids: sessionIDs)
             },
             upsertSessionFromServer: { dto, saveImmediately in
-                try await MainActor.run {
-                    try serviceProvider().upsertSessionFromServer(dto, saveImmediately: saveImmediately)
-                }
+                try await actorProvider().upsertSessionFromServer(dto, saveImmediately: saveImmediately)
             },
             sessionExists: { sessionId in
-                try await MainActor.run {
-                    try serviceProvider().sessionExists(id: sessionId)
-                }
+                try await actorProvider().sessionExists(id: sessionId)
             },
             fetchTaskBySyncId: { syncId in
-                try await MainActor.run {
-                    try serviceProvider().fetchTaskBySyncId(syncId).map { TaskItemDTO(from: $0) }
-                }
+                try await actorProvider().fetchTaskBySyncId(syncId)
             },
             fetchTaskByServerId: { serverId in
-                try await MainActor.run {
-                    try serviceProvider().fetchTaskByServerId(serverId).map { TaskItemDTO(from: $0) }
-                }
+                try await actorProvider().fetchTaskByServerId(serverId)
             },
             linkSessionToTask: { sessionId, taskId, saveImmediately in
-                try await MainActor.run {
-                    try serviceProvider().linkSessionToTask(sessionId: sessionId, taskId: taskId, saveImmediately: saveImmediately)
-                }
+                try await actorProvider().linkSessionToTask(sessionId: sessionId, taskId: taskId, saveImmediately: saveImmediately)
             },
             getAllPreferencesAsKeyValue: {
-                await MainActor.run {
-                    (try? serviceProvider().getAllPreferencesAsKeyValue()) ?? []
-                }
+                await actorProvider().getAllPreferencesAsKeyValue()
             },
             applyServerPreference: { key, value, updatedAt in
-                await MainActor.run {
-                    try? serviceProvider().applyServerPreference(key: key, value: value, updatedAt: updatedAt)
-                }
+                await actorProvider().applyServerPreference(key: key, value: value, updatedAt: updatedAt)
             },
             deleteAllTasks: {
-                await MainActor.run {
-                    try? serviceProvider().deleteAllTasks()
-                }
+                await actorProvider().deleteAllTasks()
             },
             deleteAllSessions: {
-                await MainActor.run {
-                    try? serviceProvider().deleteAllSessions()
-                }
+                await actorProvider().deleteAllSessions()
             },
             deleteAllStats: {
-                await MainActor.run {
-                    try? serviceProvider().deleteAllStats()
-                }
+                await actorProvider().deleteAllStats()
             },
             getTaskCount: {
-                await MainActor.run {
-                    (try? serviceProvider().getTaskCount()) ?? 0
-                }
+                await actorProvider().getTaskCount()
             },
             getSessionCount: {
-                await MainActor.run {
-                    (try? serviceProvider().getSessionCount()) ?? 0
-                }
+                await actorProvider().getSessionCount()
             },
             getLastSessionSyncTimestamp: {
-                await MainActor.run {
-                    serviceProvider().getLastSessionSyncTimestamp()
-                }
+                await actorProvider().getLastSessionSyncTimestamp()
             },
             saveLastSessionSyncTimestamp: { timestamp in
-                await MainActor.run {
-                    serviceProvider().saveLastSessionSyncTimestamp(timestamp)
-                }
+                await actorProvider().saveLastSessionSyncTimestamp(timestamp)
             }
         )
     }

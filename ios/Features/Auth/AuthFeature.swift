@@ -190,10 +190,11 @@ struct AuthFeature {
                 }
                 state.isSyncing = true
                 return .run { [persistence, syncClient] send in
-                    // Check if there's local data to merge
+                    // Check if there's local data to merge.
+                    // Use lightweight counts rather than loading all records.
                     let tasks = try await persistence.fetchTasks()
-                    let sessions = try await persistence.fetchSessions(Date.distantPast, Date.now)
-                    let hasLocalData = !tasks.isEmpty || !sessions.isEmpty
+                    let sessionCount = await persistence.getSessionCount()
+                    let hasLocalData = !tasks.isEmpty || sessionCount > 0
 
                     if hasLocalData {
                         do {

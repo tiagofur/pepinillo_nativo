@@ -171,7 +171,8 @@ private final class AppBootstrap: ObservableObject {
         store = Store(initialState: initialState) {
             AppFeature()
         } withDependencies: {
-            $0.persistenceClient = PersistenceClient.live(serviceProvider: { router.activeService() })
+            let actorBox = router.activeActorBox()
+            $0.persistenceClient = PersistenceClient.live(actorProvider: { actorBox.current })
             $0.syncModeClient.reconcile = { [weak self] capabilities in
                 await router.reconcile(capabilities: capabilities)
                 await MainActor.run {

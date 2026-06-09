@@ -16,6 +16,9 @@ struct TaskListFeature {
     struct State: Equatable {
         var tasks: IdentifiedArrayOf<TaskItemState> = []
         var isLoading: Bool = false
+        /// True after the first successful task load. Guards the passive
+        /// `.onAppear` so tab switches don't refetch + regenerate recurring tasks.
+        var hasLoadedData: Bool = false
         var filter: TaskFilter = .today
         var energyFilter: EnergyFilter = .all
         var sortOrder: SortOrder = .custom
@@ -137,6 +140,7 @@ struct TaskListFeature {
 
     enum Action: Equatable {
         case onAppear
+        case refresh
         case tasksLoaded([TaskItemState])
         case tasksLoadFailed(String)
         case filterChanged(TaskFilter)
@@ -189,15 +193,30 @@ struct TaskListFeature {
             switch action {
 
             case .onAppear:
+                // Passive appearance (tab switch / re-entry): load only once.
+                // Explicit reloads (pull-to-refresh, detail dismiss, session
+                // completed) bypass this guard via their own actions.
+                guard !state.isLoading, !state.hasLoadedData else { return .none }
+                state.isLoading = true
+                return .run { send in
+                    do {
+                        // First load: generate recurring instances once, then a
+                        // single fetch (previously fetched twice back-to-back).
+                        try await persistence.generateRecurringTasks()
+                        let items = try await persistence.fetchTasks()
+                        let states = items.map { TaskItemState.from($0) }
+                        await send(.tasksLoaded(states))
+                    } catch {
+                        await send(.tasksLoadFailed(error.localizedDescription))
+                    }
+                }
+
+            case .refresh:
+                // Explicit user-initiated reload (pull-to-refresh). Always runs.
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
                 return .run { send in
                     do {
-                        // Keep first app interaction local-first: show persisted tasks before
-                        // generating recurring instances or indexing Spotlight.
-                        let initialItems = try await persistence.fetchTasks()
-                        await send(.tasksLoaded(initialItems.map { TaskItemState.from($0) }))
-
                         try await persistence.generateRecurringTasks()
                         let items = try await persistence.fetchTasks()
                         let states = items.map { TaskItemState.from($0) }
@@ -210,6 +229,7 @@ struct TaskListFeature {
             case .tasksLoaded(let tasks):
                 state.tasks = IdentifiedArrayOf(uniqueElements: tasks)
                 state.isLoading = false
+                state.hasLoadedData = true
                 let dtos = tasks.map { task in
                     TaskItemDTO(
                         id: task.id, title: task.title, notes: task.notes,
