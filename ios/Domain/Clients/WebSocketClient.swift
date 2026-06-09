@@ -273,6 +273,8 @@ private final class WebSocketManager: @unchecked Sendable {
                         let response = try await refreshTokens(RefreshRequest(refreshToken: refreshToken))
                         try await saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
                         wsLogger.info("WebSocket token refreshed before reconnect")
+                    } else {
+                        wsLogger.debug("No refresh token available, reconnecting with existing token")
                     }
                 } catch {
                     wsLogger.warning("WebSocket token refresh failed before reconnect: \(error, privacy: .public)")

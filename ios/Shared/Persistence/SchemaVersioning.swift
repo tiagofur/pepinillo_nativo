@@ -585,13 +585,13 @@ enum SchemaV3: VersionedSchema {
 
     static var models: [any PersistentModel.Type] {
         [
-            TaskItem.self,
-            SubTask.self,
-            FocusSessionRecord.self,
-            DailyStats.self,
-            UserPreferences.self,
-            ProductivityReport.self,
-            CachedUser.self,
+            SchemaV3.TaskItem.self,
+            SchemaV3.SubTask.self,
+            SchemaV3.FocusSessionRecord.self,
+            SchemaV3.DailyStats.self,
+            SchemaV3.UserPreferences.self,
+            SchemaV3.ProductivityReport.self,
+            SchemaV3.CachedUser.self,
         ]
     }
 
