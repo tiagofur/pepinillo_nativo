@@ -157,21 +157,35 @@ struct StreakProtectionTests {
         #expect(result.protectionApplied == true)
     }
 
-    // MARK: - Miss on today (no session today yet)
+    // MARK: - Today in-progress (no session yet today)
 
-    @Test("Free: no session today breaks streak immediately")
-    func freeNoSessionToday() {
-        // No entry for today; yesterday and before have sessions
+    @Test("Free: no session today is neutral — streak anchors at yesterday")
+    func freeNoSessionTodayIsNeutral() {
+        // No entry for today; yesterday and 2 days ago have sessions.
+        // Today is in-progress and should not break the streak.
         let history = [1, 2, 3].map { stat(daysAgo: $0, from: today) }
         let result = compute(history: history, isPro: false)
-        #expect(result.days == 0)
+        #expect(result.days == 3)  // streak runs from yesterday back 3 days
         #expect(result.protectionApplied == false)
     }
 
-    @Test("Pro: no session today — protection covers it and streak continues")
-    func proNoSessionTodayCovered() {
-        // No entry for today; previous 4 days active
+    @Test("Pro: no session today is neutral — streak anchors at yesterday, skip NOT consumed by today")
+    func proNoSessionTodayNeutral() {
+        // No entry for today; previous 4 days active.
+        // Today is neutral — the skip must NOT be consumed on today.
         let history = [1, 2, 3, 4].map { stat(daysAgo: $0, from: today) }
+        let result = compute(history: history, isPro: true)
+        // Walk starts at yesterday (day 1), all 4 days active → 4-day streak, no skip used.
+        #expect(result.days == 4)
+        #expect(result.protectionApplied == false)
+    }
+
+    @Test("Pro: no session today + covered miss 3 days ago — skip consumed by miss only")
+    func proNoSessionTodayWithCoveredMissEarlier() {
+        // Today: no session (neutral). Days 1, 2, 4, 5 active; day 3 is a miss.
+        // Expected: walk starts at yesterday (1), covers 1,2, skip day 3, continues 4,5 → 5 days.
+        // Skip is consumed by day-3 miss, not by today.
+        let history = [1, 2, 4, 5].map { stat(daysAgo: $0, from: today) }
         let result = compute(history: history, isPro: true)
         #expect(result.days == 5)
         #expect(result.protectionApplied == true)

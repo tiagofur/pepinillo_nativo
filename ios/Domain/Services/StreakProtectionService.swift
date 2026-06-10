@@ -47,6 +47,15 @@ public enum StreakProtectionService {
     ///   - calendar:   Calendar to use for day arithmetic.
     /// - Returns: A `StreakResult` with the protected streak length and a flag
     ///            indicating whether protection was actually applied.
+    ///
+    /// Today-in-progress rule
+    /// ----------------------
+    /// If today has no focus session yet, it is **neutral** — it does not break
+    /// the streak and does not consume a Pro skip. The streak is computed
+    /// starting from yesterday. This matches the pre-streak-protection
+    /// widget-provider algorithm (which anchored at yesterday when today had no
+    /// activity). A Pro skip can only cover fully-elapsed missed days (yesterday
+    /// and earlier).
     public static func computeProtectedStreak(
         focusByDay: [Date: Bool],
         isPro: Bool,
@@ -57,6 +66,14 @@ public enum StreakProtectionService {
 
         let startOfToday = calendar.startOfDay(for: today)
 
+        // If the user already has a session today, start the walk from today.
+        // Otherwise, skip today entirely — an in-progress day is neutral.
+        let todayHasFocus = focusByDay[startOfToday] ?? false
+        guard let startDate = todayHasFocus
+            ? Optional(startOfToday)
+            : calendar.date(byAdding: .day, value: -1, to: startOfToday)
+        else { return .zero }
+
         // Earliest calendar day that actually has a recorded focus session.
         // A Pro skip can only bridge over missed days that sit between two real
         // focus sessions — it must never extend the streak past the oldest known
@@ -64,7 +81,7 @@ public enum StreakProtectionService {
         let earliestFocusDate = focusByDay
             .filter { $0.value }
             .keys
-            .min() ?? startOfToday
+            .min() ?? startDate
 
         var streak = 0
         var protectionApplied = false
@@ -74,7 +91,7 @@ public enum StreakProtectionService {
         // (since we walk backward, "before" = an earlier absolute date).
         var lastSkipUsedDate: Date? = nil
 
-        var checkDate = startOfToday
+        var checkDate = startDate
 
         for _ in 0..<730 { // Safety cap: max 2 years back
             let hadFocus = focusByDay[checkDate] ?? false
@@ -85,6 +102,8 @@ public enum StreakProtectionService {
                 // Determine whether we can cover this miss with a skip.
                 // Only allow skipping within the span of actual focus history —
                 // never speculatively extend past the oldest recorded day.
+                // Today is excluded from skip eligibility (handled above by
+                // anchoring the walk at yesterday when today has no activity).
                 let canSkip: Bool
                 if let lastSkip = lastSkipUsedDate {
                     // Days apart between the previous skip (lastSkip) and current miss
