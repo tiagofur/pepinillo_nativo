@@ -62,7 +62,7 @@ struct AuthView: View {
             .ignoresSafeArea()
         }
         .scrollDismissesKeyboard(.interactively)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: store.mode)
+        .animation(MotionTokens.snappy, value: store.mode)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $store.scope(state: \.forgotPassword, action: \.forgotPassword)) { forgotPasswordStore in
             ForgotPasswordView(store: forgotPasswordStore)

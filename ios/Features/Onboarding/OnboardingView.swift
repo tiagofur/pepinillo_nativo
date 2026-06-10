@@ -91,10 +91,10 @@ struct OnboardingView: View {
                         .fill(
                             (currentPage < pages.count
                              ? Color.accentColor
-                             : Color(red: 0.18, green: 0.55, blue: 0.23)).gradient
+                             : AppTheme.forest.pomodoroColor).gradient
                         )
                 )
-                .shadow(color: (currentPage < pages.count ? Color.accentColor : Color.green).opacity(0.3), radius: 10, y: 5)
+                .shadow(color: (currentPage < pages.count ? Color.accentColor : AppTheme.forest.pomodoroColor).opacity(0.3), radius: 10, y: 5)
         }
         .accessibilityLabel(currentPage < pages.count
             ? String(localized: "Continue to next page")
@@ -131,7 +131,7 @@ struct OnboardingView: View {
                             mode: mode,
                             isSelected: selectedDefaultMode == mode
                         ) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            withAnimation(MotionTokens.bouncy) {
                                 selectedDefaultMode = mode
                             }
                         }
@@ -253,13 +253,13 @@ struct OnboardingPageView: View {
                 descAppeared = true
             } else {
                 // Staggered entrance
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1)) {
+                withAnimation(MotionTokens.heroEntrance.delay(0.1)) {
                     emojiAppeared = true
                 }
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.3)) {
+                withAnimation(MotionTokens.heroEntrance.delay(0.3)) {
                     titleAppeared = true
                 }
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.5)) {
+                withAnimation(MotionTokens.heroEntrance.delay(0.5)) {
                     descAppeared = true
                 }
                 
@@ -326,7 +326,7 @@ struct DefaultModeCard: View {
             .accessibilityLabel("\(mode.displayName), \(modeTagline)")
         }
         .buttonStyle(.plain)
-        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+        .animation(reduceMotion ? nil : MotionTokens.bouncy, value: isSelected)
     }
 
     private var modeColor: Color {
