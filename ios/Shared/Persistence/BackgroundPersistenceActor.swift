@@ -147,6 +147,10 @@ public actor BackgroundPersistenceActor {
         return DailyStatsDTO(from: stats)
     }
 
+    func fetchDailyStatsRange(from start: Date, to end: Date) throws -> [DailyStatsDTO] {
+        try service.fetchDailyStatsRange(from: start, to: end).map { DailyStatsDTO(from: $0) }
+    }
+
     // MARK: - Preferences
 
     func fetchPreferences() throws -> UserPreferencesDTO {

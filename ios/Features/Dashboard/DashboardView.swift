@@ -27,7 +27,8 @@ struct DashboardView: View {
                     DashboardHeroSection(
                         streakDays: store.currentStreakDays,
                         sessionsCompleted: store.sessionsCompleted,
-                        totalFocusMinutes: store.totalFocusMinutes
+                        totalFocusMinutes: store.totalFocusMinutes,
+                        streakProtectionApplied: store.streakProtectionApplied
                     )
 
                     // Reflection CTAs — always full width

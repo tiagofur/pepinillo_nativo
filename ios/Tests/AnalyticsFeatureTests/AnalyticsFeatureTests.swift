@@ -167,6 +167,7 @@ struct AnalyticsFeatureTests {
             insights: .empty,
             streakDays: 0,
             longestStreak: 0,
+            streakProtectionApplied: false,
             achievements: [],
             weeklyInsights: []
         ))
@@ -189,6 +190,7 @@ struct AnalyticsFeatureTests {
             insights: .empty,
             streakDays: 7,
             longestStreak: 30,
+            streakProtectionApplied: false,
             achievements: [],
             weeklyInsights: []
         ))
@@ -323,6 +325,7 @@ struct AnalyticsFeatureTests {
             insights: insights,
             streakDays: 0,
             longestStreak: 0,
+            streakProtectionApplied: false,
             achievements: [],
             weeklyInsights: []
         ))
