@@ -48,9 +48,12 @@ struct ExportView: View {
         #endif
         .navigationTitle(String(localized: "Export Data"))
         .navigationBarTitleDisplayMode(.inline)
+        .disabled(!isPro)
+        .accessibilityHidden(!isPro)
         .overlay {
             if isPro == false {
                 proOverlay
+                    .accessibilityElement(children: .contain)
             }
         }
         .sheet(isPresented: $isShareSheetPresented, onDismiss: {
@@ -176,6 +179,7 @@ struct ExportView: View {
 
     @MainActor
     private func performExport() async {
+        guard isPro else { return }
         guard !isExporting else { return }
         isExporting = true
         exportError = nil
@@ -240,8 +244,16 @@ struct ExportView: View {
             isShareSheetPresented = true
 
         } catch let exportErr as ExportError {
+            if let dir = tempDirectory {
+                try? FileManager.default.removeItem(at: dir)
+                tempDirectory = nil
+            }
             exportError = exportErr.errorDescription
         } catch {
+            if let dir = tempDirectory {
+                try? FileManager.default.removeItem(at: dir)
+                tempDirectory = nil
+            }
             exportError = ExportError.writeFailed(error).errorDescription
         }
 
