@@ -5,6 +5,7 @@ import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PaginatedSessionPage
 import dev.creapolis.pepinillo.core.network.PaginatedTaskPage
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
+import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import dev.creapolis.pepinillo.core.network.TaskDto
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
@@ -67,8 +68,8 @@ class InitialSyncManagerTest {
         sessionNextCursor: String? = null,
         serverTimestamp: String = "2025-01-01T00:00:00Z",
     ) = FullSyncResponse(
-        tasks = PaginatedTaskPage(items = tasks, nextCursor = taskNextCursor),
-        sessions = PaginatedSessionPage(items = emptyList(), nextCursor = sessionNextCursor),
+        tasks = PaginatedTaskPage(items = tasks, nextCursor = taskNextCursor, hasMore = taskNextCursor != null),
+        sessions = PaginatedSessionPage(items = emptyList(), nextCursor = sessionNextCursor, hasMore = sessionNextCursor != null),
         settings = emptyList(),
         serverTimestamp = serverTimestamp,
     )
@@ -138,11 +139,11 @@ class InitialSyncManagerTest {
     }
 
     // -----------------------------------------------------------------------
-    // wipeAndSync -- clears all tables before syncing
+    // wipeAndSync -- fetches first, then wipes (download-then-swap)
     // -----------------------------------------------------------------------
 
     @Test
-    fun `wipeAndSync clears all tables before syncing`() = runTest {
+    fun `wipeAndSync clears all tables after successful download`() = runTest {
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
         } returns NetworkResult.Success(fullSyncResponse())
@@ -157,23 +158,134 @@ class InitialSyncManagerTest {
         coVerify { preferenceSyncDao.deleteAll() }
     }
 
-    // -----------------------------------------------------------------------
-    // wipeAndSync -- calls performInitialSync after wipe
-    // -----------------------------------------------------------------------
-
     @Test
-    fun `wipeAndSync calls performInitialSync after wipe`() = runTest {
+    fun `wipeAndSync fetches all server pages before wiping local data`() = runTest {
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
         } returns NetworkResult.Success(fullSyncResponse())
 
         manager.wipeAndSync()
 
-        // Verify wipe happens before sync (deleteAll before getFullSync)
+        // Fetch must complete before any deleteAll is called
         coVerifyOrder {
-            taskDao.deleteAll()
             apiClient.getFullSync(any(), any(), any())
+            taskDao.deleteAll()
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // wipeAndSync -- network failure during download leaves local data intact
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `wipeAndSync network failure leaves local data intact`() = runTest {
+        coEvery {
+            apiClient.getFullSync(any(), any(), any())
+        } returns NetworkResult.NetworkError(RuntimeException("timeout"))
+
+        val result = manager.wipeAndSync()
+
+        assertTrue(result is InitialSyncManager.InitialSyncResult.Error)
+
+        // No DAO wipe should have been called
+        coVerify(exactly = 0) { taskDao.deleteAll() }
+        coVerify(exactly = 0) { subtaskDao.deleteAll() }
+        coVerify(exactly = 0) { sessionDao.deleteAll() }
+        coVerify(exactly = 0) { dailyStatsDao.deleteAll() }
+        coVerify(exactly = 0) { preferenceSyncDao.deleteAll() }
+    }
+
+    @Test
+    fun `wipeAndSync server error during download leaves local data intact`() = runTest {
+        coEvery {
+            apiClient.getFullSync(any(), any(), any())
+        } returns NetworkResult.Error(500, "Internal Server Error")
+
+        val result = manager.wipeAndSync()
+
+        assertTrue(result is InitialSyncManager.InitialSyncResult.Error)
+
+        coVerify(exactly = 0) { taskDao.deleteAll() }
+        coVerify(exactly = 0) { sessionDao.deleteAll() }
+    }
+
+    // -----------------------------------------------------------------------
+    // Asymmetric pagination -- tasks finish before sessions; no task duplicates
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `asymmetric pagination tasks finish on page 1 sessions need more pages no duplicate task upserts`() = runTest {
+        val task1 = TaskDto(id = 1, syncId = "t-1", title = "Task 1", updatedAt = "2025-01-01T00:00:00Z")
+        val session1 = PomodoroSessionDto(id = "s-1", startedAt = "2025-01-01T00:00:00Z", createdAt = "2025-01-01T00:00:00Z", updatedAt = "2025-01-01T00:00:00Z")
+        val session2 = PomodoroSessionDto(id = "s-2", startedAt = "2025-01-02T00:00:00Z", createdAt = "2025-01-02T00:00:00Z", updatedAt = "2025-01-02T00:00:00Z")
+
+        // Page 1: tasks done (hasMore=false), sessions still have more
+        coEvery {
+            apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
+        } returns NetworkResult.Success(
+            FullSyncResponse(
+                tasks = PaginatedTaskPage(items = listOf(task1), nextCursor = null, hasMore = false),
+                sessions = PaginatedSessionPage(items = listOf(session1), nextCursor = "session-cursor-2", hasMore = true),
+                settings = emptyList(),
+                serverTimestamp = "2025-01-01T00:00:00Z",
+            )
+        )
+
+        // Page 2: only session cursor provided (tasks done), server returns task page 1 again
+        // — the implementation must ignore/skip the task items because tasksDone=true
+        coEvery {
+            apiClient.getFullSync(taskCursor = null, sessionCursor = "session-cursor-2", limit = 100)
+        } returns NetworkResult.Success(
+            FullSyncResponse(
+                tasks = PaginatedTaskPage(items = listOf(task1), nextCursor = null, hasMore = false),
+                sessions = PaginatedSessionPage(items = listOf(session2), nextCursor = null, hasMore = false),
+                settings = emptyList(),
+                serverTimestamp = "2025-01-02T00:00:00Z",
+            )
+        )
+
+        val result = manager.performInitialSync()
+        assertEquals(InitialSyncManager.InitialSyncResult.Success, result)
+
+        // Tasks must be upserted exactly once (page 1 only); page 2 task items are skipped
+        coVerify(exactly = 1) { taskDao.upsertAll(any()) }
+    }
+
+    @Test
+    fun `wipeAndSync asymmetric pagination accumulates tasks exactly once`() = runTest {
+        val task1 = TaskDto(id = 1, syncId = "t-1", title = "Task 1", updatedAt = "2025-01-01T00:00:00Z")
+        val session1 = PomodoroSessionDto(id = "s-1", startedAt = "2025-01-01T00:00:00Z", createdAt = "2025-01-01T00:00:00Z", updatedAt = "2025-01-01T00:00:00Z")
+        val session2 = PomodoroSessionDto(id = "s-2", startedAt = "2025-01-02T00:00:00Z", createdAt = "2025-01-02T00:00:00Z", updatedAt = "2025-01-02T00:00:00Z")
+
+        // Page 1: tasks done, sessions paginated
+        coEvery {
+            apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
+        } returns NetworkResult.Success(
+            FullSyncResponse(
+                tasks = PaginatedTaskPage(items = listOf(task1), nextCursor = null, hasMore = false),
+                sessions = PaginatedSessionPage(items = listOf(session1), nextCursor = "session-cursor-2", hasMore = true),
+                settings = emptyList(),
+                serverTimestamp = "2025-01-01T00:00:00Z",
+            )
+        )
+
+        // Page 2: server resends task1 (common server behavior for cursor=null) plus session2
+        coEvery {
+            apiClient.getFullSync(taskCursor = null, sessionCursor = "session-cursor-2", limit = 100)
+        } returns NetworkResult.Success(
+            FullSyncResponse(
+                tasks = PaginatedTaskPage(items = listOf(task1), nextCursor = null, hasMore = false),
+                sessions = PaginatedSessionPage(items = listOf(session2), nextCursor = null, hasMore = false),
+                settings = emptyList(),
+                serverTimestamp = "2025-01-02T00:00:00Z",
+            )
+        )
+
+        manager.wipeAndSync()
+
+        // After wipe, tasks are applied once from accumulated list (task1 deduplicated)
+        // upsertAll is called exactly once with 1 task (not 2)
+        coVerify(exactly = 1) { taskDao.upsertAll(match { it.size == 1 }) }
     }
 
     // -----------------------------------------------------------------------
