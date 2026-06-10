@@ -58,10 +58,20 @@ struct InsightsServiceTests {
         }
         let insights = service.generateWeeklyInsights(sessions: sessions, dailyStats: [])
 
-        let completionInsight = insights.first(where: {
-            $0.title.contains("Completion") || $0.title.contains("Strong")
-        })
-        #expect(completionInsight != nil)
+        // With 5 sessions (sessions.count >= 3), generateWeeklyInsights always emits a
+        // completion-rate insight. At 80% completion it is .productivity ("Strong Completion");
+        // below 80% it is .suggestion. Avoid asserting localized title strings, which break
+        // when the test simulator runs in a non-English locale (e.g. es-MX).
+        // Instead: verify at least 4 insights are produced and that a completion-rate
+        // insight exists via its category.
+        #expect(insights.count >= 4)
+        // Weekly Focus is the only .productivity insight generated without dailyStats.
+        // A second .productivity insight means "Strong Completion" (rate >= 80%) was added.
+        // Alternatively the insight landed in .suggestion (rate < 80%).
+        let productivityInsights = insights.filter { $0.category == .productivity }
+        let suggestionInsights = insights.filter { $0.category == .suggestion }
+        let completionInsightGenerated = productivityInsights.count >= 2 || !suggestionInsights.isEmpty
+        #expect(completionInsightGenerated)
     }
 
     @Test("Consistency insight requires 3+ days")
