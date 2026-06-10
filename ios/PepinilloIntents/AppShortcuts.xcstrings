@@ -1,351 +1,453 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "Am I focusing in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+  "sourceLanguage": "en",
+  "strings": {
+    "Am I focusing in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "Am I focusing in ${applicationName}",
               "What's my current session in ${applicationName}",
               "Is a session active in ${applicationName}"
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Estoy enfocándome en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estoy enfocándome en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Estou focando no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Estou focando no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estou focando no ${applicationName}"
           }
         }
       }
     },
-    "Check my stats in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver mis estadísticas en ${applicationName}"
+    "Check my stats in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver mis estadísticas en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ver minhas estatísticas no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver minhas estatísticas no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ver minhas estatísticas no ${applicationName}"
           }
         }
       }
     },
-    "Continue my session in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continuar mi sesión en ${applicationName}"
+    "Continue my session in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar mi sesión en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Continuar minha sessão no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar minha sessão no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar minha sessão no ${applicationName}"
           }
         }
       }
     },
-    "End focus session in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Terminar sesión de enfoque en ${applicationName}"
+    "End focus session in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminar sesión de enfoque en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Encerrar sessão de foco no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encerrar sessão de foco no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encerrar sessão de foco no ${applicationName}"
           }
         }
       }
     },
-    "Focus insights from ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Insights de enfoque de ${applicationName}"
+    "Focus insights from ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insights de enfoque de ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Insights de foco do ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insights de foco do ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Insights de foco do ${applicationName}"
           }
         }
       }
     },
-    "Focus time with ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tiempo de enfoque con ${applicationName}"
+    "Focus time with ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiempo de enfoque con ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tempo de foco com ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo de foco com ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo de foco com o ${applicationName}"
           }
         }
       }
     },
-    "Give me focus insights in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+    "Give me focus insights in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "Give me focus insights in ${applicationName}",
               "Focus insights from ${applicationName}",
               "What are my focus patterns in ${applicationName}"
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dime mis insights de enfoque en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dame mis insights de enfoque en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Me dê insights de foco no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Me dê insights de foco no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me dá insights de foco no ${applicationName}"
           }
         }
       }
     },
-    "How much did I focus in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cuánto me enfoqué en ${applicationName}"
+    "How much did I focus in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuánto me enfoqué en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quanto eu foquei no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quanto eu foquei no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quanto me concentrei no ${applicationName}"
           }
         }
       }
     },
-    "How was my focus this week in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+    "How was my focus this week in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "How was my focus this week in ${applicationName}",
               "Weekly report in ${applicationName}",
               "Weekly focus summary in ${applicationName}"
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Cómo fue mi enfoque esta semana en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo fue mi enfoque esta semana en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Como foi meu foco esta semana no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Como foi meu foco esta semana no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Como foi meu foco esta semana no ${applicationName}"
           }
         }
       }
     },
-    "How's my focus today in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+    "How's my focus today in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "How's my focus today in ${applicationName}",
               "Check my stats in ${applicationName}",
               "How much did I focus in ${applicationName}"
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Cómo va mi enfoque hoy en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo va mi enfoque hoy en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Como está meu foco hoje no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Como está meu foco hoje no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Como está meu foco hoje no ${applicationName}"
           }
         }
       }
     },
-    "Is a session active in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hay una sesión activa en ${applicationName}"
+    "Is a session active in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hay una sesión activa en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tem uma sessão ativa no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tem uma sessão ativa no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tem sessão ativa no ${applicationName}"
           }
         }
       }
     },
-    "Pause focus in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+    "Pause focus in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "Pause focus in ${applicationName}",
               "Pause my session in ${applicationName}",
               "Take a break in ${applicationName}"
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Pausar enfoque en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar enfoque en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Pausar foco no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Pausar foco no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar foco no ${applicationName}"
           }
         }
       }
     },
-    "Pause my session in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pausar mi sesión en ${applicationName}"
+    "Pause my session in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar mi sesión en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pausar minha sessão no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar minha sessão no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pausar minha sessão no ${applicationName}"
           }
         }
       }
     },
-    "Resume focus in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+    "Resume focus in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "Resume focus in ${applicationName}",
               "Continue my session in ${applicationName}",
               "Resume session in ${applicationName}"
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Reanudar enfoque en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar enfoque en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Retomar foco no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Retomar foco no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retomar foco no ${applicationName}"
           }
         }
       }
     },
-    "Resume session in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reanudar sesión en ${applicationName}"
+    "Resume session in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reanudar sesión en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Retomar sessão no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retomar sessão no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retomar sessão no ${applicationName}"
           }
         }
       }
     },
-    "Start a Pomodoro in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Iniciar un Pomodoro en ${applicationName}"
+    "Start a Pomodoro in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar un Pomodoro en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Começar um Pomodoro no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Começar um Pomodoro no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar um Pomodoro no ${applicationName}"
           }
         }
       }
     },
-    "Start a time block in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Iniciar un bloque de tiempo en ${applicationName}"
+    "Start a time block in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar un bloque de tiempo en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Iniciar um bloco de tempo no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar um bloco de tempo no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar um bloco de tempo no ${applicationName}"
           }
         }
       }
     },
-    "Start deep work in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+    "Start deep work in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "Start deep work in ${applicationName}",
               "Start a Pomodoro in ${applicationName}",
               "Focus time with ${applicationName}",
@@ -355,234 +457,312 @@
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Iniciar trabajo profundo en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar trabajo profundo en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Iniciar foco profundo no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Iniciar foco profundo no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar trabalho profundo no ${applicationName}"
           }
         }
       }
     },
-    "Start flow mode in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Iniciar modo flujo en ${applicationName}"
+    "Start flow mode in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar modo flujo en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Iniciar modo fluxo no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar modo fluxo no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Iniciar modo flow no ${applicationName}"
           }
         }
       }
     },
-    "Start focusing in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Empezar a enfocarme en ${applicationName}"
+    "Start focusing in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empezar a enfocarme en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Começar a focar no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Começar a focar no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Começar a focar no ${applicationName}"
           }
         }
       }
     },
-    "Stop focusing in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+    "Stop focusing in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "Stop focusing in ${applicationName}",
               "End focus session in ${applicationName}",
               "Stop Pomodoro in ${applicationName}"
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dejar de enfocarme en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dejar de enfocarme en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Parar de focar no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Parar de focar no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar de focar no ${applicationName}"
           }
         }
       }
     },
-    "Stop Pomodoro in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Detener Pomodoro en ${applicationName}"
+    "Stop Pomodoro in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Detener Pomodoro en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Parar Pomodoro no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Pomodoro no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parar Pomodoro no ${applicationName}"
           }
         }
       }
     },
-    "Suggest a focus mode in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sugiere un modo de enfoque en ${applicationName}"
+    "Suggest a focus mode in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugiere un modo de enfoque en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sugira um modo de foco no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugira um modo de foco no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sugere um modo de foco no ${applicationName}"
           }
         }
       }
     },
-    "Take a break in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tomar un descanso en ${applicationName}"
+    "Take a break in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tomar un descanso en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fazer uma pausa no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fazer uma pausa no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fazer uma pausa no ${applicationName}"
           }
         }
       }
     },
-    "Weekly focus summary in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resumen semanal de enfoque en ${applicationName}"
+    "Weekly focus summary in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resumen semanal de enfoque en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Resumo semanal de foco no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resumo semanal de foco no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resumo semanal de foco no ${applicationName}"
           }
         }
       }
     },
-    "Weekly report in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reporte semanal en ${applicationName}"
+    "Weekly report in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reporte semanal en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Relatório semanal no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relatório semanal no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relatório semanal no ${applicationName}"
           }
         }
       }
     },
-    "What are my focus patterns in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cuáles son mis patrones de enfoque en ${applicationName}"
+    "What are my focus patterns in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuáles son mis patrones de enfoque en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quais são meus padrões de foco no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quais são meus padrões de foco no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quais são meus padrões de foco no ${applicationName}"
           }
         }
       }
     },
-    "What focus mode should I use in ${applicationName}" : {
-      "extractionState" : "extracted_with_value",
-      "localizations" : {
-        "en" : {
-          "stringSet" : {
-            "state" : "new",
-            "values" : [
+    "What focus mode should I use in ${applicationName}": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringSet": {
+            "state": "new",
+            "values": [
               "What focus mode should I use in ${applicationName}",
               "Suggest a focus mode in ${applicationName}",
               "Which mode works best in ${applicationName}"
             ]
           }
         },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Qué modo de enfoque me recomiendas en ${applicationName}"
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qué modo de enfoque debería usar en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Qual modo de foco devo usar no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Qual modo de foco devo usar no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qual modo de foco devo usar no ${applicationName}"
           }
         }
       }
     },
-    "What's my current session in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cuál es mi sesión actual en ${applicationName}"
+    "What's my current session in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuál es mi sesión actual en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qual é minha sessão atual no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qual é minha sessão atual no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qual é minha sessão atual no ${applicationName}"
           }
         }
       }
     },
-    "Which mode works best in ${applicationName}" : {
-      "localizations" : {
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cuál modo funciona mejor en ${applicationName}"
+    "Which mode works best in ${applicationName}": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cuál modo funciona mejor en ${applicationName}"
           }
         },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Qual modo funciona melhor no ${applicationName}"
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qual modo funciona melhor no ${applicationName}"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qual modo funciona melhor no ${applicationName}"
           }
         }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }
