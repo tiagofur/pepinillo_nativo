@@ -252,6 +252,57 @@ struct TaskListFeatureTests {
         }
     }
 
+    // MARK: - Energy Grouping
+
+    @Test func defaultGroupingIsFalse() {
+        let state = TaskListFeature.State()
+        #expect(state.isGroupedByEnergy == false)
+    }
+
+    @Test func defaultSuggestionDismissedIsFalse() {
+        let state = TaskListFeature.State()
+        #expect(state.energySuggestionDismissed == false)
+    }
+
+    @Test func groupByEnergyToggledEnablesGrouping() async {
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+        }
+
+        await store.send(.groupByEnergyToggled) {
+            $0.isGroupedByEnergy = true
+        }
+    }
+
+    @Test func groupByEnergyToggledTogglesBack() async {
+        var initial = TaskListFeature.State()
+        initial.isGroupedByEnergy = true
+
+        let store = TestStore(initialState: initial) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+        }
+
+        await store.send(.groupByEnergyToggled) {
+            $0.isGroupedByEnergy = false
+        }
+    }
+
+    @Test func energySuggestionDismissedSetsFlag() async {
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+        }
+
+        await store.send(.energySuggestionDismissed) {
+            $0.energySuggestionDismissed = true
+        }
+    }
+
     @Test func energyLevelChangedThenChangedAgain() async {
         var initialState = TaskListFeature.State()
         let taskID = UUID()

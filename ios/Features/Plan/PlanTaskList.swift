@@ -77,6 +77,18 @@ struct PlanTaskList: View {
                             }
                         }
                     }
+                    Section(String(localized: "View")) {
+                        Button {
+                            store.send(.groupByEnergyToggled)
+                            HapticManager.selection()
+                        } label: {
+                            if store.isGroupedByEnergy {
+                                Label(String(localized: "Ungroup by Energy"), systemImage: "checkmark.square")
+                            } else {
+                                Label(String(localized: "Group by Energy"), systemImage: "bolt.square")
+                            }
+                        }
+                    }
                     Divider()
                     Button {
                         store.send(.importFromRemindersTapped)
@@ -126,7 +138,15 @@ struct PlanTaskList: View {
                 Text(emptyDescription)
             }
             .frame(maxHeight: .infinity)
+        } else if store.isGroupedByEnergy {
+            // Energy-grouped mode: sections by level, reorder disabled across sections
+            EnergyGroupedTaskList(
+                store: store,
+                filteredTasks: filteredTasks,
+                currentDate: Date.now
+            )
         } else {
+            // Flat list mode (existing behaviour, reordering intact)
             List {
                 ForEach(filteredTasks) { task in
                     TaskRow(
@@ -168,6 +188,9 @@ struct PlanTaskList: View {
                         taskToDelete = filteredTasks[index].id
                         store.send(.taskDeleted(filteredTasks[index].id))
                     }
+                }
+                .onMove { source, destination in
+                    store.send(.taskMoved(source, destination))
                 }
             }
             #if os(macOS)
