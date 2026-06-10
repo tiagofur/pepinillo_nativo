@@ -16,20 +16,20 @@ struct DataMergeView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(Color.accentColor)
 
-            Text("Local Data Found")
+            Text(String(localized: "datamerge.title", defaultValue: "Local Data Found"))
                 .font(.title2.bold())
 
-            Text("You have data on this device that hasn't been synced. Would you like to merge it with your account, or start fresh with your account data?")
+            Text(String(localized: "datamerge.body", defaultValue: "You have data on this device that hasn't been synced. Would you like to merge it with your account, or start fresh with your account data?"))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
             VStack(spacing: 12) {
-                Button("Merge Data") { onMerge() }
+                Button(String(localized: "datamerge.merge.button", defaultValue: "Merge Data")) { onMerge() }
                     .buttonStyle(.borderedProminent)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
 
-                Button("Use Account Only") { onUseAccountOnly() }
+                Button(String(localized: "datamerge.accountonly.button", defaultValue: "Use Account Only")) { onUseAccountOnly() }
                     .buttonStyle(.bordered)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)

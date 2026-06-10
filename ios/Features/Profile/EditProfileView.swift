@@ -25,7 +25,7 @@ struct EditProfileView: View {
                 // Avatar
                 avatarSection
 
-                Text("Apple decides whether to share your name and email during Sign in with Apple. Birth date and profile photo are managed manually in Pepinillo, and you can keep using a private relay email or replace it locally here.")
+                Text(String(localized: "editprofile.applesignin.explanation", defaultValue: "Apple decides whether to share your name and email during Sign in with Apple. Birth date and profile photo are managed manually in Pepinillo, and you can keep using a private relay email or replace it locally here."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

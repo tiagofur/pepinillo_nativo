@@ -15,14 +15,16 @@ struct ForgotPasswordView: View {
                 Spacer()
 
                 // MARK: Header
-                Text(store.step == .enterEmail ? "Forgot Password" : "Reset Password")
+                Text(store.step == .enterEmail
+                    ? String(localized: "forgotpassword.title.enteremail", defaultValue: "Forgot Password")
+                    : String(localized: "forgotpassword.title.resetpassword", defaultValue: "Reset Password"))
                     .font(.largeTitle.bold())
                     .foregroundStyle(.primary)
 
                 Text(
                     store.step == .enterEmail
-                        ? "Enter your email and we'll send you a code to reset your password."
-                        : "Enter the code we sent to \(store.email) and choose a new password."
+                        ? String(localized: "forgotpassword.subtitle.enteremail", defaultValue: "Enter your email and we'll send you a code to reset your password.")
+                        : String(format: String(localized: "forgotpassword.subtitle.entercode", defaultValue: "Enter the code we sent to %@ and choose a new password."), store.email)
                 )
                 .font(.body)
                 .foregroundStyle(.secondary)
@@ -69,7 +71,9 @@ struct ForgotPasswordView: View {
                             ProgressView()
                                 .tint(.white)
                         } else {
-                            Text(store.step == .enterEmail ? "Send Code" : "Reset Password")
+                            Text(store.step == .enterEmail
+                                ? String(localized: "forgotpassword.sendcode.button", defaultValue: "Send Code")
+                                : String(localized: "forgotpassword.resetpassword.button", defaultValue: "Reset Password"))
                         }
                     }
                     .font(.headline)
@@ -85,7 +89,7 @@ struct ForgotPasswordView: View {
                     Button {
                         store.send(.sendCodeTapped)
                     } label: {
-                        Text("Resend code")
+                        Text(String(localized: "forgotpassword.resendcode.button", defaultValue: "Resend code"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -102,7 +106,7 @@ struct ForgotPasswordView: View {
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "chevron.left")
-                            Text("Back")
+                            Text(String(localized: "forgotpassword.back.button", defaultValue: "Back"))
                         }
                         .foregroundStyle(.primary)
                     }
@@ -116,7 +120,7 @@ struct ForgotPasswordView: View {
     @ViewBuilder
     private var emailFields: some View {
         TextField(
-            "Email",
+            String(localized: "forgotpassword.field.email", defaultValue: "Email"),
             text: Binding(
                 get: { store.email },
                 set: { store.send(.emailChanged($0)) }
@@ -134,7 +138,7 @@ struct ForgotPasswordView: View {
     @ViewBuilder
     private var resetFields: some View {
         TextField(
-            "Reset Code",
+            String(localized: "forgotpassword.field.resetcode", defaultValue: "Reset Code"),
             text: Binding(
                 get: { store.code },
                 set: { store.send(.codeChanged($0)) }
@@ -151,7 +155,7 @@ struct ForgotPasswordView: View {
             Group {
                 if store.isPasswordVisible {
                     TextField(
-                        "New Password",
+                        String(localized: "forgotpassword.field.newpassword", defaultValue: "New Password"),
                         text: Binding(
                             get: { store.newPassword },
                             set: { store.send(.newPasswordChanged($0)) }
@@ -160,7 +164,7 @@ struct ForgotPasswordView: View {
                     .textContentType(.newPassword)
                 } else {
                     SecureField(
-                        "New Password",
+                        String(localized: "forgotpassword.field.newpassword", defaultValue: "New Password"),
                         text: Binding(
                             get: { store.newPassword },
                             set: { store.send(.newPasswordChanged($0)) }
@@ -191,7 +195,7 @@ struct ForgotPasswordView: View {
             Group {
                 if store.isConfirmPasswordVisible {
                     TextField(
-                        "Confirm Password",
+                        String(localized: "forgotpassword.field.confirmpassword", defaultValue: "Confirm Password"),
                         text: Binding(
                             get: { store.confirmPassword },
                             set: { store.send(.confirmPasswordChanged($0)) }
@@ -200,7 +204,7 @@ struct ForgotPasswordView: View {
                     .textContentType(.newPassword)
                 } else {
                     SecureField(
-                        "Confirm Password",
+                        String(localized: "forgotpassword.field.confirmpassword", defaultValue: "Confirm Password"),
                         text: Binding(
                             get: { store.confirmPassword },
                             set: { store.send(.confirmPasswordChanged($0)) }
@@ -225,7 +229,7 @@ struct ForgotPasswordView: View {
         }
         .textFieldStyle(.roundedBorder)
 
-        Text("Min 8 chars, with uppercase, lowercase, and a number")
+        Text(String(localized: "forgotpassword.passwordhint", defaultValue: "Min 8 chars, with uppercase, lowercase, and a number"))
             .font(.caption)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)

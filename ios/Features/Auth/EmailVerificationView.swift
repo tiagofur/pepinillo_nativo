@@ -21,14 +21,14 @@ struct EmailVerificationView: View {
                     .foregroundStyle(Color.accentColor)
                     .accessibilityHidden(true)
 
-                Text("Check your inbox")
+                Text(String(localized: "emailverification.title", defaultValue: "Check your inbox"))
                     .font(.title2.bold())
 
-                Text("We sent a 6-digit code to\n**\(store.email)**")
+                Text(String(format: String(localized: "emailverification.subtitle", defaultValue: "We sent a 6-digit code to\n**%@**"), store.email))
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .accessibilityLabel("We sent a 6-digit code to \(store.email)")
+                    .accessibilityLabel(String(format: String(localized: "emailverification.subtitle", defaultValue: "We sent a 6-digit code to\n**%@**"), store.email))
             }
 
             // MARK: - Code field
@@ -67,7 +67,7 @@ struct EmailVerificationView: View {
                     if store.isLoading {
                         ProgressView()
                     } else {
-                        Text("Verify email")
+                        Text(String(localized: "emailverification.verify.button", defaultValue: "Verify email"))
                             .fontWeight(.semibold)
                     }
                 }
@@ -88,7 +88,7 @@ struct EmailVerificationView: View {
                     if store.isResending {
                         ProgressView()
                     } else {
-                        Text("Resend code")
+                        Text(String(localized: "emailverification.resend.button", defaultValue: "Resend code"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }

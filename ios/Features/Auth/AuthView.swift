@@ -106,7 +106,7 @@ struct AuthView: View {
                         ProgressView()
                             .scaleEffect(1.5)
                             .accessibilityHidden(true)
-                        Text("Syncing your data...")
+                        Text(String(localized: "auth.syncing.label", defaultValue: "Syncing your data..."))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -304,7 +304,7 @@ struct AuthView: View {
                     Rectangle()
                         .fill(Color.secondary.opacity(0.25))
                         .frame(height: 1)
-                    Text("or")
+                    Text(String(localized: "auth.separator.or", defaultValue: "or"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     Rectangle()

@@ -159,7 +159,7 @@ struct AnalyticsPlaceholder: View {
                     VStack(spacing: 8) {
                         Text("00h 00m")
                             .font(.title3.weight(.bold))
-                        Text("Focus Time")
+                        Text(String(localized: "analytics.placeholder.focustime", defaultValue: "Focus Time"))
                             .font(.caption)
                     }
                     .frame(maxWidth: .infinity)
@@ -177,9 +177,9 @@ struct AnalyticsPlaceholder: View {
             HStack(spacing: 12) {
                 ForEach(0..<2, id: \.self) { _ in
                     VStack(spacing: 8) {
-                        Text("9 AM - 12 PM")
+                        Text(String(localized: "analytics.placeholder.peakvalue", defaultValue: "9 AM - 12 PM"))
                             .font(.subheadline.weight(.bold))
-                        Text("Peak Hours")
+                        Text(String(localized: "analytics.placeholder.peakhours", defaultValue: "Peak Hours"))
                             .font(.caption)
                     }
                     .frame(maxWidth: .infinity)
