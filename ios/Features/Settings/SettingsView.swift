@@ -26,9 +26,10 @@ struct SettingsView: View {
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
+            .primaryScrollEdgeEffect()
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
-            .background(Color.pepinilloSystemBackground)
+            .background(Color.pepinilloSystemGroupedBackground)
             .navigationTitle(String(localized: "Settings"))
             .navigationDestination(item: $store.scope(state: \.about, action: \.about)) { aboutStore in
                 AboutView(store: aboutStore)

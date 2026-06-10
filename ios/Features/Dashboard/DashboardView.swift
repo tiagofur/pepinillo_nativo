@@ -85,7 +85,8 @@ struct DashboardView: View {
             .padding(.bottom, 32)
             .contentMaxWidth()
         }
-        .background(Color.pepinilloSystemBackground)
+        .primaryScrollEdgeEffect()
+        .background(Color.pepinilloSystemGroupedBackground)
         .scrollContentBackground(.hidden)
         .refreshable { store.send(.onAppear) }
         .navigationTitle(String(localized: "Dashboard"))

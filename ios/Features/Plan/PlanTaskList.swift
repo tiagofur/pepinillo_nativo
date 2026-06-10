@@ -60,7 +60,7 @@ struct PlanTaskList: View {
                             .padding(.bottom, 60)
                     }
                 }
-                .animation(.spring(), value: store.recentlyDeletedTask != nil)
+                .animation(MotionTokens.snappy, value: store.recentlyDeletedTask != nil)
         }
         .navigationTitle(showsTitle ? filter.title : "")
         .toolbar {
@@ -200,6 +200,7 @@ struct PlanTaskList: View {
             #endif
             .scrollContentBackground(.hidden)
             .background(Color.clear)
+            .primaryScrollEdgeEffect()
             .conditionalAnimation(.smooth(duration: 0.3), value: filteredTasks.map(\.id))
             .refreshable { store.send(.refresh) }
         }
