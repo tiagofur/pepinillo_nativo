@@ -853,6 +853,8 @@ struct AppFeature {
                     prefs.displayName = nil
                     prefs.userEmail = nil
                     try await persistence.savePreferences(prefs)
+                    // Clear per-user AI report cache so the next user starts fresh
+                    AIReportFeature.clearAllCachedReports()
                     // Reset to anonymous in RevenueCat
                     await subscriptionClient.logOut()
                 }
@@ -866,7 +868,7 @@ struct AppFeature {
                 return .run { [keychain, apiClient, persistence] send in
                     // Call backend to delete data
                     try? await apiClient.deleteAccount()
-                    
+
                     // Cleanup local state
                     try? await keychain.deleteTokens()
                     try? await persistence.deleteCachedUser()
@@ -875,7 +877,10 @@ struct AppFeature {
                     prefs.displayName = nil
                     prefs.userEmail = nil
                     try await persistence.savePreferences(prefs)
-                    
+
+                    // Clear per-user AI report cache
+                    AIReportFeature.clearAllCachedReports()
+
                     // Reset to anonymous in RevenueCat
                     await subscriptionClient.logOut()
                 }
