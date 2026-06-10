@@ -34,7 +34,7 @@ struct AccountView: View {
             }
             .navigationTitle(String(localized: "More"))
             .scrollContentBackground(.hidden)
-            .background(Color.pepinilloSystemBackground)
+            .background(Color.pepinilloSystemGroupedBackground)
             .confirmationDialog(
                 String(localized: "Delete Account?"),
                 isPresented: $showDeleteConfirmation,

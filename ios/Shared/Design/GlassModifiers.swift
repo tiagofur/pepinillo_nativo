@@ -16,7 +16,7 @@ struct PepinilloGlassModifier: ViewModifier {
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
             #else
             content
-                .background(Color.pepinilloSecondarySystemBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(Color.pepinilloSecondarySystemGroupedBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
             #endif
         } else if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
             content
@@ -78,7 +78,7 @@ struct AdaptiveGlassCircleModifier: ViewModifier {
             #else
             content
                 .foregroundStyle(foreground ?? .primary)
-                .background(tint ?? Color.pepinilloSecondarySystemBackground, in: Circle())
+                .background(tint ?? Color.pepinilloSecondarySystemGroupedBackground, in: Circle())
                 .contentShape(Circle())
             #endif
         } else if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
