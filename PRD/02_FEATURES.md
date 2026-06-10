@@ -843,7 +843,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | Soundscapes (8 total)             | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Mode Intelligence                 | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Streaks                           | ✅  | ✅      | ⬜      | ⬜      | FREE |
-| Streak Protection (1 skip/week)   | ⬜  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Streak Protection (1 skip/week)   | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Apple Health (Mindful Minutes)    | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Health Connect (Mindful Minutes)  | ➖  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Control Center widget (iOS 18+)   | ✅  | ➖      | ➖      | ➖      | FREE |
