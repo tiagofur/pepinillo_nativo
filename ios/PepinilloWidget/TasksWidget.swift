@@ -22,8 +22,8 @@ struct TasksHomeScreenWidget: Widget {
                 .pepinilloWidgetBackground()
                 .widgetURL(URL(string: "pepinillo://plan"))
         }
-        .configurationDisplayName("Tasks")
-        .description("See your active tasks and mark them complete.")
+        .configurationDisplayName(LocalizedStringResource("widget.tasks.displayname", defaultValue: "Tasks"))
+        .description(LocalizedStringResource("widget.tasks.description", defaultValue: "See your active tasks and mark them complete."))
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
