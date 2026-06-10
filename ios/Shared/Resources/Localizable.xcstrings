@@ -1511,7 +1511,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una semana de enfoque sólida"
+            "value": "Una %@ de enfoque sólida"
           }
         },
         "pt": {
@@ -2870,7 +2870,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Perspectivas IA"
+            "value": "Insights de IA"
           }
         },
         "pt": {
@@ -2921,7 +2921,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Informe IA"
+            "value": "Informe de IA"
           }
         },
         "pt": {
@@ -3242,7 +3242,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enfoque en Apple. Sincroniza cuando lo necesitas."
+            "value": "Primero Apple. Sincroniza cuando lo necesitas."
           }
         },
         "pt": {
@@ -5271,7 +5271,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Panel e informes"
+            "value": "Panel e insights"
           }
         },
         "pt": {
@@ -7265,7 +7265,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Status"
+            "value": "Estado"
           }
         }
       }
@@ -10185,13 +10185,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Informe IA mensual"
+            "value": "Informe de IA mensual"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Relatório IA mensal"
+            "value": "Relatório de IA mensal"
           }
         }
       }
@@ -11960,7 +11960,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preparando perspectivas IA..."
+            "value": "Preparando insights de IA..."
           }
         },
         "pt": {
@@ -12078,7 +12078,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paisajes sonoros Pro, suscripción requerida"
+            "value": "Paisajes sonoros Pro, requiere suscripción"
           }
         },
         "pt": {
@@ -12320,7 +12320,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Status da Compra"
+            "value": "Estado da Compra"
           }
         }
       }
@@ -12478,7 +12478,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Regenerar perspectivas"
+            "value": "Regenerar insights"
           }
         },
         "pt": {
@@ -14148,13 +14148,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Racha protegida por skip Pro"
+            "value": "Racha protegida · salto Pro usado"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sequência protegida por skip Pro"
+            "value": "Sequência protegida · pulo Pro usado"
           }
         }
       }
@@ -14171,13 +14171,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Racha protegida · Skip Pro usado"
+            "value": "Racha protegida · Salto Pro usado"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sequência protegida · Skip Pro usado"
+            "value": "Sequência protegida · Pulo Pro usado"
           }
         }
       }
@@ -15342,7 +15342,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Actualizá a Pepinillo Pro para exportar tus sesiones de enfoque y tareas."
+            "value": "Actualiza a Pepinillo Pro para exportar tus sesiones de enfoque y tareas."
           }
         },
         "pt": {
@@ -15682,13 +15682,13 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Informe IA semanal"
+            "value": "Informe de IA semanal"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Relatório IA semanal"
+            "value": "Relatório de IA semanal"
           }
         }
       }
@@ -16619,7 +16619,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tenés datos en este dispositivo que no se han sincronizado. ¿Querés combinarlos con tu cuenta o empezar de nuevo con los datos de tu cuenta?"
+            "value": "Tienes datos en este dispositivo que no se han sincronizado. ¿Quieres combinarlos con tu cuenta o empezar de nuevo con los datos de tu cuenta?"
           }
         },
         "pt": {
@@ -17219,7 +17219,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mirá tu progreso diario de enfoque y el temporizador activo."
+            "value": "Mira tu progreso diario de enfoque y el temporizador activo."
           }
         },
         "pt": {
@@ -17363,7 +17363,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mirá tus tareas activas y marcalas como completadas."
+            "value": "Mira tus tareas activas y márcalas como completadas."
           }
         },
         "pt": {

@@ -139,7 +139,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tempo de foco com o ${applicationName}"
+            "value": "Tempo de foco com ${applicationName}"
           }
         }
       }
@@ -172,7 +172,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Me dá insights de foco no ${applicationName}"
+            "value": "Me dê insights de foco no ${applicationName}"
           }
         }
       }
@@ -194,7 +194,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quanto me concentrei no ${applicationName}"
+            "value": "Quanto eu foquei no ${applicationName}"
           }
         }
       }
@@ -282,7 +282,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tem sessão ativa no ${applicationName}"
+            "value": "Tem uma sessão ativa no ${applicationName}"
           }
         }
       }
@@ -414,7 +414,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Iniciar um Pomodoro no ${applicationName}"
+            "value": "Começar um Pomodoro no ${applicationName}"
           }
         }
       }
@@ -465,8 +465,8 @@
         },
         "pt-BR": {
           "stringUnit": {
-            "state": "needs_review",
-            "value": "Iniciar foco profundo no ${applicationName}"
+            "state": "translated",
+            "value": "Iniciar trabalho profundo no ${applicationName}"
           }
         },
         "pt": {
@@ -494,7 +494,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Iniciar modo flow no ${applicationName}"
+            "value": "Iniciar modo fluxo no ${applicationName}"
           }
         }
       }
@@ -581,7 +581,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sugiere un modo de enfoque en ${applicationName}"
+            "value": "Sugerir un modo de enfoque en ${applicationName}"
           }
         },
         "pt-BR": {
@@ -593,7 +593,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sugere um modo de foco no ${applicationName}"
+            "value": "Sugira um modo de foco no ${applicationName}"
           }
         }
       }
@@ -647,7 +647,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reporte semanal en ${applicationName}"
+            "value": "Informe semanal en ${applicationName}"
           }
         },
         "pt-BR": {
