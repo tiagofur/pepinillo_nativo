@@ -20,14 +20,63 @@ extension View {
 
     #if !os(watchOS)
     /// Apple-native content background for non-atmospheric screens.
+    ///
+    /// On iOS 26+ we deliberately do NOT apply an opaque full-screen background on
+    /// TabView child views.  The system Liquid Glass tab bar composites a blur of
+    /// whatever sits behind the bar — an opaque `.all`-edge fill blocks that path and
+    /// forces the bar to render as plain white.  Instead we let the system material
+    /// show through and only paint the content area (safe area insets, NOT the
+    /// tab-bar region).  On iOS 17-25 the old full-bleed behavior is preserved.
     func systemContentBackground(grouped: Bool = false) -> some View {
-        self.background(
-            grouped ? Color.pepinilloSystemGroupedBackground : Color.pepinilloSystemBackground,
-            ignoresSafeAreaEdges: .all
-        )
+        if #available(iOS 26.0, *) {
+            // On iOS 26+: let the system glass bar look through — no opaque fill
+            // behind the bar.  Apply the color only to the safe-area content area.
+            return self.background(
+                grouped ? Color.pepinilloSystemGroupedBackground : Color.pepinilloSystemBackground
+            )
+        } else {
+            return self.background(
+                grouped ? Color.pepinilloSystemGroupedBackground : Color.pepinilloSystemBackground,
+                ignoresSafeAreaEdges: .all
+            )
+        }
     }
     #endif
 }
+
+// MARK: - iOS 26 Scroll Edge Effect
+
+#if !os(watchOS)
+extension View {
+    /// Applies a soft scroll-edge effect at the top of a scroll view on iOS 26+.
+    /// No-op on earlier OS versions.
+    @ViewBuilder
+    func primaryScrollEdgeEffect() -> some View {
+        if #available(iOS 26.0, *) {
+            self.scrollEdgeEffectStyle(.soft, for: .top)
+        } else {
+            self
+        }
+    }
+}
+#endif
+
+// MARK: - iOS 26 Tab Bar Minimize Behavior
+
+#if !os(watchOS)
+extension View {
+    /// Hides/minimizes the tab bar when the user scrolls down (iOS 26+).
+    /// No-op on earlier OS versions — no availability guard at call site required.
+    @ViewBuilder
+    func conditionalTabBarMinimize() -> some View {
+        if #available(iOS 26.0, *) {
+            self.tabBarMinimizeBehavior(.onScrollDown)
+        } else {
+            self
+        }
+    }
+}
+#endif
 
 // MARK: - Ambient Background (PepinilloLiquidBackground)
 
