@@ -49,13 +49,8 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             )
             let todayStats = try context.fetch(todayDescriptor).first
 
-            // Fetch all daily stats to compute streak via StreakEngine
-            let isPro = AppGroupDefaults.isProUser
-            let allStatsDescriptor = FetchDescriptor<DailyStats>()
-            let allStatsForStreak = (try? context.fetch(allStatsDescriptor)) ?? []
-            let activeDays = allStatsForStreak.filter(\.hadFocusSession).map(\.date)
-            let streakResult = StreakEngine.computeStreak(activeDays: activeDays, isProUser: isPro, today: today)
-            let streak = streakResult.streak
+            // Fetch streak (consecutive days with focus sessions, counting backwards)
+            let streak = computeStreak(context: context, today: today)
 
             // Fetch user preferences for default mode
             let prefsDescriptor = FetchDescriptor<UserPreferences>()
@@ -116,6 +111,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 timerText = nil
             }
 
+            let isPro = AppGroupDefaults.isProUser
             let entry = FocusWidgetEntry(
                 date: Date(),
                 isProUser: isPro,
@@ -135,7 +131,6 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 todayFocusMinutes: focusMinutes,
                 todaySessionsCompleted: sessionsCompleted,
                 currentStreakDays: streak,
-                streakProtectionApplied: streakResult.protectionApplied,
                 dominantMode: dominantMode,
                 modeMinutes: modeMinutes
             )
@@ -189,7 +184,6 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             todayFocusMinutes: 0,
             todaySessionsCompleted: 0,
             currentStreakDays: 0,
-            streakProtectionApplied: false,
             dominantMode: nil,
             modeMinutes: [:]
         )
@@ -219,6 +213,29 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
         return String(format: "%d:%02d", minutes, remainingSeconds)
     }
 
+    // MARK: - Streak Calculation
+
+    /// Count consecutive days (going back from yesterday) where hadFocusSession == true.
+    private func computeStreak(context: ModelContext, today: Date) -> Int {
+        var streak = 0
+        var checkDate = today
+
+        for _ in 0..<365 {
+            guard let start = Calendar.current.date(byAdding: .day, value: -1, to: checkDate) else { break }
+            let end = checkDate
+
+            let descriptor = FetchDescriptor<DailyStats>(
+                predicate: #Predicate { $0.date >= start && $0.date < end }
+            )
+
+            guard let stats = try? context.fetch(descriptor).first,
+                  stats.hadFocusSession else { break }
+
+            streak += 1
+            checkDate = start
+        }
+        return streak
+    }
 }
 
 // MARK: - Widget Configuration Intent

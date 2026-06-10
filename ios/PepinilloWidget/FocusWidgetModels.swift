@@ -37,8 +37,6 @@ struct FocusWidgetEntry: TimelineEntry {
     let todayFocusMinutes: Int
     let todaySessionsCompleted: Int
     let currentStreakDays: Int
-    /// True when a missed day was automatically bridged via Pro streak-protection.
-    let streakProtectionApplied: Bool
     let dominantMode: String?     // FocusMode.rawValue
 
     // Mode breakdown for large widget
@@ -63,7 +61,6 @@ struct FocusWidgetEntry: TimelineEntry {
         todayFocusMinutes: 95,
         todaySessionsCompleted: 4,
         currentStreakDays: 7,
-        streakProtectionApplied: false,
         dominantMode: "pomodoro",
         modeMinutes: ["pomodoro": 50, "flowtime": 30, "timeBlock": 15]
     )
@@ -87,7 +84,6 @@ struct FocusWidgetEntry: TimelineEntry {
         todayFocusMinutes: 0,
         todaySessionsCompleted: 0,
         currentStreakDays: 0,
-        streakProtectionApplied: false,
         dominantMode: nil,
         modeMinutes: [:]
     )

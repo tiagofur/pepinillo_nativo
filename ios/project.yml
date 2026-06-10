@@ -270,7 +270,6 @@ targets:
       - path: Features/Focus/FocusModels.swift
       - path: Domain/Clients/LiveActivityClient.swift
       - path: Domain/Models
-      - path: Domain/Services/StreakEngine.swift
       - path: Shared/Persistence/AppGroupContainer.swift
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Shared/Design/ModeColors.swift
@@ -322,7 +321,6 @@ targets:
         excludes:
           - "**/*"
       - path: Domain/Models
-      - path: Domain/Services/StreakEngine.swift
       - path: Shared/Persistence/AppGroupContainer.swift
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Shared/Design/ModeColors.swift
