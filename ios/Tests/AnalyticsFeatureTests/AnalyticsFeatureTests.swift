@@ -35,6 +35,7 @@ struct AnalyticsFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
@@ -52,6 +53,7 @@ struct AnalyticsFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
@@ -73,6 +75,7 @@ struct AnalyticsFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
@@ -246,6 +249,7 @@ struct AnalyticsFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 

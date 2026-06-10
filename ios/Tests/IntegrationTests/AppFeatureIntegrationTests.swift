@@ -20,6 +20,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
