@@ -113,11 +113,17 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             }
 
             let isPro = AppGroupDefaults.isProUser
-            let streak = computeProtectedStreak(
-                allStats: allTimeStats,
+            let calendar = Calendar.current
+            var focusByDay: [Date: Bool] = [:]
+            for stat in allTimeStats {
+                let day = calendar.startOfDay(for: stat.date)
+                focusByDay[day] = (focusByDay[day] ?? false) || stat.hadFocusSession
+            }
+            let streakResult = StreakProtectionService.computeProtectedStreak(
+                focusByDay: focusByDay,
                 isPro: isPro,
                 today: today,
-                calendar: Calendar.current
+                calendar: calendar
             )
 
             let entry = FocusWidgetEntry(
@@ -138,7 +144,8 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 timerEnd: timerEnd,
                 todayFocusMinutes: focusMinutes,
                 todaySessionsCompleted: sessionsCompleted,
-                currentStreakDays: streak,
+                currentStreakDays: streakResult.days,
+                streakProtectionApplied: streakResult.protectionApplied,
                 dominantMode: dominantMode,
                 modeMinutes: modeMinutes
             )
@@ -192,6 +199,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             todayFocusMinutes: 0,
             todaySessionsCompleted: 0,
             currentStreakDays: 0,
+            streakProtectionApplied: false,
             dominantMode: nil,
             modeMinutes: [:]
         )
@@ -219,58 +227,6 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
         let minutes = totalSeconds / 60
         let remainingSeconds = totalSeconds % 60
         return String(format: "%d:%02d", minutes, remainingSeconds)
-    }
-
-    // MARK: - Streak Calculation (with Pro protection)
-
-    private func computeProtectedStreak(
-        allStats: [DailyStats],
-        isPro: Bool,
-        today: Date,
-        calendar: Calendar
-    ) -> Int {
-        var focusByDay: [Date: Bool] = [:]
-        for stat in allStats {
-            let day = calendar.startOfDay(for: stat.date)
-            focusByDay[day] = (focusByDay[day] ?? false) || stat.hadFocusSession
-        }
-
-        guard !focusByDay.isEmpty else { return 0 }
-
-        let startOfToday = calendar.startOfDay(for: today)
-        let earliestFocusDate = focusByDay.filter { $0.value }.keys.min() ?? startOfToday
-
-        var streak = 0
-        var lastSkipUsedDate: Date? = nil
-        var checkDate = startOfToday
-
-        for _ in 0..<730 {
-            let hadFocus = focusByDay[checkDate] ?? false
-
-            if hadFocus {
-                streak += 1
-            } else if isPro && checkDate >= earliestFocusDate {
-                let canSkip: Bool
-                if let lastSkip = lastSkipUsedDate {
-                    let daysApart = calendar.dateComponents([.day], from: checkDate, to: lastSkip).day ?? 0
-                    canSkip = daysApart >= 7
-                } else {
-                    canSkip = true
-                }
-                if canSkip {
-                    streak += 1
-                    lastSkipUsedDate = checkDate
-                } else {
-                    break
-                }
-            } else {
-                break
-            }
-
-            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
-            checkDate = previousDay
-        }
-        return streak
     }
 }
 

@@ -113,28 +113,4 @@ public enum StreakProtectionService {
 
         return StreakResult(days: streak, protectionApplied: protectionApplied)
     }
-
-    /// Convenience overload for use in the main app with `DailyStatsDTO` history.
-    public static func computeProtectedStreak(
-        history: [DailyStatsDTO],
-        isPro: Bool,
-        today: Date = .now,
-        calendar: Calendar = .current
-    ) -> StreakResult {
-        guard !history.isEmpty else { return .zero }
-
-        var focusByDay: [Date: Bool] = [:]
-        for stat in history {
-            let day = calendar.startOfDay(for: stat.date)
-            let hadSession = stat.sessionsCompleted > 0
-            focusByDay[day] = (focusByDay[day] ?? false) || hadSession
-        }
-
-        return computeProtectedStreak(
-            focusByDay: focusByDay,
-            isPro: isPro,
-            today: today,
-            calendar: calendar
-        )
-    }
 }

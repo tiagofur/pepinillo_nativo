@@ -59,6 +59,8 @@ struct DashboardWidgetEntry: TimelineEntry {
     let todayMinutes: Int
     let todaySessions: Int
     let streakDays: Int
+    /// True when a missed day was automatically bridged via Pro streak-protection.
+    let streakProtectionApplied: Bool
     let weeklyData: [DayData]
     let weeklyTotalMinutes: Int
     let bestDayMinutes: Int
@@ -87,6 +89,7 @@ struct DashboardWidgetEntry: TimelineEntry {
         todayMinutes: 95,
         todaySessions: 4,
         streakDays: 7,
+        streakProtectionApplied: false,
         weeklyData: (0..<7).map { i in
             DayData(
                 id: Calendar.current.date(byAdding: .day, value: -(6-i), to: Date())!,
@@ -110,6 +113,7 @@ struct DashboardWidgetEntry: TimelineEntry {
         todayMinutes: 0,
         todaySessions: 0,
         streakDays: 0,
+        streakProtectionApplied: false,
         weeklyData: [],
         weeklyTotalMinutes: 0,
         bestDayMinutes: 0,
@@ -123,6 +127,7 @@ struct DashboardWidgetEntry: TimelineEntry {
         todayMinutes: 0,
         todaySessions: 0,
         streakDays: 0,
+        streakProtectionApplied: false,
         weeklyData: [],
         weeklyTotalMinutes: 0,
         bestDayMinutes: 0,
