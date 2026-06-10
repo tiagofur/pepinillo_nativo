@@ -116,6 +116,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
                 todayMinutes: todayMinutes,
                 todaySessions: todaySessions,
                 streakDays: streak,
+                streakProtectionApplied: false,
                 weeklyData: weeklyData,
                 weeklyTotalMinutes: weeklyTotal,
                 bestDayMinutes: bestDay,
