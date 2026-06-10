@@ -49,10 +49,11 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             )
             let todayStats = try context.fetch(todayDescriptor).first
 
-            // Fetch streak (consecutive days with focus sessions, counting backwards)
-            let streak = computeStreak(context: context, today: today)
+            // Fetch all-time stats for protected streak computation
+            let allTimeDescriptor = FetchDescriptor<DailyStats>()
+            let allTimeStats = (try? context.fetch(allTimeDescriptor)) ?? []
 
-            // Fetch user preferences for default mode
+            // Fetch user preferences for default mode and Pro status
             let prefsDescriptor = FetchDescriptor<UserPreferences>()
             let prefs = try context.fetch(prefsDescriptor).first
 
@@ -112,6 +113,13 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             }
 
             let isPro = AppGroupDefaults.isProUser
+            let streak = computeProtectedStreak(
+                allStats: allTimeStats,
+                isPro: isPro,
+                today: today,
+                calendar: Calendar.current
+            )
+
             let entry = FocusWidgetEntry(
                 date: Date(),
                 isProUser: isPro,
@@ -213,26 +221,54 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
         return String(format: "%d:%02d", minutes, remainingSeconds)
     }
 
-    // MARK: - Streak Calculation
+    // MARK: - Streak Calculation (with Pro protection)
 
-    /// Count consecutive days (going back from yesterday) where hadFocusSession == true.
-    private func computeStreak(context: ModelContext, today: Date) -> Int {
+    private func computeProtectedStreak(
+        allStats: [DailyStats],
+        isPro: Bool,
+        today: Date,
+        calendar: Calendar
+    ) -> Int {
+        var focusByDay: [Date: Bool] = [:]
+        for stat in allStats {
+            let day = calendar.startOfDay(for: stat.date)
+            focusByDay[day] = (focusByDay[day] ?? false) || stat.hadFocusSession
+        }
+
+        guard !focusByDay.isEmpty else { return 0 }
+
+        let startOfToday = calendar.startOfDay(for: today)
+        let earliestFocusDate = focusByDay.filter { $0.value }.keys.min() ?? startOfToday
+
         var streak = 0
-        var checkDate = today
+        var lastSkipUsedDate: Date? = nil
+        var checkDate = startOfToday
 
-        for _ in 0..<365 {
-            guard let start = Calendar.current.date(byAdding: .day, value: -1, to: checkDate) else { break }
-            let end = checkDate
+        for _ in 0..<730 {
+            let hadFocus = focusByDay[checkDate] ?? false
 
-            let descriptor = FetchDescriptor<DailyStats>(
-                predicate: #Predicate { $0.date >= start && $0.date < end }
-            )
+            if hadFocus {
+                streak += 1
+            } else if isPro && checkDate >= earliestFocusDate {
+                let canSkip: Bool
+                if let lastSkip = lastSkipUsedDate {
+                    let daysApart = calendar.dateComponents([.day], from: checkDate, to: lastSkip).day ?? 0
+                    canSkip = daysApart >= 7
+                } else {
+                    canSkip = true
+                }
+                if canSkip {
+                    streak += 1
+                    lastSkipUsedDate = checkDate
+                } else {
+                    break
+                }
+            } else {
+                break
+            }
 
-            guard let stats = try? context.fetch(descriptor).first,
-                  stats.hadFocusSession else { break }
-
-            streak += 1
-            checkDate = start
+            guard let previousDay = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
+            checkDate = previousDay
         }
         return streak
     }

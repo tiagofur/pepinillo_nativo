@@ -21,6 +21,7 @@ struct AnalyticsFeature {
         var sessionsCompleted: Int = 0
         var currentStreakDays: Int = 0
         var longestStreakDays: Int = 0
+        var streakProtectionApplied: Bool = false
         var dominantMode: FocusMode?
         var achievements: [UserAchievement] = []
         var weeklyInsights: [FocusInsight] = []
@@ -91,6 +92,7 @@ struct AnalyticsFeature {
             insights: ProductivityInsights,
             streakDays: Int,
             longestStreak: Int,
+            streakProtectionApplied: Bool,
             achievements: [UserAchievement],
             weeklyInsights: [FocusInsight]
         )
@@ -157,7 +159,7 @@ struct AnalyticsFeature {
                 state.isLoading = true
                 return loadData(for: period)
 
-            case let .allDataLoaded(snapshots, insights, streakDays, longestStreak, achievements, weeklyInsights):
+            case let .allDataLoaded(snapshots, insights, streakDays, longestStreak, streakProtectionApplied, achievements, weeklyInsights):
                 state.isLoading = false
                 state.hasLoadedData = true
                 state.weeklyInsights = weeklyInsights
@@ -219,6 +221,7 @@ struct AnalyticsFeature {
                 // Streaks & achievements
                 state.currentStreakDays = streakDays
                 state.longestStreakDays = longestStreak
+                state.streakProtectionApplied = streakProtectionApplied
                 state.achievements = achievements
 
                 return .none
@@ -281,23 +284,34 @@ struct AnalyticsFeature {
             let calendar = Calendar.current
             let end = Date.now
             guard let start = calendar.date(byAdding: .day, value: -(period.days - 1), to: end) else {
-                await send(.allDataLoaded(snapshots: [], insights: .empty, streakDays: 0, longestStreak: 0, achievements: [], weeklyInsights: []))
+                await send(.allDataLoaded(snapshots: [], insights: .empty, streakDays: 0, longestStreak: 0, streakProtectionApplied: false, achievements: [], weeklyInsights: []))
                 return
             }
 
-            // Fetch concurrently: period sessions, all-time sessions, preferences
+            // Fetch concurrently: period sessions, all-time sessions, preferences,
+            // and all-time daily stats for streak computation.
             async let periodSessionsFetch = persistence.fetchSessions(start, end)
             async let lifetimeSessionsFetch = persistence.fetchSessions(Date.distantPast, end)
             async let prefsFetch = persistence.fetchPreferences()
+            async let allStatsFetch = persistence.fetchDailyStatsRange(Date.distantPast, end)
 
-            let (periodSessions, lifetimeSessions, prefs) = try await (
+            let (periodSessions, lifetimeSessions, prefs, allDailyStats) = try await (
                 periodSessionsFetch,
                 lifetimeSessionsFetch,
-                prefsFetch
+                prefsFetch,
+                allStatsFetch
             )
 
             let snapshots = buildSnapshots(from: periodSessions, calendar: calendar)
             let insights = buildInsights(from: periodSessions, calendar: calendar)
+
+            // Compute protected streak on-the-fly from full DailyStats history.
+            let streakResult = StreakProtectionService.computeProtectedStreak(
+                history: allDailyStats,
+                isPro: prefs.isProUser,
+                today: end,
+                calendar: calendar
+            )
 
             // Achievement counts from lifetime data
             let earlyBirdCount = lifetimeSessions.filter {
@@ -314,7 +328,7 @@ struct AnalyticsFeature {
 
             let achievements = buildAchievements(
                 totalSessions: allTimeTotal,
-                currentStreak: prefs.currentStreakDays,
+                currentStreak: streakResult.days,
                 pomodoroCompleted: pomodoroCompleted,
                 flowtimeCompleted: flowtimeCompleted,
                 earlyBirdCount: earlyBirdCount
@@ -338,8 +352,9 @@ struct AnalyticsFeature {
             await send(.allDataLoaded(
                 snapshots: snapshots,
                 insights: insights,
-                streakDays: prefs.currentStreakDays,
+                streakDays: streakResult.days,
                 longestStreak: prefs.longestStreakDays,
+                streakProtectionApplied: streakResult.protectionApplied,
                 achievements: achievements,
                 weeklyInsights: weeklyInsights
             ))

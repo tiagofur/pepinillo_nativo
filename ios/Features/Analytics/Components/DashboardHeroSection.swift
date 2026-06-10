@@ -14,6 +14,7 @@ struct DashboardHeroSection: View {
     let streakDays: Int
     let sessionsCompleted: Int
     let totalFocusMinutes: Int
+    var streakProtectionApplied: Bool = false
 
     @Environment(\.appTheme) private var theme
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -84,12 +85,24 @@ struct DashboardHeroSection: View {
 
     private var streakRow: some View {
         HStack(spacing: 18) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(theme.streakColor)
-                .frame(width: 58, height: 58)
-                .background(theme.streakColor.opacity(0.12), in: Circle())
-                .accessibilityHidden(true)
+            ZStack(alignment: .bottomTrailing) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 34, weight: .semibold))
+                    .foregroundStyle(theme.streakColor)
+                    .frame(width: 58, height: 58)
+                    .background(theme.streakColor.opacity(0.12), in: Circle())
+
+                if streakProtectionApplied {
+                    Image(systemName: "shield.fill")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 22, height: 22)
+                        .background(Color.blue, in: Circle())
+                        .offset(x: 2, y: 2)
+                        .accessibilityHidden(true)
+                }
+            }
+            .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -102,11 +115,20 @@ struct DashboardHeroSection: View {
                         .foregroundStyle(.primary)
                 }
 
-                Text(streakDays > 0
-                     ? String(localized: "Keep the chain alive today.")
-                     : String(localized: "Start one focused session today."))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if streakProtectionApplied {
+                    Text(String(localized: "streak.protection.caption",
+                                defaultValue: "Streak protected · Pro skip used"))
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                        .accessibilityLabel(String(localized: "streak.protection.accessibility",
+                                                   defaultValue: "Streak protected by Pro skip"))
+                } else {
+                    Text(streakDays > 0
+                         ? String(localized: "Keep the chain alive today.")
+                         : String(localized: "Start one focused session today."))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }

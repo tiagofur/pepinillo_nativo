@@ -506,6 +506,7 @@ public struct PersistenceClient: Sendable {
 
     // Daily Stats
     public var fetchDailyStats: @Sendable (Date) async throws -> DailyStatsDTO? = { _ in nil }
+    public var fetchDailyStatsRange: @Sendable (Date, Date) async throws -> [DailyStatsDTO] = { _, _ in [] }
 
     // Preferences
     public var fetchPreferences: @Sendable () async throws -> UserPreferencesDTO = {
@@ -623,6 +624,9 @@ extension PersistenceClient: DependencyKey {
             },
             fetchDailyStats: { date in
                 try await actorProvider().fetchDailyStats(for: date)
+            },
+            fetchDailyStatsRange: { start, end in
+                try await actorProvider().fetchDailyStatsRange(from: start, to: end)
             },
             fetchPreferences: {
                 try await actorProvider().fetchPreferences()

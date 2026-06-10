@@ -9585,6 +9585,38 @@
           }
         }
       }
+    },
+    "streak.protection.caption" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha protegida · Skip Pro usado"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência protegida · Skip Pro usado"
+          }
+        }
+      }
+    },
+    "streak.protection.accessibility" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Racha protegida por skip Pro"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequência protegida por skip Pro"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

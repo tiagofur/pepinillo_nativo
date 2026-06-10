@@ -954,12 +954,17 @@ struct AppFeature {
                             .map { Int($0.actualDuration) / 60 }
                             .max() ?? 0
 
+                        let allDailyStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                        let streakResult = StreakProtectionService.computeProtectedStreak(
+                            history: allDailyStats,
+                            isPro: prefs?.isProUser ?? false
+                        )
                         let dashStats = WatchDashboardStats(
                             todayMinutes: stats?.totalFocusMinutes ?? 0,
                             sessionsCompleted: stats?.sessionsCompleted ?? 0,
                             tasksCompleted: todayTasks.filter(\.isCompleted).count,
                             tasksTotal: todayTasks.count,
-                            streakDays: prefs?.currentStreakDays ?? 0,
+                            streakDays: streakResult.days,
                             pomodoroMinutes: stats?.pomodoroMinutes ?? 0,
                             flowtimeMinutes: stats?.flowtimeMinutes ?? 0,
                             timeBlockMinutes: stats?.timeBlockMinutes ?? 0,
@@ -1001,10 +1006,15 @@ struct AppFeature {
                     .run { [watchClient] _ in
                         if let stats = try? await persistence.fetchDailyStats(Date.now),
                            let prefs = try? await persistence.fetchPreferences() {
+                            let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                            let streakResult = StreakProtectionService.computeProtectedStreak(
+                                history: allStats,
+                                isPro: prefs.isProUser
+                            )
                             await watchClient.sendStats(
                                 stats.totalFocusMinutes,
                                 stats.sessionsCompleted,
-                                prefs.currentStreakDays
+                                streakResult.days
                             )
                         }
                     },
@@ -1018,9 +1028,15 @@ struct AppFeature {
                             return .merge(
                                 .send(.analytics(.onAppear)),
                                 Effect<Action>.run { send in
-                                    if let prefs = try? await persistence.fetchPreferences(),
-                                       let milestone = CelebrationMilestone.checkStreak(prefs.currentStreakDays) {
-                                        await send(.celebrationTriggered(milestone))
+                                    if let prefs = try? await persistence.fetchPreferences() {
+                                        let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                                        let streakResult = StreakProtectionService.computeProtectedStreak(
+                                            history: allStats,
+                                            isPro: prefs.isProUser
+                                        )
+                                        if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
+                                            await send(.celebrationTriggered(milestone))
+                                        }
                                     }
                                 }
                             )
