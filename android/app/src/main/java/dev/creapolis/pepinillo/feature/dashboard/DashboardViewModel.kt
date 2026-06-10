@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
@@ -148,7 +149,11 @@ class DashboardViewModel @Inject constructor(
         val periodMinutes = (periodTotalMillis / 60_000).toInt()
         val periodSessionCount = workSessions.size
 
-        val streak = sessionRepository.calculateCurrentStreak(allDays)
+        val streakResult = StreakProtectionService.computeProtectedStreak(
+            history = allDays,
+            isPro = featureGate.isPro,
+        )
+        val streak = streakResult.days
         val bestStreak = sessionRepository.calculateBestStreak(allDays)
 
         // Chart data (DailyStats is fine for per-day bars — visual approximation)
@@ -172,6 +177,7 @@ class DashboardViewModel @Inject constructor(
             weekSessions = if (period == AnalyticsPeriod.Week) periodSessionCount else 0,
             currentStreak = streak,
             bestStreak = bestStreak,
+            streakProtectionApplied = streakResult.protectionApplied,
             longestSessionMinutes = workSessions.maxOfOrNull { (it.durationMillis / 60_000).toInt() } ?: 0,
             weeklyData = if (period == AnalyticsPeriod.Week) chartData else emptyList(),
             modeBreakdown = modeBreakdown,
@@ -321,7 +327,10 @@ class DashboardViewModel @Inject constructor(
         val currentSessionCount = currentWork.size
         val previousMinutes = (previousWork.sumOf { it.durationMillis } / 60_000).toInt()
         val previousSessionCount = previousWork.size
-        val streak = sessionRepository.calculateCurrentStreak(allDays)
+        val streak = StreakProtectionService.computeProtectedStreak(
+            history = allDays,
+            isPro = featureGate.isPro,
+        ).days
 
         // Dominant mode from raw sessions (breaks excluded)
         val byMode = currentWork.groupBy { it.mode }

@@ -13,6 +13,7 @@ import dev.creapolis.pepinillo.core.billing.SubscriptionTier
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
@@ -100,7 +101,10 @@ class SettingsViewModel @Inject constructor(
         val isLoggedIn = values[7] as Boolean
 
         prefs.toUiState(
-            currentStreak = sessionRepository.calculateCurrentStreak(allDays),
+            currentStreak = StreakProtectionService.computeProtectedStreak(
+                history = allDays,
+                isPro = subState.hasLocalPremium,
+            ).days,
             isPro = subState.hasLocalPremium,
             subscriptionTier = subState.tier,
             isOnline = isOnline,

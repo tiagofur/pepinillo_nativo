@@ -45,6 +45,7 @@ import dagger.hilt.android.EntryPointAccessors
 import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
 
@@ -70,8 +71,13 @@ class DailyStatsWidget : GlanceAppWidget() {
 
             val stats = runCatching { sessionRepo.getTodayStats().first() }.getOrNull()
             val allDays = runCatching { sessionRepo.getAllDaysWithSessions().first() }.getOrDefault(emptyList())
-            val streak = runCatching { sessionRepo.calculateCurrentStreak(allDays) }.getOrDefault(0)
             val isPro = subscriptionManager.subscriptionState.value.hasLocalPremium
+            val streak = runCatching {
+                StreakProtectionService.computeProtectedStreak(
+                    history = allDays,
+                    isPro = isPro,
+                ).days
+            }.getOrDefault(0)
             
             val startOfDay = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0)

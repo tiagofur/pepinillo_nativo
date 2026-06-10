@@ -13,6 +13,7 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.soundscape.Soundscape
 import dev.creapolis.pepinillo.domain.soundscape.SoundscapeManager
@@ -220,7 +221,10 @@ class FocusViewModel @Inject constructor(
             isPaused = combined.timerState.status == TimerStatus.Paused,
             linkedTaskName = combined.linkedTaskName,
             sessionsToday = combined.todayCount,
-            currentStreak = sessionRepository.calculateCurrentStreak(combined.allDays),
+            currentStreak = StreakProtectionService.computeProtectedStreak(
+                history = combined.allDays,
+                isPro = featureGate.isPro,
+            ).days,
             greetingRes = computeGreetingRes(),
             currentDate = computeDate(),
             showTaskPicker = combined.showPicker,

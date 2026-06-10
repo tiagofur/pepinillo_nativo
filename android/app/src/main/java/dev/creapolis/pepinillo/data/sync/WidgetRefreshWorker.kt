@@ -12,8 +12,10 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dev.creapolis.pepinillo.widget.WidgetStateManager
@@ -32,6 +34,7 @@ class WidgetRefreshWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val sessionRepository: SessionRepository,
     private val taskRepository: TaskRepository,
+    private val featureGate: FeatureGate,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
@@ -39,7 +42,10 @@ class WidgetRefreshWorker @AssistedInject constructor(
             // ── 1. Focus stats ──────────────────────────────────────────────
             val stats = sessionRepository.getTodayStats().first()
             val allDays = sessionRepository.getAllDaysWithSessions().first()
-            val streak = sessionRepository.calculateCurrentStreak(allDays)
+            val streak = StreakProtectionService.computeProtectedStreak(
+                history = allDays,
+                isPro = featureGate.isPro,
+            ).days
             val totalMinutes = stats?.totalMinutes ?: 0
             val sessions = stats?.sessionsCompleted ?: 0
 

@@ -785,7 +785,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | Achievements (6 types)                 | ✅  | ✅      | ➖      | ➖      | FREE |
 | Weekly Review                          | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Monthly Review                         | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
-| AI Productivity Reports                | 🔄  | 🔄      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| AI Productivity Reports                | ✅  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | **Widgets**                            |     |         |         |         |      |
 | Home Screen — Small                    | ✅  | ⬜      | ➖      | ➖      | FREE |
 | Home Screen — Medium                   | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
@@ -800,11 +800,11 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | Dynamic Island + Live Activity         | ✅  | ➖      | ➖      | ➖      | FREE |
 | Foreground notification with progress  | ➖  | ✅      | ➖      | ➖      | FREE |
 | **Smartwatch**                         |     |         |         |         |      |
-| Watch timer                            | ⬜  | ➖      | ⬜      | ✅      | APPLE / EVERYWHERE  |
-| Mode selection                         | ⬜  | ➖      | ⬜      | ✅      | APPLE / EVERYWHERE  |
-| Watch task list                        | ⬜  | ➖      | ⬜      | ✅      | APPLE / EVERYWHERE  |
-| Watch dashboard/stats                  | ⬜  | ➖      | ⬜      | ✅      | APPLE / EVERYWHERE  |
-| Complications (enhanced)               | ⬜  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
+| Watch timer                            | ✅  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
+| Mode selection                         | ✅  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
+| Watch task list                        | ✅  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
+| Watch dashboard/stats                  | ✅  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
+| Complications (enhanced)               | ✅  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
 | Focus Timer Tile (enhanced)            | ➖  | ➖      | ➖      | ✅      | APPLE / EVERYWHERE  |
 | Tasks Tile                             | ➖  | ➖      | ✅      | ✅      | APPLE / EVERYWHERE  |
 | Watch haptics                          | ⬜  | ➖      | ⬜      | ⬜      | APPLE / EVERYWHERE  |
@@ -844,11 +844,11 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | Mode Intelligence                 | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Streaks                           | ✅  | ✅      | ⬜      | ⬜      | FREE |
 | Streak Protection (1 skip/week)   | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
-| Apple Health (Mindful Minutes)    | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Apple Health (Mindful Minutes)    | ✅  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Health Connect (Mindful Minutes)  | ➖  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Control Center widget (iOS 18+)   | ✅  | ➖      | ➖      | ➖      | FREE |
 | Quick Settings Tile               | ➖  | ⬜      | ➖      | ➖      | FREE |
-| Apple Reminders import            | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| Apple Reminders import            | ✅  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Google Tasks import               | ➖  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Apple Calendar integration        | ✅  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Google Calendar integration       | ➖  | ✅      | ➖      | ➖      | APPLE / EVERYWHERE  |
@@ -863,7 +863,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | ------------------------------------- | --- | ------- | ------- | ------- | ---- |
 | Advanced AI Insights                  | ⬜  | ⬜      | ➖      | ➖      | EVERYWHERE  |
 | Social Accountability                 | ⬜  | ⬜      | ➖      | ➖      | PRO  |
-| CSV/PDF Export                        | ⬜  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
+| CSV/PDF Export                        | ✅  | ⬜      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Apple Vision Pro                      | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
 | Device handoff                        | ⬜  | ➖      | ⬜      | ➖      | APPLE / EVERYWHERE  |
 | Shortcuts automation                  | ⬜  | ➖      | ➖      | ➖      | APPLE / EVERYWHERE  |
