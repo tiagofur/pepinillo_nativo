@@ -394,6 +394,10 @@ targets:
       - path: Shared/Design
     resources:
       - path: PepinilloWatch/PrivacyInfo.xcprivacy
+      - path: Shared/Resources/Localizable.xcstrings
+        optional: true
+      - path: Shared/Resources/InfoPlist.xcstrings
+        optional: true
     dependencies:
       - package: swift-composable-architecture
         product: ComposableArchitecture
@@ -430,6 +434,9 @@ targets:
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Domain/Models
       - path: Features/Focus/FocusModels.swift
+    resources:
+      - path: Shared/Resources/Localizable.xcstrings
+        optional: true
     dependencies: []
     settings:
       base:

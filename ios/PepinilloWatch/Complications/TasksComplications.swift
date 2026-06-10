@@ -164,7 +164,7 @@ struct TasksRectangularView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             // Header: "Tasks (2/5)"
-            Text("Tasks (\(entry.completedCount)/\(entry.totalCount))")
+            Text(String(format: String(localized: "complication.tasks.header", defaultValue: "Tasks (%lld/%lld)"), entry.completedCount, entry.totalCount))
                 .font(.system(.caption, design: .rounded, weight: .bold))
                 .foregroundStyle(.primary)
 
