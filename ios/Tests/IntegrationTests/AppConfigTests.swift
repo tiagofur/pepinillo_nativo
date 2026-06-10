@@ -7,8 +7,8 @@ import Testing
 @Suite("AppConfig")
 struct AppConfigTests {
 
-    @Test("aiInsightsEnabled defaults to false for v1")
-    func aiInsightsDisabledByDefault() {
-        #expect(AppConfig.aiInsightsEnabled == false)
+    @Test("aiInsightsEnabled is true — AI Reports feature is enabled")
+    func aiInsightsEnabled() {
+        #expect(AppConfig.aiInsightsEnabled == true)
     }
 }

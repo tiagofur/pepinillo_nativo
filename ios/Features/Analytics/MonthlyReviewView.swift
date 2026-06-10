@@ -102,10 +102,10 @@ struct MonthlyReviewView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.purple)
 
-            Text(String(localized: "AI Insights requiere Pepinillo+"))
+            Text(String(localized: "AI Insights requires Pepinillo+"))
                 .font(.title3.bold())
 
-            Text(String(localized: "Obtén análisis mensuales impulsados por Inteligencia Artificial con detección de patrones, puntuación de productividad y coaching personalizado."))
+            Text(String(localized: "Get AI-powered monthly analysis with pattern detection, a productivity score, and personalized coaching."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
