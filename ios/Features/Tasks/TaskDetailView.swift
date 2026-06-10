@@ -140,9 +140,8 @@ struct TaskDetailView: View {
             let total = store.subtasks.count
             
             Text(total > 0 ? String(localized: "Subtasks (\(completed)/\(total))") : String(localized: "Subtasks"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
                 .padding(.bottom, 4)
 
             VStack(spacing: 12) {
@@ -268,9 +267,8 @@ struct TaskDetailView: View {
     private var metadataSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Priority & Focus"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
                 .padding(.bottom, 4)
 
             VStack(spacing: 14) {
@@ -350,9 +348,8 @@ struct TaskDetailView: View {
     private var recurrenceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Recurrence"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
 
             VStack {
                 if let rule = store.recurrenceRule, let preset = RecurrencePreset.from(rule: rule) {
@@ -405,9 +402,8 @@ struct TaskDetailView: View {
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Notes"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
 
             TextEditor(
                 text: Binding(
@@ -427,9 +423,8 @@ struct TaskDetailView: View {
     private var statsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Focus History"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
 
             VStack(spacing: 14) {
                 LabeledContent(String(localized: "Total Focus Time")) {

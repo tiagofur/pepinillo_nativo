@@ -263,7 +263,7 @@ struct FocusView: View {
                 .padding(.horizontal, 24)
                 .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
 
-            Text(store.phaseLabel.uppercased())
+            Text(store.phaseLabel)
                 .font(.system(.subheadline, design: .rounded))
                 .fontWeight(.bold)
                 .tracking(2)

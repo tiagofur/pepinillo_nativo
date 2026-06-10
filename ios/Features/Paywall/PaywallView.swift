@@ -104,8 +104,7 @@ struct PaywallHeaderSection: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(localized: "Pepinillo plans"))
-                        .font(.caption.weight(.semibold))
-                        .textCase(.uppercase)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Text(String(localized: "Apple-first focus. Sync when you need it."))
                         .font(.subheadline.weight(.semibold))

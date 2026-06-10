@@ -162,7 +162,6 @@ struct ExportReportView: View {
                                 defaultValue: "Focus Mode Breakdown"))
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Color(.gray))
-                        .textCase(.uppercase)
 
                     ForEach(modeBreakdown, id: \.0) { mode, minutes in
                         HStack {
@@ -332,7 +331,6 @@ struct ExportReportView: View {
                     .font(.system(size: isHeader ? 10 : 11,
                                   weight: isHeader ? .semibold : .regular))
                     .foregroundStyle(isHeader ? Color(.gray) : Color(.darkGray))
-                    .textCase(isHeader ? .uppercase : .none)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: .infinity, alignment: .leading)
