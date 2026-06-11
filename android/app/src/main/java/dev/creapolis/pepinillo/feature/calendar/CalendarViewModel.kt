@@ -107,14 +107,15 @@ class CalendarViewModel @Inject constructor(
                 emptyList()
             }
 
-            val totalMinutes = sessions.sumOf { (it.durationMillis / 60_000).toInt() }
+            val focusSessions = sessions.filter { it.phase == null || it.phase == "Work" }
+            val totalMinutes = focusSessions.sumOf { (it.durationMillis / 60_000).toInt() }
 
             _dayDetail.value = DayDetail(
                 dateLabel = dateFormat.format(dateMillis),
                 totalMinutes = totalMinutes,
-                sessionsCompleted = sessions.size,
+                sessionsCompleted = focusSessions.size,
                 taskCount = tasks.size,
-                sessions = sessions.map { s ->
+                sessions = focusSessions.map { s ->
                     SessionSummary(
                         mode = s.mode,
                         startTime = s.startTime,
