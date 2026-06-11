@@ -311,6 +311,7 @@ struct PaywallProductCard: View {
                             Text(product.planDisplayName)
                                 .font(.headline)
                                 .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
 
                             if product.isFeatured {
                                 Text(String(localized: "Best value"))
@@ -327,8 +328,7 @@ struct PaywallProductCard: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-
-                    Spacer(minLength: 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(product.displayPrice)
@@ -339,7 +339,7 @@ struct PaywallProductCard: View {
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
                     }
-                    .layoutPriority(1)
+                    .fixedSize(horizontal: true, vertical: false)
                 }
 
                 HStack(spacing: 8) {

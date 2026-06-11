@@ -586,9 +586,11 @@ struct FocusView: View {
                         Image(systemName: "play.fill")
                         Text(String(localized: "Start \(store.selectedMode.displayName)"))
                             .fontWeight(.semibold)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .font(.title3)
-                    .frame(maxWidth: 280)
+                    .frame(maxWidth: 360)
                     .frame(minHeight: 64)
                     .primaryFocusActionGlass(tint: modeColor, namespace: glassNS)
                 }
