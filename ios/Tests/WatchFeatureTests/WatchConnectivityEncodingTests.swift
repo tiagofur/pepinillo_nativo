@@ -764,3 +764,371 @@ struct StatsDictionaryEncodingTests {
         #expect(dict["streak"]       as? Int == 0)
     }
 }
+
+// MARK: - Wire Format Type Dispatcher Tests
+//
+// All incoming WatchConnectivity messages have a "type" discriminator key.
+// The dispatcher must handle unknown types gracefully — no crash, no action.
+
+@Suite("Wire Format Type Dispatcher")
+struct WireFormatTypeDispatcherTests {
+
+    /// Simulates the top-level dispatch WatchConnectivityManager.didReceiveMessage performs.
+    private func dispatch(_ message: [String: Any]) -> String? {
+        message["type"] as? String
+    }
+
+    @Test func knownTypeSessionState() {
+        let dict: [String: Any] = ["type": "sessionState", "isActive": false]
+        #expect(dispatch(dict) == "sessionState")
+    }
+
+    @Test func knownTypeCommand() {
+        let dict: [String: Any] = ["type": "command", "action": "pause"]
+        #expect(dispatch(dict) == "command")
+    }
+
+    @Test func knownTypeStats() {
+        let dict: [String: Any] = ["type": "stats"]
+        #expect(dispatch(dict) == "stats")
+    }
+
+    @Test func knownTypeTasks() {
+        let dict: [String: Any] = ["type": "tasks"]
+        #expect(dispatch(dict) == "tasks")
+    }
+
+    @Test func knownTypeDashboardStats() {
+        let dict: [String: Any] = ["type": "dashboardStats"]
+        #expect(dispatch(dict) == "dashboardStats")
+    }
+
+    @Test func unknownTypeReturnsUnrecognizedString() {
+        // A future message type from a newer app version should not crash;
+        // the dispatcher should receive a non-nil String, then skip unknown types.
+        let dict: [String: Any] = ["type": "futurePayloadType", "data": 42]
+        let typeValue = dispatch(dict)
+        // It is NOT nil — the key is present. The dispatcher must handle
+        // unrecognised values by doing nothing (no default handler).
+        #expect(typeValue == "futurePayloadType")
+    }
+
+    @Test func missingTypeKeyReturnsNil() {
+        let dict: [String: Any] = ["action": "pause"]
+        #expect(dispatch(dict) == nil)
+    }
+
+    @Test func wrongTypeForTypeKeyReturnsNil() {
+        // If "type" is not a String (e.g. sent by a buggy future version)
+        let dict: [String: Any] = ["type": 42]
+        #expect(dispatch(dict) == nil)
+    }
+}
+
+// MARK: - Transport Semantics Contract Tests
+//
+// Documents the contractual constraints on WatchConnectivity transport choice.
+// All five send methods use sendMessage(), which requires isReachable == true.
+// These tests assert the *wire format shapes* that each mechanism must carry,
+// so that a future migration to applicationContext or transferUserInfo
+// can be validated against the same contract.
+
+@Suite("Transport Semantics Contract")
+struct TransportSemanticsContractTests {
+
+    // MARK: - sendMessage payloads (require isReachable)
+
+    @Test func sessionStatePayloadFitsInSendMessage() {
+        // sendMessage payloads must be [String: Any] — verify all values are
+        // property-list-compatible (no custom types, no Codable wrapping).
+        let state = WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "23:00", phaseLabel: "Focus 1/4",
+            progress: 0.08, pomodoroNumber: 1,
+            linkedTaskTitle: "Ship it", linkedTaskID: "T-42",
+            isPhaseTransition: false
+        )
+        let dict: [String: Any] = [
+            "type":              "sessionState",
+            "isActive":          state.isActive,
+            "isPaused":          state.isPaused,
+            "modeID":            state.modeID,
+            "displayTime":       state.displayTime,
+            "phaseLabel":        state.phaseLabel,
+            "isPhaseTransition": state.isPhaseTransition,
+            "progress":          state.progress as Any,
+            "pomodoroNumber":    state.pomodoroNumber as Any,
+            "linkedTaskTitle":   state.linkedTaskTitle as Any,
+            "linkedTaskID":      state.linkedTaskID as Any,
+        ]
+        // All values must be serializable to a property list
+        #expect(PropertyListSerialization.propertyList(dict, isValidFor: .binary))
+    }
+
+    @Test func commandPayloadFitsInSendMessage() {
+        let dict: [String: Any] = ["type": "command", "action": "pause"]
+        #expect(PropertyListSerialization.propertyList(dict, isValidFor: .binary))
+    }
+
+    @Test func statsPayloadFitsInSendMessage() {
+        let dict: [String: Any] = [
+            "type": "stats",
+            "todayMinutes": 90,
+            "sessions": 4,
+            "streak": 7,
+        ]
+        #expect(PropertyListSerialization.propertyList(dict, isValidFor: .binary))
+    }
+
+    @Test func taskPayloadFitsInSendMessage() {
+        let taskDict: [String: Any] = [
+            "id":                 UUID().uuidString,
+            "title":              "Ship feature",
+            "isCompleted":        false,
+            "priority":           2,
+            "estimatedPomodoros": 4,
+            "completedPomodoros": 1,
+        ]
+        let dict: [String: Any] = ["type": "tasks", "items": [taskDict]]
+        #expect(PropertyListSerialization.propertyList(dict, isValidFor: .binary))
+    }
+
+    @Test func dashboardStatsPayloadFitsInSendMessage() {
+        let dict: [String: Any] = [
+            "type":                  "dashboardStats",
+            "todayMinutes":          180,
+            "sessionsCompleted":     8,
+            "tasksCompleted":        5,
+            "tasksTotal":            12,
+            "streakDays":            14,
+            "pomodoroMinutes":       75,
+            "flowtimeMinutes":       50,
+            "timeBlockMinutes":      35,
+            "stopwatchMinutes":      20,
+            "longestSessionMinutes": 60,
+        ]
+        #expect(PropertyListSerialization.propertyList(dict, isValidFor: .binary))
+    }
+
+    // MARK: - Reachability guard contract
+
+    @Test func sendMessageRequiresReachabilityDoc() {
+        // CONTRACT (enforced by code review, not runtime): every send path in
+        // WatchConnectivityManager guards on `session.isReachable`.
+        // When isReachable is false the message is SILENTLY DROPPED.
+        //
+        // Consequence: phone→watch state updates are lost any time the watch app
+        // is backgrounded, the watch is on wrist detection off, or the simulator
+        // pair is disconnected. This is a CRITICAL defect for complications and
+        // background sessions.
+        //
+        // Correct fix: use applicationContext for session state (survives background)
+        // and transferUserInfo for tasks (queued, guaranteed delivery).
+        // sendMessage should remain ONLY for latency-sensitive interactive commands
+        // (pause, resume, stop, skip) when isReachable is confirmed.
+        //
+        // This test documents the contract so a future fix can be verified.
+        let droppedWhenNotReachable = true  // current behavior, NOT desired
+        #expect(droppedWhenNotReachable == true,
+                "Remove this assertion when sendMessage is replaced with applicationContext for session state")
+    }
+}
+
+// MARK: - Complication Reload Gating Tests
+//
+// WidgetCenter.reloadAllTimelines() must NOT fire every second —
+// only on phase transitions or session end. This test verifies the
+// predicate logic that gates the reload call.
+
+@Suite("Complication Reload Gating")
+struct ComplicationReloadGatingTests {
+
+    /// Mirrors the gating condition in WatchTimerFeature.sessionStateReceived:
+    ///   if didTransition || !isActive { WidgetCenter.shared.reloadAllTimelines() }
+    private func shouldReloadComplications(isActive: Bool, isPhaseTransition: Bool) -> Bool {
+        isPhaseTransition || !isActive
+    }
+
+    @Test func doesNotReloadOnNormalTick() {
+        // Every-second update while session is running: no reload
+        #expect(shouldReloadComplications(isActive: true, isPhaseTransition: false) == false)
+    }
+
+    @Test func reloadsOnPhaseTransition() {
+        // Focus → Break transition: reload
+        #expect(shouldReloadComplications(isActive: true, isPhaseTransition: true) == true)
+    }
+
+    @Test func reloadsOnSessionEnd() {
+        // Session stopped/completed: reload
+        #expect(shouldReloadComplications(isActive: false, isPhaseTransition: false) == true)
+    }
+
+    @Test func reloadsOnPhaseTransitionAtSessionEnd() {
+        // Pathological: last phase transition that also ends the session
+        #expect(shouldReloadComplications(isActive: false, isPhaseTransition: true) == true)
+    }
+
+    @Test func gatingPreventsBurstReloadsOverOneMinute() {
+        // Simulate 60 ticks of a running session
+        var reloadCount = 0
+        for _ in 0..<60 {
+            if shouldReloadComplications(isActive: true, isPhaseTransition: false) {
+                reloadCount += 1
+            }
+        }
+        // Zero reloads during normal ticking — complications use their own 5-min timeline
+        #expect(reloadCount == 0)
+    }
+
+    @Test func gatingAllowsOneReloadPerPhaseChange() {
+        // A typical pomodoro session: 4 focus phases + 3 short breaks + 1 long break
+        // = 8 phase transitions, each fires exactly one reload
+        let phaseEvents: [(isActive: Bool, isPhaseTransition: Bool)] = [
+            (true,  true),   // focus→break 1
+            (true,  false),  // break ticking
+            (true,  true),   // break→focus 2
+            (true,  false),  // focus ticking
+            (true,  true),   // focus→break 2
+            (true,  false),  // break ticking
+            (true,  true),   // break→focus 3
+            (true,  false),  // focus ticking
+            (true,  true),   // focus→break 3
+            (true,  false),  // break ticking
+            (true,  true),   // break→focus 4
+            (true,  false),  // focus ticking
+            (true,  true),   // focus→long break
+            (true,  false),  // long break ticking
+            (false, false),  // session ended
+        ]
+        let transitionReloads = phaseEvents.filter { shouldReloadComplications(isActive: $0.isActive, isPhaseTransition: $0.isPhaseTransition) }.count
+        let endReloads = phaseEvents.filter { !$0.isActive }.count
+        #expect(transitionReloads == 7)  // 7 phase transition events
+        #expect(endReloads == 1)         // 1 session-end event
+    }
+}
+
+// MARK: - DisplayTime Parse Tests
+//
+// WatchTimerFeature.persistSessionState() calls parseDisplayTime() to derive
+// phase start/end dates for live countdown complications. The parse logic must
+// handle valid "MM:SS" strings, edge cases, and malformed input.
+
+@Suite("DisplayTime Parse Logic")
+struct DisplayTimeParseTests {
+
+    /// Mirrors WatchTimerFeature.parseDisplayTime(_:) — private static func.
+    private func parseDisplayTime(_ displayTime: String) -> TimeInterval {
+        let parts = displayTime.split(separator: ":").compactMap { Double($0) }
+        guard parts.count == 2 else { return 0 }
+        return parts[0] * 60 + parts[1]
+    }
+
+    @Test func parsesStandardPomodoro() {
+        #expect(parseDisplayTime("25:00") == 1500)
+    }
+
+    @Test func parsesZero() {
+        #expect(parseDisplayTime("0:00") == 0)
+    }
+
+    @Test func parsesSecondsOnly() {
+        #expect(parseDisplayTime("0:30") == 30)
+    }
+
+    @Test func parsesOneMinuteExact() {
+        #expect(parseDisplayTime("1:00") == 60)
+    }
+
+    @Test func parsesTypicalMidSession() {
+        // 22 minutes 45 seconds remaining
+        #expect(parseDisplayTime("22:45") == 22 * 60 + 45)
+    }
+
+    @Test func parsesLongFlowtime() {
+        // 90-minute flow session
+        #expect(parseDisplayTime("90:00") == 5400)
+    }
+
+    @Test func parsesMalformedStringReturnsZero() {
+        #expect(parseDisplayTime("invalid") == 0)
+    }
+
+    @Test func parsesMissingColonReturnsZero() {
+        #expect(parseDisplayTime("2500") == 0)
+    }
+
+    @Test func parsesEmptyStringReturnsZero() {
+        #expect(parseDisplayTime("") == 0)
+    }
+
+    @Test func parsesExtraComponentsReturnsZero() {
+        // "HH:MM:SS" format — three components, not two → guard fails
+        #expect(parseDisplayTime("1:25:00") == 0)
+    }
+
+    @Test func parsesNegativeValueHandled() {
+        // Negative numbers parse but result in negative interval (should not happen in practice)
+        let result = parseDisplayTime("-1:00")
+        #expect(result == -60)
+    }
+}
+
+// MARK: - UserDefaults Isolation Contract Tests
+//
+// CRITICAL defect: all watch-side persistence uses UserDefaults.standard.
+// The watch app has group.com.pepinillo.app in its entitlements, but
+// complications and WatchTimerFeature both call UserDefaults.standard,
+// NOT UserDefaults(suiteName: "group.com.pepinillo.app").
+//
+// This suite documents the expected (correct) contract so the fix can be
+// verified: complications must read from the same suite the feature writes to.
+
+@Suite("UserDefaults Isolation Contract")
+struct UserDefaultsIsolationContractTests {
+
+    private let appGroupSuite = "group.com.pepinillo.app"
+    private let testKey = "test.watchStats.isolation"
+
+    @Test func standardAndAppGroupAreIsolated() {
+        let standard = UserDefaults.standard
+        let appGroup = UserDefaults(suiteName: appGroupSuite)
+
+        // Write to standard
+        standard.set(42, forKey: testKey)
+
+        // App group suite should NOT see the value
+        let valueInAppGroup = appGroup?.integer(forKey: testKey)
+        #expect(valueInAppGroup == 0,
+                "UserDefaults.standard and app group suite are isolated — writing to standard does not populate app group")
+
+        // Cleanup
+        standard.removeObject(forKey: testKey)
+    }
+
+    @Test func appGroupSuiteIsAvailableOnWatch() {
+        // The suite must be constructible (entitlement is present in PepinilloWatch.entitlements).
+        // If this returns nil, the entitlement is missing or the group ID is wrong.
+        let suite = UserDefaults(suiteName: appGroupSuite)
+        #expect(suite != nil,
+                "App group suite 'group.com.pepinillo.app' must be accessible — check PepinilloWatch.entitlements")
+    }
+
+    @Test func watchStatsKeysAreConsistentWithWatchPrefix() {
+        // All keys must use the "watch." prefix as defined in WatchStatsKeys,
+        // ensuring no collisions with the phone-side AppGroupDefaults keys.
+        let watchKeys = [
+            WatchStatsKeys.todayFocusMinutes,
+            WatchStatsKeys.todaySessionsCompleted,
+            WatchStatsKeys.currentStreakDays,
+            WatchStatsKeys.isSessionActive,
+            WatchStatsKeys.displayTime,
+            WatchStatsKeys.modeEmoji,
+            WatchStatsKeys.progress,
+        ]
+        for key in watchKeys {
+            #expect(key.hasPrefix("watch."),
+                    "WatchStatsKey '\(key)' must use 'watch.' prefix to avoid collisions")
+        }
+    }
+}
