@@ -120,8 +120,8 @@ struct AppFeature {
             switch self {
             case .focus:     return "brain.head.profile"
             case .plan:      return "checklist"
-            case .dashboard: return "chart.bar"
-            case .account:   return "ellipsis"
+            case .dashboard: return "chart.bar.fill"
+            case .account:   return "ellipsis.circle"
             }
         }
     }
