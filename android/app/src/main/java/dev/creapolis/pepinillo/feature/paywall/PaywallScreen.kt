@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -54,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -211,11 +213,12 @@ fun PaywallScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // ── PURCHASE BUTTON ──
+        // heightIn instead of fixed height so the label can wrap at large font scales
         Button(
             onClick = { activity?.let { viewModel.purchase(it) } },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .heightIn(min = 56.dp),
             shape = RoundedCornerShape(12.dp),
             enabled = uiState.selectedProductId != null && !uiState.isPurchasing,
             colors = ButtonDefaults.buttonColors(
@@ -382,11 +385,14 @@ private fun TierFeatureRow(
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface,
+                // Allow multi-line at XXXL font scale instead of silent clipping
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         if (comingSoon) {
