@@ -125,23 +125,28 @@ fun FocusScreen(
         label = "progress",
     )
     val sessionActive = uiState.isRunning || uiState.isPaused || uiState.isWaitingForNext
+    val primaryTimerActionVisual = when {
+        uiState.isRunning -> PrimaryTimerActionVisual.Pause
+        uiState.isPaused || uiState.isWaitingForNext -> PrimaryTimerActionVisual.PlayCompact
+        else -> PrimaryTimerActionVisual.StartExpanded
+    }
     val timerSize by animateFloatAsState(
         targetValue = if (sessionActive) 292f else 268f,
         animationSpec = tween(500),
         label = "timerSize",
     )
     val buttonWidth by animateDpAsState(
-        targetValue = if (sessionActive) 72.dp else 280.dp,
+        targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 280.dp else 72.dp,
         animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
         label = "buttonWidth",
     )
     val buttonHeight by animateDpAsState(
-        targetValue = if (sessionActive) 72.dp else 60.dp,
+        targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 60.dp else 72.dp,
         animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
         label = "buttonHeight",
     )
     val buttonCornerRadius by animateDpAsState(
-        targetValue = if (sessionActive) 36.dp else 30.dp,
+        targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 30.dp else 36.dp,
         animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
         label = "buttonCornerRadius",
     )
@@ -323,30 +328,52 @@ fun FocusScreen(
                         containerColor = animatedAccentColor,
                         contentColor = animatedOnAccentColor,
                     ),
-                    contentPadding = if (sessionActive) PaddingValues(0.dp) else ButtonDefaults.ContentPadding,
+                    contentPadding = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) {
+                        ButtonDefaults.ContentPadding
+                    } else {
+                        PaddingValues(0.dp)
+                    },
                 ) {
                     AnimatedContent(
-                        targetState = uiState.isRunning,
+                        targetState = primaryTimerActionVisual,
                         label = "startStop",
-                    ) { isRunning ->
-                        if (isRunning || uiState.isPaused) {
-                            Icon(
-                                imageVector = if (isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                contentDescription = if (isRunning) stringResource(R.string.btn_pause) else stringResource(R.string.btn_resume),
-                                modifier = Modifier.size(32.dp),
-                            )
-                        } else {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                    ) { visual ->
+                        when (visual) {
+                            PrimaryTimerActionVisual.Pause -> {
+                                Icon(
+                                    imageVector = Icons.Rounded.Pause,
+                                    contentDescription = stringResource(R.string.btn_pause),
+                                    modifier = Modifier.size(32.dp),
+                                )
+                            }
+
+                            PrimaryTimerActionVisual.PlayCompact -> {
                                 Icon(
                                     imageVector = Icons.Rounded.PlayArrow,
-                                    contentDescription = "Start timer",
+                                    contentDescription = if (uiState.isPaused) {
+                                        stringResource(R.string.btn_resume)
+                                    } else {
+                                        stringResource(R.string.cd_start_timer)
+                                    },
+                                    modifier = Modifier.size(32.dp),
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.btn_start_focus),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
+                            }
+
+                            PrimaryTimerActionVisual.StartExpanded -> {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.PlayArrow,
+                                        contentDescription = null,
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.btn_start_focus),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                         }
                     }
@@ -507,6 +534,12 @@ fun FocusScreen(
             },
         )
     }
+}
+
+private enum class PrimaryTimerActionVisual {
+    StartExpanded,
+    Pause,
+    PlayCompact,
 }
 
 @Composable
