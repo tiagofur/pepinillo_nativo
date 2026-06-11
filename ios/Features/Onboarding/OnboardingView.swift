@@ -84,8 +84,8 @@ struct OnboardingView: View {
         if currentPage < pages.count {
             accentColor = pages[currentPage].accentColor
         } else {
-            // Mode picker page — use the app green
-            accentColor = Color(red: 0.18, green: 0.72, blue: 0.44)
+            // Mode picker page — use stopwatch emerald token
+            accentColor = ModeColors.stopwatch
         }
 
         return GeometryReader { geo in
@@ -139,7 +139,7 @@ struct OnboardingView: View {
                         .fill(
                             (currentPage < pages.count
                              ? (currentPage < pages.count ? pages[currentPage].accentColor : Color.accentColor)
-                             : Color(red: 0.18, green: 0.72, blue: 0.44)).gradient
+                             : ModeColors.stopwatch).gradient
                         )
                 )
                 .shadow(
@@ -215,24 +215,21 @@ struct OnboardingPage {
             title: String(localized: "Choose Your Focus"),
             subtitle: String(localized: "4 modes, 1 goal"),
             description: String(localized: "Whether it's Pomodoro, Flowtime, or Time Blocks, we have the perfect scientific method to keep you in the zone."),
-            // Ocean blue — "flow into focus"
-            accentColor: Color(red: 0.20, green: 0.53, blue: 0.92)
+            accentColor: ModeColors.flowtime
         ),
         OnboardingPage(
             emoji: "✅",
             title: String(localized: "Organize Your Day"),
             subtitle: String(localized: "Integrated Task Manager"),
             description: String(localized: "Don't just track time; track progress. Plan your deep work sessions directly from your task list."),
-            // Amber/orange — energy & action
-            accentColor: Color(red: 1.00, green: 0.60, blue: 0.10)
+            accentColor: ModeColors.streak
         ),
         OnboardingPage(
             emoji: "📈",
             title: String(localized: "Analyze Your Growth"),
             subtitle: String(localized: "Dashboard & Insights"),
             description: String(localized: "Visualize your productivity streaks and deep work trends. Knowledge is power to improve your focus."),
-            // Emerald green — growth & progress
-            accentColor: Color(red: 0.18, green: 0.72, blue: 0.44)
+            accentColor: ModeColors.stopwatch
         )
     ]
 }
