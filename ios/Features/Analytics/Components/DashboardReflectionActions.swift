@@ -7,17 +7,20 @@
 import SwiftUI
 
 /// Two tappable cards that open the Weekly Review and Monthly Review sheets.
-/// Accepts plain closures — the parent wires the TCA actions.
+/// Accepts plain closures and optional live preview strings computed from real data.
 struct DashboardReflectionActions: View {
     let onWeeklyReview: () -> Void
     let onMonthlyReview: () -> Void
+    /// If set, replaces the generic subtitle with a data-driven preview line.
+    var weeklyPreview: String? = nil
+    var monthlyPreview: String? = nil
 
     var body: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 12)], spacing: 12) {
             ReflectionCard(
                 icon: "calendar.badge.clock",
                 title: String(localized: "Weekly Review"),
-                subtitle: String(localized: "Data & AI insights for your week"),
+                subtitle: weeklyPreview ?? String(localized: "Data & AI insights for your week"),
                 color: .orange,
                 action: onWeeklyReview
             )
@@ -26,7 +29,7 @@ struct DashboardReflectionActions: View {
             ReflectionCard(
                 icon: "calendar.badge.checkmark",
                 title: String(localized: "Monthly Review"),
-                subtitle: String(localized: "Data & AI insights for your month"),
+                subtitle: monthlyPreview ?? String(localized: "Data & AI insights for your month"),
                 color: .purple,
                 action: onMonthlyReview
             )
