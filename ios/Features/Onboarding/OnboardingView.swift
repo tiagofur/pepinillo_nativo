@@ -156,15 +156,16 @@ struct OnboardingView: View {
 
     private var getStartedPage: some View {
         ScrollView {
-            VStack(spacing: 32) {
-                VStack(spacing: 12) {
-                    Text("🥒")
-                        .font(.system(size: 80))
-                        .accessibilityHidden(true)
-                        .shadow(radius: 10)
-
-                    Text(String(localized: "Ready to focus?"))
-                        .font(.largeTitle.bold())
+            VStack(spacing: 24) {
+                // Header: cucumber badge inline with title
+                VStack(spacing: 8) {
+                    HStack(spacing: 10) {
+                        Text("🥒")
+                            .font(.system(size: 36))
+                            .accessibilityHidden(true)
+                        Text(String(localized: "Ready to focus?"))
+                            .font(.largeTitle.bold())
+                    }
 
                     Text(String(localized: "Choose your default focus style. You can change this later in settings."))
                         .font(.subheadline)
@@ -172,7 +173,7 @@ struct OnboardingView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                 }
-                .padding(.top, 60)
+                .padding(.top, 24)
                 .readableContent(maxWidth: 672)
 
                 // Mode selector cards — adaptive grid: 1 col iPhone, 2+ cols iPad
