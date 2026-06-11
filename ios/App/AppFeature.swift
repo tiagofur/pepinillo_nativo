@@ -53,6 +53,9 @@ struct AppFeature {
         var pendingExternalStartTaskID: String?
         var pendingExternalStartTimerStart: Date?
         var pendingExternalStartTimerEnd: Date?
+
+        // Watch bridge throttle — last elapsed value sent to Watch (1Hz gate)
+        var lastWatchSentElapsed: TimeInterval = -1
         var profileSummaryUser: CachedUserDTO? {
             func normalized(_ value: String?) -> String? {
                 guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
@@ -983,6 +986,13 @@ struct AppFeature {
             // MARK: - Watch State Bridge (iOS → Watch)
 
             case .focus(.timerTicked):
+                // Throttle to 1Hz: only send when a full second of elapsed time has passed.
+                // State transitions (pause/resume/stop/phaseCompleted) bypass this guard
+                // and send immediately via their own dedicated cases below.
+                let currentElapsed = state.focus.elapsedSeconds
+                let lastSent = state.lastWatchSentElapsed
+                guard currentElapsed - lastSent >= 1.0 else { return .none }
+                state.lastWatchSentElapsed = currentElapsed
                 let watchState = WatchSessionState(from: state.focus)
                 return .run { [watchClient, watchState] _ in
                     await watchClient.sendSessionState(watchState)

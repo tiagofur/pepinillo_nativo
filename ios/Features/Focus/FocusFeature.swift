@@ -577,7 +577,9 @@ struct FocusFeature {
                     AppGroupDefaults.activeSessionTaskTitle = taskTitle
                 }
 
-                // Update Live Activity + notification (notification every 30s)
+                // Throttle Live Activity to 1Hz (ActivityKit rate limits; display shows whole seconds).
+                // Notification update already runs every 30s.
+                guard significantChange else { return .none }
                 let displayTime = state.displayTime
                 let modeName = mode.rawValue
                 let phaseLabel = state.phaseLabel
