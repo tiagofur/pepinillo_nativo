@@ -19,9 +19,29 @@ private enum AppBootstrapTiming {
     // If the shared App Group store is corrupt or blocked by SQLite/SwiftData,
     // the app must fail open into a stable recovery store instead of sitting on
     // the splash/loading screen.
-    static let sharedStoreOpenTimeoutSeconds: TimeInterval = 3
+    //
+    // Adaptive timeout: if the WAL file is large (> 512 KB) the SQLite open
+    // must replay those frames before returning, which takes several seconds on
+    // a warm simulator and more on a cold device. We detect this at launch and
+    // give the open up to 12 s instead of the standard 3 s cliff.
+    // Once the WAL is checkpointed (which we now do before opening), subsequent
+    // cold launches will hit the 3 s baseline again.
+    static let walCheckpointThresholdBytes: Int = 512 * 1_024    // 512 KB
+    static let sharedStoreOpenTimeoutSecondsNormal: TimeInterval = 3
+    static let sharedStoreOpenTimeoutSecondsLargeWAL: TimeInterval = 12
     static let recoveryStoreOpenTimeoutSeconds: TimeInterval = 3
     static let inMemoryStoreOpenTimeoutSeconds: TimeInterval = 1.5
+
+    /// Returns the timeout appropriate for the current WAL state of the shared store.
+    /// After the first successful open+checkpoint the WAL will be small and this will
+    /// return the normal 3 s limit.
+    static var sharedStoreOpenTimeoutSeconds: TimeInterval {
+        let walBytes = walFileSizeBytes(for: AppGroup.storeURL)
+        if walBytes > walCheckpointThresholdBytes {
+            return sharedStoreOpenTimeoutSecondsLargeWAL
+        }
+        return sharedStoreOpenTimeoutSecondsNormal
+    }
 }
 
 private enum AppLaunchDefaults {
@@ -214,6 +234,10 @@ private final class AppBootstrap: ObservableObject {
 
     private func markBootstrapCompleted() {
         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: AppLaunchDefaults.bootstrapCompletedAtKey)
+        // Clear recovery-skip flag so the next cold launch re-attempts the shared store.
+        // Without this reset, a single timeout permanently routes all launches to the
+        // fallback store, causing split-brain (widget sees shared store, app writes to fallback).
+        UserDefaults.standard.removeObject(forKey: AppLaunchDefaults.useRecoveryStoreKey)
     }
 
     private func markSharedStoreFailed() {
@@ -262,6 +286,12 @@ struct PepinilloApp: App {
                             store.send(.appBecameActive)
                         case .background:
                             store.send(.appWentToBackground)
+                            // Checkpoint the WAL on background so the next cold launch does
+                            // not need to replay a large WAL file before the store is readable.
+                            // Uses a low-priority global queue so it does not delay backgrounding.
+                            DispatchQueue.global(qos: .utility).async {
+                                checkpointWAL(at: AppGroup.storeURL)
+                            }
                         default:
                             break
                         }

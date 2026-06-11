@@ -18,6 +18,7 @@
 import Foundation
 import SwiftData
 import OSLog
+import SQLite3
 
 private let persistenceLogger = Logger(subsystem: "com.pepinillo.app", category: "persistence")
 
@@ -595,14 +596,23 @@ enum AppGroupDefaults {
 /// fresh local store file and leaves the legacy file untouched for later recovery.
 func makeSharedModelContainer() throws -> ModelContainer {
     try ensureDirectoryExists(for: AppGroup.storeURL)
+    let walBytes = walFileSizeBytes(for: AppGroup.storeURL)
+    if walBytes > 0 {
+        persistenceLogger.info("Shared store WAL size before open: \(walBytes) bytes — checkpointing now")
+        // Checkpoint before opening SwiftData so the migration plan evaluator sees
+        // a near-empty WAL and does not need to replay potentially megabytes of frames.
+        checkpointWAL(at: AppGroup.storeURL)
+        let walBytesAfter = walFileSizeBytes(for: AppGroup.storeURL)
+        persistenceLogger.info("Shared store WAL size after checkpoint: \(walBytesAfter) bytes")
+    }
     persistenceLogger.info("Opening shared ModelContainer at: \(AppGroup.storeURL.path, privacy: .public)")
     do {
         return try makeModelContainer(at: AppGroup.storeURL)
     } catch {
         persistenceLogger.error("Failed to open shared ModelContainer: \(String(describing: error), privacy: .public)")
-        
+
         try quarantineCorruptedStoreIfPresent()
-        
+
         persistenceLogger.info("Retrying shared ModelContainer after quarantine...")
         do {
             return try makeModelContainer(at: AppGroup.storeURL)
@@ -718,5 +728,81 @@ private func ensureDirectoryExists(for storeURL: URL) throws {
     let directory = storeURL.deletingLastPathComponent()
     if fileManager.fileExists(atPath: directory.path) == false {
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
+    }
+}
+
+// MARK: - WAL Utilities
+
+/// Returns the on-disk byte size of the SQLite WAL sidecar for `storeURL`,
+/// or 0 if the WAL file is absent or unreadable.
+func walFileSizeBytes(for storeURL: URL) -> Int {
+    let walURL = URL(fileURLWithPath: storeURL.path + "-wal")
+    let size = (try? FileManager.default.attributesOfItem(atPath: walURL.path)[.size] as? Int) ?? 0
+    return size
+}
+
+/// Issues a passive WAL checkpoint against the SQLite file at `storeURL`.
+///
+/// A passive checkpoint writes as many WAL frames as possible without waiting
+/// for readers to vacate, then returns immediately. It is safe to call from any
+/// thread and from any process that shares the WAL (the widget/intents extension),
+/// because SQLite file-coordination serialises concurrent checkpoints.
+///
+/// Call this:
+///  • After a successful ModelContainer open (so the next cold launch reads a
+///    near-empty WAL instead of replaying megabytes).
+///  • When the app enters background (via `scenePhase` change in AppBootstrap).
+///
+/// If the checkpoint fails (e.g. a reader has a long-lived transaction) it logs
+/// the WAL page counts and returns without throwing; the WAL is still valid.
+func checkpointWAL(at storeURL: URL) {
+    let path = storeURL.path
+    var db: OpaquePointer?
+    // Open read-write (no CREATE) — WAL checkpoint requires write access to
+    // copy frames from the WAL into the main database file.
+    // NOMUTEX is safe here because this function is only called from one thread at a time.
+    let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_URI | SQLITE_OPEN_NOMUTEX
+    guard sqlite3_open_v2(path, &db, flags, nil) == SQLITE_OK, let db else {
+        persistenceLogger.warning("checkpointWAL: could not open '\(path, privacy: .public)' read-write — skipping checkpoint")
+        return
+    }
+    defer { sqlite3_close(db) }
+
+    // Ensure the connection uses WAL mode. This is a no-op if WAL mode is
+    // already active (the existing WAL file causes the connection to adopt it
+    // automatically); it enables WAL if the file was created without it.
+    sqlite3_exec(db, "PRAGMA journal_mode=WAL", nil, nil, nil)
+
+    var logSize: Int32 = 0
+    var framesCheckpointed: Int32 = 0
+    // TRUNCATE: after checkpointing, reset the WAL file to zero length so the
+    // next open does not need to replay any frames. Requires no active readers,
+    // but is non-blocking — if a reader holds the WAL it returns SQLITE_BUSY and
+    // we fall through gracefully.
+    let rc = sqlite3_wal_checkpoint_v2(
+        db,
+        nil,                        // checkpoint all attached databases
+        SQLITE_CHECKPOINT_TRUNCATE,  // compact WAL to zero after checkpointing
+        &logSize,
+        &framesCheckpointed
+    )
+    if rc == SQLITE_OK {
+        persistenceLogger.info("WAL checkpoint (TRUNCATE) complete: \(framesCheckpointed)/\(logSize) frames flushed")
+        let walBytesAfter = walFileSizeBytes(for: storeURL)
+        persistenceLogger.info("WAL size after TRUNCATE checkpoint: \(walBytesAfter) bytes")
+    } else if rc == SQLITE_BUSY {
+        // A reader is holding the WAL — try PASSIVE (non-blocking, leaves WAL as-is)
+        let rcPassive = sqlite3_wal_checkpoint_v2(
+            db, nil, SQLITE_CHECKPOINT_PASSIVE, &logSize, &framesCheckpointed
+        )
+        if rcPassive == SQLITE_OK {
+            persistenceLogger.info("WAL checkpoint (PASSIVE fallback): \(framesCheckpointed)/\(logSize) frames flushed")
+        } else {
+            let msg = String(cString: sqlite3_errmsg(db))
+            persistenceLogger.warning("WAL checkpoint PASSIVE fallback returned \(rcPassive): \(msg, privacy: .public)")
+        }
+    } else {
+        let msg = String(cString: sqlite3_errmsg(db))
+        persistenceLogger.warning("WAL checkpoint returned \(rc): \(msg, privacy: .public) (log=\(logSize) frames=\(framesCheckpointed))")
     }
 }
