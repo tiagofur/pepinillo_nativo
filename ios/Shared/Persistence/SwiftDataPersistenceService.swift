@@ -848,23 +848,19 @@ public final class SwiftDataPersistenceService {
     // MARK: - Wipe Operations
 
     public func deleteAllTasks() throws {
-        let descriptor = FetchDescriptor<TaskItem>()
-        let tasks = try context.fetch(descriptor)
-        for task in tasks { context.delete(task) }
+        // Batch delete — iOS 17+ SwiftData API; avoids fetch-then-loop row-by-row cost.
+        try context.delete(model: SubTask.self)
+        try context.delete(model: TaskItem.self)
         try context.save()
     }
 
     public func deleteAllSessions() throws {
-        let descriptor = FetchDescriptor<FocusSessionRecord>()
-        let sessions = try context.fetch(descriptor)
-        for session in sessions { context.delete(session) }
+        try context.delete(model: FocusSessionRecord.self)
         try context.save()
     }
 
     public func deleteAllStats() throws {
-        let descriptor = FetchDescriptor<DailyStats>()
-        let stats = try context.fetch(descriptor)
-        for stat in stats { context.delete(stat) }
+        try context.delete(model: DailyStats.self)
         try context.save()
     }
 
