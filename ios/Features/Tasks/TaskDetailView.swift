@@ -254,9 +254,17 @@ struct TaskDetailView: View {
                 Button {
                     store.send(.dueDateChanged(Calendar.current.date(byAdding: .day, value: 1, to: .now)))
                 } label: {
-                    Label(String(localized: "Add Due Date"), systemImage: "calendar.badge.plus")
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 12) {
+                        Label(String(localized: "Add due date"), systemImage: "calendar.badge.plus")
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
         }
         .padding(16)
@@ -310,25 +318,49 @@ struct TaskDetailView: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .fixedSize()
                 }
 
                 Divider().opacity(0.1)
 
                 planEditorRow(String(localized: "Pomodoros"), systemImage: "timer") {
-                    HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        // Decrement — ≥44pt target
+                        Button {
+                            let current = store.estimatedPomodoros
+                            if current > 1 { store.send(.estimatedPomodorosChanged(current - 1)) }
+                        } label: {
+                            Image(systemName: "minus")
+                                .font(.body.weight(.semibold))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(store.estimatedPomodoros <= 1 ? Color.secondary : Color.primary)
+                        .disabled(store.estimatedPomodoros <= 1)
+                        .accessibilityLabel(String(localized: "Decrease pomodoros"))
+
                         Text("\(store.estimatedPomodoros)")
                             .font(NumericFont.inline())
                             .foregroundStyle(.primary)
-                        
-                        Stepper(
-                            "\(store.estimatedPomodoros)",
-                            value: Binding(
-                                get: { store.estimatedPomodoros },
-                                set: { store.send(.estimatedPomodorosChanged($0)) }
-                            ),
-                            in: 1...8
-                        )
-                        .labelsHidden()
+                            .frame(minWidth: 24, alignment: .center)
+
+                        // Increment — ≥44pt target
+                        Button {
+                            let current = store.estimatedPomodoros
+                            if current < 8 { store.send(.estimatedPomodorosChanged(current + 1)) }
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.body.weight(.semibold))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(store.estimatedPomodoros >= 8 ? Color.secondary : Color.primary)
+                        .disabled(store.estimatedPomodoros >= 8)
+                        .accessibilityLabel(String(localized: "Increase pomodoros"))
                     }
                 }
 
