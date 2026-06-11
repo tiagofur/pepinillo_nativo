@@ -58,12 +58,17 @@ fun CircularTimerRing(
             style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round),
         )
         
+        // Display floor: when the session is running but progress is ~0 (count-up modes
+        // such as Flow and Chrono start empty), draw a minimum 2% sweep so the ring never
+        // reads as idle. Mirrors the iOS "ensure count-up ring reads active" fix.
+        val displayProgress = if (isRunning && progress < 0.02f) 0.02f else progress
+
         // Subtle pulse glow behind the progress arc
-        if (isRunning && progress > 0f && progress < 1f) {
+        if (isRunning && displayProgress > 0f && displayProgress < 1f) {
             drawArc(
                 color = ringColor.copy(alpha = pulseAlpha * 0.4f),
                 startAngle = -90f,
-                sweepAngle = 360f * progress.coerceIn(0f, 1f),
+                sweepAngle = 360f * displayProgress.coerceIn(0f, 1f),
                 useCenter = false,
                 topLeft = topLeft,
                 size = arcSize,
@@ -72,11 +77,11 @@ fun CircularTimerRing(
         }
 
         // Progress arc
-        if (progress > 0f) {
+        if (displayProgress > 0f) {
             drawArc(
                 color = ringColor,
                 startAngle = -90f,
-                sweepAngle = 360f * progress.coerceIn(0f, 1f),
+                sweepAngle = 360f * displayProgress.coerceIn(0f, 1f),
                 useCenter = false,
                 topLeft = topLeft,
                 size = arcSize,
