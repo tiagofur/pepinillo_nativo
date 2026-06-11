@@ -49,8 +49,16 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             )
             let todayStats = try context.fetch(todayDescriptor).first
 
-            // Fetch all-time stats for protected streak computation
-            let allTimeDescriptor = FetchDescriptor<DailyStats>()
+            // Fetch stats for protected streak computation.
+            // StreakProtectionService walks at most 730 days back; fetching 731
+            // days is sufficient and avoids an unbounded table scan.
+            let streakLookbackStart = Calendar.current.date(
+                byAdding: .day, value: -731, to: today
+            ) ?? Date.distantPast
+            let allTimeDescriptor = FetchDescriptor<DailyStats>(
+                predicate: #Predicate { $0.date >= streakLookbackStart },
+                sortBy: [SortDescriptor(\.date)]
+            )
             let allTimeStats = (try? context.fetch(allTimeDescriptor)) ?? []
 
             // Fetch user preferences for default mode and Pro status

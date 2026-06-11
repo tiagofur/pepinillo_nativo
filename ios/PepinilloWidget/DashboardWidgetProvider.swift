@@ -106,8 +106,15 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             let todayMinutes = todayStats?.totalFocusMinutes ?? 0
             let todaySessions = todayStats?.sessionsCompleted ?? 0
 
-            // Streak — fetch all-time stats for protected streak computation
-            let allTimeDescriptor = FetchDescriptor<DailyStats>()
+            // Streak — fetch stats for protected streak computation.
+            // StreakProtectionService walks at most 730 days; 731 days is sufficient.
+            let streakLookbackStart = calendar.date(
+                byAdding: .day, value: -731, to: today
+            ) ?? Date.distantPast
+            let allTimeDescriptor = FetchDescriptor<DailyStats>(
+                predicate: #Predicate { $0.date >= streakLookbackStart },
+                sortBy: [SortDescriptor(\.date)]
+            )
             let allTimeStats = (try? context.fetch(allTimeDescriptor)) ?? []
             let isPro = AppGroupDefaults.isProUser
             var focusByDay: [Date: Bool] = [:]
