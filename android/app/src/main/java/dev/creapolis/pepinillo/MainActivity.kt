@@ -32,8 +32,10 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -209,6 +211,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PepinilloApp(
     prefsRepository: UserPreferencesRepository,
@@ -220,7 +223,8 @@ fun PepinilloApp(
 
     // Hide bottom bar on non-top-level screens (like Profile, Auth) or when in PiP
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
-    val showBottomBar = currentRoute in topLevelRoutes && !isPipMode
+    val isImeVisible = WindowInsets.isImeVisible
+    val showBottomBar = currentRoute in topLevelRoutes && !isPipMode && !isImeVisible
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -344,6 +348,7 @@ fun PepinilloApp(
                     onSignInClick = { navController.navigate("login") },
                     onCreateAccountClick = { navController.navigate("register") },
                     onSettingsClick = { navController.navigate("settings") },
+                    onAppSetupClick = { navController.navigate("app_setup") },
                     onExportClick = { navController.navigate("export") },
                     onHelpSupportClick = { navController.navigate("help") },
                     onAboutClick = { navController.navigate("about") },
