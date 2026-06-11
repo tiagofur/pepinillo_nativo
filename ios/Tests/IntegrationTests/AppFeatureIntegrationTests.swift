@@ -93,6 +93,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.soundscapeClient.play = { _, _ in }
             $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -455,6 +456,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -478,6 +480,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -512,6 +515,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -585,6 +589,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
