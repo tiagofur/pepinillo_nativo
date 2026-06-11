@@ -331,6 +331,14 @@ struct FocusFeature {
                             durationMinutes = 60 // default for open-ended modes
                         }
                         try? await calendarClient.createFocusEvent(title, Date.now, durationMinutes, mode.rawValue)
+                    },
+                    // Request notification permission at first session start (contextual moment).
+                    // Fires at most once; denied permission doesn't affect session flow.
+                    .run { [notificationClient] _ in
+                        let key = "pepinillo.hasRequestedNotificationPermission"
+                        guard !UserDefaults.standard.bool(forKey: key) else { return }
+                        UserDefaults.standard.set(true, forKey: key)
+                        _ = await notificationClient.requestAuthorization()
                     }
                 )
 
