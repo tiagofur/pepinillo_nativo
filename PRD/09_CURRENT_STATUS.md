@@ -3,7 +3,7 @@
 **Date:** 2026-03-24  
 **Version:** 3.0.0  
 **Status:** Active Development  
-**Last Updated:** 2026-04-21  
+**Last Updated:** 2026-06-11  
 **Update Cadence:** Per sprint
 
 ---
@@ -186,10 +186,12 @@
 | ✅ AI Reports enabled              | DONE  | `AppConfig.aiInsightsEnabled = true`; Apple Foundation Models + template fallback active |
 | ✅ CSV/PDF Export                  | DONE  | Export to CSV and PDF implemented and Pro-gated (`ios/Features/Account/ExportView.swift`) |
 | ✅ Streak Protection (1 skip/week) | DONE  | `StreakProtectionService` shared by app + widgets + watch bridge (`ios/Domain/Services/`) |
+| ✅ Dashboard P4 design package (7-day chart hero) | DONE | Streak hero, 7-day bar chart with avg rule, compact stats row, review rows with live preview lines, toolbar menu — `ios/Features/Dashboard/DashboardView.swift` |
+| ✅ Compact stats / chart alignment bug fix | DONE | `DashboardCompactStats` now reads `weekFormattedTotalTime` / `weekSessionsCompleted` (both derived from `weekChartData`); stats and chart always show the same 7-day window regardless of period picker. Unit test added: `weekPeriodChartSumMatchesTotals` in `AnalyticsFeatureTests`. |
+| ✅ Demo data verification | DONE | `-seedDemoData` verified with simulator: Dashboard, AI Reports, charts all display correctly. Math check: avg (~8h29m) × 7 = "59h 25m" matches compact stats row and Revisión Semanal preview. |
 | Paywall redesign for Pepinillo+ / Everywhere/AI+ | P0 | Two-tier paywall: one-time vs subscription, Próximamente section |
 | RevenueCat entitlement reconfiguration | P0     | Map `pro.lifetime` → `pepinillo_plus`, `pro.monthly`/`pro.annual` → `everywhere_plus` |
 | App Store Connect metadata update | P0       | New names, descriptions, and screenshots for the 3 products |
-| Demo data verification | P0       | Run `-seedDemoData` and verify Dashboard, AI Reports, charts all display correctly |
 | Feature gating enforcement | ✅ Done   | Legacy single-pro gating is in place; entitlement names updated for new tiers |
 | Xcode setup (non-code)              | P0       | App Group, CloudKit container, StoreKit config, targets, SPM, Info.plist, audio assets, localization |
 | macOS target                        | P2       | Included in roadmap but not implemented                                                                |
