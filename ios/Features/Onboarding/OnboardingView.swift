@@ -51,10 +51,11 @@ struct OnboardingView: View {
                             withAnimation(.easeInOut(duration: 0.4)) { currentPage = pages.count }
                         }
                         .font(.subheadline.bold())
-                        .foregroundStyle(.white.opacity(0.85))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .contentShape(Rectangle())
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(.black.opacity(0.22), in: Capsule())
+                        .contentShape(Capsule())
                         .padding(.horizontal, 16)
                         .padding(.top, 56)
                         .accessibilityLabel(String(localized: "Skip onboarding"))
