@@ -6,9 +6,6 @@
 
 import Foundation
 import ComposableArchitecture
-#if os(iOS)
-import UIKit
-#endif
 
 // MARK: - PaywallFeature
 
@@ -117,12 +114,7 @@ struct PaywallFeature {
                     )
                     // P2 item 6a: success notification haptic on purchase completion
                     return .run { _ in
-                        #if os(iOS)
-                        await MainActor.run {
-                            let generator = UINotificationFeedbackGenerator()
-                            generator.notificationOccurred(.success)
-                        }
-                        #endif
+                        await HapticManager.notification(.success)
                     }
                 case .pending:
                     state.purchaseResult = State.PurchaseResultAlert(
