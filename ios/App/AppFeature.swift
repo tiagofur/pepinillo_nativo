@@ -362,8 +362,12 @@ struct AppFeature {
                         }
                     }
                     .cancellable(id: CancelID.transactionListener),
-                    // Notification permission
+                    // Notification permission — skip in demo/seeder mode to avoid
+                    // blocking the UI during screenshot sessions.
                     .run { send in
+                        #if DEBUG
+                        guard !CommandLine.arguments.contains("-seedDemoData") else { return }
+                        #endif
                         try? await Task.sleep(for: .seconds(2))
                         await send(.requestNotificationPermission)
                     },

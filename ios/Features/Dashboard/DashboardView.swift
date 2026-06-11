@@ -52,10 +52,10 @@ struct DashboardView: View {
                         theme: theme
                     )
 
-                    // 3. Compact stats row — single source of truth
+                    // 3. Compact stats row — always 7-day totals to match the chart above.
                     DashboardCompactStats(
-                        formattedTotalTime: formattedTotalTime,
-                        sessionsCompleted: store.sessionsCompleted,
+                        formattedTotalTime: weekFormattedTotalTime,
+                        sessionsCompleted: weekSessionsCompleted,
                         theme: theme
                     )
 
@@ -168,6 +168,21 @@ struct DashboardView: View {
             return String(localized: "\(hours)h \(minutes)m")
         }
         return String(localized: "\(minutes)m")
+    }
+
+    /// Total focus minutes for the last 7 days (matches the 7-day spark chart, always).
+    private var weekTotalMinutes: Int {
+        weekChartData.reduce(0) { $0 + $1.totalMinutes }
+    }
+
+    /// Formatted focus time for the last 7 days — used by the compact stats row.
+    private var weekFormattedTotalTime: String {
+        formatMinutes(weekTotalMinutes)
+    }
+
+    /// Session count for the last 7 days — used by the compact stats row.
+    private var weekSessionsCompleted: Int {
+        weekChartData.reduce(0) { $0 + $1.sessionsCompleted }
     }
 
     /// Live preview line for the Weekly Review row.
