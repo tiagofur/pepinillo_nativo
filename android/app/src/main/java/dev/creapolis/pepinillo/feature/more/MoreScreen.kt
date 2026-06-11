@@ -26,6 +26,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PersonAdd
+import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.HorizontalDivider
@@ -55,6 +56,7 @@ fun MoreScreen(
     onSignInClick: () -> Unit = {},
     onCreateAccountClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {},
+    onAppSetupClick: () -> Unit = {},
     onExportClick: () -> Unit = {},
     onHelpSupportClick: () -> Unit = {},
     onAboutClick: () -> Unit = {},
@@ -132,6 +134,13 @@ fun MoreScreen(
                     subtitle = stringResource(R.string.more_desc_settings),
                     icon = Icons.Rounded.Settings,
                     onClick = onSettingsClick,
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                ActionCard(
+                    title = stringResource(R.string.settings_app_setup),
+                    subtitle = stringResource(R.string.more_desc_permissions_background),
+                    icon = Icons.Rounded.Security,
+                    onClick = onAppSetupClick,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 ActionCard(

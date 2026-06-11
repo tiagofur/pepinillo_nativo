@@ -762,16 +762,21 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
+        SectionHeader(icon = Icons.Rounded.Security, title = stringResource(R.string.settings_sec_operation))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        SettingsCard {
+            NavigationRow(label = stringResource(R.string.settings_app_setup), onClick = onNavigateToAppSetup)
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
         // ── ABOUT SECTION ──
         SectionHeader(icon = Icons.Rounded.Info, title = stringResource(R.string.settings_sec_about))
         Spacer(modifier = Modifier.height(12.dp))
 
         SettingsCard {
             NavigationRow(label = stringResource(R.string.settings_version), trailing = uiState.appVersion)
-            if (!hasPermissionIssues) {
-                SettingsDivider()
-                NavigationRow(label = stringResource(R.string.settings_app_setup), onClick = onNavigateToAppSetup)
-            }
             SettingsDivider()
                 NavigationRow(
                     label = stringResource(R.string.settings_privacy),
