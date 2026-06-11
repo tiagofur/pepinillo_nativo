@@ -27,12 +27,12 @@ struct DataMergeView: View {
                 Button(String(localized: "datamerge.merge.button", defaultValue: "Merge Data")) { onMerge() }
                     .buttonStyle(.borderedProminent)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(minHeight: 52)
 
                 Button(String(localized: "datamerge.accountonly.button", defaultValue: "Use Account Only")) { onUseAccountOnly() }
                     .buttonStyle(.bordered)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(minHeight: 52)
             }
         }
         .padding(24)

@@ -103,7 +103,7 @@ struct EditProfileView: View {
                     }
                     .font(.headline)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 52)
+                    .frame(minHeight: 52)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(store.isLoading || store.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

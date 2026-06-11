@@ -413,7 +413,7 @@ struct PaywallPurchaseButton: View {
             }
             .font(.headline.weight(.semibold))
             .frame(maxWidth: .infinity)
-            .frame(height: 58)
+            .frame(minHeight: 58)
             .paywallPrimaryActionGlass(glassNamespace: glassNamespace)
         }
         .frame(maxWidth: 480)

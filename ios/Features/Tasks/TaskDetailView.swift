@@ -496,7 +496,7 @@ struct TaskDetailView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 56)
+                .frame(minHeight: 56)
                 .background(store.isCompleted ? Color.pepinilloSystemFill : Color.accentColor)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: (store.isCompleted ? Color.clear : Color.accentColor.opacity(0.3)), radius: 8, y: 4)

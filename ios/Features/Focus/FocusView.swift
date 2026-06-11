@@ -589,7 +589,7 @@ struct FocusView: View {
                     }
                     .font(.title3)
                     .frame(maxWidth: 280)
-                    .frame(height: 64)
+                    .frame(minHeight: 64)
                     .primaryFocusActionGlass(tint: modeColor, namespace: glassNS)
                 }
                 .buttonStyle(.pressable)

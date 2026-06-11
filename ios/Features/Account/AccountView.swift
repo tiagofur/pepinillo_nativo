@@ -194,7 +194,7 @@ struct AccountView: View {
             }
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .adaptiveGlassCapsule(id: "apple-auth-account", namespace: buttonNamespace)
             .overlay {
                 Capsule()
@@ -242,7 +242,7 @@ struct AccountView: View {
             .signInWithAppleButtonStyle(currentColorScheme == .dark ? .black : .white)
             .opacity(0.015)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(minHeight: 50)
         }
         .contentShape(Capsule())
     }
@@ -258,7 +258,7 @@ struct AccountView: View {
             .font(.subheadline.weight(.bold))
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .adaptiveGlassCapsule(id: "email-login", namespace: buttonNamespace)
             .overlay {
                 Capsule()

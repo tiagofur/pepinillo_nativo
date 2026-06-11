@@ -282,7 +282,7 @@ struct AuthView: View {
             .font(.subheadline.weight(.bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(
                 theme.pomodoroColor.gradient,
                 in: Capsule()
