@@ -1,7 +1,7 @@
 # Pepinillo — Unified Features Document
 
 **Version:** 1.3  
-**Last Updated:** 2026-04-21  
+**Last Updated:** 2026-06-11  
 **Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS  
 **Author:** Tiago David + Claude Code  
 **Status:** Active
@@ -907,7 +907,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 
 ## Cross-Platform Parity Notes
 
-1. **Enhanced Wear OS and watchOS tiles/widgets**: Wear OS now has two rich tiles (Focus Timer with progress arc + Tasks with top 4 tasks) and enhanced complications with live countdown. watchOS Smart Stack widgets were redesigned with live countdowns, phase info, linked task names, and smart relevance scoring. watchOS now also has a Tasks complication (accessoryRectangular, accessoryCircular, accessoryCorner). Both platforms persist extended snapshot data (linked task, session count, theme colors, phase dates) for tile/widget access. Pomodoro live countdown verified working on both platforms (Wear OS tile updates live; watchOS complication shows countdown even at progress=0).
+1. **Enhanced Wear OS and watchOS tiles/widgets**: Wear OS now has two rich tiles (Focus Timer with progress arc + Tasks with top 4 tasks) and enhanced complications with live countdown. watchOS Smart Stack widgets were redesigned with live countdowns, phase info, linked task names, and smart relevance scoring. watchOS now also has a Tasks complication (accessoryRectangular, accessoryCircular, accessoryCorner). Both platforms persist extended snapshot data (linked task, session count, theme colors, phase dates) for tile/widget access. Pomodoro live countdown verified working on both platforms (Wear OS tile updates live; watchOS complication shows countdown even at progress=0). **watchOS complications and widgets now read from the shared app group UserDefaults suite (`group.com.pepinillo.app`) so they remain accurate when running as a separate process.**
 
 2. **iOS is ahead in ecosystem integrations**: Widgets, Live Activity, Siri, Calendar, Control Center, Mode Intelligence, and Soundscapes are already implemented on iOS. Android still has pending work for widgets, Quick Settings, Assistant, and Soundscapes.
 
@@ -924,3 +924,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 8. **Social login planned**: Google Sign-In (Android via Credential Manager) and Sign In with Apple (iOS via AuthenticationServices) are planned. Backend must add OAuth providers. Account linking will allow multiple providers per account.
 
 9. **Unified cloud sync architecture achieved**: Both iOS and Android now have full sync architecture via Go backend. iOS uses TCA-based sync clients (SyncClient, IdentityClient, WebSocketClient) with URLSession. Android uses SyncEngine + Room dirty flags + SyncWebSocketClient (OkHttp). Both platforms support: settings sync (per-key LWW), batch session sync, initial upload on registration, cursor-paginated full sync for new devices, WebSocket real-time notifications, and data merge dialogs for anonymous-to-existing-account transitions. Commercially, backend sync now maps to `Everywhere`, while iOS retains CloudKit as Apple-local sync under Apple Unlock.
+
+10. **WatchConnectivity transport reliability (iOS/watchOS, 2026-06-11)**: Phone→watch updates were previously all sent via `sendMessage`, which is silently dropped when the watch app is backgrounded. Fixed with a transport split: `updateApplicationContext` for state/stats/dashboard (background-safe), `transferUserInfo` for tasks (queued FIFO), `sendMessage` kept only as a fast path when the watch is reachable. This resolves stale complications and dashboard data after the watch app goes to background. Android Wear was already correct — DataClient/DataItems handle background delivery natively.
+
+11. **Android parity ports (2026-06-11)**: Focus engine tick reduced 10 Hz → 4 Hz (battery, matches iOS). Widget reloads scoped to the affected widget class. Paywall text and CTAs now grow with large font scales (matches iOS Dynamic Type fix, WCAG compliant). Streak promoted to dashboard emotional hero and deduplicated (matches iOS Dashboard P4 design). Timer ring display floor added for count-up modes on both Android phone and Wear OS (matches iOS). Onboarding now uses full-bleed color scenes with a WCAG-compliant skip pill (matches iOS onboarding visual redesign).
