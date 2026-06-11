@@ -188,9 +188,18 @@ struct WatchTimerFeature {
     }
 
     // MARK: - UserDefaults Persistence (for Complications)
+    //
+    // Complications run in a separate process (WidgetKit extension).
+    // UserDefaults.standard is NOT shared across processes.
+    // All watch-side persistence MUST use the app group suite so complications
+    // can read the same values the watch app writes.
+
+    private static var appGroupDefaults: UserDefaults? {
+        UserDefaults(suiteName: "group.com.pepinillo.app")
+    }
 
     private static func persistStats(minutes: Int, sessions: Int, streak: Int) {
-        let defaults = UserDefaults.standard
+        guard let defaults = appGroupDefaults else { return }
         defaults.set(minutes, forKey: WatchStatsKeys.todayFocusMinutes)
         defaults.set(sessions, forKey: WatchStatsKeys.todaySessionsCompleted)
         defaults.set(streak, forKey: WatchStatsKeys.currentStreakDays)
@@ -205,7 +214,7 @@ struct WatchTimerFeature {
         progress: Double?,
         pomodoroNumber: Int?
     ) {
-        let defaults = UserDefaults.standard
+        guard let defaults = appGroupDefaults else { return }
         defaults.set(isActive, forKey: WatchStatsKeys.isSessionActive)
         defaults.set(displayTime, forKey: WatchStatsKeys.displayTime)
         defaults.set(modeEmoji, forKey: WatchStatsKeys.modeEmoji)

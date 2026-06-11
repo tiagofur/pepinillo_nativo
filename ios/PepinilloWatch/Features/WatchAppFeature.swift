@@ -162,9 +162,16 @@ struct WatchAppFeature {
     }
 
     // MARK: - UserDefaults Persistence (for Tasks Complication)
+    //
+    // Must use the app group suite — complications are a separate process and
+    // cannot read UserDefaults.standard written by the watch app.
+
+    private static var appGroupDefaults: UserDefaults? {
+        UserDefaults(suiteName: "group.com.pepinillo.app")
+    }
 
     private static func persistTasksForComplication(_ tasks: [WatchTaskItem]) {
-        let defaults = UserDefaults.standard
+        guard let defaults = appGroupDefaults else { return }
         let completedCount = tasks.filter(\.isCompleted).count
         defaults.set(completedCount, forKey: WatchStatsKeys.tasksCompletedCount)
         defaults.set(tasks.count, forKey: WatchStatsKeys.tasksTotalCount)

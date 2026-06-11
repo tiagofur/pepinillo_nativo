@@ -74,9 +74,10 @@ struct TasksComplicationProvider: TimelineProvider {
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
-    /// Reads persisted task data from UserDefaults (written by WatchAppFeature on tasks received).
+    /// Reads persisted task data from the app group UserDefaults suite
+    /// (written by WatchAppFeature; must use the same suite for cross-process reads).
     private func buildEntry() -> TasksComplicationEntry {
-        let defaults = UserDefaults.standard
+        let defaults = UserDefaults(suiteName: "group.com.pepinillo.app") ?? .standard
         let completedCount = defaults.integer(forKey: WatchStatsKeys.tasksCompletedCount)
         let totalCount = defaults.integer(forKey: WatchStatsKeys.tasksTotalCount)
 
