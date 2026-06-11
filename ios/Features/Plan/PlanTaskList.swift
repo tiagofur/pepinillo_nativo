@@ -17,6 +17,8 @@ struct PlanTaskList: View {
     var heroNamespace: Namespace.ID? = nil
     @State private var collapsedSections: Set<PlanFilter> = []
     @State private var taskToDelete: UUID?
+    @State private var quickAddExpanded: Bool = false
+    @FocusState private var quickAddFocused: Bool
 
     // MARK: - Filtered tasks
 
@@ -226,43 +228,83 @@ struct PlanTaskList: View {
         }
     }
 
-    // MARK: - Add Task Bar
+    // MARK: - Quick-Add Row (minimal expanding)
 
     private var addTaskBar: some View {
-        HStack(spacing: 12) {
-            TextField(
-                String(localized: "Add a task…"),
-                text: Binding(
-                    get: { store.newTaskTitle },
-                    set: { store.send(.newTaskTitleChanged($0)) }
-                )
-            )
-            .textFieldStyle(.plain)
-            .submitLabel(.done)
-            .onSubmit { store.send(.addTaskTapped) }
-            .padding(.horizontal, 12)
-            .frame(height: 36)
-            .background(.quaternary.opacity(0.6), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile))
+        Group {
+            if quickAddExpanded {
+                // Expanded: inline text field + submit button pinned to keyboard
+                HStack(spacing: 10) {
+                    TextField(
+                        String(localized: "New task"),
+                        text: Binding(
+                            get: { store.newTaskTitle },
+                            set: { store.send(.newTaskTitleChanged($0)) }
+                        )
+                    )
+                    .textFieldStyle(.plain)
+                    .submitLabel(.done)
+                    .focused($quickAddFocused)
+                    .onSubmit {
+                        store.send(.addTaskTapped)
+                        collapseQuickAdd()
+                    }
 
-            Button {
-                HapticManager.impact(.light)
-                store.send(.addTaskTapped)
-            } label: {
-                Image(systemName: "plus")
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 36, height: 36)
-                    .background(store.newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty ? Color.secondary.opacity(0.45) : Color.accentColor, in: Circle())
+                    if !store.newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Button {
+                            HapticManager.impact(.light)
+                            store.send(.addTaskTapped)
+                            collapseQuickAdd()
+                        } label: {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(.tint)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(String(localized: "Add new task"))
+                        .transition(.scale.combined(with: .opacity))
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            } else {
+                // Collapsed: minimal plus + label row
+                Button {
+                    withAnimation(MotionTokens.snappy) { quickAddExpanded = true }
+                    quickAddFocused = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.tint)
+                        Text(String(localized: "New task"))
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(String(localized: "Add a new task"))
+                .padding(.bottom, 4)
             }
-            .buttonStyle(.plain)
-            .disabled(store.newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty)
-            .accessibilityLabel(String(localized: "Add new task"))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .conditionalAnimation(MotionTokens.snappy, value: quickAddExpanded)
+        .onChange(of: quickAddFocused) { _, focused in
+            if !focused && store.newTaskTitle.trimmingCharacters(in: .whitespaces).isEmpty {
+                withAnimation(MotionTokens.snappy) { quickAddExpanded = false }
+            }
+        }
+    }
+
+    private func collapseQuickAdd() {
+        withAnimation(MotionTokens.snappy) { quickAddExpanded = false }
+        quickAddFocused = false
     }
 
     // MARK: - Undo Banner
