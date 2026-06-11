@@ -141,6 +141,29 @@ enum DemoDataSeeder {
         allSessions.forEach { context.insert($0) }
 
         // MARK: - Daily Stats (past 14 days)
+        //
+        // Seeded with intentional variety so the 7-day spark chart shows
+        // a realistic spread: a productive Tuesday, a quieter weekend,
+        // a great Thursday, etc.  Each day's seconds are driven by the
+        // generated sessions, then we add a per-day variance multiplier
+        // so the bars differ noticeably.
+        let dayVariance: [Int: Double] = [
+            // dayOffset → multiplier applied to session seconds
+            0: 1.0,  // today (partial)
+            1: 1.4,  // yesterday (strong day)
+            2: 0.6,  // 2 days ago (light)
+            3: 1.2,  // 3 days ago (good)
+            4: 0.3,  // 4 days ago (weekend — minimal)
+            5: 0.4,  // 5 days ago (weekend — light)
+            6: 1.1,  // 6 days ago (solid)
+            7: 0.8,
+            8: 1.3,
+            9: 0.5,
+            10: 1.0,
+            11: 0.7,
+            12: 1.2,
+            13: 0.9,
+        ]
 
         for dayOffset in (0...13).reversed() {
             let dayDate = cal.date(byAdding: .day, value: -dayOffset, to: today)!
@@ -150,8 +173,11 @@ enum DemoDataSeeder {
                 cal.isDate($0.startedAt, inSameDayAs: dayDate)
             }
 
+            let multiplier = dayVariance[dayOffset] ?? 1.0
+
             for session in daySessions {
-                let seconds = Int(session.actualDuration)
+                let rawSeconds = Int(session.actualDuration)
+                let seconds = max(60, Int(Double(rawSeconds) * multiplier))
                 stats.totalFocusSeconds += seconds
                 stats.sessionsCompleted += 1
                 stats.hadFocusSession = true
@@ -173,6 +199,7 @@ enum DemoDataSeeder {
                 }
             }
 
+            // Skip today's tasks-completed since the day is in progress.
             stats.tasksCompleted = dayOffset == 0 ? 0 : min(daySessions.count / 2, 3)
             context.insert(stats)
         }
@@ -182,6 +209,18 @@ enum DemoDataSeeder {
 
     // MARK: - Session Generator
 
+    // Per-day session count override for last 7 days — drives visible chart variance.
+    // Index 0 = today (rightmost bar), index 6 = 6 days ago (leftmost bar).
+    private static let sessionCountByDayOffset: [Int: Int] = [
+        0: 3,  // today: partial day
+        1: 7,  // yesterday: strong productivity day
+        2: 2,  // 2 days ago: light day (interruptions, meetings)
+        3: 5,  // 3 days ago: solid day
+        4: 1,  // 4 days ago: near-zero (weekend)
+        5: 2,  // 5 days ago: weekend, light
+        6: 6,  // 6 days ago: most productive day of the week
+    ]
+
     private static func generateSessionsForDay(
         dayStart: Date,
         dayOffset: Int,
@@ -190,12 +229,17 @@ enum DemoDataSeeder {
     ) -> [FocusSessionRecord] {
         var sessions: [FocusSessionRecord] = []
 
-        // Vary the session count by day (more on weekdays, less on weekends)
-        let weekday = cal.component(.weekday, from: dayStart)
-        let isWeekend = weekday == 1 || weekday == 7
-        let baseCount = isWeekend ? 3 : 5
-        let variance = dayOffset == 0 ? -1 : (dayOffset % 3 == 0 ? 1 : 0)
-        let sessionCount = max(2, baseCount + variance)
+        // Use the per-day override for the chart window; fall back to weekday heuristic.
+        let sessionCount: Int
+        if let override = sessionCountByDayOffset[dayOffset] {
+            sessionCount = override
+        } else {
+            let weekday = cal.component(.weekday, from: dayStart)
+            let isWeekend = weekday == 1 || weekday == 7
+            let baseCount = isWeekend ? 3 : 5
+            let variance = dayOffset % 3 == 0 ? 1 : 0
+            sessionCount = max(2, baseCount + variance)
+        }
 
         var hour = 8 // Start at 8 AM
 

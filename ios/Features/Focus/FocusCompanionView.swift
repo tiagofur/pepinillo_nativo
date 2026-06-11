@@ -42,6 +42,7 @@ struct FocusCompanionView: View {
                 .padding(.vertical, 8)
             }
             .scrollBounceBehavior(.basedOnSize)
+            .primaryScrollEdgeEffect()
         case .grid:
             LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
                 cards

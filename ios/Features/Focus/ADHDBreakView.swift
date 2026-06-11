@@ -16,10 +16,10 @@ struct ADHDBreakView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 24) {
-                Text("Break Time")
+                Text(String(localized: "adhdbreak.title", defaultValue: "Break Time"))
                     .font(.title.bold())
 
-                Text("Pick a guided activity for your \(breakDurationMinutes)-minute break")
+                Text(String(format: String(localized: "adhdbreak.instruction", defaultValue: "Pick a guided activity for your %lld-minute break"), breakDurationMinutes))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -50,7 +50,7 @@ struct ADHDBreakView: View {
                 Button {
                     onDismiss()
                 } label: {
-                    Text("Back to Focus")
+                    Text(String(localized: "adhdbreak.backtofocus.button", defaultValue: "Back to Focus"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)

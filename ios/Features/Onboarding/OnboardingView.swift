@@ -20,6 +20,10 @@ struct OnboardingView: View {
 
     var body: some View {
         ZStack {
+            // Full-bleed background that cross-fades between page accent colors
+            pageBackground
+                .ignoresSafeArea()
+
             // Page content
             TabView(selection: $currentPage) {
                 ForEach(Array(pages.enumerated()), id: \.offset) { index, page in
@@ -44,11 +48,15 @@ struct OnboardingView: View {
                     Spacer()
                     if currentPage < pages.count {
                         Button(String(localized: "Skip")) {
-                            withAnimation { currentPage = pages.count }
+                            withAnimation(.easeInOut(duration: 0.4)) { currentPage = pages.count }
                         }
                         .font(.subheadline.bold())
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 24)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .background(.black.opacity(0.22), in: Capsule())
+                        .contentShape(Capsule())
+                        .padding(.horizontal, 16)
                         .padding(.top, 56)
                         .accessibilityLabel(String(localized: "Skip onboarding"))
                         .accessibilityHint(String(localized: "Jump to mode selection"))
@@ -67,7 +75,48 @@ struct OnboardingView: View {
                     .padding(.bottom, 60) // Extra padding for the page index indicators
             }
         }
-        .conditionalAnimation(.easeInOut(duration: 0.3), value: currentPage)
+        .conditionalAnimation(.easeInOut(duration: 0.4), value: currentPage)
+    }
+
+    // MARK: - Background Scene
+
+    private var pageBackground: some View {
+        let accentColor: Color
+        if currentPage < pages.count {
+            accentColor = pages[currentPage].accentColor
+        } else {
+            // Mode picker page — use stopwatch emerald token
+            accentColor = ModeColors.stopwatch
+        }
+
+        return GeometryReader { geo in
+            ZStack(alignment: .top) {
+                // Base color fill
+                accentColor
+                    .opacity(0.08)
+
+                // Top gradient hero area (~58% height)
+                LinearGradient(
+                    stops: [
+                        .init(color: accentColor.opacity(0.72), location: 0),
+                        .init(color: accentColor.opacity(0.30), location: 0.55),
+                        .init(color: accentColor.opacity(0.0),  location: 0.75)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: geo.size.height)
+
+                // Soft radial glow behind the centerpiece
+                RadialGradient(
+                    colors: [accentColor.opacity(0.35), .clear],
+                    center: .init(x: 0.5, y: 0.22),
+                    startRadius: 0,
+                    endRadius: geo.size.width * 0.65
+                )
+            }
+        }
+        .animation(.easeInOut(duration: 0.45), value: currentPage)
     }
 
     // MARK: - Continue Button
@@ -75,7 +124,7 @@ struct OnboardingView: View {
     private var continueButton: some View {
         Button {
             if currentPage < pages.count {
-                withAnimation { currentPage += 1 }
+                withAnimation(.easeInOut(duration: 0.35)) { currentPage += 1 }
             } else {
                 currentPage = 0
                 onComplete(selectedDefaultMode)
@@ -85,16 +134,19 @@ struct OnboardingView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 56)
+                .frame(minHeight: 56)
                 .background(
                     Capsule()
                         .fill(
                             (currentPage < pages.count
-                             ? Color.accentColor
-                             : Color(red: 0.18, green: 0.55, blue: 0.23)).gradient
+                             ? (currentPage < pages.count ? pages[currentPage].accentColor : Color.accentColor)
+                             : ModeColors.stopwatch).gradient
                         )
                 )
-                .shadow(color: (currentPage < pages.count ? Color.accentColor : Color.green).opacity(0.3), radius: 10, y: 5)
+                .shadow(
+                    color: (currentPage < pages.count ? pages[currentPage].accentColor : Color.accentColor).opacity(0.35),
+                    radius: 12, y: 6
+                )
         }
         .accessibilityLabel(currentPage < pages.count
             ? String(localized: "Continue to next page")
@@ -105,15 +157,16 @@ struct OnboardingView: View {
 
     private var getStartedPage: some View {
         ScrollView {
-            VStack(spacing: 32) {
-                VStack(spacing: 12) {
-                    Text("🥒")
-                        .font(.system(size: 80))
-                        .accessibilityHidden(true)
-                        .shadow(radius: 10)
-
-                    Text(String(localized: "Ready to focus?"))
-                        .font(.largeTitle.bold())
+            VStack(spacing: 24) {
+                // Header: cucumber badge inline with title
+                VStack(spacing: 8) {
+                    HStack(spacing: 10) {
+                        Text("🥒")
+                            .font(.system(size: 36))
+                            .accessibilityHidden(true)
+                        Text(String(localized: "Ready to focus?"))
+                            .font(.largeTitle.bold())
+                    }
 
                     Text(String(localized: "Choose your default focus style. You can change this later in settings."))
                         .font(.subheadline)
@@ -121,7 +174,7 @@ struct OnboardingView: View {
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 32)
                 }
-                .padding(.top, 60)
+                .padding(.top, 24)
                 .readableContent(maxWidth: 672)
 
                 // Mode selector cards — adaptive grid: 1 col iPhone, 2+ cols iPad
@@ -131,7 +184,7 @@ struct OnboardingView: View {
                             mode: mode,
                             isSelected: selectedDefaultMode == mode
                         ) {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            withAnimation(MotionTokens.bouncy) {
                                 selectedDefaultMode = mode
                             }
                         }
@@ -163,21 +216,21 @@ struct OnboardingPage {
             title: String(localized: "Choose Your Focus"),
             subtitle: String(localized: "4 modes, 1 goal"),
             description: String(localized: "Whether it's Pomodoro, Flowtime, or Time Blocks, we have the perfect scientific method to keep you in the zone."),
-            accentColor: Color.blue
+            accentColor: ModeColors.flowtime
         ),
         OnboardingPage(
             emoji: "✅",
             title: String(localized: "Organize Your Day"),
             subtitle: String(localized: "Integrated Task Manager"),
             description: String(localized: "Don't just track time; track progress. Plan your deep work sessions directly from your task list."),
-            accentColor: Color.orange
+            accentColor: ModeColors.streak
         ),
         OnboardingPage(
             emoji: "📈",
             title: String(localized: "Analyze Your Growth"),
             subtitle: String(localized: "Dashboard & Insights"),
             description: String(localized: "Visualize your productivity streaks and deep work trends. Knowledge is power to improve your focus."),
-            accentColor: Color.accentColor
+            accentColor: ModeColors.stopwatch
         )
     ]
 }
@@ -194,31 +247,53 @@ struct OnboardingPageView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Spacer()
-                .frame(height: 60)
+            // Hero area (~top 55%): large emoji with depth layering
+            GeometryReader { geo in
+                ZStack {
+                    // Soft outer glow ring
+                    Circle()
+                        .fill(page.accentColor.opacity(0.18))
+                        .frame(width: 220, height: 220)
+                        .blur(radius: 30)
 
-            // Emoji in a colored circle
-            ZStack {
-                Circle()
-                    .fill(page.accentColor.opacity(0.12))
-                    .frame(width: 140, height: 140)
-                    .blur(radius: emojiAppeared ? 0 : 20)
-                
-                Text(page.emoji)
-                    .font(.system(size: 72))
-                    .offset(y: floatingOffset)
+                    // Mid glow ring
+                    Circle()
+                        .fill(page.accentColor.opacity(0.22))
+                        .frame(width: 160, height: 160)
+                        .blur(radius: 12)
+
+                    // Inner crisp circle
+                    Circle()
+                        .fill(page.accentColor.opacity(0.15))
+                        .frame(width: 130, height: 130)
+
+                    // Emoji — large, expressive
+                    Text(page.emoji)
+                        .font(.system(size: 88))
+                        .offset(y: floatingOffset)
+                        .shadow(color: page.accentColor.opacity(0.4), radius: 16, y: 8)
+                        .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: geo.size.height)
             }
-            .scaleEffect(emojiAppeared ? 1 : 0.4)
+            .frame(height: 240)
+            .scaleEffect(emojiAppeared ? 1 : 0.3)
             .opacity(emojiAppeared ? 1 : 0)
-            .rotationEffect(.degrees(emojiAppeared ? 0 : -15))
+            .rotationEffect(.degrees(emojiAppeared ? 0 : -20))
             .accessibilityHidden(true)
-            .padding(.bottom, 40)
+            .padding(.top, 80)
+            .padding(.bottom, 32)
 
+            // Content card — glass bottom card
             VStack(spacing: 24) {
                 VStack(spacing: 8) {
                     Text(page.title)
                         .font(.largeTitle.bold())
                         .foregroundStyle(.primary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                         .offset(x: titleAppeared ? 0 : -50)
                         .opacity(titleAppeared ? 1 : 0)
                         .accessibilityAddTraits(.isHeader)
@@ -226,6 +301,7 @@ struct OnboardingPageView: View {
                     Text(page.subtitle)
                         .font(.title3.weight(.medium))
                         .foregroundStyle(page.accentColor)
+                        .multilineTextAlignment(.center)
                         .offset(x: titleAppeared ? 0 : 50)
                         .opacity(titleAppeared ? 1 : 0)
                 }
@@ -239,7 +315,7 @@ struct OnboardingPageView: View {
                     .opacity(descAppeared ? 1 : 0)
             }
             .padding(32)
-            .pepinilloGlass()
+            .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
             .readableContent(maxWidth: 672)
             .padding(.horizontal, 24)
             .offset(y: descAppeared ? 0 : 30)
@@ -253,17 +329,17 @@ struct OnboardingPageView: View {
                 descAppeared = true
             } else {
                 // Staggered entrance
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.1)) {
+                withAnimation(MotionTokens.heroEntrance.delay(0.1)) {
                     emojiAppeared = true
                 }
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.3)) {
+                withAnimation(MotionTokens.heroEntrance.delay(0.3)) {
                     titleAppeared = true
                 }
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.5)) {
+                withAnimation(MotionTokens.heroEntrance.delay(0.5)) {
                     descAppeared = true
                 }
-                
-                // Floating emoji effect
+
+                // Floating emoji effect — Reduce Motion safe
                 withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
                     floatingOffset = -10
                 }
@@ -292,26 +368,41 @@ struct DefaultModeCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
-                        .fill(modeColor.opacity(0.12))
+                        .fill(isSelected ? modeColor : modeColor.opacity(0.15))
                         .frame(width: 48, height: 48)
                     Text(mode.icon)
                         .font(.title)
                 }
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(mode.displayName)
                         .font(.subheadline.bold())
                         .foregroundStyle(.primary)
-                    Text(modeTagline)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        Text(modeTagline)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if modeIsProOnly {
+                            ProPillBadge(color: modeColor)
+                        }
+                    }
                 }
 
                 Spacer()
 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(isSelected ? modeColor : .secondary.opacity(0.4))
+                // Selection indicator: filled accent circle with checkmark when selected;
+                // accent-tinted border when unselected (satisfies WCAG 1.4.11 non-text contrast)
+                ZStack {
+                    Circle()
+                        .strokeBorder(modeColor.opacity(isSelected ? 0 : 0.7), lineWidth: isSelected ? 0 : 2)
+                        .background(Circle().fill(isSelected ? modeColor : Color.clear))
+                        .frame(width: 28, height: 28)
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.caption.bold())
+                            .foregroundStyle(.white)
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
@@ -326,19 +417,38 @@ struct DefaultModeCard: View {
             .accessibilityLabel("\(mode.displayName), \(modeTagline)")
         }
         .buttonStyle(.plain)
-        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+        .animation(reduceMotion ? nil : MotionTokens.bouncy, value: isSelected)
     }
 
     private var modeColor: Color {
         theme.color(for: mode)
     }
 
+    private var modeIsProOnly: Bool {
+        !mode.isFreeTier
+    }
+
     private var modeTagline: String {
         switch mode {
-        case .pomodoro:  return String(localized: "Classic 25/5 cycles — free")
-        case .flowtime:  return String(localized: "Follow your natural flow — pro")
-        case .timeBlock: return String(localized: "Commit to a fixed block — pro")
-        case .stopwatch: return String(localized: "Zero pressure tracking — free")
+        case .pomodoro:  return String(localized: "Classic 25/5 cycles")
+        case .flowtime:  return String(localized: "Follow your natural flow")
+        case .timeBlock: return String(localized: "Commit to a fixed block")
+        case .stopwatch: return String(localized: "Zero pressure tracking")
         }
+    }
+}
+
+// MARK: - PRO Pill Badge
+
+struct ProPillBadge: View {
+    var color: Color = .accentColor
+
+    var body: some View {
+        Text("PRO")
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.15), in: Capsule())
+            .foregroundStyle(color)
     }
 }

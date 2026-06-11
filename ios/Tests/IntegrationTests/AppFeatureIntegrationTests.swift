@@ -9,7 +9,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite(.serialized)
+@Suite(.serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct AppFeatureIntegrationTests {
 
@@ -20,6 +20,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.savePreferences = { _ in }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
@@ -92,6 +93,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.soundscapeClient.play = { _, _ in }
             $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -454,6 +456,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -477,6 +480,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -511,6 +515,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -584,6 +589,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -660,6 +666,17 @@ struct AppFeatureIntegrationTests {
         defer { AppGroupDefaults.userCapabilities = saved }
         AppGroupDefaults.userCapabilities = nil
 
+        // Neutralise the sticky -proMode flag that DemoDataSeeder reads from UserDefaults.standard;
+        // if left set from a previous demo run the #if DEBUG guard in subscriptionStateLoaded
+        // overrides whatever SubscriptionState the test sends, making assertions flaky.
+        let proModeKey = "pepinillo.debug.simulatePro"
+        let savedProMode = UserDefaults.standard.object(forKey: proModeKey)
+        defer {
+            if let v = savedProMode { UserDefaults.standard.set(v, forKey: proModeKey) }
+            else { UserDefaults.standard.removeObject(forKey: proModeKey) }
+        }
+        UserDefaults.standard.set(false, forKey: proModeKey)
+
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
@@ -721,6 +738,15 @@ struct AppFeatureIntegrationTests {
         let saved = AppGroupDefaults.userCapabilities
         defer { AppGroupDefaults.userCapabilities = saved }
         AppGroupDefaults.userCapabilities = .everywherePlus
+
+        // Same sticky-flag guard as subscriptionStateLoadedWritesCapabilitiesToAppGroup above.
+        let proModeKey = "pepinillo.debug.simulatePro"
+        let savedProMode = UserDefaults.standard.object(forKey: proModeKey)
+        defer {
+            if let v = savedProMode { UserDefaults.standard.set(v, forKey: proModeKey) }
+            else { UserDefaults.standard.removeObject(forKey: proModeKey) }
+        }
+        UserDefaults.standard.set(false, forKey: proModeKey)
 
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()

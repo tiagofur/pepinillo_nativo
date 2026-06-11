@@ -105,10 +105,10 @@ struct WeeklyReviewView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(.teal)
 
-            Text(String(localized: "AI Insights requiere Pepinillo+"))
+            Text(String(localized: "AI Insights requires Pepinillo+"))
                 .font(.title3.bold())
 
-            Text(String(localized: "Obtén análisis impulsados por Inteligencia Artificial de tus patrones de productividad, puntuación de productividad y recomendaciones personalizadas."))
+            Text(String(localized: "Get AI-powered analysis of your productivity patterns, a productivity score, and personalized recommendations."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

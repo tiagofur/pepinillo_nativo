@@ -3,7 +3,7 @@
 **Date:** 2026-03-24  
 **Version:** 3.0.0  
 **Status:** Active Development  
-**Last Updated:** 2026-04-21  
+**Last Updated:** 2026-06-11  
 **Update Cadence:** Per sprint
 
 ---
@@ -183,11 +183,15 @@
 | ----------------------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
 | ✅ Product reset IA + screen ownership | DONE     | 4-tab runtime baseline: Focus / Plan / Dashboard / More, with More owning account/admin surfaces |
 | ✅ Account tab full-screen navigation | DONE     | Profile, Subscription, Export, Help all push as NavigationLink (Phase 5 complete) |
-| Enable Apple Intelligence (AI Reports) | P0    | Code is ready, just needs `AppConfig.aiInsightsEnabled = true` + paywall redesign |
+| ✅ AI Reports enabled              | DONE  | `AppConfig.aiInsightsEnabled = true`; Apple Foundation Models + template fallback active |
+| ✅ CSV/PDF Export                  | DONE  | Export to CSV and PDF implemented and Pro-gated (`ios/Features/Account/ExportView.swift`) |
+| ✅ Streak Protection (1 skip/week) | DONE  | `StreakProtectionService` shared by app + widgets + watch bridge (`ios/Domain/Services/`) |
+| ✅ Dashboard P4 design package (7-day chart hero) | DONE | Streak hero, 7-day bar chart with avg rule, compact stats row, review rows with live preview lines, toolbar menu — `ios/Features/Dashboard/DashboardView.swift` |
+| ✅ Compact stats / chart alignment bug fix | DONE | `DashboardCompactStats` now reads `weekFormattedTotalTime` / `weekSessionsCompleted` (both derived from `weekChartData`); stats and chart always show the same 7-day window regardless of period picker. Unit test added: `weekPeriodChartSumMatchesTotals` in `AnalyticsFeatureTests`. |
+| ✅ Demo data verification | DONE | `-seedDemoData` verified with simulator: Dashboard, AI Reports, charts all display correctly. Math check: avg (~8h29m) × 7 = "59h 25m" matches compact stats row and Revisión Semanal preview. |
 | Paywall redesign for Pepinillo+ / Everywhere/AI+ | P0 | Two-tier paywall: one-time vs subscription, Próximamente section |
 | RevenueCat entitlement reconfiguration | P0     | Map `pro.lifetime` → `pepinillo_plus`, `pro.monthly`/`pro.annual` → `everywhere_plus` |
 | App Store Connect metadata update | P0       | New names, descriptions, and screenshots for the 3 products |
-| Demo data verification | P0       | Run `-seedDemoData` and verify Dashboard, AI Reports, charts all display correctly |
 | Feature gating enforcement | ✅ Done   | Legacy single-pro gating is in place; entitlement names updated for new tiers |
 | Xcode setup (non-code)              | P0       | App Group, CloudKit container, StoreKit config, targets, SPM, Info.plist, audio assets, localization |
 | macOS target                        | P2       | Included in roadmap but not implemented                                                                |
@@ -344,7 +348,7 @@
 | Subtasks                           | ✅            | ✅      |                                                 |
 | Priority levels                    | ✅            | ✅      |                                                 |
 | Energy levels (deep/shallow/admin) | ✅            | ✅      |                                                 |
-| Energy batching UI                 | ⬜            | ✅      | Android has energy grouping; iOS does not       |
+| Energy batching UI                 | ✅            | ✅      | Energy grouping by level + time-of-day suggestion |
 | Recurring tasks                    | ✅ iCal RRULE | ✅      | iOS uses iCalendar format                        |
 | Estimated/completed pomodoros      | ✅            | ✅      |                                                 |
 | Apple Reminders import             | ✅            | N/A     | iOS only                                        |
@@ -392,7 +396,7 @@
 | Feature                           | iOS                              | Android            | Notes                                  |
 | --------------------------------- | -------------------------------- | ------------------ | -------------------------------------- |
 | Health (Mindful Minutes/Sessions) | ✅ HealthKit                     | ✅ Health Connect  |                                        |
-| Calendar integration              | ⬜                               | ✅ Google Calendar | iOS does not have calendar integration |
+| Calendar integration              | ✅ Apple Calendar (EventKit)     | ✅ Google Calendar |                                        |
 | System Focus Mode / DND           | ✅ FocusFilterIntent             | ✅ DndManager      |                                        |
 | Soundscapes                       | ✅ AVAudioPlayer (4 soundscapes) | ⬜ Not implemented | Android missing; iOS has 4 functional  |
 | Mode Intelligence                 | ✅                               | ✅                 |                                        |
@@ -597,8 +601,8 @@ The following issues were identified during a production readiness audit and hav
 
 | Item                         | Platform | Details                                                 |
 | ---------------------------- | -------- | ------------------------------------------------------- |
-| Live Activity is a stub      | iOS      | Not wired to TCA; needs full integration                |
-| SwiftData migration strategy | iOS      | No `ModelVersion`/`VersionedSchema` defined             |
+| Live Activity is a stub      | iOS      | ✅ Fully wired to TCA with 4-mode Dynamic Island UIs    |
+| SwiftData migration strategy | iOS      | ✅ SchemaV4 migration implemented with VersionedSchema  |
 | Soundscapes not implemented  | Android  | iOS has 4 functional soundscapes; Android still missing |
 | Accessibility labels         | iOS      | 29 labels currently; could use more coverage            |
 

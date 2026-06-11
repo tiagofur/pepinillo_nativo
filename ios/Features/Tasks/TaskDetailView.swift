@@ -140,9 +140,8 @@ struct TaskDetailView: View {
             let total = store.subtasks.count
             
             Text(total > 0 ? String(localized: "Subtasks (\(completed)/\(total))") : String(localized: "Subtasks"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
                 .padding(.bottom, 4)
 
             VStack(spacing: 12) {
@@ -255,9 +254,17 @@ struct TaskDetailView: View {
                 Button {
                     store.send(.dueDateChanged(Calendar.current.date(byAdding: .day, value: 1, to: .now)))
                 } label: {
-                    Label(String(localized: "Add Due Date"), systemImage: "calendar.badge.plus")
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(spacing: 12) {
+                        Label(String(localized: "Add due date"), systemImage: "calendar.badge.plus")
+                            .foregroundStyle(.secondary)
+                        Spacer(minLength: 4)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
             }
         }
         .padding(16)
@@ -268,9 +275,8 @@ struct TaskDetailView: View {
     private var metadataSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Priority & Focus"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
                 .padding(.bottom, 4)
 
             VStack(spacing: 14) {
@@ -312,25 +318,49 @@ struct TaskDetailView: View {
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .fixedSize()
                 }
 
                 Divider().opacity(0.1)
 
                 planEditorRow(String(localized: "Pomodoros"), systemImage: "timer") {
-                    HStack(spacing: 12) {
+                    HStack(spacing: 4) {
+                        // Decrement — ≥44pt target
+                        Button {
+                            let current = store.estimatedPomodoros
+                            if current > 1 { store.send(.estimatedPomodorosChanged(current - 1)) }
+                        } label: {
+                            Image(systemName: "minus")
+                                .font(.body.weight(.semibold))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(store.estimatedPomodoros <= 1 ? Color.secondary : Color.primary)
+                        .disabled(store.estimatedPomodoros <= 1)
+                        .accessibilityLabel(String(localized: "Decrease pomodoros"))
+
                         Text("\(store.estimatedPomodoros)")
                             .font(NumericFont.inline())
                             .foregroundStyle(.primary)
-                        
-                        Stepper(
-                            "\(store.estimatedPomodoros)",
-                            value: Binding(
-                                get: { store.estimatedPomodoros },
-                                set: { store.send(.estimatedPomodorosChanged($0)) }
-                            ),
-                            in: 1...8
-                        )
-                        .labelsHidden()
+                            .frame(minWidth: 24, alignment: .center)
+
+                        // Increment — ≥44pt target
+                        Button {
+                            let current = store.estimatedPomodoros
+                            if current < 8 { store.send(.estimatedPomodorosChanged(current + 1)) }
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.body.weight(.semibold))
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(store.estimatedPomodoros >= 8 ? Color.secondary : Color.primary)
+                        .disabled(store.estimatedPomodoros >= 8)
+                        .accessibilityLabel(String(localized: "Increase pomodoros"))
                     }
                 }
 
@@ -350,9 +380,8 @@ struct TaskDetailView: View {
     private var recurrenceSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Recurrence"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
 
             VStack {
                 if let rule = store.recurrenceRule, let preset = RecurrencePreset.from(rule: rule) {
@@ -405,9 +434,8 @@ struct TaskDetailView: View {
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Notes"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
 
             TextEditor(
                 text: Binding(
@@ -427,9 +455,8 @@ struct TaskDetailView: View {
     private var statsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "Focus History"))
-                .font(.caption.bold())
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .textCase(.uppercase)
 
             VStack(spacing: 14) {
                 LabeledContent(String(localized: "Total Focus Time")) {
@@ -469,7 +496,7 @@ struct TaskDetailView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 56)
+                .frame(minHeight: 56)
                 .background(store.isCompleted ? Color.pepinilloSystemFill : Color.accentColor)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .shadow(color: (store.isCompleted ? Color.clear : Color.accentColor.opacity(0.3)), radius: 8, y: 4)

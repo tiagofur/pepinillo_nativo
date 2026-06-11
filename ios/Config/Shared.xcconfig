@@ -18,3 +18,10 @@ SLASH_SLASH = //
 // sets its own value. Exposed through Info.plist SENTRY_DSN and read at
 // launch by SentryService. Empty value = Sentry disabled.
 SENTRY_DSN =
+
+// RevenueCat API key. Loaded from the gitignored Secrets.xcconfig.
+// The '?' makes a missing file non-fatal so CI builds without a secrets file
+// still compile (AppFeature.swift already fails-safe when the key is empty).
+// To set up locally: copy ios/Config/Secrets.xcconfig.template to
+// ios/Config/Secrets.xcconfig and fill in REVENUECAT_API_KEY.
+#include? "Secrets.xcconfig"

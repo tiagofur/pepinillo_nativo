@@ -11,7 +11,9 @@ import dev.creapolis.pepinillo.data.local.dao.TaskDao
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Subtask
 import dev.creapolis.pepinillo.feature.tasks.model.Task
@@ -35,6 +37,7 @@ class TaskRepository @Inject constructor(
     private val focusSessionDao: FocusSessionDao,
     private val workManager: WorkManager,
     private val sessionRepository: SessionRepository,
+    private val featureGate: FeatureGate,
     @ApplicationContext private val appContext: Context,
 ) {
     fun getAllTasks(): Flow<List<Task>> =
@@ -190,7 +193,10 @@ class TaskRepository @Inject constructor(
             val widgetTasks = activeTasks.take(5).map { WidgetTask.fromTask(it) }
             val stats = sessionRepository.getTodayStats().first()
             val allDays = sessionRepository.getAllDaysWithSessions().first()
-            val streak = sessionRepository.calculateCurrentStreak(allDays)
+            val streak = StreakProtectionService.computeProtectedStreak(
+                history = allDays,
+                isPro = featureGate.isPro,
+            ).days
             val cal = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)

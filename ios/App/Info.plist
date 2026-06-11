@@ -51,6 +51,9 @@
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Pepinillo logs your focus sessions as Mindful Minutes in Apple Health to help you track your wellbeing alongside your productivity.
 </string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Pepinillo imports your Reminders as tasks so you can start focusing on them right away.
+</string>
 	<key>NSSiriUsageDescription</key>
 	<string>Pepinillo uses Siri so you can start and stop focus sessions with your voice.
 </string>
@@ -59,11 +62,9 @@
 		<string>com.pepinillo.app.focusSession</string>
 		<string>com.pepinillo.app.viewAnalytics</string>
 		<string>com.pepinillo.app.viewTask</string>
-		<string>INSendMessageIntent</string>
 	</array>
-	<key>NSUserNotificationUsageDescription</key>
-	<string>Pepinillo sends reminders to start your focus sessions and notifies you when a Pomodoro or break is complete.
-</string>
+	<key>REVENUECAT_API_KEY</key>
+	<string>$(REVENUECAT_API_KEY)</string>
 	<key>SENTRY_DSN</key>
 	<string>$(SENTRY_DSN)</string>
 	<key>UIApplicationSceneManifest</key>
@@ -82,7 +83,7 @@
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>

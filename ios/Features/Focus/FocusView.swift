@@ -258,12 +258,19 @@ struct FocusView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            timerCircle
-                .frame(maxWidth: timerMaxSize, maxHeight: timerMaxSize)
-                .padding(.horizontal, 24)
-                .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
+            // P2 item 2: Ambient radial glow behind the timer ring in light mode.
+            // Matches the warmth dark mode already has from PepinilloLiquidBackground.
+            // Uses ZStack overlay so the glow sits directly behind the ring.
+            ZStack {
+                FocusAmbientGlow(color: modeColor)
 
-            Text(store.phaseLabel.uppercased())
+                timerCircle
+                    .padding(.horizontal, 24)
+            }
+            .frame(maxWidth: timerMaxSize, maxHeight: timerMaxSize)
+            .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
+
+            Text(store.phaseLabel)
                 .font(.system(.subheadline, design: .rounded))
                 .fontWeight(.bold)
                 .tracking(2)
@@ -361,31 +368,43 @@ struct FocusView: View {
 
     // MARK: - Timer Circle
 
+    // MARK: - Ring scale state (P2: spring on mode change)
+    @State private var ringScale: CGFloat = 1.0
+
     @ViewBuilder
     private var timerCircle: some View {
         ZStack {
-            // Background ring
+            // Background track ring — always visible, mode-tinted
             Circle()
-                .stroke(modeColor.opacity(0.15), lineWidth: 14)
+                .stroke(modeColor.opacity(0.18), lineWidth: 13)
 
-            // Countdown modes show remaining time: full ring at start, empty at zero.
+            // Count-up idle treatment: dashed tick overlay to signal "will fill".
+            // lineCap .butt keeps dashes crisp; .round inflated the dash width to blobs.
+            if currentMode.direction == .countUp && !(store.isRunning) {
+                Circle()
+                    .stroke(
+                        modeColor.opacity(0.30),
+                        style: StrokeStyle(lineWidth: 13, lineCap: .butt, dash: [4, 10])
+                    )
+            }
+
+            // Progress arc — countdown: remaining arc; count-up: accruing arc while running
             if let ringProgress = timerRingProgress {
                 Circle()
                     .trim(from: 0, to: CGFloat(ringProgress))
                     .stroke(
                         modeGradient,
-                        style: StrokeStyle(lineWidth: 14, lineCap: .round)
+                        style: StrokeStyle(lineWidth: 13, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
                     .conditionalAnimation(.linear(duration: 0.1), value: ringProgress)
             }
 
             // Center content
-            VStack(spacing: 8) {
-                // Mode icon — emoji glyphs use scaleEffect-based breath while running.
-                // .id(store.phase) triggers an id-based swap transition on phase changes.
+            VStack(spacing: 4) {
+                // Mode icon — smaller above digits, no overlap
                 Text(store.modeIcon)
-                    .font(.system(.largeTitle, design: .default))
+                    .font(.system(size: 28, design: .default))
                     .scaleEffect(breatheScale)
                     .conditionalAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breatheScale)
                     .onChange(of: store.isRunning) { _, running in
@@ -397,7 +416,7 @@ struct FocusView: View {
                         removal: .scale(scale: 1.3).combined(with: .opacity)
                     ))
 
-                // Time display
+                // Time display — dominant focal point
                 Text(store.displayTime)
                     .font(NumericFont.timer())
                     .contentTransition(.numericText())
@@ -411,10 +430,33 @@ struct FocusView: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
+        // P2 item 5: spring scale on mode change
+        .scaleEffect(ringScale)
+        .onChange(of: store.selectedMode) { _, _ in
+            guard !reduceMotion else { return }
+            withAnimation(MotionTokens.bouncy.speed(1.4)) {
+                ringScale = 0.92
+            }
+            // Spring back after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                withAnimation(MotionTokens.bouncy) {
+                    ringScale = 1.0
+                }
+            }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(timerAccessibilityLabel)
         .accessibilityValue(timerAccessibilityValue)
     }
+
+    // timerRingProgress:
+    // • Countdown modes: fraction of time REMAINING (full at start → empty at zero)
+    // • Count-up modes while running: derive a "minute-cycle" fill (resets each 60 min)
+    //   so the ring is never an empty gray circle. A 4% display floor ensures a visible arc
+    //   even at <2 min (raw progress would otherwise be a sub-pixel sliver).
+    //   Floor applies ONLY while running and only when raw progress < floor.
+    // • Count-up modes at rest: nil (dashed overlay handles the visual instead)
+    private static let countUpRingDisplayFloor: Double = 0.04
 
     private var timerRingProgress: Double? {
         switch currentMode.direction {
@@ -422,8 +464,15 @@ struct FocusView: View {
             let completed = store.progress.map { min(max($0, 0), 1) } ?? 0
             return 1 - completed
         case .countUp:
-            guard let progress = store.progress else { return nil }
-            return min(max(progress, 0), 1)
+            guard store.isRunning else { return nil }
+            // Fill the ring as elapsed seconds progress within each 60-min cycle.
+            // Cycle resets at 60 min so very long sessions remain readable.
+            let elapsed = store.elapsedSeconds
+            let cycle: Double = 60 * 60  // 1 hour
+            let positionInCycle = elapsed.truncatingRemainder(dividingBy: cycle)
+            let raw = min(positionInCycle / cycle, 1.0)
+            // Apply display floor so the arc reads as "active" immediately on start.
+            return max(raw, Self.countUpRingDisplayFloor)
         }
     }
 
@@ -460,15 +509,21 @@ struct FocusView: View {
     private var controlButtons: some View {
         HStack(spacing: 12) {
             if store.isRunning {
-                // Stop button
+                // Stop button — destructive action; red tint reads clearly in both
+                // appearances and is consistent with the confirmation dialog that follows.
                 Button {
                     showStopConfirmation = true
                 } label: {
                     Image(systemName: "stop.fill")
                         .font(.title2)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(.white)
                         .frame(width: 56, height: 56)
-                        .adaptiveGlassCircle(id: "stop-button", namespace: glassNS)
+                        .adaptiveGlassCircle(
+                            id: "stop-button",
+                            namespace: glassNS,
+                            tint: .red,
+                            tintOpacity: 0.50
+                        )
                 }
                 .buttonStyle(.plain)
                 .buttonBorderShape(.circle)
@@ -492,6 +547,7 @@ struct FocusView: View {
                             id: "pause-resume-button",
                             namespace: glassNS,
                             tint: modeColor,
+                            tintOpacity: 0.60,
                             foreground: .white
                         )
                 }
@@ -530,10 +586,12 @@ struct FocusView: View {
                         Image(systemName: "play.fill")
                         Text(String(localized: "Start \(store.selectedMode.displayName)"))
                             .fontWeight(.semibold)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .font(.title3)
-                    .frame(maxWidth: 280)
-                    .frame(height: 64)
+                    .frame(maxWidth: 360)
+                    .frame(minHeight: 64)
                     .primaryFocusActionGlass(tint: modeColor, namespace: glassNS)
                 }
                 .buttonStyle(.pressable)
@@ -601,6 +659,39 @@ private extension View {
     }
 }
 
+// MARK: - Focus Ambient Glow (P2 item 2)
+// Subtle radial gradient that bleeds the active mode color behind the timer ring
+// in light mode. In dark mode the PepinilloLiquidBackground already provides warmth,
+// so we keep opacity very low there to avoid fighting it.
+
+private struct FocusAmbientGlow: View {
+    let color: Color
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        GeometryReader { geo in
+            let size = min(geo.size.width, geo.size.height)
+            // Light mode: 7% center opacity; dark mode: 4% (existing mesh handles the rest)
+            let opacity = colorScheme == .dark ? 0.04 : 0.07
+            if !reduceTransparency {
+                RadialGradient(
+                    gradient: Gradient(colors: [
+                        color.opacity(opacity),
+                        color.opacity(0)
+                    ]),
+                    center: .center,
+                    startRadius: 0,
+                    endRadius: min(size * 0.5, 280)
+                )
+                .frame(width: size, height: size)
+                .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                .allowsHitTesting(false)
+            }
+        }
+    }
+}
+
 // MARK: - Audio Bars (animated playing indicator)
 
 struct AudioBarsView: View {
@@ -635,97 +726,141 @@ struct AudioBarsView: View {
     }
 }
 
-// MARK: - Mode Picker
+// MARK: - Mode Picker (P2 item 3)
+// Compact glass pills sitting directly on the background — no outer card container.
+// Selected pill gets the mode accent tint; unselected pills are plain glass.
+// Icons: all emoji for a warm, coherent personality (🍅🌊📦⏱️).
 
 struct ModePickerView: View {
     let selectedMode: FocusMode
     let isProUser: Bool
     let onSelect: (FocusMode) -> Void
     var glassNamespace: Namespace.ID? = nil
+    @Environment(\.appTheme) private var theme
     @Namespace private var namespace
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 6) {
             ForEach(FocusMode.allCases) { mode in
+                let isSelected = selectedMode == mode
+                let modeAccent = theme.color(for: mode)
+
                 Button {
                     onSelect(mode)
                     HapticManager.selection()
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 3) {
                         Text(mode.icon)
-                            .font(.title2)
+                            .font(.system(size: 18))
                         Text(mode.displayName)
-                            .font(.caption2)
-                            .fontWeight(selectedMode == mode ? .bold : .regular)
+                            .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(
-                        ZStack {
-                            if selectedMode == mode {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.accentColor.opacity(0.12))
-                                    .matchedGeometryEffect(id: "mode_bg", in: namespace)
-                            } else {
-                                Color.clear
-                            }
-                        }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 4)
+                    .foregroundStyle(isSelected ? modeAccent : .secondary)
+                    .modePillBackground(
+                        mode: mode,
+                        isSelected: isSelected,
+                        accent: modeAccent,
+                        glassNamespace: glassNamespace,
+                        matchNamespace: namespace
                     )
-                    .modeChipGlass(mode: mode, glassNamespace: glassNamespace)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay {
+                    .overlay(alignment: .topTrailing) {
                         if !mode.isFreeTier && !isProUser {
                             Image(systemName: "lock.fill")
-                                .font(.caption2)
+                                .font(.system(size: 8, weight: .bold))
                                 .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                                .padding(6)
+                                .offset(x: 2, y: -2)
                         }
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.pressable)
+                .accessibilityLabel(mode.displayName)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
         .padding(.horizontal, 16)
     }
 }
 
-// MARK: - Mode chip glass helper (avoids passing Namespace.ID? through ViewModifier directly)
+// MARK: - Mode pill glass helper (P2 item 3)
 
 private extension View {
+    // P2 item 3: pill background for the mode selector.
+    // Selected: accent-tinted glass / material. Unselected: plain glass / ultraThin.
     @ViewBuilder
-    func modeChipGlass(mode: FocusMode, glassNamespace: Namespace.ID?) -> some View {
+    func modePillBackground(
+        mode: FocusMode,
+        isSelected: Bool,
+        accent: Color,
+        glassNamespace: Namespace.ID?,
+        matchNamespace: Namespace.ID
+    ) -> some View {
+        let cornerRadius = GlassCornerRadius.card
         if #available(iOS 26.0, macOS 26.0, *), let ns = glassNamespace {
             self
-                .glassEffect(.regular.interactive(true), in: .rect(cornerRadius: GlassCornerRadius.card))
-                .glassEffectID("mode-chip-\(mode.id)", in: ns)
+                .glassEffect(
+                    .regular
+                        .interactive(true)
+                        .tint(isSelected ? accent.opacity(0.35) : .clear),
+                    in: .rect(cornerRadius: cornerRadius)
+                )
+                .glassEffectID("mode-pill-\(mode.id)", in: ns)
         } else {
-            self.pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+            // iOS 17-25: tinted material for selected, plain rounded rect for unselected
+            if isSelected {
+                self
+                    .background(
+                        ZStack {
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .fill(accent.opacity(0.15))
+                                .matchedGeometryEffect(id: "mode_pill_bg", in: matchNamespace)
+                            RoundedRectangle(cornerRadius: cornerRadius)
+                                .fill(.ultraThinMaterial)
+                        }
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(accent.opacity(0.35), lineWidth: 1)
+                    }
+            } else {
+                self.background(
+                    .ultraThinMaterial,
+                    in: RoundedRectangle(cornerRadius: cornerRadius)
+                )
+            }
         }
     }
 
+    // P2 item 1: Solid mode-accent CTA — confident fill on both iOS generations.
+    // iOS 26: tinted glass at 0.72 opacity so the mode color reads strongly
+    //         over the liquid glass system while preserving the glass language.
+    // iOS 17-25: solid gradient fill with drop shadow (pre-existing pattern).
     @ViewBuilder
     func primaryFocusActionGlass(tint: Color, namespace: Namespace.ID) -> some View {
         if #available(iOS 26.0, macOS 26.0, *) {
             self
-                .foregroundStyle(.primary)
+                .foregroundStyle(.white)
                 .glassEffect(
                     .regular
                         .interactive(true)
-                        .tint(tint.opacity(0.24)),
+                        .tint(tint.opacity(0.72)),
                     in: .capsule
                 )
                 .glassEffectID("start-button", in: namespace)
                 .overlay {
                     Capsule()
-                        .stroke(tint.opacity(0.45), lineWidth: 1)
+                        .stroke(.white.opacity(0.22), lineWidth: 1)
                 }
         } else {
             self
                 .foregroundStyle(.white)
                 .background(tint.gradient)
                 .clipShape(Capsule())
-                .shadow(color: tint.opacity(0.3), radius: 12, y: 6)
+                .shadow(color: tint.opacity(0.35), radius: 14, y: 7)
         }
     }
 }

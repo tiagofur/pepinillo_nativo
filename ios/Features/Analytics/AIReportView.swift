@@ -22,6 +22,9 @@ struct AIReportView: View {
                     errorView(error)
                 } else if let report = store.report {
                     reportContent(report)
+                } else {
+                    // Transient state: onAppear will dispatch generateTapped immediately
+                    generatingView
                 }
             }
             .navigationTitle(store.period.displayName + " " + String(localized: "AI Report"))

@@ -4,7 +4,7 @@
 // Direct actor-based tests for the FocusEngine.
 // Validates session lifecycle, pause/resume, interruptions, and phase management.
 //
-// The engine uses a 100ms tick loop. Tests use brief sleeps (200ms)
+// The engine uses a 250ms tick loop (4Hz). Tests use brief sleeps (≥250ms)
 // to let at least one tick occur where needed.
 
 import Testing
@@ -37,7 +37,7 @@ struct FocusEngineStartTests {
     @Test func startPomodoroCreatesActiveState() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state != nil)
@@ -55,7 +55,7 @@ struct FocusEngineStartTests {
     @Test func startFlowtimeCreatesActiveState() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .flowtime)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state != nil)
@@ -69,7 +69,7 @@ struct FocusEngineStartTests {
     @Test func startTimeBlockCreatesActiveState() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .timeBlock)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state != nil)
@@ -82,7 +82,7 @@ struct FocusEngineStartTests {
     @Test func startStopwatchCreatesActiveState() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .stopwatch)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state != nil)
@@ -96,7 +96,7 @@ struct FocusEngineStartTests {
     @Test func startPomodoroSetsPomodoroCounts() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.pomodoroNumber == 1)
@@ -108,7 +108,7 @@ struct FocusEngineStartTests {
 
         for mode in [FocusMode.flowtime, .timeBlock, .stopwatch] {
             await engine.start(mode: mode)
-            try await Task.sleep(for: .milliseconds(200))
+            try await Task.sleep(for: .milliseconds(300))
 
             let state = await engine.currentState()
             #expect(state?.pomodoroNumber == nil, "Expected nil pomodoroNumber for \(mode)")
@@ -119,11 +119,11 @@ struct FocusEngineStartTests {
     @Test func startAssignsUniqueSessionID() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
         let firstID = await engine.currentState()?.id
 
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
         let secondID = await engine.currentState()?.id
 
         #expect(firstID != nil)
@@ -140,7 +140,7 @@ struct FocusEnginePauseResumeTests {
     @Test func pauseSetsStateCorrectly() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
         let state = await engine.currentState()
@@ -153,14 +153,14 @@ struct FocusEnginePauseResumeTests {
     @Test func resumeRestoresWorkPhase() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
         let pausedState = await engine.currentState()
         #expect(pausedState?.phase == .paused)
 
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
         let resumedState = await engine.currentState()
 
         #expect(resumedState?.isPaused == false)
@@ -178,13 +178,13 @@ struct FocusEnginePauseResumeTests {
     @Test func resumeRestoresFlowPhase() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .flowtime)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
         #expect(await engine.currentState()?.phase == .paused)
 
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.isPaused == false)
@@ -194,13 +194,13 @@ struct FocusEnginePauseResumeTests {
     @Test func resumeRestoresBlockPhase() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .timeBlock)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
         #expect(await engine.currentState()?.phase == .paused)
 
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         #expect(await engine.currentState()?.phase == .block)
     }
@@ -208,13 +208,13 @@ struct FocusEnginePauseResumeTests {
     @Test func resumeRestoresFreeformPhase() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .stopwatch)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
         #expect(await engine.currentState()?.phase == .paused)
 
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         #expect(await engine.currentState()?.phase == .freeform)
     }
@@ -226,11 +226,11 @@ struct FocusEnginePauseResumeTests {
 
         // Start Pomodoro and skip to trigger a break phase.
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         // Skip the work phase to advance to short break
         await engine.skipToNextPhase()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let preBreakState = await engine.currentState()
         #expect(preBreakState?.phase == .shortBreak,
@@ -242,7 +242,7 @@ struct FocusEnginePauseResumeTests {
 
         // Resume — the break phase must be restored, NOT work
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let resumedState = await engine.currentState()
         #expect(resumedState?.isPaused == false)
@@ -253,7 +253,7 @@ struct FocusEnginePauseResumeTests {
     @Test func pauseWhenAlreadyPausedIsNoOp() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
         let firstPausedAt = await engine.currentState()?.pausedAt
@@ -268,12 +268,12 @@ struct FocusEnginePauseResumeTests {
     @Test func resumeWhenNotPausedIsNoOp() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         // Not paused — resume should be a no-op
         let stateBefore = await engine.currentState()
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
         let stateAfter = await engine.currentState()
 
         #expect(stateBefore?.isPaused == false)
@@ -283,12 +283,12 @@ struct FocusEnginePauseResumeTests {
     @Test func resumeTracksPausedDuration() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.totalPausedDuration ?? 0 > 0)
@@ -297,7 +297,7 @@ struct FocusEnginePauseResumeTests {
     @Test func externalPauseUsesWidgetTapTimestampWhenAppWakesLater() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let pauseTapState = try #require(await engine.currentState())
         let elapsedAtTap = pauseTapState.elapsedSeconds
@@ -313,7 +313,7 @@ struct FocusEnginePauseResumeTests {
             pausedAt: pausedAt
         )
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let resumedState = try #require(await engine.currentState())
         #expect(resumedState.isPaused == false)
@@ -333,7 +333,7 @@ struct FocusEngineStopTests {
     @Test func stopResetsStateToNil() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         #expect(await engine.currentState() != nil)
 
@@ -352,7 +352,7 @@ struct FocusEngineStopTests {
     @Test func stopWhilePausedResetsState() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .flowtime)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
         #expect(await engine.currentState()?.isPaused == true)
@@ -370,7 +370,7 @@ struct FocusEngineInterruptionTests {
     @Test func recordInterruptionIncrementsCount() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         #expect(await engine.currentState()?.interruptions == 0)
 
@@ -401,13 +401,13 @@ struct FocusEngineSessionReplacementTests {
         let engine = FocusEngine()
 
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
         let firstState = await engine.currentState()
         #expect(firstState?.mode == .pomodoro)
 
         // Start a different mode — should cancel the pomodoro
         await engine.start(mode: .flowtime)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
         let secondState = await engine.currentState()
 
         #expect(secondState?.mode == .flowtime)
@@ -417,14 +417,14 @@ struct FocusEngineSessionReplacementTests {
     @Test func startingNewSessionResetsInterruptions() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.recordInterruption()
         await engine.recordInterruption()
         #expect(await engine.currentState()?.interruptions == 2)
 
         await engine.start(mode: .flowtime)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
         #expect(await engine.currentState()?.interruptions == 0)
     }
 }
@@ -439,7 +439,7 @@ struct FocusEngineCustomDurationTests {
         let customDuration: TimeInterval = 45 * 60 // 45 minutes
 
         await engine.start(mode: .timeBlock, customDuration: customDuration)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.targetDuration == customDuration)
@@ -451,7 +451,7 @@ struct FocusEngineCustomDurationTests {
 
         // Custom duration should only apply to timeBlock
         await engine.start(mode: .pomodoro, customDuration: customDuration)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         // Pomodoro should use its default 25-minute duration, not the custom one
@@ -469,7 +469,7 @@ struct FocusEngineLinkedTaskTests {
         let taskID = UUID()
 
         await engine.start(mode: .pomodoro, linkedTaskID: taskID)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.linkedTaskID == taskID)
@@ -478,7 +478,7 @@ struct FocusEngineLinkedTaskTests {
     @Test func linkedTaskIDIsNilByDefault() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.linkedTaskID == nil)
@@ -489,11 +489,11 @@ struct FocusEngineLinkedTaskTests {
         let taskID = UUID()
 
         await engine.start(mode: .flowtime, linkedTaskID: taskID)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.pause()
         await engine.resume()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.linkedTaskID == taskID)
@@ -502,7 +502,7 @@ struct FocusEngineLinkedTaskTests {
 
 // MARK: - Timer Ticking
 
-@Suite("FocusEngine — Timer", .serialized)
+@Suite("FocusEngine — Timer", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineTimerTests {
 
     @Test func elapsedTimeIncreasesAfterTick() async throws {
@@ -590,10 +590,10 @@ struct FocusEngineSkipPhaseTests {
     @Test func skipWorkPhaseAdvancesToBreak() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         await engine.skipToNextPhase()
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.phase == .shortBreak)
@@ -619,7 +619,7 @@ struct FocusEngineConfigTests {
         config.pomodorosPerCycle = 2
 
         await engine.start(mode: .pomodoro, config: config)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.targetDuration == TimeInterval(50 * 60))
@@ -636,7 +636,7 @@ struct FocusEngineConfigTests {
     @Test func defaultConfigUsesStandardDurations() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
-        try await Task.sleep(for: .milliseconds(200))
+        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.targetDuration == TimeInterval(25 * 60))

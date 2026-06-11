@@ -29,6 +29,11 @@ struct TaskListFeature {
         var recentlyDeletedTask: TaskItemState?
         var successMessage: String?
         var isProUser: Bool = false
+        /// When true the task list renders sections by energy level.
+        var isGroupedByEnergy: Bool = false
+        /// Whether the time-of-day energy suggestion banner has been dismissed
+        /// for this session. Resets on next cold launch.
+        var energySuggestionDismissed: Bool = false
         @Presents var detail: TaskDetailFeature.State?
     }
 
@@ -160,6 +165,8 @@ struct TaskListFeature {
         case recurrenceChanged(UUID, String?)
         case taskScheduledForToday(UUID, Bool)
         case startFocusOnTask(UUID)
+        case groupByEnergyToggled
+        case energySuggestionDismissed
 
         // Delegation
         case delegate(Delegate)
@@ -464,6 +471,14 @@ struct TaskListFeature {
                         WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     }
                 }
+
+            case .groupByEnergyToggled:
+                state.isGroupedByEnergy.toggle()
+                return .none
+
+            case .energySuggestionDismissed:
+                state.energySuggestionDismissed = true
+                return .none
 
             case .startFocusOnTask:
                 // Handled by AppFeature to switch tabs + link task

@@ -508,7 +508,7 @@ struct FocusWidgetMedium: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text(String(localized: "READY"))
+                    Text(String(localized: "Ready"))
                         .font(.system(size: 10, weight: .black))
                         .foregroundStyle(.secondary)
                     Spacer()
@@ -561,7 +561,7 @@ struct FocusWidgetLarge: View {
 
         VStack(spacing: 14) {
             HStack {
-                Text(entry.isPaused ? String(localized: "PAUSED") : (entry.phase?.uppercased() ?? String(localized: "FOCUSING")))
+                Text(entry.isPaused ? String(localized: "Paused") : (entry.phase ?? String(localized: "Focusing")))
                     .font(.system(size: 12, weight: .black))
                     .foregroundStyle(entry.isPaused ? .orange : .secondary)
                 Spacer()
@@ -634,7 +634,7 @@ struct FocusWidgetLarge: View {
                 .frame(width: 130, height: 130)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(String(localized: "READY"))
+                    Text(String(localized: "Ready"))
                         .font(.system(size: 12, weight: .black))
                         .foregroundStyle(.secondary)
 

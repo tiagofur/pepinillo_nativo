@@ -341,7 +341,7 @@ private struct TaskAnalyticsPlaceholder: View {
         VStack(spacing: 20) {
             // Title placeholder
             HStack {
-                Text("Task Title Placeholder")
+                Text(String(localized: "analytics.placeholder.tasktitle", defaultValue: "Task Title Placeholder"))
                     .font(.title2.weight(.bold))
                 Spacer()
             }
@@ -352,7 +352,7 @@ private struct TaskAnalyticsPlaceholder: View {
                     VStack(spacing: 8) {
                         Text("00h 00m")
                             .font(.title3.weight(.bold))
-                        Text("Focus Time")
+                        Text(String(localized: "analytics.placeholder.focustime", defaultValue: "Focus Time"))
                             .font(.caption)
                     }
                     .frame(maxWidth: .infinity)
@@ -367,7 +367,7 @@ private struct TaskAnalyticsPlaceholder: View {
                     VStack(spacing: 8) {
                         Text("00")
                             .font(.title3.weight(.bold))
-                        Text("Metric")
+                        Text(String(localized: "analytics.placeholder.metric", defaultValue: "Metric"))
                             .font(.caption)
                     }
                     .frame(maxWidth: .infinity)

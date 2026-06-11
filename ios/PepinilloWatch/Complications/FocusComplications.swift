@@ -59,9 +59,10 @@ struct FocusComplicationProvider: TimelineProvider {
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
-    /// Reads persisted stats from UserDefaults (written by WatchTimerFeature on stats received).
+    /// Reads persisted stats from the app group UserDefaults suite
+    /// (written by WatchTimerFeature; must use the same suite for cross-process reads).
     private func buildEntry() -> FocusComplicationEntry {
-        let defaults = UserDefaults.standard
+        let defaults = UserDefaults(suiteName: "group.com.pepinillo.app") ?? .standard
         let isActive = defaults.bool(forKey: WatchStatsKeys.isSessionActive)
         let displayTime = defaults.string(forKey: WatchStatsKeys.displayTime) ?? "—"
         let todayMinutes = defaults.integer(forKey: WatchStatsKeys.todayFocusMinutes)

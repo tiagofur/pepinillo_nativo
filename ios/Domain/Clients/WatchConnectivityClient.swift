@@ -30,6 +30,8 @@ struct WatchSessionState: Equatable, Sendable {
     var linkedTaskID: String?
     /// True on the first tick after a phase change — triggers haptic on Watch.
     var isPhaseTransition: Bool = false
+    /// Timestamp of when this state was generated (for stale-update dedupe on watch).
+    var sentAt: TimeInterval = Date().timeIntervalSince1970
 
     static let idle = WatchSessionState(
         isActive: false, isPaused: false, modeID: "pomodoro",
@@ -158,7 +160,20 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     static let shared = WatchConnectivityManager()
 
     private var session: WCSession?
-    private var continuation: AsyncStream<WatchMessage>.Continuation?
+
+    // Multicast: all active subscribers receive every message.
+    // Keyed by UUID so terminated streams can be removed (Continuation is a
+    // struct — identity comparison via AnyObject boxing never matches).
+    private var continuations: [UUID: AsyncStream<WatchMessage>.Continuation] = [:]
+    private let continuationsLock = NSLock()
+
+    // Phone-side context cache: always send a FULL context dict so applicationContext
+    // merging never leaves stale keys from prior sends.  The phone holds the last
+    // known values for every key and merges before each updateApplicationContext call.
+    private var cachedSessionStateDict: [String: Any] = [:]
+    private var cachedStatsDict: [String: Any] = [:]
+    private var cachedDashboardStatsDict: [String: Any] = [:]
+    private let contextCacheLock = NSLock()
 
     private override init() {
         super.init()
@@ -171,14 +186,30 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
 
     // MARK: - Stream
 
+    /// Returns an AsyncStream that receives all messages from the counterpart.
+    ///
+    /// Multiple callers are safe: each gets an independent stream.  The continuation
+    /// is added to the multicast list and removed when the stream is cancelled.
     func messageStream() -> AsyncStream<WatchMessage> {
         AsyncStream { continuation in
-            self.continuation = continuation
+            let id = UUID()
+            continuationsLock.lock()
+            continuations[id] = continuation
+            continuationsLock.unlock()
+
+            // Deliver current reachability immediately so the subscriber has initial state.
             continuation.yield(.connectivityStatus(session?.isReachable ?? false))
+
+            continuation.onTermination = { [weak self] _ in
+                guard let self else { return }
+                self.continuationsLock.lock()
+                self.continuations[id] = nil
+                self.continuationsLock.unlock()
+            }
         }
     }
 
-    // MARK: - Send (Watch → iOS direction)
+    // MARK: - Send (Watch → iOS direction: always sendMessage — correct)
 
     private static let log = Logger(subsystem: "com.pepinillo.app", category: "WatchConnectivity")
 
@@ -190,42 +221,94 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     }
 
     // MARK: - Send (iOS → Watch direction)
+    //
+    // Transport semantics (changed from all-sendMessage to per-payload strategy):
+    //
+    //   sessionState  → updateApplicationContext (guaranteed on wake) +
+    //                   sendMessage when reachable (low-latency live updates)
+    //   stats         → merged into applicationContext (same updateApplicationContext call)
+    //   dashboardStats→ merged into applicationContext
+    //   tasks         → transferUserInfo (queued, guaranteed) +
+    //                   sendMessage when reachable for latency
+    //   commands      → sendMessage (Watch→phone only, correct as-is)
+    //
+    // Context dict shape (top-level keys, never clobber each other):
+    //   "sessionState": { ... }
+    //   "stats":        { ... }
+    //   "dashboardStats": { ... }
+    //   "sentAt": TimeInterval   (for stale-update dedupe on the watch side)
+    //
+    // The phone maintains a cache of the last-sent values per section so it can
+    // always write the FULL context dict (applicationContext does not merge — it
+    // replaces, so we must send all sections together every time).
 
     func sendSessionState(_ state: WatchSessionState) async {
-        guard let session, session.isReachable else { return }
-        var dict: [String: Any] = [
-            "type":             "sessionState",
-            "isActive":         state.isActive,
-            "isPaused":         state.isPaused,
-            "modeID":           state.modeID,
-            "displayTime":      state.displayTime,
-            "phaseLabel":       state.phaseLabel,
+        guard let session else { return }
+
+        var sessionDict: [String: Any] = [
+            "isActive":          state.isActive,
+            "isPaused":          state.isPaused,
+            "modeID":            state.modeID,
+            "displayTime":       state.displayTime,
+            "phaseLabel":        state.phaseLabel,
             "isPhaseTransition": state.isPhaseTransition,
+            "sentAt":            state.sentAt,
         ]
-        if let p = state.progress        { dict["progress"]       = p }
-        if let n = state.pomodoroNumber  { dict["pomodoroNumber"] = n }
-        if let t = state.linkedTaskTitle { dict["linkedTaskTitle"] = t }
-        if let t = state.linkedTaskID    { dict["linkedTaskID"]   = t }
-        session.sendMessage(dict, replyHandler: nil) { error in
-            Self.log.error("Watch sendSessionState failed: \(error.localizedDescription)")
+        if let p = state.progress        { sessionDict["progress"]        = p }
+        if let n = state.pomodoroNumber  { sessionDict["pomodoroNumber"]  = n }
+        if let t = state.linkedTaskTitle { sessionDict["linkedTaskTitle"] = t }
+        if let t = state.linkedTaskID    { sessionDict["linkedTaskID"]    = t }
+
+        // Update phone-side context cache
+        let fullContext = updateContextCache { self.cachedSessionStateDict = sessionDict }
+
+        // Guaranteed delivery: applicationContext is delivered when watch app wakes
+        do {
+            try session.updateApplicationContext(fullContext)
+        } catch {
+            Self.log.error("updateApplicationContext(sessionState) failed: \(error.localizedDescription)")
+        }
+
+        // Low-latency live update: sendMessage when reachable (belt and suspenders)
+        if session.isReachable {
+            var messageDict = sessionDict
+            messageDict["type"] = "sessionState"
+            session.sendMessage(messageDict, replyHandler: nil) { error in
+                Self.log.error("sendMessage(sessionState) failed: \(error.localizedDescription)")
+            }
         }
     }
 
     func sendStats(todayMinutes: Int, sessions: Int, streak: Int) async {
-        guard let session, session.isReachable else { return }
-        let dict: [String: Any] = [
-            "type":         "stats",
+        guard let session else { return }
+
+        let statsDict: [String: Any] = [
             "todayMinutes": todayMinutes,
             "sessions":     sessions,
             "streak":       streak,
         ]
-        session.sendMessage(dict, replyHandler: nil) { error in
-            Self.log.error("Watch sendStats failed: \(error.localizedDescription)")
+
+        let fullContext = updateContextCache { self.cachedStatsDict = statsDict }
+
+        do {
+            try session.updateApplicationContext(fullContext)
+        } catch {
+            Self.log.error("updateApplicationContext(stats) failed: \(error.localizedDescription)")
+        }
+
+        // Also send via message for low-latency update if reachable
+        if session.isReachable {
+            var messageDict = statsDict
+            messageDict["type"] = "stats"
+            session.sendMessage(messageDict, replyHandler: nil) { error in
+                Self.log.error("sendMessage(stats) failed: \(error.localizedDescription)")
+            }
         }
     }
 
     func sendTasks(_ tasks: [WatchTaskItem]) async {
-        guard let session, session.isReachable else { return }
+        guard let session else { return }
+
         let encoded: [[String: Any]] = tasks.map { task in
             [
                 "id":                 task.id.uuidString,
@@ -240,15 +323,23 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             "type":  "tasks",
             "items": encoded,
         ]
-        session.sendMessage(dict, replyHandler: nil) { error in
-            Self.log.error("Watch sendTasks failed: \(error.localizedDescription)")
+
+        // Guaranteed delivery: transferUserInfo queues the payload and delivers
+        // it in order even when the watch app is not reachable.
+        session.transferUserInfo(dict)
+
+        // Low-latency: also sendMessage when reachable
+        if session.isReachable {
+            session.sendMessage(dict, replyHandler: nil) { error in
+                Self.log.error("sendMessage(tasks) failed: \(error.localizedDescription)")
+            }
         }
     }
 
     func sendDashboardStats(_ stats: WatchDashboardStats) async {
-        guard let session, session.isReachable else { return }
-        let dict: [String: Any] = [
-            "type":                  "dashboardStats",
+        guard let session else { return }
+
+        let dashboardDict: [String: Any] = [
             "todayMinutes":          stats.todayMinutes,
             "sessionsCompleted":     stats.sessionsCompleted,
             "tasksCompleted":        stats.tasksCompleted,
@@ -260,9 +351,49 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             "stopwatchMinutes":      stats.stopwatchMinutes,
             "longestSessionMinutes": stats.longestSessionMinutes,
         ]
-        session.sendMessage(dict, replyHandler: nil) { error in
-            Self.log.error("Watch sendDashboardStats failed: \(error.localizedDescription)")
+
+        let fullContext = updateContextCache { self.cachedDashboardStatsDict = dashboardDict }
+
+        do {
+            try session.updateApplicationContext(fullContext)
+        } catch {
+            Self.log.error("updateApplicationContext(dashboardStats) failed: \(error.localizedDescription)")
         }
+
+        if session.isReachable {
+            var messageDict = dashboardDict
+            messageDict["type"] = "dashboardStats"
+            session.sendMessage(messageDict, replyHandler: nil) { error in
+                Self.log.error("sendMessage(dashboardStats) failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Applies a cache mutation under the lock and returns the merged full context.
+    /// Synchronous on purpose: NSLock.lock()/unlock() is unavailable in async
+    /// contexts under Swift 6, and no suspension may occur while holding the lock.
+    private func updateContextCache(_ mutate: () -> Void) -> [String: Any] {
+        contextCacheLock.lock()
+        defer { contextCacheLock.unlock() }
+        mutate()
+        return buildFullContextLocked()
+    }
+
+    /// Merges all cached section dicts into a single applicationContext payload.
+    /// Must be called while holding contextCacheLock.
+    private func buildFullContextLocked() -> [String: Any] {
+        var ctx: [String: Any] = [:]
+        if !cachedSessionStateDict.isEmpty {
+            ctx["sessionState"] = cachedSessionStateDict
+        }
+        if !cachedStatsDict.isEmpty {
+            ctx["stats"] = cachedStatsDict
+        }
+        if !cachedDashboardStatsDict.isEmpty {
+            ctx["dashboardStats"] = cachedDashboardStatsDict
+        }
+        ctx["sentAt"] = Date().timeIntervalSince1970
+        return ctx
     }
 
     // MARK: - WCSessionDelegate
@@ -270,11 +401,21 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     func session(_ session: WCSession,
                  activationDidCompleteWith state: WCSessionActivationState,
                  error: Error?) {
-        continuation?.yield(.connectivityStatus(state == .activated))
+        yield(.connectivityStatus(state == .activated))
+
+        // Cold-start hydration: when activation completes on the WATCH side,
+        // read any previously delivered applicationContext and surface it as messages.
+        // On iOS this is a no-op (receivedApplicationContext is empty there).
+        if state == .activated {
+            let ctx = session.receivedApplicationContext
+            if !ctx.isEmpty {
+                deliverApplicationContext(ctx)
+            }
+        }
     }
 
     func sessionReachabilityDidChange(_ session: WCSession) {
-        continuation?.yield(.connectivityStatus(session.isReachable))
+        yield(.connectivityStatus(session.isReachable))
     }
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
@@ -282,28 +423,66 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         switch type {
         case "command":
             if let cmd = decodeCommand(message) {
-                continuation?.yield(.command(cmd))
+                yield(.command(cmd))
             }
         case "sessionState":
             if let state = decodeSessionState(message) {
-                continuation?.yield(.sessionState(state))
+                yield(.sessionState(state))
             }
         case "stats":
-            continuation?.yield(.stats(
+            yield(.stats(
                 todayMinutes: message["todayMinutes"] as? Int ?? 0,
                 sessions:     message["sessions"]     as? Int ?? 0,
                 streak:       message["streak"]       as? Int ?? 0
             ))
         case "tasks":
             if let items = decodeTasks(message) {
-                continuation?.yield(.tasks(items))
+                yield(.tasks(items))
             }
         case "dashboardStats":
             if let stats = decodeDashboardStats(message) {
-                continuation?.yield(.dashboardStats(stats))
+                yield(.dashboardStats(stats))
             }
         default:
             break
+        }
+    }
+
+    /// Handles applicationContext delivery (watch waking, cold-start hydration).
+    func session(_ session: WCSession,
+                 didReceiveApplicationContext applicationContext: [String: Any]) {
+        deliverApplicationContext(applicationContext)
+    }
+
+    /// Handles transferUserInfo delivery (guaranteed queued delivery for tasks).
+    func session(_ session: WCSession,
+                 didReceiveUserInfo userInfo: [String: Any]) {
+        guard let type = userInfo["type"] as? String else { return }
+        if type == "tasks", let items = decodeTasks(userInfo) {
+            yield(.tasks(items))
+        }
+    }
+
+    /// Unpacks a full applicationContext dict and yields one message per section present.
+    /// Ignores sections whose sentAt is older than the most recently processed state
+    /// (dedupe: the watch compares sentAt against its own current state timestamp
+    ///  in the reducer; we surface the values here unconditionally and let the reducer
+    ///  decide whether to apply them).
+    private func deliverApplicationContext(_ ctx: [String: Any]) {
+        if let sessionDict = ctx["sessionState"] as? [String: Any],
+           let state = decodeSessionState(sessionDict) {
+            yield(.sessionState(state))
+        }
+        if let statsDict = ctx["stats"] as? [String: Any] {
+            yield(.stats(
+                todayMinutes: statsDict["todayMinutes"] as? Int ?? 0,
+                sessions:     statsDict["sessions"]     as? Int ?? 0,
+                streak:       statsDict["streak"]       as? Int ?? 0
+            ))
+        }
+        if let dashDict = ctx["dashboardStats"] as? [String: Any],
+           let stats = decodeDashboardStats(dashDict) {
+            yield(.dashboardStats(stats))
         }
     }
 
@@ -312,6 +491,17 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     func sessionDidBecomeInactive(_ session: WCSession) {}
     func sessionDidDeactivate(_ session: WCSession) { session.activate() }
     #endif
+
+    // MARK: - Multicast yield helper
+
+    private func yield(_ message: WatchMessage) {
+        continuationsLock.lock()
+        let snapshot = continuations
+        continuationsLock.unlock()
+        for continuation in snapshot.values {
+            continuation.yield(message)
+        }
+    }
 
     // MARK: - Encode / Decode
 
@@ -358,16 +548,17 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         else { return nil }
 
         return WatchSessionState(
-            isActive:         isActive,
-            isPaused:         isPaused,
-            modeID:           modeID,
-            displayTime:      displayTime,
-            phaseLabel:       phaseLabel,
-            progress:         message["progress"]        as? Double,
-            pomodoroNumber:   message["pomodoroNumber"]  as? Int,
-            linkedTaskTitle:  message["linkedTaskTitle"] as? String,
-            linkedTaskID:     message["linkedTaskID"]    as? String,
-            isPhaseTransition: message["isPhaseTransition"] as? Bool ?? false
+            isActive:          isActive,
+            isPaused:          isPaused,
+            modeID:            modeID,
+            displayTime:       displayTime,
+            phaseLabel:        phaseLabel,
+            progress:          message["progress"]         as? Double,
+            pomodoroNumber:    message["pomodoroNumber"]   as? Int,
+            linkedTaskTitle:   message["linkedTaskTitle"]  as? String,
+            linkedTaskID:      message["linkedTaskID"]     as? String,
+            isPhaseTransition: message["isPhaseTransition"] as? Bool ?? false,
+            sentAt:            message["sentAt"]           as? TimeInterval ?? Date().timeIntervalSince1970
         )
     }
 

@@ -7,6 +7,9 @@
 import WidgetKit
 import SwiftData
 import Foundation
+import OSLog
+
+private let widgetLogger = Logger(subsystem: "com.pepinillo.app", category: "dashboard-widget")
 
 struct DashboardWidgetProvider: AppIntentTimelineProvider {
     typealias Entry = DashboardWidgetEntry
@@ -69,7 +72,7 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
 
                 let stats = allStats.first { $0.date >= dayDate && $0.date < dayEnd }
                 if stats == nil {
-                    print("[DashboardWidget] No DailyStats found for \(abbrev) \(dayDate)")
+                    widgetLogger.debug("No DailyStats found for \(abbrev, privacy: .public) \(dayDate, privacy: .public)")
                 }
 
                 let pomMin = (stats?.pomodoroSeconds ?? 0) / 60
@@ -103,16 +106,36 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
             let todayMinutes = todayStats?.totalFocusMinutes ?? 0
             let todaySessions = todayStats?.sessionsCompleted ?? 0
 
-            // Streak
-            let streak = computeStreak(context: context, today: today, calendar: calendar)
-
+            // Streak — fetch stats for protected streak computation.
+            // StreakProtectionService walks at most 730 days; 731 days is sufficient.
+            let streakLookbackStart = calendar.date(
+                byAdding: .day, value: -731, to: today
+            ) ?? Date.distantPast
+            let allTimeDescriptor = FetchDescriptor<DailyStats>(
+                predicate: #Predicate { $0.date >= streakLookbackStart },
+                sortBy: [SortDescriptor(\.date)]
+            )
+            let allTimeStats = (try? context.fetch(allTimeDescriptor)) ?? []
             let isPro = AppGroupDefaults.isProUser
+            var focusByDay: [Date: Bool] = [:]
+            for stat in allTimeStats {
+                let day = calendar.startOfDay(for: stat.date)
+                focusByDay[day] = (focusByDay[day] ?? false) || stat.hadFocusSession
+            }
+            let streakResult = StreakProtectionService.computeProtectedStreak(
+                focusByDay: focusByDay,
+                isPro: isPro,
+                today: today,
+                calendar: calendar
+            )
+
             return DashboardWidgetEntry(
                 date: Date.now,
                 isProUser: isPro,
                 todayMinutes: todayMinutes,
                 todaySessions: todaySessions,
-                streakDays: streak,
+                streakDays: streakResult.days,
+                streakProtectionApplied: streakResult.protectionApplied,
                 weeklyData: weeklyData,
                 weeklyTotalMinutes: weeklyTotal,
                 bestDayMinutes: bestDay,
@@ -122,28 +145,5 @@ struct DashboardWidgetProvider: AppIntentTimelineProvider {
         } catch {
             return .empty
         }
-    }
-
-    // MARK: - Streak Calculation
-
-    private func computeStreak(context: ModelContext, today: Date, calendar: Calendar) -> Int {
-        var streak = 0
-        var checkDate = today
-
-        for _ in 0..<365 {
-            guard let start = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
-            let end = checkDate
-
-            let descriptor = FetchDescriptor<DailyStats>(
-                predicate: #Predicate { $0.date >= start && $0.date < end }
-            )
-
-            guard let stats = try? context.fetch(descriptor).first,
-                  stats.hadFocusSession else { break }
-
-            streak += 1
-            checkDate = start
-        }
-        return streak
     }
 }

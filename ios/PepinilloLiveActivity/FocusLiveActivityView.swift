@@ -58,7 +58,7 @@ struct FocusLockScreenView: View {
             // Mode icon + progress ring
             ZStack {
                 Circle()
-                    .stroke(Color.white.opacity(0.2), lineWidth: 4)
+                    .stroke(Color.secondary.opacity(0.3), lineWidth: 4)
                     .frame(width: 48, height: 48)
 
                 if let progress = state.progress {
@@ -79,19 +79,19 @@ struct FocusLockScreenView: View {
                     Text(state.phase)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(.primary)
 
                     if state.isPaused {
                         Image(systemName: "pause.fill")
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.7))
+                            .foregroundStyle(.secondary)
                     }
                 }
 
                 if let task = state.taskName {
                     Text(task)
                         .font(.caption)
-                        .foregroundStyle(.white.opacity(0.75))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
@@ -103,14 +103,14 @@ struct FocusLockScreenView: View {
                 Text(state.formattedTime)
                     .font(.system(.title3, design: .rounded, weight: .semibold))
                     .monospacedDigit()
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
 
                 // Pomodoro counter
                 if let num = state.pomodoroNumber, let total = state.totalPomodoros {
                     HStack(spacing: 3) {
                         ForEach(1...total, id: \.self) { i in
                             Circle()
-                                .fill(i <= num ? state.modeColor : Color.white.opacity(0.3))
+                                .fill(i <= num ? state.modeColor : Color.secondary.opacity(0.4))
                                 .frame(width: 6, height: 6)
                         }
                     }
@@ -119,10 +119,6 @@ struct FocusLockScreenView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.black.opacity(0.85))
-        )
     }
 }
 

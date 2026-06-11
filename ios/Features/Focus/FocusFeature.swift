@@ -169,7 +169,10 @@ struct FocusFeature {
                 state.modeIcon = mode.icon
                 updateIdleDisplay(&state)
                 AppGroupDefaults.widgetSelectedMode = mode.rawValue
-                return .run { _ in WidgetCenter.shared.reloadAllTimelines() }
+                return .run { _ in
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                }
 
             // MARK: Session Control
 
@@ -256,8 +259,10 @@ struct FocusFeature {
 
                 updateDisplayFromPhase(&state)
 
-                // Notify widgets immediately that a session has started
-                WidgetCenter.shared.reloadAllTimelines()
+                // Notify only focus widgets that a session has started.
+                // Dashboard/Tasks widgets don't change at session start.
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
 
                 let linkedTitle = state.linkedTaskTitle
 
@@ -331,6 +336,14 @@ struct FocusFeature {
                             durationMinutes = 60 // default for open-ended modes
                         }
                         try? await calendarClient.createFocusEvent(title, Date.now, durationMinutes, mode.rawValue)
+                    },
+                    // Request notification permission at first session start (contextual moment).
+                    // Fires at most once; denied permission doesn't affect session flow.
+                    .run { [notificationClient] _ in
+                        let key = "pepinillo.hasRequestedNotificationPermission"
+                        guard !UserDefaults.standard.bool(forKey: key) else { return }
+                        UserDefaults.standard.set(true, forKey: key)
+                        _ = await notificationClient.requestAuthorization()
                     }
                 )
 
@@ -478,8 +491,13 @@ struct FocusFeature {
                 AppGroupDefaults.activeTaskID = id?.uuidString
                 AppGroupDefaults.activeSessionTaskTitle = title
                 
-                let reloadWidgetEffect: Effect<Action> = .run { _ in WidgetCenter.shared.reloadAllTimelines() }
-                
+                // Only focus widgets show the linked task title while a session is idle/active;
+                // dashboard and tasks widgets are unaffected by task linking.
+                let reloadWidgetEffect: Effect<Action> = .run { _ in
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                }
+
                 guard let taskID = id, !state.isRunning else {
                     return reloadWidgetEffect
                 }
@@ -569,7 +587,9 @@ struct FocusFeature {
                     AppGroupDefaults.activeSessionTaskTitle = taskTitle
                 }
 
-                // Update Live Activity + notification (notification every 30s)
+                // Throttle Live Activity to 1Hz (ActivityKit rate limits; display shows whole seconds).
+                // Notification update already runs every 30s.
+                guard significantChange else { return .none }
                 let displayTime = state.displayTime
                 let modeName = mode.rawValue
                 let phaseLabel = state.phaseLabel

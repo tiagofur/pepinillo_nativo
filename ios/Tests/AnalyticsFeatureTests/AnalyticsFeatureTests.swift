@@ -35,6 +35,7 @@ struct AnalyticsFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
@@ -52,6 +53,7 @@ struct AnalyticsFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
@@ -73,6 +75,7 @@ struct AnalyticsFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
@@ -167,6 +170,7 @@ struct AnalyticsFeatureTests {
             insights: .empty,
             streakDays: 0,
             longestStreak: 0,
+            streakProtectionApplied: false,
             achievements: [],
             weeklyInsights: []
         ))
@@ -174,6 +178,67 @@ struct AnalyticsFeatureTests {
         #expect(store.state.totalFocusMinutes == 60)
         #expect(store.state.sessionsCompleted == 3)
         #expect(store.state.dominantMode == .pomodoro)
+    }
+
+    // MARK: - chartData <-> totals invariant
+    //
+    // The compact stats row and weekly preview line both read from the 7-day chart window.
+    // When period == .week, chartData.reduce(totalMinutes) MUST equal totalFocusMinutes and
+    // chartData.reduce(sessionsCompleted) MUST equal sessionsCompleted — otherwise the
+    // numbers shown in the UI would be inconsistent with the bars displayed in the chart.
+
+    @Test func weekPeriodChartSumMatchesTotals() async {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date.now)
+
+        // Build 7 snapshots with known values
+        let snapshots: [AnalyticsFeature.DayDataSnapshot] = (0..<7).map { offset in
+            let date = calendar.date(byAdding: .day, value: -offset, to: today)!
+            return AnalyticsFeature.DayDataSnapshot(
+                date: date,
+                totalFocusSeconds: (offset + 1) * 600,  // 10, 20, 30, ... 70 minutes
+                sessionsCompleted: offset + 1,
+                pomodoroSeconds:   (offset + 1) * 600,
+                flowtimeSeconds:   0,
+                timeBlockSeconds:  0,
+                stopwatchSeconds:  0,
+                hadFocusSession:   true
+            )
+        }
+
+        let expectedTotalMinutes = snapshots.reduce(0) { $0 + $1.totalFocusSeconds } / 60
+        let expectedSessions = snapshots.reduce(0) { $0 + $1.sessionsCompleted }
+
+        let store = TestStore(initialState: AnalyticsFeature.State()) {
+            AnalyticsFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.allDataLoaded(
+            snapshots: snapshots,
+            insights: .empty,
+            streakDays: 0,
+            longestStreak: 0,
+            streakProtectionApplied: false,
+            achievements: [],
+            weeklyInsights: []
+        ))
+
+        // chartData has one point per day in the 7-day period
+        #expect(store.state.chartData.count == 7)
+
+        // Sum of chart bar heights (in minutes) must equal the period totals
+        let chartMinutesSum = store.state.chartData.reduce(0) { $0 + $1.totalMinutes }
+        let chartSessionsSum = store.state.chartData.reduce(0) { $0 + $1.sessionsCompleted }
+
+        #expect(chartMinutesSum == expectedTotalMinutes,
+            "Chart bars sum (\(chartMinutesSum)m) must equal totalFocusMinutes (\(expectedTotalMinutes)m)")
+        #expect(chartSessionsSum == expectedSessions,
+            "Chart sessions sum (\(chartSessionsSum)) must equal sessionsCompleted (\(expectedSessions))")
+
+        // The store-level totals must also match
+        #expect(store.state.totalFocusMinutes == expectedTotalMinutes)
+        #expect(store.state.sessionsCompleted == expectedSessions)
     }
 
     // MARK: - allDataLoaded — streaks
@@ -189,6 +254,7 @@ struct AnalyticsFeatureTests {
             insights: .empty,
             streakDays: 7,
             longestStreak: 30,
+            streakProtectionApplied: false,
             achievements: [],
             weeklyInsights: []
         ))
@@ -244,6 +310,7 @@ struct AnalyticsFeatureTests {
         } withDependencies: {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
         }
         store.exhaustivity = .off
 
@@ -323,6 +390,7 @@ struct AnalyticsFeatureTests {
             insights: insights,
             streakDays: 0,
             longestStreak: 0,
+            streakProtectionApplied: false,
             achievements: [],
             weeklyInsights: []
         ))

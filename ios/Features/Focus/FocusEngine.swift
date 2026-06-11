@@ -351,9 +351,11 @@ public actor FocusEngine {
     private func startTicking() {
         timerTask?.cancel()
         timerTask = Task { [weak self] in
-            // Tick at 10Hz for smooth UI updates
+            // Tick at 4Hz (250ms). All display modes show whole seconds, so sub-second
+            // precision is not needed. The ring uses a linear SwiftUI animation to smooth
+            // progress updates between ticks, so the visual is identical to 10Hz.
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(100))
+                try? await Task.sleep(for: .milliseconds(250))
                 await self?.tick()
             }
         }

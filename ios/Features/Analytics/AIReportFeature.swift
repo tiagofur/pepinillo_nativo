@@ -143,8 +143,11 @@ struct AIReportFeature {
     }
 
     /// Load a cached report from UserDefaults (lightweight cache for the current period).
+    /// The cache key is scoped to the current user ID so that after an account switch,
+    /// user B never sees user A's cached report.
     private func loadCachedReport(period: ReportPeriod, periodStart: Date) async throws -> ProductivityReportDTO? {
-        let key = "cachedReport_\(period.rawValue)"
+        let userScope = (try? await persistence.fetchCachedUser())?.id ?? "anonymous"
+        let key = "cachedReport_\(userScope)_\(period.rawValue)"
         guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
 
         struct CachedReport: Codable {
@@ -162,8 +165,10 @@ struct AIReportFeature {
     }
 
     /// Cache a report to UserDefaults.
+    /// Key is user-scoped to prevent cross-user cache leaks on account switch.
     private func cacheReport(_ dto: ProductivityReportDTO) async throws {
-        let key = "cachedReport_\(dto.period)"
+        let userScope = (try? await persistence.fetchCachedUser())?.id ?? "anonymous"
+        let key = "cachedReport_\(userScope)_\(dto.period)"
 
         struct CachedReport: Codable {
             let dto: CodableReportDTO
@@ -174,6 +179,16 @@ struct AIReportFeature {
         if let data = try? JSONEncoder().encode(cached) {
             UserDefaults.standard.set(data, forKey: key)
         }
+    }
+
+    /// Remove all cached AI reports from UserDefaults.
+    /// Call this on sign-out and account deletion so the next user starts fresh.
+    static func clearAllCachedReports() {
+        let defaults = UserDefaults.standard
+        let prefix = "cachedReport_"
+        defaults.dictionaryRepresentation().keys
+            .filter { $0.hasPrefix(prefix) }
+            .forEach { defaults.removeObject(forKey: $0) }
     }
 }
 

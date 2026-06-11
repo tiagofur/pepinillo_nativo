@@ -112,6 +112,9 @@ struct PaywallFeature {
                         message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
                         isSuccess: true
                     )
+                    // Haptic is triggered in the view layer (PaywallView) reacting to
+                    // purchaseResult.isSuccess — matching the CelebrationView.onAppear pattern.
+                    return .none
                 case .pending:
                     state.purchaseResult = State.PurchaseResultAlert(
                         message: String(localized: "Purchase is pending approval."),

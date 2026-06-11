@@ -147,6 +147,10 @@ public actor BackgroundPersistenceActor {
         return DailyStatsDTO(from: stats)
     }
 
+    func fetchDailyStatsRange(from start: Date, to end: Date) throws -> [DailyStatsDTO] {
+        try service.fetchDailyStatsRange(from: start, to: end).map { DailyStatsDTO(from: $0) }
+    }
+
     // MARK: - Preferences
 
     func fetchPreferences() throws -> UserPreferencesDTO {
@@ -284,16 +288,20 @@ public actor BackgroundPersistenceActor {
 
     // MARK: - Wipe Operations
 
-    func deleteAllTasks() {
-        try? service.deleteAllTasks()
+    /// Deletes all task rows from the store. Throws on save failure so callers
+    /// know the wipe did not complete and can abort a wipeAndSync safely.
+    func deleteAllTasks() throws {
+        try service.deleteAllTasks()
     }
 
-    func deleteAllSessions() {
-        try? service.deleteAllSessions()
+    /// Deletes all session rows from the store. Throws on save failure.
+    func deleteAllSessions() throws {
+        try service.deleteAllSessions()
     }
 
-    func deleteAllStats() {
-        try? service.deleteAllStats()
+    /// Deletes all daily-stat rows from the store. Throws on save failure.
+    func deleteAllStats() throws {
+        try service.deleteAllStats()
     }
 
     // MARK: - Counts

@@ -62,11 +62,28 @@ struct AuthView: View {
             .ignoresSafeArea()
         }
         .scrollDismissesKeyboard(.interactively)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: store.mode)
+        .animation(MotionTokens.snappy, value: store.mode)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $store.scope(state: \.forgotPassword, action: \.forgotPassword)) { forgotPasswordStore in
             ForgotPasswordView(store: forgotPasswordStore)
                 .pepinilloSheetStyle()
+        }
+        .alert(
+            String(localized: "auth.wipeandsync.failure.title", defaultValue: "Data Sync Failed"),
+            isPresented: Binding(
+                get: { store.wipeAndSyncError != nil },
+                set: { if !$0 { store.send(.dismissWipeAndSyncError) } }
+            )
+        ) {
+            Button(String(localized: "auth.wipeandsync.failure.retry", defaultValue: "Retry")) {
+                store.send(.retryWipeAndSync)
+            }
+            .keyboardShortcut(.defaultAction)
+            Button(String(localized: "auth.wipeandsync.failure.continue", defaultValue: "Continue"), role: .cancel) {
+                store.send(.dismissWipeAndSyncError)
+            }
+        } message: {
+            Text(String(localized: "auth.wipeandsync.failure.message", defaultValue: "Your account data could not be synced to this device. You can retry now or continue — your account is active and sync will be attempted again later."))
         }
         .sheet(isPresented: Binding(
             get: { store.showMergeDialog },
@@ -89,7 +106,7 @@ struct AuthView: View {
                         ProgressView()
                             .scaleEffect(1.5)
                             .accessibilityHidden(true)
-                        Text("Syncing your data...")
+                        Text(String(localized: "auth.syncing.label", defaultValue: "Syncing your data..."))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -265,7 +282,7 @@ struct AuthView: View {
             .font(.subheadline.weight(.bold))
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(
                 theme.pomodoroColor.gradient,
                 in: Capsule()
@@ -287,7 +304,7 @@ struct AuthView: View {
                     Rectangle()
                         .fill(Color.secondary.opacity(0.25))
                         .frame(height: 1)
-                    Text("or")
+                    Text(String(localized: "auth.separator.or", defaultValue: "or"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                     Rectangle()

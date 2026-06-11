@@ -9,7 +9,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite("FocusFeatureReducer", .serialized)
+@Suite("FocusFeatureReducer", .serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct FocusFeatureReducerTests {
 
@@ -81,6 +81,7 @@ struct FocusFeatureReducerTests {
             $0.soundscapeClient.play = { _, _ in }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -113,6 +114,7 @@ struct FocusFeatureReducerTests {
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off
@@ -146,6 +148,7 @@ struct FocusFeatureReducerTests {
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.notificationClient.requestAuthorization = { false }
         }
 
         store.exhaustivity = .off

@@ -53,6 +53,12 @@ struct PaywallView: View {
             } message: {
                 Text(store.purchaseResult?.message ?? "")
             }
+            .onChange(of: store.purchaseResult) { _, result in
+                // Fire success haptic in the view layer — matches CelebrationView.onAppear pattern.
+                if result?.isSuccess == true {
+                    HapticManager.notification(.success)
+                }
+            }
             .task { store.send(.appeared) }
         }
     }
@@ -104,8 +110,7 @@ struct PaywallHeaderSection: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(String(localized: "Pepinillo plans"))
-                        .font(.caption.weight(.semibold))
-                        .textCase(.uppercase)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                     Text(String(localized: "Apple-first focus. Sync when you need it."))
                         .font(.subheadline.weight(.semibold))
@@ -306,6 +311,7 @@ struct PaywallProductCard: View {
                             Text(product.planDisplayName)
                                 .font(.headline)
                                 .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
 
                             if product.isFeatured {
                                 Text(String(localized: "Best value"))
@@ -322,8 +328,7 @@ struct PaywallProductCard: View {
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-
-                    Spacer(minLength: 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(product.displayPrice)
@@ -334,7 +339,7 @@ struct PaywallProductCard: View {
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
                     }
-                    .layoutPriority(1)
+                    .fixedSize(horizontal: true, vertical: false)
                 }
 
                 HStack(spacing: 8) {
@@ -408,7 +413,7 @@ struct PaywallPurchaseButton: View {
             }
             .font(.headline.weight(.semibold))
             .frame(maxWidth: .infinity)
-            .frame(height: 58)
+            .frame(minHeight: 58)
             .paywallPrimaryActionGlass(glassNamespace: glassNamespace)
         }
         .frame(maxWidth: 480)

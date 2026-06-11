@@ -49,6 +49,10 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
                     SortDescriptor(\.createdAt, order: .reverse),
                 ]
             )
+            // Bound the fetch: the widget renders at most 8 tasks. We fetch 50 so
+            // the in-memory today/due/overdue filter has enough candidates without
+            // scanning the full table.
+            descriptor.fetchLimit = 50
             // Avoid loading relationships in widget process
             descriptor.relationshipKeyPathsForPrefetching = []
 

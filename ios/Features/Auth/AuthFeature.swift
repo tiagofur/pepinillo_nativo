@@ -5,7 +5,10 @@
 // Handles email/password auth, delegates authenticated user or guest mode.
 
 import Foundation
+import OSLog
 import ComposableArchitecture
+
+private let authLogger = Logger(subsystem: "com.pepinillo.app", category: "auth")
 
 // MARK: - AuthFeature
 
@@ -25,6 +28,9 @@ struct AuthFeature {
         var isPasswordVisible = false
         var showMergeDialog = false
         var isSyncing = false
+        /// Non-nil when wipeAndSync failed after authentication succeeded.
+        /// Drives an alert offering Retry / Continue.
+        var wipeAndSyncError: String? = nil
         @Presents var forgotPassword: ForgotPasswordFeature.State?
     }
 
@@ -56,6 +62,9 @@ struct AuthFeature {
         case mergeTapped
         case useAccountOnlyTapped
         case dismissMergeDialog
+        case wipeAndSyncFailed(String)
+        case retryWipeAndSync
+        case dismissWipeAndSyncError
 
         case delegate(Delegate)
         enum Delegate: Equatable {
@@ -248,9 +257,43 @@ struct AuthFeature {
                 return .run { [syncClient, persistence] send in
                     do {
                         try await syncClient.wipeAndSync()
+                        if let user = try await persistence.fetchCachedUser() {
+                            await send(.delegate(.authenticated(user)))
+                        }
                     } catch {
-                        // Best-effort wipe — continue regardless
+                        authLogger.error("wipeAndSync failed: \(error, privacy: .public)")
+                        SentryService.captureError(error, context: "wipeAndSync failed during account-only auth flow")
+                        await send(.wipeAndSyncFailed(error.localizedDescription))
                     }
+                }
+
+            case .wipeAndSyncFailed(let message):
+                state.isSyncing = false
+                state.wipeAndSyncError = message
+                return .none
+
+            case .retryWipeAndSync:
+                state.wipeAndSyncError = nil
+                state.isSyncing = true
+                return .run { [syncClient, persistence] send in
+                    do {
+                        try await syncClient.wipeAndSync()
+                        if let user = try await persistence.fetchCachedUser() {
+                            await send(.delegate(.authenticated(user)))
+                        }
+                    } catch {
+                        authLogger.error("wipeAndSync retry failed: \(error, privacy: .public)")
+                        SentryService.captureError(error, context: "wipeAndSync retry failed during account-only auth flow")
+                        await send(.wipeAndSyncFailed(error.localizedDescription))
+                    }
+                }
+
+            case .dismissWipeAndSyncError:
+                // User chose Continue — authentication succeeded, surface the app
+                // even though the data merge did not complete.
+                state.wipeAndSyncError = nil
+                state.isSyncing = false
+                return .run { [persistence] send in
                     if let user = try await persistence.fetchCachedUser() {
                         await send(.delegate(.authenticated(user)))
                     }

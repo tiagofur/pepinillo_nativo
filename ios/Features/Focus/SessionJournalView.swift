@@ -32,7 +32,7 @@ struct SessionJournalView: View {
     @ViewBuilder
     private var headerSection: some View {
         VStack(spacing: 8) {
-            Text("Session Complete")
+            Text(String(localized: "sessionjournal.title", defaultValue: "Session Complete"))
                 .font(.title2.bold())
             Text("\(store.modeName.capitalized) · \(store.durationFormatted)")
                 .font(.subheadline)
@@ -44,7 +44,7 @@ struct SessionJournalView: View {
     @ViewBuilder
     private var ratingSection: some View {
         VStack(spacing: 12) {
-            Text("How was your focus?")
+            Text(String(localized: "sessionjournal.rating.heading", defaultValue: "How was your focus?"))
                 .font(.headline)
 
             HStack(spacing: 16) {
@@ -84,7 +84,7 @@ struct SessionJournalView: View {
     @ViewBuilder
     private var noteSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Quick reflection")
+            Text(String(localized: "sessionjournal.note.heading", defaultValue: "Quick reflection"))
                 .font(.headline)
 
             TextField(
@@ -112,7 +112,7 @@ struct SessionJournalView: View {
             Button {
                 store.send(.saveTapped)
             } label: {
-                Text("Save")
+                Text(String(localized: "sessionjournal.save.button", defaultValue: "Save"))
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
@@ -123,7 +123,7 @@ struct SessionJournalView: View {
             Button {
                 store.send(.skipTapped)
             } label: {
-                Text("Skip")
+                Text(String(localized: "sessionjournal.skip.button", defaultValue: "Skip"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

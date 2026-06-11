@@ -107,7 +107,10 @@ final class PersistenceStoreRouter: ObservableObject {
             let container = try await openAppleCloudContainerWithTimeout()
             let didMigrate = UserDefaults.standard.bool(forKey: "pepAppleCloudInitialMigrationComplete")
             if !didMigrate {
-                try migrateData(from: localContainer, to: container)
+                // Perform the data copy off the main thread; only the container swap
+                // (below) needs to happen on @MainActor.
+                let source = localContainer
+                try await Self.migrateDataOffMain(from: source, to: container)
                 UserDefaults.standard.set(true, forKey: "pepAppleCloudInitialMigrationComplete")
             }
 
@@ -127,12 +130,21 @@ final class PersistenceStoreRouter: ObservableObject {
     private func exportAppleCloudDataToLocalForBackendIfNeeded() {
         guard AppGroupDefaults.activeSyncMode == .appleCloud, let appleCloudContainer else { return }
 
-        do {
-            try migrateData(from: appleCloudContainer, to: localContainer)
-            try SwiftDataPersistenceService(container: localContainer).markAllSyncableDataDirty()
-        } catch {
-            syncRouterLogger.error("Apple Cloud export to backend-local store failed: \(String(describing: error), privacy: .public)")
-            AppGroupDefaults.lastAppleCloudActivationError = String(describing: error)
+        // Capture containers as Sendable references before leaving the main actor.
+        let source = appleCloudContainer
+        let target = localContainer
+
+        Task.detached(priority: .utility) { [weak self] in
+            do {
+                try await Self.migrateDataOffMain(from: source, to: target)
+                try SwiftDataPersistenceService(container: target).markAllSyncableDataDirty()
+            } catch {
+                syncRouterLogger.error("Apple Cloud export to backend-local store failed: \(String(describing: error), privacy: .public)")
+                await MainActor.run {
+                    AppGroupDefaults.lastAppleCloudActivationError = String(describing: error)
+                }
+            }
+            _ = self // suppress unused warning; weak ref keeps router alive during detach
         }
     }
 
@@ -146,7 +158,21 @@ final class PersistenceStoreRouter: ObservableObject {
         }
     }
 
-    private func migrateData(from sourceContainer: ModelContainer, to targetContainer: ModelContainer) throws {
+    /// Performs a full data copy between two containers.
+    /// This method is intentionally `static nonisolated` so it can be called from a
+    /// background Task without hopping to the main actor. Both `SwiftDataPersistenceService`
+    /// instances create fresh `ModelContext` objects inside the call, which is safe as
+    /// long as they are not shared with any other thread.
+    private nonisolated static func migrateDataOffMain(
+        from sourceContainer: ModelContainer,
+        to targetContainer: ModelContainer
+    ) async throws {
+        try await Task.detached(priority: .utility) {
+            try Self._migrateDataSync(from: sourceContainer, to: targetContainer)
+        }.value
+    }
+
+    private nonisolated static func _migrateDataSync(from sourceContainer: ModelContainer, to targetContainer: ModelContainer) throws {
         let source = SwiftDataPersistenceService(container: sourceContainer)
         let target = SwiftDataPersistenceService(container: targetContainer)
         let iso = ISO8601DateFormatter()

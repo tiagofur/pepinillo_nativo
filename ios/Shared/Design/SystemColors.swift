@@ -43,6 +43,18 @@ extension Color {
         #endif
     }
 
+    /// Cards and list rows sitting on top of a grouped page background.
+    /// In dark mode: ~rgb(28,28,30) — visually separated from systemGroupedBackground (pure black).
+    static var pepinilloSecondarySystemGroupedBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #elseif os(macOS)
+        Color(nsColor: .controlBackgroundColor)
+        #else
+        Color(.secondarySystemGroupedBackground)
+        #endif
+    }
+
     static var pepinilloTertiarySystemBackground: Color {
         #if os(iOS)
         Color(uiColor: .tertiarySystemBackground)

@@ -20,7 +20,9 @@ import androidx.glance.appwidget.updateAll
 import dagger.hilt.android.AndroidEntryPoint
 import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.FocusTimerState
@@ -65,6 +67,7 @@ class FocusTimerService : Service() {
     @Inject lateinit var sessionRepository: SessionRepository
     @Inject lateinit var taskRepository: dev.creapolis.pepinillo.data.repository.TaskRepository
     @Inject lateinit var userPreferencesRepository: UserPreferencesRepository
+    @Inject lateinit var featureGate: FeatureGate
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isCollecting = false
@@ -272,7 +275,10 @@ class FocusTimerService : Service() {
                 sessionRepository.getAllDaysWithSessions(),
                 userPreferencesRepository.preferences,
             ) { timerState: dev.creapolis.pepinillo.domain.timer.FocusTimerState, stats: DailyStatsEntity?, allDays: List<DailyStatsEntity>, userPrefs: UserPreferences ->
-                val streak = sessionRepository.calculateCurrentStreak(allDays)
+                val streak = StreakProtectionService.computeProtectedStreak(
+                    history = allDays,
+                    isPro = featureGate.isPro,
+                ).days
                 val sessionsToday = stats?.sessionsCompleted ?: 0
                 val themeId = userPrefs.selectedTheme
                 val themeMode = userPrefs.themeMode.name
@@ -377,7 +383,10 @@ class FocusTimerService : Service() {
                     context = this@FocusTimerService,
                     totalMinutes = stats?.totalMinutes ?: 0,
                     sessions = stats?.sessionsCompleted ?: 0,
-                    streak = sessionRepository.calculateCurrentStreak(allDays),
+                    streak = StreakProtectionService.computeProtectedStreak(
+                        history = allDays,
+                        isPro = featureGate.isPro,
+                    ).days,
                     completedTasksToday = completedToday,
                 )
             }

@@ -97,6 +97,7 @@ data class DashboardStats(
     val weekSessions: Int = 0,
     val currentStreak: Int = 0,
     val bestStreak: Int = 0,
+    val streakProtectionApplied: Boolean = false,
     val longestSessionMinutes: Int = 0,
     val weeklyData: List<DailyFocus> = emptyList(),
     val modeBreakdown: List<ModeUsage> = emptyList(),

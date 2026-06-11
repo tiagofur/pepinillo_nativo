@@ -231,6 +231,7 @@ struct AppView: View {
             }
         }
         .tabViewStyle(.sidebarAdaptable)
+        .conditionalTabBarMinimize()
         .animation(.snappy(duration: 0.25), value: store.selectedTab)
         .focusedValue(\.appStore, store)
     }

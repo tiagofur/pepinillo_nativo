@@ -19,20 +19,25 @@ struct TaskRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                completionButton
-                taskInfo
-                Spacer()
-                if !task.isCompleted {
-                    focusButton
+            HStack(spacing: 0) {
+                // Priority color bar — calm leading indicator replacing text prefixes
+                priorityBar
+
+                HStack(spacing: 12) {
+                    completionButton
+                    taskInfo
+                    Spacer()
+                    if !task.isCompleted {
+                        focusButton
+                    }
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
             .background(cardBackgroundTint)
-            .pepinilloGlass(cornerRadius: 12)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(cardBorderColor, lineWidth: 1)
             )
             .shadow(
@@ -122,75 +127,88 @@ struct TaskRow: View {
 
     private var taskInfo: some View {
         VStack(alignment: .leading, spacing: 3) {
-            taskTitleView
+            Text(task.title)
+                .font(.body)
                 .strikethrough(task.isCompleted)
                 .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                .lineLimit(2)
+                .lineLimit(1)
 
-            // Notes snippet
-            if let notes = task.notes, !notes.isEmpty {
-                Text(notes)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-
-            // Metadata badges
-            metadataBadges
+            // Metadata chip (single — see chip priority logic)
+            metadataChip
         }
     }
 
+    /// Single metadata chip — chip priority:
+    ///   1. Energy level (app's most distinctive concept)
+    ///   2. Due-today / overdue indicator
+    ///   3. Recurring icon
+    ///   4. Nothing (no chip)
     @ViewBuilder
-    private var metadataBadges: some View {
-        let hasBadges = task.dueDate != nil || task.scheduledForToday
-            || task.estimatedPomodoros > 0 || task.subtaskProgress.total > 0
-            || task.recurrenceRule != nil
+    private var metadataChip: some View {
+        // 1. Energy level if set (non-default detection: always show — energy is core)
+        let chipContent = chipData
+        if let (label, icon, color) = chipContent {
+            Label(label, systemImage: icon)
+                .font(.caption2)
+                .foregroundStyle(color)
+                .lineLimit(1)
+        }
+    }
 
-        if hasBadges {
-            HStack(spacing: 6) {
-                // Due date
-                if let due = task.dueDate {
-                    let isOverdue = due < Calendar.current.startOfDay(for: .now) && !task.isCompleted
-                    let isToday = Calendar.current.isDateInToday(due) && !task.isCompleted
-                    Label(formatDueDate(due), systemImage: "calendar")
-                        .font(.caption2)
-                        .foregroundStyle(isOverdue ? .red : (isToday ? .orange : .secondary))
-                }
+    /// Returns (label, icon, color) for the single metadata chip, or nil.
+    private var chipData: (String, String, Color)? {
+        // 1. Energy level (always the primary differentiator)
+        let energy = task.energyLevel
+        // Show energy chip always (all tasks have an energy level)
+        let energyChip: (String, String, Color) = (energy.displayName, energy.icon, energy.color)
 
-                // Today indicator
-                if task.scheduledForToday && task.dueDate == nil {
-                    Label(String(localized: "Today"), systemImage: "bolt.fill")
-                        .font(.caption2)
-                        .foregroundStyle(.green)
-                }
-
-                // Energy level
-                Label(task.energyLevel.displayName, systemImage: task.energyLevel.icon)
-                    .font(.caption2)
-                    .foregroundStyle(task.energyLevel.color)
-
-                // Pomodoros
-                if task.estimatedPomodoros > 0 {
-                    Text("🍅 \(task.completedPomodoros)/\(task.estimatedPomodoros)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
-                // Subtasks
-                if task.subtaskProgress.total > 0 {
-                    Text("☑ \(task.subtaskProgress.completed)/\(task.subtaskProgress.total)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
-                // Recurrence
-                if let rule = task.recurrenceRule,
-                   let preset = RecurrencePreset.from(rule: rule) {
-                    Label(preset.displayName, systemImage: preset.icon)
-                        .font(.caption2)
-                        .foregroundStyle(.teal)
-                }
+        // 2. Due date — overrides energy when task is overdue or due today
+        if let due = task.dueDate {
+            let cal = Calendar.current
+            let isOverdue = due < cal.startOfDay(for: .now) && !task.isCompleted
+            let isToday = cal.isDateInToday(due) && !task.isCompleted
+            if isOverdue {
+                return (String(localized: "Overdue"), "calendar", .red)
             }
+            if isToday {
+                return (String(localized: "Due today"), "calendar", .orange)
+            }
+        }
+
+        // 3. If due date exists but not urgent, still show energy
+        if task.dueDate == nil {
+            // Due-today via scheduledForToday toggle (no explicit date)
+            if task.scheduledForToday {
+                return (String(localized: "Today"), "bolt.fill", .green)
+            }
+            // Recurring
+            if let rule = task.recurrenceRule, let preset = RecurrencePreset.from(rule: rule) {
+                return (preset.displayName, preset.icon, .teal)
+            }
+        }
+
+        // Fall back to energy for tasks with a future due date
+        return energyChip
+    }
+
+    /// Slim leading color bar (≈4 pt wide) colored by priority.
+    /// Hidden (zero width) when priority is .none so the row layout is unchanged.
+    @ViewBuilder
+    private var priorityBar: some View {
+        if let barColor = priorityBarColor {
+            barColor
+                .frame(width: 4)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var priorityBarColor: Color? {
+        guard !task.isCompleted else { return nil }
+        switch task.priority {
+        case .high:   return .red
+        case .medium: return .orange
+        case .low:    return .blue
+        case .none:   return nil
         }
     }
 
@@ -273,46 +291,6 @@ struct TaskRow: View {
             return .blue
         case .none:
             return .secondary
-        }
-    }
-
-    private func priorityPrefix(for priority: TaskPriority) -> String {
-        switch priority {
-        case .high:
-            return "!!! "
-        case .medium:
-            return "!! "
-        case .low:
-            return "! "
-        case .none:
-            return ""
-        }
-    }
-
-    private var taskTitleView: Text {
-        let prefix = priorityPrefix(for: task.priority)
-        if !prefix.isEmpty {
-            let prefixColor = task.isCompleted ? Color.secondary : (priorityColor(for: task.priority, isCompleted: false) ?? .primary)
-            return Text(prefix)
-                .font(.body.weight(.bold))
-                .foregroundStyle(prefixColor)
-            + Text(task.title)
-        } else {
-            return Text(task.title)
-        }
-    }
-
-    private func priorityColor(for priority: TaskPriority, isCompleted: Bool) -> Color? {
-        guard !isCompleted else { return nil }
-        switch priority {
-        case .high:
-            return .red
-        case .medium:
-            return .orange
-        case .low:
-            return .blue
-        case .none:
-            return nil
         }
     }
 

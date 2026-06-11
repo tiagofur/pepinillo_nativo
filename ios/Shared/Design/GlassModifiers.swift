@@ -16,7 +16,7 @@ struct PepinilloGlassModifier: ViewModifier {
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
             #else
             content
-                .background(Color.pepinilloSecondarySystemBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(Color.pepinilloSecondarySystemGroupedBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
             #endif
         } else if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
             content
@@ -64,6 +64,7 @@ struct AdaptiveGlassCircleModifier: ViewModifier {
     let id: String
     let namespace: Namespace.ID
     var tint: Color?
+    var tintOpacity: Double
     var foreground: Color?
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -78,7 +79,7 @@ struct AdaptiveGlassCircleModifier: ViewModifier {
             #else
             content
                 .foregroundStyle(foreground ?? .primary)
-                .background(tint ?? Color.pepinilloSecondarySystemBackground, in: Circle())
+                .background(tint ?? Color.pepinilloSecondarySystemGroupedBackground, in: Circle())
                 .contentShape(Circle())
             #endif
         } else if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
@@ -87,7 +88,7 @@ struct AdaptiveGlassCircleModifier: ViewModifier {
                 .glassEffect(
                     .regular
                         .interactive(true)
-                        .tint((tint ?? .clear).opacity(tint == nil ? 0 : 0.28)),
+                        .tint((tint ?? .clear).opacity(tint == nil ? 0 : tintOpacity)),
                     in: .circle
                 )
                 .glassEffectID(id, in: namespace)
@@ -112,9 +113,10 @@ extension View {
         id: String,
         namespace: Namespace.ID,
         tint: Color? = nil,
+        tintOpacity: Double = 0.28,
         foreground: Color? = nil
     ) -> some View {
-        modifier(AdaptiveGlassCircleModifier(id: id, namespace: namespace, tint: tint, foreground: foreground))
+        modifier(AdaptiveGlassCircleModifier(id: id, namespace: namespace, tint: tint, tintOpacity: tintOpacity, foreground: foreground))
     }
 }
 

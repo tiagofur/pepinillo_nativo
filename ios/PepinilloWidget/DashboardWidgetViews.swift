@@ -26,7 +26,6 @@ struct ProWidgetOverlay: View {
             Text(String(localized: "Pepinillo+ required"))
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.pepinilloSystemBackground.opacity(0.8))
@@ -156,7 +155,6 @@ struct DashboardWidgetMedium: View {
                         Text(String(localized: "This week"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
 
                         if entry.weeklyData.isEmpty {
                             Spacer()
@@ -261,7 +259,6 @@ struct DashboardWidgetLarge: View {
                     Text(String(localized: "Weekly Overview"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
 
                     WeeklyBarChart(data: entry.weeklyData, height: 100)
 

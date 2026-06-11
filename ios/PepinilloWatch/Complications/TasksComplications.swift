@@ -74,9 +74,10 @@ struct TasksComplicationProvider: TimelineProvider {
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
-    /// Reads persisted task data from UserDefaults (written by WatchAppFeature on tasks received).
+    /// Reads persisted task data from the app group UserDefaults suite
+    /// (written by WatchAppFeature; must use the same suite for cross-process reads).
     private func buildEntry() -> TasksComplicationEntry {
-        let defaults = UserDefaults.standard
+        let defaults = UserDefaults(suiteName: "group.com.pepinillo.app") ?? .standard
         let completedCount = defaults.integer(forKey: WatchStatsKeys.tasksCompletedCount)
         let totalCount = defaults.integer(forKey: WatchStatsKeys.tasksTotalCount)
 
@@ -164,7 +165,7 @@ struct TasksRectangularView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             // Header: "Tasks (2/5)"
-            Text("Tasks (\(entry.completedCount)/\(entry.totalCount))")
+            Text(String(format: String(localized: "complication.tasks.header", defaultValue: "Tasks (%lld/%lld)"), entry.completedCount, entry.totalCount))
                 .font(.system(.caption, design: .rounded, weight: .bold))
                 .foregroundStyle(.primary)
 

@@ -69,7 +69,7 @@ targets:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: true
           UISceneConfigurations: {}
-        UIRequiredDeviceCapabilities: [armv7]
+        UIRequiredDeviceCapabilities: [arm64]
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UISupportedInterfaceOrientations~ipad:
           - UIInterfaceOrientationPortrait
@@ -83,9 +83,7 @@ targets:
         WS_BASE_URL: "$(WS_BASE_URL)"
         APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
         SENTRY_DSN: "$(SENTRY_DSN)"
-        NSUserNotificationUsageDescription: >
-          Pepinillo sends reminders to start your focus sessions and notifies
-          you when a Pomodoro or break is complete.
+        REVENUECAT_API_KEY: "$(REVENUECAT_API_KEY)"
         NSHealthUpdateUsageDescription: >
           Pepinillo logs your focus sessions as Mindful Minutes in Apple Health
           to help you track your wellbeing alongside your productivity.
@@ -98,6 +96,9 @@ targets:
         NSCalendarsFullAccessUsageDescription: >
           Pepinillo reads and updates your Calendar so your focus sessions
           appear alongside your existing schedule.
+        NSRemindersFullAccessUsageDescription: >
+          Pepinillo imports your Reminders as tasks so you can start focusing
+          on them right away.
         NSSiriUsageDescription: >
           Pepinillo uses Siri so you can start and stop focus sessions with
           your voice.
@@ -106,7 +107,6 @@ targets:
           - com.pepinillo.app.focusSession
           - com.pepinillo.app.viewAnalytics
           - com.pepinillo.app.viewTask
-          - INSendMessageIntent
         CFBundleURLTypes:
           - CFBundleURLName: com.pepinillo.app
             CFBundleURLSchemes:
@@ -125,7 +125,6 @@ targets:
           - CloudKit
         com.apple.developer.healthkit: true
         com.apple.developer.siri: true
-        com.apple.developer.usernotifications.communication: true
     sources:
       - path: App
       - path: Features
@@ -271,6 +270,7 @@ targets:
       - path: Features/Focus/FocusModels.swift
       - path: Domain/Clients/LiveActivityClient.swift
       - path: Domain/Models
+      - path: Domain/Services/StreakProtectionService.swift
       - path: Shared/Persistence/AppGroupContainer.swift
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Shared/Design/ModeColors.swift
@@ -309,6 +309,9 @@ targets:
         NSSupportsLiveActivities: false
     entitlements:
       path: PepinilloWidget/PepinilloWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.pepinillo.app
     sources:
       - path: PepinilloWidget
       - path: PepinilloLiveActivity
@@ -319,6 +322,7 @@ targets:
         excludes:
           - "**/*"
       - path: Domain/Models
+      - path: Domain/Services/StreakProtectionService.swift
       - path: Shared/Persistence/AppGroupContainer.swift
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Shared/Design/ModeColors.swift
@@ -364,6 +368,7 @@ targets:
         WKCompanionAppBundleIdentifier: com.pepinillo.app
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        ITSAppUsesNonExemptEncryption: false
         API_BASE_URL: "$(API_BASE_URL)"
         WS_BASE_URL: "$(WS_BASE_URL)"
         APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
@@ -387,6 +392,12 @@ targets:
           - "SyncClient.swift"
       - path: Features/Focus/FocusModels.swift
       - path: Shared/Design
+    resources:
+      - path: PepinilloWatch/PrivacyInfo.xcprivacy
+      - path: Shared/Resources/Localizable.xcstrings
+        optional: true
+      - path: Shared/Resources/InfoPlist.xcstrings
+        optional: true
     dependencies:
       - package: swift-composable-architecture
         product: ComposableArchitecture
@@ -423,6 +434,9 @@ targets:
       - path: Shared/Persistence/SchemaVersioning.swift
       - path: Domain/Models
       - path: Features/Focus/FocusModels.swift
+    resources:
+      - path: Shared/Resources/Localizable.xcstrings
+        optional: true
     dependencies: []
     settings:
       base:
@@ -475,7 +489,7 @@ schemes:
     analyze:
       config: Debug
     archive:
-      config: Debug
+      config: Release
 
   Pepinillo Staging:
     build:
@@ -538,7 +552,7 @@ schemes:
     analyze:
       config: Debug
     archive:
-      config: Debug
+      config: Release
 
   PepinilloMac Staging:
     build:

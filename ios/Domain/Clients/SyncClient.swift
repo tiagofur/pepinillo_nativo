@@ -452,51 +452,71 @@ extension SyncClient: DependencyKey {
                 var sessionCursor: String? = nil
                 let pageLimit = 100
 
+                // Tracks whether each stream has been fully consumed. Once a stream
+                // is done we pass nil for its cursor on every subsequent request so
+                // the server does not restart that stream from page 1, which would
+                // produce duplicate items.
+                var tasksDone = false
+                var sessionsDone = false
+
+                // Server contract: settings are only returned on the first page
+                // (taskCursor == nil && sessionCursor == nil). Subsequent pages
+                // carry an empty settings array.
+                var isFirstPage = true
+
                 // Paginated fetch loop
                 var hasMoreData = true
                 while hasMoreData {
                     let response = try await apiClient.getFullSync(taskCursor, sessionCursor, pageLimit)
 
-                    // Process tasks
-                    for serverTask in response.tasks.items {
-                        try await persistence.upsertTaskFromServer(serverTask, false)
-                    }
-
-                    // Process sessions
-                    for serverSession in response.sessions.items {
-                        let exists = try await persistence.sessionExists(serverSession.id)
-                        if !exists {
-                            try await persistence.upsertSessionFromServer(serverSession, false)
-                        }
-                    }
-                    // Resolve inbound task links for server sessions
-                    for serverSession in response.sessions.items {
-                        guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
-                        if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
-                            if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
-                                try await persistence.linkSessionToTask(sessionUUID, task.id, false)
-                            }
-                        } else if let taskId = serverSession.taskId {
-                            if let task = try await persistence.fetchTaskByServerId(taskId) {
-                                try await persistence.linkSessionToTask(sessionUUID, task.id, false)
-                            }
+                    // Process tasks (only while the task stream is still active)
+                    if !tasksDone {
+                        for serverTask in response.tasks.items {
+                            try await persistence.upsertTaskFromServer(serverTask, false)
                         }
                     }
 
-                    // Process settings (only on first page)
-                    if taskCursor == nil && sessionCursor == nil {
+                    // Process sessions (only while the session stream is still active)
+                    if !sessionsDone {
+                        for serverSession in response.sessions.items {
+                            let exists = try await persistence.sessionExists(serverSession.id)
+                            if !exists {
+                                try await persistence.upsertSessionFromServer(serverSession, false)
+                            }
+                        }
+                        // Resolve inbound task links for server sessions
+                        for serverSession in response.sessions.items {
+                            guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
+                            if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
+                                if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
+                                    try await persistence.linkSessionToTask(sessionUUID, task.id, false)
+                                }
+                            } else if let taskId = serverSession.taskId {
+                                if let task = try await persistence.fetchTaskByServerId(taskId) {
+                                    try await persistence.linkSessionToTask(sessionUUID, task.id, false)
+                                }
+                            }
+                        }
+                    }
+
+                    // Process settings (only on first page — server contract)
+                    if isFirstPage {
                         for serverPref in response.settings {
                             let serverDate = iso.date(from: serverPref.updatedAt) ?? Date.now
                             await persistence.applyServerPreference(serverPref.key, serverPref.value, serverDate)
                         }
+                        isFirstPage = false
                     }
 
                     try await persistence.save()
 
-                    // Update cursors
-                    taskCursor = response.tasks.nextCursor
-                    sessionCursor = response.sessions.nextCursor
-                    hasMoreData = response.tasks.hasMore || response.sessions.hasMore
+                    // Advance only the cursors that still have more pages.
+                    // Finished streams stay nil so the server does not restart them.
+                    tasksDone = tasksDone || !response.tasks.hasMore
+                    sessionsDone = sessionsDone || !response.sessions.hasMore
+                    taskCursor = tasksDone ? nil : response.tasks.nextCursor
+                    sessionCursor = sessionsDone ? nil : response.sessions.nextCursor
+                    hasMoreData = !tasksDone || !sessionsDone
 
                     // Save timestamp
                     try await persistence.saveLastSyncTimestamp(response.serverTimestamp)
@@ -511,18 +531,95 @@ extension SyncClient: DependencyKey {
                 }
                 guard AppGroupDefaults.canBackendSync else { return }
 
-                // Delete all local data
-                await persistence.deleteAllTasks()
-                await persistence.deleteAllSessions()
-                await persistence.deleteAllStats()
+                let iso = ISO8601DateFormatter()
 
-                // Clear sync timestamps
+                // ── Phase 1: Fetch ALL server pages into memory ──────────────────
+                // We accumulate every page before touching local storage so that a
+                // network failure at any point during fetching leaves local data
+                // completely intact — the user never ends up with an empty database.
+                var allServerTasks: [TaskSyncDTO] = []
+                var allServerSessions: [FocusSessionSyncDTO] = []
+                var allServerSettings: [PreferenceSyncItem] = []
+                var serverTimestamp = ""
+
+                var taskCursor: String? = nil
+                var sessionCursor: String? = nil
+                let pageLimit = 100
+                var hasMoreData = true
+                var isFirstPage = true
+
+                // Tracks whether each stream is fully consumed. Once done, that
+                // stream's cursor is kept nil so the server does not restart it from
+                // page 1, which would produce duplicates in allServerTasks/Sessions.
+                var tasksDone = false
+                var sessionsDone = false
+
+                while hasMoreData {
+                    let response = try await apiClient.getFullSync(taskCursor, sessionCursor, pageLimit)
+                    if !tasksDone {
+                        allServerTasks.append(contentsOf: response.tasks.items)
+                    }
+                    if !sessionsDone {
+                        allServerSessions.append(contentsOf: response.sessions.items)
+                    }
+                    // Server contract: settings are only returned on the first page.
+                    if isFirstPage {
+                        allServerSettings = response.settings
+                        isFirstPage = false
+                    }
+                    serverTimestamp = response.serverTimestamp
+                    tasksDone = tasksDone || !response.tasks.hasMore
+                    sessionsDone = sessionsDone || !response.sessions.hasMore
+                    taskCursor = tasksDone ? nil : response.tasks.nextCursor
+                    sessionCursor = sessionsDone ? nil : response.sessions.nextCursor
+                    hasMoreData = !tasksDone || !sessionsDone
+                }
+                // All server data is now in memory. Any error above keeps local DB untouched.
+
+                // ── Phase 2: Wipe local storage ──────────────────────────────────
+                // Only reached when the full server fetch succeeded. Errors here
+                // propagate — partial wipes are surfaced to the caller rather than
+                // silently leaving the DB in an inconsistent state.
+                try await persistence.deleteAllTasks()
+                try await persistence.deleteAllSessions()
+                try await persistence.deleteAllStats()
+
+                // Clear sync timestamps (after wipe, before apply)
                 try await persistence.saveLastSyncTimestamp("")
                 await persistence.saveLastSessionSyncTimestamp("")
 
-                // Perform full download
-                @Dependency(\.syncClient) var syncClient
-                try await syncClient.performInitialSync()
+                // ── Phase 3: Apply fetched data ──────────────────────────────────
+                for serverTask in allServerTasks {
+                    try await persistence.upsertTaskFromServer(serverTask, false)
+                }
+                for serverSession in allServerSessions {
+                    let exists = try await persistence.sessionExists(serverSession.id)
+                    if !exists {
+                        try await persistence.upsertSessionFromServer(serverSession, false)
+                    }
+                }
+                // Resolve inbound task links (taskSyncId / taskId → local task)
+                for serverSession in allServerSessions {
+                    guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }
+                    if let taskSyncId = serverSession.taskSyncId, !taskSyncId.isEmpty {
+                        if let task = try await persistence.fetchTaskBySyncId(taskSyncId) {
+                            try await persistence.linkSessionToTask(sessionUUID, task.id, false)
+                        }
+                    } else if let taskId = serverSession.taskId {
+                        if let task = try await persistence.fetchTaskByServerId(taskId) {
+                            try await persistence.linkSessionToTask(sessionUUID, task.id, false)
+                        }
+                    }
+                }
+                for serverPref in allServerSettings {
+                    let serverDate = iso.date(from: serverPref.updatedAt) ?? Date.now
+                    await persistence.applyServerPreference(serverPref.key, serverPref.value, serverDate)
+                }
+
+                try await persistence.save()
+                try await persistence.saveLastSyncTimestamp(serverTimestamp)
+                await persistence.saveLastSessionSyncTimestamp(serverTimestamp)
+                PreferenceDirtyTracker.clearAll()
             },
             hasLocalData: {
                 let taskCount = await persistence.getTaskCount()

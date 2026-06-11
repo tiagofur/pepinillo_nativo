@@ -121,7 +121,7 @@ struct WatchTimerView: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.8))
                             .frame(width: 36, height: 36)
-                            .background(.white.opacity(0.12), in: Circle())
+                            .background(.ultraThinMaterial, in: Circle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -297,7 +297,7 @@ private struct WatchModeChip: View {
             .background(
                 isSelected
                     ? AnyShapeStyle(modeColor.opacity(0.25))
-                    : AnyShapeStyle(Color.white.opacity(0.08))
+                    : AnyShapeStyle(.ultraThinMaterial)
             )
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(

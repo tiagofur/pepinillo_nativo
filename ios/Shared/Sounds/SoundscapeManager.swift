@@ -113,7 +113,7 @@ actor SoundscapeManager {
         return
         #else
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
         try session.setActive(true)
         #endif
     }

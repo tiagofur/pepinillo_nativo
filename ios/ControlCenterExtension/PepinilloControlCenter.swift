@@ -28,15 +28,18 @@ struct PepinilloFocusToggle: ControlWidget {
                 action: ToggleFocusIntent()
             ) { isOn in
                 Label {
-                    Text(isOn ? "Focusing" : "Start Focus")
+                    Text(isOn
+                        ? String(localized: "controlcenter.focusing.label", defaultValue: "Focusing")
+                        : String(localized: "controlcenter.startfocus.label", defaultValue: "Start Focus"))
                 } icon: {
                     Image(systemName: isOn ? "brain.head.profile.fill" : "brain.head.profile")
                 }
             }
             .tint(.purple)
         }
+        // Keep brand name "Pepinillo Focus" as-is; localize only the description
         .displayName("Pepinillo Focus")
-        .description("Start or stop a focus session.")
+        .description(LocalizedStringResource("controlcenter.description", defaultValue: "Start or stop a focus session."))
     }
 }
 

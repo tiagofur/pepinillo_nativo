@@ -5,7 +5,10 @@
 // Handles authentication, token refresh, and error mapping.
 
 import Foundation
+import OSLog
 import ComposableArchitecture
+
+private let apiLogger = Logger(subsystem: "com.pepinillo.app", category: "api-client")
 
 // MARK: - Client
 
@@ -345,6 +348,10 @@ private struct APIHelper: Sendable {
         do {
             return try await URLSession.shared.data(for: timedRequest)
         } catch {
+            // Log the original URLError before collapsing it to .networkError so
+            // Instruments / Console captures the actual failure reason (timeout,
+            // not connected, cancelled, etc.) without changing the thrown type.
+            apiLogger.warning("Network request failed [\(request.httpMethod ?? "?", privacy: .public) \(request.url?.path ?? "?", privacy: .public)]: \(error, privacy: .public)")
             throw APIClientError.networkError
         }
     }

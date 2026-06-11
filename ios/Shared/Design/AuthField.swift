@@ -46,7 +46,7 @@ struct AuthField: View {
             }
         }
         .padding(.horizontal, 16)
-        .frame(height: 56)
+        .frame(minHeight: 56)
         .background(
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)

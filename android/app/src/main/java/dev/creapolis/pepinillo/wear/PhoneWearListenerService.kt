@@ -8,9 +8,11 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
 import dagger.hilt.android.AndroidEntryPoint
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.service.FocusTimerService
@@ -35,6 +37,7 @@ class PhoneWearListenerService : WearableListenerService() {
     @Inject lateinit var taskRepository: TaskRepository
     @Inject lateinit var sessionRepository: SessionRepository
     @Inject lateinit var prefsRepo: UserPreferencesRepository
+    @Inject lateinit var featureGate: FeatureGate
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -169,7 +172,10 @@ class PhoneWearListenerService : WearableListenerService() {
 
                 val stats = sessionRepository.getTodayStats().first()
                 val allDays = sessionRepository.getAllDaysWithSessions().first()
-                val streak = sessionRepository.calculateCurrentStreak(allDays)
+                val streak = StreakProtectionService.computeProtectedStreak(
+                    history = allDays,
+                    isPro = featureGate.isPro,
+                ).days
                 val cal = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
                     set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)

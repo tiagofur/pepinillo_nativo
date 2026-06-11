@@ -13,11 +13,14 @@
 //   - Pro Lifetime → grandfathered to Pepinillo+
 
 import Foundation
+import OSLog
 import ComposableArchitecture
 
 #if canImport(RevenueCat)
 import RevenueCat
 #endif
+
+private let subscriptionLogger = Logger(subsystem: "com.pepinillo.app", category: "subscription")
 
 // MARK: - Subscription Product IDs
 
@@ -301,8 +304,10 @@ private actor SubscriptionManager {
         do {
             _ = try await Purchases.shared.logIn(userID)
         } catch {
-            // Log error but don't fail
-            print("RevenueCat logIn failed: \(error)")
+            // Log error but don't fail — RevenueCat logIn failure is non-fatal;
+            // the app continues with anonymous entitlement state.
+            // User ID is intentionally redacted from the log (privacy: .private default).
+            subscriptionLogger.error("RevenueCat logIn failed: \(error, privacy: .private)")
         }
     }
 
@@ -311,8 +316,8 @@ private actor SubscriptionManager {
         do {
             _ = try await Purchases.shared.logOut()
         } catch {
-            // Log error but don't fail
-            print("RevenueCat logOut failed: \(error)")
+            // Log error but don't fail — logOut failure is non-fatal.
+            subscriptionLogger.error("RevenueCat logOut failed: \(error, privacy: .private)")
         }
     }
 
