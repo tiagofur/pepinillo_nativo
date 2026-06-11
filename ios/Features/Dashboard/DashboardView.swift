@@ -92,8 +92,20 @@ struct DashboardView: View {
         .navigationTitle(String(localized: "Dashboard"))
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                if AppConfig.aiInsightsEnabled {
-                    Menu {
+                // Reviews menu — Weekly + Monthly in one icon, with optional AI submenu.
+                Menu {
+                    Button {
+                        store.send(.weeklyReviewTapped)
+                    } label: {
+                        Label(String(localized: "Weekly Review"), systemImage: "calendar.badge.clock")
+                    }
+                    Button {
+                        store.send(.monthlyReviewTapped)
+                    } label: {
+                        Label(String(localized: "Monthly Review"), systemImage: "calendar.badge.checkmark")
+                    }
+                    if AppConfig.aiInsightsEnabled {
+                        Divider()
                         Button {
                             store.send(.aiReportTapped(.week))
                         } label: {
@@ -104,19 +116,11 @@ struct DashboardView: View {
                         } label: {
                             Label(String(localized: "Monthly AI Report"), systemImage: "sparkles")
                         }
-                    } label: {
-                        Label(String(localized: "AI Report"), systemImage: "sparkles")
                     }
-                }
-                Button {
-                    store.send(.weeklyReviewTapped)
                 } label: {
-                    Label(String(localized: "Weekly Review"), systemImage: "calendar.badge.clock")
-                }
-                Button {
-                    store.send(.monthlyReviewTapped)
-                } label: {
-                    Label(String(localized: "Monthly Review"), systemImage: "calendar.badge.checkmark")
+                    Label(String(localized: "Reviews"), systemImage: "calendar")
+                        .accessibilityLabel(String(localized: "dashboard.toolbar.reviews.label",
+                                                   defaultValue: "Open weekly or monthly review"))
                 }
             }
         }
