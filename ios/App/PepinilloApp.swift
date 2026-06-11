@@ -299,7 +299,7 @@ struct PepinilloApp: App {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color("LaunchBackground").ignoresSafeArea())
+                .background(Color(.systemBackground).ignoresSafeArea())
             }
         }
         .defaultSize(width: 1_100, height: 720)

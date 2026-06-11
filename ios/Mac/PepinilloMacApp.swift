@@ -178,6 +178,6 @@ private struct MacBootstrapView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color("LaunchBackground").ignoresSafeArea())
+        .background(Color(.systemBackground).ignoresSafeArea())
     }
 }
