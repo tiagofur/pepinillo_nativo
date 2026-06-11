@@ -158,7 +158,11 @@ struct WatchTimerFeature {
                         WidgetCenter.shared.reloadAllTimelines()
                     }
                     #if os(watchOS)
-                    if didTransition {
+                    if !isActive {
+                        // Session completed — celebrate
+                        WKInterfaceDevice.current().play(.success)
+                    } else if didTransition {
+                        // Phase changed (focus → break or break → focus)
                         WKInterfaceDevice.current().play(.notification)
                     }
                     #endif
