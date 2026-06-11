@@ -460,12 +460,14 @@ struct FocusView: View {
             return 1 - completed
         case .countUp:
             guard store.isRunning else { return nil }
-            // Fill the ring as elapsed minutes progress within each 60-min cycle.
+            // Fill the ring as elapsed seconds progress within each 60-min cycle.
             // Cycle resets at 60 min so very long sessions remain readable.
             let elapsed = store.elapsedSeconds
             let cycle: Double = 60 * 60  // 1 hour
             let positionInCycle = elapsed.truncatingRemainder(dividingBy: cycle)
-            return min(positionInCycle / cycle, 1.0)
+            let raw = min(positionInCycle / cycle, 1.0)
+            // Apply display floor so the arc reads as "active" immediately on start.
+            return max(raw, Self.countUpRingDisplayFloor)
         }
     }
 
@@ -502,15 +504,21 @@ struct FocusView: View {
     private var controlButtons: some View {
         HStack(spacing: 12) {
             if store.isRunning {
-                // Stop button
+                // Stop button — destructive action; red tint reads clearly in both
+                // appearances and is consistent with the confirmation dialog that follows.
                 Button {
                     showStopConfirmation = true
                 } label: {
                     Image(systemName: "stop.fill")
                         .font(.title2)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(.white)
                         .frame(width: 56, height: 56)
-                        .adaptiveGlassCircle(id: "stop-button", namespace: glassNS)
+                        .adaptiveGlassCircle(
+                            id: "stop-button",
+                            namespace: glassNS,
+                            tint: .red,
+                            tintOpacity: 0.50
+                        )
                 }
                 .buttonStyle(.plain)
                 .buttonBorderShape(.circle)
