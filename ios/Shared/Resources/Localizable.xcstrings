@@ -2672,6 +2672,40 @@
         }
       }
     },
+    "Add a new task": {
+      "comment": "Accessibility label on the collapsed quick-add row.",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agregar nueva tarea"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionar nova tarefa"
+          }
+        }
+      }
+    },
+    "Add due date": {
+      "comment": "Row label in the scheduling section of the task detail sheet.",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agregar fecha límite"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adicionar data limite"
+          }
+        }
+      }
+    },
     "Add new task": {
       "localizations": {
         "es": {
@@ -5976,6 +6010,40 @@
         }
       }
     },
+    "Decrease pomodoros": {
+      "comment": "Accessibility label on the − button in the pomodoro stepper.",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disminuir pomodoros"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diminuir pomodoros"
+          }
+        }
+      }
+    },
+    "Due today": {
+      "comment": "Chip label shown on a task row when the task is due today.",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vence hoy"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vence hoje"
+          }
+        }
+      }
+    },
     "Duration (minutes)": {
       "localizations": {
         "es": {
@@ -8938,6 +9006,23 @@
         }
       }
     },
+    "Increase pomodoros": {
+      "comment": "Accessibility label on the + button in the pomodoro stepper.",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aumentar pomodoros"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aumentar pomodoros"
+          }
+        }
+      }
+    },
     "Import Failed": {
       "localizations": {
         "es": {
@@ -10347,6 +10432,23 @@
         }
       }
     },
+    "New task": {
+      "comment": "Label on the collapsed quick-add row. Tapping it expands the text field.",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva tarea"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nova tarefa"
+          }
+        }
+      }
+    },
     "New task…": {
       "extractionState": "stale",
       "localizations": {
@@ -10858,6 +10960,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "Overdue": {
+      "comment": "Chip label shown on a task row when the task's due date has passed.",
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vencida"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vencida"
           }
         }
       }
