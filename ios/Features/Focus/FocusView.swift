@@ -378,12 +378,13 @@ struct FocusView: View {
             Circle()
                 .stroke(modeColor.opacity(0.18), lineWidth: 13)
 
-            // Count-up idle treatment: dashed tick overlay to signal "will fill"
+            // Count-up idle treatment: dashed tick overlay to signal "will fill".
+            // lineCap .butt keeps dashes crisp; .round inflated the dash width to blobs.
             if currentMode.direction == .countUp && !(store.isRunning) {
                 Circle()
                     .stroke(
                         modeColor.opacity(0.30),
-                        style: StrokeStyle(lineWidth: 13, lineCap: .round, dash: [4, 10])
+                        style: StrokeStyle(lineWidth: 13, lineCap: .butt, dash: [4, 10])
                     )
             }
 
@@ -451,8 +452,12 @@ struct FocusView: View {
     // timerRingProgress:
     // • Countdown modes: fraction of time REMAINING (full at start → empty at zero)
     // • Count-up modes while running: derive a "minute-cycle" fill (resets each 60 min)
-    //   so the ring is never an empty gray circle. Simplest credible option — no engine changes.
+    //   so the ring is never an empty gray circle. A 4% display floor ensures a visible arc
+    //   even at <2 min (raw progress would otherwise be a sub-pixel sliver).
+    //   Floor applies ONLY while running and only when raw progress < floor.
     // • Count-up modes at rest: nil (dashed overlay handles the visual instead)
+    private static let countUpRingDisplayFloor: Double = 0.04
+
     private var timerRingProgress: Double? {
         switch currentMode.direction {
         case .countDown:
@@ -542,6 +547,7 @@ struct FocusView: View {
                             id: "pause-resume-button",
                             namespace: glassNS,
                             tint: modeColor,
+                            tintOpacity: 0.60,
                             foreground: .white
                         )
                 }
