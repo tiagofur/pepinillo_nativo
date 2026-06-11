@@ -18002,6 +18002,70 @@
           }
         }
       }
+    },
+    "Classic 25/5 cycles": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ciclos clásicos 25/5"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ciclos clássicos 25/5"
+          }
+        }
+      }
+    },
+    "Follow your natural flow": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sigue tu flujo natural"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siga seu fluxo natural"
+          }
+        }
+      }
+    },
+    "Commit to a fixed block": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprométete con un bloque fijo"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprometa-se com um bloco fixo"
+          }
+        }
+      }
+    },
+    "Zero pressure tracking": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Seguimiento sin presión"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acompanhamento sem pressão"
+          }
+        }
+      }
     }
   },
   "version": "1.1"
