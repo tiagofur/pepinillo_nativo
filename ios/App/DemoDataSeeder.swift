@@ -209,6 +209,18 @@ enum DemoDataSeeder {
 
     // MARK: - Session Generator
 
+    // Per-day session count override for last 7 days — drives visible chart variance.
+    // Index 0 = today (rightmost bar), index 6 = 6 days ago (leftmost bar).
+    private static let sessionCountByDayOffset: [Int: Int] = [
+        0: 3,  // today: partial day
+        1: 7,  // yesterday: strong productivity day
+        2: 2,  // 2 days ago: light day (interruptions, meetings)
+        3: 5,  // 3 days ago: solid day
+        4: 1,  // 4 days ago: near-zero (weekend)
+        5: 2,  // 5 days ago: weekend, light
+        6: 6,  // 6 days ago: most productive day of the week
+    ]
+
     private static func generateSessionsForDay(
         dayStart: Date,
         dayOffset: Int,
@@ -217,12 +229,17 @@ enum DemoDataSeeder {
     ) -> [FocusSessionRecord] {
         var sessions: [FocusSessionRecord] = []
 
-        // Vary the session count by day (more on weekdays, less on weekends)
-        let weekday = cal.component(.weekday, from: dayStart)
-        let isWeekend = weekday == 1 || weekday == 7
-        let baseCount = isWeekend ? 3 : 5
-        let variance = dayOffset == 0 ? -1 : (dayOffset % 3 == 0 ? 1 : 0)
-        let sessionCount = max(2, baseCount + variance)
+        // Use the per-day override for the chart window; fall back to weekday heuristic.
+        let sessionCount: Int
+        if let override = sessionCountByDayOffset[dayOffset] {
+            sessionCount = override
+        } else {
+            let weekday = cal.component(.weekday, from: dayStart)
+            let isWeekend = weekday == 1 || weekday == 7
+            let baseCount = isWeekend ? 3 : 5
+            let variance = dayOffset % 3 == 0 ? 1 : 0
+            sessionCount = max(2, baseCount + variance)
+        }
 
         var hour = 8 // Start at 8 AM
 

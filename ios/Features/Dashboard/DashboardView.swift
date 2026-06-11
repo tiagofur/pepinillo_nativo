@@ -189,8 +189,9 @@ struct DashboardView: View {
     }
 
     /// Live preview line for the Monthly Review row.
+    /// Only shown when the period picker is on 30D so the totals are month-scale.
     private var monthlyPreviewLine: String? {
-        guard store.hasLoadedData else { return nil }
+        guard store.hasLoadedData, store.period == .month else { return nil }
         guard store.totalFocusMinutes > 0 || store.sessionsCompleted > 0 else { return nil }
         let timeStr = formatMinutes(store.totalFocusMinutes)
         return String(
