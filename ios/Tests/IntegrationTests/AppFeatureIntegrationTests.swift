@@ -661,6 +661,17 @@ struct AppFeatureIntegrationTests {
         defer { AppGroupDefaults.userCapabilities = saved }
         AppGroupDefaults.userCapabilities = nil
 
+        // Neutralise the sticky -proMode flag that DemoDataSeeder reads from UserDefaults.standard;
+        // if left set from a previous demo run the #if DEBUG guard in subscriptionStateLoaded
+        // overrides whatever SubscriptionState the test sends, making assertions flaky.
+        let proModeKey = "pepinillo.debug.simulatePro"
+        let savedProMode = UserDefaults.standard.object(forKey: proModeKey)
+        defer {
+            if let v = savedProMode { UserDefaults.standard.set(v, forKey: proModeKey) }
+            else { UserDefaults.standard.removeObject(forKey: proModeKey) }
+        }
+        UserDefaults.standard.set(false, forKey: proModeKey)
+
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
         } withDependencies: {
@@ -722,6 +733,15 @@ struct AppFeatureIntegrationTests {
         let saved = AppGroupDefaults.userCapabilities
         defer { AppGroupDefaults.userCapabilities = saved }
         AppGroupDefaults.userCapabilities = .everywherePlus
+
+        // Same sticky-flag guard as subscriptionStateLoadedWritesCapabilitiesToAppGroup above.
+        let proModeKey = "pepinillo.debug.simulatePro"
+        let savedProMode = UserDefaults.standard.object(forKey: proModeKey)
+        defer {
+            if let v = savedProMode { UserDefaults.standard.set(v, forKey: proModeKey) }
+            else { UserDefaults.standard.removeObject(forKey: proModeKey) }
+        }
+        UserDefaults.standard.set(false, forKey: proModeKey)
 
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
