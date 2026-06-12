@@ -642,11 +642,29 @@ func makeAppleCloudModelContainer() throws -> ModelContainer {
 
 // MARK: - Widget / Extension Container (non-CloudKit, non-MainActor)
 
+private final class SharedModelContainerCache: @unchecked Sendable {
+    static let shared = SharedModelContainerCache()
+    private let lock = NSLock()
+    private var container: ModelContainer?
+
+    func getOrCreateContainer() throws -> ModelContainer {
+        lock.lock()
+        defer { lock.unlock() }
+        if let container {
+            return container
+        }
+        persistenceLogger.info("SharedModelContainerCache: Initializing shared container for extensions...")
+        let newContainer = try makeModelContainer(at: AppGroup.storeURL)
+        container = newContainer
+        return newContainer
+    }
+}
+
 /// Non-isolated version for WidgetKit extension process.
 /// WidgetKit runs in a separate process — no @MainActor, no CloudKit sync.
 /// Includes TaskItem + SubTask + FocusSessionRecord so Tasks and Dashboard widgets can read real data.
 func makeWidgetModelContainer() throws -> ModelContainer {
-    try makeModelContainer(at: AppGroup.storeURL)
+    try SharedModelContainerCache.shared.getOrCreateContainer()
 }
 
 // MARK: - Intents Extension Container (includes TaskItem for Siri queries)
@@ -654,7 +672,7 @@ func makeWidgetModelContainer() throws -> ModelContainer {
 /// Non-isolated container for the Intents extension (Siri Shortcuts).
 /// Includes TaskItem + SubTask so Siri can suggest real user tasks.
 func makeIntentsModelContainer() throws -> ModelContainer {
-    try makeModelContainer(at: AppGroup.storeURL)
+    try SharedModelContainerCache.shared.getOrCreateContainer()
 }
 
 private func makeModelContainer(at url: URL) throws -> ModelContainer {
