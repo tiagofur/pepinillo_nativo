@@ -16,8 +16,13 @@ struct PepinilloGlassModifier: ViewModifier {
     func body(content: Content) -> some View {
         if reduceTransparency {
             #if os(watchOS)
-            content
-                .background(tint ?? .regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+            if let tint {
+                content
+                    .background(tint, in: RoundedRectangle(cornerRadius: cornerRadius))
+            } else {
+                content
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+            }
             #else
             content
                 .background(tint?.opacity(tintOpacity) ?? Color.pepinilloSecondarySystemGroupedBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
