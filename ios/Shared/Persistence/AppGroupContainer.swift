@@ -831,8 +831,12 @@ func checkpointWAL(at storeURL: URL) {
     // copy frames from the WAL into the main database file.
     // NOMUTEX is safe here because this function is only called from one thread at a time.
     let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_URI | SQLITE_OPEN_NOMUTEX
-    guard sqlite3_open_v2(path, &db, flags, nil) == SQLITE_OK, let db else {
+    let openRc = sqlite3_open_v2(path, &db, flags, nil)
+    if openRc != SQLITE_OK {
         persistenceLogger.warning("checkpointWAL: could not open '\(path, privacy: .public)' read-write — skipping checkpoint")
+        if let db {
+            sqlite3_close(db)
+        }
         return
     }
     defer { sqlite3_close(db) }
