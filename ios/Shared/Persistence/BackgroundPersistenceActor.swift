@@ -22,7 +22,7 @@ public actor BackgroundPersistenceActor {
 
     func fetchTasks() throws -> [TaskItemDTO] {
         let svc = service
-        let tasks = try svc.fetchTasks().filter { !$0.isDeleted }
+        let tasks = try svc.fetchTasks().filter { !$0.isLocallyDeleted }
         // One batch fetch of subtask counts to avoid an N+1 relationship fault.
         let progress = try svc.subtaskProgressByTask()
         return tasks.map { TaskItemDTO(from: $0, subtaskProgress: progress[$0.id] ?? (0, 0)) }

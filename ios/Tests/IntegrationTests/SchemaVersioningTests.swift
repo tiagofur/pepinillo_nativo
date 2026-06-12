@@ -99,7 +99,7 @@ struct SchemaVersioningTests {
         let task = try #require(tasks.first)
         #expect(task.syncId.isEmpty == false, "syncId should be non-empty after migration")
         #expect(task.isDirty == true, "isDirty default is true")
-        #expect(task.isDeleted == false, "isDeleted default is false")
+        #expect(task.isLocallyDeleted == false, "isLocallyDeleted default is false")
         #expect(task.syncedAt == nil, "syncedAt starts nil")
 
         // 5. Assert FocusSessionRecord data survived.
@@ -161,7 +161,7 @@ struct SchemaVersioningTests {
         let task = try #require(tasks.first)
         #expect(task.syncId.isEmpty == false, "syncId gained in V3 migration")
         #expect(task.isDirty == true)
-        #expect(task.isDeleted == false)
+        #expect(task.isLocallyDeleted == false)
 
         // 5. CachedUser survived (was already present in V2).
         let users = try ctx.fetch(FetchDescriptor<CachedUser>())
@@ -268,7 +268,7 @@ struct SchemaVersioningTests {
         let newFetched = try #require(tasks.first(where: { $0.title == "New task post-migration" }))
         #expect(newFetched.syncId.isEmpty == false)
         #expect(newFetched.isDirty == true)
-        #expect(newFetched.isDeleted == false)
+        #expect(newFetched.isLocallyDeleted == false)
 
         // Also insert a FocusSessionRecord and verify sync fields.
         let newSession = FocusSessionRecord(

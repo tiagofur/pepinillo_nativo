@@ -113,7 +113,7 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         self.syncId = task.syncId
         self.serverId = task.serverId
         self.isDirty = task.isDirty
-        self.isDeleted = task.isDeleted
+        self.isDeleted = task.isLocallyDeleted
         self.syncedAt = task.syncedAt
         self.updatedAt = task.updatedAt
     }
