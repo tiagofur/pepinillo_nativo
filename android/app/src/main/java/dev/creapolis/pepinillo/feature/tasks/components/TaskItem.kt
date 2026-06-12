@@ -259,17 +259,6 @@ fun TaskItem(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                // Notes snippet (first line)
-                if (!task.isCompleted && !task.notes.isNullOrBlank()) {
-                    Text(
-                        text = task.notes.lineSequence().first(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-
                 if (!task.isCompleted) {
                     Spacer(modifier = Modifier.size(4.dp))
                     MetadataRow(task = task, subtaskProgress = subtaskProgress)
@@ -298,99 +287,60 @@ private fun MetadataRow(
     task: Task,
     subtaskProgress: Pair<Int, Int>?,
 ) {
-    val dateFormatter = remember {
-        SimpleDateFormat("MMM d", Locale.getDefault()).apply {
-            timeZone = java.util.TimeZone.getTimeZone("UTC")
-        }
-    }
-    val metadataItems = mutableListOf<@Composable () -> Unit>()
+    val isToday = task.dueDate != null && isDueTodayMs(task.dueDate)
+    val isOverdue = task.dueDate != null && isBeforeTodayMs(task.dueDate)
 
-    // Due date
-    task.dueDate?.let { dueDate ->
-        val isToday = isDueTodayMs(dueDate)
-        val isOverdue = isBeforeTodayMs(dueDate)
-        val color = when {
-            isOverdue -> MaterialTheme.colorScheme.error
-            isToday -> Color(0xFFFF8A00)
-            else -> MaterialTheme.colorScheme.onSurfaceVariant
-        }
-        metadataItems.add {
+    when {
+        // 1. Due date overdue
+        task.dueDate != null && isOverdue -> {
+            val color = MaterialTheme.colorScheme.error
             MetadataBadge(color = color) {
-                Icon(Icons.Rounded.CalendarMonth, contentDescription = "Due date", modifier = Modifier.size(14.dp), tint = color)
-                Text(dateFormatter.format(Date(dueDate)), style = MaterialTheme.typography.bodySmall, color = color)
+                Icon(Icons.Rounded.CalendarMonth, contentDescription = "Overdue", modifier = Modifier.size(14.dp), tint = color)
+                Text(stringResource(R.string.task_overdue), style = MaterialTheme.typography.bodySmall, color = color)
             }
         }
-    }
-
-    // Today indicator (only if no due date to avoid clutter)
-    if (task.scheduledForToday && task.dueDate == null) {
-        metadataItems.add {
+        // 2. Due date today
+        task.dueDate != null && isToday -> {
+            val color = Color(0xFFFF8A00)
+            MetadataBadge(color = color) {
+                Icon(Icons.Rounded.CalendarMonth, contentDescription = "Due today", modifier = Modifier.size(14.dp), tint = color)
+                Text(stringResource(R.string.task_due_today), style = MaterialTheme.typography.bodySmall, color = color)
+            }
+        }
+        // 3. Today (via scheduledForToday toggle, only if no due date)
+        task.dueDate == null && task.scheduledForToday -> {
             val color = brandGreen()
             MetadataBadge(color = color) {
                 Icon(Icons.Rounded.Today, contentDescription = "Scheduled for today", modifier = Modifier.size(14.dp), tint = color)
                 Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
             }
         }
-    }
-
-    // Energy level (icon + label for accessibility — distinguishable without color)
-    metadataItems.add {
-        val color = energyColor(task.energyLevel)
-        MetadataBadge(color = color) {
-            EnergyIcon(energyLevel = task.energyLevel)
-            Text(task.energyLevel.label, style = MaterialTheme.typography.bodySmall, color = color)
-        }
-    }
-
-    // Pomodoro count
-    if (task.estimatedPomodoros > 0) {
-        metadataItems.add {
-            val color = MaterialTheme.colorScheme.secondary
-            MetadataBadge(color = color) {
-                Icon(Icons.Rounded.AccessTime, contentDescription = "Pomodoros", modifier = Modifier.size(14.dp), tint = color)
-                Text(
-                    "${task.completedPomodoros}/${task.estimatedPomodoros}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = color,
-                )
-            }
-        }
-    }
-
-    // Subtask progress
-    subtaskProgress?.let { (completed, total) ->
-        if (total > 0) {
-            metadataItems.add {
-                val color = MaterialTheme.colorScheme.tertiary
-                MetadataBadge(color = color) {
-                    Icon(Icons.Rounded.Checklist, contentDescription = "Subtasks", modifier = Modifier.size(14.dp), tint = color)
-                    Text("$completed/$total", style = MaterialTheme.typography.bodySmall, color = color)
-                }
-            }
-        }
-    }
-
-    // Recurrence
-    task.recurrenceRule?.let {
-        val option = RecurrenceOption.fromRrule(it)
-        if (option != RecurrenceOption.None) {
-            metadataItems.add {
+        // 4. Recurring (only if no due date)
+        task.dueDate == null && task.recurrenceRule != null -> {
+            val option = RecurrenceOption.fromRrule(task.recurrenceRule)
+            if (option != RecurrenceOption.None) {
                 val color = MaterialTheme.colorScheme.primary
                 MetadataBadge(color = color) {
                     Icon(Icons.Rounded.Repeat, contentDescription = "Recurring", modifier = Modifier.size(14.dp), tint = color)
                     Text(option.label, style = MaterialTheme.typography.bodySmall, color = color)
                 }
+            } else {
+                DefaultEnergyBadge(task)
             }
         }
-    }
-
-    if (metadataItems.isNotEmpty()) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            metadataItems.forEach { item -> item() }
+        // 5. Default/Fallback: Energy level
+        else -> {
+            DefaultEnergyBadge(task)
         }
+    }
+}
+
+@Composable
+private fun DefaultEnergyBadge(task: Task) {
+    val color = energyColor(task.energyLevel)
+    MetadataBadge(color = color) {
+        EnergyIcon(energyLevel = task.energyLevel)
+        Text(task.energyLevel.label, style = MaterialTheme.typography.bodySmall, color = color)
     }
 }
 
