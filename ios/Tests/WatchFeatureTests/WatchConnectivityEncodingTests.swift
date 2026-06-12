@@ -30,13 +30,18 @@ struct WatchSessionStateTests {
     }
 
     @Test func equatableConformance() {
+        // Use an explicit sentAt so the two instances are identical — sentAt is a
+        // transport timestamp (stale-update dedupe) so tests must pin it explicitly.
+        let sentAt: TimeInterval = 1_000_000
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4"
+            displayTime: "24:30", phaseLabel: "Focus 1/4",
+            sentAt: sentAt
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4"
+            displayTime: "24:30", phaseLabel: "Focus 1/4",
+            sentAt: sentAt
         )
         #expect(a == b)
     }
