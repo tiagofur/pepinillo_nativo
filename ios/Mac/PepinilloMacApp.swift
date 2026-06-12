@@ -134,8 +134,10 @@ struct PepinilloMacApp: App {
                 }
             }
         }
+        #if os(macOS) || targetEnvironment(macCatalyst)
         .defaultSize(width: 1_120, height: 760)
         .windowResizability(.contentMinSize)
+        #endif
         .commands {
             if let store = bootstrap.store {
                 PepinilloCommands(store: store)

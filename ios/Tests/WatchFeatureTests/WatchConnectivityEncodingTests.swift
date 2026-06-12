@@ -32,11 +32,11 @@ struct WatchSessionStateTests {
     @Test func equatableConformance() {
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4"
+            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4"
+            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
         )
         #expect(a == b)
     }
@@ -44,11 +44,11 @@ struct WatchSessionStateTests {
     @Test func equatableDiffersOnModeID() {
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4"
+            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "flowtime",
-            displayTime: "24:30", phaseLabel: "Focus 1/4"
+            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
         )
         #expect(a != b)
     }
@@ -57,12 +57,12 @@ struct WatchSessionStateTests {
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests"
+            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests", sentAt: 100
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests"
+            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests", sentAt: 100
         )
         #expect(a == b)
     }
@@ -71,11 +71,11 @@ struct WatchSessionStateTests {
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5
+            progress: 0.5, sentAt: 100
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4"
+            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
         )
         #expect(a != b)
     }
@@ -83,7 +83,7 @@ struct WatchSessionStateTests {
     @Test func phaseTransitionDefaultsToFalse() {
         let state = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "25:00", phaseLabel: "Focus 1/4"
+            displayTime: "25:00", phaseLabel: "Focus 1/4", sentAt: 100
         )
         #expect(state.isPhaseTransition == false)
     }

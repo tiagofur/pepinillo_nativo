@@ -373,8 +373,8 @@ struct PepinilloApp: App {
                 .background(Color(.systemBackground).ignoresSafeArea())
             }
         }
-        .defaultSize(width: 1_100, height: 720)
         #if os(macOS) || targetEnvironment(macCatalyst)
+        .defaultSize(width: 1_100, height: 720)
         .windowResizability(.contentMinSize)
         #endif
         .commands {
