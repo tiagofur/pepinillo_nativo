@@ -611,13 +611,19 @@ func makeSharedModelContainer() throws -> ModelContainer {
     } catch {
         persistenceLogger.error("Failed to open shared ModelContainer: \(String(describing: error), privacy: .public)")
 
-        try quarantineCorruptedStoreIfPresent()
-
-        persistenceLogger.info("Retrying shared ModelContainer after quarantine...")
-        do {
-            return try makeModelContainer(at: AppGroup.storeURL)
-        } catch {
-            persistenceLogger.fault("Critical failure: Could not open shared ModelContainer even after quarantine. Error: \(String(describing: error), privacy: .public)")
+        if isDatabaseCorrupted(at: AppGroup.storeURL) {
+            persistenceLogger.warning("Shared database is verified corrupted. Initiating quarantine...")
+            try quarantineCorruptedStoreIfPresent()
+            
+            persistenceLogger.info("Retrying shared ModelContainer after quarantine...")
+            do {
+                return try makeModelContainer(at: AppGroup.storeURL)
+            } catch {
+                persistenceLogger.fault("Critical failure: Could not open shared ModelContainer even after quarantine. Error: \(String(describing: error), privacy: .public)")
+                throw error
+            }
+        } else {
+            persistenceLogger.warning("ModelContainer failed to open, but database is not verified corrupted (might be locked or permissions issue). Skipping quarantine.")
             throw error
         }
     }
@@ -701,6 +707,51 @@ func makeInMemoryModelContainer() throws -> ModelContainer {
         for: schema,
         configurations: [config]
     )
+}
+
+private func isDatabaseCorrupted(at url: URL) -> Bool {
+    let path = url.path
+    let fileManager = FileManager.default
+    guard fileManager.fileExists(atPath: path) else {
+        return false // File doesn't exist, nothing to be corrupted
+    }
+
+    var db: OpaquePointer?
+    let flags = SQLITE_OPEN_READONLY | SQLITE_OPEN_URI
+    let rc = sqlite3_open_v2(path, &db, flags, nil)
+    if rc != SQLITE_OK {
+        if let db {
+            sqlite3_close(db)
+        }
+        // SQLITE_CORRUPT or SQLITE_NOTADB indicates file format/integrity corruption.
+        // Other codes (like SQLITE_BUSY or SQLITE_CANTOPEN) are typically transient locks or sandbox restrictions.
+        return rc == SQLITE_CORRUPT || rc == SQLITE_NOTADB
+    }
+    defer { sqlite3_close(db) }
+
+    var stmt: OpaquePointer?
+    let query = "PRAGMA integrity_check;"
+    if sqlite3_prepare_v2(db, query, -1, &stmt, nil) == SQLITE_OK {
+        defer { sqlite3_finalize(stmt) }
+        if sqlite3_step(stmt) == SQLITE_ROW {
+            if let cString = sqlite3_column_text(stmt, 0) {
+                let result = String(cString: cString)
+                if result == "ok" {
+                    return false
+                } else {
+                    persistenceLogger.error("isDatabaseCorrupted: integrity check failed with result '\(result, privacy: .public)'")
+                    return true
+                }
+            }
+        }
+    } else {
+        let errCode = sqlite3_errcode(db)
+        if errCode == SQLITE_CORRUPT || errCode == SQLITE_NOTADB {
+            return true
+        }
+    }
+
+    return false
 }
 
 private func quarantineCorruptedStoreIfPresent() throws {
