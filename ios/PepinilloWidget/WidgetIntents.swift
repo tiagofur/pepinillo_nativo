@@ -196,9 +196,12 @@ struct StartFocusWithTaskIntent: AppIntent {
         guard let uuid = UUID(uuidString: taskID) else { return nil }
         let container = try makeWidgetModelContainer()
         let context = ModelContext(container)
-        let descriptor = FetchDescriptor<TaskItem>()
+        var descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == uuid }
+        )
+        descriptor.fetchLimit = 1
         let tasks = try context.fetch(descriptor)
-        return tasks.first(where: { $0.id == uuid })?.title
+        return tasks.first?.title
     }
 }
 
@@ -238,9 +241,12 @@ struct CompleteTaskFromWidgetIntent: AppIntent {
         guard let uuid = UUID(uuidString: taskID) else { return .result() }
         let container = try makeWidgetModelContainer()
         let context = ModelContext(container)
-        let descriptor = FetchDescriptor<TaskItem>()
+        var descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == uuid }
+        )
+        descriptor.fetchLimit = 1
         let tasks = try context.fetch(descriptor)
-        if let task = tasks.first(where: { $0.id == uuid }) {
+        if let task = tasks.first {
             let now = Date.now
             task.isCompleted = true
             task.completedAt = now
