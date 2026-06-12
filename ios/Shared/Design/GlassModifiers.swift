@@ -7,30 +7,94 @@ import SwiftUI
 
 struct PepinilloGlassModifier: ViewModifier {
     var cornerRadius: CGFloat = 24
+    var tint: Color? = nil
+    var tintOpacity: Double = 0.08
+    
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
         if reduceTransparency {
             #if os(watchOS)
             content
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(tint ?? .regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
             #else
             content
-                .background(Color.pepinilloSecondarySystemGroupedBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(tint?.opacity(tintOpacity) ?? Color.pepinilloSecondarySystemGroupedBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
             #endif
         } else if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
             content
-                .glassEffect(.regular, in: .rect(cornerRadius: cornerRadius))
+                .glassEffect(
+                    .regular
+                        .tint((tint ?? .clear).opacity(tint == nil ? 0 : tintOpacity)),
+                    in: .rect(cornerRadius: cornerRadius)
+                )
+                .overlay {
+                    specularHighlight(cornerRadius: cornerRadius)
+                }
+                .overlay {
+                    glareSheen(cornerRadius: cornerRadius)
+                }
         } else {
             content
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(tint?.opacity(tintOpacity) ?? .clear, in: RoundedRectangle(cornerRadius: cornerRadius))
+                .overlay {
+                    specularHighlight(cornerRadius: cornerRadius)
+                }
+                .overlay {
+                    glareSheen(cornerRadius: cornerRadius)
+                }
         }
+    }
+
+    @ViewBuilder
+    private func specularHighlight(cornerRadius: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: cornerRadius)
+            .stroke(
+                LinearGradient(
+                    colors: [
+                        .white.opacity(colorScheme == .dark ? 0.24 : 0.40),
+                        .white.opacity(colorScheme == .dark ? 0.08 : 0.15),
+                        .clear,
+                        .white.opacity(colorScheme == .dark ? 0.04 : 0.10),
+                        .white.opacity(colorScheme == .dark ? 0.16 : 0.30)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 0.8
+            )
+            .blendMode(.overlay)
+            .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func glareSheen(cornerRadius: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: cornerRadius)
+            .fill(
+                LinearGradient(
+                    colors: [
+                        .white.opacity(colorScheme == .dark ? 0.03 : 0.06),
+                        .clear,
+                        .clear
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .blendMode(.plusLighter)
+            .allowsHitTesting(false)
     }
 }
 
 extension View {
-    func pepinilloGlass(cornerRadius: CGFloat = 24) -> some View {
-        modifier(PepinilloGlassModifier(cornerRadius: cornerRadius))
+    func pepinilloGlass(
+        cornerRadius: CGFloat = 24,
+        tint: Color? = nil,
+        tintOpacity: Double = 0.08
+    ) -> some View {
+        modifier(PepinilloGlassModifier(cornerRadius: cornerRadius, tint: tint, tintOpacity: tintOpacity))
     }
 }
 
