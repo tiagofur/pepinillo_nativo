@@ -112,4 +112,42 @@ struct WidgetProGatingTests {
         let isPro = AppGroupDefaults.userCapabilities?.hasAnyPremium ?? false
         #expect(isPro == true, "Everywhere+ → isPro true in Focus widget entry")
     }
+
+    // MARK: - Control Center Pro gating (widgetResolvedMode)
+
+    @Test("CC start: free user with flowtime selected → falls back to pomodoro")
+    func controlCenterFreeUserFlowtimeFallsBackToPomodoro() {
+        let resolved = widgetResolvedMode(requested: "flowtime", isPro: false)
+        #expect(resolved == "pomodoro", "Free user + flowtime → must fall back to pomodoro")
+    }
+
+    @Test("CC start: free user with timeBlock selected → falls back to pomodoro")
+    func controlCenterFreeUserTimeBlockFallsBackToPomodoro() {
+        let resolved = widgetResolvedMode(requested: "timeBlock", isPro: false)
+        #expect(resolved == "pomodoro", "Free user + timeBlock → must fall back to pomodoro")
+    }
+
+    @Test("CC start: free user with pomodoro selected → pomodoro passes through")
+    func controlCenterFreeUserPomodoroPassesThrough() {
+        let resolved = widgetResolvedMode(requested: "pomodoro", isPro: false)
+        #expect(resolved == "pomodoro", "Free user + pomodoro → pomodoro")
+    }
+
+    @Test("CC start: free user with stopwatch selected → stopwatch passes through")
+    func controlCenterFreeUserStopwatchPassesThrough() {
+        let resolved = widgetResolvedMode(requested: "stopwatch", isPro: false)
+        #expect(resolved == "stopwatch", "Free user + stopwatch → stopwatch (not a Pro mode)")
+    }
+
+    @Test("CC start: pro user with flowtime selected → flowtime passes through")
+    func controlCenterProUserFlowtimePassesThrough() {
+        let resolved = widgetResolvedMode(requested: "flowtime", isPro: true)
+        #expect(resolved == "flowtime", "Pro user + flowtime → flowtime")
+    }
+
+    @Test("CC start: pro user with timeBlock selected → timeBlock passes through")
+    func controlCenterProUserTimeBlockPassesThrough() {
+        let resolved = widgetResolvedMode(requested: "timeBlock", isPro: true)
+        #expect(resolved == "timeBlock", "Pro user + timeBlock → timeBlock")
+    }
 }

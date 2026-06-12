@@ -71,9 +71,7 @@ struct ToggleFocusIntent: SetValueIntent {
             // Use the last selected mode or default to pomodoro.
             // Pro modes (flowtime, timeBlock) fall back to pomodoro for free users.
             let requested = AppGroupDefaults.widgetSelectedMode ?? "pomodoro"
-            let isPro = AppGroupDefaults.isProUser
-            let isProMode = (requested == "flowtime" || requested == "timeBlock")
-            let mode = (isProMode && !isPro) ? "pomodoro" : requested
+            let mode = widgetResolvedMode(requested: requested, isPro: AppGroupDefaults.isProUser)
             AppGroupDefaults.startWidgetSession(modeID: mode)
         } else {
             // Stop current session — mirror StopFocusFromWidgetIntent exactly.

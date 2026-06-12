@@ -587,6 +587,17 @@ enum AppGroupDefaults {
     }
 }
 
+// MARK: - Widget Pro Gate
+
+/// Returns the mode that should actually be started, applying Pro gating.
+/// Free users who have a Pro mode selected (flowtime / timeBlock) fall back to pomodoro
+/// so that CC/widget toggles always produce a sensible result instead of silently failing.
+/// Pure function — no side effects, fully testable.
+func widgetResolvedMode(requested: String, isPro: Bool) -> String {
+    let isProMode = (requested == "flowtime" || requested == "timeBlock")
+    return (isProMode && !isPro) ? "pomodoro" : requested
+}
+
 // MARK: - Shared Container Factory
 
 /// Call this from every target that needs to read/write shared SwiftData.
