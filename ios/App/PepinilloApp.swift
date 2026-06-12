@@ -301,31 +301,44 @@ struct PepinilloApp: App {
                         store.send(.dayChanged)
                     }
             } else {
-                VStack(spacing: 16) {
-                    Image("LaunchLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 96, height: 96)
+                Group {
                     if bootstrap.phase == .failed {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.orange)
-                        Text("Could not initialize local data")
-                            .font(.headline)
-                        Text("Please retry. If this persists, reinstall the app to reset the local database.")
-                            .font(.subheadline)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 28)
-                        Button("Retry") {
-                            bootstrap.retry()
+                        VStack(spacing: 16) {
+                            Image("LaunchLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 96, height: 96)
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.title2)
+                                .foregroundStyle(.orange)
+                            Text("Could not initialize local data")
+                                .font(.headline)
+                            Text("Please retry. If this persists, reinstall the app to reset the local database.")
+                                .font(.subheadline)
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 28)
+                            Button("Retry") {
+                                bootstrap.retry()
+                            }
+                            .buttonStyle(.borderedProminent)
                         }
-                        .buttonStyle(.borderedProminent)
                     } else {
-                        ProgressView()
-                        Text(bootstrap.statusMessage)
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                        ZStack {
+                            Image("LaunchLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 96, height: 96)
+                            
+                            VStack {
+                                Spacer()
+                                ProgressView()
+                                Text(bootstrap.statusMessage)
+                                    .font(.headline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.bottom, 80)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
