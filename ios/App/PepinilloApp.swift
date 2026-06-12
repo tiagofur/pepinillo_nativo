@@ -13,6 +13,9 @@ import UserNotifications
 import ActivityKit
 import ComposableArchitecture
 import OSLog
+#if canImport(UIKit)
+import UIKit
+#endif
 
 private enum AppBootstrapTiming {
     // Keep launch-critical persistence well below the iOS watchdog window.
@@ -289,9 +292,34 @@ struct PepinilloApp: App {
                             // Checkpoint the WAL on background so the next cold launch does
                             // not need to replay a large WAL file before the store is readable.
                             // Uses a low-priority global queue so it does not delay backgrounding.
+                            #if os(iOS) || targetEnvironment(macCatalyst)
+                            final class TaskIdBox: @unchecked Sendable {
+                                var value: UIBackgroundTaskIdentifier = .invalid
+                            }
+                            let box = TaskIdBox()
+                            let sharedApp = UIApplication.shared
+                            box.value = sharedApp.beginBackgroundTask(withName: "WALCheckpoint") {
+                                Task { @MainActor [box] in
+                                    if box.value != .invalid {
+                                        sharedApp.endBackgroundTask(box.value)
+                                        box.value = .invalid
+                                    }
+                                }
+                            }
+                            DispatchQueue.global(qos: .utility).async {
+                                checkpointWAL(at: AppGroup.storeURL)
+                                Task { @MainActor [box] in
+                                    if box.value != .invalid {
+                                        sharedApp.endBackgroundTask(box.value)
+                                        box.value = .invalid
+                                    }
+                                }
+                            }
+                            #else
                             DispatchQueue.global(qos: .utility).async {
                                 checkpointWAL(at: AppGroup.storeURL)
                             }
+                            #endif
                         default:
                             break
                         }
