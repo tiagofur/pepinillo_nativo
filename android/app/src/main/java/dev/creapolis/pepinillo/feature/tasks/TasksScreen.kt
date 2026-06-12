@@ -369,6 +369,8 @@ private fun QuickAddBar(
         label = "quickAddTransition"
     ) { isExpanded ->
         if (isExpanded) {
+            var hasFocused by remember { mutableStateOf(false) }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -382,7 +384,10 @@ private fun QuickAddBar(
                         .weight(1f)
                         .focusRequester(focusRequester)
                         .onFocusChanged { focusState ->
-                            if (!focusState.isFocused && title.isBlank()) {
+                            if (focusState.isFocused) {
+                                hasFocused = true
+                            }
+                            if (hasFocused && !focusState.isFocused && title.isBlank()) {
                                 onExpandedChange(false)
                             }
                         },
