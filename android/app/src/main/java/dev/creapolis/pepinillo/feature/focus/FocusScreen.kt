@@ -1,7 +1,12 @@
 package dev.creapolis.pepinillo.feature.focus
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.view.WindowManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -66,6 +71,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
@@ -91,8 +97,15 @@ fun FocusScreen(
     val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
     val haptic = LocalHapticFeedback.current
 
+    val context = LocalContext.current
+    // Request POST_NOTIFICATIONS on the first session start (Android 13+).
+    // The session always starts regardless of the user's choice.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* granted or denied — session already started, nothing to do */ }
+
     val keepScreenActive = uiState.keepScreenOn && (uiState.isRunning || uiState.isPaused)
-    val activity = LocalContext.current as? Activity
+    val activity = context as? Activity
     DisposableEffect(keepScreenActive) {
         if (keepScreenActive) {
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -319,6 +332,16 @@ fun FocusScreen(
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                        // On the first session start (idle state), request POST_NOTIFICATIONS
+                        // on Android 13+. The session starts regardless of the user's choice.
+                        if (!uiState.isRunning && !uiState.isPaused && !uiState.isWaitingForNext &&
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.POST_NOTIFICATIONS,
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
                         viewModel.onStartStopClick()
                     },

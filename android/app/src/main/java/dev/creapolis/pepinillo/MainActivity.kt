@@ -1,15 +1,10 @@
 package dev.creapolis.pepinillo
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -120,10 +115,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { /* granted or not, we continue */ }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         enableEdgeToEdge()
@@ -147,7 +138,6 @@ class MainActivity : ComponentActivity() {
             // Notify system that we are ready to draw
             LaunchedEffect(Unit) {
                 isAppReady = true
-                requestNotificationPermissionIfNeeded()
             }
             val subscriptionState by subscriptionManager.subscriptionState.collectAsState()
             val themeMode by ThemeController.themeMode.collectAsState()
@@ -197,17 +187,6 @@ class MainActivity : ComponentActivity() {
         ProcessLifecycleOwner.get().lifecycle.removeObserver(foregroundSyncObserver)
         syncScope.cancel()
         super.onDestroy()
-    }
-
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.POST_NOTIFICATIONS,
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
     }
 }
 
