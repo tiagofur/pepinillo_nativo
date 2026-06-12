@@ -78,10 +78,13 @@ public enum StreakProtectionService {
         // A Pro skip can only bridge over missed days that sit between two real
         // focus sessions — it must never extend the streak past the oldest known
         // record, because there's no evidence of a prior streak to protect.
-        let earliestFocusDate = focusByDay
-            .filter { $0.value }
+        guard let earliestFocusDate = focusByDay
+            .filter({ $0.value })
             .keys
-            .min() ?? startDate
+            .min() else {
+            // Zero focus history — no streak to protect.
+            return .zero
+        }
 
         var streak = 0
         var protectionApplied = false
