@@ -59,7 +59,6 @@ fun GlassBox(
         // Specular highlight border & glare sheen layer
         Box(
             modifier = Modifier
-                .matchParentSize()
                 .drawWithCache {
                     val isDarkTheme = isDark
                     onDrawWithContent {

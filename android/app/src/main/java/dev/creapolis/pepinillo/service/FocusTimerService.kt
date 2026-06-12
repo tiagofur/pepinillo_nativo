@@ -71,6 +71,7 @@ class FocusTimerService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isCollecting = false
+    private var sessionsBeforeLongBreak = 4
     private var dayChangeReceiver: BroadcastReceiver? = null
 
     companion object {
@@ -283,6 +284,7 @@ class FocusTimerService : Service() {
                 val themeId = userPrefs.selectedTheme
                 val themeMode = userPrefs.themeMode.name
                 
+                this@FocusTimerService.sessionsBeforeLongBreak = userPrefs.sessionsBeforeLongBreak
                 TimerWidgetUpdateData(timerState, streak, sessionsToday, themeId, themeMode)
             }.collect { info: TimerWidgetUpdateData ->
                 val state = info.state
@@ -436,7 +438,8 @@ class FocusTimerService : Service() {
         val phaseLabel = if (state.mode == FocusMode.Pomodoro && 
             state.phase == dev.creapolis.pepinillo.domain.timer.FocusPhase.Work &&
             (state.status == TimerStatus.Running || state.status == TimerStatus.Paused)) {
-            getString(R.string.phase_focus_numbered, state.completedSessions + 1)
+            val focusWord = getString(R.string.phase_focus)
+            "$focusWord ${state.completedSessions + 1}/$sessionsBeforeLongBreak"
         } else {
             getString(state.phaseLabelRes)
         }

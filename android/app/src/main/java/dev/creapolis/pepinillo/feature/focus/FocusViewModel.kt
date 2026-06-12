@@ -66,6 +66,7 @@ data class FocusUiState(
     val soundscapeVolume: Float = 0.5f,
     val showSoundscapePicker: Boolean = false,
     val completedSessions: Int = 0,
+    val sessionsBeforeLongBreak: Int = 4,
     val showBatteryWarningDialog: Boolean = false,
 )
 
@@ -242,6 +243,7 @@ class FocusViewModel @Inject constructor(
             soundscapeVolume = soundscape.volume,
             showSoundscapePicker = soundscape.showPicker,
             completedSessions = combined.timerState.completedSessions,
+            sessionsBeforeLongBreak = settings.prefs.sessionsBeforeLongBreak,
             showBatteryWarningDialog = soundscape.showBatteryWarning,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(

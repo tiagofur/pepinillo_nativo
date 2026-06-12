@@ -32,6 +32,7 @@
     <string name="mode_chrono">Stopwatch</string>
 
     <!-- Focus Phases -->
+    <string name="state_ready">Ready</string>
     <string name="phase_focus">Focus</string>
     <string name="phase_short_break">Short Break</string>
     <string name="phase_long_break">Long Break</string>

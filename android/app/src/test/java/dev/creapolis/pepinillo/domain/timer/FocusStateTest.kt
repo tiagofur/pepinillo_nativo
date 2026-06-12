@@ -99,7 +99,7 @@ class FocusStateTest {
     @Test
     fun `phase label idle pomodoro`() {
         val state = FocusTimerState(mode = FocusMode.Pomodoro, status = TimerStatus.Idle)
-        assertEquals(R.string.phase_focus, state.phaseLabelRes)
+        assertEquals(R.string.state_ready, state.phaseLabelRes)
     }
 
     @Test
