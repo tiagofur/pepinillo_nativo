@@ -38,6 +38,7 @@ struct ProWidgetOverlay: View {
 struct DashboardWidgetSmall: View {
     let entry: DashboardWidgetEntry
     @Environment(\.showsWidgetContainerBackground) var showsBackground
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     var body: some View {
         Group {
@@ -81,7 +82,8 @@ struct DashboardWidgetSmall: View {
                         HStack(spacing: 3) {
                             Image(systemName: "flame.fill")
                                 .font(.caption2)
-                                .foregroundStyle(ModeColors.streak)
+                                .foregroundStyle(renderingMode == .accented ? .primary : ModeColors.streak)
+                                .widgetAccentable(renderingMode == .accented)
                             Text("\(entry.streakDays)d")
                                 .font(.caption2)
                                 .fontWeight(.medium)
@@ -116,6 +118,7 @@ struct DashboardWidgetSmall: View {
 struct DashboardWidgetMedium: View {
     let entry: DashboardWidgetEntry
     @Environment(\.showsWidgetContainerBackground) var showsBackground
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     var body: some View {
         Group {
@@ -143,7 +146,7 @@ struct DashboardWidgetMedium: View {
                         HStack(spacing: 12) {
                             StatPill(icon: "checkmark.circle", value: "\(entry.todaySessions)")
                             if entry.streakDays > 0 {
-                                StatPill(icon: "flame.fill", value: "\(entry.streakDays)d", color: ModeColors.streak)
+                                StatPill(icon: "flame.fill", value: "\(entry.streakDays)d", color: renderingMode == .accented ? .primary : ModeColors.streak)
                             }
                         }
                     }
@@ -163,7 +166,7 @@ struct DashboardWidgetMedium: View {
                                 .foregroundStyle(.secondary)
                             Spacer()
                         } else {
-                            WeeklyBarChart(data: entry.weeklyData, height: 60)
+                            WeeklyBarChart(data: entry.weeklyData, height: 60, renderingMode: renderingMode)
                             Text(String(localized: "\(formattedMinutes(entry.weeklyTotalMinutes)) total"))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -186,7 +189,8 @@ struct DashboardWidgetMedium: View {
                         VStack(spacing: 4) {
                             Image(systemName: "flame.fill")
                                 .font(.title2)
-                                .foregroundStyle(ModeColors.streak)
+                                .foregroundStyle(renderingMode == .accented ? .primary : ModeColors.streak)
+                                .widgetAccentable(renderingMode == .accented)
                             Text("\(entry.streakDays)d")
                                 .font(.title3)
                                 .fontWeight(.semibold)
@@ -204,6 +208,7 @@ struct DashboardWidgetMedium: View {
 struct DashboardWidgetLarge: View {
     let entry: DashboardWidgetEntry
     @Environment(\.showsWidgetContainerBackground) var showsBackground
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -218,7 +223,8 @@ struct DashboardWidgetLarge: View {
                     if entry.streakDays > 0 {
                         HStack(spacing: 3) {
                             Image(systemName: "flame.fill")
-                                .foregroundStyle(ModeColors.streak)
+                                .foregroundStyle(renderingMode == .accented ? .primary : ModeColors.streak)
+                                .widgetAccentable(renderingMode == .accented)
                             Text("\(entry.streakDays)d")
                                 .fontWeight(.semibold)
                         }
@@ -260,14 +266,16 @@ struct DashboardWidgetLarge: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
-                    WeeklyBarChart(data: entry.weeklyData, height: 100)
+                    WeeklyBarChart(data: entry.weeklyData, height: 100, renderingMode: renderingMode)
 
-                    // Mode legend
-                    HStack(spacing: 12) {
-                        ModeLegendItem(color: ModeColors.pomodoro, label: String(localized: "Pomodoro"))
-                        ModeLegendItem(color: ModeColors.flowtime, label: String(localized: "Flow"))
-                        ModeLegendItem(color: ModeColors.timeBlock, label: String(localized: "Blocks"))
-                        ModeLegendItem(color: ModeColors.stopwatch, label: String(localized: "Chrono"))
+                    // Mode legend — hide in tinted mode since colours are opacity-differentiated
+                    if renderingMode != .accented {
+                        HStack(spacing: 12) {
+                            ModeLegendItem(color: ModeColors.pomodoro, label: String(localized: "Pomodoro"))
+                            ModeLegendItem(color: ModeColors.flowtime, label: String(localized: "Flow"))
+                            ModeLegendItem(color: ModeColors.timeBlock, label: String(localized: "Blocks"))
+                            ModeLegendItem(color: ModeColors.stopwatch, label: String(localized: "Chrono"))
+                        }
                     }
 
                     // Best day callout
@@ -275,7 +283,7 @@ struct DashboardWidgetLarge: View {
                         HStack(spacing: 6) {
                             Image(systemName: "star.fill")
                                 .font(.caption2)
-                                .foregroundStyle(.yellow)
+                                .foregroundStyle(renderingMode == .accented ? .secondary : Color.yellow)
                             Text(String(localized: "Best: \(entry.bestDayName) — \(formattedMinutes(entry.bestDayMinutes))"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -307,37 +315,42 @@ struct DashboardWidgetLarge: View {
 private struct WeeklyBarChart: View {
     let data: [DashboardWidgetEntry.DayData]
     let height: CGFloat
+    var renderingMode: WidgetRenderingMode = .fullColor
+
+    /// Opacity levels for the four modes in tinted (accented) rendering.
+    /// Ordered: pomodoro, flowtime, timeBlock, stopwatch.
+    private static let tintedOpacities: [Double] = [1.0, 0.65, 0.40, 0.20]
 
     var body: some View {
         Chart(data) { day in
-            // Stacked bars by mode
+            // Stacked bars by mode — use opacity-differentiated accent in tinted mode.
             if day.pomodoroMinutes > 0 {
                 BarMark(
                     x: .value("Day", day.dayAbbrev),
                     y: .value("Minutes", day.pomodoroMinutes)
                 )
-                .foregroundStyle(ModeColors.pomodoro)
+                .foregroundStyle(barColor(for: .pomodoro))
             }
             if day.flowtimeMinutes > 0 {
                 BarMark(
                     x: .value("Day", day.dayAbbrev),
                     y: .value("Minutes", day.flowtimeMinutes)
                 )
-                .foregroundStyle(ModeColors.flowtime)
+                .foregroundStyle(barColor(for: .flowtime))
             }
             if day.timeBlockMinutes > 0 {
                 BarMark(
                     x: .value("Day", day.dayAbbrev),
                     y: .value("Minutes", day.timeBlockMinutes)
                 )
-                .foregroundStyle(ModeColors.timeBlock)
+                .foregroundStyle(barColor(for: .timeBlock))
             }
             if day.stopwatchMinutes > 0 {
                 BarMark(
                     x: .value("Day", day.dayAbbrev),
                     y: .value("Minutes", day.stopwatchMinutes)
                 )
-                .foregroundStyle(ModeColors.stopwatch)
+                .foregroundStyle(barColor(for: .stopwatch))
             }
         }
         .chartYAxis(.hidden)
@@ -356,6 +369,20 @@ private struct WeeklyBarChart: View {
         }
         .chartLegend(.hidden)
         .frame(height: height)
+    }
+
+    private enum ModeSlot: Int { case pomodoro = 0, flowtime, timeBlock, stopwatch }
+
+    private func barColor(for slot: ModeSlot) -> Color {
+        guard renderingMode == .accented else {
+            switch slot {
+            case .pomodoro: return ModeColors.pomodoro
+            case .flowtime: return ModeColors.flowtime
+            case .timeBlock: return ModeColors.timeBlock
+            case .stopwatch: return ModeColors.stopwatch
+            }
+        }
+        return Color.primary.opacity(Self.tintedOpacities[slot.rawValue])
     }
 }
 
