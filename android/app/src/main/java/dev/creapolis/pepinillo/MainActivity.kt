@@ -1,15 +1,10 @@
 package dev.creapolis.pepinillo
 
-import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -32,8 +27,10 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -118,10 +115,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { /* granted or not, we continue */ }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         enableEdgeToEdge()
@@ -145,7 +138,6 @@ class MainActivity : ComponentActivity() {
             // Notify system that we are ready to draw
             LaunchedEffect(Unit) {
                 isAppReady = true
-                requestNotificationPermissionIfNeeded()
             }
             val subscriptionState by subscriptionManager.subscriptionState.collectAsState()
             val themeMode by ThemeController.themeMode.collectAsState()
@@ -196,19 +188,9 @@ class MainActivity : ComponentActivity() {
         syncScope.cancel()
         super.onDestroy()
     }
-
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this, Manifest.permission.POST_NOTIFICATIONS,
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        }
-    }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PepinilloApp(
     prefsRepository: UserPreferencesRepository,
@@ -220,7 +202,8 @@ fun PepinilloApp(
 
     // Hide bottom bar on non-top-level screens (like Profile, Auth) or when in PiP
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
-    val showBottomBar = currentRoute in topLevelRoutes && !isPipMode
+    val isImeVisible = WindowInsets.isImeVisible
+    val showBottomBar = currentRoute in topLevelRoutes && !isPipMode && !isImeVisible
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -344,6 +327,7 @@ fun PepinilloApp(
                     onSignInClick = { navController.navigate("login") },
                     onCreateAccountClick = { navController.navigate("register") },
                     onSettingsClick = { navController.navigate("settings") },
+                    onAppSetupClick = { navController.navigate("app_setup") },
                     onExportClick = { navController.navigate("export") },
                     onHelpSupportClick = { navController.navigate("help") },
                     onAboutClick = { navController.navigate("about") },

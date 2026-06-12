@@ -170,9 +170,11 @@ private fun TimerActiveLayout(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        // Progress ring
+        // Display floor: ensure the ring reads active even at progress ~0 (count-up
+        // modes such as Flow and Chrono start empty). Mirrors the phone-side fix.
+        val displayProgress = if (localProgress < 0.02f) 0.02f else localProgress
         CircularProgressIndicator(
-            progress = localProgress.coerceIn(0f, 1f),
+            progress = displayProgress.coerceIn(0f, 1f),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp),

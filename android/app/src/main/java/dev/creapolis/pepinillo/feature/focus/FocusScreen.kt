@@ -1,7 +1,12 @@
 package dev.creapolis.pepinillo.feature.focus
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
 import android.view.WindowManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
@@ -66,6 +71,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
@@ -91,8 +97,15 @@ fun FocusScreen(
     val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
     val haptic = LocalHapticFeedback.current
 
+    val context = LocalContext.current
+    // Request POST_NOTIFICATIONS on the first session start (Android 13+).
+    // The session always starts regardless of the user's choice.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* granted or denied — session already started, nothing to do */ }
+
     val keepScreenActive = uiState.keepScreenOn && (uiState.isRunning || uiState.isPaused)
-    val activity = LocalContext.current as? Activity
+    val activity = context as? Activity
     DisposableEffect(keepScreenActive) {
         if (keepScreenActive) {
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -125,23 +138,28 @@ fun FocusScreen(
         label = "progress",
     )
     val sessionActive = uiState.isRunning || uiState.isPaused || uiState.isWaitingForNext
+    val primaryTimerActionVisual = when {
+        uiState.isRunning -> PrimaryTimerActionVisual.Pause
+        uiState.isPaused || uiState.isWaitingForNext -> PrimaryTimerActionVisual.PlayCompact
+        else -> PrimaryTimerActionVisual.StartExpanded
+    }
     val timerSize by animateFloatAsState(
         targetValue = if (sessionActive) 292f else 268f,
         animationSpec = tween(500),
         label = "timerSize",
     )
     val buttonWidth by animateDpAsState(
-        targetValue = if (sessionActive) 72.dp else 280.dp,
+        targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 280.dp else 72.dp,
         animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
         label = "buttonWidth",
     )
     val buttonHeight by animateDpAsState(
-        targetValue = if (sessionActive) 72.dp else 60.dp,
+        targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 60.dp else 72.dp,
         animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
         label = "buttonHeight",
     )
     val buttonCornerRadius by animateDpAsState(
-        targetValue = if (sessionActive) 36.dp else 30.dp,
+        targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 30.dp else 36.dp,
         animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
         label = "buttonCornerRadius",
     )
@@ -315,6 +333,16 @@ fun FocusScreen(
                         } else {
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
+                        // On the first session start (idle state), request POST_NOTIFICATIONS
+                        // on Android 13+. The session starts regardless of the user's choice.
+                        if (!uiState.isRunning && !uiState.isPaused && !uiState.isWaitingForNext &&
+                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                            ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.POST_NOTIFICATIONS,
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
                         viewModel.onStartStopClick()
                     },
                     modifier = Modifier.size(width = buttonWidth, height = buttonHeight),
@@ -323,30 +351,52 @@ fun FocusScreen(
                         containerColor = animatedAccentColor,
                         contentColor = animatedOnAccentColor,
                     ),
-                    contentPadding = if (sessionActive) PaddingValues(0.dp) else ButtonDefaults.ContentPadding,
+                    contentPadding = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) {
+                        ButtonDefaults.ContentPadding
+                    } else {
+                        PaddingValues(0.dp)
+                    },
                 ) {
                     AnimatedContent(
-                        targetState = uiState.isRunning,
+                        targetState = primaryTimerActionVisual,
                         label = "startStop",
-                    ) { isRunning ->
-                        if (isRunning || uiState.isPaused) {
-                            Icon(
-                                imageVector = if (isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                                contentDescription = if (isRunning) stringResource(R.string.btn_pause) else stringResource(R.string.btn_resume),
-                                modifier = Modifier.size(32.dp),
-                            )
-                        } else {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                    ) { visual ->
+                        when (visual) {
+                            PrimaryTimerActionVisual.Pause -> {
+                                Icon(
+                                    imageVector = Icons.Rounded.Pause,
+                                    contentDescription = stringResource(R.string.btn_pause),
+                                    modifier = Modifier.size(32.dp),
+                                )
+                            }
+
+                            PrimaryTimerActionVisual.PlayCompact -> {
                                 Icon(
                                     imageVector = Icons.Rounded.PlayArrow,
-                                    contentDescription = "Start timer",
+                                    contentDescription = if (uiState.isPaused) {
+                                        stringResource(R.string.btn_resume)
+                                    } else {
+                                        stringResource(R.string.cd_start_timer)
+                                    },
+                                    modifier = Modifier.size(32.dp),
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.btn_start_focus),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
+                            }
+
+                            PrimaryTimerActionVisual.StartExpanded -> {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.PlayArrow,
+                                        contentDescription = null,
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = stringResource(R.string.btn_start_focus),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                         }
                     }
@@ -507,6 +557,12 @@ fun FocusScreen(
             },
         )
     }
+}
+
+private enum class PrimaryTimerActionVisual {
+    StartExpanded,
+    Pause,
+    PlayCompact,
 }
 
 @Composable

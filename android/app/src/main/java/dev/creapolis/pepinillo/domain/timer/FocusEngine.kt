@@ -42,7 +42,7 @@ class FocusEngine @Inject constructor(
     private var timerJob: Job? = null
     private var prefsObserverJob: Job? = null
 
-    // Cached preferences for use in the tick loop (avoids reading DataStore every 100ms)
+    // Cached preferences for use in the tick loop (avoids reading DataStore every 250ms)
     private var cachedPrefs: UserPreferences = UserPreferences()
 
     init {
@@ -311,7 +311,8 @@ class FocusEngine @Inject constructor(
             // Start observing preference changes during the active session
             startPrefsObserver()
 
-            val tickInterval = 100L
+            // 4 Hz tick rate — matches iOS; wall-clock anchoring keeps elapsed accurate regardless
+            val tickInterval = 250L
             // Use wall-clock anchoring to avoid drift from delay() imprecision
             val loopStartRealtime = SystemClock.elapsedRealtime()
             val initialElapsed = _state.value.elapsedMillis

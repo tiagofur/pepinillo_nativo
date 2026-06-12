@@ -229,7 +229,18 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ── SUMMARY CARDS ──
+        // ── STREAK HERO ──
+        // Streak is the emotional centrepiece of the dashboard — shown prominently
+        // above the chart so it anchors the session and motivates continuation.
+        StreakHeroCard(
+            currentStreak = stats.currentStreak,
+            bestStreak = stats.bestStreak,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ── SUMMARY CARDS (Focus Time + Sessions) ──
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -244,12 +255,6 @@ fun DashboardScreen(
                 title = stringResource(R.string.dashboard_sessions),
                 value = "${stats.periodSessions}",
                 icon = Icons.Rounded.TaskAlt,
-                modifier = Modifier.weight(1f),
-            )
-            SummaryCard(
-                title = stringResource(R.string.dashboard_streak),
-                value = stringResource(R.string.dashboard_days_count, stats.currentStreak),
-                icon = Icons.Rounded.LocalFireDepartment,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -323,25 +328,6 @@ fun DashboardScreen(
             Spacer(modifier = Modifier.height(12.dp))
             AchievementsRow(achievements = stats.achievements)
             Spacer(modifier = Modifier.height(28.dp))
-        }
-
-        // ── STREAK SECTION ──
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            StreakCard(
-                title = stringResource(R.string.dashboard_current),
-                days = stats.currentStreak,
-                icon = Icons.Rounded.LocalFireDepartment,
-                modifier = Modifier.weight(1f),
-            )
-            StreakCard(
-                title = stringResource(R.string.dashboard_best),
-                days = stats.bestStreak,
-                icon = Icons.Rounded.EmojiEvents,
-                modifier = Modifier.weight(1f),
-            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -500,39 +486,75 @@ private fun PatternCard(
     }
 }
 
+/**
+ * Streak hero card — the emotional centrepiece of the dashboard.
+ * Shows the current streak large and centered with flame iconography,
+ * and the personal best as a compact secondary stat.
+ */
 @Composable
-private fun StreakCard(
-    title: String,
-    days: Int,
-    icon: ImageVector,
+private fun StreakHeroCard(
+    currentStreak: Int,
+    bestStreak: Int,
     modifier: Modifier = Modifier,
 ) {
+    val streakColor = MaterialTheme.colorScheme.tertiary
+    val streakContainerColor = MaterialTheme.colorScheme.tertiaryContainer
+
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
-            .padding(16.dp),
+            .background(streakContainerColor.copy(alpha = 0.7f))
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(28.dp),
-            tint = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        // Flame icon + large streak number
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.LocalFireDepartment,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = streakColor,
             )
-            Text(
-                text = stringResource(R.string.dashboard_days_count, days),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Column {
+                Text(
+                    text = stringResource(R.string.dashboard_days_count, currentStreak),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+                Text(
+                    text = stringResource(R.string.day_streak),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                )
+            }
+        }
+
+        // Personal best — compact secondary stat
+        if (bestStreak > 0) {
+            Column(horizontalAlignment = Alignment.End) {
+                Icon(
+                    imageVector = Icons.Rounded.EmojiEvents,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp).align(Alignment.End),
+                    tint = streakColor.copy(alpha = 0.7f),
+                )
+                Text(
+                    text = stringResource(R.string.dashboard_days_count, bestStreak),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
+                )
+                Text(
+                    text = stringResource(R.string.dashboard_best),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.6f),
+                )
+            }
         }
     }
 }

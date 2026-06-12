@@ -144,8 +144,13 @@ object WidgetTaskStateManager {
     suspend fun updateLinkedTaskId(context: Context, taskId: String?) {
         val manager = GlanceAppWidgetManager(context)
         val glanceIds = manager.getGlanceIds(TasksWidget::class.java)
+        var changed = false
         glanceIds.forEach { glanceId ->
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
+                val current = prefs[PREF_LINKED_TASK_ID]
+                val next = taskId
+                // Only mark dirty when the linked task actually changes
+                if (current != next) changed = true
                 prefs.toMutablePreferences().apply {
                     if (taskId != null) {
                         this[PREF_LINKED_TASK_ID] = taskId
@@ -155,7 +160,8 @@ object WidgetTaskStateManager {
                 }
             }
         }
-        TasksWidget().updateAll(context)
+        // Redraw only when the highlighted task changed, not on every timer tick
+        if (changed) TasksWidget().updateAll(context)
     }
 }
 
