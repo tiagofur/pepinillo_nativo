@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
@@ -24,11 +25,14 @@ fun CircularTimerRing(
     progress: Float,
     ringColor: Color,
     trackColor: Color,
-    strokeWidth: Dp = 12.dp,
+    strokeWidth: Dp = 13.dp,
     modifier: Modifier = Modifier,
     isRunning: Boolean = false,
+    showDashedOverlay: Boolean = false,
 ) {
     val strokeWidthPx = with(LocalDensity.current) { strokeWidth.toPx() }
+    val dashPx = with(LocalDensity.current) { 4.dp.toPx() }
+    val gapPx = with(LocalDensity.current) { 10.dp.toPx() }
     
     val infiniteTransition = rememberInfiniteTransition(label = "ringPulse")
     val pulseAlpha by infiniteTransition.animateFloat(
@@ -57,6 +61,23 @@ fun CircularTimerRing(
             size = arcSize,
             style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round),
         )
+
+        // Dashed track overlay for count-up idle mode
+        if (showDashedOverlay) {
+            drawArc(
+                color = ringColor.copy(alpha = 0.30f),
+                startAngle = -90f,
+                sweepAngle = 360f,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(
+                    width = strokeWidthPx,
+                    cap = StrokeCap.Butt,
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashPx, gapPx), 0f)
+                ),
+            )
+        }
         
         // Display floor: when the session is running but progress is ~0 (count-up modes
         // such as Flow and Chrono start empty), draw a minimum 2% sweep so the ring never

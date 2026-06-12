@@ -325,4 +325,13 @@
     <string name="widget_no_task_linked">Sem tarefa</string>
     <string name="widget_streak_indicator">sequência</string>
     <string name="widget_sessions_indicator">sessões</string>
+
+    <!-- Reflection & Quick Add -->
+    <string name="dashboard_weekly_review_subtitle">Dados e IA para a sua semana</string>
+    <string name="dashboard_monthly_review_subtitle">Dados e IA para o seu mês</string>
+    <string name="dashboard_weekly_review_preview">%1$s focado em %2$d sessões esta semana</string>
+    <string name="dashboard_monthly_review_preview">%1$s focado em %2$d sessões este mês</string>
+    <string name="dashboard_weekly_review_hint">Abre seu relatório semanal de produtividade</string>
+    <string name="dashboard_monthly_review_hint">Abre seu relatório mensal de produtividade</string>
+    <string name="btn_new_task">Nova tarefa</string>
 </resources>

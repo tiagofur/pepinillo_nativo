@@ -30,9 +30,11 @@ import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Summarize
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -256,6 +258,54 @@ fun DashboardScreen(
                 value = "${stats.periodSessions}",
                 icon = Icons.Rounded.TaskAlt,
                 modifier = Modifier.weight(1f),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ── REFLECTION ACTION CARDS ──
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            val weeklyPreviewLine = if (!stats.isLoading && (weeklyReport.currentWeekMinutes > 0 || weeklyReport.currentWeekSessions > 0)) {
+                stringResource(
+                    R.string.dashboard_weekly_review_preview,
+                    formatMinutes(weeklyReport.currentWeekMinutes),
+                    weeklyReport.currentWeekSessions
+                )
+            } else {
+                stringResource(R.string.dashboard_weekly_review_subtitle)
+            }
+
+            ReflectionCard(
+                title = stringResource(R.string.cd_weekly_review),
+                subtitle = weeklyPreviewLine,
+                icon = Icons.Rounded.Summarize,
+                tintColor = Color(0xFFFF9800), // Orange
+                onClick = {
+                    if (hasLocalPremium) viewModel.showWeeklyReview() else onNavigateToPaywall()
+                }
+            )
+
+            val monthlyPreviewLine = if (!stats.isLoading && stats.selectedPeriod == AnalyticsPeriod.Month && (monthlyReport.currentMonthMinutes > 0 || monthlyReport.currentMonthSessions > 0)) {
+                stringResource(
+                    R.string.dashboard_monthly_review_preview,
+                    formatMinutes(monthlyReport.currentMonthMinutes),
+                    monthlyReport.currentMonthSessions
+                )
+            } else {
+                stringResource(R.string.dashboard_monthly_review_subtitle)
+            }
+
+            ReflectionCard(
+                title = stringResource(R.string.cd_monthly_review),
+                subtitle = monthlyPreviewLine,
+                icon = Icons.Rounded.DateRange,
+                tintColor = Color(0xFF9C27B0), // Purple
+                onClick = {
+                    if (hasLocalPremium) viewModel.showMonthlyReview() else onNavigateToPaywall()
+                }
             )
         }
 
@@ -690,6 +740,67 @@ private fun EmptyDashboardState(
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(R.string.dashboard_btn_start))
         }
+    }
+}
+
+@Composable
+private fun ReflectionCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    tintColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(20.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(tintColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = tintColor,
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 

@@ -11,14 +11,21 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -54,10 +61,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.delay
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -96,6 +110,38 @@ fun FocusScreen(
     val activeTasks by viewModel.activeTasks.collectAsState()
     val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
     val haptic = LocalHapticFeedback.current
+
+    // Spring scale on mode change
+    var ringScaleTarget by remember { mutableStateOf(1f) }
+    val ringScale by animateFloatAsState(
+        targetValue = ringScaleTarget,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "ringScale"
+    )
+    LaunchedEffect(uiState.selectedMode) {
+        ringScaleTarget = 0.92f
+        delay(80)
+        ringScaleTarget = 1.0f
+    }
+
+    // Breathing scale for emoji when running
+    val infiniteTransition = rememberInfiniteTransition(label = "breathe")
+    val breatheScale by if (uiState.isRunning) {
+        infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.06f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "breatheScale"
+        )
+    } else {
+        remember { mutableStateOf(1f) }
+    }
 
     val context = LocalContext.current
     // Request POST_NOTIFICATIONS on the first session start (Android 13+).
@@ -179,8 +225,10 @@ fun FocusScreen(
                 exit = fadeOut(tween(180)) + slideOutVertically { -it / 3 },
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     FocusMode.entries.forEach { mode ->
                         ModeChip(
@@ -188,6 +236,7 @@ fun FocusScreen(
                             isSelected = mode == uiState.selectedMode,
                             onClick = { viewModel.selectMode(mode) },
                             isLocked = !mode.isFreeTier && !uiState.isPro,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -218,24 +267,39 @@ fun FocusScreen(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(timerSize.dp)
+                    .scale(ringScale)
                     .semantics {
                         contentDescription = "$phaseLabel: ${uiState.displayTime}, $modeLabel mode"
                     },
             ) {
+                // Ambient Radial Glow
+                Box(
+                    modifier = Modifier
+                        .size(timerSize.dp)
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    animatedAccentColor.copy(alpha = if (isSystemInDarkTheme()) 0.04f else 0.07f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                )
+
                 CircularTimerRing(
                     progress = animatedProgress,
                     ringColor = animatedAccentColor,
                     trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                    strokeWidth = if (sessionActive) 12.dp else 10.dp,
+                    strokeWidth = if (sessionActive) 13.dp else 11.dp,
                     modifier = Modifier.size(timerSize.dp),
                     isRunning = uiState.isRunning,
+                    showDashedOverlay = !uiState.isRunning && uiState.selectedMode.defaultTotalSeconds == null,
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = uiState.selectedMode.icon,
-                        contentDescription = null,
-                        tint = animatedContentColor,
-                        modifier = Modifier.size(34.dp),
+                    Text(
+                        text = uiState.selectedMode.emoji,
+                        fontSize = 28.sp,
+                        modifier = Modifier.scale(breatheScale),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -315,8 +379,8 @@ fun FocusScreen(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.onStopClick()
                         },
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.16f),
+                        contentColor = MaterialTheme.colorScheme.error,
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Stop,
@@ -349,7 +413,7 @@ fun FocusScreen(
                     shape = RoundedCornerShape(buttonCornerRadius),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = animatedAccentColor,
-                        contentColor = animatedOnAccentColor,
+                        contentColor = Color.White,
                     ),
                     contentPadding = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) {
                         ButtonDefaults.ContentPadding
