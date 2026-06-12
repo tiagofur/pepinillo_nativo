@@ -155,6 +155,22 @@ public final class SwiftDataPersistenceService {
         return task.sessions.sorted { $0.startedAt > $1.startedAt }
     }
 
+    public func fetchSessions(forTaskIDs ids: [UUID]) throws -> [UUID: [FocusSessionRecord]] {
+        let descriptor = FetchDescriptor<FocusSessionRecord>()
+        let sessions = try context.fetch(descriptor)
+        let idSet = Set(ids)
+        var result: [UUID: [FocusSessionRecord]] = [:]
+        for session in sessions {
+            if let taskID = session.task?.id, idSet.contains(taskID) {
+                result[taskID, default: []].append(session)
+            }
+        }
+        for (taskID, list) in result {
+            result[taskID] = list.sorted { $0.startedAt > $1.startedAt }
+        }
+        return result
+    }
+
     public func fetchTaskAnalytics(taskID: UUID) throws -> TaskAnalyticsDTO {
         let taskDescriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == taskID })
         guard let task = try context.fetch(taskDescriptor).first else {
@@ -363,6 +379,22 @@ public final class SwiftDataPersistenceService {
         let descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == taskID })
         guard let task = try context.fetch(descriptor).first else { return [] }
         return task.subtasks.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    public func fetchSubtasks(forTaskIDs ids: [UUID]) throws -> [UUID: [SubTask]] {
+        let descriptor = FetchDescriptor<SubTask>()
+        let subtasks = try context.fetch(descriptor)
+        let idSet = Set(ids)
+        var result: [UUID: [SubTask]] = [:]
+        for subtask in subtasks {
+            if let parentID = subtask.parent?.id, idSet.contains(parentID) {
+                result[parentID, default: []].append(subtask)
+            }
+        }
+        for (taskID, list) in result {
+            result[taskID] = list.sorted { $0.sortOrder < $1.sortOrder }
+        }
+        return result
     }
 
     public func addSubtask(to taskID: UUID, title: String) throws -> SubTask {

@@ -102,6 +102,13 @@ public actor BackgroundPersistenceActor {
         try service.fetchSubtasks(for: taskID).map { SubTaskDTO(from: $0) }
     }
 
+    func fetchSubtasksForTasks(taskIDs: [UUID]) throws -> [UUID: [SubTaskDTO]] {
+        let batch = try service.fetchSubtasks(forTaskIDs: taskIDs)
+        return batch.mapValues { subtasks in
+            subtasks.map { SubTaskDTO(from: $0) }
+        }
+    }
+
     func addSubtask(to taskID: UUID, title: String) throws -> SubTaskDTO {
         SubTaskDTO(from: try service.addSubtask(to: taskID, title: title))
     }
@@ -130,6 +137,13 @@ public actor BackgroundPersistenceActor {
 
     func fetchSessionsForTask(taskID: UUID) throws -> [SessionRecordDTO] {
         try service.fetchSessionsForTask(taskID: taskID).map { SessionRecordDTO(from: $0) }
+    }
+
+    func fetchSessionsForTasks(taskIDs: [UUID]) throws -> [UUID: [SessionRecordDTO]] {
+        let batch = try service.fetchSessions(forTaskIDs: taskIDs)
+        return batch.mapValues { sessions in
+            sessions.map { SessionRecordDTO(from: $0) }
+        }
     }
 
     func fetchTaskAnalytics(taskID: UUID) throws -> TaskAnalyticsDTO {

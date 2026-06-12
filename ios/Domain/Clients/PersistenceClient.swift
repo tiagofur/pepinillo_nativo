@@ -492,6 +492,7 @@ public struct PersistenceClient: Sendable {
 
     // Subtasks
     public var fetchSubtasks: @Sendable (UUID) async throws -> [SubTaskDTO] = { _ in [] }
+    public var fetchSubtasksForTasks: @Sendable ([UUID]) async throws -> [UUID: [SubTaskDTO]] = { _ in [:] }
     public var addSubtask: @Sendable (UUID, String) async throws -> SubTaskDTO
     public var toggleSubtask: @Sendable (UUID) async throws -> Void
     public var deleteSubtask: @Sendable (UUID) async throws -> Void
@@ -501,6 +502,7 @@ public struct PersistenceClient: Sendable {
     public var saveSession: @Sendable (FocusSessionResult) async throws -> Void
     public var fetchSessions: @Sendable (Date, Date) async throws -> [SessionRecordDTO] = { _, _ in [] }
     public var fetchSessionsForTask: @Sendable (UUID) async throws -> [SessionRecordDTO] = { _ in [] }
+    public var fetchSessionsForTasks: @Sendable ([UUID]) async throws -> [UUID: [SessionRecordDTO]] = { _ in [:] }
     public var fetchTaskAnalytics: @Sendable (UUID) async throws -> TaskAnalyticsDTO
     public var saveJournalEntry: @Sendable (UUID, String?, Int?) async throws -> Void
 
@@ -595,6 +597,9 @@ extension PersistenceClient: DependencyKey {
             fetchSubtasks: { taskID in
                 try await actorProvider().fetchSubtasks(for: taskID)
             },
+            fetchSubtasksForTasks: { taskIDs in
+                try await actorProvider().fetchSubtasksForTasks(taskIDs: taskIDs)
+            },
             addSubtask: { taskID, title in
                 try await actorProvider().addSubtask(to: taskID, title: title)
             },
@@ -615,6 +620,9 @@ extension PersistenceClient: DependencyKey {
             },
             fetchSessionsForTask: { taskID in
                 try await actorProvider().fetchSessionsForTask(taskID: taskID)
+            },
+            fetchSessionsForTasks: { taskIDs in
+                try await actorProvider().fetchSessionsForTasks(taskIDs: taskIDs)
             },
             fetchTaskAnalytics: { taskID in
                 try await actorProvider().fetchTaskAnalytics(taskID: taskID)
