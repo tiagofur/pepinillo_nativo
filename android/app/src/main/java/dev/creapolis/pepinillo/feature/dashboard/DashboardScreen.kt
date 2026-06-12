@@ -57,6 +57,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.feature.dashboard.components.FocusChart
+import dev.creapolis.pepinillo.ui.components.GlassBox
 import dev.creapolis.pepinillo.feature.dashboard.components.ModeBreakdown
 import dev.creapolis.pepinillo.feature.dashboard.model.Achievement
 import dev.creapolis.pepinillo.feature.dashboard.model.AnalyticsPeriod
@@ -611,18 +612,13 @@ private fun SectionTitle(title: String) {
 
 @Composable
 private fun DashboardCard(content: @Composable () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(20.dp),
-            )
-            .padding(20.dp),
+    GlassBox(
+        modifier = Modifier.fillMaxWidth(),
+        cornerRadius = 20.dp
     ) {
-        content()
+        Box(modifier = Modifier.padding(20.dp)) {
+            content()
+        }
     }
 }
 

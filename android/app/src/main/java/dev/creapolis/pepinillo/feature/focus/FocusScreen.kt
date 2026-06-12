@@ -75,6 +75,7 @@ import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
 import dev.creapolis.pepinillo.ui.components.SuccessToast
+import dev.creapolis.pepinillo.ui.components.GlassBox
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -539,31 +540,34 @@ private fun CompactFocusChip(
     trailingIcon: @Composable (() -> Unit)? = null,
     minHeight: Dp = 40.dp,
 ) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f))
-            .clickable(onClick = onClick)
-            .height(minHeight)
-            .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
+    GlassBox(
+        modifier = modifier,
+        cornerRadius = 22.dp
     ) {
-        if (leadingIcon != null) {
-            leadingIcon()
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (trailingIcon != null) {
-            Spacer(modifier = Modifier.width(8.dp))
-            trailingIcon()
+        Row(
+            modifier = Modifier
+                .clickable(onClick = onClick)
+                .height(minHeight)
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            if (leadingIcon != null) {
+                leadingIcon()
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (trailingIcon != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                trailingIcon()
+            }
         }
     }
 }
