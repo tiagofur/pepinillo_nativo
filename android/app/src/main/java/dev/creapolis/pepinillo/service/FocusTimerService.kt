@@ -12,6 +12,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -169,13 +170,21 @@ class FocusTimerService : Service() {
             addAction(Intent.ACTION_TIME_CHANGED)
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
         }
-        registerReceiver(dayChangeReceiver, filter)
+        ContextCompat.registerReceiver(this, dayChangeReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+    }
+
+    private fun startForegroundCompat(notification: Notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // null intent = START_STICKY restart after process death — attempt recovery
         if (intent == null) {
-            startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+            startForegroundCompat(buildNotification(focusEngine.state.value))
             val recovery = readRecoveryState(this)
             if (recovery != null) {
                 serviceScope.launch {
@@ -204,18 +213,21 @@ class FocusTimerService : Service() {
         when (intent.action) {
             ACTION_PAUSE -> focusEngine.pause()
             ACTION_RESUME -> {
-                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+                startForegroundCompat(buildNotification(focusEngine.state.value))
                 focusEngine.start()
             }
             ACTION_STOP -> {
+                // Capture the current mode before triggering the async stop coroutine,
+                // then push the idle reset values immediately using the default display time
+                // for that mode. This prevents the watch UI from freezing on the last
+                // running timer value while focusEngine.stop() completes asynchronously.
+                val currentMode = focusEngine.state.value.mode
                 focusEngine.stop()
                 clearRecoveryState(this)
-                // Push idle state to watch NOW, before stopping — prevents watch from freezing
-                // on the last running timer value while the coroutine collector shuts down.
                 WearDataLayerHelper.pushIdleState(
                     context = this,
-                    mode = focusEngine.state.value.mode.name,
-                    displayTime = focusEngine.state.value.displayTime,
+                    mode = currentMode.name,
+                    displayTime = "", // Empty string signals idle; watch resets display to full duration
                 )
                 // Clear linked task highlight from tasks widget
                 serviceScope.launch { WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, null) }
@@ -231,7 +243,7 @@ class FocusTimerService : Service() {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
                 val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
                 // startForeground BEFORE the suspend call to satisfy Android's 5-second requirement
-                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+                startForegroundCompat(buildNotification(focusEngine.state.value))
                 startCollectingIfNeeded()
                 serviceScope.launch {
                     focusEngine.selectMode(mode)
@@ -246,14 +258,14 @@ class FocusTimerService : Service() {
             ACTION_SELECT_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
                 val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+                startForegroundCompat(buildNotification(focusEngine.state.value))
                 startCollectingIfNeeded()
                 serviceScope.launch { focusEngine.selectMode(mode) }
                 return START_STICKY
             }
         }
 
-        startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+        startForegroundCompat(buildNotification(focusEngine.state.value))
         startCollectingIfNeeded()
 
         return START_STICKY

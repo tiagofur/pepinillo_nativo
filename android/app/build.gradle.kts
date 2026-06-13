@@ -21,6 +21,27 @@ android {
     namespace = "dev.creapolis.pepinillo"
     compileSdk = 36
 
+    val localProperties = Properties().apply {
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { load(it) }
+        }
+    }
+
+    // Keys are required for release builds. Debug/dev can proceed with empty strings to allow
+    // generic Gradle tasks (clean, help, tasks) to succeed on fresh checkouts without credentials.
+    val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }
+
+    val googleWebClientId = localProperties.getProperty("google.web.client.id")
+        ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
+        ?: if (isReleaseBuild) throw GradleException("Missing google.web.client.id in local.properties or GOOGLE_WEB_CLIENT_ID environment variable.")
+           else ""
+
+    val revenuecatApiKey = localProperties.getProperty("revenuecat.api.key")
+        ?: System.getenv("REVENUECAT_API_KEY")
+        ?: if (isReleaseBuild) throw GradleException("Missing revenuecat.api.key in local.properties or REVENUECAT_API_KEY environment variable.")
+           else ""
+
     defaultConfig {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 29
@@ -58,8 +79,8 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "BASE_URL", "\"https://api.ppn.creapolis.dev/api/v1/\"")
-            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"254888961741-jhbnemtpraihlkb5ckjajmkqmijlr0tc.apps.googleusercontent.com\"")
-            buildConfigField("String", "REVENUECAT_API_KEY", "\"goog_ITPYSPEdubAzAeoNGxezZuZJELT\"")
+            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
+            buildConfigField("String", "REVENUECAT_API_KEY", "\"$revenuecatApiKey\"")
         }
         release {
             isMinifyEnabled = true
@@ -68,8 +89,8 @@ android {
                 "proguard-rules.pro"
             )
             buildConfigField("String", "BASE_URL", "\"https://api.ppn.creapolis.dev/api/v1/\"")
-            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"254888961741-jhbnemtpraihlkb5ckjajmkqmijlr0tc.apps.googleusercontent.com\"")
-            buildConfigField("String", "REVENUECAT_API_KEY", "\"goog_ITPYSPEdubAzAeoNGxezZuZJELT\"")
+            buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
+            buildConfigField("String", "REVENUECAT_API_KEY", "\"$revenuecatApiKey\"")
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -74,12 +75,10 @@ class PaywallViewModel @Inject constructor(
 
         viewModelScope.launch {
             subscriptionManager.launchPurchaseFlow(activity, product)
-            // Observe subscription state changes to detect when purchase completes
-            subscriptionManager.subscriptionState.collect { state ->
-                if (state.hasLocalPremium) {
-                    _isPurchasing.value = false
-                }
-            }
+            // Wait until the premium status transitions to active, then stop collecting.
+            // Using first { } instead of collect { } to avoid leaking an infinite flow collector.
+            subscriptionManager.subscriptionState.first { it.hasLocalPremium }
+            _isPurchasing.value = false
         }
     }
 
