@@ -1,7 +1,7 @@
 # Pepinillo — Unified Features Document
 
-**Version:** 1.3  
-**Last Updated:** 2026-04-21  
+**Version:** 1.4  
+**Last Updated:** 2026-06-12  
 **Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS  
 **Author:** Tiago David + Claude Code  
 **Status:** Active
@@ -761,6 +761,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | -------------------------------------- | --- | ------- | ------- | ------- | ---- |
 | **Focus Engine**                       |     |         |         |         |      |
 | Pomodoro mode                          | ✅  | ✅      | ⬜      | ✅      | FREE |
+| Auto-start settings (phase transition gate) | ✅  | ✅      | ✅      | ✅      | FREE |
 | Flowtime mode                          | ✅  | ✅      | ⬜      | ✅      | APPLE / EVERYWHERE  |
 | Time Block mode                        | ✅  | ✅      | ⬜      | ✅      | APPLE / EVERYWHERE  |
 | Stopwatch/Chrono mode                  | ✅  | ✅      | ⬜      | ✅      | FREE |
@@ -924,3 +925,5 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 8. **Social login planned**: Google Sign-In (Android via Credential Manager) and Sign In with Apple (iOS via AuthenticationServices) are planned. Backend must add OAuth providers. Account linking will allow multiple providers per account.
 
 9. **Unified cloud sync architecture achieved**: Both iOS and Android now have full sync architecture via Go backend. iOS uses TCA-based sync clients (SyncClient, IdentityClient, WebSocketClient) with URLSession. Android uses SyncEngine + Room dirty flags + SyncWebSocketClient (OkHttp). Both platforms support: settings sync (per-key LWW), batch session sync, initial upload on registration, cursor-paginated full sync for new devices, WebSocket real-time notifications, and data merge dialogs for anonymous-to-existing-account transitions. Commercially, backend sync now maps to `Everywhere`, while iOS retains CloudKit as Apple-local sync under Apple Unlock.
+
+10. **Auto-start settings parity alcanzada (iOS, 2026-06-12)**: iOS ahora respeta `autoStartBreaks` y `autoStartWork`. Al completar una fase de trabajo o descanso, si el ajuste correspondiente está desactivado, el motor queda en un estado de espera (sin cuenta regresiva) y la UI presenta un CTA ("Start break" / "Start long break" / "Start focus") que el usuario activa manualmente. watchOS y widgets exponen el estado de espera durante el hold. Localización completa en EN/ES/PT. Android ya contaba con este comportamiento vía `WaitingForNext`; la paridad está cubierta en todas las plataformas. Hardening aplicado sobre 3 rondas de revisión adversarial: guards en engine, reducer, widget-intent y Siri-intent, más flag cross-process `activeSessionIsWaiting`.

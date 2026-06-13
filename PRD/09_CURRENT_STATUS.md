@@ -774,3 +774,42 @@ Android y Wear OS **no tenían** los bugs de iOS: el dashboard ya es reactivo vi
 | `recordSession` read-modify-write fuera de `@Transaction` | Android | Condición de carrera si el path de sincronización también invoca el método. |
 | Stats de Wear pueden ir un ciclo de WorkManager atrás | Wear OS | Retraso visible en la pantalla de stats después de una sesión. |
 | Gate `isPro` en stats de Wear sin fallback local | Wear OS | Pantalla bloqueada en pairings recientes sin snapshot local de `isPro`. |
+
+---
+
+## 14. Judgment Day — iOS Auto-Start Settings Parity (2026-06-12) ✅
+
+Sesión de revisión adversarial dual (Judgment Day) sobre el comportamiento de transición de fase en Pomodoro. Problema raíz: iOS ignoraba los ajustes `autoStartBreaks` y `autoStartWork` y avanzaba siempre a la siguiente fase de forma automática. Android ya implementaba la gate correcta vía el estado `WaitingForNext`.
+
+### Correcciones aplicadas — iOS (commit `805b4b1`, branch `feat/android-expressive-m3`)
+
+| Área | Problema | Corrección |
+|------|----------|------------|
+| `FocusEngine` | Al completar un intervalo WORK o BREAK, el motor avanzaba sin consultar los ajustes de auto-start. | Se introduce un estado de espera ("waiting for next phase"): sin cuenta regresiva activa. El motor queda detenido hasta que el usuario o los ajustes habiliten el avance. |
+| `FocusFeature` / reducer | No existía acción ni lógica para el estado de espera. | Se agrega la acción `.startNextPhase` y el manejo del estado hold; la UI emite el CTA correspondiente ("Start break" / "Start long break" / "Start focus"). |
+| Widget intent | El intent de Resume podía ser invocado durante el hold, lo que habría contabilizado el doble de un intervalo. | Guardias añadidas en el handler del widget-intent para rechazar Resume mientras `activeSessionIsWaiting` sea verdadero. |
+| Siri intent | Mismo riesgo de doble conteo vía Siri/App Intents. | Guard simétrico añadido en el Siri intent handler. |
+| Flag cross-process `activeSessionIsWaiting` | Sin esta bandera, el widget y los intents no podían conocer el estado del motor. | Flag persistido en App Group para que widget, watchOS y Siri-intent lean el estado sin acceder al proceso principal. |
+| watchOS / widgets | Las superficies mostraban estado de running durante el hold. | Ahora consumen `activeSessionIsWaiting` para mostrar el estado de espera apropiado. |
+| Localización | Strings de CTA y estado de espera ausentes en ES/PT. | Añadidas en `Localizable.xcstrings` para EN, ES y PT. |
+
+**Build:** exitoso (scheme "Pepinillo Dev").
+
+### Rondas de hardening (Judgment Day)
+
+El fix inicial introdujo un CRITICAL en ronda 1 (el intent de widget podía double-count un intervalo Pomodoro durante el hold). Se requirieron 3 rondas de revisión adversarial hasta confirmar el cierre completo:
+
+| Ronda | Veredicto | Acción |
+|-------|-----------|--------|
+| 1 | CRITICAL (widget Resume double-count) | Guards en widget-intent + flag cross-process |
+| 2 | WARNING (Siri intent sin guard) | Guard simétrico en Siri intent |
+| 3 | PASS — sin CRITICALs ni WARNINGs | Cierre confirmado |
+
+### Estado post-fix
+
+| Plataforma | Auto-start respetado | Estado de espera en UI |
+|------------|---------------------|------------------------|
+| Android | ✅ (`WaitingForNext` state — preexistente) | ✅ |
+| iOS | ✅ (corregido, commit `805b4b1`) | ✅ CTA en FocusView |
+| watchOS | ✅ (flag `activeSessionIsWaiting`) | ✅ Estado de espera visible |
+| Wear OS | ✅ (preexistente en Android) | ✅ |
