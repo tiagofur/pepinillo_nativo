@@ -76,8 +76,8 @@ class WearFocusService : Service() {
 
     private fun buildNotification(state: WearTimerState): android.app.Notification {
         val title = when (state.phase) {
-            "Work" -> "Enfoque"
-            "ShortBreak", "LongBreak" -> "Descanso"
+            "Work" -> getString(R.string.phase_focus)
+            "ShortBreak", "LongBreak" -> getString(R.string.phase_break)
             else -> state.phaseLabel
         }
         val text = if (state.linkedTaskName != null) {
@@ -117,7 +117,7 @@ class WearFocusService : Service() {
                 statusBuilder.addTemplate(title)
             }
         } else {
-            val pausedLabel = if (state.status == "Paused") " (Pausado)" else ""
+            val pausedLabel = if (state.status == "Paused") getString(R.string.state_paused_suffix) else ""
             statusBuilder.addTemplate("$title$pausedLabel")
         }
 
