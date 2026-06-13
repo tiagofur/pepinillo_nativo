@@ -66,6 +66,9 @@ class DashboardViewModel @Inject constructor(
     private val _showMonthlyReview = MutableStateFlow(false)
     val showMonthlyReview: StateFlow<Boolean> = _showMonthlyReview.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     val stats: StateFlow<DashboardStats> = _selectedPeriod.flatMapLatest { period ->
         combine(
             sessionRepository.getTodayStats(),
@@ -130,6 +133,15 @@ class DashboardViewModel @Inject constructor(
 
     fun dismissMonthlyReview() {
         _showMonthlyReview.value = false
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            // Data is already reactive via Room Flows — brief delay for visual feedback
+            kotlinx.coroutines.delay(500)
+            _isRefreshing.value = false
+        }
     }
 
     private fun getStatsForPeriod(period: AnalyticsPeriod) = when (period) {

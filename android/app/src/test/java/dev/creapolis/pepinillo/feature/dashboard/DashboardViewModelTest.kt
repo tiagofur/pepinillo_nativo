@@ -26,6 +26,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -130,6 +132,10 @@ class DashboardViewModelTest {
 
     private fun TestScope.collectReflectionPreviews(vm: DashboardViewModel) {
         backgroundScope.launch { vm.reflectionPreviews.collect {} }
+    }
+
+    private fun TestScope.collectIsRefreshing(vm: DashboardViewModel) {
+        backgroundScope.launch { vm.isRefreshing.collect {} }
     }
 
     // Helper to create a work session
@@ -247,5 +253,35 @@ class DashboardViewModelTest {
         assertEquals(0, previews.weeklySessions)
         assertEquals(0, previews.monthlyMinutes)
         assertEquals(0, previews.monthlySessions)
+    }
+
+    // -----------------------------------------------------------------------
+    // refresh / isRefreshing tests
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `isRefreshing is false initially`() = runTest {
+        val vm = createViewModel()
+        collectIsRefreshing(vm)
+        advanceUntilIdle()
+
+        assertEquals(false, vm.isRefreshing.value)
+    }
+
+    @Test
+    fun `refresh sets isRefreshing to true then false`() = runTest {
+        val vm = createViewModel()
+        val states = mutableListOf<Boolean>()
+        val job = backgroundScope.launch { vm.isRefreshing.collect { states.add(it) } }
+        advanceUntilIdle()
+
+        vm.refresh()
+        advanceUntilIdle()
+
+        // Should have been true during refresh
+        assertTrue(states.contains(true))
+        // And back to false after refresh completes
+        assertEquals(false, vm.isRefreshing.value)
+        job.cancel()
     }
 }

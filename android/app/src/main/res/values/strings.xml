@@ -428,6 +428,7 @@
     <string name="dashboard_peak_hours">Peak Hours</string>
     <string name="dashboard_best_day">Best Day</string>
     <string name="dashboard_focus_score">Focus Score</string>
+    <string name="dashboard_completion">Completion</string>
     <string name="dashboard_focus_modes">Focus Modes</string>
     <string name="dashboard_achievements">Achievements</string>
     <string name="dashboard_current">Current</string>
