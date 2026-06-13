@@ -189,6 +189,7 @@
 | ✅ Dashboard P4 design package (7-day chart hero) | DONE | Streak hero, 7-day bar chart with avg rule, compact stats row, review rows with live preview lines, toolbar menu — `ios/Features/Dashboard/DashboardView.swift` |
 | ✅ Compact stats / chart alignment bug fix | DONE | `DashboardCompactStats` now reads `weekFormattedTotalTime` / `weekSessionsCompleted` (both derived from `weekChartData`); stats and chart always show the same 7-day window regardless of period picker. Unit test added: `weekPeriodChartSumMatchesTotals` in `AnalyticsFeatureTests`. |
 | ✅ Demo data verification | DONE | `-seedDemoData` verified with simulator: Dashboard, AI Reports, charts all display correctly. Math check: avg (~8h29m) × 7 = "59h 25m" matches compact stats row and Revisión Semanal preview. |
+| ✅ Dashboard live refresh + estadísticas Pomodoro | DONE (2026-06-12) | Bug corregido: `AnalyticsFeature` permanecía congelado por guardia `!hasLoadedData`; se agregó acción `.refresh` que la bypasea. Cada intervalo WORK de Pomodoro ahora persiste un `FocusSessionRecord` inmediatamente. Push a Watch corregido para incluir todos los campos del dashboard. Commit: `e0bb3df`. |
 | Paywall redesign for Pepinillo+ / Everywhere/AI+ | P0 | Two-tier paywall: one-time vs subscription, Próximamente section |
 | RevenueCat entitlement reconfiguration | P0     | Map `pro.lifetime` → `pepinillo_plus`, `pro.monthly`/`pro.annual` → `everywhere_plus` |
 | App Store Connect metadata update | P0       | New names, descriptions, and screenshots for the 3 products |
@@ -732,3 +733,44 @@ Resuelto un problema de rendimiento crítico en iOS donde SwiftData leía y escr
 |------|-----------|---------|
 | Medición cold start con Instruments | P1 | Validar mejora real en dispositivo físico (iPhone 14+). No se dispone de métricas numéricas previas al cambio. |
 | Reset de `hasLoadedData` en wipe local | LOW | Si en el futuro se agrega un path que borra datos locales (logout-wipe, reset de cuenta), ese path debe resetear `hasLoadedData = false` para forzar recarga limpia. |
+
+---
+
+## 13. Judgment Day — Dashboard Refresh & Pomodoro Stats (2026-06-12) ✅
+
+Sesión de revisión adversarial dual (Judgment Day) sobre el dashboard de iOS. Android/Wear OS verificado y confirmado correcto — iOS estaba detrás y se niveló.
+
+### Correcciones aplicadas — iOS (commit `e0bb3df`, branch `feat/android-expressive-m3`)
+
+| Área | Problema | Corrección |
+|------|----------|------------|
+| `AnalyticsFeature.onAppear` | Guardia `!hasLoadedData` bloqueaba permanentemente el refresh post-sesión y el pull-to-refresh después del primer carga. El dashboard quedaba congelado hasta reiniciar la app. | Se agregó acción `.refresh` dedicada que bypasea la guardia. La finalización de sesión, el stop manual y el pull-to-refresh la usan en lugar de `.onAppear`. |
+| Persistencia Pomodoro | Solo se guardaba `FocusSessionRecord` al terminar el ciclo completo; un intervalo WORK completado era invisible durante la siguiente ronda. | Cada intervalo WORK completado persiste un `FocusSessionRecord` inmediatamente. El `sessionCompleted` final ya no duplica el guardado en modo Pomodoro. |
+| Push de stats a Watch | El push post-save enviaba solo 3 campos, zeroeando el desglose por modo en el Watch. | El push ahora incluye todos los campos del dashboard (total, sesiones, desglose por modo). |
+| UUID race al inicio de sesión | Timer-tick sintético generaba una condición de carrera con el UUID en el arranque de sesión. | Eliminado. |
+
+**Build:** exitoso (scheme "Pepinillo Dev").
+
+### Hallazgo de paridad cross-platform — Android/Wear OS (commit `945b37f`)
+
+Android y Wear OS **no tenían** los bugs de iOS: el dashboard ya es reactivo via Room Flow y ya persistía cada intervalo WORK de Pomodoro. El commit de Android corrigió tres problemas distintos descubiertos durante la misma sesión:
+
+| Área | Corrección |
+|------|------------|
+| Ventanas de estadísticas semana/mes | Las ventanas `week`/`month` estaban congeladas; ahora son reactivas. |
+| Solapamiento de días en ventana mes anterior | Corregido el cálculo de offset que incluía días del mes corriente. |
+| Etiqueta de descanso Wear OS (regresión) | La etiqueta optimista de break en Wear había regresionado; restaurada. |
+| Throttle de escritura en recovery state | La escritura del estado de recuperación del timer estaba limitada innecesariamente; corregida. |
+
+**Build:** `compileDebugKotlin` exitoso para `:app` y `:wear`.
+
+### Problemas conocidos pendientes (identificados durante la sesión, no corregidos)
+
+| Problema | Plataforma | Impacto |
+|----------|------------|---------|
+| `upsertSessionFromServer` no actualiza `DailyStats` | iOS | Sesiones sincronizadas desde el servidor pueden subcontar el streak. |
+| `actualDuration` usa elapsed local de fase | iOS | Subestima la duración de sesiones Pomodoro abandonadas a mitad de ciclo. |
+| `getSessionsForDate` usa offset fijo de 86400000 ms | Android | Edge case en el cambio horario de verano (DST-night). |
+| `recordSession` read-modify-write fuera de `@Transaction` | Android | Condición de carrera si el path de sincronización también invoca el método. |
+| Stats de Wear pueden ir un ciclo de WorkManager atrás | Wear OS | Retraso visible en la pantalla de stats después de una sesión. |
+| Gate `isPro` en stats de Wear sin fallback local | Wear OS | Pantalla bloqueada en pairings recientes sin snapshot local de `isPro`. |
