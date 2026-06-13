@@ -1,4 +1,108 @@
 <resources>
+    <string name="app_name">Pepinillo</string>
+
+    <!-- Focus Screen -->
+    <string name="greeting_morning">Bom dia</string>
+    <string name="greeting_afternoon">Boa tarde</string>
+    <string name="greeting_evening">Boa noite</string>
+    <string name="focus_phase_label">Foco</string>
+    <string name="tap_to_link_task">Toque para vincular uma tarefa</string>
+    <string name="sessions_today">sess\u00f5es hoje</string>
+    <string name="day_streak">dias de sequ\u00eancia</string>
+    <string name="msg_task_linked">Tarefa vinculada</string>
+    <string name="btn_start_focus">Iniciar Foco</string>
+    <string name="btn_start_break">Iniciar Descanso</string>
+    <string name="btn_start_long_break">Iniciar Descanso Longo</string>
+    <string name="btn_pause">Pausar</string>
+    <string name="btn_resume">Retomar</string>
+    <string name="btn_stop">Parar</string>
+    <string name="stop_confirm_title">Parar sess\u00e3o?</string>
+    <string name="stop_confirm_body">O temporizador ser\u00e1 parado e seu progresso at\u00e9 agora ser\u00e1 salvo.</string>
+
+    <!-- Focus Modes -->
+    <string name="mode_pomodoro">Pomodoro</string>
+    <string name="mode_flow">Flow</string>
+    <string name="mode_blocks">Blocos</string>
+    <string name="mode_chrono">Cron\u00f4metro</string>
+
+    <!-- Focus Phases -->
+    <string name="state_ready">Pronto</string>
+    <string name="phase_focus">Foco</string>
+    <string name="phase_short_break">Descanso Curto</string>
+    <string name="phase_long_break">Descanso Longo</string>
+    <string name="phase_flowing">Fluindo...</string>
+    <string name="phase_timing">Cronometrando...</string>
+    <string name="phase_focus_numbered">Foco %1$d</string>
+
+    <!-- Timer Suggestion -->
+    <string name="break_suggestion_text">Voc\u00ea est\u00e1 focado h\u00e1 um tempo \u2014 considere fazer uma pausa!</string>
+
+    <!-- Tasks Screen -->
+    <string name="filter_active">Ativas</string>
+    <string name="no_tasks_yet">Sem tarefas ainda</string>
+    <string name="add_task_hint">No que voc\u00ea precisa se concentrar?</string>
+    <string name="add_task_title">Nova Tarefa</string>
+    <string name="task_title_label">T\u00edtulo da tarefa</string>
+    <string name="energy_level_label">N\u00edvel de Energia</string>
+    <string name="pomodoro_estimate_label">Estimativa de Pomodoros</string>
+    <string name="btn_add">Adicionar</string>
+    <string name="btn_cancel">Cancelar</string>
+
+    <!-- Dashboard Screen -->
+    <string name="today_focus">Foco de hoje</string>
+    <string name="this_week">Esta Semana</string>
+    <string name="minutes_short">min</string>
+    <string name="sessions_label">sess\u00f5es</string>
+    <string name="current_streak">Sequ\u00eancia Atual</string>
+    <string name="best_streak">Melhor Sequ\u00eancia</string>
+    <string name="days_short">dias</string>
+    <string name="weekly_overview">Resumo Semanal</string>
+    <string name="mode_breakdown">Distribui\u00e7\u00e3o por Modo</string>
+    <string name="longest_session">Sess\u00e3o mais longa</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Configura\u00e7\u00f5es</string>
+    <string name="timer_settings">Configura\u00e7\u00f5es do Temporizador</string>
+    <string name="pomodoro_duration">Dura\u00e7\u00e3o do Pomodoro</string>
+    <string name="short_break">Descanso Curto</string>
+    <string name="long_break">Descanso Longo</string>
+    <string name="time_block">Bloco de Tempo</string>
+    <string name="minutes_unit">min</string>
+    <string name="automation">Automa\u00e7\u00e3o</string>
+    <string name="auto_start_breaks">Auto-iniciar descansos</string>
+    <string name="auto_start_next_pomodoro">Auto-iniciar pr\u00f3ximo Pomodoro</string>
+    <string name="feedback_section">Feedback</string>
+    <string name="sound">Som</string>
+    <string name="vibration">Vibra\u00e7\u00e3o</string>
+    <string name="appearance">Apar\u00eancia</string>
+    <string name="theme_mode">Modo do Tema</string>
+    <string name="dynamic_color">Cor Din\u00e2mica</string>
+
+    <!-- Profile Screen -->
+    <string name="sign_in">Entrar</string>
+    <string name="total_focus_time">Tempo Total de Foco</string>
+    <string name="tasks_completed">Tarefas Conclu\u00eddas</string>
+    <string name="total_sessions">Total de Sess\u00f5es</string>
+    <string name="profile_edit_title">Editar Perfil</string>
+    <string name="profile_edit_photo">Alterar foto</string>
+    <string name="profile_label_name">Nome</string>
+    <string name="btn_save">Salvar</string>
+
+    <!-- Accessibility -->
+    <string name="cd_profile">Perfil</string>
+    <string name="cd_link_task">Vincular tarefa</string>
+    <string name="cd_streak">Sequ\u00eancia</string>
+    <string name="cd_stop_timer">Parar temporizador</string>
+    <string name="cd_start_timer">Iniciar temporizador</string>
+    <string name="cd_pause_timer">Pausar temporizador</string>
+    <string name="cd_completed">Conclu\u00eddo</string>
+
+    <!-- Task Picker -->
+    <string name="link_a_task">Vincular uma tarefa</string>
+    <string name="unlink_task">Desvincular tarefa</string>
+    <string name="no_active_tasks">Sem tarefas ativas. Crie uma primeiro.</string>
+    <string name="pomodoro_progress">%1$d/%2$d pomodoros</string>
+
     <!-- Session Journal -->
     <string name="journal_session_complete">Sess\u00e3o conclu\u00edda</string>
     <string name="journal_how_was_focus">Como foi seu foco?</string>
@@ -322,4 +426,258 @@
     <string name="widget_no_task_linked">Sem tarefa</string>
     <string name="widget_streak_indicator">sequência</string>
     <string name="widget_sessions_indicator">sessões</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">Temporizador de Foco</string>
+    <string name="notification_channel_description">Exibe o temporizador de foco ativo</string>
+    <string name="notification_connecting">Conectando ao telefone...</string>
+
+    <!-- Completion Messages -->
+    <string name="msg_focus_complete_title">Sessão de foco concluída!</string>
+    <string name="msg_focus_complete_text">Bom trabalho! Hora de descansar.</string>
+    <string name="msg_short_break_over_title">O descanso acabou!</string>
+    <string name="msg_short_break_over_text">Pronto para sua próxima sessão de foco.</string>
+    <string name="msg_long_break_over_title">O descanso longo acabou!</string>
+    <string name="msg_long_break_over_text">Se sentindo renovado? Vamos lá de novo.</string>
+    <string name="msg_block_complete_title">Bloco de tempo concluído!</string>
+    <string name="msg_block_complete_text">Seu bloco de foco foi concluído.</string>
+    <string name="msg_timer_complete_title">Temporizador concluído!</string>
+    <string name="msg_timer_complete_text">Sua sessão foi finalizada.</string>
+    <string name="notification_completion_channel_name">Conclusão do Temporizador</string>
+    <string name="notification_completion_channel_desc">Alertas quando um temporizador de foco conclui</string>
+
+    <!-- Soundscapes -->
+    <string name="soundscape_title">Paisagem Sonora</string>
+    <string name="soundscape_none">Nenhum</string>
+    <string name="soundscape_rain">Chuva</string>
+    <string name="soundscape_forest">Floresta</string>
+    <string name="soundscape_cafe">Cafeteria</string>
+    <string name="soundscape_white_noise">Ruído Branco</string>
+    <string name="soundscape_ocean">Oceano</string>
+    <string name="soundscape_fireplace">Lareira</string>
+    <string name="soundscape_binaural">Batidas Binaurais</string>
+    <string name="soundscape_lofi">Lo-fi</string>
+    <string name="soundscape_section_free">Sons Gratuitos</string>
+    <string name="soundscape_section_pro">Sons Everywhere/AI+</string>
+    <string name="soundscape_preview">Pré-visualizar</string>
+    <string name="soundscape_stop_preview">Parar pré-visualização</string>
+    <string name="soundscape_requires_pro">Requer Everywhere/AI+</string>
+    <string name="soundscape_choose">Escolher paisagem sonora</string>
+
+    <!-- Daily Reminder -->
+    <string name="daily_reminder_channel_name">Lembrete Diário</string>
+    <string name="daily_reminder_channel_description">Notificações diárias de lembrete de foco</string>
+    <string name="daily_reminder_title">Hora de focar!</string>
+    <string name="daily_reminder_text">Inicie uma sessão de foco hoje e mantenha sua sequência.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_welcome_title">Bem-vindo ao Pepinillo</string>
+    <string name="onboarding_welcome_desc">Seu companheiro de trabalho profundo. Foque melhor, conquiste mais e descubra seu estilo ideal de produtividade.</string>
+    <string name="onboarding_modes_title">4 Modos de Foco</string>
+    <string name="onboarding_modes_desc">Pomodoro, Flow, Blocos de Tempo e Cronômetro. Encontre a técnica que funciona melhor para você.</string>
+    <string name="onboarding_everywhere_title">Foco em Todo Lugar</string>
+    <string name="onboarding_everywhere_desc">Sincronize suas tarefas e sessões em todos os seus dispositivos com o Everywhere/AI+. Nunca perca sua sequência.</string>
+    <string name="onboarding_tasks_title">Gerenciamento Inteligente de Tarefas</string>
+    <string name="onboarding_tasks_desc">Organize tarefas por nível de energia e prioridade. Vincule-as a sessões de foco para acompanhar o progresso.</string>
+    <string name="onboarding_widgets_title">Widgets e Notificações</string>
+    <string name="onboarding_widgets_desc">Controle seu temporizador a partir da tela inicial, tela de bloqueio ou painel de notificações.</string>
+    <string name="onboarding_ready_title">Pronto para Focar!</string>
+    <string name="onboarding_ready_desc">Acompanhe seu progresso com análises detalhadas. Vamos iniciar sua primeira sessão de foco.</string>
+    <string name="btn_skip">Pular</string>
+    <string name="btn_next">Próximo</string>
+    <string name="btn_get_started">Começar</string>
+
+    <!-- Forgot Password -->
+    <string name="forgot_password_title">Esqueci minha senha</string>
+    <string name="forgot_password_desc">Insira seu e-mail e enviaremos um código para redefinir sua senha.</string>
+    <string name="forgot_password_label_email">E-mail</string>
+    <string name="forgot_password_btn_send">Enviar código</string>
+    <string name="reset_password_title">Redefinir senha</string>
+    <string name="reset_password_desc">Insira o código que enviamos para %1$s e sua nova senha.</string>
+    <string name="reset_password_label_code">Código de verificação</string>
+    <string name="reset_password_label_new">Nova senha</string>
+    <string name="reset_password_label_confirm">Confirmar senha</string>
+    <string name="reset_password_btn_reset">Redefinir senha</string>
+    <string name="reset_password_resend">Não recebeu o código? Reenviar</string>
+
+    <!-- Delete Account -->
+    <string name="delete_account_title">Excluir Conta?</string>
+    <string name="delete_account_desc">Esta ação é permanente e excluirá todas as suas tarefas, sessões e configurações de nossos servidores. Isso não pode ser desfeito.</string>
+    <string name="delete_account_btn_forever">Excluir para sempre</string>
+
+    <!-- Email Verification -->
+    <string name="email_verify_title">Verificar E-mail</string>
+    <string name="email_verify_desc">Enviamos um código para %1$s. Insira-o abaixo para verificar sua conta.</string>
+    <string name="email_verify_label_code">Código de verificação</string>
+    <string name="email_verify_btn_verify">Verificar E-mail</string>
+    <string name="email_verify_btn_resend">Reenviar código</string>
+
+    <!-- Task Detail -->
+    <string name="task_detail_title">Detalhes da Tarefa</string>
+    <string name="task_detail_btn_start">Iniciar Sessão de Foco</string>
+    <string name="task_detail_btn_delete">Excluir Tarefa</string>
+    <string name="task_delete_confirm_title">Excluir Tarefa?</string>
+    <string name="task_delete_confirm_desc">Esta ação não pode ser desfeita.</string>
+    <string name="task_label_priority">Prioridade</string>
+    <string name="task_label_energy">Nível de Energia</string>
+    <string name="task_label_estimate">Estimativa de Pomodoros</string>
+    <string name="task_label_repeat">Repetir</string>
+    <string name="task_label_notes">Notas</string>
+    <string name="task_label_notes_hint">Adicionar notas...</string>
+    <string name="task_label_history">Histórico de Foco</string>
+    <string name="task_stat_total_time">Tempo Total de Foco</string>
+    <string name="task_stat_completed_pomos">Pomodoros Concluídos</string>
+    <string name="task_focus_today">Foco de Hoje</string>
+    <string name="task_status_active">Ativa</string>
+    <string name="task_status_completed">Concluída</string>
+
+    <!-- Feedback Messages -->
+    <string name="msg_task_added">Tarefa adicionada</string>
+    <string name="msg_task_update_failed">Falha ao atualizar tarefa</string>
+    <string name="msg_task_add_failed">Falha ao adicionar tarefa</string>
+    <string name="msg_task_delete_failed">Falha ao excluir tarefa</string>
+    <string name="msg_task_restore_failed">Falha ao restaurar tarefa</string>
+    <string name="msg_task_reorder_failed">Falha ao reordenar tarefas</string>
+    <string name="msg_no_internet">Sem conexão à internet</string>
+    <string name="msg_account_deleted">Conta excluída com sucesso</string>
+    <string name="msg_error_generic">Algo deu errado</string>
+
+    <!-- Common UI -->
+    <string name="cd_toggle_password">Alternar visibilidade da senha</string>
+    <string name="cd_go_back">Voltar</string>
+    <string name="cd_close">Fechar</string>
+
+    <!-- Paywall -->
+    <string name="paywall_title">Eleve seu Foco</string>
+    <string name="paywall_subtitle">Escolha o plano que se adapta ao seu fluxo de trabalho</string>
+    <string name="paywall_one_time">Pagamento único</string>
+    <string name="paywall_subscription">Assinatura</string>
+    <string name="paywall_monthly">Mensal</string>
+    <string name="paywall_annual">Anual</string>
+    <string name="paywall_best_value">MELHOR CUSTO-BENEFÍCIO</string>
+    <string name="paywall_btn_restore">Restaurar Compras</string>
+    <string name="paywall_legal">As assinaturas se renovam automaticamente a menos que sejam canceladas pelo menos 24 horas antes do fim do período atual. Gerencie assinaturas nas configurações do Google Play.</string>
+    <string name="paywall_unit_month">/mês</string>
+    <string name="paywall_unit_year">/ano</string>
+    <string name="paywall_unit_once"> único</string>
+    <string name="paywall_btn_start_sub">Iniciar Assinatura</string>
+    <string name="paywall_btn_continue">Continuar</string>
+
+    <!-- Paywall Features -->
+    <string name="feature_local_premium">Premium Local</string>
+    <string name="feature_local_premium_desc">Todos os temas, sons e widgets</string>
+    <string name="feature_adv_timer">Temporizador Avançado</string>
+    <string name="feature_adv_timer_desc">Flowtime e Blocos de Tempo</string>
+    <string name="feature_unlimited_tasks">Tarefas Ilimitadas</string>
+    <string name="feature_unlimited_tasks_desc">Subtarefas e recorrência</string>
+    <string name="feature_wearos">App Wear OS</string>
+    <string name="feature_wearos_desc">Integração completa com smartwatch</string>
+    <string name="feature_adv_stats">Estatísticas Avançadas</string>
+    <string name="feature_adv_stats_desc">Histórico completo e análises</string>
+    <string name="feature_cloud_sync">Sincronização na Nuvem</string>
+    <string name="feature_cloud_sync_desc">Sincronize em todos os seus dispositivos</string>
+    <string name="feature_ai_reports">Relatórios de IA</string>
+    <string name="feature_ai_reports_desc">Análises mensais de produtividade</string>
+    <string name="feature_vps_backup">Backup VPS</string>
+    <string name="feature_vps_backup_desc">Backup seguro em tempo real</string>
+    <string name="feature_pro_included">Benefícios Pro</string>
+    <string name="feature_pro_included_desc">Tudo do Pepinillo+ incluído</string>
+
+    <!-- Data Merge -->
+    <string name="merge_title">Dados Locais Encontrados</string>
+    <string name="merge_desc">Você tem dados neste dispositivo que não foram sincronizados. Deseja combiná-los com sua conta ou começar do zero com os dados da conta?</string>
+    <string name="merge_btn_merge">Combinar Dados</string>
+    <string name="merge_btn_account_only">Usar Apenas Conta</string>
+
+    <!-- Navigation -->
+    <string name="nav_focus">Foco</string>
+    <string name="nav_plan">Plano</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_more">Mais</string>
+
+    <!-- Dashboard Content -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_subtitle">Seu resumo de foco</string>
+    <string name="dashboard_focus_time">Tempo de Foco</string>
+    <string name="dashboard_sessions">Sessões</string>
+    <string name="dashboard_streak">Sequência</string>
+    <string name="dashboard_focus_minutes">Minutos de Foco</string>
+    <string name="dashboard_patterns">Padrões de Produtividade</string>
+    <string name="dashboard_peak_hours">Horários de Pico</string>
+    <string name="dashboard_best_day">Melhor Dia</string>
+    <string name="dashboard_focus_score">Pontuação de Foco</string>
+    <string name="dashboard_focus_modes">Modos de Foco</string>
+    <string name="dashboard_achievements">Conquistas</string>
+    <string name="dashboard_current">Atual</string>
+    <string name="dashboard_best">Melhor</string>
+    <string name="dashboard_no_sessions">Sem sessões de foco ainda</string>
+    <string name="dashboard_empty_desc">Inicie sua primeira sessão para ver suas análises aqui</string>
+    <string name="dashboard_btn_start">Iniciar seu primeiro foco</string>
+    <string name="dashboard_days_count">%1$d dias</string>
+    <string name="cd_weekly_review">Resumo Semanal</string>
+    <string name="cd_monthly_review">Resumo Mensal</string>
+    <string name="cd_calendar">Calendário</string>
+    <string name="cd_pro">Pro</string>
+
+    <!-- Tasks -->
+    <string name="tasks_title">Plano</string>
+    <string name="tasks_active_count">%1$d ativas</string>
+    <string name="tasks_active_limit">%1$d/%2$d ativas</string>
+    <string name="tasks_no_tasks">Sem tarefas ainda</string>
+    <string name="tasks_empty_desc">Digite abaixo para adicionar sua primeira tarefa</string>
+    <string name="tasks_deleted_msg">"%1$s" excluída</string>
+    <string name="btn_undo">Desfazer</string>
+    <string name="cd_delete">Excluir</string>
+    <string name="cd_sort">Ordenar</string>
+    <string name="cd_add_task">Adicionar tarefa</string>
+
+    <!-- Task Filter Labels -->
+    <string name="filter_all">Todas</string>
+
+    <!-- Task Sort Labels -->
+    <string name="sort_custom">Personalizado</string>
+    <string name="sort_priority">Prioridade</string>
+    <string name="sort_time">Tempo</string>
+    <string name="sort_energy">Energia</string>
+
+    <!-- Auth -->
+    <string name="auth_slogan">Seu companheiro de trabalho profundo</string>
+    <string name="auth_label_email">E-mail</string>
+    <string name="auth_label_password">Senha</string>
+    <string name="auth_label_name">Nome</string>
+    <string name="auth_btn_google">Entrar com o Google</string>
+    <string name="auth_btn_guest">Continuar como convidado</string>
+    <string name="auth_forgot_password">Esqueceu sua senha?</string>
+    <string name="auth_already_have_account">Já tem uma conta? Entrar</string>
+    <string name="auth_register_title">Criar Conta</string>
+    <string name="auth_register_subtitle">Junte-se ao Pepinillo e comece a focar</string>
+    <string name="auth_password_hint">Mín. 8 caracteres, com maiúscula, minúscula e um número</string>
+    <string name="cd_logo">Logo do Pepinillo</string>
+
+    <!-- Review Sheets -->
+    <string name="review_weekly_title">Resumo Semanal</string>
+    <string name="review_monthly_title">Resumo Mensal</string>
+    <string name="review_focus_time">Tempo de Foco</string>
+    <string name="review_sessions">Sessões</string>
+    <string name="review_completion_rate">Taxa de Conclusão</string>
+    <string name="review_this_week">Esta Semana</string>
+    <string name="review_this_month">Este Mês</string>
+    <string name="review_dominant_mode">Modo Dominante</string>
+    <string name="review_best_day">Melhor Dia</string>
+    <string name="review_best_week">Melhor Semana</string>
+    <string name="review_mode_distribution">Distribuição por Modo</string>
+    <string name="review_current_streak">Sequência Atual</string>
+    <string name="review_top_tasks">Principais Tarefas</string>
+    <string name="review_delta_minutes">%1$dm</string>
+
+    <!-- AI Report extras -->
+    <string name="ai_credits_left">%1$d créditos restantes este mês</string>
+
+    <!-- Task Detail extras -->
+    <string name="task_detail_remove_due_date">Remover Prazo</string>
+    <string name="task_detail_add_due_date">Adicionar Prazo</string>
+    <string name="task_detail_subtasks_pro">Subtarefas (Pepinillo+)</string>
+    <string name="task_detail_repeat_pro">Repetir (Pepinillo+)</string>
+    <string name="btn_done">Concluído</string>
+
 </resources>

@@ -68,11 +68,25 @@ val FocusTimerState.progress: Float
 
 val FocusTimerState.phaseLabelRes: Int
     get() = when {
-        status == TimerStatus.Idle || status == TimerStatus.WaitingForNext -> R.string.state_ready
+        status == TimerStatus.Idle -> R.string.state_ready
+        // WaitingForNext: show the phase that is pending, not "Ready"
+        status == TimerStatus.WaitingForNext -> when (phase) {
+            FocusPhase.ShortBreak -> R.string.phase_short_break
+            FocusPhase.LongBreak -> R.string.phase_long_break
+            FocusPhase.Work -> when (mode) {
+                // NOTE: phase_focus_numbered is a format string requiring %1$d (session number).
+                // Callers MUST pass completedSessions + 1 as the format arg, e.g.
+                //   getString(phaseLabelRes, completedSessions + 1)
+                FocusMode.Pomodoro -> R.string.phase_focus_numbered
+                FocusMode.Flow -> R.string.phase_flowing
+                FocusMode.Blocks -> R.string.mode_blocks
+                FocusMode.Chrono -> R.string.phase_timing
+            }
+        }
         phase == FocusPhase.ShortBreak -> R.string.phase_short_break
         phase == FocusPhase.LongBreak -> R.string.phase_long_break
         else -> when (mode) {
-            FocusMode.Pomodoro -> R.string.phase_focus_numbered // Context handles the number
+            FocusMode.Pomodoro -> R.string.phase_focus_numbered // Format string: callers must pass completedSessions + 1 as %1$d
             FocusMode.Flow -> R.string.phase_flowing
             FocusMode.Blocks -> R.string.mode_blocks
             FocusMode.Chrono -> R.string.phase_timing

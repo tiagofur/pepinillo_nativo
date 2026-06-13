@@ -47,6 +47,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -180,9 +181,11 @@ fun FocusScreen(
                 Spacer(modifier = Modifier.height(22.dp))
             }
 
-            if (uiState.showPaywall) {
-                viewModel.dismissPaywall()
-                onNavigateToPaywall()
+            LaunchedEffect(uiState.showPaywall) {
+                if (uiState.showPaywall) {
+                    viewModel.dismissPaywall()
+                    onNavigateToPaywall()
+                }
             }
 
             Spacer(modifier = Modifier.weight(if (sessionActive) 0.55f else 0.28f))
@@ -343,6 +346,13 @@ fun FocusScreen(
                                     tint = Color.White,
                                 )
                             } else {
+                                val ctaLabel = when {
+                                    uiState.isWaitingForNext && uiState.currentPhase == FocusPhase.ShortBreak ->
+                                        stringResource(R.string.btn_start_break)
+                                    uiState.isWaitingForNext && uiState.currentPhase == FocusPhase.LongBreak ->
+                                        stringResource(R.string.btn_start_long_break)
+                                    else -> stringResource(R.string.btn_start_focus)
+                                }
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.Center,
@@ -350,12 +360,12 @@ fun FocusScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Rounded.PlayArrow,
-                                        contentDescription = "Start timer",
+                                        contentDescription = ctaLabel,
                                         tint = Color.White,
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = stringResource(R.string.btn_start_focus),
+                                        text = ctaLabel,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold,
                                         color = Color.White,

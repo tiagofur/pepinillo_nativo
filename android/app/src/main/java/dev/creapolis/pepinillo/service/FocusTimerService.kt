@@ -341,7 +341,11 @@ class FocusTimerService : Service() {
                             selectedMode = state.mode,
                             displayTime = state.displayTime,
                             finishTimestamp = finishTimestamp,
-                            phaseLabel = this@FocusTimerService.getString(state.phaseLabelRes),
+                            phaseLabel = if (state.mode == FocusMode.Pomodoro && state.phase == FocusPhase.Work) {
+                                this@FocusTimerService.getString(state.phaseLabelRes, state.completedSessions + 1)
+                            } else {
+                                this@FocusTimerService.getString(state.phaseLabelRes)
+                            },
                             status = state.status,
                             progress = state.progress,
                             linkedTaskName = state.linkedTaskId,
@@ -447,9 +451,10 @@ class FocusTimerService : Service() {
             PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val phaseLabel = if (state.mode == FocusMode.Pomodoro && 
+        val phaseLabel = if (state.mode == FocusMode.Pomodoro &&
             state.phase == dev.creapolis.pepinillo.domain.timer.FocusPhase.Work &&
-            (state.status == TimerStatus.Running || state.status == TimerStatus.Paused)) {
+            (state.status == TimerStatus.Running || state.status == TimerStatus.Paused ||
+                state.status == TimerStatus.WaitingForNext)) {
             val focusWord = getString(R.string.phase_focus)
             "$focusWord ${state.completedSessions + 1}/$sessionsBeforeLongBreak"
         } else {
@@ -469,7 +474,14 @@ class FocusTimerService : Service() {
         when (state.status) {
             TimerStatus.Running -> builder.addAction(0, getString(R.string.btn_pause), servicePending(1, ACTION_PAUSE))
             TimerStatus.Paused -> builder.addAction(0, getString(R.string.btn_resume), servicePending(2, ACTION_RESUME))
-            TimerStatus.WaitingForNext -> builder.addAction(0, getString(R.string.btn_start_focus), servicePending(2, ACTION_RESUME))
+            TimerStatus.WaitingForNext -> {
+                val actionLabel = when (state.phase) {
+                    dev.creapolis.pepinillo.domain.timer.FocusPhase.ShortBreak -> getString(R.string.btn_start_break)
+                    dev.creapolis.pepinillo.domain.timer.FocusPhase.LongBreak -> getString(R.string.btn_start_long_break)
+                    else -> getString(R.string.btn_start_focus)
+                }
+                builder.addAction(0, actionLabel, servicePending(2, ACTION_RESUME))
+            }
             else -> {}
         }
         builder.addAction(0, getString(R.string.btn_stop), servicePending(3, ACTION_STOP))
