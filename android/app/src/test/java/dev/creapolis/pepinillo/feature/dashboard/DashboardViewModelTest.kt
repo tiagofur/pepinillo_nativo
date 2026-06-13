@@ -158,7 +158,7 @@ class DashboardViewModelTest {
 
     @Test
     fun `completionRate is computed correctly when sessions exist`() = runTest {
-        // 3 sessions: 2 completed, 1 not → 2/3 ≈ 0.6667
+        // 3 sessions: 2 completed, 1 not → 2/3 = 0.6667, rounded to 2 decimals = 0.67
         weekSessionsFlow.value = listOf(
             workSession(wasCompleted = true),
             workSession(wasCompleted = true),
@@ -171,7 +171,7 @@ class DashboardViewModelTest {
         advanceUntilIdle()
 
         val stats = vm.stats.value
-        assertEquals(2.0 / 3.0, stats.completionRate, 0.001)
+        assertEquals(0.67, stats.completionRate, 0.001)
     }
 
     @Test

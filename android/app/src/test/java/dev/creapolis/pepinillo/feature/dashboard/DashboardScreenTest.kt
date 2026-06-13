@@ -17,8 +17,9 @@ class DashboardScreenTest {
     // -------------------------------------------------------------------
 
     @Test
-    fun `formatCompletionRate formats zero as 0 percent`() {
-        assertEquals("0%", formatCompletionRate(0.0))
+    fun `formatCompletionRate returns em-dash for zero rate`() {
+        // Spec: when periodSessions = 0, completion card shows "–" not "0%"
+        assertEquals("\u2013", formatCompletionRate(0.0))
     }
 
     @Test

@@ -561,8 +561,13 @@ private fun EmptyDashboardState(
     }
 }
 
-/** Formats a 0.0–1.0 completion rate as a percentage string, e.g. 0.78 → "78%". */
+/**
+ * Formats a 0.0–1.0 completion rate as a percentage string, e.g. 0.78 → "78%".
+ * Returns "–" when the rate is 0.0 (no sessions in the period), matching the
+ * em-dash placeholder used by the other PatternCards.
+ */
 fun formatCompletionRate(rate: Double): String {
+    if (rate == 0.0) return "\u2013"
     val percentage = (rate * 100).toInt()
     return "$percentage%"
 }

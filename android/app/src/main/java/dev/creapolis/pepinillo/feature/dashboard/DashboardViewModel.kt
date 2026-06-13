@@ -192,9 +192,10 @@ class DashboardViewModel @Inject constructor(
         val bestDay = sessionRepository.computeBestDayOfWeek(periodStats)
         val focusScore = computeFocusScore(periodStats)
 
-        // Completion rate from work sessions
+        // Completion rate from work sessions (rounded to 2 decimal places per spec)
         val completedCount = workSessions.count { it.wasCompleted }
-        val completionRate = if (periodSessionCount > 0) completedCount.toDouble() / periodSessionCount else 0.0
+        val rawRate = if (periodSessionCount > 0) completedCount.toDouble() / periodSessionCount else 0.0
+        val completionRate = kotlin.math.round(rawRate * 100.0) / 100.0
 
         // Achievements
         val achievements = computeAchievements(allDays, streak)
