@@ -119,6 +119,9 @@ struct FocusFeature {
         // Day change
         case dayChanged
 
+        // Internal: seed the pomodoro cycle number from DB without clobbering live session state
+        case _pomodoroWorkCountSeeded(Int)
+
         // Mode Intelligence
         case modeSuggested(ModeSuggestion?)
         case modeSuggestionAccepted
@@ -271,24 +274,17 @@ struct FocusFeature {
 
                 return .merge(
                     // Load today's completed pomodoro work sessions from DB
-                    // so the engine starts with the correct cycle position
+                    // so the engine starts with the correct cycle position.
+                    // Uses a dedicated action to avoid clobbering the live engine session state
+                    // with a synthetic FocusSessionState that has a mismatched UUID.
                     .run { [persistence] send in
                         if mode == .pomodoro {
                             let startOfDay = Calendar.current.startOfDay(for: Date.now)
                             let sessions = try await persistence.fetchSessions(startOfDay, Date.now)
                             let pomodoroWorkCount = sessions.filter {
-                                $0.mode == "pomodoro" && ($0.taskID != nil || true)
+                                $0.mode == "pomodoro" && $0.wasCompleted
                             }.count
-                            // Update state via a tick — the engine will pick this up
-                            // We store the DB-derived count for display
-                            await send(.timerTicked(FocusSessionState(
-                                id: UUID(),
-                                mode: .pomodoro,
-                                phase: .work(number: pomodoroWorkCount + 1, total: config.pomodorosPerCycle),
-                                startedAt: Date.now,
-                                pomodoroNumber: pomodoroWorkCount + 1,
-                                totalPomodoros: config.pomodorosPerCycle
-                            )))
+                            await send(._pomodoroWorkCountSeeded(pomodoroWorkCount))
                         }
                     },
                     // Start engine, then observe its events.
@@ -624,19 +620,39 @@ struct FocusFeature {
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
 
-                // For Pomodoro work phases, send a phase-end notification
+                // For Pomodoro work phases, persist the completed work interval immediately
+                // so stats update in real time without waiting for the full cycle to end.
+                // saveSession internally handles task.completedPomodoros, so we do NOT
+                // call incrementTaskPomodoros separately to avoid double-counting.
                 var phaseNotificationEffect: Effect<Action> = .none
-                var taskProgressEffect: Effect<Action> = .none
-                if case .work(let number, let total) = completedPhase {
+                var intervalPersistEffect: Effect<Action> = .none
+                if case .work(let number, let total) = completedPhase, mode == .pomodoro {
                     let isLongBreak = number >= total
                     phaseNotificationEffect = .run { [notificationClient] _ in
                         await notificationClient.scheduleWorkPhaseEnd(number, isLongBreak, taskTitle)
                     }
-                    if mode == .pomodoro, let taskID = state.linkedTaskID {
-                        taskProgressEffect = .run { [persistence] send in
-                            try await persistence.incrementTaskPomodoros(taskID)
-                            await send(.delegate(.taskProgressChanged))
-                        }
+                    // Capture values for the persistence effect
+                    let workDuration = state.elapsedSeconds
+                    let intervalStartedAt = Date.now.addingTimeInterval(-workDuration)
+                    let sessionID = UUID()
+                    let linkedTaskID = state.linkedTaskID
+                    let pomNumber = number
+                    let intervalResult = FocusSessionResult(
+                        id: sessionID,
+                        mode: .pomodoro,
+                        phase: .work(number: pomNumber, total: total),
+                        startedAt: intervalStartedAt,
+                        endedAt: Date.now,
+                        targetDuration: config.pomodoroDuration,
+                        actualDuration: workDuration,
+                        wasCompleted: true,
+                        interruptions: state.interruptions,
+                        pomodoroNumber: pomNumber,
+                        linkedTaskID: linkedTaskID
+                    )
+                    intervalPersistEffect = .run { [persistence] send in
+                        try await persistence.saveSession(intervalResult)
+                        await send(.delegate(.sessionPersisted))
                     }
                 }
 
@@ -651,7 +667,7 @@ struct FocusFeature {
                         #endif
                     },
                     phaseNotificationEffect,
-                    taskProgressEffect
+                    intervalPersistEffect
                 )
 
             case .sessionCompleted(let result):
@@ -661,6 +677,17 @@ struct FocusFeature {
                 let sessionID = result.id
                 let actualDuration = result.actualDuration
                 resetState(&state)
+
+                // For Pomodoro, each work interval was already persisted in phaseCompleted.
+                // The final sessionCompleted fires at end-of-cycle (break phase end) or on
+                // stopTapped — neither case should save an additional record to avoid
+                // double-counting focus time. For all other modes, save as usual.
+                let persistEffect: Effect<Action> = result.mode == .pomodoro
+                    ? .none
+                    : .run { [persistence] send in
+                        try await persistence.saveSession(result)
+                        await send(.delegate(.sessionPersisted))
+                    }
 
                 return .merge(
                     // Check preference and present journal sheet if enabled
@@ -680,10 +707,7 @@ struct FocusFeature {
                     .run { [liveActivity] _ in await liveActivity.end(true) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
-                    .run { [persistence] send in
-                        try await persistence.saveSession(result)
-                        await send(.delegate(.sessionPersisted))
-                    },
+                    persistEffect,
                     .run { [notificationClient] _ in
                         await notificationClient.scheduleSessionComplete(modeName, taskTitle)
                     },
@@ -793,6 +817,24 @@ struct FocusFeature {
 
             case .paywallDismissed:
                 state.showPaywall = false
+                return .none
+
+            // MARK: Pomodoro Cycle Seed
+
+            case ._pomodoroWorkCountSeeded(let count):
+                // Update the displayed pomodoro number without touching elapsedSeconds,
+                // remainingSeconds, progress, or any other live session state that the
+                // engine manages. Only set if the session is still running in pomodoro mode
+                // and the engine hasn't already sent a later tick with a higher number.
+                if state.isRunning, state.activeMode == .pomodoro {
+                    let seeded = count + 1
+                    // Don't regress: if the engine already advanced to a higher number, keep it.
+                    if let current = state.pomodoroNumber {
+                        if seeded > current { state.pomodoroNumber = seeded }
+                    } else {
+                        state.pomodoroNumber = seeded
+                    }
+                }
                 return .none
 
             // MARK: Day Change

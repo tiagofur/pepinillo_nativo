@@ -1018,21 +1018,6 @@ struct AppFeature {
                     .run { [watchClient, watchState] _ in
                         await watchClient.sendSessionState(watchState)
                     },
-                    .run { [watchClient] _ in
-                        if let stats = try? await persistence.fetchDailyStats(Date.now),
-                           let prefs = try? await persistence.fetchPreferences() {
-                            let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                            let streakResult = StreakProtectionService.computeProtectedStreak(
-                                history: allStats,
-                                isPro: prefs.isProUser
-                            )
-                            await watchClient.sendStats(
-                                stats.totalFocusMinutes,
-                                stats.sessionsCompleted,
-                                streakResult.days
-                            )
-                        }
-                    },
                     {
                         if case .focus(.sessionCompleted) = action {
                             // Task refresh after session completion is handled by the
@@ -1040,23 +1025,24 @@ struct AppFeature {
                             // reliably once the session is actually saved and has the
                             // correct pomodoro counts. Do not send .tasks(.onAppear) here:
                             // that path is guarded by hasLoadedData and would no-op anyway.
-                            return .merge(
-                                .send(.analytics(.onAppear)),
-                                Effect<Action>.run { send in
-                                    if let prefs = try? await persistence.fetchPreferences() {
-                                        let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                                        let streakResult = StreakProtectionService.computeProtectedStreak(
-                                            history: allStats,
-                                            isPro: prefs.isProUser
-                                        )
-                                        if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
-                                            await send(.celebrationTriggered(milestone))
-                                        }
+                            //
+                            // Analytics refresh and Watch stats are sent from
+                            // .focus(.delegate(.sessionPersisted)) so they read committed data.
+                            return Effect<Action>.run { send in
+                                if let prefs = try? await persistence.fetchPreferences() {
+                                    let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                                    let streakResult = StreakProtectionService.computeProtectedStreak(
+                                        history: allStats,
+                                        isPro: prefs.isProUser
+                                    )
+                                    if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
+                                        await send(.celebrationTriggered(milestone))
                                     }
                                 }
-                            )
+                            }
                         }
-                        return .none
+                        // stopTapped: refresh analytics so the dashboard reflects the abandoned session
+                        return .send(.analytics(.refresh))
                     }()
                 )
 
@@ -1193,11 +1179,44 @@ struct AppFeature {
                 // Single explicit refresh path for session events. cancelInFlight ensures
                 // that when taskProgressChanged fires just before sessionPersisted (final
                 // pomodoro), only one fetch runs — the second cancels the first.
-                return .run { [persistence] send in
-                    let items = try await persistence.fetchTasks()
-                    await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
-                }
-                .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true)
+                //
+                // Also refresh analytics dashboard and push full Watch stats here so both
+                // reads happen after saveSession has committed (FIX 1 + FIX 3).
+                return .merge(
+                    .run { [persistence] send in
+                        let items = try await persistence.fetchTasks()
+                        await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
+                    }
+                    .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true),
+                    .send(.analytics(.refresh)),
+                    .run { [watchClient, persistence] _ in
+                        guard let stats = try? await persistence.fetchDailyStats(Date.now),
+                              let prefs = try? await persistence.fetchPreferences() else { return }
+                        let tasks = (try? await persistence.fetchTasks()) ?? []
+                        let todayTasks = tasks.filter { $0.scheduledForToday }
+                        let startOfDay = Calendar.current.startOfDay(for: Date.now)
+                        let sessions = (try? await persistence.fetchSessions(startOfDay, Date.now)) ?? []
+                        let longestMinutes = sessions.map { Int($0.actualDuration) / 60 }.max() ?? 0
+                        let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                        let streakResult = StreakProtectionService.computeProtectedStreak(
+                            history: allStats,
+                            isPro: prefs.isProUser
+                        )
+                        let dashStats = WatchDashboardStats(
+                            todayMinutes: stats.totalFocusMinutes,
+                            sessionsCompleted: stats.sessionsCompleted,
+                            tasksCompleted: todayTasks.filter(\.isCompleted).count,
+                            tasksTotal: todayTasks.count,
+                            streakDays: streakResult.days,
+                            pomodoroMinutes: stats.pomodoroMinutes,
+                            flowtimeMinutes: stats.flowtimeMinutes,
+                            timeBlockMinutes: stats.timeBlockMinutes,
+                            stopwatchMinutes: stats.stopwatchMinutes,
+                            longestSessionMinutes: longestMinutes
+                        )
+                        await watchClient.sendDashboardStats(dashStats)
+                    }
+                )
 
             case .tasks(.delegate(.showPaywall)):
                 state.focus.showPaywall = true
