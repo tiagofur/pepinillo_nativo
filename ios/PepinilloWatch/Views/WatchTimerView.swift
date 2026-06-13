@@ -35,7 +35,7 @@ struct WatchTimerView: View {
             Text(store.selectedMode.icon)
                 .font(.system(size: 28))
 
-            // Phase label shows what just completed — tell the user what's next
+            // phaseLabel here is the pending next phase name (set on .waitingForNextPhase) — tells the user what's next
             Text(store.phaseLabel)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)

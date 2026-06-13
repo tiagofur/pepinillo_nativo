@@ -12,10 +12,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.nio.charset.StandardCharsets
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.domain.timer.FocusTimerState
+import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabelRes
 import dev.creapolis.pepinillo.domain.timer.progress
+import dev.creapolis.pepinillo.feature.focus.FocusMode
 import androidx.compose.ui.graphics.toArgb
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.ui.theme.AppTheme
@@ -43,12 +46,18 @@ object WearDataLayerHelper {
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
 
     fun pushTimer(context: Context, state: FocusTimerState, linkedTaskName: String?) {
+        val appContext = context.applicationContext
         val request = PutDataMapRequest.create(PATH_TIMER).apply {
             dataMap.putString("mode", state.mode.name)
             dataMap.putString("phase", state.phase.name)
             dataMap.putString("status", state.status.name)
             dataMap.putString("displayTime", state.displayTime)
-            dataMap.putString("phaseLabel", context.getString(state.phaseLabelRes))
+            val phaseLabel = if (state.mode == FocusMode.Pomodoro && state.phase == FocusPhase.Work) {
+                appContext.getString(state.phaseLabelRes, state.completedSessions + 1)
+            } else {
+                appContext.getString(state.phaseLabelRes)
+            }
+            dataMap.putString("phaseLabel", phaseLabel)
             dataMap.putFloat("progress", state.progress)
             dataMap.putLong("elapsedMillis", state.elapsedMillis)
             dataMap.putLong("totalMillis", state.totalMillis)
@@ -58,7 +67,7 @@ object WearDataLayerHelper {
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        putWithRetry(context, request, "pushTimer")
+        putWithRetry(appContext, request, "pushTimer")
     }
 
     fun pushTasksAndStats(
@@ -69,6 +78,7 @@ object WearDataLayerHelper {
         streak: Int,
         completedTasksToday: Int,
     ) {
+        val appContext = context.applicationContext
         val json = tasksToJson(tasks)
         Log.d(TAG, "Pushing ${tasks.size} tasks to wear, json length=${json.length}")
         val tasksRequest = PutDataMapRequest.create(PATH_TASKS).apply {
@@ -77,7 +87,7 @@ object WearDataLayerHelper {
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        putWithRetry(context, tasksRequest, "pushTasks(${tasks.size})")
+        putWithRetry(appContext, tasksRequest, "pushTasks(${tasks.size})")
 
         val statsRequest = PutDataMapRequest.create(PATH_STATS).apply {
             dataMap.putInt("totalMinutes", totalMinutes)
@@ -87,7 +97,7 @@ object WearDataLayerHelper {
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        putWithRetry(context, statsRequest, "pushStats")
+        putWithRetry(appContext, statsRequest, "pushStats")
     }
 
     private fun tasksToJson(tasks: List<WidgetTask>): String {
@@ -107,12 +117,13 @@ object WearDataLayerHelper {
 
     /** Push the current idle state so the watch knows the phone is connected. */
     fun pushIdleState(context: Context, mode: String, displayTime: String) {
+        val appContext = context.applicationContext
         val request = PutDataMapRequest.create(PATH_TIMER).apply {
             dataMap.putString("mode", mode)
             dataMap.putString("phase", "Work")
             dataMap.putString("status", "Idle")
             dataMap.putString("displayTime", displayTime)
-            dataMap.putString("phaseLabel", "Listo")
+            dataMap.putString("phaseLabel", appContext.getString(R.string.state_ready))
             dataMap.putFloat("progress", 1f)
             dataMap.putLong("elapsedMillis", 0L)
             dataMap.putLong("totalMillis", 0L)
@@ -120,20 +131,21 @@ object WearDataLayerHelper {
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        putWithRetry(context, request, "pushIdleState")
+        putWithRetry(appContext, request, "pushIdleState")
     }
 
     private const val EVENT_PHASE_COMPLETE = "/pepinillo/event/phase_complete"
 
     /** Notify the watch that a timer phase just completed (vibration trigger). */
     fun pushPhaseComplete(context: Context, mode: String, completedPhase: String, scope: CoroutineScope? = null) {
+        val appContext = context.applicationContext
         val payload = "$mode|$completedPhase".toByteArray(StandardCharsets.UTF_8)
         val effectiveScope = scope ?: CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
         effectiveScope.launch {
             runCatching {
-                val nodes = Wearable.getNodeClient(context).connectedNodes.await()
+                val nodes = Wearable.getNodeClient(appContext).connectedNodes.await()
                 nodes.forEach { node ->
-                    Wearable.getMessageClient(context)
+                    Wearable.getMessageClient(appContext)
                         .sendMessage(node.id, EVENT_PHASE_COMPLETE, payload)
                         .await()
                 }
@@ -142,6 +154,7 @@ object WearDataLayerHelper {
     }
 
     fun pushTheme(context: Context, themeId: String, theme: AppTheme) {
+        val appContext = context.applicationContext
         try {
             val request = PutDataMapRequest.create(PATH_THEME).apply {
                 dataMap.putString("themeId", themeId)
@@ -153,28 +166,30 @@ object WearDataLayerHelper {
                 dataMap.putLong("timestamp", System.currentTimeMillis())
             }.asPutDataRequest().setUrgent()
 
-            putWithRetry(context, request, "pushTheme")
+            putWithRetry(appContext, request, "pushTheme")
         } catch (e: Exception) {
             // Silently fail - watch will use defaults
         }
     }
 
     fun pushUserStatus(context: Context, isPro: Boolean) {
+        val appContext = context.applicationContext
         val request = PutDataMapRequest.create(PATH_USER).apply {
             dataMap.putBoolean("isPro", isPro)
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        putWithRetry(context, request, "pushUserStatus($isPro)")
+        putWithRetry(appContext, request, "pushUserStatus($isPro)")
     }
 
     private fun putWithRetry(context: Context, request: PutDataRequest, tag: String, retries: Int = 2) {
-        Wearable.getDataClient(context).putDataItem(request)
+        val appContext = context.applicationContext
+        Wearable.getDataClient(appContext).putDataItem(request)
             .addOnFailureListener { e ->
                 if (retries > 0) {
                     Log.w(TAG, "$tag failed, retrying ($retries left)", e)
                     Handler(Looper.getMainLooper()).postDelayed({
-                        putWithRetry(context, request, tag, retries - 1)
+                        putWithRetry(appContext, request, tag, retries - 1)
                     }, 1000L)
                 } else {
                     Log.e(TAG, "$tag failed after all retries", e)
