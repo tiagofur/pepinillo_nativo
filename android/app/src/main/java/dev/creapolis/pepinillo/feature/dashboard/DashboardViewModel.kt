@@ -15,6 +15,7 @@ import dev.creapolis.pepinillo.feature.dashboard.model.DailyFocus
 import dev.creapolis.pepinillo.feature.dashboard.model.DashboardStats
 import dev.creapolis.pepinillo.feature.dashboard.model.ModeUsage
 import dev.creapolis.pepinillo.feature.dashboard.model.MonthlyReportData
+import dev.creapolis.pepinillo.feature.dashboard.model.ReflectionPreviews
 import dev.creapolis.pepinillo.feature.dashboard.model.TopTaskUsage
 import dev.creapolis.pepinillo.feature.dashboard.model.WeeklyReportData
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -94,6 +95,18 @@ class DashboardViewModel @Inject constructor(
         buildMonthlyReport(currentMonthSessions, previousMonthSessions, currentMonthStats)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MonthlyReportData())
 
+    val reflectionPreviews: StateFlow<ReflectionPreviews> = combine(
+        weeklyReport,
+        monthlyReport,
+    ) { weekly, monthly ->
+        ReflectionPreviews(
+            weeklyMinutes = weekly.currentWeekMinutes,
+            weeklySessions = weekly.currentWeekSessions,
+            monthlyMinutes = monthly.currentMonthMinutes,
+            monthlySessions = monthly.currentMonthSessions,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReflectionPreviews())
+
     fun setPeriod(period: AnalyticsPeriod) {
         // Free users can only see Week
         // Only users with local premium can access Month/Year analytics
@@ -167,6 +180,10 @@ class DashboardViewModel @Inject constructor(
         val bestDay = sessionRepository.computeBestDayOfWeek(periodStats)
         val focusScore = computeFocusScore(periodStats)
 
+        // Completion rate from work sessions
+        val completedCount = workSessions.count { it.wasCompleted }
+        val completionRate = if (periodSessionCount > 0) completedCount.toDouble() / periodSessionCount else 0.0
+
         // Achievements
         val achievements = computeAchievements(allDays, streak)
 
@@ -190,6 +207,7 @@ class DashboardViewModel @Inject constructor(
             bestDayOfWeek = bestDay,
             focusScore = focusScore,
             achievements = achievements,
+            completionRate = completionRate,
         )
     }
 
