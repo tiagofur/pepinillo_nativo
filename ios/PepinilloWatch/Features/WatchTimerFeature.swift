@@ -27,6 +27,8 @@ struct WatchTimerFeature {
         var selectedMode: FocusMode = .pomodoro
         var displayTime: String = "25:00"
         var phaseLabel: String = "Ready"
+        var isBreakPhase: Bool = false
+        var isLongBreakPhase: Bool = false
         var progress: Double? = nil
         var pomodoroNumber: Int? = nil
         var linkedTaskTitle: String? = nil
@@ -125,6 +127,8 @@ struct WatchTimerFeature {
                 state.isPaused = s.isPaused
                 state.displayTime = s.displayTime
                 state.phaseLabel = s.phaseLabel
+                state.isBreakPhase = s.isBreakPhase
+                state.isLongBreakPhase = s.isLongBreakPhase
                 state.progress = s.progress
                 state.pomodoroNumber = s.pomodoroNumber
                 state.linkedTaskTitle = s.linkedTaskTitle

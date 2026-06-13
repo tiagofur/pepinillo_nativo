@@ -30,6 +30,12 @@ struct WatchSessionState: Equatable, Sendable {
     var linkedTaskID: String?
     /// True on the first tick after a phase change — triggers haptic on Watch.
     var isPhaseTransition: Bool = false
+    /// True when the current phase is any break phase (short, long, or flow break).
+    /// Carried as a typed flag so watch UI never has to parse localised strings.
+    var isBreakPhase: Bool = false
+    /// True only when the current phase is a long break.
+    /// Allows watch UI to select the long-break colour variant without string parsing.
+    var isLongBreakPhase: Bool = false
     /// Timestamp of when this state was generated (for stale-update dedupe on watch).
     var sentAt: TimeInterval = Date().timeIntervalSince1970
 
@@ -252,6 +258,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             "displayTime":       state.displayTime,
             "phaseLabel":        state.phaseLabel,
             "isPhaseTransition": state.isPhaseTransition,
+            "isBreakPhase":      state.isBreakPhase,
+            "isLongBreakPhase":  state.isLongBreakPhase,
             "sentAt":            state.sentAt,
         ]
         if let p = state.progress        { sessionDict["progress"]        = p }
@@ -547,6 +555,12 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
               let phaseLabel  = message["phaseLabel"]  as? String
         else { return nil }
 
+        let isLongBreak = message["isLongBreakPhase"] as? Bool ?? false
+        // Invariant: isLongBreakPhase implies isBreakPhase.
+        // An inconsistent payload (isLongBreakPhase=true, isBreakPhase=false) would
+        // hide the Skip button while showing the long-break colour; normalise here.
+        let isBreak = isLongBreak || (message["isBreakPhase"] as? Bool ?? false)
+
         return WatchSessionState(
             isActive:          isActive,
             isPaused:          isPaused,
@@ -558,6 +572,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             linkedTaskTitle:   message["linkedTaskTitle"]  as? String,
             linkedTaskID:      message["linkedTaskID"]     as? String,
             isPhaseTransition: message["isPhaseTransition"] as? Bool ?? false,
+            isBreakPhase:      isBreak,
+            isLongBreakPhase:  isLongBreak,
             sentAt:            message["sentAt"]           as? TimeInterval ?? Date().timeIntervalSince1970
         )
     }

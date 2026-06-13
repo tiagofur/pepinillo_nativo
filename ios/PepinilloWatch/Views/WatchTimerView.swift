@@ -113,7 +113,7 @@ struct WatchTimerView: View {
                 .buttonStyle(.plain)
 
                 // Skip phase (only during break phases)
-                if store.phaseLabel.contains("Break") {
+                if store.isBreakPhase {
                     Button {
                         store.send(.skipTapped)
                     } label: {
@@ -252,10 +252,9 @@ struct WatchTimerView: View {
 
     private var modeColor: Color {
         let base = colorFor(store.selectedMode)
-        let phase = store.phaseLabel
-        if phase.contains("Long Break") {
+        if store.isLongBreakPhase {
             return base.longBreakVariant()
-        } else if phase.contains("Break") {
+        } else if store.isBreakPhase {
             return base.shortBreakVariant()
         }
         return base

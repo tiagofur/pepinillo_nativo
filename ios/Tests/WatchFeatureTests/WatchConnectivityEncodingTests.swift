@@ -27,6 +27,8 @@ struct WatchSessionStateTests {
         #expect(idle.linkedTaskTitle == nil)
         #expect(idle.linkedTaskID == nil)
         #expect(idle.isPhaseTransition == false)
+        #expect(idle.isBreakPhase == false)
+        #expect(idle.isLongBreakPhase == false)
     }
 
     @Test func equatableConformance() {
@@ -104,6 +106,8 @@ struct SessionStateDictionaryTests {
             "displayTime":       state.displayTime,
             "phaseLabel":        state.phaseLabel,
             "isPhaseTransition": state.isPhaseTransition,
+            "isBreakPhase":      state.isBreakPhase,
+            "isLongBreakPhase":  state.isLongBreakPhase,
             "sentAt":            state.sentAt,
         ]
         if let p = state.progress        { dict["progress"]       = p }
@@ -133,6 +137,8 @@ struct SessionStateDictionaryTests {
             linkedTaskTitle:   message["linkedTaskTitle"]  as? String,
             linkedTaskID:      message["linkedTaskID"]     as? String,
             isPhaseTransition: message["isPhaseTransition"] as? Bool ?? false,
+            isBreakPhase:      message["isBreakPhase"]     as? Bool ?? false,
+            isLongBreakPhase:  message["isLongBreakPhase"] as? Bool ?? false,
             sentAt:            message["sentAt"]           as? TimeInterval ?? Date().timeIntervalSince1970
         )
     }
@@ -143,7 +149,7 @@ struct SessionStateDictionaryTests {
             displayTime: "22:15", phaseLabel: "Focus 2/4",
             progress: 0.11, pomodoroNumber: 2,
             linkedTaskTitle: "Ship v1", linkedTaskID: "ABC-123",
-            isPhaseTransition: true
+            isPhaseTransition: true, isBreakPhase: true, isLongBreakPhase: true
         )
         let dict = encodeSessionState(original)
         let decoded = decodeSessionState(dict)
@@ -167,14 +173,84 @@ struct SessionStateDictionaryTests {
         #expect(decoded == idle)
     }
 
+    @Test func roundTripIsBreakPhaseTrue() {
+        // Verifies the typed flag survives encode → decode for a break phase,
+        // i.e. a Spanish or Portuguese payload ("Pausa Corta", "Descanso") that
+        // would have failed the old phaseLabel.contains("Break") check.
+        let original = WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "05:00", phaseLabel: "Pausa Corta",
+            isBreakPhase: true
+        )
+        let dict = encodeSessionState(original)
+        let decoded = decodeSessionState(dict)
+        #expect(decoded?.isBreakPhase == true)
+        #expect(decoded == original)
+    }
+
+    @Test func roundTripIsBreakPhaseFalse() {
+        let original = WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "25:00", phaseLabel: "Foco",
+            isBreakPhase: false
+        )
+        let dict = encodeSessionState(original)
+        let decoded = decodeSessionState(dict)
+        #expect(decoded?.isBreakPhase == false)
+    }
+
+    @Test func isBreakPhaseDefaultsToFalseOnLegacyPayload() {
+        // Simulates receiving a payload from an older app version that lacks the key.
+        var dict = encodeSessionState(WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "05:00", phaseLabel: "Short Break",
+            isBreakPhase: true
+        ))
+        dict.removeValue(forKey: "isBreakPhase")
+        let decoded = decodeSessionState(dict)
+        // Must not crash and must default to false for backward compatibility.
+        #expect(decoded?.isBreakPhase == false)
+    }
+
+    @Test func roundTripIsLongBreakPhaseTrue() {
+        // Verifies that both isBreakPhase and isLongBreakPhase survive encode → decode
+        // for a long-break phase (e.g. "Descanso Largo" payload that would have failed
+        // the old phaseLabel string-parsing approach).
+        let original = WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "15:00", phaseLabel: "Descanso Largo",
+            isBreakPhase: true, isLongBreakPhase: true
+        )
+        let dict = encodeSessionState(original)
+        let decoded = decodeSessionState(dict)
+        #expect(decoded?.isBreakPhase    == true)
+        #expect(decoded?.isLongBreakPhase == true)
+        #expect(decoded == original)
+    }
+
+    @Test func isLongBreakPhaseDefaultsToFalseOnLegacyPayload() {
+        // Simulates receiving a payload from an older app version that lacks the key.
+        var dict = encodeSessionState(WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "15:00", phaseLabel: "Long Break",
+            isBreakPhase: true, isLongBreakPhase: true
+        ))
+        dict.removeValue(forKey: "isLongBreakPhase")
+        let decoded = decodeSessionState(dict)
+        // Must not crash and must default to false for backward compatibility.
+        #expect(decoded?.isLongBreakPhase == false)
+    }
+
     @Test func dictionaryContainsRequiredKeys() {
         let dict = encodeSessionState(.idle)
         #expect(dict["type"] as? String == "sessionState")
-        #expect(dict["isActive"]    != nil)
-        #expect(dict["isPaused"]    != nil)
-        #expect(dict["modeID"]      != nil)
-        #expect(dict["displayTime"] != nil)
-        #expect(dict["phaseLabel"]  != nil)
+        #expect(dict["isActive"]        != nil)
+        #expect(dict["isPaused"]        != nil)
+        #expect(dict["modeID"]          != nil)
+        #expect(dict["displayTime"]     != nil)
+        #expect(dict["phaseLabel"]      != nil)
+        #expect(dict["isBreakPhase"]    != nil)
+        #expect(dict["isLongBreakPhase"] != nil)
     }
 
     @Test func optionalFieldsOmittedWhenNil() {
@@ -864,6 +940,8 @@ struct TransportSemanticsContractTests {
             "displayTime":       state.displayTime,
             "phaseLabel":        state.phaseLabel,
             "isPhaseTransition": state.isPhaseTransition,
+            "isBreakPhase":      state.isBreakPhase,
+            "isLongBreakPhase":  state.isLongBreakPhase,
             "sentAt":            state.sentAt,
             "progress":          state.progress as Any,
             "pomodoroNumber":    state.pomodoroNumber as Any,

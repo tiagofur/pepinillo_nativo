@@ -1246,6 +1246,14 @@ struct AppFeature {
 extension WatchSessionState {
     init(from focusState: FocusFeature.State, isPhaseTransition: Bool = false) {
         let activeMode = focusState.activeMode ?? focusState.selectedMode
+        let isBreak: Bool
+        let isLongBreak: Bool
+        switch focusState.phase {
+        case .shortBreak, .flowBreak:            isBreak = true;  isLongBreak = false
+        case .longBreak:                         isBreak = true;  isLongBreak = true
+        case .work, .flow, .block, .freeform,
+             .idle, .paused:                     isBreak = false; isLongBreak = false
+        }
         self.init(
             isActive:         focusState.isRunning,
             isPaused:         focusState.isPaused,
@@ -1256,7 +1264,9 @@ extension WatchSessionState {
             pomodoroNumber:   focusState.pomodoroNumber,
             linkedTaskTitle:  focusState.linkedTaskTitle,
             linkedTaskID:     focusState.linkedTaskID?.uuidString,
-            isPhaseTransition: isPhaseTransition
+            isPhaseTransition: isPhaseTransition,
+            isBreakPhase:     isBreak,
+            isLongBreakPhase: isLongBreak
         )
     }
 }
