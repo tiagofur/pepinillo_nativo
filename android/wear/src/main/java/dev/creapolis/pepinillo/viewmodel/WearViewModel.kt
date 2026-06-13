@@ -93,9 +93,17 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun skipPhase() {
-        // Optimistic UI: show Running with next phase
+        // Optimistic UI: show Running with next phase.
+        // When transitioning from Work the watch does not carry sessionsBeforeLongBreak, so it
+        // cannot reliably distinguish ShortBreak from LongBreak. We optimistically use "ShortBreak"
+        // — it is occasionally wrong on the long-break boundary, but every UI check (Skip button
+        // visibility, WaitingForNext labels, WearTheme color) works correctly with a recognised
+        // phase string. The phone will sync the authoritative phase on its next push.
         val current = timerState.value
-        val nextPhase = if (current.phase == "Work") "ShortBreak" else "Work"
+        val nextPhase = when (current.phase) {
+            "Work" -> "ShortBreak" // optimistic; phone corrects to LongBreak if needed on next sync
+            else -> "Work"
+        }
         val nextLabel = if (nextPhase == "Work") "Focus" else "Descanso"
         WearDataStore.updateTimer(
             current.copy(

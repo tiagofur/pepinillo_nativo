@@ -141,34 +141,39 @@ class SessionRepository @Inject constructor(
                 .catch { e -> Log.e(TAG, "Error loading today stats", e); emit(null) }
         }
 
-    fun getWeekStats(): Flow<List<DailyStatsEntity>> {
-        val now = System.currentTimeMillis()
-        val weekAgo = now - 7L * 24 * 60 * 60 * 1000
-        return dailyStatsDao.getStatsInRange(startOfDay(weekAgo), startOfDay(now))
-            .catch { e -> Log.e(TAG, "Error loading week stats", e); emit(emptyList()) }
-    }
+    fun getWeekStats(): Flow<List<DailyStatsEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // 7-day window: [today - 6 days .. today], matching the chart's (6 downTo 0) range.
+            // getStatsInRange uses >= startDate AND <= endDate (both inclusive).
+            val weekStart = todayStart - 6L * 24 * 60 * 60 * 1000
+            dailyStatsDao.getStatsInRange(weekStart, todayStart)
+                .catch { e -> Log.e(TAG, "Error loading week stats", e); emit(emptyList()) }
+        }
 
-    fun getMonthStats(): Flow<List<DailyStatsEntity>> {
-        val now = System.currentTimeMillis()
-        val monthAgo = now - 30L * 24 * 60 * 60 * 1000
-        return dailyStatsDao.getStatsInRange(startOfDay(monthAgo), startOfDay(now))
-            .catch { e -> Log.e(TAG, "Error loading month stats", e); emit(emptyList()) }
-    }
+    fun getMonthStats(): Flow<List<DailyStatsEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // 30-day window: [today - 29 days .. today], consistent with getMonthSessions.
+            val monthStart = todayStart - 29L * 24 * 60 * 60 * 1000
+            dailyStatsDao.getStatsInRange(monthStart, todayStart)
+                .catch { e -> Log.e(TAG, "Error loading month stats", e); emit(emptyList()) }
+        }
 
-    fun getYearStats(): Flow<List<DailyStatsEntity>> {
-        val now = System.currentTimeMillis()
-        val yearAgo = now - 364L * 24 * 60 * 60 * 1000
-        return dailyStatsDao.getStatsInRange(startOfDay(yearAgo), startOfDay(now))
-            .catch { e -> Log.e(TAG, "Error loading year stats", e); emit(emptyList()) }
-    }
+    fun getYearStats(): Flow<List<DailyStatsEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // 364-day window: [today - 363 days .. today].
+            val yearStart = todayStart - 363L * 24 * 60 * 60 * 1000
+            dailyStatsDao.getStatsInRange(yearStart, todayStart)
+                .catch { e -> Log.e(TAG, "Error loading year stats", e); emit(emptyList()) }
+        }
 
-    fun getPreviousWeekStats(): Flow<List<DailyStatsEntity>> {
-        val now = System.currentTimeMillis()
-        val twoWeeksAgo = now - 14L * 24 * 60 * 60 * 1000
-        val weekAgo = now - 7L * 24 * 60 * 60 * 1000
-        return dailyStatsDao.getStatsInRange(startOfDay(twoWeeksAgo), startOfDay(weekAgo))
-            .catch { e -> Log.e(TAG, "Error loading previous week stats", e); emit(emptyList()) }
-    }
+    fun getPreviousWeekStats(): Flow<List<DailyStatsEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // Previous 7-day window: [today - 13 days .. today - 7 days].
+            val twoWeeksStart = todayStart - 13L * 24 * 60 * 60 * 1000
+            val weekAgoStart = todayStart - 7L * 24 * 60 * 60 * 1000
+            dailyStatsDao.getStatsInRange(twoWeeksStart, weekAgoStart)
+                .catch { e -> Log.e(TAG, "Error loading previous week stats", e); emit(emptyList()) }
+        }
 
     fun getStatsForMonth(year: Int, month: Int): Flow<List<DailyStatsEntity>> {
         val cal = Calendar.getInstance()
@@ -181,50 +186,64 @@ class SessionRepository @Inject constructor(
             .catch { e -> Log.e(TAG, "Error loading month stats", e); emit(emptyList()) }
     }
 
-    fun getWeekSessions(): Flow<List<FocusSessionEntity>> {
-        val now = System.currentTimeMillis()
-        val weekAgo = now - 7L * 24 * 60 * 60 * 1000
-        return sessionDao.getSessionsInRange(startOfDay(weekAgo), now)
-            .catch { e -> Log.e(TAG, "Error loading week sessions", e); emit(emptyList()) }
-    }
+    fun getWeekSessions(): Flow<List<FocusSessionEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // Same 7-day window as getWeekStats. getSessionsInRange uses exclusive upper bound,
+            // so add one full day to include all sessions that started today.
+            val weekStart = todayStart - 6L * 24 * 60 * 60 * 1000
+            val tomorrowStart = todayStart + 24 * 60 * 60 * 1000
+            sessionDao.getSessionsInRange(weekStart, tomorrowStart)
+                .catch { e -> Log.e(TAG, "Error loading week sessions", e); emit(emptyList()) }
+        }
 
-    fun getMonthSessions(): Flow<List<FocusSessionEntity>> {
-        val now = System.currentTimeMillis()
-        val monthAgo = now - 30L * 24 * 60 * 60 * 1000
-        return sessionDao.getSessionsInRange(startOfDay(monthAgo), now)
-            .catch { e -> Log.e(TAG, "Error loading month sessions", e); emit(emptyList()) }
-    }
+    fun getMonthSessions(): Flow<List<FocusSessionEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // Same 30-day window as getMonthStats.
+            val monthStart = todayStart - 29L * 24 * 60 * 60 * 1000
+            val tomorrowStart = todayStart + 24 * 60 * 60 * 1000
+            sessionDao.getSessionsInRange(monthStart, tomorrowStart)
+                .catch { e -> Log.e(TAG, "Error loading month sessions", e); emit(emptyList()) }
+        }
 
-    fun getYearSessions(): Flow<List<FocusSessionEntity>> {
-        val now = System.currentTimeMillis()
-        val yearAgo = now - 364L * 24 * 60 * 60 * 1000
-        return sessionDao.getSessionsInRange(startOfDay(yearAgo), now)
-            .catch { e -> Log.e(TAG, "Error loading year sessions", e); emit(emptyList()) }
-    }
+    fun getYearSessions(): Flow<List<FocusSessionEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // Same 364-day window as getYearStats.
+            val yearStart = todayStart - 363L * 24 * 60 * 60 * 1000
+            val tomorrowStart = todayStart + 24 * 60 * 60 * 1000
+            sessionDao.getSessionsInRange(yearStart, tomorrowStart)
+                .catch { e -> Log.e(TAG, "Error loading year sessions", e); emit(emptyList()) }
+        }
 
-    fun getPreviousWeekSessions(): Flow<List<FocusSessionEntity>> {
-        val now = System.currentTimeMillis()
-        val twoWeeksAgo = now - 14L * 24 * 60 * 60 * 1000
-        val weekAgo = now - 7L * 24 * 60 * 60 * 1000
-        return sessionDao.getSessionsInRange(startOfDay(twoWeeksAgo), startOfDay(weekAgo))
-            .catch { e -> Log.e(TAG, "Error loading previous week sessions", e); emit(emptyList()) }
-    }
+    fun getPreviousWeekSessions(): Flow<List<FocusSessionEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // Same previous-week window as getPreviousWeekStats: [today-13 .. today-7].
+            // getSessionsInRange uses exclusive upper bound, so add one full day to include all
+            // sessions that started on today-7 (mirroring the current-week alignment).
+            val twoWeeksStart = todayStart - 13L * 24 * 60 * 60 * 1000
+            val weekAgoEnd = todayStart - 6L * 24 * 60 * 60 * 1000 // exclusive: day after today-7
+            sessionDao.getSessionsInRange(twoWeeksStart, weekAgoEnd)
+                .catch { e -> Log.e(TAG, "Error loading previous week sessions", e); emit(emptyList()) }
+        }
 
-    fun getPreviousMonthSessions(): Flow<List<FocusSessionEntity>> {
-        val now = System.currentTimeMillis()
-        val twoMonthsAgo = now - 60L * 24 * 60 * 60 * 1000
-        val monthAgo = now - 30L * 24 * 60 * 60 * 1000
-        return sessionDao.getSessionsInRange(startOfDay(twoMonthsAgo), startOfDay(monthAgo))
-            .catch { e -> Log.e(TAG, "Error loading previous month sessions", e); emit(emptyList()) }
-    }
+    fun getPreviousMonthSessions(): Flow<List<FocusSessionEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // Same previous-month window as getPreviousMonthStats: [today-59 .. today-30].
+            // getSessionsInRange uses exclusive upper bound, so today-29 as exclusive upper means
+            // the last fully-included day is today-30 (no overlap with current month's today-29).
+            val twoMonthsStart = todayStart - 59L * 24 * 60 * 60 * 1000
+            val monthAgoEnd = todayStart - 29L * 24 * 60 * 60 * 1000 // exclusive: day after today-30
+            sessionDao.getSessionsInRange(twoMonthsStart, monthAgoEnd)
+                .catch { e -> Log.e(TAG, "Error loading previous month sessions", e); emit(emptyList()) }
+        }
 
-    fun getPreviousMonthStats(): Flow<List<DailyStatsEntity>> {
-        val now = System.currentTimeMillis()
-        val twoMonthsAgo = now - 60L * 24 * 60 * 60 * 1000
-        val monthAgo = now - 30L * 24 * 60 * 60 * 1000
-        return dailyStatsDao.getStatsInRange(startOfDay(twoMonthsAgo), startOfDay(monthAgo))
-            .catch { e -> Log.e(TAG, "Error loading previous month stats", e); emit(emptyList()) }
-    }
+    fun getPreviousMonthStats(): Flow<List<DailyStatsEntity>> =
+        _currentDayStart.flatMapLatest { todayStart ->
+            // Previous month window: [today-59 .. today-30], matching getPreviousMonthSessions.
+            val twoMonthsStart = todayStart - 59L * 24 * 60 * 60 * 1000
+            val monthAgoStart = todayStart - 30L * 24 * 60 * 60 * 1000
+            dailyStatsDao.getStatsInRange(twoMonthsStart, monthAgoStart)
+                .catch { e -> Log.e(TAG, "Error loading previous month stats", e); emit(emptyList()) }
+        }
 
     fun getSessionsForDate(dateMillis: Long): Flow<List<FocusSessionEntity>> {
         val endOfDay = dateMillis + 24 * 60 * 60 * 1000
