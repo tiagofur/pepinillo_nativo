@@ -948,6 +948,9 @@ struct AppFeature {
                     return .run { [watchClient, watchTasks] _ in
                         await watchClient.sendTasks(watchTasks)
                     }
+                case .startNextPhase:
+                    return .send(.focus(.startNextPhaseTapped))
+
                 case .requestDashboard:
                     return .run { [watchClient, persistence] _ in
                         let stats = try? await persistence.fetchDailyStats(Date.now)
@@ -1007,6 +1010,23 @@ struct AppFeature {
 
             case .focus(.pauseTapped), .focus(.resumeTapped),
                  .focus(.externalPauseApplied), .focus(.externalResumeApplied):
+                let watchState = WatchSessionState(from: state.focus)
+                return .run { [watchClient, watchState] _ in
+                    await watchClient.sendSessionState(watchState)
+                }
+
+            case .focus(.waitingForNextPhase):
+                // The tick loop is suspended during the hold, so this is the only trigger
+                // that will push a watch state update when autoStart is OFF. Without this,
+                // the watch never learns the engine entered the waiting state.
+                let watchState = WatchSessionState(from: state.focus)
+                return .run { [watchClient, watchState] _ in
+                    await watchClient.sendSessionState(watchState)
+                }
+
+            case .focus(.startNextPhaseTapped):
+                // The phone is leaving the waiting hold — push fresh state so the watch
+                // transitions away from the waiting view immediately.
                 let watchState = WatchSessionState(from: state.focus)
                 return .run { [watchClient, watchState] _ in
                     await watchClient.sendSessionState(watchState)
@@ -1246,9 +1266,16 @@ struct AppFeature {
 extension WatchSessionState {
     init(from focusState: FocusFeature.State, isPhaseTransition: Bool = false) {
         let activeMode = focusState.activeMode ?? focusState.selectedMode
+
+        // During a waiting hold, derive the break/long-break flags from the PENDING
+        // next phase so the watch CTA label ("Start break" / "Start long break" /
+        // "Start focus") reflects what's about to start, not the phase just completed.
+        let phaseForFlags: FocusPhase = focusState.isWaitingForNextPhase
+            ? (focusState.pendingNextPhase ?? focusState.phase)
+            : focusState.phase
         let isBreak: Bool
         let isLongBreak: Bool
-        switch focusState.phase {
+        switch phaseForFlags {
         case .shortBreak, .flowBreak:            isBreak = true;  isLongBreak = false
         case .longBreak:                         isBreak = true;  isLongBreak = true
         case .work, .flow, .block, .freeform,
@@ -1266,7 +1293,8 @@ extension WatchSessionState {
             linkedTaskID:     focusState.linkedTaskID?.uuidString,
             isPhaseTransition: isPhaseTransition,
             isBreakPhase:     isBreak,
-            isLongBreakPhase: isLongBreak
+            isLongBreakPhase: isLongBreak,
+            isWaiting:        focusState.isWaitingForNextPhase
         )
     }
 }

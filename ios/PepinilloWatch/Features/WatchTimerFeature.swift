@@ -29,6 +29,9 @@ struct WatchTimerFeature {
         var phaseLabel: String = "Ready"
         var isBreakPhase: Bool = false
         var isLongBreakPhase: Bool = false
+        /// Mirrors WatchSessionState.isWaiting — true when autoStart is OFF and the engine
+        /// is holding for the user to tap the "Start …" CTA.
+        var isWaiting: Bool = false
         var progress: Double? = nil
         var pomodoroNumber: Int? = nil
         var linkedTaskTitle: String? = nil
@@ -48,6 +51,7 @@ struct WatchTimerFeature {
         case pauseResumeTapped
         case stopTapped
         case skipTapped
+        case startNextPhaseTapped
         case modeSelected(FocusMode)
 
         // Received from root (routed from WatchConnectivity)
@@ -87,13 +91,25 @@ struct WatchTimerFeature {
                 }
 
             case .pauseResumeTapped:
-                guard state.isSessionActive else { return .none }
+                // No-op during the waiting hold — the engine ignores pause while waiting,
+                // and we must not play a success haptic that implies it worked.
+                guard state.isSessionActive, !state.isWaiting else { return .none }
                 let command: WatchCommand = state.isPaused ? .resumeSession : .pauseSession
                 return .run { [watchClient] send in
                     await watchClient.sendCommand(command)
                     await send(.commandSent(command))
                     #if os(watchOS)
                     WKInterfaceDevice.current().play(.click)
+                    #endif
+                }
+
+            case .startNextPhaseTapped:
+                guard state.isSessionActive, state.isWaiting else { return .none }
+                return .run { [watchClient] send in
+                    await watchClient.sendCommand(.startNextPhase)
+                    await send(.commandSent(.startNextPhase))
+                    #if os(watchOS)
+                    WKInterfaceDevice.current().play(.start)
                     #endif
                 }
 
@@ -129,6 +145,7 @@ struct WatchTimerFeature {
                 state.phaseLabel = s.phaseLabel
                 state.isBreakPhase = s.isBreakPhase
                 state.isLongBreakPhase = s.isLongBreakPhase
+                state.isWaiting = s.isWaiting
                 state.progress = s.progress
                 state.pomodoroNumber = s.pomodoroNumber
                 state.linkedTaskTitle = s.linkedTaskTitle

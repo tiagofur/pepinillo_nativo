@@ -108,6 +108,7 @@ struct SessionStateDictionaryTests {
             "isPhaseTransition": state.isPhaseTransition,
             "isBreakPhase":      state.isBreakPhase,
             "isLongBreakPhase":  state.isLongBreakPhase,
+            "isWaiting":         state.isWaiting,
             "sentAt":            state.sentAt,
         ]
         if let p = state.progress        { dict["progress"]       = p }
@@ -139,6 +140,7 @@ struct SessionStateDictionaryTests {
             isPhaseTransition: message["isPhaseTransition"] as? Bool ?? false,
             isBreakPhase:      message["isBreakPhase"]     as? Bool ?? false,
             isLongBreakPhase:  message["isLongBreakPhase"] as? Bool ?? false,
+            isWaiting:         message["isWaiting"]        as? Bool ?? false,
             sentAt:            message["sentAt"]           as? TimeInterval ?? Date().timeIntervalSince1970
         )
     }
@@ -241,16 +243,56 @@ struct SessionStateDictionaryTests {
         #expect(decoded?.isLongBreakPhase == false)
     }
 
+    @Test func roundTripIsWaitingTrue() {
+        // Verifies that isWaiting=true survives encode → decode (waiting hold is active).
+        let original = WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "05:00", phaseLabel: "Short Break",
+            isBreakPhase: true, isWaiting: true
+        )
+        let dict = encodeSessionState(original)
+        let decoded = decodeSessionState(dict)
+        #expect(decoded?.isWaiting == true)
+        #expect(decoded == original)
+    }
+
+    @Test func roundTripIsWaitingFalse() {
+        // Verifies that isWaiting=false (normal running session) survives encode → decode.
+        let original = WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "25:00", phaseLabel: "Focus",
+            isWaiting: false
+        )
+        let dict = encodeSessionState(original)
+        let decoded = decodeSessionState(dict)
+        #expect(decoded?.isWaiting == false)
+    }
+
+    @Test func isWaitingDefaultsToFalseOnLegacyPayload() {
+        // Simulates receiving a payload from an older app version that lacks the key.
+        // Safe legacy default must be false so old watch builds behave as before.
+        var dict = encodeSessionState(WatchSessionState(
+            isActive: true, isPaused: false, modeID: "pomodoro",
+            displayTime: "05:00", phaseLabel: "Short Break",
+            isBreakPhase: true, isWaiting: true
+        ))
+        dict.removeValue(forKey: "isWaiting")
+        let decoded = decodeSessionState(dict)
+        // Must not crash and must default to false for backward compatibility.
+        #expect(decoded?.isWaiting == false)
+    }
+
     @Test func dictionaryContainsRequiredKeys() {
         let dict = encodeSessionState(.idle)
         #expect(dict["type"] as? String == "sessionState")
-        #expect(dict["isActive"]        != nil)
-        #expect(dict["isPaused"]        != nil)
-        #expect(dict["modeID"]          != nil)
-        #expect(dict["displayTime"]     != nil)
-        #expect(dict["phaseLabel"]      != nil)
-        #expect(dict["isBreakPhase"]    != nil)
+        #expect(dict["isActive"]         != nil)
+        #expect(dict["isPaused"]         != nil)
+        #expect(dict["modeID"]           != nil)
+        #expect(dict["displayTime"]      != nil)
+        #expect(dict["phaseLabel"]       != nil)
+        #expect(dict["isBreakPhase"]     != nil)
         #expect(dict["isLongBreakPhase"] != nil)
+        #expect(dict["isWaiting"]        != nil)
     }
 
     @Test func optionalFieldsOmittedWhenNil() {
@@ -308,6 +350,7 @@ struct WatchCommandDictionaryTests {
         case .toggleTaskCompleted(let id):  dict["action"] = "toggleTask"; dict["taskID"] = id
         case .requestTasks:                 dict["action"] = "requestTasks"
         case .requestDashboard:             dict["action"] = "requestDashboard"
+        case .startNextPhase:               dict["action"] = "startNextPhase"
         }
         return dict
     }
@@ -326,6 +369,7 @@ struct WatchCommandDictionaryTests {
         case "toggleTask":       return .toggleTaskCompleted(id: message["taskID"] as? String ?? "")
         case "requestTasks":     return .requestTasks
         case "requestDashboard": return .requestDashboard
+        case "startNextPhase":   return .startNextPhase
         default:                 return nil
         }
     }
@@ -396,6 +440,14 @@ struct WatchCommandDictionaryTests {
         #expect(decoded == cmd)
     }
 
+    @Test func roundTripStartNextPhase() {
+        let cmd = WatchCommand.startNextPhase
+        let dict = encodeCommand(cmd)
+        #expect(dict["type"]   as? String == "command")
+        #expect(dict["action"] as? String == "startNextPhase")
+        #expect(decodeCommand(dict) == cmd)
+    }
+
     @Test func allCommandsRoundTrip() {
         let commands: [WatchCommand] = [
             .startSession(mode: "pomodoro"),
@@ -411,6 +463,7 @@ struct WatchCommandDictionaryTests {
             .toggleTaskCompleted(id: "id-2"),
             .requestTasks,
             .requestDashboard,
+            .startNextPhase,
         ]
         for cmd in commands {
             let roundTripped = decodeCommand(encodeCommand(cmd))
@@ -454,6 +507,7 @@ struct WatchCommandEquatableTests {
         #expect(WatchCommand.unlinkTask == WatchCommand.unlinkTask)
         #expect(WatchCommand.requestTasks == WatchCommand.requestTasks)
         #expect(WatchCommand.requestDashboard == WatchCommand.requestDashboard)
+        #expect(WatchCommand.startNextPhase == WatchCommand.startNextPhase)
     }
 
     @Test func startSessionDiffersOnMode() {
@@ -942,6 +996,7 @@ struct TransportSemanticsContractTests {
             "isPhaseTransition": state.isPhaseTransition,
             "isBreakPhase":      state.isBreakPhase,
             "isLongBreakPhase":  state.isLongBreakPhase,
+            "isWaiting":         state.isWaiting,
             "sentAt":            state.sentAt,
             "progress":          state.progress as Any,
             "pomodoroNumber":    state.pomodoroNumber as Any,
