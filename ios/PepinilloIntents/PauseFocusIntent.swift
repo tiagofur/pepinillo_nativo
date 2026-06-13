@@ -20,6 +20,9 @@ struct PauseFocusIntent: AppIntent {
         guard AppGroupDefaults.isSessionActive else {
             return .result(dialog: "No focus session is running right now.")
         }
+        guard !AppGroupDefaults.activeSessionIsWaiting else {
+            return .result(dialog: "Waiting for the next phase to begin.")
+        }
 
         AppGroupDefaults.externalPauseRequested = true
         return .result(dialog: "Focus session paused. Take a moment.")
@@ -40,9 +43,12 @@ struct ResumeFocusIntent: AppIntent {
         guard AppGroupDefaults.isSessionActive else {
             return .result(dialog: "No focus session to resume.")
         }
+        guard !AppGroupDefaults.activeSessionIsWaiting else {
+            return .result(dialog: "Waiting for the next phase to begin.")
+        }
 
         AppGroupDefaults.externalResumeRequested = true
-        return .result(dialog: "Focus session resumed. Let's go! 🎯")
+        return .result(dialog: "Focus session resumed. Let's go!")
     }
 }
 

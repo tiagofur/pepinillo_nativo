@@ -447,6 +447,14 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "activeSessionIsPaused") }
     }
 
+    /// Whether the engine is in the "waiting for next phase" hold (tick suspended,
+    /// pendingNextPhase set). Widgets and intents read this to suppress pause/resume
+    /// controls that would be misleading or harmful during the hold.
+    static var activeSessionIsWaiting: Bool {
+        get { defaults?.bool(forKey: "activeSessionIsWaiting") ?? false }
+        set { defaults?.set(newValue, forKey: "activeSessionIsWaiting") }
+    }
+
     /// Whether the visible session was started optimistically by a widget before
     /// the app reconciled it into the FocusEngine.
     static var activeSessionStartedFromWidget: Bool {
@@ -536,6 +544,7 @@ enum AppGroupDefaults {
         activeSessionTimerStart = issuedAt
         activeSessionElapsed = 0
         activeSessionIsPaused = false
+        activeSessionIsWaiting = false
         activeSessionPausedAt = nil
 
         if duration > 0 {
@@ -581,6 +590,7 @@ enum AppGroupDefaults {
         defaults?.removeObject(forKey: "activeSessionTimerStart")
         defaults?.removeObject(forKey: "activeSessionTimerEnd")
         defaults?.set(false, forKey: "activeSessionIsPaused")
+        defaults?.set(false, forKey: "activeSessionIsWaiting")
         defaults?.set(false, forKey: "activeSessionStartedFromWidget")
         defaults?.removeObject(forKey: "activeSessionPausedAt")
         defaults?.removeObject(forKey: "activeTaskID")

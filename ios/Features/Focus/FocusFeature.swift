@@ -66,6 +66,11 @@ struct FocusFeature {
         // Custom duration (Time Block)
         var customDurationMinutes: Int = 60
 
+        // Waiting-for-next-phase gate (auto-start OFF)
+        // When true, the engine is holding between phases and waiting for user input.
+        var isWaitingForNextPhase: Bool = false
+        var pendingNextPhase: FocusPhase? = nil
+
         // Mode Intelligence
         var modeSuggestion: ModeSuggestion?
 
@@ -107,6 +112,10 @@ struct FocusFeature {
         case breakSuggested(TimeInterval)
         case midpointReached
         case interrupted
+        case waitingForNextPhase(FocusPhase)
+
+        // User action: advance from the waiting-for-next-phase hold
+        case startNextPhaseTapped
 
         // Navigation
         case modeInfoTapped
@@ -196,6 +205,7 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionTotalPomodoros = state.selectedMode == .pomodoro ? state.config.pomodorosPerCycle : nil
                 AppGroupDefaults.activeSessionTaskTitle = state.linkedTaskTitle
                 AppGroupDefaults.activeSessionIsPaused = false
+                AppGroupDefaults.activeSessionIsWaiting = false
                 AppGroupDefaults.activeTaskID = state.linkedTaskID?.uuidString
                 
                 // Adopt provided anchors (from widget) or check for recent ones in defaults
@@ -295,12 +305,13 @@ struct FocusFeature {
                         let stream = await focusClient.events()
                         for await event in stream {
                             switch event {
-                            case .tick(let sessionState):         await send(.timerTicked(sessionState))
-                            case .phaseCompleted(let phase):      await send(.phaseCompleted(phase))
-                            case .sessionCompleted(let result):   await send(.sessionCompleted(result))
-                            case .breakSuggested(let duration):   await send(.breakSuggested(duration))
-                            case .midpointReached:                await send(.midpointReached)
-                            case .interrupted:                    await send(.interrupted)
+                            case .tick(let sessionState):               await send(.timerTicked(sessionState))
+                            case .phaseCompleted(let phase):            await send(.phaseCompleted(phase))
+                            case .sessionCompleted(let result):         await send(.sessionCompleted(result))
+                            case .breakSuggested(let duration):         await send(.breakSuggested(duration))
+                            case .midpointReached:                      await send(.midpointReached)
+                            case .interrupted:                          await send(.interrupted)
+                            case .waitingForNextPhase(let nextPhase):   await send(.waitingForNextPhase(nextPhase))
                             }
                         }
                     }
@@ -344,6 +355,7 @@ struct FocusFeature {
                 )
 
             case .pauseTapped:
+                guard !state.isWaitingForNextPhase else { return .none }
                 guard state.isRunning, !state.isPaused else { return .none }
                 let frozenElapsed = AppGroupDefaults.activeSessionLiveElapsed()
                 let frozenRemaining = AppGroupDefaults.activeSessionLiveRemaining()
@@ -371,6 +383,10 @@ struct FocusFeature {
                 )
 
             case .externalPauseApplied(let elapsed, let remaining, let pausedAt):
+                // Defense-in-depth: ignore external pause/resume during the hold.
+                // The engine guard is the primary line; this ensures the reducer also
+                // does not mutate state or forward the call during the hold.
+                guard !state.isWaitingForNextPhase else { return .none }
                 guard state.isRunning else { return .none }
                 state.isPaused = true
                 state.elapsedSeconds = max(0, elapsed)
@@ -402,6 +418,7 @@ struct FocusFeature {
                 )
 
             case .resumeTapped:
+                guard !state.isWaitingForNextPhase else { return .none }
                 guard state.isRunning, state.isPaused else { return .none }
                 state.isPaused = false
                 AppGroupDefaults.activeSessionIsPaused = false
@@ -429,6 +446,8 @@ struct FocusFeature {
                 )
 
             case .externalResumeApplied(let elapsed, let remaining):
+                // Defense-in-depth: ignore external resume during the hold.
+                guard !state.isWaitingForNextPhase else { return .none }
                 guard state.isRunning else { return .none }
                 state.isPaused = false
                 state.elapsedSeconds = max(0, elapsed)
@@ -745,6 +764,91 @@ struct FocusFeature {
                 state.interruptions += 1
                 return .none
 
+            case .waitingForNextPhase(let nextPhase):
+                // Engine is now holding — tick timer is suspended. Update UI state so the
+                // view can show the CTA button for the pending next phase.
+                state.isWaitingForNextPhase = true
+                state.pendingNextPhase = nextPhase
+                // Show the pending phase label so the user knows what's coming next.
+                state.phaseLabel = nextPhase.displayName
+
+                // FIX 1: Clear the countdown anchors written by .phaseCompleted so
+                // widgets do not display a phantom live countdown for the pending phase
+                // while we are in the hold (no timer is running). The widget sees
+                // timerEnd = nil and isPaused = true, which it treats as a paused/waiting
+                // state rather than a ticking countdown.
+                AppGroupDefaults.activeSessionTimerEnd = nil
+                AppGroupDefaults.activeSessionTimerStart = nil
+                AppGroupDefaults.activeSessionRemaining = nil
+                AppGroupDefaults.activeSessionProgress = nil
+
+                // Update widget/AppGroup so the lock screen widget reflects the hold state.
+                AppGroupDefaults.activeSessionPhase = nextPhase.displayName
+                AppGroupDefaults.activeSessionIsPaused = true
+                // Signal to widget intents and widget views that the engine is in the
+                // waiting hold, so they suppress pause/resume controls and intents.
+                AppGroupDefaults.activeSessionIsWaiting = true
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+
+                // FIX 2: Build a synthetic waiting state for the Live Activity so it shows
+                // the PENDING phase as paused/waiting, not the completed phase at 0:00.
+                let waitingState: FocusSessionState? = state.activeMode.map { mode in
+                    let target = mode.strategy.targetDuration(config: state.config, phase: nextPhase)
+                    return FocusSessionState(
+                        id: UUID(),
+                        mode: mode,
+                        phase: nextPhase,
+                        startedAt: Date.now,
+                        elapsedSeconds: 0,
+                        targetDuration: target,
+                        remainingSeconds: target,
+                        progress: 0.0,
+                        isPaused: true,
+                        pomodoroNumber: state.pomodoroNumber,
+                        totalPomodoros: state.config.pomodorosPerCycle
+                    )
+                }
+                let taskTitle = state.linkedTaskTitle
+                return .run { [liveActivity] _ in
+                    if let ws = waitingState {
+                        await liveActivity.update(ws, taskTitle)
+                    }
+                }
+
+            case .startNextPhaseTapped:
+                guard state.isWaitingForNextPhase, let pending = state.pendingNextPhase else { return .none }
+                state.isWaitingForNextPhase = false
+                state.pendingNextPhase = nil
+
+                // Update widget anchors for the new phase before the engine emits its first tick.
+                // Also clear the isPaused and isWaiting flags set during the hold.
+                let mode = state.activeMode ?? state.selectedMode
+                let config = state.config
+                AppGroupDefaults.activeSessionIsPaused = false
+                AppGroupDefaults.activeSessionIsWaiting = false
+                if let target = mode.strategy.targetDuration(config: config, phase: pending) {
+                    AppGroupDefaults.activeSessionTimerStart = Date.now
+                    AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(target)
+                    AppGroupDefaults.activeSessionPhase = pending.displayName
+                }
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+
+                let hapticEnabled = state.config.hapticEnabled
+                return .merge(
+                    .run { [focusClient] _ in await focusClient.startNextPhase() },
+                    .run { _ in
+                        guard hapticEnabled else { return }
+                        #if os(iOS)
+                        await MainActor.run {
+                            let generator = UIImpactFeedbackGenerator(style: .medium)
+                            generator.impactOccurred()
+                        }
+                        #endif
+                    }
+                )
+
             case .delegate:
                 return .none
 
@@ -944,6 +1048,8 @@ struct FocusFeature {
         state.linkedTaskID = nil
         state.linkedTaskTitle = nil
         state.modeSuggestion = nil
+        state.isWaitingForNextPhase = false
+        state.pendingNextPhase = nil
         AppGroupDefaults.isSessionActive = false
         AppGroupDefaults.clearActiveSession()
         updateIdleDisplay(&state)

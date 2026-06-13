@@ -80,7 +80,11 @@ struct PauseFocusFromWidgetIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
-        guard AppGroupDefaults.isSessionActive, !AppGroupDefaults.activeSessionIsPaused else {
+        // No-op during the waiting-for-next-phase hold — the engine has no running
+        // timer, so pausing would corrupt state (completed phase at 0 seconds).
+        guard AppGroupDefaults.isSessionActive,
+              !AppGroupDefaults.activeSessionIsPaused,
+              !AppGroupDefaults.activeSessionIsWaiting else {
             return .result()
         }
 
@@ -115,7 +119,13 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
-        guard AppGroupDefaults.isSessionActive, AppGroupDefaults.activeSessionIsPaused else {
+        // No-op during the waiting-for-next-phase hold — calling applyExternalResume()
+        // during the hold would invoke startTicking() with remainingSeconds == 0 and
+        // immediately re-fire phaseComplete(), causing double interval persistence and
+        // double pomodoro-number increment.
+        guard AppGroupDefaults.isSessionActive,
+              AppGroupDefaults.activeSessionIsPaused,
+              !AppGroupDefaults.activeSessionIsWaiting else {
             return .result()
         }
 

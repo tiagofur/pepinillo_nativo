@@ -37,6 +37,10 @@ public actor FocusEngine {
     // For Pomodoro: track which number we're on across phase transitions
     private var currentPomodoroNumber: Int = 1
 
+    // Waiting-for-next-phase gate (auto-start OFF)
+    // When set, the tick loop is suspended and the user must call startNextPhase().
+    private var pendingNextPhase: FocusPhase?
+
     // Pause tracking
     private var pauseCount: Int = 0
     private var phaseBeforePause: FocusPhase?
@@ -136,6 +140,12 @@ public actor FocusEngine {
     /// Pause the current session.
     public func pause() {
         guard var current = state, !current.isPaused else { return }
+        // FIX 4: During the waiting-for-next-phase hold the tick task is already
+        // cancelled and no countdown is running. Pausing a hold has no meaningful
+        // effect and would set phaseBeforePause to the completed phase (remaining = 0),
+        // causing resume() → startTicking() → phaseComplete() to fire again (double
+        // pomodoro increment). Guard here so pause is a no-op in this state.
+        guard pendingNextPhase == nil else { return }
         phaseBeforePause = current.phase
         current.isPaused = true
         current.pausedAt = Date.now
@@ -151,6 +161,10 @@ public actor FocusEngine {
 
     /// Resume a paused session.
     public func resume() {
+        // FIX 4: Mirror the pause() guard — if we somehow reach resume() while in the
+        // waiting hold (e.g. Watch sends a resume after a pause that was itself a no-op),
+        // do nothing. The hold is not a paused countdown; the CTA is the only exit.
+        guard pendingNextPhase == nil else { return }
         guard var current = state, current.isPaused, let pauseStart = current.pausedAt else { return }
 
         let pauseDuration = Date.now.timeIntervalSince(pauseStart)
@@ -210,7 +224,25 @@ public actor FocusEngine {
     /// Skip to the next phase (e.g., skip break in Pomodoro, or end Flowtime session).
     public func skipToNextPhase() {
         guard let current = state, strategy != nil else { return }
+        // FIX 3: If we are in the waiting-for-next-phase hold (auto-start OFF),
+        // a skip command (e.g. from the Watch) must advance into the already-resolved
+        // pending phase and clear pendingNextPhase — exactly the same code path as
+        // startNextPhase(). Re-deriving from the completed phase would double-advance
+        // the Pomodoro number and leave pendingNextPhase dirty.
+        if pendingNextPhase != nil {
+            startNextPhase()
+            return
+        }
         advancePhase(from: current.phase, elapsed: current.elapsedSeconds)
+    }
+
+    /// Advance from the waiting-for-next-phase hold state into the pending next phase and
+    /// start its countdown. Called when the user taps the CTA after auto-start is OFF.
+    public func startNextPhase() {
+        guard let pending = pendingNextPhase, let current = state else { return }
+        pendingNextPhase = nil
+        // Advance directly into the pending phase (already computed in phaseComplete).
+        advancePhase(toResolved: pending, from: current)
     }
 
     /// Get the current session state snapshot.
@@ -289,6 +321,10 @@ public actor FocusEngine {
     /// This keeps elapsed time and future resume math anchored to the widget tap,
     /// not to the later moment when the app wakes up.
     public func applyExternalPause(elapsed: TimeInterval, remaining: TimeInterval?, pausedAt: Date) {
+        // During a "waiting for next phase" hold the tick task is already cancelled and
+        // there is no running timer — external pause must be a no-op to prevent
+        // restoring a completed phase and triggering a double phaseComplete().
+        guard pendingNextPhase == nil else { return }
         guard var current = state else { return }
 
         if !current.isPaused {
@@ -320,6 +356,11 @@ public actor FocusEngine {
 
     /// Apply an externally-triggered resume and align the engine with widget anchors.
     public func applyExternalResume(elapsed: TimeInterval, remaining: TimeInterval?) {
+        // During a "waiting for next phase" hold the tick task is already cancelled and
+        // there is no running timer — external resume must be a no-op to prevent
+        // calling startTicking() with a completed phase (remainingSeconds == 0),
+        // which would immediately re-fire phaseComplete() and double-count the interval.
+        guard pendingNextPhase == nil else { return }
         guard var current = state else { return }
 
         if current.isPaused {
@@ -440,15 +481,55 @@ public actor FocusEngine {
 
         emit(.phaseCompleted(current.phase))
 
-        // Should we auto-advance?
-        if strategy.supportsAutoAdvance {
-            advancePhase(from: current.phase, elapsed: current.elapsedSeconds)
-        } else {
-            // Stop and report completion
+        guard strategy.supportsAutoAdvance else {
+            // Modes that don't auto-advance (e.g. TimeBlock) stop on completion.
             stop(completed: true)
+            return
+        }
+
+        // Resolve the next phase before checking the gate so we can carry it in the event.
+        guard let nextPhase = strategy.nextPhase(after: current.phase, elapsed: current.elapsedSeconds, config: config) else {
+            // No more phases — full cycle complete.
+            stop(completed: true)
+            return
+        }
+
+        // Resolve the actual next phase (Pomodoro work number increment happens here).
+        var resolvedNext = nextPhase
+        if case .work(_, let total) = nextPhase, current.mode == .pomodoro {
+            currentPomodoroNumber += 1
+            resolvedNext = .work(number: currentPomodoroNumber, total: total)
+        }
+
+        // Gate: check whether auto-start is enabled for the UPCOMING phase type.
+        let shouldAutoStart: Bool
+        switch current.phase {
+        case .work:
+            // Work just finished → next is a break. Gate on autoStartBreaks.
+            shouldAutoStart = config.autoStartBreaks
+        case .shortBreak, .longBreak:
+            // Break just finished → next is work. Gate on autoStartWork.
+            shouldAutoStart = config.autoStartWork
+        default:
+            // Non-Pomodoro phases or unexpected cases: always auto-advance.
+            shouldAutoStart = true
+        }
+
+        if shouldAutoStart {
+            // Auto-start is ON: advance immediately (existing behavior).
+            advancePhase(toResolved: resolvedNext, from: current)
+        } else {
+            // Auto-start is OFF: enter the waiting hold.
+            // Cancel the tick timer so nothing counts down while we wait.
+            timerTask?.cancel()
+            timerTask = nil
+            pendingNextPhase = resolvedNext
+            emit(.waitingForNextPhase(resolvedNext))
         }
     }
 
+    /// Advance to the next phase by re-deriving it from the strategy.
+    /// Used by `skipToNextPhase()` (user-initiated skip) where we haven't pre-resolved the next phase.
     private func advancePhase(from phase: FocusPhase, elapsed: TimeInterval) {
         guard var current = state, let strategy = strategy else { return }
 
@@ -466,7 +547,24 @@ public actor FocusEngine {
             current.pomodoroNumber = currentPomodoroNumber
         }
 
-        // Reset phase timing
+        applyPhaseTransition(to: resolvedPhase, current: &current)
+    }
+
+    /// Advance into an already-resolved next phase.
+    /// Used by `phaseComplete()` (which pre-resolves to avoid duplicate number increments)
+    /// and by `startNextPhase()` (user taps CTA from waiting state).
+    private func advancePhase(toResolved resolvedPhase: FocusPhase, from current: FocusSessionState) {
+        var mutable = current
+        if case .work = resolvedPhase {
+            mutable.pomodoroNumber = currentPomodoroNumber
+        }
+        applyPhaseTransition(to: resolvedPhase, current: &mutable)
+    }
+
+    /// Shared phase-transition logic: reset timing state, start ticking, emit tick.
+    private func applyPhaseTransition(to resolvedPhase: FocusPhase, current: inout FocusSessionState) {
+        guard let strategy = strategy else { return }
+
         let newTarget = strategy.targetDuration(config: config, phase: resolvedPhase)
         current.phase = resolvedPhase
         current.targetDuration = newTarget
@@ -478,6 +576,7 @@ public actor FocusEngine {
         phaseStartDate = Date.now
         totalPausedDuration = 0
 
+        startTicking()
         emit(.tick(current))
     }
 
@@ -516,5 +615,6 @@ public actor FocusEngine {
         currentPomodoroNumber = 1
         pauseCount = 0
         phaseBeforePause = nil
+        pendingNextPhase = nil
     }
 }
