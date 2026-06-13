@@ -88,7 +88,7 @@ class SessionRepository @Inject constructor(
                 ),
             )
 
-            // Only update daily summary stats for work sessions (not breaks)
+            // Only update daily summary stats for completed work sessions (not breaks)
             val isBreakPhase = phase == "ShortBreak" || phase == "LongBreak"
             if (!isBreakPhase) {
                 val today = startOfDay(System.currentTimeMillis())
@@ -98,12 +98,14 @@ class SessionRepository @Inject constructor(
                 dailyStatsDao.upsert(
                     existing.copy(
                         totalMinutes = existing.totalMinutes + minutes,
-                        sessionsCompleted = existing.sessionsCompleted + 1,
+                        // Only count completed work sessions toward the "sessions completed" tally
+                        sessionsCompleted = existing.sessionsCompleted + if (wasCompleted) 1 else 0,
                         longestSessionMinutes = maxOf(existing.longestSessionMinutes, minutes),
                         pomodoroMinutes = existing.pomodoroMinutes + if (mode == "Pomodoro") minutes else 0,
                         flowMinutes = existing.flowMinutes + if (mode == "Flow") minutes else 0,
                         blocksMinutes = existing.blocksMinutes + if (mode == "Blocks") minutes else 0,
                         stopwatchMinutes = existing.stopwatchMinutes + if (mode == "Chrono") minutes else 0,
+                        isDirty = true,
                     ),
                 )
             }
