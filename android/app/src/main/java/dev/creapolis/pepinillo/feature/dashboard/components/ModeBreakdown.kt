@@ -32,8 +32,8 @@ fun ModeBreakdown(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier.padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         modes.forEach { mode ->
             ModeRow(mode = mode)
@@ -73,7 +73,7 @@ private fun ModeRow(mode: ModeUsage) {
             ) {
                 Text(
                     text = mode.modeLabel,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )

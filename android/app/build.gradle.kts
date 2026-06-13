@@ -177,6 +177,9 @@ dependencies {
     // RevenueCat (Billing)
     implementation(libs.revenuecat.purchases)
 
+    // Vico (Charts)
+    implementation(libs.vico.compose.m3)
+
     // ML Kit GenAI (On-device AI)
     implementation(libs.mlkit.genai.prompt)
 
