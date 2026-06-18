@@ -157,7 +157,8 @@ Content-Type: application/json
 
 Request:
 {
-  "idToken": "apple-id-token-string"
+  "idToken": "<apple-id-token>",
+  "nonce": "<raw-nonce-string>"
 }
 
 Response: (same as Google login)
@@ -191,7 +192,8 @@ Content-Type: application/json
 
 Request:
 {
-  "idToken": "apple-id-token-string"
+  "idToken": "<apple-id-token>",
+  "nonce": "<raw-nonce-string>"
 }
 
 Response:
@@ -253,6 +255,41 @@ Response:
 4. **Rate Limiting**: OAuth login endpoints use the same rate limits as email/password login (5 requests per minute)
 5. **JWT Security**: All tokens use HMAC-SHA256 with configurable secret
 
+### Nonce Contract (Apple Sign-In)
+
+Apple ID tokens are short-lived (10-minute `appleTokenMaxAge` window), but a
+token stolen during that window is replayable unless the backend binds the
+verification to a one-shot nonce the client generated. Both `POST /auth/apple`
+(login) and `POST /auth/link/apple` (link) REQUIRE a nonce; omitting it returns
+HTTP 400 `missing_required_fields`.
+
+Contract:
+
+1. **Client generates a raw nonce.** Use a cryptographically random value of at
+   least 32 bytes, hex- or base64-encoded (e.g. `SecRandomCopyBytes` on iOS).
+2. **Client hashes the nonce and sends the HASH as the `nonce` claim** in the
+   Apple `Authorization` request (`ASAuthorizationRequest.nonce`), per the
+   Sign-In with Apple spec. Apple embeds this hash inside the issued ID token.
+3. **Client sends the RAW nonce in the HTTP body field `nonce`** to
+   `/auth/apple` or `/auth/link/apple`. The body field is the un-hashed nonce.
+4. **Backend re-hashes the raw nonce** with SHA-256 and compares it against the
+   `nonce` claim embedded in the Apple ID token via `validateAppleNonce`. The
+   validator fails closed: if either the body nonce or the token claim is
+   missing, verification returns an error instead of silently skipping the
+   check.
+5. **Missing nonce returns HTTP 400 `missing_required_fields`** at the handler
+   boundary for both login and link. A mismatched or absent claim in the token
+   returns HTTP 401 `invalid_oauth_token`.
+
+Example raw/nonce pair the backend expects:
+
+```
+rawNonce      = "9f3c...d1a2"        # 32 random bytes, hex-encoded
+hashedNonce   = sha256(rawNonce)     # client passes this to ASAuthorizationRequest.nonce
+                                 # and Apple includes it in the issued ID token
+body.nonce    = rawNonce             # sent verbatim in the JSON body
+```
+
 ## Mobile App Integration
 
 ### Android (Google Sign-In)
@@ -288,19 +325,47 @@ The iOS app should:
 
 Example flow:
 ```swift
+import CryptoKit
+
+// 1. Generate a cryptographically random raw nonce (32 bytes, hex).
+let rawNonce = randomNonceString()
+// 2. Hash it with SHA-256; this is what Apple embeds in the issued ID token.
+let hashedNonce = sha256(rawNonce)
+
 let request = ASAuthorizationAppleIDProvider().createRequest()
 request.requestedScopes = [.fullName, .email]
+// 3. Hand the HASH to Apple — the raw nonce never leaves the device.
+request.nonce = hashedNonce
 
 let authorizationController = ASAuthorizationController(authorizationRequests: [request])
 authorizationController.performRequests { authorization, error in
     if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
         let appleIDToken = appleIDCredential.identityToken
-        
-        // Send to backend
+
+        // 4. Send the ID token AND the RAW nonce to the backend.
+        //    Backend re-hashes the raw nonce and compares against the
+        //    `nonce` claim embedded by Apple in step 2.
         Task {
-            try await apiService.loginWithApple(LoginWithAppleRequest(appleIDToken))
+            try await apiService.loginWithApple(LoginWithAppleRequest(
+                idToken: appleIDToken,
+                nonce: rawNonce
+            ))
         }
     }
+}
+
+// Helper: 32 random bytes hex-encoded.
+func randomNonceString(length: Int = 32) -> String {
+    var bytes = [UInt8](repeating: 0, count: length)
+    _ = SecRandomCopyBytes(kSecRandomDefault, length, &bytes)
+    return bytes.map { String(format: "%02x", $0) }.joined()
+}
+
+// Helper: SHA-256 hex digest (mirrors backend's validateAppleNonce).
+func sha256(_ input: String) -> String {
+    let data = Data(input.utf8)
+    let digest = SHA256.hash(data: data)
+    return digest.map { String(format: "%02x", $0) }.joined()
 }
 ```
 
@@ -340,15 +405,14 @@ OAuth methods have been added to all test repositories:
 1. **Database Migration**: Run migration `000006_add_oauth_providers` on production database
 2. **No External Dependencies**: OAuth verification uses public endpoints, no external credentials needed
 3. **Backward Compatible**: Existing email/password authentication continues to work unchanged
-4. **CloudKit Migration**: iOS users currently using CloudKit will need to update to use the backend for OAuth login
+4. **CloudKit Migration**: iOS users currently using CloudKit can migrate to Sign in with Apple via `POST /api/v1/auth/apple` (requires `idToken` + `nonce`)
 
 ## Future Enhancements
 
-1. **iOS Hybrid Authentication**: Currently iOS uses CloudKit only; future work to combine Sign in with Apple with backend JWT tokens
-2. **OAuth2 Refresh Tokens**: Store Google/Apple refresh tokens for silent renewal
-3. **Web OAuth**: Add support for web-based Google/Apple login
-4. **Multiple Google Accounts**: Support linking multiple Google accounts per user
-5. **Profile Picture Sync**: Automatically sync profile pictures from Google/Apple
+1. **OAuth2 Refresh Tokens**: Store Google/Apple refresh tokens for silent renewal
+2. **Web OAuth**: Add support for web-based Google/Apple login
+3. **Multiple Google Accounts**: Support linking multiple Google accounts per user
+4. **Profile Picture Sync**: Automatically sync profile pictures from Google/Apple
 
 ## Troubleshooting
 
