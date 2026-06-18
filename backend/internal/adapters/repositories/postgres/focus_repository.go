@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
@@ -42,9 +44,13 @@ func (r *FocusRepository) UpsertStats(ctx context.Context, stats *domain.FocusSt
 		var existing domain.FocusStats
 		err := tx.Where("user_id = ? AND date = ?", stats.UserID, stats.Date.Format("2006-01-02")).First(&existing).Error
 		if err == nil {
+			// Trusted lookup hit: use the server-assigned ID.
 			stats.ID = existing.ID
-		}
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Lookup missed: never trust a client-supplied ID, force INSERT so
+			// Save cannot overwrite another user's stats row by PK.
+			stats.ID = 0
+		} else {
 			return err
 		}
 		return tx.Save(stats).Error
@@ -64,7 +70,20 @@ func (r *FocusRepository) ListStatsByRange(ctx context.Context, userID string, f
 }
 
 func (r *FocusRepository) InsertSession(ctx context.Context, session *domain.FocusSession) error {
-	return r.db.WithContext(ctx).Save(session).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// IDOR guard: when the client supplies a session ID, verify any
+		// existing row belongs to the same user before Save-by-PK.
+		if session.ID != "" {
+			var existing domain.FocusSession
+			err := tx.Where("id = ?", session.ID).First(&existing).Error
+			if err == nil && existing.UserID != session.UserID {
+				return gorm.ErrRecordNotFound
+			} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		}
+		return tx.Save(session).Error
+	})
 }
 
 func (r *FocusRepository) ListSessionsByTask(ctx context.Context, userID string, taskID int) ([]domain.FocusSession, error) {
@@ -220,15 +239,89 @@ func (r *FocusRepository) UpsertSessionBatch(ctx context.Context, sessions []dom
 	if len(sessions) == 0 {
 		return nil
 	}
-	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{
-			"ended_at", "duration_seconds", "elapsed_seconds",
-			"was_completed", "pause_count", "total_pause_seconds",
-			"interruptions", "pomodoro_number", "satisfaction_rating",
-			"journal_note", "updated_at",
-		}),
-	}).Create(&sessions).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// IDOR guard: callers (sync_service.SyncSessions / InitialUpload)
+		// stamp every session with the authenticated user's ID, so the batch
+		// is scoped to a single user. Collect that user ID and the set of
+		// non-zero client-supplied IDs, then look up which of those IDs
+		// actually belong to this user. Any ID that exists for a DIFFERENT
+		// user must NOT take the ON CONFLICT DO UPDATE branch — otherwise an
+		// attacker could overwrite a victim's row by submitting their id.
+		var userID string
+		idSet := make(map[string]struct{})
+		for i := range sessions {
+			if userID == "" {
+				userID = sessions[i].UserID
+			}
+			if sessions[i].ID != "" {
+				idSet[sessions[i].ID] = struct{}{}
+			}
+		}
+
+		allowedIDs := make(map[string]struct{})
+		if len(idSet) > 0 && userID != "" {
+			ids := make([]string, 0, len(idSet))
+			for id := range idSet {
+				ids = append(ids, id)
+			}
+			var owned []string
+			if err := tx.
+				Model(&domain.FocusSession{}).
+				Where("id IN ? AND user_id = ?", ids, userID).
+				Pluck("id", &owned).Error; err != nil {
+				return fmt.Errorf("upsert session batch idor pre-check: %w", err)
+			}
+			for _, id := range owned {
+				allowedIDs[id] = struct{}{}
+			}
+		}
+
+		filtered := dropForeignSessionIDs(sessions, allowedIDs)
+		return tx.Clauses(clause.OnConflict{
+			Columns: []clause.Column{{Name: "id"}},
+			DoUpdates: clause.AssignmentColumns([]string{
+				"ended_at", "duration_seconds", "elapsed_seconds",
+				"was_completed", "pause_count", "total_pause_seconds",
+				"interruptions", "pomodoro_number", "satisfaction_rating",
+				"journal_note", "updated_at",
+			}),
+		}).Create(&filtered).Error
+	})
+}
+
+// dropForeignSessionIDs returns a copy of sessions in which any session whose
+// ID is non-empty AND not present in allowedIDs has its ID replaced with a
+// freshly generated UUID so GORM INSERTs it as a genuinely new row (valid,
+// unique primary key) instead of following the ON CONFLICT DO UPDATE branch
+// (which would overwrite another user's existing row by primary key).
+// Sessions with an empty ID (new rows) or whose ID is in allowedIDs (verified
+// to belong to the caller) are passed through unchanged.
+//
+// Using uuid.NewString() (rather than clearing to "") is load-bearing:
+// focus_sessions.id is VARCHAR(255) PRIMARY KEY with no DEFAULT and
+// domain.FocusSession has no default tag or BeforeCreate hook, so an empty ID
+// would collapse N rewritten rows onto a single id="" row (within-batch
+// collision via ON CONFLICT) and could even let a later batch overwrite an
+// earlier batch's id="" row while leaving the original user_id in place
+// (cross-user data leak).
+//
+// This is a pure helper extracted for direct unit testing — the IDOR guard
+// lives in the query that populates allowedIDs inside UpsertSessionBatch.
+func dropForeignSessionIDs(sessions []domain.FocusSession, allowedIDs map[string]struct{}) []domain.FocusSession {
+	out := make([]domain.FocusSession, len(sessions))
+	copy(out, sessions)
+	for i := range out {
+		if out[i].ID == "" {
+			continue
+		}
+		if _, ok := allowedIDs[out[i].ID]; ok {
+			continue
+		}
+		slog.Warn("UpsertSessionBatch: dropping foreign session ID from batch (would overwrite another user's row); forcing INSERT as new row",
+			"sessionId", out[i].ID, "userId", out[i].UserID)
+		out[i].ID = uuid.NewString()
+	}
+	return out
 }
 
 func (r *FocusRepository) ListSessionsUpdatedSince(ctx context.Context, userID string, since time.Time) ([]domain.FocusSession, error) {

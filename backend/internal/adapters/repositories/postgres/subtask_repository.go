@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"gorm.io/gorm"
 
@@ -21,6 +22,20 @@ func (r *SubTaskRepository) Create(ctx context.Context, subtask *domain.SubTask)
 }
 
 func (r *SubTaskRepository) Update(ctx context.Context, subtask *domain.SubTask) error {
+	// IDOR guard: verify the existing subtask belongs to the claimed task
+	// before allowing a Save-by-PK, so a client-supplied subtaskID cannot
+	// overwrite another task's subtask.
+	var existing domain.SubTask
+	err := r.db.WithContext(ctx).Where("id = ?", subtask.ID).First(&existing).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return gorm.ErrRecordNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if existing.TaskID != subtask.TaskID {
+		return gorm.ErrRecordNotFound
+	}
 	return r.db.WithContext(ctx).Save(subtask).Error
 }
 

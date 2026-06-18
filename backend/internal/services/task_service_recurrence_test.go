@@ -60,16 +60,16 @@ func (f *fakeTaskRepository) Delete(_ context.Context, _ string, _ int) error { 
 func (f *fakeTaskRepository) Sync(_ context.Context, _ string, _ []domain.Task, _ []string, _ *time.Time) ([]domain.Task, []string, time.Time, error) {
 	return nil, nil, time.Time{}, nil
 }
-func (f *fakeTaskRepository) UpdateTrackingMode(_ context.Context, _ int, _ string) error {
+func (f *fakeTaskRepository) UpdateTrackingMode(_ context.Context, _ string, _ int, _ string) error {
 	return nil
 }
-func (f *fakeTaskRepository) IncrementCompletionCount(_ context.Context, _ int, _ string) error {
+func (f *fakeTaskRepository) IncrementCompletionCount(_ context.Context, _ string, _ int, _ string) error {
 	return nil
 }
-func (f *fakeTaskRepository) IncrementFocusTime(_ context.Context, _ int, _ string, _ int) error {
+func (f *fakeTaskRepository) IncrementFocusTime(_ context.Context, _ string, _ int, _ string, _ int) error {
 	return nil
 }
-func (f *fakeTaskRepository) SetActiveSession(_ context.Context, _ int, _ *string) error {
+func (f *fakeTaskRepository) SetActiveSession(_ context.Context, _ string, _ int, _ *string) error {
 	return nil
 }
 func (f *fakeTaskRepository) ListByUserPaginated(_ context.Context, _ string, _ *ports.PaginationCursor, _ int) ([]domain.Task, error) {

@@ -141,16 +141,16 @@ func (f *fakeSyncTaskRepository) Sync(_ context.Context, _ string, tasks []domai
 	f.tasks = append(f.tasks, tasks...)
 	return f.tasks, nil, time.Now().UTC(), nil
 }
-func (f *fakeSyncTaskRepository) UpdateTrackingMode(_ context.Context, _ int, _ string) error {
+func (f *fakeSyncTaskRepository) UpdateTrackingMode(_ context.Context, _ string, _ int, _ string) error {
 	return nil
 }
-func (f *fakeSyncTaskRepository) IncrementCompletionCount(_ context.Context, _ int, _ string) error {
+func (f *fakeSyncTaskRepository) IncrementCompletionCount(_ context.Context, _ string, _ int, _ string) error {
 	return nil
 }
-func (f *fakeSyncTaskRepository) IncrementFocusTime(_ context.Context, _ int, _ string, _ int) error {
+func (f *fakeSyncTaskRepository) IncrementFocusTime(_ context.Context, _ string, _ int, _ string, _ int) error {
 	return nil
 }
-func (f *fakeSyncTaskRepository) SetActiveSession(_ context.Context, _ int, _ *string) error {
+func (f *fakeSyncTaskRepository) SetActiveSession(_ context.Context, _ string, _ int, _ *string) error {
 	return nil
 }
 func (f *fakeSyncTaskRepository) ListByUserPaginated(_ context.Context, _ string, _ *ports.PaginationCursor, limit int) ([]domain.Task, error) {
