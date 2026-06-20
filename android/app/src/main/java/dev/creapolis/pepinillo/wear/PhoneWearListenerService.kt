@@ -103,8 +103,8 @@ class PhoneWearListenerService : WearableListenerService() {
 
             WearDataLayerHelper.CMD_TIMER_SKIP -> {
                 Log.d(TAG, "Skip phase from watch")
-                // Skip = start the next phase (works from WaitingForNext or Running)
-                focusEngine.start()
+                // Skip the current break phase and advance to the next work phase.
+                focusEngine.skipPhase()
             }
 
             WearDataLayerHelper.CMD_TASK_COMPLETE -> {
