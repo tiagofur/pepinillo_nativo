@@ -1,12 +1,25 @@
 package dev.creapolis.pepinillo.data.repository
 
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -52,9 +65,44 @@ private class FakeDailyStatsDao : DailyStatsDao {
     override suspend fun deleteAll() = Unit
 }
 
+/**
+ * Records the `startOfDay` argument passed to [getSessionsForDay] so the W-4
+ * read-path test can assert which day boundary the repository actually computed
+ * (persisted tz vs device tz). All other methods mirror [FakeFocusSessionDao].
+ */
+private class RecordingFocusSessionDao : FocusSessionDao {
+    @Volatile
+    var lastSessionsForDayStart: Long? = null
+
+    override suspend fun insertSession(session: FocusSessionEntity) = Unit
+    override fun getSessionsForDay(startOfDay: Long): Flow<List<FocusSessionEntity>> {
+        lastSessionsForDayStart = startOfDay
+        return flowOf(emptyList())
+    }
+    override fun getSessionCountForDay(startOfDay: Long): Flow<Int> = flowOf(0)
+    override fun getSessionsInRange(startTime: Long, endTime: Long): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
+    override fun getSessionsForTask(taskId: String): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
+    override suspend fun getTodayPomodoroWorkCount(startOfDay: Long): Int = 0
+    override suspend fun updateJournalEntry(sessionId: String, journalNote: String?, satisfactionRating: Int?) = Unit
+    override suspend fun getDirtySessions(): List<FocusSessionEntity> = emptyList()
+    override suspend fun markSynced(sessionId: String, syncedAt: Long) = Unit
+    override suspend fun getSessionsInRangeSync(startTime: Long, endTime: Long): List<FocusSessionEntity> = emptyList()
+    override suspend fun getSessionById(sessionId: String): FocusSessionEntity? = null
+    override suspend fun insertIfNotExists(session: FocusSessionEntity) = Unit
+    override suspend fun upsertSession(session: FocusSessionEntity) = Unit
+    override suspend fun upsertSessions(sessions: List<FocusSessionEntity>) = Unit
+    override suspend fun getAllSessionsSync(): List<FocusSessionEntity> = emptyList()
+    override suspend fun getSessionCount(): Int = 0
+    override suspend fun deleteAll() = Unit
+    override suspend fun updateLinkedTaskId(sessionId: String, taskId: String) = Unit
+    override fun getDirtySessionCount(): Flow<Int> = flowOf(0)
+}
+
 class SessionRepositoryTest {
 
     private lateinit var repo: SessionRepository
+    private lateinit var database: PepinilloDatabase
+    private lateinit var userPreferencesRepository: UserPreferencesRepository
     private lateinit var previousLocale: Locale
 
     private val oneDay = 24 * 60 * 60 * 1000L
@@ -89,9 +137,24 @@ class SessionRepositoryTest {
     fun setUp() {
         previousLocale = Locale.getDefault()
         Locale.setDefault(Locale.US)
+        // W-4: SessionRepository resolves a persisted home timezone; stub it so the
+        // pure-function tests below are deterministic. The companion startOfDay() tests
+        // call the function directly and do not touch the repository instance.
+        val prefs = mockk<UserPreferencesRepository>(relaxed = true)
+        coEvery { prefs.getOrInitUserTimezone() } returns TimeZone.getDefault().id
+        database = mockk(relaxed = true)
+        userPreferencesRepository = mockk(relaxed = true)
+        // recordSession (work phase) resolves the persisted home timezone; stub it
+        // so the day-key computation is deterministic in the atomic-write tests below.
+        coEvery { userPreferencesRepository.getOrInitUserTimezone() } returns "UTC"
         repo = SessionRepository(
             sessionDao = FakeFocusSessionDao(),
             dailyStatsDao = FakeDailyStatsDao(),
+            database = database,
+            userPreferencesRepository = userPreferencesRepository,
+            // Unconfined so the init-block timezone resolution runs eagerly during
+            // construction, keeping the pure-function tests deterministic.
+            scope = CoroutineScope(Dispatchers.Unconfined),
         )
     }
 
@@ -150,6 +213,45 @@ class SessionRepositoryTest {
         expected.set(2025, Calendar.JANUARY, 1, 0, 0, 0)
         expected.set(Calendar.MILLISECOND, 0)
         assertEquals(expected.timeInMillis, result)
+    }
+
+    // -----------------------------------------------------------------------
+    // W-4: startOfDay honours an explicit persisted timezone.
+    // Day-key computations on the WRITE/SYNC path pass a stable "home" timezone so
+    // travelling across timezones does not shift the user's day boundary.
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `W-4 startOfDay with explicit timezone differs from default for same instant`() {
+        // Fix an instant: 2025-06-18T02:00:00Z.
+        val utc = TimeZone.getTimeZone("UTC")
+        val cal = Calendar.getInstance(utc)
+        cal.set(2025, Calendar.JUNE, 18, 2, 0, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val instant = cal.timeInMillis
+
+        val tokyo = TimeZone.getTimeZone("Asia/Tokyo") // +09:00
+        // In UTC the instant belongs to June 18 → midnight is 2025-06-18T00:00:00Z.
+        val startUtc = SessionRepository.startOfDay(instant, utc)
+        // In Tokyo the same instant is 2025-06-18T11:00:00+09, still June 18 locally, but
+        // Tokyo midnight is 2025-06-17T15:00:00Z → a different (earlier) epoch millis.
+        val startTokyo = SessionRepository.startOfDay(instant, tokyo)
+
+        assertEquals(instant - 2 * 3_600_000L, startUtc) // back to 00:00 UTC
+        assertTrue(startTokyo < startUtc) // Tokyo midnight is earlier in epoch terms
+        assertTrue(startTokyo == instant - 11 * 3_600_000L) // back to 00:00+09 = 15:00Z prev day
+    }
+
+    @Test
+    fun `W-4 startOfDay default param equals device timezone behaviour`() {
+        // Backward-compat: callers that omit the timezone get the device default.
+        val cal = Calendar.getInstance(TimeZone.getDefault())
+        cal.set(2025, Calendar.JUNE, 18, 14, 30, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val instant = cal.timeInMillis
+        val explicit = SessionRepository.startOfDay(instant, TimeZone.getDefault())
+        val default = SessionRepository.startOfDay(instant)
+        assertEquals(explicit, default)
     }
 
     // -----------------------------------------------------------------------
@@ -437,5 +539,119 @@ class SessionRepositoryTest {
             statsAt(t - oneDay),
         )
         assertEquals(3, repo.calculateBestStreak(days))
+    }
+
+    // -----------------------------------------------------------------------
+    // recordSession: atomic session + stats (W-3 fix)
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `recordSession commits session and stats via the atomic entrypoint for a work session`() = runTest {
+        val sessionId = repo.recordSession(
+            mode = "Pomodoro",
+            startTime = 1_000L,
+            endTime = 2_000L,
+            durationMillis = 1_000L,
+            phase = "Work",
+            wasCompleted = true,
+        )
+
+        assertNotNull(sessionId)
+        // Both writes must go through the single transactional method (not two
+        // separate suspend calls that can leave the DB half-written on failure).
+        coVerify(exactly = 1) { database.recordSessionAtomic(any(), any()) }
+    }
+
+    @Test
+    fun `recordSession passes null stats for break phases (no daily-totals update)`() = runTest {
+        repo.recordSession(
+            mode = "Pomodoro",
+            startTime = 1_000L,
+            endTime = 2_000L,
+            durationMillis = 1_000L,
+            phase = "ShortBreak",
+        )
+
+        coVerify(exactly = 1) { database.recordSessionAtomic(any(), null) }
+    }
+
+    @Test
+    fun `recordSession returns null for invalid duration without touching the DB`() = runTest {
+        val sessionId = repo.recordSession(
+            mode = "Pomodoro",
+            startTime = 1_000L,
+            endTime = 2_000L,
+            durationMillis = 0L, // invalid: non-positive duration
+        )
+
+        assertNull(sessionId)
+        coVerify(exactly = 0) { database.recordSessionAtomic(any(), any()) }
+    }
+
+    @Test
+    fun `recordSession propagates DB failure instead of swallowing it as null`() = runTest {
+        // The old code did `runCatching{}.onFailure { return null }`, silently
+        // hiding real failures. The fix logs AND rethrows so callers can react.
+        coEvery { database.recordSessionAtomic(any(), any()) } throws RuntimeException("disk full")
+
+        assertThrows(RuntimeException::class.java) {
+            kotlinx.coroutines.runBlocking {
+                repo.recordSession(
+                    mode = "Pomodoro",
+                    startTime = 1_000L,
+                    endTime = 2_000L,
+                    durationMillis = 1_000L,
+                )
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // W-4 READ PATH: _currentDayStart uses the persisted home timezone.
+    //
+    // Previously the initializer and notifyDayChanged() used the device default
+    // timezone, so for users whose persisted home tz differs from the device tz
+    // (the travel scenario W-4 targets), the "today" window drifted on the read
+    // path until the first recordSession. The fix resolves the persisted tz in an
+    // init coroutine and uses it for both the initializer and notifyDayChanged().
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `W-4 read path uses persisted timezone for the first today boundary`() = runTest {
+        val previousTz = TimeZone.getDefault()
+        try {
+            // Device tz is UTC, but the persisted home timezone is Tokyo.
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+            val prefs = mockk<UserPreferencesRepository>(relaxed = true)
+            coEvery { prefs.getOrInitUserTimezone() } returns "Asia/Tokyo"
+            val recordingDao = RecordingFocusSessionDao()
+
+            // Unconfined scope: the init-block timezone resolution runs eagerly
+            // during construction, so _currentDayStart is the Tokyo boundary by
+            // the time we subscribe below.
+            val repoWithTokyo = SessionRepository(
+                sessionDao = recordingDao,
+                dailyStatsDao = FakeDailyStatsDao(),
+                database = mockk(relaxed = true),
+                userPreferencesRepository = prefs,
+                scope = CoroutineScope(Dispatchers.Unconfined),
+            )
+
+            // Drive a read-path flow so the computed day boundary is handed to the DAO.
+            repoWithTokyo.getTodaySessions().first()
+
+            val now = System.currentTimeMillis()
+            val tokyoBoundary = SessionRepository.startOfDay(now, TimeZone.getTimeZone("Asia/Tokyo"))
+            val utcBoundary = SessionRepository.startOfDay(now, TimeZone.getTimeZone("UTC"))
+
+            val captured = recordingDao.lastSessionsForDayStart
+            assertNotNull("expected the DAO to receive a day-start value", captured)
+            assertEquals(tokyoBoundary, captured)
+            // Sanity: Tokyo and UTC boundaries actually differ for this instant,
+            // otherwise the assertion above would be vacuous.
+            assertTrue("test invariant: Tokyo boundary must differ from UTC boundary", tokyoBoundary != utcBoundary)
+        } finally {
+            TimeZone.setDefault(previousTz)
+        }
     }
 }

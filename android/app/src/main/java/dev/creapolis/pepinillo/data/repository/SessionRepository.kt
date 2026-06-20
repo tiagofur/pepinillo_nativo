@@ -1,15 +1,20 @@
 package dev.creapolis.pepinillo.data.repository
 
 import android.util.Log
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dev.creapolis.pepinillo.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -41,12 +46,55 @@ private const val TAG = "SessionRepository"
 class SessionRepository @Inject constructor(
     private val sessionDao: FocusSessionDao,
     private val dailyStatsDao: DailyStatsDao,
+    private val database: PepinilloDatabase,
+    private val userPreferencesRepository: UserPreferencesRepository,
+    @ApplicationScope private val scope: CoroutineScope,
 ) {
-    private val _currentDayStart = MutableStateFlow(startOfDay(System.currentTimeMillis()))
+    // W-4 read path: nullable until the persisted home timezone is resolved so the
+    // first "today" boundary aligns with the write/sync path. Consumers read via
+    // [currentDayStart] (non-nullable), which falls back to device-tz startOfDay
+    // during the brief init window.
+    private val _currentDayStart = MutableStateFlow<Long?>(null)
+
+    /**
+     * Non-nullable view of [_currentDayStart]: emits the device-tz startOfDay while
+     * the persisted timezone is being resolved, then switches to the persisted-tz
+     * boundary once [init] completes. All read-path flows subscribe to this.
+     */
+    private val currentDayStart: Flow<Long> =
+        _currentDayStart.map { it ?: startOfDay(System.currentTimeMillis()) }
+
+    init {
+        // Resolve the persisted home timezone on the application scope so the
+        // read-path "today" window does not drift on device-tz until the first
+        // recordSession. Safe to fire-and-forget: currentDayStart already provides
+        // a correct (device-tz) fallback while this runs.
+        scope.launch {
+            _currentDayStart.value = startOfPersistedDay(System.currentTimeMillis())
+        }
+    }
+
+    /**
+     * Resolves the persisted home timezone (W-4). All day-key computations on the WRITE
+     * path (recordSession) and the SYNC path use this so the day boundary does not shift
+     * when the device crosses timezones.
+     */
+    private suspend fun persistedTimeZone(): TimeZone =
+        TimeZone.getTimeZone(userPreferencesRepository.getOrInitUserTimezone())
+
+    /** Start-of-day for the persisted home timezone (write/sync path). */
+    private suspend fun startOfPersistedDay(millis: Long): Long =
+        startOfDay(millis, persistedTimeZone())
 
     /** Called by FocusEngine when the calendar day changes — refreshes all "today" flows. */
     fun notifyDayChanged() {
-        _currentDayStart.value = startOfDay(System.currentTimeMillis())
+        // W-4 read path: use the persisted home timezone (not the device default) so
+        // the day-rollover boundary matches the write/sync path. Launched on the
+        // application scope to keep this method non-suspend (existing callers stay
+        // unchanged); persistedTimeZone() is suspend.
+        scope.launch {
+            _currentDayStart.value = startOfPersistedDay(System.currentTimeMillis())
+        }
     }
 
     suspend fun recordSession(
@@ -65,51 +113,64 @@ class SessionRepository @Inject constructor(
         satisfactionRating: Int? = null,
         targetDurationMillis: Long? = null,
     ): String? {
+        // Validation preconditions: caller gets null to signal "nothing to record".
         if (durationMillis <= 0 || startTime <= 0 || endTime <= startTime) return null
         val sessionId = java.util.UUID.randomUUID().toString()
-        runCatching {
-            sessionDao.insertSession(
-                FocusSessionEntity(
-                    id = sessionId,
-                    mode = mode,
-                    startTime = startTime,
-                    endTime = endTime,
-                    durationMillis = durationMillis,
-                    linkedTaskId = linkedTaskId,
-                    phase = phase,
-                    wasCompleted = wasCompleted,
-                    interruptions = interruptions,
-                    pauseCount = pauseCount,
-                    totalPauseMillis = totalPauseMillis,
-                    pomodoroNumber = pomodoroNumber,
-                    journalNote = journalNote,
-                    satisfactionRating = satisfactionRating,
-                    targetDurationMillis = targetDurationMillis,
-                ),
+
+        val sessionEntity = FocusSessionEntity(
+            id = sessionId,
+            mode = mode,
+            startTime = startTime,
+            endTime = endTime,
+            durationMillis = durationMillis,
+            linkedTaskId = linkedTaskId,
+            phase = phase,
+            wasCompleted = wasCompleted,
+            interruptions = interruptions,
+            pauseCount = pauseCount,
+            totalPauseMillis = totalPauseMillis,
+            pomodoroNumber = pomodoroNumber,
+            journalNote = journalNote,
+            satisfactionRating = satisfactionRating,
+            targetDurationMillis = targetDurationMillis,
+        )
+
+        // Only update daily summary stats for completed work sessions (not breaks).
+        // Computed up-front so the session insert + stats upsert commit atomically.
+        val isBreakPhase = phase == "ShortBreak" || phase == "LongBreak"
+        val updatedStats: DailyStatsEntity? = if (!isBreakPhase) {
+            // W-4: persisted home timezone so the day key aligns with SyncEngine regardless
+            // of device timezone changes.
+            val persistedTz = persistedTimeZone()
+            val today = startOfDay(System.currentTimeMillis(), persistedTz)
+            // Keep the "today" flows aligned with the persisted day boundary.
+            _currentDayStart.value = today
+            val minutes = ((durationMillis + 30_000) / 60_000).toInt() // round instead of truncate
+            val existing = dailyStatsDao.getStatsForDate(today) ?: DailyStatsEntity(date = today)
+            existing.copy(
+                totalMinutes = existing.totalMinutes + minutes,
+                // Only count completed work sessions toward the "sessions completed" tally
+                sessionsCompleted = existing.sessionsCompleted + if (wasCompleted) 1 else 0,
+                longestSessionMinutes = maxOf(existing.longestSessionMinutes, minutes),
+                pomodoroMinutes = existing.pomodoroMinutes + if (mode == "Pomodoro") minutes else 0,
+                flowMinutes = existing.flowMinutes + if (mode == "Flow") minutes else 0,
+                blocksMinutes = existing.blocksMinutes + if (mode == "Blocks") minutes else 0,
+                stopwatchMinutes = existing.stopwatchMinutes + if (mode == "Chrono") minutes else 0,
+                isDirty = true,
             )
+        } else {
+            null
+        }
 
-            // Only update daily summary stats for completed work sessions (not breaks)
-            val isBreakPhase = phase == "ShortBreak" || phase == "LongBreak"
-            if (!isBreakPhase) {
-                val today = startOfDay(System.currentTimeMillis())
-                val minutes = ((durationMillis + 30_000) / 60_000).toInt() // round instead of truncate
-                val existing = dailyStatsDao.getStatsForDate(today) ?: DailyStatsEntity(date = today)
-
-                dailyStatsDao.upsert(
-                    existing.copy(
-                        totalMinutes = existing.totalMinutes + minutes,
-                        // Only count completed work sessions toward the "sessions completed" tally
-                        sessionsCompleted = existing.sessionsCompleted + if (wasCompleted) 1 else 0,
-                        longestSessionMinutes = maxOf(existing.longestSessionMinutes, minutes),
-                        pomodoroMinutes = existing.pomodoroMinutes + if (mode == "Pomodoro") minutes else 0,
-                        flowMinutes = existing.flowMinutes + if (mode == "Flow") minutes else 0,
-                        blocksMinutes = existing.blocksMinutes + if (mode == "Blocks") minutes else 0,
-                        stopwatchMinutes = existing.stopwatchMinutes + if (mode == "Chrono") minutes else 0,
-                        isDirty = true,
-                    ),
-                )
-            }
-        }.onFailure { Log.e(TAG, "Error recording session", it); return null }
+        // Atomic: session + stats commit together or not at all.
+        // DB failures are logged AND propagated to the caller instead of being
+        // silently swallowed as null, so upstream can react to a real failure.
+        try {
+            database.recordSessionAtomic(sessionEntity, updatedStats)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error recording session", e)
+            throw e
+        }
         return sessionId
     }
 
@@ -121,30 +182,30 @@ class SessionRepository @Inject constructor(
 
     /** Count today's completed Pomodoro work sessions (for long break calculation). */
     suspend fun getTodayPomodoroWorkCount(): Int =
-        runCatching { sessionDao.getTodayPomodoroWorkCount(startOfDay(System.currentTimeMillis())) }
+        runCatching { sessionDao.getTodayPomodoroWorkCount(startOfPersistedDay(System.currentTimeMillis())) }
             .onFailure { Log.e(TAG, "Error counting today's pomodoro work sessions", it) }
             .getOrDefault(0)
 
     fun getTodaySessions(): Flow<List<FocusSessionEntity>> =
-        _currentDayStart.flatMapLatest { dayStart ->
+        currentDayStart.flatMapLatest { dayStart ->
             sessionDao.getSessionsForDay(dayStart)
                 .catch { e -> Log.e(TAG, "Error loading today sessions", e); emit(emptyList()) }
         }
 
     fun getTodaySessionCount(): Flow<Int> =
-        _currentDayStart.flatMapLatest { dayStart ->
+        currentDayStart.flatMapLatest { dayStart ->
             sessionDao.getSessionCountForDay(dayStart)
                 .catch { e -> Log.e(TAG, "Error loading session count", e); emit(0) }
         }
 
     fun getTodayStats(): Flow<DailyStatsEntity?> =
-        _currentDayStart.flatMapLatest { dayStart ->
+        currentDayStart.flatMapLatest { dayStart ->
             dailyStatsDao.observeStatsForDate(dayStart)
                 .catch { e -> Log.e(TAG, "Error loading today stats", e); emit(null) }
         }
 
     fun getWeekStats(): Flow<List<DailyStatsEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // 7-day window: [today - 6 days .. today], matching the chart's (6 downTo 0) range.
             // getStatsInRange uses >= startDate AND <= endDate (both inclusive).
             val weekStart = todayStart - 6L * 24 * 60 * 60 * 1000
@@ -153,7 +214,7 @@ class SessionRepository @Inject constructor(
         }
 
     fun getMonthStats(): Flow<List<DailyStatsEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // 30-day window: [today - 29 days .. today], consistent with getMonthSessions.
             val monthStart = todayStart - 29L * 24 * 60 * 60 * 1000
             dailyStatsDao.getStatsInRange(monthStart, todayStart)
@@ -161,7 +222,7 @@ class SessionRepository @Inject constructor(
         }
 
     fun getYearStats(): Flow<List<DailyStatsEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // 364-day window: [today - 363 days .. today].
             val yearStart = todayStart - 363L * 24 * 60 * 60 * 1000
             dailyStatsDao.getStatsInRange(yearStart, todayStart)
@@ -169,7 +230,7 @@ class SessionRepository @Inject constructor(
         }
 
     fun getPreviousWeekStats(): Flow<List<DailyStatsEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // Previous 7-day window: [today - 13 days .. today - 7 days].
             val twoWeeksStart = todayStart - 13L * 24 * 60 * 60 * 1000
             val weekAgoStart = todayStart - 7L * 24 * 60 * 60 * 1000
@@ -189,7 +250,7 @@ class SessionRepository @Inject constructor(
     }
 
     fun getWeekSessions(): Flow<List<FocusSessionEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // Same 7-day window as getWeekStats. getSessionsInRange uses exclusive upper bound,
             // so add one full day to include all sessions that started today.
             val weekStart = todayStart - 6L * 24 * 60 * 60 * 1000
@@ -199,7 +260,7 @@ class SessionRepository @Inject constructor(
         }
 
     fun getMonthSessions(): Flow<List<FocusSessionEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // Same 30-day window as getMonthStats.
             val monthStart = todayStart - 29L * 24 * 60 * 60 * 1000
             val tomorrowStart = todayStart + 24 * 60 * 60 * 1000
@@ -208,7 +269,7 @@ class SessionRepository @Inject constructor(
         }
 
     fun getYearSessions(): Flow<List<FocusSessionEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // Same 364-day window as getYearStats.
             val yearStart = todayStart - 363L * 24 * 60 * 60 * 1000
             val tomorrowStart = todayStart + 24 * 60 * 60 * 1000
@@ -217,7 +278,7 @@ class SessionRepository @Inject constructor(
         }
 
     fun getPreviousWeekSessions(): Flow<List<FocusSessionEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // Same previous-week window as getPreviousWeekStats: [today-13 .. today-7].
             // getSessionsInRange uses exclusive upper bound, so add one full day to include all
             // sessions that started on today-7 (mirroring the current-week alignment).
@@ -228,7 +289,7 @@ class SessionRepository @Inject constructor(
         }
 
     fun getPreviousMonthSessions(): Flow<List<FocusSessionEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // Same previous-month window as getPreviousMonthStats: [today-59 .. today-30].
             // getSessionsInRange uses exclusive upper bound, so today-29 as exclusive upper means
             // the last fully-included day is today-30 (no overlap with current month's today-29).
@@ -239,7 +300,7 @@ class SessionRepository @Inject constructor(
         }
 
     fun getPreviousMonthStats(): Flow<List<DailyStatsEntity>> =
-        _currentDayStart.flatMapLatest { todayStart ->
+        currentDayStart.flatMapLatest { todayStart ->
             // Previous month window: [today-59 .. today-30], matching getPreviousMonthSessions.
             val twoMonthsStart = todayStart - 59L * 24 * 60 * 60 * 1000
             val monthAgoStart = todayStart - 30L * 24 * 60 * 60 * 1000
@@ -415,8 +476,17 @@ class SessionRepository @Inject constructor(
             .catch { e -> Log.e(TAG, "Error computing task analytics for $taskId", e) }
 
     companion object {
-        fun startOfDay(millis: Long): Long {
-            val cal = Calendar.getInstance(TimeZone.getDefault())
+        /**
+         * Truncates [millis] to the start (midnight) of its day in [timeZone].
+         *
+         * Defaults to the device timezone for backward compatibility with existing
+         * pure-function callers (FocusEngine day-rollover, FocusTimerService persistence,
+         * ReportDataBuilder, tests). The WRITE/SYNC paths that must be stable across
+         * device-travel (recordSession, SyncEngine) pass the persisted home timezone
+         * explicitly — see W-4.
+         */
+        fun startOfDay(millis: Long, timeZone: TimeZone = TimeZone.getDefault()): Long {
+            val cal = Calendar.getInstance(timeZone)
             cal.timeInMillis = millis
             cal.set(Calendar.HOUR_OF_DAY, 0)
             cal.set(Calendar.MINUTE, 0)
