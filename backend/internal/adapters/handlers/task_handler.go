@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 
 	"pepinillo/backend/internal/domain"
 	"pepinillo/backend/internal/services"
@@ -67,6 +68,9 @@ func (h *TaskHandler) Upsert(c *fiber.Ctx) error {
 	}
 	task.UserID = userID
 	if err := h.tasks.Upsert(c.Context(), &task); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
+		}
 		return err
 	}
 	return c.JSON(task)
@@ -227,7 +231,10 @@ func (h *TaskHandler) UpdateTrackingMode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "missing_required_fields")
 	}
 
-	if err := h.tasks.UpdateTaskTrackingMode(c.Context(), taskID, req.Mode); err != nil {
+	if err := h.tasks.UpdateTaskTrackingMode(c.Context(), userID, taskID, req.Mode); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
+		}
 		return err
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -252,7 +259,10 @@ func (h *TaskHandler) IncrementCompletion(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "missing_required_fields")
 	}
 
-	if err := h.tasks.IncrementTaskCompletion(c.Context(), taskID, req.Mode); err != nil {
+	if err := h.tasks.IncrementTaskCompletion(c.Context(), userID, taskID, req.Mode); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
+		}
 		return err
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -278,7 +288,10 @@ func (h *TaskHandler) IncrementFocusTime(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
-	if err := h.tasks.IncrementTaskFocusTime(c.Context(), taskID, req.Mode, req.Seconds); err != nil {
+	if err := h.tasks.IncrementTaskFocusTime(c.Context(), userID, taskID, req.Mode, req.Seconds); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
+		}
 		return err
 	}
 	return c.SendStatus(fiber.StatusNoContent)
@@ -300,7 +313,10 @@ func (h *TaskHandler) SetActiveSession(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
 
-	if err := h.tasks.SetTaskActiveSession(c.Context(), taskID, req.SessionID); err != nil {
+	if err := h.tasks.SetTaskActiveSession(c.Context(), userID, taskID, req.SessionID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
+		}
 		return err
 	}
 	return c.SendStatus(fiber.StatusNoContent)

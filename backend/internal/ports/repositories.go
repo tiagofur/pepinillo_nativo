@@ -52,10 +52,10 @@ type TaskRepository interface {
 	ListByUserPaginated(ctx context.Context, userID string, cursor *PaginationCursor, limit int) ([]domain.Task, error)
 
 	// Mode-specific tracking methods
-	UpdateTrackingMode(ctx context.Context, taskID int, mode string) error
-	IncrementCompletionCount(ctx context.Context, taskID int, mode string) error
-	IncrementFocusTime(ctx context.Context, taskID int, mode string, seconds int) error
-	SetActiveSession(ctx context.Context, taskID int, sessionID *string) error
+	UpdateTrackingMode(ctx context.Context, userID string, taskID int, mode string) error
+	IncrementCompletionCount(ctx context.Context, userID string, taskID int, mode string) error
+	IncrementFocusTime(ctx context.Context, userID string, taskID int, mode string, seconds int) error
+	SetActiveSession(ctx context.Context, userID string, taskID int, sessionID *string) error
 }
 
 type SubTaskRepository interface {

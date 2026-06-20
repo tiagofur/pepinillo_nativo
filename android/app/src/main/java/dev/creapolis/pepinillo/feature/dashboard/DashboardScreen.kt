@@ -432,6 +432,11 @@ private fun PatternCard(
     }
 }
 
+/**
+ * Streak hero card — the emotional centrepiece of the dashboard.
+ * Shows the current streak large and centered with flame iconography,
+ * and the personal best as a compact secondary stat.
+ */
 @Composable
 private fun AchievementsRow(achievements: List<Achievement>) {
     Row(

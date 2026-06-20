@@ -87,7 +87,7 @@
 ### Apple Ecosystem ✅
 
 - **watchOS app:** timer with 4 modes, task list, dashboard, enhanced Smart Stack widgets (rectangular with live countdown + phase + linked task, circular with actual progress, corner with live countdown), smart relevance scoring (100 active / 10 idle), 5-minute refresh when active, Tasks complication (accessoryRectangular, accessoryCircular, accessoryCorner)
-- **Watch-Phone connectivity:** bidirectional state sync via WatchConnectivity
+- **Watch-Phone connectivity:** bidirectional state sync via WatchConnectivity — transport split: `updateApplicationContext` for state/stats/dashboard (background-safe), `transferUserInfo` for tasks (queued FIFO), `sendMessage` kept as fast path when reachable only. Complications and tiles now read from shared app group UserDefaults (`group.com.pepinillo.app`). See §10 for full details.
 - **Widgets:** Home Screen (S/M/L) + Lock Screen, all mode-aware
 - **Live Activity + Dynamic Island:** 4 distinct UIs per active mode
 - **Siri / App Intents:** multi-mode commands in 3 languages (EN, ES, PT)
@@ -190,6 +190,7 @@
 | ✅ Compact stats / chart alignment bug fix | DONE | `DashboardCompactStats` now reads `weekFormattedTotalTime` / `weekSessionsCompleted` (both derived from `weekChartData`); stats and chart always show the same 7-day window regardless of period picker. Unit test added: `weekPeriodChartSumMatchesTotals` in `AnalyticsFeatureTests`. |
 | ✅ Demo data verification | DONE | `-seedDemoData` verified with simulator: Dashboard, AI Reports, charts all display correctly. Math check: avg (~8h29m) × 7 = "59h 25m" matches compact stats row and Revisión Semanal preview. |
 | ✅ Dashboard live refresh + estadísticas Pomodoro | DONE (2026-06-12) | Bug corregido: `AnalyticsFeature` permanecía congelado por guardia `!hasLoadedData`; se agregó acción `.refresh` que la bypasea. Cada intervalo WORK de Pomodoro ahora persiste un `FocusSessionRecord` inmediatamente. Push a Watch corregido para incluir todos los campos del dashboard. Commit: `e0bb3df`. |
+| ✅ WatchConnectivity transport fix | DONE | phone→watch updates no longer dropped when watch is backgrounded; transport split by message type; complications read from shared app group UserDefaults. See §10. |
 | Paywall redesign for Pepinillo+ / Everywhere/AI+ | P0 | Two-tier paywall: one-time vs subscription, Próximamente section |
 | RevenueCat entitlement reconfiguration | P0     | Map `pro.lifetime` → `pepinillo_plus`, `pro.monthly`/`pro.annual` → `everywhere_plus` |
 | App Store Connect metadata update | P0       | New names, descriptions, and screenshots for the 3 products |
@@ -314,6 +315,12 @@
 | More hub parity closures       | P0       | ✅ Help/Support, About, Export, Profile all have dedicated screens wired in nav |
 | Feature gating enforcement     | P0       | ✅ All features gated: modes, tasks, subtasks, recurrence, export, themes, analytics (periods/reviews/AI), widgets (focus+stats), Wear tiles/complications, task analytics |
 | Complete paywall UI            | P0       | ✅ v3.1 two-tier design: Pepinillo+ (one-time) + Everywhere/AI+ (subscription) cards, dynamic CTA |
+| ✅ Focus engine tick 10Hz → 4Hz | DONE   | Battery optimization; matches iOS tick rate. See §10. |
+| ✅ Widget reload scoped to affected class | DONE | Prevents redundant full widget reloads. See §10. |
+| ✅ Paywall/CTA text scales with large fonts | DONE | WCAG compliance; matches iOS Dynamic Type fix. See §10. |
+| ✅ Streak dashboard hero + dedup | DONE  | Streak now top-of-dashboard emotional hero, no duplicate display. Matches iOS. See §10. |
+| ✅ Timer ring display floor (count-up modes) | DONE | Ring floor in Stopwatch/Chrono; matches iOS + Wear OS. See §10. |
+| ✅ Onboarding full-bleed scenes + WCAG skip pill | DONE | Matches iOS onboarding visual redesign. See §10. |
 | Firebase Analytics/Crashlytics | P1       | Plugins commented out; missing `google-services.json`                        |
 | CI/CD pipeline                 | P1       | GitHub Actions (build + lint + tests)                                        |
 | Play Store listing             | P1       | Screenshots, ASO, description                                                |
@@ -380,7 +387,7 @@
 | Wear Tasks Tile                      | N/A                                               | ✅                      | Top 4 tasks with energy emoji + pomodoro progress       |
 | watchOS Tasks Complication           | ✅                                                | N/A                     | accessoryRectangular, accessoryCircular, accessoryCorner |
 | watchOS Smart Stack widgets          | ✅ Enhanced (live countdown, relevance scoring)   | N/A                     | Rectangular, circular, corner complications              |
-| Watch-Phone sync                     | ✅ WatchConnectivity                              | ✅ Data Layer           |                                                          |
+| Watch-Phone sync                     | ✅ WatchConnectivity (transport fix 2026-06-11)   | ✅ Data Layer           | iOS: updateApplicationContext/transferUserInfo split; complications use app group UserDefaults |
 | Home Screen widgets                  | ✅                                                | ✅ Glance               |                                                          |
 | Lock Screen widget                   | ✅                                                | ✅ Android 14+          |                                                          |
 | Live Activity / Ongoing notification | ✅ Live Activity + DI                             | ✅ Foreground Service   |                                                          |
@@ -660,7 +667,51 @@ Sync implementation enhancements to improve cross-platform reliability and data 
 
 ---
 
-## 10. Summary of Critical Gaps
+## 10. WatchConnectivity Transport Fix & Android Parity Ports (2026-06-11) ✅
+
+**Branch:** `fix/ios-release-config-blockers`
+
+### iOS/watchOS — WatchConnectivity Transport Overhaul (commits 76da584, f564391)
+
+Critical bug: all phone→watch updates (session state, stats, dashboard, tasks) were sent via `sendMessage`, which is silently dropped when the watch app is backgrounded. This caused complications and tiles to show stale data.
+
+**Fix — transport split by message type:**
+
+| Message type | Transport now used | Reason |
+|---|---|---|
+| Session state / stats / dashboard | `updateApplicationContext` | Background-safe; watch picks it up on next activation |
+| Task list updates | `transferUserInfo` | Queued FIFO delivery; guaranteed even when watch is backgrounded |
+| Low-latency control (pause/stop while reachable) | `sendMessage` | Kept as fast path only when watch is reachable |
+
+**Additional fixes in the same branch:**
+
+- Watch-side persistence and complication/widget providers now read from the app group UserDefaults suite (`group.com.pepinillo.app`), so complications (separate process) can read stats and tasks without relying on the main app being alive.
+- `messageStream()` converted to multicast so multiple subscribers receive the same events.
+
+**Files affected:** `ios/Domain/Clients/WatchConnectivityClient.swift`, `ios/PepinilloWatch/Features/WatchTimerFeature.swift`
+
+### Android/Wear OS — Parity Ports (commits fd659a7–db592e1)
+
+| Change | Platform | Details |
+|---|---|---|
+| Focus engine tick 10Hz → 4Hz | Android | Matches iOS; reduces battery drain during active sessions |
+| Widget reload scoped to affected class | Android | Prevents full widget reload on unrelated state changes |
+| Paywall text/CTAs scale with large font sizes | Android | Matches iOS Dynamic Type fix; WCAG compliance |
+| Streak promoted to dashboard emotional hero, deduplicated | Android | Matches iOS dashboard P4 design (streak hero at top, single source of truth) |
+| Timer ring display floor for count-up modes | Android + Wear OS | Matches iOS; prevents ring from showing 0% at session start in Stopwatch/Chrono |
+| Onboarding full-bleed color scenes + WCAG skip pill | Android | Matches iOS onboarding visual redesign; skip button meets WCAG 2.1 AA contrast |
+
+### Parity Audit Findings (no action needed)
+
+| Finding | Status |
+|---|---|
+| Android Wear connectivity (DataClient/DataItems) | Already correct — no iOS-style transport bug existed |
+| Wear complications/tiles reading from persisted SharedPreferences snapshot | Already correct — separate process data access was never broken |
+| Wear session haptics and material chips | Already at parity with iOS |
+
+---
+
+## 11. Summary of Critical Gaps (updated 2026-06-11)
 
 ### Both Platforms
 
@@ -692,7 +743,7 @@ Sync implementation enhancements to improve cross-platform reliability and data 
 
 ---
 
-## 11. Backend CI & Stability Hardening (2026-05-14) ✅
+## 12. Backend CI & Stability Hardening (2026-05-14) ✅
 
 Resolved critical compilation errors in the Go backend test suite that were blocking CI:
 
@@ -703,7 +754,7 @@ Resolved critical compilation errors in the Go backend test suite that were bloc
 
 ---
 
-## 12. iOS — Optimización de Rendimiento: Capa de Persistencia en Background (2026-06-09) ✅
+## 13. iOS — Optimización de Rendimiento: Capa de Persistencia en Background (2026-06-09) ✅
 
 **Branch:** `perf/ios-startup-and-reads`
 

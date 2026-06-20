@@ -52,7 +52,7 @@
     <string name="add_task_title">Nueva Tarea</string>
     <string name="task_title_label">T\u00edtulo de la tarea</string>
     <string name="energy_level_label">Nivel de Energ\u00eda</string>
-    <string name="pomodoro_estimate_label">Estimaci\u00f3n Pomodoros</string>
+    <string name="pomodoro_estimate_label">Pomodoros</string>
     <string name="btn_add">A\u00f1adir</string>
     <string name="btn_cancel">Cancelar</string>
     <string name="today_focus">Enfoque de hoy</string>
@@ -301,7 +301,7 @@
     <string name="task_delete_confirm_desc">Esta acci\u00f3n no se puede deshacer.</string>
     <string name="task_label_priority">Prioridad</string>
     <string name="task_label_energy">Nivel de Energ\u00eda</string>
-    <string name="task_label_estimate">Estimaci\u00f3n Pomodoros</string>
+    <string name="task_label_estimate">Pomodoros</string>
     <string name="task_label_repeat">Repetir</string>
     <string name="task_label_notes">Notas</string>
     <string name="task_label_notes_hint">A\u00f1adir notas...</string>
@@ -400,6 +400,7 @@
     <string name="more_btn_profile">Ver Perfil</string>
     <string name="more_btn_settings">Ajustes de App</string>
     <string name="more_desc_settings">Temporizador, sonido y apariencia</string>
+    <string name="more_desc_permissions_background">Notificaciones, alarmas y acceso en segundo plano</string>
     <string name="more_btn_sync">Sincro en la Nube</string>
     <string name="more_btn_signout">Cerrar Sesión</string>
     <string name="more_desc_sync_active">Activa y asegurando tus datos</string>
@@ -503,7 +504,7 @@
 
     <!-- Settings Screen (Extra) -->
     <string name="settings_subtitle">Personaliza tu experiencia</string>
-    <string name="settings_app_setup">Configuración de App</string>
+    <string name="settings_app_setup">Permisos y segundo plano</string>
     <string name="settings_action_required">Acción requerida para mejor experiencia</string>
     <string name="settings_all_configured">Todos los permisos configurados</string>
     <string name="settings_upgrade_promo">Mejorar a Pepinillo+</string>
@@ -555,6 +556,7 @@
     <string name="settings_pending_changes">Cambios pendientes</string>
     <string name="settings_syncing">Sincronizando...</string>
     <string name="settings_sync_now">Sincronizar ahora</string>
+    <string name="settings_sec_operation">Funcionamiento</string>
     <string name="settings_sec_about">Acerca de</string>
     <string name="settings_version">Versión</string>
     <string name="settings_privacy">Política de Privacidad</string>
@@ -570,7 +572,7 @@
     <string name="settings_sync_days_ago">Hace %1$d días</string>
 
     <!-- App Setup Screen -->
-    <string name="setup_title">Configuración de App</string>
+    <string name="setup_title">Permisos y segundo plano</string>
     <string name="setup_all_set">¡Todo listo!</string>
     <string name="setup_all_set_sub">Tu app está configurada para la mejor experiencia</string>
     <string name="setup_action_required_sub">Completa la configuración debajo para un funcionamiento confiable en segundo plano</string>

@@ -16,3 +16,7 @@ type PomodoroConfig struct {
 	CreatedAt    time.Time  `json:"createdAt"`
 	UpdatedAt    time.Time  `json:"updatedAt"`
 }
+
+// TableName maps the legacy PomodoroConfig struct onto the focus_configs
+// table that replaced pomodoro_configs in migration 000007_focus_modes.
+func (PomodoroConfig) TableName() string { return "focus_configs" }
