@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.creapolis.pepinillo.BuildConfig
 import dev.creapolis.pepinillo.R
 
 const val PRIVACY_URL = "https://creapolis.dev/privacy-policy/"
@@ -142,7 +143,10 @@ fun AboutScreen(
                 fontWeight = FontWeight.Bold,
             )
             Text(
-                text = stringResource(R.string.about_version, "2.1.0 (17)"),
+                text = stringResource(
+                    R.string.about_version,
+                    "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
