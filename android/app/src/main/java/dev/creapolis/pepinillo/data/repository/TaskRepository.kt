@@ -78,16 +78,9 @@ class TaskRepository @Inject constructor(
 
     suspend fun toggleCompletion(taskId: String): Result<Unit> =
         runCatching {
-            val entity = taskDao.getTaskById(taskId)
-                ?: throw IllegalStateException("Task $taskId not found")
-            taskDao.updateTask(
-                entity.copy(
-                    isCompleted = !entity.isCompleted,
-                    completedAt = if (!entity.isCompleted) System.currentTimeMillis() else null,
-                    updatedAt = System.currentTimeMillis(),
-                    isDirty = true,
-                ),
-            )
+            // Atomic single-statement UPDATE — no read-modify-write, so concurrent
+            // toggles cannot lose an update.
+            taskDao.toggleCompletionAtomic(taskId)
         }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }
             .onSuccess { refreshWearData() }
 
@@ -130,13 +123,12 @@ class TaskRepository @Inject constructor(
 
     /**
      * Batch-update sort orders for a reordered list of tasks.
-     * Each pair is (taskId, newSortOrder).
+     * Each pair is (taskId, newSortOrder). Applied atomically — partial failure
+     * rolls the whole batch back so sort order never ends up inconsistent.
      */
     suspend fun reorderTasks(orderedIds: List<Pair<String, Int>>): Result<Unit> =
         runCatching {
-            orderedIds.forEach { (id, order) ->
-                taskDao.updateSortOrder(id, order)
-            }
+            taskDao.reorderTasksAtomic(orderedIds)
         }
             .onFailure { Log.e(TAG, "Error reordering tasks", it) }
             .onSuccess { refreshWearData() }
@@ -166,14 +158,28 @@ class TaskRepository @Inject constructor(
                     title = title,
                 ),
             )
+            // Mark parent dirty so the next sync push carries the new subtask in the
+            // task's snapshot — otherwise the local-only subtask is lost on merge.
+            taskDao.markDirty(taskId)
         }.onFailure { Log.e(TAG, "Error adding subtask", it) }
 
     suspend fun toggleSubtask(subtaskId: String): Result<Unit> =
-        runCatching { subtaskDao.toggleCompletion(subtaskId) }
+        runCatching {
+            subtaskDao.toggleCompletion(subtaskId)
+            // Propagate dirtiness to the parent so the toggle survives the next sync.
+            val parentId = subtaskDao.getTaskIdForSubtask(subtaskId)
+            if (parentId != null) taskDao.markDirty(parentId)
+        }
             .onFailure { Log.e(TAG, "Error toggling subtask $subtaskId", it) }
 
     suspend fun deleteSubtask(subtaskId: String): Result<Unit> =
-        runCatching { subtaskDao.deleteSubtaskById(subtaskId) }
+        runCatching {
+            // Resolve parent first (soft-delete keeps the row, but capturing the id
+            // up-front is clearer and avoids any ordering surprise).
+            val parentId = subtaskDao.getTaskIdForSubtask(subtaskId)
+            subtaskDao.deleteSubtaskById(subtaskId)
+            if (parentId != null) taskDao.markDirty(parentId)
+        }
             .onFailure { Log.e(TAG, "Error deleting subtask $subtaskId", it) }
 
     // ── Focus session methods ──

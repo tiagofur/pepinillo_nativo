@@ -811,5 +811,17 @@ El fix inicial introdujo un CRITICAL en ronda 1 (el intent de widget podía doub
 |------------|---------------------|------------------------|
 | Android | ✅ (`WaitingForNext` state — preexistente) | ✅ |
 | iOS | ✅ (corregido, commit `805b4b1`) | ✅ CTA en FocusView |
-| watchOS | ✅ (flag `activeSessionIsWaiting`) | ✅ Estado de espera visible |
+| watchOS | ✅ (UI implementada, commit `0200791`) | ✅ Pause/Resume ocultos; CTA phase-aware en Apple Watch |
 | Wear OS | ✅ (preexistente en Android) | ✅ |
+
+---
+
+## 15. watchOS — Waiting-for-Next-Phase UI (2026-06-12) ✅
+
+La sección 14 registró el flag `activeSessionIsWaiting` en el bridge de WatchConnectivity, pero la UI del Apple Watch no estaba implementada en ese momento. Commit `0200791` (`feat(watchos): reflect waiting-for-next-phase hold on Apple Watch`, branch `feat/android-expressive-m3`) cierra esa brecha:
+
+- Durante el hold, el Apple Watch oculta los botones Pause/Resume y muestra un CTA phase-aware ("Start break" / "Start long break" / "Start focus") que arranca la fase pendiente.
+- Se añadió el campo `isWaiting` al payload de WatchConnectivity y el comando `.startNextPhase` a `WatchCommand`.
+- El teléfono empuja estado fresco al watch al entrar y salir del hold; el tick loop queda suspendido durante el hold.
+- Revisado con dual adversarial review: Judge A APPROVED; Judge B solo ítems menores no bloqueantes (flicker sub-segundo en la transición, gap pre-existente en mirror de tests).
+- **Build:** exitoso (scheme "Pepinillo Dev"). Cierra el gap registrado en `scratch/watch-waiting-gap-issue.md`.

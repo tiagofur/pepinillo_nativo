@@ -113,6 +113,60 @@ android {
             it.jvmArgs("-XX:+UseG1GC")
         }
     }
+
+    // Exported Room schemas (one JSON per DB version) live under app/schemas/ and are
+    // committed to VCS. They are consumed by MigrationTestHelper to validate that
+    // hand-written migrations produce a schema matching the entity definitions.
+    sourceSets {
+        getByName("androidTest").assets.srcDirs("$projectDir/schemas")
+    }
+}
+
+// Force kotlinx-serialization to a version compatible with Room 2.8.4's compiled
+// schema-bundle serializers. Room 2.8.4's FieldBundle/etc. $$serializer classes were
+// generated against a serialization version where GeneratedSerializer.typeParametersSerializers()
+// had a default implementation; serialization 1.8.x made it abstract, so loading any
+// existing app/schemas/*.json during KSP throws AbstractMethodError. Applied via
+// resolutionStrategy.force so it reaches the KSP processor classpath too.
+//
+// NOTE: This mitigation alone is NOT enough — Room 2.8.4 transitively pulls
+// kotlin-metadata-jvm:2.2.0 (via room-compiler-processing), which forces kotlin-stdlib
+// to 2.2.0 on a Kotlin 2.1.0 toolchain. That deeper incompatibility still breaks the
+// schema-LOAD path when app/schemas/*.json exist. See the conditional ksp {} block
+// below for the workflow that avoids the broken path during routine builds.
+configurations.configureEach {
+    resolutionStrategy.force(
+        "org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3",
+        "org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3",
+        "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.6.3",
+        "org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.6.3",
+    )
+}
+
+// Room schema export. KSP emits one JSON per DB version to app/schemas/ for
+// MigrationTestHelper to consume. The schemas MUST be committed to VCS — this is
+// the entire point of `exportSchema = true` on PepinilloDatabase.
+//
+// Workflow:
+//   - Routine builds: do nothing. The committed JSONs in app/schemas/ are consumed
+//     by MigrationTest via androidTest.assets.srcDirs above. KSP does not need to
+//     re-export them.
+//   - Regenerate after entity changes:
+//       rm -rf app/schemas && ./gradlew :app:kspDebugKotlin -Proom.exportSchemas
+//     Then commit the new app/schemas/*.json files.
+//
+// Why conditional: Room 2.8.4's schema-export code path loads any existing JSONs
+// from app/schemas/ and tries to deserialize them via kotlinx.serialization. Room
+// 2.8.4 also pulls kotlin-metadata-jvm:2.2.0 (which forces kotlin-stdlib to 2.2.0
+// on this Kotlin 2.1.0 project), and that version mismatch makes Room's compiled
+// $$serializer classes throw AbstractMethodError on the load path. Pinning the
+// serialization version (above) is necessary but not sufficient. Upgrading the
+// project's Kotlin plugin to 2.2.0 (out of scope for this fix) is the long-term
+// fix; until then, only opt into schema export when regenerating.
+ksp {
+    if (project.hasProperty("room.exportSchemas")) {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
 }
 
 dependencies {
@@ -141,6 +195,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+    // Room schema migration testing (same version as runtime, see libs.versions.toml).
+    androidTestImplementation("androidx.room:room-testing:${libs.versions.room.get()}")
 
     // Hilt
     implementation(libs.hilt.android)
