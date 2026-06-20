@@ -8,6 +8,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.creapolis.pepinillo.BuildConfig
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.core.billing.SubscriptionTier
 import dev.creapolis.pepinillo.core.auth.AuthStore
@@ -46,7 +47,7 @@ data class SettingsUiState(
     val vibrationEnabled: Boolean = true,
     val themeMode: ThemeMode = ThemeMode.System,
     val dynamicColor: Boolean = true,
-    val appVersion: String = "1.0.0",
+    val appVersion: String = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
     val flowtimeMinMinutes: Int = 5,
     val defaultMode: FocusMode = FocusMode.Pomodoro,
     val keepScreenOn: Boolean = false,
