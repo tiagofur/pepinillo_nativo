@@ -10,6 +10,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -33,12 +35,28 @@ class SyncWebSocketClient @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private var webSocket: WebSocket? = null
-    private var isConnected = false
+
+    // @Volatile: these are read/written from multiple threads (OkHttp dispatcher,
+    // heartbeat coroutine, caller thread). Volatile gives visibility; the
+    // connect()/disconnect() critical sections additionally hold connectionLock
+    // to make the read-then-write check atomic and prevent duplicate sockets.
+    @Volatile private var isConnected = false
+    @Volatile private var shouldConnect = false
+
     private var reconnectAttempt = 0
     private val maxReconnectDelay = 30_000L // 30 seconds
     private val baseReconnectDelay = 1_000L // 1 second
     private var pingJob: Job? = null
     @Volatile private var awaitingPong = false
+
+    private val connectionLock = Any()
+
+    /**
+     * Serializes sync calls triggered by incoming WS messages so they do not race
+     * with each other (e.g. concurrent task_updated + sync_required) nor stomp on
+     * SyncWorker. Kept here intentionally to avoid editing SyncEngine.kt.
+     */
+    private val syncMutex = Mutex()
 
     private val client = OkHttpClient.Builder()
         .readTimeout(0, TimeUnit.MILLISECONDS) // No timeout for WebSocket
@@ -46,54 +64,72 @@ class SyncWebSocketClient @Inject constructor(
         .build()
 
     fun connect() {
-        if (isConnected) return
-        val token = authStore.getAccessToken() ?: return
-        val deviceId = authStore.getOrCreateDeviceId()
-
-        val wsUrl = buildWsUrl(token, deviceId)
-        Log.d(TAG, "Connecting to WebSocket...")
-
-        val request = Request.Builder().url(wsUrl).build()
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(TAG, "WebSocket connected")
-                isConnected = true
-                reconnectAttempt = 0
-                startHeartbeat()
+        synchronized(connectionLock) {
+            if (shouldConnect && isConnected) return
+            val token = authStore.getAccessToken()
+            if (token == null) {
+                // Not authenticated — do not open a socket that would just 401.
+                shouldConnect = false
+                return
             }
+            shouldConnect = true
+            val deviceId = authStore.getOrCreateDeviceId()
 
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d(TAG, "WebSocket message: $text")
-                handleMessage(text)
-            }
+            val wsUrl = buildWsUrl(deviceId)
+            Log.d(TAG, "Connecting to WebSocket...")
 
-            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                // Pong frames are handled by OkHttp at the protocol level,
-                // but any binary message resets our pong awaiting state
-                awaitingPong = false
-            }
+            // Pass the access token via the Sec-WebSocket-Protocol subprotocol
+            // header instead of the URL query, so it never lands in proxy or
+            // server access logs. Backend websocket_handler.go accepts
+            // "Sec-WebSocket-Protocol: bearer, <jwt>".
+            val request = Request.Builder()
+                .url(wsUrl)
+                .header("Sec-WebSocket-Protocol", "bearer, $token")
+                .build()
+            webSocket = client.newWebSocket(request, object : WebSocketListener() {
+                override fun onOpen(webSocket: WebSocket, response: Response) {
+                    Log.d(TAG, "WebSocket connected")
+                    isConnected = true
+                    reconnectAttempt = 0
+                    startHeartbeat()
+                }
 
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d(TAG, "WebSocket closed: $code $reason")
-                isConnected = false
-                stopHeartbeat()
-            }
+                override fun onMessage(webSocket: WebSocket, text: String) {
+                    Log.d(TAG, "WebSocket message: $text")
+                    handleMessage(text)
+                }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.w(TAG, "WebSocket failure: ${t.message}")
-                isConnected = false
-                stopHeartbeat()
-                scheduleReconnect()
-            }
-        })
+                override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                    // Pong frames are handled by OkHttp at the protocol level,
+                    // but any binary message resets our pong awaiting state
+                    awaitingPong = false
+                }
+
+                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    Log.d(TAG, "WebSocket closed: $code $reason")
+                    isConnected = false
+                    stopHeartbeat()
+                }
+
+                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    Log.w(TAG, "WebSocket failure: ${t.message}")
+                    isConnected = false
+                    stopHeartbeat()
+                    scheduleReconnect()
+                }
+            })
+        }
     }
 
     fun disconnect() {
-        stopHeartbeat()
-        webSocket?.close(1000, "App backgrounded")
-        webSocket = null
-        isConnected = false
-        reconnectAttempt = 0
+        synchronized(connectionLock) {
+            shouldConnect = false
+            stopHeartbeat()
+            webSocket?.close(1000, "App backgrounded")
+            webSocket = null
+            isConnected = false
+            reconnectAttempt = 0
+        }
     }
 
     private fun startHeartbeat() {
@@ -132,18 +168,18 @@ class SyncWebSocketClient @Inject constructor(
         // Run JSON parsing + sync engine work off the main thread. The shared
         // @ApplicationScope is confined to Dispatchers.Main (FocusEngine and
         // SoundscapeManager rely on that single-thread guarantee), so we override
-        // the dispatcher only for this push-driven path. The only field touched
-        // here is awaitingPong, which is @Volatile and therefore thread-safe.
+        // the dispatcher only for this push-driven path. Sync calls are serialized
+        // through syncMutex so concurrent WS messages do not race.
         scope.launch(Dispatchers.Default) {
             try {
                 val json = JSONObject(text)
                 when (json.optString("type")) {
                     "pong" -> awaitingPong = false
-                    "task_updated" -> syncEngine.syncTasks()
-                    "sessions_synced" -> syncEngine.syncSessions()
-                    "settings_updated" -> settingsSyncEngine.syncSettings()
-                    "stats_updated" -> syncEngine.syncDailyStats()
-                    "sync_required" -> syncEngine.syncAll()
+                    "task_updated" -> syncMutex.withLock { syncEngine.syncTasks() }
+                    "sessions_synced" -> syncMutex.withLock { syncEngine.syncSessions() }
+                    "settings_updated" -> syncMutex.withLock { settingsSyncEngine.syncSettings() }
+                    "stats_updated" -> syncMutex.withLock { syncEngine.syncDailyStats() }
+                    "sync_required" -> syncMutex.withLock { syncEngine.syncAll() }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error handling WebSocket message", e)
@@ -152,22 +188,60 @@ class SyncWebSocketClient @Inject constructor(
     }
 
     private fun scheduleReconnect() {
-        val delay = (baseReconnectDelay * (1 shl minOf(reconnectAttempt, 5)))
-            .coerceAtMost(maxReconnectDelay)
+        val hasToken = authStore.getAccessToken() != null
+        if (!shouldAttemptReconnect(reconnectAttempt, hasToken, shouldConnect)) {
+            when {
+                !shouldConnect ->
+                    Log.d(TAG, "Skipping reconnect (disconnect requested)")
+                !hasToken -> {
+                    Log.d(TAG, "No access token; stopping reconnect after logout")
+                    shouldConnect = false
+                }
+                else ->
+                    Log.w(TAG, "Reached max reconnect attempts ($MAX_RECONNECT_ATTEMPTS); giving up")
+            }
+            return
+        }
+        val delayMs = calcReconnectDelay(reconnectAttempt, baseReconnectDelay, maxReconnectDelay)
         reconnectAttempt++
-        Log.d(TAG, "Scheduling reconnect in ${delay}ms (attempt $reconnectAttempt)")
+        Log.d(TAG, "Scheduling reconnect in ${delayMs}ms (attempt $reconnectAttempt)")
         scope.launch {
-            delay(delay)
-            if (!isConnected) connect()
+            delay(delayMs)
+            if (!isConnected && shouldConnect) connect()
         }
     }
 
-    private fun buildWsUrl(token: String, deviceId: String): String {
-        // Convert https://host/api/v1/ to wss://host/api/v1/ws?token=...&deviceId=...
-        val baseUrl = BuildConfig.BASE_URL.trimEnd('/')
-        val wsBase = baseUrl
-            .replace("https://", "wss://")
-            .replace("http://", "ws://")
-        return "$wsBase/ws?token=$token&deviceId=$deviceId"
+    private fun buildWsUrl(deviceId: String): String =
+        buildWsUrlPure(wsBaseFrom(BuildConfig.BASE_URL), deviceId)
+
+    companion object {
+        internal const val MAX_RECONNECT_ATTEMPTS = 20
+
+        /** Pure: exponential backoff delay capped at [max]. Exposed for tests. */
+        internal fun calcReconnectDelay(
+            attempt: Int,
+            base: Long = 1_000L,
+            max: Long = 30_000L,
+        ): Long = (base * (1 shl minOf(attempt, 5))).coerceAtMost(max)
+
+        /**
+         * Pure reconnect decision: schedule another attempt only while the caller
+         * still wants a connection, we hold an access token, and we have not
+         * exceeded [maxAttempts]. Exposed for tests.
+         */
+        internal fun shouldAttemptReconnect(
+            attempt: Int,
+            hasToken: Boolean,
+            wantConnect: Boolean,
+            maxAttempts: Int = MAX_RECONNECT_ATTEMPTS,
+        ): Boolean = wantConnect && hasToken && attempt < maxAttempts
+
+        /** Pure: convert an http(s) base URL to its ws(s) form. Exposed for tests. */
+        internal fun wsBaseFrom(baseUrl: String): String =
+            baseUrl.trimEnd('/').replace("https://", "wss://").replace("http://", "ws://")
+
+        /** Pure: build the WebSocket URL. Deliberately contains NO token. */
+        internal fun buildWsUrlPure(wsBase: String, deviceId: String): String =
+            "$wsBase/ws?deviceId=$deviceId"
     }
 }

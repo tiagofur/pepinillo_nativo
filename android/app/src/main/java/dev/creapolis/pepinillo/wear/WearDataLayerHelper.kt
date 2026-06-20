@@ -1,14 +1,14 @@
 package dev.creapolis.pepinillo.wear
 
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import com.google.android.gms.wearable.PutDataMapRequest
 import com.google.android.gms.wearable.PutDataRequest
 import com.google.android.gms.wearable.Wearable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.nio.charset.StandardCharsets
@@ -44,6 +44,13 @@ object WearDataLayerHelper {
     const val CMD_TASK_LINK = "/pepinillo/cmd/task/link"
     const val CMD_TASK_UNLINK = "/pepinillo/cmd/task/unlink"
     const val CMD_REQUEST_SYNC = "/pepinillo/cmd/request_sync"
+
+    /**
+     * Dedicated scope for put-item retries so the work (and its recursive
+     * retries) never runs on the Main looper. A SupervisorJob keeps one
+     * failed put from cancelling sibling pushes.
+     */
+    private val wearIoScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     fun pushTimer(context: Context, state: FocusTimerState, linkedTaskName: String?) {
         val appContext = context.applicationContext
@@ -182,20 +189,40 @@ object WearDataLayerHelper {
         putWithRetry(appContext, request, "pushUserStatus($isPro)")
     }
 
-    private fun putWithRetry(context: Context, request: PutDataRequest, tag: String, retries: Int = 2) {
+    /**
+     * Put a data item with bounded retry. Runs entirely on [wearIoScope]
+     * (Dispatchers.IO) so retries and their blocking Play services calls never
+     * run on the Main looper. Each push function wraps this in a launch so
+     * callers can keep their synchronous (non-suspend) signatures.
+     */
+    private fun putWithRetry(
+        context: Context,
+        request: PutDataRequest,
+        tag: String,
+        maxRetries: Int = DEFAULT_PUT_RETRIES,
+    ) {
         val appContext = context.applicationContext
-        Wearable.getDataClient(appContext).putDataItem(request)
-            .addOnFailureListener { e ->
-                if (retries > 0) {
-                    Log.w(TAG, "$tag failed, retrying ($retries left)", e)
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        putWithRetry(appContext, request, tag, retries - 1)
-                    }, 1000L)
-                } else {
-                    Log.e(TAG, "$tag failed after all retries", e)
+        wearIoScope.launch {
+            var attempt = 0
+            while (true) {
+                try {
+                    Wearable.getDataClient(appContext).putDataItem(request).await()
+                    return@launch
+                } catch (e: Exception) {
+                    attempt++
+                    if (attempt > maxRetries) {
+                        Log.e(TAG, "$tag failed after $maxRetries retries", e)
+                        return@launch
+                    }
+                    Log.w(TAG, "$tag failed, retrying ($attempt/$maxRetries)", e)
+                    delay(PUT_RETRY_DELAY_MS)
                 }
             }
+        }
     }
 
     fun isRunning(status: String): Boolean = status == TimerStatus.Running.name
+
+    private const val DEFAULT_PUT_RETRIES = 2
+    private const val PUT_RETRY_DELAY_MS = 1_000L
 }
