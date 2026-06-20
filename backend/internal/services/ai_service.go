@@ -28,6 +28,69 @@ type AnalyzeInput struct {
 	Context string `json:"context"`
 }
 
+// ReportPayload mirrors the Android ReportPayload contract sent to POST /ai/report
+// (see android .../domain/report/ReportDataBuilder.kt). The client builds it
+// on-device from local focus sessions and posts it for server-side LLM enrichment.
+type ReportPayload struct {
+	Period            string                         `json:"period"`
+	PeriodStart       string                         `json:"periodStart"`
+	PeriodEnd         string                         `json:"periodEnd"`
+	Summary           ReportSummary                  `json:"summary"`
+	Trends            ReportTrends                   `json:"trends"`
+	Patterns          ReportPatterns                 `json:"patterns"`
+	TaskBreakdown     []ReportTaskBreakdownEntry     `json:"taskBreakdown"`
+	DailyDistribution []ReportDailyDistributionEntry `json:"dailyDistribution"`
+}
+
+type ReportSummary struct {
+	TotalMinutes       int `json:"totalMinutes"`
+	TotalSessions      int `json:"totalSessions"`
+	CompletedSessions  int `json:"completedSessions"`
+	AvgSessionMinutes  int `json:"avgSessionMinutes"`
+	TotalInterruptions int `json:"totalInterruptions"`
+	TotalPauses        int `json:"totalPauses"`
+}
+
+type ReportTrends struct {
+	MinutesChange         int `json:"minutesChange"`
+	SessionsChange        int `json:"sessionsChange"`
+	PreviousTotalMinutes  int `json:"previousTotalMinutes"`
+	PreviousTotalSessions int `json:"previousTotalSessions"`
+}
+
+type ReportPatterns struct {
+	DominantMode    string         `json:"dominantMode"`
+	PeakHourRange   string         `json:"peakHourRange"`
+	BestDayOfWeek   string         `json:"bestDayOfWeek"`
+	ModeDistribution map[string]int `json:"modeDistribution"`
+}
+
+type ReportTaskBreakdownEntry struct {
+	TaskID       string `json:"taskId"`
+	TotalMinutes int    `json:"totalMinutes"`
+	Sessions     int    `json:"sessions"`
+}
+
+type ReportDailyDistributionEntry struct {
+	DayLabel string `json:"dayLabel"`
+	Minutes  int    `json:"minutes"`
+	Sessions int    `json:"sessions"`
+}
+
+// AIReportResponse mirrors the Android AIReportResponse contract expected from
+// POST /ai/report (see android .../core/network/ApiModels.kt).
+type AIReportResponse struct {
+	Title           string          `json:"title"`
+	Highlights      []string        `json:"highlights"`
+	Insights        []ReportInsight `json:"insights"`
+	Recommendations []string        `json:"recommendations"`
+}
+
+type ReportInsight struct {
+	Category string `json:"category"`
+	Text     string `json:"text"`
+}
+
 func NewAIService(
 	users ports.UserRepository,
 	insightRepo ports.AIInsightRepository,
@@ -98,9 +161,9 @@ func (s *AIService) buildDataSummary(ctx context.Context, userID string, days in
 
 	now := time.Now().UTC()
 	summary := &userDataSummary{
-		Categories:  make(map[string]int),
+		Categories:   make(map[string]int),
 		SessionHours: make(map[int]int),
-		StatsWindow: days,
+		StatsWindow:  days,
 	}
 
 	for _, t := range tasks {
@@ -194,6 +257,11 @@ Tu tarea: predice la productividad del usuario para hoy basado en su historial.
 Devuelve un JSON con esta estructura exacta (sin texto adicional):
 {"level": "low|medium|high", "focusMinutes": N, "confidence": 0.0-1.0, "reasoning": "explicación breve"}`
 
+const systemReport = systemPromptBase + `
+Tu tarea: genera un reporte de productividad estructurado basado en los datos del periodo que te proporciona el usuario (resumen, tendencias, patrones, desglose por tarea y distribución diaria).
+Devuelve un JSON con esta estructura exacta (sin texto adicional):
+{"title": "string", "highlights": ["string"], "insights": [{"category": "string", "text": "string"}], "recommendations": ["string"]}`
+
 // ---------- public methods ----------
 
 func (s *AIService) GenerateDailyTip(ctx context.Context, userID string) (*domain.AIInsight, error) {
@@ -249,7 +317,7 @@ func (s *AIService) ensureAiAccess(ctx context.Context, userID string) error {
 	isEverywhere := tier == "everywhere_monthly" || tier == "everywhere_annual"
 
 	if !isEverywhere {
-		return fmt.Errorf("tier_insufficient_for_cloud_ai")
+		return ErrTierInsufficientForCloudAI
 	}
 
 	// Monthly credit refresh (100 credits)
@@ -268,7 +336,7 @@ func (s *AIService) ensureAiAccess(ctx context.Context, userID string) error {
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("insufficient_ai_credits")
+		return ErrInsufficientAICredits
 	}
 
 	return nil
@@ -378,14 +446,100 @@ func (s *AIService) Analyze(ctx context.Context, userID string, input AnalyzeInp
 	return insight, nil
 }
 
-func (s *AIService) ProductivityPrediction(ctx context.Context, userID string) map[string]any {
+// Report generates a structured AIReportResponse for the POST /ai/report route.
+// It reuses the same credit gating (ensureAiAccess) and LLM provider as the
+// other AI endpoints, but operates on the client-supplied ReportPayload rather
+// than server-side repository data. Falls back to a deterministic template when
+// the LLM is unavailable so the Android client always gets a valid response.
+func (s *AIService) Report(ctx context.Context, userID string, payload ReportPayload) (*AIReportResponse, error) {
 	if err := s.ensureAiAccess(ctx, userID); err != nil {
-		return map[string]any{"error": err.Error()}
+		return nil, err
+	}
+
+	payloadJSON, _ := json.MarshalIndent(payload, "", "  ")
+	userPrompt := fmt.Sprintf("Datos del reporte (periodo: %s, %s a %s):\n%s\n\nGenera el reporte estructurado.",
+		payload.Period, payload.PeriodStart, payload.PeriodEnd, string(payloadJSON))
+
+	content, err := s.llm.Generate(ctx, systemReport, userPrompt)
+	if err != nil || content == "" {
+		return s.fallbackReport(payload), nil
+	}
+
+	var result AIReportResponse
+	if err := json.Unmarshal([]byte(extractJSON(content)), &result); err != nil {
+		return s.fallbackReport(payload), nil
+	}
+	if result.Title == "" {
+		result.Title = fmt.Sprintf("Reporte %s", payload.Period)
+	}
+	if result.Highlights == nil {
+		result.Highlights = []string{}
+	}
+	if result.Insights == nil {
+		result.Insights = []ReportInsight{}
+	}
+	if result.Recommendations == nil {
+		result.Recommendations = []string{}
+	}
+	return &result, nil
+}
+
+// fallbackReport produces a deterministic AIReportResponse when the LLM cannot
+// be reached, so the Android client always receives a well-formed payload.
+func (s *AIService) fallbackReport(payload ReportPayload) *AIReportResponse {
+	periodLabel := payload.Period
+	if periodLabel == "" {
+		periodLabel = "periodo"
+	}
+	hours := payload.Summary.TotalMinutes / 60
+	mins := payload.Summary.TotalMinutes % 60
+
+	highlights := []string{
+		fmt.Sprintf("%d sesión(es) completada(s) de %d", payload.Summary.CompletedSessions, payload.Summary.TotalSessions),
+		fmt.Sprintf("%d h %d min de enfoque total", hours, mins),
+	}
+	if payload.Trends.MinutesChange != 0 {
+		sign := "+"
+		if payload.Trends.MinutesChange < 0 {
+			sign = ""
+		}
+		highlights = append(highlights, fmt.Sprintf("Cambio vs. periodo anterior: %s%d min", sign, payload.Trends.MinutesChange))
+	}
+
+	insights := []ReportInsight{
+		{
+			Category: "constancia",
+			Text:     fmt.Sprintf("Completaste %d de %d sesiones iniciadas este %s.", payload.Summary.CompletedSessions, payload.Summary.TotalSessions, periodLabel),
+		},
+	}
+	if payload.Patterns.BestDayOfWeek != "" {
+		insights = append(insights, ReportInsight{
+			Category: "patrones",
+			Text:     fmt.Sprintf("Tu día más productivo fue %s.", payload.Patterns.BestDayOfWeek),
+		})
+	}
+
+	recommendations := []string{
+		"Mantén bloques de enfoque consistentes en tus horas pico.",
+		"Revisa las tareas con menos avance y priorízalas en el próximo periodo.",
+	}
+
+	return &AIReportResponse{
+		Title:           fmt.Sprintf("Reporte %s", periodLabel),
+		Highlights:      highlights,
+		Insights:        insights,
+		Recommendations: recommendations,
+	}
+}
+
+func (s *AIService) ProductivityPrediction(ctx context.Context, userID string) (map[string]any, error) {
+	if err := s.ensureAiAccess(ctx, userID); err != nil {
+		return nil, err
 	}
 
 	summary, err := s.buildDataSummary(ctx, userID, 14)
 	if err != nil {
-		return s.fallbackPrediction()
+		return s.fallbackPrediction(), nil
 	}
 
 	userPrompt := fmt.Sprintf("Datos recientes (14 días):\n%s\n\nHoy es %s. Predice la productividad.",
@@ -393,15 +547,15 @@ func (s *AIService) ProductivityPrediction(ctx context.Context, userID string) m
 
 	content, err := s.llm.Generate(ctx, systemPrediction, userPrompt)
 	if err != nil || content == "" {
-		return s.fallbackPrediction()
+		return s.fallbackPrediction(), nil
 	}
 
 	var result map[string]any
 	if err := json.Unmarshal([]byte(extractJSON(content)), &result); err != nil {
-		return s.fallbackPrediction()
+		return s.fallbackPrediction(), nil
 	}
 	result["source"] = "gemini"
-	return result
+	return result, nil
 }
 
 func (s *AIService) ProductivityPredictionFromML(ctx context.Context, weekday int, recentFocusMinutes float64, streakDays int) map[string]any {
@@ -436,39 +590,39 @@ func (s *AIService) ProductivityPredictionFromML(ctx context.Context, weekday in
 	return payload
 }
 
-func (s *AIService) BurnoutRisk(ctx context.Context, userID string) map[string]any {
+func (s *AIService) BurnoutRisk(ctx context.Context, userID string) (map[string]any, error) {
 	if err := s.ensureAiAccess(ctx, userID); err != nil {
-		return map[string]any{"error": err.Error()}
+		return nil, err
 	}
 
 	summary, err := s.buildDataSummary(ctx, userID, 30)
 	if err != nil {
-		return s.fallbackBurnout()
+		return s.fallbackBurnout(), nil
 	}
 
 	userPrompt := fmt.Sprintf("Datos del último mes:\n%s\n\nEvalúa el riesgo de burnout.", summaryToPromptContext(summary))
 
 	content, err := s.llm.Generate(ctx, systemBurnout, userPrompt)
 	if err != nil || content == "" {
-		return s.fallbackBurnout()
+		return s.fallbackBurnout(), nil
 	}
 
 	var result map[string]any
 	if err := json.Unmarshal([]byte(extractJSON(content)), &result); err != nil {
-		return s.fallbackBurnout()
+		return s.fallbackBurnout(), nil
 	}
 	result["source"] = "gemini"
-	return result
+	return result, nil
 }
 
-func (s *AIService) OptimalHours(ctx context.Context, userID string) map[string]any {
+func (s *AIService) OptimalHours(ctx context.Context, userID string) (map[string]any, error) {
 	if err := s.ensureAiAccess(ctx, userID); err != nil {
-		return map[string]any{"error": err.Error()}
+		return nil, err
 	}
 
 	summary, err := s.buildDataSummary(ctx, userID, 30)
 	if err != nil {
-		return s.fallbackOptimalHours()
+		return s.fallbackOptimalHours(), nil
 	}
 
 	userPrompt := fmt.Sprintf("Datos del último mes (distribución de sesiones por hora):\n%s\n\nIdentifica las horas más productivas.",
@@ -476,15 +630,15 @@ func (s *AIService) OptimalHours(ctx context.Context, userID string) map[string]
 
 	content, err := s.llm.Generate(ctx, systemOptimalHours, userPrompt)
 	if err != nil || content == "" {
-		return s.fallbackOptimalHours()
+		return s.fallbackOptimalHours(), nil
 	}
 
 	var result map[string]any
 	if err := json.Unmarshal([]byte(extractJSON(content)), &result); err != nil {
-		return s.fallbackOptimalHours()
+		return s.fallbackOptimalHours(), nil
 	}
 	result["source"] = "gemini"
-	return result
+	return result, nil
 }
 
 // ---------- fallbacks ----------

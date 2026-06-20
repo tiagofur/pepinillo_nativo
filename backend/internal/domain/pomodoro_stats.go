@@ -18,3 +18,7 @@ type PomodoroStats struct {
 	CreatedAt        time.Time `json:"createdAt"`
 	UpdatedAt        time.Time `json:"updatedAt"`
 }
+
+// TableName maps the legacy PomodoroStats struct onto the focus_stats
+// table that replaced pomodoro_stats in migration 000007_focus_modes.
+func (PomodoroStats) TableName() string { return "focus_stats" }

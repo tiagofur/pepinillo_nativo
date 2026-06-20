@@ -25,6 +25,14 @@ type linkAccountRequest struct {
 	IDToken string `json:"idToken"`
 }
 
+// linkAppleAccountRequest mirrors appleLoginRequest: Apple Sign-In requires a
+// nonce to close the replay window on stolen ID tokens, so the link endpoint
+// accepts and validates the same field as login.
+type linkAppleAccountRequest struct {
+	IDToken string `json:"idToken"`
+	Nonce   string `json:"nonce"`
+}
+
 func NewOAuthHandler(oauth *services.OAuthService) *OAuthHandler {
 	return &OAuthHandler{oauth: oauth}
 }
@@ -141,15 +149,15 @@ func (h *OAuthHandler) LinkAppleAccount(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
 	}
 
-	var req linkAccountRequest
+	var req linkAppleAccountRequest
 	if err := c.BodyParser(&req); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid_request_body")
 	}
-	if req.IDToken == "" {
+	if req.IDToken == "" || req.Nonce == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "missing_required_fields")
 	}
 
-	user, err := h.oauth.LinkAppleAccount(c.Context(), userID, req.IDToken)
+	user, err := h.oauth.LinkAppleAccount(c.Context(), userID, req.IDToken, req.Nonce)
 	if err != nil {
 		return mapOAuthError(err)
 	}

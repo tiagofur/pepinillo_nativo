@@ -161,12 +161,14 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	focus.Put("/sessions/:id", deps.Focus.UpdateSession)
 
 	ai := verified.Group("/ai")
+	ai.Use(middleware.NewSubscriptionMiddleware(deps.UserRepository))
 	ai.Use(middleware.NewRequireProFeatureMiddleware("predictions"))
 	ai.Use(middleware.NewRequireProFeatureMiddleware("advanced_analytics"))
 	ai.Get("/daily-tip", deps.AI.DailyTip)
 	ai.Get("/insights", deps.AI.ListInsights)
 	ai.Get("/weekly-report", deps.AI.WeeklyReport)
 	ai.Post("/analyze", deps.AI.Analyze)
+	ai.Post("/report", deps.AI.Report)
 	ai.Get("/predictions/productivity", deps.AI.ProductivityPrediction)
 	ai.Get("/predictions/burnout-risk", deps.AI.BurnoutRisk)
 	ai.Get("/optimal-hours", deps.AI.OptimalHours)
@@ -186,6 +188,7 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 
 	// Analytics endpoints (PRO only)
 	analytics := verified.Group("/analytics")
+	analytics.Use(middleware.NewSubscriptionMiddleware(deps.UserRepository))
 	analytics.Use(middleware.NewRequireProFeatureMiddleware("advanced_analytics"))
 	analytics.Get("/weekly-report", deps.Analytics.WeeklyReport)
 	analytics.Get("/monthly-report", deps.Analytics.MonthlyReport)
