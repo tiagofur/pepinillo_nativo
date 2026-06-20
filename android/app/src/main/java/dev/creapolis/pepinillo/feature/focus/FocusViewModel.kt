@@ -118,9 +118,18 @@ class FocusViewModel @Inject constructor(
             WearDataLayerHelper.pushTimer(context, currentState, linkedTaskName)
         }
 
-        // Watch engine state to manage foreground service lifecycle
+        // Watch engine state to manage foreground service lifecycle.
+        // A-C5: Only react to STATUS TRANSITIONS, not every 100ms tick emission.
+        // Calling FocusTimerService.start(context) on every Running/WaitingForNext
+        // tick fired a redundant startForegroundService + onStartCommand + startForeground
+        // 10x/second, and rapid play/pause toggles could leave multiple startForegroundService
+        // calls in flight with no startForeground between them -> RemoteServiceException on
+        // Android 12+.
         viewModelScope.launch {
+            var previousStatus: TimerStatus? = null
             focusEngine.state.collect { state ->
+                if (state.status == previousStatus) return@collect
+                previousStatus = state.status
                 when (state.status) {
                     TimerStatus.Running -> FocusTimerService.start(context)
                     TimerStatus.WaitingForNext -> FocusTimerService.start(context)

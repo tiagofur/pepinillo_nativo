@@ -605,6 +605,79 @@ class FocusEngineTest {
         assertEquals(FocusMode.Chrono, engine.state.value.mode)
     }
 
+    // ── restoreState: linkedTaskId persistence (W-8) ──
+
+    @Test
+    fun `restoreState preserves linkedTaskId in restored Running state`() = runTest {
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = 10 * 60 * 1000L,
+            totalMillis = 25 * 60 * 1000L,
+            completedSessions = 0,
+            sessionStartTime = System.currentTimeMillis() - 10 * 60 * 1000L,
+            linkedTaskId = "task-recovered",
+        )
+        testScope.testScheduler.runCurrent()
+
+        assertEquals("task-recovered", engine.state.value.linkedTaskId)
+    }
+
+    @Test
+    fun `restoreState WaitingForNext preserves linkedTaskId`() = runTest {
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.ShortBreak,
+            elapsedMillis = 0L,
+            totalMillis = 5 * 60 * 1000L,
+            completedSessions = 1,
+            sessionStartTime = 0L,
+            status = TimerStatus.WaitingForNext,
+            linkedTaskId = "task-waiting",
+        )
+        testScope.testScheduler.runCurrent()
+
+        assertEquals(TimerStatus.WaitingForNext, engine.state.value.status)
+        assertEquals("task-waiting", engine.state.value.linkedTaskId)
+    }
+
+    @Test
+    fun `restoreState linkedTaskId carries into incrementPomodoros on stop`() = runTest {
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = 10 * 60 * 1000L,
+            totalMillis = 25 * 60 * 1000L,
+            completedSessions = 0,
+            sessionStartTime = System.currentTimeMillis() - 10 * 60 * 1000L,
+            linkedTaskId = "task-recovered",
+        )
+        testScope.testScheduler.runCurrent()
+
+        engine.stop()
+        testScope.advanceUntilIdle()
+
+        coVerify { taskRepository.incrementPomodoros("task-recovered") }
+    }
+
+    @Test
+    fun `restoreState with already-completed phase carries linkedTaskId through onPhaseComplete`() = runTest {
+        val total = 25 * 60 * 1000L
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = total,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = System.currentTimeMillis() - total,
+            linkedTaskId = "task-complete",
+        )
+        testScope.advanceUntilIdle()
+
+        // onPhaseComplete should have preserved linkedTaskId in the new break-phase state
+        assertEquals("task-complete", engine.state.value.linkedTaskId)
+    }
+
     // ── onPhaseComplete (Pomodoro work -> break transition) ──
 
     @Test

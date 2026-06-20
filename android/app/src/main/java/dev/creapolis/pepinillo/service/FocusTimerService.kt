@@ -95,6 +95,7 @@ class FocusTimerService : Service() {
         private const val KEY_R_ACTIVE = "r_active"
         private const val KEY_R_STATUS = "r_status"
         private const val KEY_R_DAY_START = "r_day_start"
+        private const val KEY_R_LINKED_TASK_ID = "linked_task_id"
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, FocusTimerService::class.java))
@@ -105,6 +106,8 @@ class FocusTimerService : Service() {
         }
 
         fun saveRecoveryState(context: Context, state: FocusTimerState) {
+            // W-8: persist linkedTaskId so restored sessions keep the task link.
+            // putString(key, null) removes the key, which reads back as the null default.
             context.getSharedPreferences(RECOVERY_PREFS, Context.MODE_PRIVATE).edit()
                 .putString(KEY_R_MODE, state.mode.name)
                 .putString(KEY_R_PHASE, state.phase.name)
@@ -112,6 +115,7 @@ class FocusTimerService : Service() {
                 .putLong(KEY_R_TOTAL, state.totalMillis)
                 .putInt(KEY_R_COMPLETED, state.completedSessions)
                 .putString(KEY_R_STATUS, state.status.name)
+                .putString(KEY_R_LINKED_TASK_ID, state.linkedTaskId)
                 .putBoolean(KEY_R_ACTIVE, true)
                 .putLong(KEY_R_DAY_START, SessionRepository.startOfDay(System.currentTimeMillis()))
                 .apply()
@@ -138,6 +142,7 @@ class FocusTimerService : Service() {
                 sessionStartTime = startTime,
                 totalMillis = prefs.getLong(KEY_R_TOTAL, 0L),
                 completedSessions = prefs.getInt(KEY_R_COMPLETED, 0),
+                linkedTaskId = prefs.getString(KEY_R_LINKED_TASK_ID, null),
                 savedDayStart = prefs.getLong(KEY_R_DAY_START, 0L),
             )
         }
@@ -150,6 +155,7 @@ class FocusTimerService : Service() {
         val sessionStartTime: Long,
         val totalMillis: Long,
         val completedSessions: Int,
+        val linkedTaskId: String? = null,
         val savedDayStart: Long = 0L,
     )
 
@@ -199,6 +205,7 @@ class FocusTimerService : Service() {
                         sessionStartTime = recovery.sessionStartTime,
                         status = recovery.status,
                         savedDayStart = recovery.savedDayStart,
+                        linkedTaskId = recovery.linkedTaskId,
                     )
                 }
             } else {
@@ -210,10 +217,19 @@ class FocusTimerService : Service() {
             return START_STICKY
         }
 
+        // A-C10/B-Cat5: Always call startForeground BEFORE any action-specific branching.
+        // ACTION_PAUSE and ACTION_STOP can be delivered to a freshly-(re)created service
+        // (system reclaimed it, or a Wear/widget click re-launches it after stopSelf). On
+        // Android 12+ startForeground MUST be invoked within 5s of the service starting
+        // regardless of which action triggered it, otherwise the system throws
+        // ForegroundServiceDidNotStartInTimeException. Calling it here once up-front makes
+        // every entry path compliant. stopForeground/stopSelf later in the same invocation
+        // is still legal after startForeground has run.
+        startForegroundCompat(buildNotification(focusEngine.state.value))
+
         when (intent.action) {
             ACTION_PAUSE -> focusEngine.pause()
             ACTION_RESUME -> {
-                startForegroundCompat(buildNotification(focusEngine.state.value))
                 focusEngine.start()
             }
             ACTION_STOP -> {
@@ -242,8 +258,6 @@ class FocusTimerService : Service() {
             ACTION_START_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
                 val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-                // startForeground BEFORE the suspend call to satisfy Android's 5-second requirement
-                startForegroundCompat(buildNotification(focusEngine.state.value))
                 startCollectingIfNeeded()
                 serviceScope.launch {
                     focusEngine.selectMode(mode)
@@ -258,14 +272,12 @@ class FocusTimerService : Service() {
             ACTION_SELECT_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
                 val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-                startForegroundCompat(buildNotification(focusEngine.state.value))
                 startCollectingIfNeeded()
                 serviceScope.launch { focusEngine.selectMode(mode) }
                 return START_STICKY
             }
         }
 
-        startForegroundCompat(buildNotification(focusEngine.state.value))
         startCollectingIfNeeded()
 
         return START_STICKY
