@@ -102,6 +102,14 @@ class SyncEngine @Inject constructor(
         }
     }
 
+    /**
+     * The persisted home timezone (W-4). Used for ALL day-key computations (the stats pull
+     * date window and the start-of-day millis). Note: [toRfc3339] deliberately keeps
+     * [ZoneOffset.UTC] because that serializes an instant, not a day boundary.
+     */
+    private suspend fun userZoneId(): ZoneId =
+        ZoneId.of(userPreferencesRepository.getOrInitUserTimezone())
+
     suspend fun syncAll(): SyncResult {
         if (authStore.getAccessToken() == null) {
             println("[$TAG]syncAll: NOT AUTHENTICATED")
@@ -372,21 +380,42 @@ class SyncEngine @Inject constructor(
         }
     }
 
+    /**
+     * Merges inbound server tasks into local state using LAST-WRITER-WINS by `updatedAt`
+     * (server timestamps compared as epoch millis). Policy:
+     *   1. local == null                                  → insert server task.
+     *   2. local != null && !local.isDirty                → server always wins; replace local
+     *                                                       (local is just a mirror of the server).
+     *   3. local != null && local.isDirty && server newer → both sides changed; the newer
+     *                                                       write wins, so SERVER wins. The
+     *                                                       dirty local edit is overwritten and
+     *                                                       the conflict is logged for visibility.
+     *   4. local != null && local.isDirty && server older → local wins; local stays dirty so the
+     *                                                       next push re-uploads it.
+     * This guarantees convergence across multi-device edits to the same task. Previously a
+     * stale dirty local row silently overrode a fresh server update, and the inverse branch
+     * (dirty + server newer) was dropped entirely — see B-C8.
+     */
     private suspend fun mergeServerTasks(serverTasks: List<TaskDto>) {
         val now = System.currentTimeMillis()
         var inserted = 0
         var updated = 0
+        var conflictsResolved = 0
+        var localKept = 0
         for (serverTask in serverTasks) {
             val localBySyncId = serverTask.syncId.takeIf { it.isNotEmpty() }
                 ?.let { taskDao.getTaskById(it) }
             val local = localBySyncId
                 ?: taskDao.getTaskByServerId(serverTask.id)
+            val serverUpdatedAt = parseRfc3339(serverTask.updatedAt)
             if (local == null) {
+                // Branch 1: no local row → insert server task.
                 val entity = serverTask.toEntity()
                 taskDao.insertTask(entity)
                 mergeServerSubtasks(entity.id, serverTask.subTasks)
                 inserted++
-            } else if (!local.isDirty && parseRfc3339(serverTask.updatedAt) > local.updatedAt) {
+            } else if (!local.isDirty) {
+                // Branch 2: local not dirty → server is authoritative, replace local.
                 taskDao.updateTask(serverTask.toEntity().copy(
                     id = local.id,
                     isDirty = false,
@@ -395,9 +424,29 @@ class SyncEngine @Inject constructor(
                 ))
                 mergeServerSubtasks(local.id, serverTask.subTasks)
                 updated++
+            } else if (serverUpdatedAt > local.updatedAt) {
+                // Branch 3: conflict — both sides changed and the server version is newer.
+                // Last-writer-wins: the server overwrites the dirty local edit.
+                Log.w(TAG, "mergeServerTasks: conflict on task ${local.id} — dirty local " +
+                    "(updatedAt=${local.updatedAt}) overridden by newer server version " +
+                    "(updatedAt=$serverUpdatedAt)")
+                taskDao.updateTask(serverTask.toEntity().copy(
+                    id = local.id,
+                    isDirty = false,
+                    syncedAt = now,
+                    serverId = serverTask.id,
+                ))
+                mergeServerSubtasks(local.id, serverTask.subTasks)
+                conflictsResolved++
+                updated++
+            } else {
+                // Branch 4: local dirty and at least as new as server → local wins, keep dirty
+                // so syncTasks pushes it on the next cycle.
+                localKept++
             }
         }
-        println("[$TAG]mergeServerTasks: inserted=$inserted, updated=$updated")
+        println("[$TAG]mergeServerTasks: inserted=$inserted, updated=$updated, " +
+            "conflicts=$conflictsResolved, localKept=$localKept")
     }
 
     private suspend fun mergeServerSubtasks(localTaskId: String, serverSubtasks: List<SubTaskDto>) {
@@ -545,9 +594,15 @@ class SyncEngine @Inject constructor(
 
     internal suspend fun syncDailyStats() {
         try {
-            // Pull all stats from server for the last 365 days
-            // Use the device's local timezone so date boundaries align with the user's calendar.
-            val to = LocalDate.now(ZoneId.systemDefault())
+            // Push locally-dirty stats first so the server has our latest before we pull
+            // (mirrors the tasks/sessions push-then-merge pattern). B-C9.
+            syncDailyStatsPush()
+
+            // Pull all stats from server for the last 365 days.
+            // W-4: use the persisted home timezone so the date window aligns with the day
+            // keys used by SessionRepository.recordSession.
+            val zone = userZoneId()
+            val to = LocalDate.now(zone)
             val from = to.minusDays(365)
             val fromStr = from.format(DateTimeFormatter.ISO_LOCAL_DATE)
             val toStr = to.format(DateTimeFormatter.ISO_LOCAL_DATE)
@@ -556,7 +611,7 @@ class SyncEngine @Inject constructor(
                 is NetworkResult.Success -> {
                     val serverStats = result.data
                     println("[$TAG]syncDailyStats: server returned ${serverStats.size} stats")
-                    mergeServerStats(serverStats)
+                    mergeServerStats(serverStats, zone)
                 }
                 is NetworkResult.Error -> {
                     println("[$TAG]syncDailyStats ERROR: ${result.code} ${result.message}")
@@ -578,8 +633,58 @@ class SyncEngine @Inject constructor(
         }
     }
 
-    private suspend fun mergeServerStats(serverStats: List<FocusStatsDto>) {
+    /**
+     * Pushes locally-dirty DailyStats rows to the backend (B-C9). Previously local stats
+     * that diverged from the server (e.g. count=5 locally vs count=3 on server) were
+     * preserved but never re-pushed, causing permanent drift.
+     *
+     * Uses `getAllDaysWithSessions()` filtered in memory because DailyStatsDao has no
+     * dedicated dirty query; the set is bounded (≤ one row per active day) so this is cheap.
+     * Endpoint: `PepinilloApiClient.upsertStats` → `POST focus/stats`.
+     */
+    private suspend fun syncDailyStatsPush() {
+        val dirty = try {
+            dailyStatsDao.getAllDaysWithSessions().first().filter { it.isDirty }
+        } catch (e: Exception) {
+            Log.w(TAG, "syncDailyStatsPush: could not read dirty stats: ${e.message}")
+            return
+        }
+        if (dirty.isEmpty()) return
+
+        val zone = userZoneId()
+        val now = System.currentTimeMillis()
+        var pushed = 0
+        for (stats in dirty) {
+            when (val result = apiClient.upsertStats(stats.toFocusStatsDto(zone))) {
+                is NetworkResult.Success -> {
+                    dailyStatsDao.upsert(stats.copy(isDirty = false, syncedAt = now))
+                    pushed++
+                }
+                is NetworkResult.Error -> {
+                    println("[$TAG]syncDailyStatsPush ERROR: ${result.code} ${result.message}")
+                    classifyAndThrowHttpError(result.code, "syncDailyStatsPush: ${result.message}")
+                }
+                is NetworkResult.NetworkError -> {
+                    throw TransientSyncException(
+                        "syncDailyStatsPush network error: ${result.exception.message}"
+                    )
+                }
+            }
+        }
+        println("[$TAG]syncDailyStatsPush: pushed=$pushed")
+    }
+
+    /**
+     * Merges inbound server stats. Acceptance policy (B-C9):
+     *   - existing == null OR (local not dirty AND server newer) → server wins; replace local.
+     *   - otherwise local is authoritative (dirty, or newer/equal than server). If local has
+     *     diverged (dirty, or count > server), flag it dirty so [syncDailyStatsPush]
+     *     re-uploads it on the next cycle. Compared by `updatedAt` (not just `count`) so
+     *     server-side decrements are honoured when the server is newer.
+     */
+    private suspend fun mergeServerStats(serverStats: List<FocusStatsDto>, zone: ZoneId) {
         var upserted = 0
+        var localKeptDirty = 0
         for (dto in serverStats) {
             if (dto.date.isEmpty()) continue
             val date = try {
@@ -588,12 +693,18 @@ class SyncEngine @Inject constructor(
                 Log.w(TAG, "Could not parse stats date: ${dto.date}")
                 continue
             }
-            // Compute start-of-day in the device's local timezone to match SessionRepository.startOfDay().
-            // Using UTC here would create duplicate rows for the same calendar date for non-UTC users.
-            val startOfDayMillis = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            // W-4: compute start-of-day in the persisted home timezone, matching
+            // SessionRepository.recordSession. Using the device tz here would create
+            // duplicate rows for the same calendar date after a timezone change.
+            val startOfDayMillis = date.atStartOfDay(zone).toInstant().toEpochMilli()
 
             val existing = dailyStatsDao.getStatsForDate(startOfDayMillis)
-            if (existing == null || dto.count > existing.sessionsCompleted) {
+            val serverUpdatedAt = parseRfc3339(dto.updatedAt)
+            // syncedAt is the best local proxy for "the server version we last accepted".
+            val localSyncedAt = existing?.syncedAt ?: 0L
+
+            if (existing == null || (!existing.isDirty && serverUpdatedAt > localSyncedAt)) {
+                // Server wins: insert or replace local with server data.
                 val pomodoroMinutes = dto.pomodoroDuration / 60
                 val flowtimeMinutes = dto.flowtimeSeconds / 60
                 val timeblockMinutes = dto.timeblockSeconds / 60
@@ -614,9 +725,20 @@ class SyncEngine @Inject constructor(
                     syncedAt = System.currentTimeMillis(),
                 ))
                 upserted++
+            } else {
+                // Local wins. If local has diverged from the server, flag it dirty so the
+                // push phase re-uploads it and prevents permanent client/server drift.
+                val needsPush = existing.isDirty || existing.sessionsCompleted > dto.count
+                if (needsPush) {
+                    if (!existing.isDirty) {
+                        dailyStatsDao.upsert(existing.copy(isDirty = true))
+                        upserted++
+                    }
+                    localKeptDirty++
+                }
             }
         }
-        println("[$TAG]mergeServerStats: upserted=$upserted")
+        println("[$TAG]mergeServerStats: upserted=$upserted, localKeptDirty=$localKeptDirty")
     }
 
     // ── DTO Converters ──
@@ -687,6 +809,27 @@ class SyncEngine @Inject constructor(
         satisfactionRating = satisfactionRating,
         isDirty = false,
         syncedAt = System.currentTimeMillis(),
+    )
+
+    /**
+     * Converts a local [DailyStatsEntity] into the DTO used by the stats push endpoint
+     * (B-C9). The day key is rendered in the persisted home timezone so the server
+     * attributes the row to the same calendar day the user sees. `id` is left at 0 because
+     * DailyStatsEntity has no server-id column; the backend is expected to upsert by
+     * (userId, date).
+     */
+    private fun DailyStatsEntity.toFocusStatsDto(zone: ZoneId) = FocusStatsDto(
+        id = 0,
+        date = Instant.ofEpochMilli(date)
+            .atZone(zone)
+            .toLocalDate()
+            .format(DateTimeFormatter.ISO_LOCAL_DATE),
+        count = sessionsCompleted,
+        pomodoroDuration = pomodoroMinutes * 60,
+        flowtimeSeconds = flowMinutes * 60,
+        timeblockSeconds = blocksMinutes * 60,
+        stopwatchSeconds = stopwatchMinutes * 60,
+        updatedAt = (syncedAt ?: date).toRfc3339(),
     )
 
     private fun TaskEntity.toDto(subtasks: List<SubtaskEntity> = emptyList()) = TaskDto(

@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.data.sync
 
 import android.util.Log
+import androidx.room.withTransaction
 import dev.creapolis.pepinillo.core.network.FullSyncResponse
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
@@ -8,6 +9,7 @@ import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import dev.creapolis.pepinillo.core.network.PreferenceSyncItem
 import dev.creapolis.pepinillo.core.network.SubTaskDto
 import dev.creapolis.pepinillo.core.network.TaskDto
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
@@ -27,6 +29,7 @@ private const val TAG = "InitialSyncManager"
 @Singleton
 class InitialSyncManager @Inject constructor(
     private val apiClient: PepinilloApiClient,
+    private val database: PepinilloDatabase,
     private val taskDao: TaskDao,
     private val subtaskDao: SubtaskDao,
     private val sessionDao: FocusSessionDao,
@@ -227,30 +230,36 @@ class InitialSyncManager @Inject constructor(
 
             Log.d(TAG, "wipeAndSync: fetch complete (${allServerTasks.size} tasks, ${allServerSessions.size} sessions), wiping local data")
 
-            // ── Phase 2: Wipe local storage ──────────────────────────────────────
-            // Only reached after a successful full download.
-            taskDao.deleteAll()
-            subtaskDao.deleteAll()
-            sessionDao.deleteAll()
-            dailyStatsDao.deleteAll()
-            preferenceSyncDao.deleteAll()
+            // ── Phase 2 + Phase 3: atomic wipe-and-repopulate ───────────────────
+            // Both phases run inside a single Room transaction. If Phase 3 fails
+            // mid-apply, the Phase 2 deletes roll back too, so local data is never
+            // left empty with no rollback path. Only pure DB writes are inside;
+            // settings apply and sync-metadata persist afterwards (not Room-backed).
+            database.withTransaction {
+                // Phase 2: wipe local storage
+                taskDao.deleteAll()
+                subtaskDao.deleteAll()
+                sessionDao.deleteAll()
+                dailyStatsDao.deleteAll()
+                preferenceSyncDao.deleteAll()
 
-            // ── Phase 3: Apply fetched data ──────────────────────────────────────
-            if (allServerTasks.isNotEmpty()) {
-                taskDao.upsertAll(allServerTasks.map { it.toEntity() })
-                for (taskDto in allServerTasks) {
-                    if (taskDto.subTasks.isNotEmpty()) {
-                        mergeSubtasks(taskDto.toEntity().id, taskDto.subTasks)
+                // Phase 3: apply fetched data (pure DB writes only — no network)
+                if (allServerTasks.isNotEmpty()) {
+                    taskDao.upsertAll(allServerTasks.map { it.toEntity() })
+                    for (taskDto in allServerTasks) {
+                        if (taskDto.subTasks.isNotEmpty()) {
+                            mergeSubtasks(taskDto.toEntity().id, taskDto.subTasks)
+                        }
                     }
                 }
-            }
 
-            if (allServerSessions.isNotEmpty()) {
-                val sessionEntities = allServerSessions
-                    .filter { it.id.isNotEmpty() }
-                    .map { it.toEntity() }
-                sessionDao.upsertSessions(sessionEntities)
-                resolveInboundTaskLinks(allServerSessions)
+                if (allServerSessions.isNotEmpty()) {
+                    val sessionEntities = allServerSessions
+                        .filter { it.id.isNotEmpty() }
+                        .map { it.toEntity() }
+                    sessionDao.upsertSessions(sessionEntities)
+                    resolveInboundTaskLinks(allServerSessions)
+                }
             }
 
             if (serverSettings.isNotEmpty()) {

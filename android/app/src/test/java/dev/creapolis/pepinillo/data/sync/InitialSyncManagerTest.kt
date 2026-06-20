@@ -1,5 +1,7 @@
 package dev.creapolis.pepinillo.data.sync
 
+import androidx.room.RoomDatabase
+import androidx.room.withTransaction
 import dev.creapolis.pepinillo.core.network.FullSyncResponse
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PaginatedSessionPage
@@ -7,6 +9,7 @@ import dev.creapolis.pepinillo.core.network.PaginatedTaskPage
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import dev.creapolis.pepinillo.core.network.TaskDto
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
@@ -16,16 +19,21 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
 class InitialSyncManagerTest {
 
     private lateinit var apiClient: PepinilloApiClient
+    private lateinit var database: PepinilloDatabase
     private lateinit var taskDao: TaskDao
     private lateinit var subtaskDao: SubtaskDao
     private lateinit var sessionDao: FocusSessionDao
@@ -38,6 +46,7 @@ class InitialSyncManagerTest {
     @Before
     fun setUp() {
         apiClient = mockk(relaxed = true)
+        database = mockk(relaxed = true)
         taskDao = mockk(relaxed = true)
         subtaskDao = mockk(relaxed = true)
         sessionDao = mockk(relaxed = true)
@@ -46,8 +55,22 @@ class InitialSyncManagerTest {
         settingsSyncEngine = mockk(relaxed = true)
         syncMetadataStore = mockk(relaxed = true)
 
+        // `withTransaction` is an extension on RoomDatabase backed by real SQLite
+        // plumbing that a mock cannot provide. Capture its block argument and run
+        // it directly so the DAO-invocation verifications in these tests keep working.
+        // NOTE: for a top-level extension mocked via mockkStatic, the receiver is
+        // arg(0), so the block is captured explicitly via a slot (not firstArg()).
+        val txnBlock = slot<suspend () -> Unit>()
+        mockkStatic("androidx.room.RoomDatabaseKt")
+        coEvery {
+            any<RoomDatabase>().withTransaction(capture(txnBlock))
+        } coAnswers {
+            txnBlock.captured.invoke()
+        }
+
         manager = InitialSyncManager(
             apiClient = apiClient,
+            database = database,
             taskDao = taskDao,
             subtaskDao = subtaskDao,
             sessionDao = sessionDao,
@@ -56,6 +79,11 @@ class InitialSyncManagerTest {
             settingsSyncEngine = settingsSyncEngine,
             syncMetadataStore = syncMetadataStore,
         )
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic("androidx.room.RoomDatabaseKt")
     }
 
     // -----------------------------------------------------------------------

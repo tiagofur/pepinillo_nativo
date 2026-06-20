@@ -13,7 +13,9 @@ import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
 import dev.creapolis.pepinillo.data.local.entity.PreferenceSyncEntity
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.util.TimeZone
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -41,6 +43,10 @@ data class UserPreferences(
     val midpointCheckIn: Boolean = false,
     val timerNotificationsEnabled: Boolean = true,
     val showJournalAfterSession: Boolean = true,
+    // Persisted "home" timezone for day-key computations. Captured once on first run and
+    // then frozen so that traveling across timezones does not shift the user's day boundary
+    // (see W-4: SessionRepository.startOfDay + SyncEngine day-key computations).
+    val userTimezone: String = TimeZone.getDefault().id,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -74,6 +80,7 @@ class UserPreferencesRepository @Inject constructor(
         val MIDPOINT_CHECK_IN = booleanPreferencesKey("midpoint_check_in")
         val TIMER_NOTIFICATIONS_ENABLED = booleanPreferencesKey("timer_notifications_enabled")
         val SHOW_JOURNAL_AFTER_SESSION = booleanPreferencesKey("show_journal_after_session")
+        val USER_TIMEZONE = stringPreferencesKey("user_timezone")
     }
 
     val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
@@ -101,7 +108,22 @@ class UserPreferencesRepository @Inject constructor(
             midpointCheckIn = prefs[Keys.MIDPOINT_CHECK_IN] ?: false,
             timerNotificationsEnabled = prefs[Keys.TIMER_NOTIFICATIONS_ENABLED] ?: true,
             showJournalAfterSession = prefs[Keys.SHOW_JOURNAL_AFTER_SESSION] ?: true,
+            userTimezone = prefs[Keys.USER_TIMEZONE] ?: TimeZone.getDefault().id,
         )
+    }
+
+    /**
+     * Returns the persisted home timezone id, initializing it from the device's current
+     * timezone on first access so it stays stable thereafter (W-4). Used by day-key
+     * computations in [dev.creapolis.pepinillo.data.repository.SessionRepository] and
+     * [dev.creapolis.pepinillo.data.sync.SyncEngine].
+     */
+    suspend fun getOrInitUserTimezone(): String {
+        val stored = context.dataStore.data.first()[Keys.USER_TIMEZONE]
+        if (!stored.isNullOrEmpty()) return stored
+        val systemTz = TimeZone.getDefault().id
+        context.dataStore.edit { it[Keys.USER_TIMEZONE] = systemTz }
+        return systemTz
     }
 
     // ── Syncable preference updaters (mark dirty for sync) ──

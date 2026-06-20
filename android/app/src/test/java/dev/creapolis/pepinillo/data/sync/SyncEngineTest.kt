@@ -11,11 +11,13 @@ import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import dev.creapolis.pepinillo.core.network.SessionSyncResponse
 import dev.creapolis.pepinillo.core.network.TaskDto
 import dev.creapolis.pepinillo.core.network.TaskSyncResponse
+import dev.creapolis.pepinillo.core.network.FocusStatsDto
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
@@ -32,6 +34,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.TimeZone
 
 class SyncEngineTest {
 
@@ -67,6 +70,12 @@ class SyncEngineTest {
         context = mockk(relaxed = true)
 
         every { userPreferencesRepository.preferences } returns flowOf(UserPreferences())
+        // W-4: SyncEngine resolves the persisted timezone via getOrInitUserTimezone() for
+        // day-key computations; stub it so the stats path does not throw ZoneId.of("").
+        coEvery { userPreferencesRepository.getOrInitUserTimezone() } returns TimeZone.getDefault().id
+        // B-C9: syncDailyStatsPush reads dirty stats via getAllDaysWithSessions(); default
+        // to empty so the push phase is a no-op in the existing phase-ordering tests.
+        every { dailyStatsDao.getAllDaysWithSessions() } returns flowOf(emptyList())
         coEvery { settingsSyncEngine.syncSettings() } returns Result.success(Unit)
 
         // Default: Everywhere+ so existing syncAll tests still reach the sync logic
@@ -435,5 +444,172 @@ class SyncEngineTest {
         } catch (e: AuthenticationException) {
             // Expected
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // B-C8: mergeServerTasks — last-writer-wins conflict resolution (4 branches).
+    // Driven through syncTasks() -> pullAllTasks() (dirty list empty).
+    // -----------------------------------------------------------------------
+
+    private fun serverTaskDto(
+        serverId: Int = 10,
+        syncId: String = "local-1",
+        updatedAt: String = "2025-06-18T12:00:00Z",
+        title: String = "From server",
+    ) = TaskDto(id = serverId, syncId = syncId, updatedAt = updatedAt, title = title)
+
+    @Test
+    fun `B-C8 branch1 - local null inserts server task`() = runTest {
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { taskDao.getTaskById("local-1") } returns null
+        coEvery { taskDao.getTaskByServerId(10) } returns null
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(listOf(serverTaskDto()))
+
+        syncEngine.syncTasks()
+
+        coVerify { taskDao.insertTask(any()) }
+        coVerify(exactly = 0) { taskDao.updateTask(any()) }
+    }
+
+    @Test
+    fun `B-C8 branch2 - local not dirty is always replaced by server`() = runTest {
+        val local = TaskEntity(
+            id = "local-1",
+            title = "Local mirror",
+            createdAt = 1_000L,
+            updatedAt = 9_999_999_999_999L, // far future → server is "older"
+            isDirty = false,
+        )
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { taskDao.getTaskById("local-1") } returns local
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(listOf(serverTaskDto()))
+
+        syncEngine.syncTasks()
+
+        coVerify { taskDao.updateTask(any()) }
+        coVerify(exactly = 0) { taskDao.insertTask(any()) }
+    }
+
+    @Test
+    fun `B-C8 branch3 - dirty local overridden when server is newer`() = runTest {
+        val local = TaskEntity(
+            id = "local-1",
+            title = "Stale dirty local",
+            createdAt = 1_000L,
+            updatedAt = 1_000L, // very old
+            isDirty = true,
+        )
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { taskDao.getTaskById("local-1") } returns local
+        // Server updatedAt (2025-06-18) parses to ~1.75e12 >> local.updatedAt (1000).
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(listOf(serverTaskDto()))
+
+        syncEngine.syncTasks()
+
+        coVerify { taskDao.updateTask(any()) }
+    }
+
+    @Test
+    fun `B-C8 branch4 - dirty local kept when server is not newer`() = runTest {
+        val local = TaskEntity(
+            id = "local-1",
+            title = "Fresh dirty local",
+            createdAt = 1_000L,
+            updatedAt = 9_999_999_999_999L, // far future, newer than server
+            isDirty = true,
+        )
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { taskDao.getTaskById("local-1") } returns local
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(listOf(serverTaskDto()))
+
+        syncEngine.syncTasks()
+
+        coVerify(exactly = 0) { taskDao.updateTask(any()) }
+        coVerify(exactly = 0) { taskDao.insertTask(any()) }
+    }
+
+    // -----------------------------------------------------------------------
+    // B-C9: mergeServerStats — compare by updatedAt + dirty flag for re-push.
+    // Driven through syncDailyStats() (push first, then pull+merge).
+    // -----------------------------------------------------------------------
+
+    private fun statsDto(
+        date: String = "2025-06-18",
+        count: Int = 3,
+        updatedAt: String = "2025-06-18T12:00:00Z",
+    ) = FocusStatsDto(date = date, count = count, updatedAt = updatedAt)
+
+    @Test
+    fun `B-C9 push phase uploads dirty stats and clears dirty flag`() = runTest {
+        val dirty = DailyStatsEntity(
+            date = 1L,
+            sessionsCompleted = 5,
+            isDirty = true,
+            syncedAt = null,
+        )
+        every { dailyStatsDao.getAllDaysWithSessions() } returns flowOf(listOf(dirty))
+        coEvery { apiClient.upsertStats(any()) } returns
+            NetworkResult.Success(FocusStatsDto(date = "2025-06-18", count = 5))
+        coEvery { apiClient.getStats(any(), any()) } returns NetworkResult.Success(emptyList())
+        coEvery { dailyStatsDao.getStatsForDate(any()) } returns null
+
+        syncEngine.syncDailyStats()
+
+        coVerify { apiClient.upsertStats(any()) }
+        coVerify { dailyStatsDao.upsert(match { !it.isDirty && it.sessionsCompleted == 5 && it.syncedAt != null }) }
+    }
+
+    @Test
+    fun `B-C9 dirty local preserved when server has lower count`() = runTest {
+        val existing = DailyStatsEntity(
+            date = 1L,
+            sessionsCompleted = 5,
+            isDirty = true,
+            syncedAt = 1_000L,
+        )
+        every { dailyStatsDao.getAllDaysWithSessions() } returns flowOf(emptyList())
+        coEvery { apiClient.getStats(any(), any()) } returns
+            NetworkResult.Success(listOf(statsDto(count = 3)))
+        coEvery { dailyStatsDao.getStatsForDate(any()) } returns existing
+
+        syncEngine.syncDailyStats()
+
+        coVerify(exactly = 0) { dailyStatsDao.upsert(match { it.sessionsCompleted == 3 }) }
+    }
+
+    @Test
+    fun `B-C9 non-dirty local higher than older server flagged dirty for re-push`() = runTest {
+        val existing = DailyStatsEntity(
+            date = 1L,
+            sessionsCompleted = 5,
+            isDirty = false,
+            syncedAt = 9_999_999_999_999L, // far future → server updatedAt is NOT newer
+        )
+        every { dailyStatsDao.getAllDaysWithSessions() } returns flowOf(emptyList())
+        coEvery { apiClient.getStats(any(), any()) } returns
+            NetworkResult.Success(listOf(statsDto(count = 3)))
+        coEvery { dailyStatsDao.getStatsForDate(any()) } returns existing
+
+        syncEngine.syncDailyStats()
+
+        coVerify { dailyStatsDao.upsert(match { it.isDirty && it.sessionsCompleted == 5 }) }
+    }
+
+    @Test
+    fun `B-C9 server newer replaces non-dirty local`() = runTest {
+        val existing = DailyStatsEntity(
+            date = 1L,
+            sessionsCompleted = 2,
+            isDirty = false,
+            syncedAt = 1_000L, // server (2025 epoch) is newer
+        )
+        every { dailyStatsDao.getAllDaysWithSessions() } returns flowOf(emptyList())
+        coEvery { apiClient.getStats(any(), any()) } returns
+            NetworkResult.Success(listOf(statsDto(count = 3)))
+        coEvery { dailyStatsDao.getStatsForDate(any()) } returns existing
+
+        syncEngine.syncDailyStats()
+
+        coVerify { dailyStatsDao.upsert(match { !it.isDirty && it.sessionsCompleted == 3 }) }
     }
 }
