@@ -478,34 +478,34 @@ func ptrTimeTask(v time.Time) *time.Time {
 }
 
 // Mode-specific tracking methods
-func (s *TaskService) UpdateTaskTrackingMode(ctx context.Context, taskID int, mode string) error {
-	if err := s.repo.UpdateTrackingMode(ctx, taskID, mode); err != nil {
+func (s *TaskService) UpdateTaskTrackingMode(ctx context.Context, userID string, taskID int, mode string) error {
+	if err := s.repo.UpdateTrackingMode(ctx, userID, taskID, mode); err != nil {
 		return err
 	}
-	_ = s.behaviorLogger.LogEvent(ctx, "", "task_tracking_mode_updated", map[string]any{"taskId": taskID, "mode": mode})
+	_ = s.behaviorLogger.LogEvent(ctx, userID, "task_tracking_mode_updated", map[string]any{"taskId": taskID, "mode": mode})
 	return nil
 }
 
-func (s *TaskService) IncrementTaskCompletion(ctx context.Context, taskID int, mode string) error {
-	if err := s.repo.IncrementCompletionCount(ctx, taskID, mode); err != nil {
+func (s *TaskService) IncrementTaskCompletion(ctx context.Context, userID string, taskID int, mode string) error {
+	if err := s.repo.IncrementCompletionCount(ctx, userID, taskID, mode); err != nil {
 		return err
 	}
-	_ = s.behaviorLogger.LogEvent(ctx, "", "task_completion_incremented", map[string]any{"taskId": taskID, "mode": mode})
+	_ = s.behaviorLogger.LogEvent(ctx, userID, "task_completion_incremented", map[string]any{"taskId": taskID, "mode": mode})
 	return nil
 }
 
-func (s *TaskService) IncrementTaskFocusTime(ctx context.Context, taskID int, mode string, seconds int) error {
-	if err := s.repo.IncrementFocusTime(ctx, taskID, mode, seconds); err != nil {
+func (s *TaskService) IncrementTaskFocusTime(ctx context.Context, userID string, taskID int, mode string, seconds int) error {
+	if err := s.repo.IncrementFocusTime(ctx, userID, taskID, mode, seconds); err != nil {
 		return err
 	}
-	_ = s.behaviorLogger.LogEvent(ctx, "", "task_focus_time_incremented", map[string]any{"taskId": taskID, "mode": mode, "seconds": seconds})
+	_ = s.behaviorLogger.LogEvent(ctx, userID, "task_focus_time_incremented", map[string]any{"taskId": taskID, "mode": mode, "seconds": seconds})
 	return nil
 }
 
-func (s *TaskService) SetTaskActiveSession(ctx context.Context, taskID int, sessionID *string) error {
-	if err := s.repo.SetActiveSession(ctx, taskID, sessionID); err != nil {
+func (s *TaskService) SetTaskActiveSession(ctx context.Context, userID string, taskID int, sessionID *string) error {
+	if err := s.repo.SetActiveSession(ctx, userID, taskID, sessionID); err != nil {
 		return err
 	}
-	_ = s.behaviorLogger.LogEvent(ctx, "", "task_active_session_set", map[string]any{"taskId": taskID, "sessionId": sessionID})
+	_ = s.behaviorLogger.LogEvent(ctx, userID, "task_active_session_set", map[string]any{"taskId": taskID, "sessionId": sessionID})
 	return nil
 }

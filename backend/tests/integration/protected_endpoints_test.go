@@ -56,16 +56,16 @@ func (r *integrationTaskRepo) Sync(_ context.Context, userID string, tasks []dom
 	r.items = append(r.items, tasks...)
 	return tasks, nil, time.Now().UTC(), nil
 }
-func (r *integrationTaskRepo) UpdateTrackingMode(_ context.Context, _ int, _ string) error {
+func (r *integrationTaskRepo) UpdateTrackingMode(_ context.Context, _ string, _ int, _ string) error {
 	return nil
 }
-func (r *integrationTaskRepo) IncrementCompletionCount(_ context.Context, _ int, _ string) error {
+func (r *integrationTaskRepo) IncrementCompletionCount(_ context.Context, _ string, _ int, _ string) error {
 	return nil
 }
-func (r *integrationTaskRepo) IncrementFocusTime(_ context.Context, _ int, _ string, _ int) error {
+func (r *integrationTaskRepo) IncrementFocusTime(_ context.Context, _ string, _ int, _ string, _ int) error {
 	return nil
 }
-func (r *integrationTaskRepo) SetActiveSession(_ context.Context, _ int, _ *string) error {
+func (r *integrationTaskRepo) SetActiveSession(_ context.Context, _ string, _ int, _ *string) error {
 	return nil
 }
 func (r *integrationTaskRepo) ListByUserPaginated(_ context.Context, _ string, _ *ports.PaginationCursor, _ int) ([]domain.Task, error) {

@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"pepinillo/backend/internal/domain"
 	"pepinillo/backend/internal/services"
@@ -123,6 +125,9 @@ func (h *FocusHandler) InsertSession(c *fiber.Ctx) error {
 	}
 	session.UserID = userID
 	if err := h.focus.InsertSession(c.Context(), &session); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fiber.NewError(fiber.StatusNotFound, "focus_session_not_found")
+		}
 		return err
 	}
 	return c.JSON(session)

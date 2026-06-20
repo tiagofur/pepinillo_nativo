@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
+	"gorm.io/gorm"
 
 	"pepinillo/backend/internal/domain"
 	"pepinillo/backend/internal/services"
@@ -68,7 +70,7 @@ func (h *SubTaskHandler) Update(c *fiber.Ctx) error {
 	}
 	subtask.ID = subtaskID
 	if err := h.subtasks.Update(c.Context(), userID, taskID, &subtask); err != nil {
-		if err == services.ErrTaskNotFound {
+		if err == services.ErrTaskNotFound || errors.Is(err, gorm.ErrRecordNotFound) {
 			return fiber.NewError(fiber.StatusNotFound, "task_not_found")
 		}
 		return err
