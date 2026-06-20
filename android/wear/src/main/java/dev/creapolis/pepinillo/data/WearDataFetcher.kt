@@ -105,6 +105,15 @@ object WearDataFetcher {
     }
 
     suspend fun requestSyncFromPhone(context: Context) {
+        // Proactively drain any queued commands. onCapabilityChanged may not have fired
+        // (e.g. capability info already cached, GMS quiescent), and the user opening the
+        // app is a strong signal that we should attempt delivery now.
+        runCatching {
+            WearMessageSender(context).flushPendingCommands()
+        }.onFailure { e ->
+            Log.w(TAG, "Proactive flush in requestSyncFromPhone failed", e)
+        }
+
         runCatching {
             val nodes = Wearable.getNodeClient(context).connectedNodes.await()
             nodes.forEach { node ->

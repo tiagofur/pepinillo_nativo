@@ -3,6 +3,7 @@ package dev.creapolis.pepinillo.data
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
 
 object WearDataStore {
     private val _timerState = MutableStateFlow(WearTimerState())
@@ -89,24 +90,29 @@ object WearDataStore {
         val trimmed = tasksJson.trim()
         if (trimmed.isBlank() || trimmed == "[]") return emptyList()
 
-        // Keep parser JVM-friendly for unit tests (no android/org.json dependencies).
-        val objectRegex = Regex("\\{[^{}]*}")
-        return objectRegex.findAll(trimmed).mapNotNull { match ->
-            val payload = match.value
-            val id = extractJsonString(payload, "id") ?: return@mapNotNull null
-            val title = extractJsonString(payload, "title") ?: return@mapNotNull null
-            WearTask(
-                id = id,
-                title = title,
-                energyEmoji = extractJsonString(payload, "energyEmoji") ?: "",
-                pomodoroProgress = extractJsonString(payload, "pomodoroProgress") ?: "",
-            )
-        }.toList()
-    }
-
-    private fun extractJsonString(input: String, key: String): String? {
-        val pattern = Regex("\"$key\"\\s*:\\s*\"([^\"]*)\"")
-        return pattern.find(input)?.groupValues?.getOrNull(1)
+        // Use org.json (bundled in the Android runtime) instead of a hand-rolled regex
+        // parser: the previous Regex("\\{[^{}]*}") broke on any field value that itself
+        // contained a `}` character. JSONArray tolerates arbitrary string contents.
+        val array = JSONArray(trimmed)
+        val result = ArrayList<WearTask>(array.length())
+        for (i in 0 until array.length()) {
+            val obj = array.optJSONObject(i) ?: continue
+            // optString returns "" for missing OR JSON-null fields, which matches the
+            // previous regex fallback semantics for energy/progress.
+            val id = obj.optString("id")
+            val title = obj.optString("title")
+            // Skip entries that lack a usable id/title (parity with old behaviour where
+            // null id/title caused the entry to be dropped).
+            if (id.isEmpty() || title.isEmpty()) continue
+            result +=
+                WearTask(
+                    id = id,
+                    title = title,
+                    energyEmoji = obj.optString("energyEmoji"),
+                    pomodoroProgress = obj.optString("pomodoroProgress"),
+                )
+        }
+        return result
     }
 
     fun updateTasks(newTasks: List<WearTask>) {

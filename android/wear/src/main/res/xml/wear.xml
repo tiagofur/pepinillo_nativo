@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Declares the phone-side capability the watch listens for. When a nearby node
+    advertises `pepinillo_phone`, WearableListenerService.onCapabilityChanged fires,
+    which is the modern replacement for the deprecated onPeerConnected callback.
+-->
+<wearable-app xmlns:android="http://schemas.android.com/apk/res/android">
+    <capability android:name="pepinillo_phone" />
+</wearable-app>
