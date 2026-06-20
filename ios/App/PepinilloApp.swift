@@ -13,6 +13,9 @@ import UserNotifications
 import ActivityKit
 import ComposableArchitecture
 import OSLog
+#if canImport(UIKit)
+import UIKit
+#endif
 
 private enum AppBootstrapTiming {
     // Keep launch-critical persistence well below the iOS watchdog window.
@@ -289,9 +292,34 @@ struct PepinilloApp: App {
                             // Checkpoint the WAL on background so the next cold launch does
                             // not need to replay a large WAL file before the store is readable.
                             // Uses a low-priority global queue so it does not delay backgrounding.
+                            #if os(iOS) || targetEnvironment(macCatalyst)
+                            final class TaskIdBox: @unchecked Sendable {
+                                var value: UIBackgroundTaskIdentifier = .invalid
+                            }
+                            let box = TaskIdBox()
+                            let sharedApp = UIApplication.shared
+                            box.value = sharedApp.beginBackgroundTask(withName: "WALCheckpoint") {
+                                Task { @MainActor [box] in
+                                    if box.value != .invalid {
+                                        sharedApp.endBackgroundTask(box.value)
+                                        box.value = .invalid
+                                    }
+                                }
+                            }
+                            DispatchQueue.global(qos: .utility).async {
+                                checkpointWAL(at: AppGroup.storeURL)
+                                Task { @MainActor [box] in
+                                    if box.value != .invalid {
+                                        sharedApp.endBackgroundTask(box.value)
+                                        box.value = .invalid
+                                    }
+                                }
+                            }
+                            #else
                             DispatchQueue.global(qos: .utility).async {
                                 checkpointWAL(at: AppGroup.storeURL)
                             }
+                            #endif
                         default:
                             break
                         }
@@ -301,39 +329,52 @@ struct PepinilloApp: App {
                         store.send(.dayChanged)
                     }
             } else {
-                VStack(spacing: 16) {
-                    Image("LaunchLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 96, height: 96)
+                Group {
                     if bootstrap.phase == .failed {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.orange)
-                        Text("Could not initialize local data")
-                            .font(.headline)
-                        Text("Please retry. If this persists, reinstall the app to reset the local database.")
-                            .font(.subheadline)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 28)
-                        Button("Retry") {
-                            bootstrap.retry()
+                        VStack(spacing: 16) {
+                            Image("LaunchLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 96, height: 96)
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.title2)
+                                .foregroundStyle(.orange)
+                            Text("Could not initialize local data")
+                                .font(.headline)
+                            Text("Please retry. If this persists, reinstall the app to reset the local database.")
+                                .font(.subheadline)
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 28)
+                            Button("Retry") {
+                                bootstrap.retry()
+                            }
+                            .buttonStyle(.borderedProminent)
                         }
-                        .buttonStyle(.borderedProminent)
                     } else {
-                        ProgressView()
-                        Text(bootstrap.statusMessage)
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                        ZStack {
+                            Image("LaunchLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 96, height: 96)
+                            
+                            VStack {
+                                Spacer()
+                                ProgressView()
+                                Text(bootstrap.statusMessage)
+                                    .font(.headline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.bottom, 80)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color(.systemBackground).ignoresSafeArea())
             }
         }
-        .defaultSize(width: 1_100, height: 720)
         #if os(macOS) || targetEnvironment(macCatalyst)
+        .defaultSize(width: 1_100, height: 720)
         .windowResizability(.contentMinSize)
         #endif
         .commands {

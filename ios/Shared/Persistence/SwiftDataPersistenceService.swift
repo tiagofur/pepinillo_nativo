@@ -83,7 +83,7 @@ public final class SwiftDataPersistenceService {
                 // Never synced — safe to hard delete
                 context.delete(task)
             } else {
-                task.isDeleted = true
+                task.isLocallyDeleted = true
                 task.isDirty = true
                 task.updatedAt = Date.now
             }
@@ -153,6 +153,22 @@ public final class SwiftDataPersistenceService {
         let descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == taskID })
         guard let task = try context.fetch(descriptor).first else { return [] }
         return task.sessions.sorted { $0.startedAt > $1.startedAt }
+    }
+
+    public func fetchSessions(forTaskIDs ids: [UUID]) throws -> [UUID: [FocusSessionRecord]] {
+        let descriptor = FetchDescriptor<FocusSessionRecord>()
+        let sessions = try context.fetch(descriptor)
+        let idSet = Set(ids)
+        var result: [UUID: [FocusSessionRecord]] = [:]
+        for session in sessions {
+            if let taskID = session.task?.id, idSet.contains(taskID) {
+                result[taskID, default: []].append(session)
+            }
+        }
+        for (taskID, list) in result {
+            result[taskID] = list.sorted { $0.startedAt > $1.startedAt }
+        }
+        return result
     }
 
     public func fetchTaskAnalytics(taskID: UUID) throws -> TaskAnalyticsDTO {
@@ -365,6 +381,22 @@ public final class SwiftDataPersistenceService {
         return task.subtasks.sorted { $0.sortOrder < $1.sortOrder }
     }
 
+    public func fetchSubtasks(forTaskIDs ids: [UUID]) throws -> [UUID: [SubTask]] {
+        let descriptor = FetchDescriptor<SubTask>()
+        let subtasks = try context.fetch(descriptor)
+        let idSet = Set(ids)
+        var result: [UUID: [SubTask]] = [:]
+        for subtask in subtasks {
+            if let parentID = subtask.parent?.id, idSet.contains(parentID) {
+                result[parentID, default: []].append(subtask)
+            }
+        }
+        for (taskID, list) in result {
+            result[taskID] = list.sorted { $0.sortOrder < $1.sortOrder }
+        }
+        return result
+    }
+
     public func addSubtask(to taskID: UUID, title: String) throws -> SubTask {
         let descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == taskID })
         guard let task = try context.fetch(descriptor).first else {
@@ -453,19 +485,27 @@ public final class SwiftDataPersistenceService {
     /// Mark tasks as synced (clean) after successful sync.
     public func markTasksSynced(syncIds: [String], syncTimestamp: String) throws {
         let now = Date.now
-        for syncId in syncIds {
-            let syncIdCopy = syncId
-            let descriptor = FetchDescriptor<TaskItem>(
-                predicate: #Predicate { $0.syncId == syncIdCopy }
-            )
-            if let task = try context.fetch(descriptor).first {
-                task.isDirty = false
-                task.syncedAt = now
+        
+        // Fetch candidate tasks to update and purge in-memory, avoiding SwiftData loop variable predicate bugs
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.isDirty == true || $0.isLocallyDeleted == true }
+        )
+        let tasks = try context.fetch(descriptor)
+        
+        for task in tasks {
+            if syncIds.contains(task.syncId) {
+                if task.isLocallyDeleted {
+                    context.delete(task)
+                } else {
+                    task.isDirty = false
+                    task.syncedAt = now
+                }
             }
         }
-        // Purge soft-deleted tasks that have been synced
+        
+        // Purge any remaining soft-deleted tasks that are clean
         let deletedDescriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate { $0.isDeleted == true && $0.isDirty == false }
+            predicate: #Predicate { $0.isLocallyDeleted == true && $0.isDirty == false }
         )
         let deletedTasks = try context.fetch(deletedDescriptor)
         for task in deletedTasks {
@@ -549,7 +589,7 @@ public final class SwiftDataPersistenceService {
             newTask.completedAt = serverTask.isFinished ? Date.now : nil
             newTask.completedPomodoros = serverTask.completedPomodoros
             newTask.recurrenceRule = serverTask.recurrenceRule
-            newTask.isDeleted = serverTask.isDeleted
+            newTask.isLocallyDeleted = serverTask.isDeleted
             newTask.isDirty = false
             newTask.syncedAt = Date.now
             if let templateId = serverTask.recurringTemplateId {
@@ -663,7 +703,7 @@ public final class SwiftDataPersistenceService {
 
     public func markAllSyncableDataDirty() throws {
         let taskDescriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate { $0.isDeleted == false }
+            predicate: #Predicate { $0.isLocallyDeleted == false }
         )
         for task in try context.fetch(taskDescriptor) {
             task.isDirty = true
@@ -868,7 +908,7 @@ public final class SwiftDataPersistenceService {
 
     public func getTaskCount() throws -> Int {
         let descriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate { $0.isDeleted == false }
+            predicate: #Predicate { $0.isLocallyDeleted == false }
         )
         return try context.fetchCount(descriptor)
     }

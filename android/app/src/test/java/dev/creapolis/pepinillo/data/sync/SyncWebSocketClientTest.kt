@@ -111,4 +111,106 @@ class SyncWebSocketClientTest {
     fun `empty type returns null from dispatch map`() {
         assertEquals(null, dispatchMap[""])
     }
+
+    // -----------------------------------------------------------------------
+    // Auth gate + reconnect cap (A-C6)
+    //
+    // shouldAttemptReconnect() is the single decision point used by
+    // scheduleReconnect(). It must return false once we log out (no token),
+    // once disconnect() clears shouldConnect, or after MAX_RECONNECT_ATTEMPTS.
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `reconnect proceeds when connected flag set, token present, under cap`() {
+        assert(SyncWebSocketClient.shouldAttemptReconnect(attempt = 0, hasToken = true, wantConnect = true))
+        assert(SyncWebSocketClient.shouldAttemptReconnect(attempt = 19, hasToken = true, wantConnect = true))
+    }
+
+    @Test
+    fun `reconnect stops after logout - no access token`() {
+        // After logout authStore.getAccessToken() == null → must NOT reconnect.
+        assertEquals(
+            false,
+            SyncWebSocketClient.shouldAttemptReconnect(attempt = 0, hasToken = false, wantConnect = true),
+        )
+    }
+
+    @Test
+    fun `reconnect stops after disconnect - wantConnect false`() {
+        assertEquals(
+            false,
+            SyncWebSocketClient.shouldAttemptReconnect(attempt = 0, hasToken = true, wantConnect = false),
+        )
+    }
+
+    @Test
+    fun `reconnect stops after reaching max attempts`() {
+        assertEquals(
+            false,
+            SyncWebSocketClient.shouldAttemptReconnect(
+                attempt = SyncWebSocketClient.MAX_RECONNECT_ATTEMPTS,
+                hasToken = true,
+                wantConnect = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `max reconnect attempts is twenty`() {
+        assertEquals(20, SyncWebSocketClient.MAX_RECONNECT_ATTEMPTS)
+    }
+
+    @Test
+    fun `last allowed attempt is max minus one`() {
+        assert(SyncWebSocketClient.shouldAttemptReconnect(attempt = 19, hasToken = true, wantConnect = true))
+        assertEquals(
+            false,
+            SyncWebSocketClient.shouldAttemptReconnect(attempt = 20, hasToken = true, wantConnect = true),
+        )
+    }
+
+    @Test
+    fun `calcReconnectDelay matches the documented exponential formula`() {
+        // Real internal helper — not a replica.
+        assertEquals(1_000L, SyncWebSocketClient.calcReconnectDelay(0))
+        assertEquals(2_000L, SyncWebSocketClient.calcReconnectDelay(1))
+        assertEquals(4_000L, SyncWebSocketClient.calcReconnectDelay(2))
+        assertEquals(8_000L, SyncWebSocketClient.calcReconnectDelay(3))
+        assertEquals(16_000L, SyncWebSocketClient.calcReconnectDelay(4))
+        assertEquals(30_000L, SyncWebSocketClient.calcReconnectDelay(5))
+        assertEquals(30_000L, SyncWebSocketClient.calcReconnectDelay(50))
+    }
+
+    // -----------------------------------------------------------------------
+    // Token moved out of URL (W-T4)
+    //
+    // buildWsUrlPure() must NOT contain the access token; it must only carry
+    // deviceId. The token now travels via Sec-WebSocket-Protocol header.
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `ws url contains deviceId only`() {
+        val url = SyncWebSocketClient.buildWsUrlPure("wss://host/api/v1", "device-123")
+        assertEquals("wss://host/api/v1/ws?deviceId=device-123", url)
+    }
+
+    @Test
+    fun `ws url never contains a token query parameter`() {
+        val url = SyncWebSocketClient.buildWsUrlPure("wss://host/api/v1", "device-123")
+        assert(!url.contains("token")) { "token must not appear in URL: $url" }
+        assert(!url.contains("bearer")) { "bearer must not appear in URL: $url" }
+    }
+
+    @Test
+    fun `wsBaseFrom promotes https to wss and strips trailing slash`() {
+        assertEquals(
+            "wss://host/api/v1",
+            SyncWebSocketClient.wsBaseFrom("https://host/api/v1/"),
+        )
+    }
+
+    @Test
+    fun `wsBaseFrom promotes http to ws`() {
+        assertEquals("ws://host/api/v1", SyncWebSocketClient.wsBaseFrom("http://host/api/v1/"))
+    }
 }

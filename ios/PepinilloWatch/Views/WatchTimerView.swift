@@ -15,10 +15,69 @@ struct WatchTimerView: View {
 
     var body: some View {
         if store.isSessionActive {
-            activeSessionView
+            if store.isWaiting {
+                waitingView
+            } else {
+                activeSessionView
+            }
         } else {
             idleView
         }
+    }
+
+    // MARK: - Waiting for Next Phase
+
+    private var waitingView: some View {
+        VStack(spacing: 8) {
+            Spacer(minLength: 0)
+
+            // Indicate the pending phase with the mode icon
+            Text(store.selectedMode.icon)
+                .font(.system(size: 28))
+
+            // phaseLabel here is the pending next phase name (set on .waitingForNextPhase) — tells the user what's next
+            Text(store.phaseLabel)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
+
+            // Phase-aware CTA — uses the isBreakPhase/isLongBreakPhase flags which
+            // are now derived from the PENDING next phase in WatchSessionState.init(from:).
+            let ctaLabel: String = {
+                if store.isLongBreakPhase {
+                    return String(localized: "Start long break",
+                                  defaultValue: "Start long break")
+                } else if store.isBreakPhase {
+                    return String(localized: "Start break",
+                                  defaultValue: "Start break")
+                } else {
+                    return String(localized: "Start focus",
+                                  defaultValue: "Start focus")
+                }
+            }()
+
+            Button {
+                store.send(.startNextPhaseTapped)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text(ctaLabel)
+                        .font(.system(size: 15, weight: .semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background(modeColor, in: Capsule())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 4)
+        .padding(.bottom, 4)
     }
 
     // MARK: - Active Session
@@ -113,7 +172,7 @@ struct WatchTimerView: View {
                 .buttonStyle(.plain)
 
                 // Skip phase (only during break phases)
-                if store.phaseLabel.contains("Break") {
+                if store.isBreakPhase {
                     Button {
                         store.send(.skipTapped)
                     } label: {
@@ -252,10 +311,9 @@ struct WatchTimerView: View {
 
     private var modeColor: Color {
         let base = colorFor(store.selectedMode)
-        let phase = store.phaseLabel
-        if phase.contains("Long Break") {
+        if store.isLongBreakPhase {
             return base.longBreakVariant()
-        } else if phase.contains("Break") {
+        } else if store.isBreakPhase {
             return base.shortBreakVariant()
         }
         return base

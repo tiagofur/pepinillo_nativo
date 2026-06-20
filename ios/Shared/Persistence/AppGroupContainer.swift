@@ -447,6 +447,14 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "activeSessionIsPaused") }
     }
 
+    /// Whether the engine is in the "waiting for next phase" hold (tick suspended,
+    /// pendingNextPhase set). Widgets and intents read this to suppress pause/resume
+    /// controls that would be misleading or harmful during the hold.
+    static var activeSessionIsWaiting: Bool {
+        get { defaults?.bool(forKey: "activeSessionIsWaiting") ?? false }
+        set { defaults?.set(newValue, forKey: "activeSessionIsWaiting") }
+    }
+
     /// Whether the visible session was started optimistically by a widget before
     /// the app reconciled it into the FocusEngine.
     static var activeSessionStartedFromWidget: Bool {
@@ -536,6 +544,7 @@ enum AppGroupDefaults {
         activeSessionTimerStart = issuedAt
         activeSessionElapsed = 0
         activeSessionIsPaused = false
+        activeSessionIsWaiting = false
         activeSessionPausedAt = nil
 
         if duration > 0 {
@@ -581,6 +590,7 @@ enum AppGroupDefaults {
         defaults?.removeObject(forKey: "activeSessionTimerStart")
         defaults?.removeObject(forKey: "activeSessionTimerEnd")
         defaults?.set(false, forKey: "activeSessionIsPaused")
+        defaults?.set(false, forKey: "activeSessionIsWaiting")
         defaults?.set(false, forKey: "activeSessionStartedFromWidget")
         defaults?.removeObject(forKey: "activeSessionPausedAt")
         defaults?.removeObject(forKey: "activeTaskID")
@@ -611,13 +621,19 @@ func makeSharedModelContainer() throws -> ModelContainer {
     } catch {
         persistenceLogger.error("Failed to open shared ModelContainer: \(String(describing: error), privacy: .public)")
 
-        try quarantineCorruptedStoreIfPresent()
-
-        persistenceLogger.info("Retrying shared ModelContainer after quarantine...")
-        do {
-            return try makeModelContainer(at: AppGroup.storeURL)
-        } catch {
-            persistenceLogger.fault("Critical failure: Could not open shared ModelContainer even after quarantine. Error: \(String(describing: error), privacy: .public)")
+        if isDatabaseCorrupted(at: AppGroup.storeURL) {
+            persistenceLogger.warning("Shared database is verified corrupted. Initiating quarantine...")
+            try quarantineCorruptedStoreIfPresent()
+            
+            persistenceLogger.info("Retrying shared ModelContainer after quarantine...")
+            do {
+                return try makeModelContainer(at: AppGroup.storeURL)
+            } catch {
+                persistenceLogger.fault("Critical failure: Could not open shared ModelContainer even after quarantine. Error: \(String(describing: error), privacy: .public)")
+                throw error
+            }
+        } else {
+            persistenceLogger.warning("ModelContainer failed to open, but database is not verified corrupted (might be locked or permissions issue). Skipping quarantine.")
             throw error
         }
     }
@@ -636,11 +652,29 @@ func makeAppleCloudModelContainer() throws -> ModelContainer {
 
 // MARK: - Widget / Extension Container (non-CloudKit, non-MainActor)
 
+private final class SharedModelContainerCache: @unchecked Sendable {
+    static let shared = SharedModelContainerCache()
+    private let lock = NSLock()
+    private var container: ModelContainer?
+
+    func getOrCreateContainer() throws -> ModelContainer {
+        lock.lock()
+        defer { lock.unlock() }
+        if let container {
+            return container
+        }
+        persistenceLogger.info("SharedModelContainerCache: Initializing shared container for extensions...")
+        let newContainer = try makeModelContainer(at: AppGroup.storeURL)
+        container = newContainer
+        return newContainer
+    }
+}
+
 /// Non-isolated version for WidgetKit extension process.
 /// WidgetKit runs in a separate process — no @MainActor, no CloudKit sync.
 /// Includes TaskItem + SubTask + FocusSessionRecord so Tasks and Dashboard widgets can read real data.
 func makeWidgetModelContainer() throws -> ModelContainer {
-    try makeModelContainer(at: AppGroup.storeURL)
+    try SharedModelContainerCache.shared.getOrCreateContainer()
 }
 
 // MARK: - Intents Extension Container (includes TaskItem for Siri queries)
@@ -648,7 +682,7 @@ func makeWidgetModelContainer() throws -> ModelContainer {
 /// Non-isolated container for the Intents extension (Siri Shortcuts).
 /// Includes TaskItem + SubTask so Siri can suggest real user tasks.
 func makeIntentsModelContainer() throws -> ModelContainer {
-    try makeModelContainer(at: AppGroup.storeURL)
+    try SharedModelContainerCache.shared.getOrCreateContainer()
 }
 
 private func makeModelContainer(at url: URL) throws -> ModelContainer {
@@ -701,6 +735,51 @@ func makeInMemoryModelContainer() throws -> ModelContainer {
         for: schema,
         configurations: [config]
     )
+}
+
+private func isDatabaseCorrupted(at url: URL) -> Bool {
+    let path = url.path
+    let fileManager = FileManager.default
+    guard fileManager.fileExists(atPath: path) else {
+        return false // File doesn't exist, nothing to be corrupted
+    }
+
+    var db: OpaquePointer?
+    let flags = SQLITE_OPEN_READONLY | SQLITE_OPEN_URI
+    let rc = sqlite3_open_v2(path, &db, flags, nil)
+    if rc != SQLITE_OK {
+        if let db {
+            sqlite3_close(db)
+        }
+        // SQLITE_CORRUPT or SQLITE_NOTADB indicates file format/integrity corruption.
+        // Other codes (like SQLITE_BUSY or SQLITE_CANTOPEN) are typically transient locks or sandbox restrictions.
+        return rc == SQLITE_CORRUPT || rc == SQLITE_NOTADB
+    }
+    defer { sqlite3_close(db) }
+
+    var stmt: OpaquePointer?
+    let query = "PRAGMA integrity_check;"
+    if sqlite3_prepare_v2(db, query, -1, &stmt, nil) == SQLITE_OK {
+        defer { sqlite3_finalize(stmt) }
+        if sqlite3_step(stmt) == SQLITE_ROW {
+            if let cString = sqlite3_column_text(stmt, 0) {
+                let result = String(cString: cString)
+                if result == "ok" {
+                    return false
+                } else {
+                    persistenceLogger.error("isDatabaseCorrupted: integrity check failed with result '\(result, privacy: .public)'")
+                    return true
+                }
+            }
+        }
+    } else {
+        let errCode = sqlite3_errcode(db)
+        if errCode == SQLITE_CORRUPT || errCode == SQLITE_NOTADB {
+            return true
+        }
+    }
+
+    return false
 }
 
 private func quarantineCorruptedStoreIfPresent() throws {
@@ -762,8 +841,12 @@ func checkpointWAL(at storeURL: URL) {
     // copy frames from the WAL into the main database file.
     // NOMUTEX is safe here because this function is only called from one thread at a time.
     let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_URI | SQLITE_OPEN_NOMUTEX
-    guard sqlite3_open_v2(path, &db, flags, nil) == SQLITE_OK, let db else {
+    let openRc = sqlite3_open_v2(path, &db, flags, nil)
+    if openRc != SQLITE_OK {
         persistenceLogger.warning("checkpointWAL: could not open '\(path, privacy: .public)' read-write — skipping checkpoint")
+        if let db {
+            sqlite3_close(db)
+        }
         return
     }
     defer { sqlite3_close(db) }

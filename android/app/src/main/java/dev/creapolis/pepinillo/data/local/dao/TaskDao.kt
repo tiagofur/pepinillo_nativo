@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import kotlinx.coroutines.flow.Flow
@@ -48,6 +49,33 @@ interface TaskDao {
     @Query("UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1, updated_at = :now, is_dirty = 1 WHERE id = :taskId")
     suspend fun incrementPomodoros(taskId: String, now: Long = System.currentTimeMillis())
 
+    /**
+     * Mark a task dirty without changing its content. Used when a child subtask is
+     * mutated (added/toggled/deleted) so the parent task is included in the next
+     * sync push, which carries the up-to-date subtask snapshot.
+     */
+    @Query("UPDATE tasks SET is_dirty = 1, updated_at = :now WHERE id = :taskId")
+    suspend fun markDirty(taskId: String, now: Long = System.currentTimeMillis())
+
+    /**
+     * Atomic completion toggle — single SQL statement, no read-modify-write race.
+     *
+     * `is_completed` on the RHS is the pre-flip value, so:
+     *  - currently incomplete (0) → completed_at = :now (we are completing it)
+     *  - currently complete (1)   → completed_at = NULL (we are un-completing it)
+     */
+    @Query(
+        """
+        UPDATE tasks
+        SET is_completed = NOT is_completed,
+            completed_at = CASE WHEN is_completed = 0 THEN :now ELSE NULL END,
+            is_dirty = 1,
+            updated_at = :now
+        WHERE id = :taskId
+        """,
+    )
+    suspend fun toggleCompletionAtomic(taskId: String, now: Long = System.currentTimeMillis())
+
     @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 0 AND is_deleted = 0")
     fun getActiveCount(): Flow<Int>
 
@@ -87,4 +115,20 @@ interface TaskDao {
 
     @Query("SELECT COUNT(*) FROM tasks WHERE is_dirty = 1")
     fun getDirtyTaskCount(): Flow<Int>
+
+    /**
+     * Apply a batch of sort-order updates inside a single Room transaction.
+     *
+     * If any individual update fails, the whole batch rolls back so sort ordering
+     * never ends up in an inconsistent partial state. All updates share one
+     * `updated_at` / `is_dirty` stamp so the synced snapshot is coherent.
+     */
+    @Transaction
+    suspend fun reorderTasksAtomic(updates: List<Pair<String, Int>>) {
+        if (updates.isEmpty()) return
+        val now = System.currentTimeMillis()
+        updates.forEach { (taskId, sortOrder) ->
+            updateSortOrder(taskId, sortOrder, now)
+        }
+    }
 }

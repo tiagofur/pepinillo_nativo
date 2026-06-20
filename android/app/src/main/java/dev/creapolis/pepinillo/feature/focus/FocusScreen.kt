@@ -52,6 +52,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -81,6 +82,7 @@ import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
 import dev.creapolis.pepinillo.ui.components.SuccessToast
+import dev.creapolis.pepinillo.ui.components.GlassBox
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -197,9 +199,11 @@ fun FocusScreen(
                 Spacer(modifier = Modifier.height(22.dp))
             }
 
-            if (uiState.showPaywall) {
-                viewModel.dismissPaywall()
-                onNavigateToPaywall()
+            LaunchedEffect(uiState.showPaywall) {
+                if (uiState.showPaywall) {
+                    viewModel.dismissPaywall()
+                    onNavigateToPaywall()
+                }
             }
 
             Spacer(modifier = Modifier.weight(if (sessionActive) 0.55f else 0.28f))
@@ -208,7 +212,8 @@ fun FocusScreen(
                 uiState.currentPhase == FocusPhase.Work &&
                 sessionActive
             ) {
-                stringResource(R.string.phase_focus_numbered, uiState.completedSessions + 1)
+                val focusWord = stringResource(R.string.phase_focus)
+                "$focusWord ${uiState.completedSessions + 1}/${uiState.sessionsBeforeLongBreak}"
             } else {
                 stringResource(uiState.phaseLabelRes)
             }
@@ -249,7 +254,7 @@ fun FocusScreen(
                     )
                     AnimatedVisibility(visible = uiState.selectedMode == FocusMode.Pomodoro && sessionActive) {
                         Text(
-                            text = "${uiState.completedSessions + 1}",
+                            text = "${uiState.completedSessions + 1} / ${uiState.sessionsBeforeLongBreak}",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -258,11 +263,11 @@ fun FocusScreen(
             }
 
             Text(
-                text = phaseLabel.uppercase(),
+                text = phaseLabel,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 2.sp,
-                color = animatedContentColor.copy(alpha = 0.72f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 14.dp),
             )
 
@@ -315,86 +320,83 @@ fun FocusScreen(
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.onStopClick()
                         },
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = Color.Red,
+                        tintOpacity = 0.50f,
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Stop,
                             contentDescription = stringResource(R.string.btn_stop),
                             modifier = Modifier.size(28.dp),
+                            tint = Color.White,
                         )
                     }
                 }
 
-                Button(
-                    onClick = {
-                        if (uiState.isRunning) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        } else {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        }
-                        // On the first session start (idle state), request POST_NOTIFICATIONS
-                        // on Android 13+. The session starts regardless of the user's choice.
-                        if (!uiState.isRunning && !uiState.isPaused && !uiState.isWaitingForNext &&
-                            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                            ContextCompat.checkSelfPermission(
-                                context, Manifest.permission.POST_NOTIFICATIONS,
-                            ) != PackageManager.PERMISSION_GRANTED
-                        ) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                        viewModel.onStartStopClick()
-                    },
-                    modifier = Modifier.size(width = buttonWidth, height = buttonHeight),
-                    shape = RoundedCornerShape(buttonCornerRadius),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = animatedAccentColor,
-                        contentColor = animatedOnAccentColor,
-                    ),
-                    contentPadding = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) {
-                        ButtonDefaults.ContentPadding
-                    } else {
-                        PaddingValues(0.dp)
-                    },
+                GlassBox(
+                    modifier = Modifier
+                        .size(width = buttonWidth, height = buttonHeight)
+                        .clip(RoundedCornerShape(buttonCornerRadius))
+                        .clickable {
+                            if (uiState.isRunning) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            } else {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            }
+                            // On the first session start (idle state), request POST_NOTIFICATIONS
+                            // on Android 13+. The session starts regardless of the user's choice.
+                            if (!uiState.isRunning && !uiState.isPaused && !uiState.isWaitingForNext &&
+                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                ContextCompat.checkSelfPermission(
+                                    context, Manifest.permission.POST_NOTIFICATIONS,
+                                ) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            viewModel.onStartStopClick()
+                        },
+                    cornerRadius = buttonCornerRadius,
+                    tint = animatedAccentColor,
+                    tintOpacity = if (sessionActive) 0.60f else 0.85f,
                 ) {
-                    AnimatedContent(
-                        targetState = primaryTimerActionVisual,
-                        label = "startStop",
-                    ) { visual ->
-                        when (visual) {
-                            PrimaryTimerActionVisual.Pause -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        AnimatedContent(
+                            targetState = uiState.isRunning,
+                            label = "startStop",
+                        ) { isRunning ->
+                            if (isRunning || uiState.isPaused) {
                                 Icon(
-                                    imageVector = Icons.Rounded.Pause,
-                                    contentDescription = stringResource(R.string.btn_pause),
+                                    imageVector = if (isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                                    contentDescription = if (isRunning) stringResource(R.string.btn_pause) else stringResource(R.string.btn_resume),
                                     modifier = Modifier.size(32.dp),
+                                    tint = Color.White,
                                 )
-                            }
-
-                            PrimaryTimerActionVisual.PlayCompact -> {
-                                Icon(
-                                    imageVector = Icons.Rounded.PlayArrow,
-                                    contentDescription = if (uiState.isPaused) {
-                                        stringResource(R.string.btn_resume)
-                                    } else {
-                                        stringResource(R.string.cd_start_timer)
-                                    },
-                                    modifier = Modifier.size(32.dp),
-                                )
-                            }
-
-                            PrimaryTimerActionVisual.StartExpanded -> {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                            } else {
+                                val ctaLabel = when {
+                                    uiState.isWaitingForNext && uiState.currentPhase == FocusPhase.ShortBreak ->
+                                        stringResource(R.string.btn_start_break)
+                                    uiState.isWaitingForNext && uiState.currentPhase == FocusPhase.LongBreak ->
+                                        stringResource(R.string.btn_start_long_break)
+                                    else -> stringResource(R.string.btn_start_focus)
+                                }
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                                ) {
                                     Icon(
                                         imageVector = Icons.Rounded.PlayArrow,
-                                        contentDescription = null,
+                                        contentDescription = ctaLabel,
+                                        tint = Color.White,
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = stringResource(R.string.btn_start_focus),
+                                        text = ctaLabel,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
+                                        color = Color.White,
                                     )
                                 }
                             }
@@ -408,13 +410,12 @@ fun FocusScreen(
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             viewModel.onSkipClick()
                         },
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.SkipNext,
                             contentDescription = "Skip to next phase",
                             modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
@@ -568,21 +569,26 @@ private enum class PrimaryTimerActionVisual {
 @Composable
 private fun CircleControlButton(
     onClick: () -> Unit,
-    containerColor: Color,
-    contentColor: Color,
+    modifier: Modifier = Modifier,
+    tint: Color? = null,
+    tintOpacity: Float = 0.12f,
     content: @Composable () -> Unit,
 ) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.size(56.dp),
-        shape = CircleShape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = containerColor,
-            contentColor = contentColor,
-        ),
-        contentPadding = PaddingValues(0.dp),
+    GlassBox(
+        modifier = modifier
+            .size(56.dp)
+            .clip(CircleShape)
+            .clickable(onClick = onClick),
+        cornerRadius = 28.dp,
+        tint = tint,
+        tintOpacity = tintOpacity,
     ) {
-        content()
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            content()
+        }
     }
 }
 
@@ -595,31 +601,34 @@ private fun CompactFocusChip(
     trailingIcon: @Composable (() -> Unit)? = null,
     minHeight: Dp = 40.dp,
 ) {
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f))
-            .clickable(onClick = onClick)
-            .height(minHeight)
-            .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
+    GlassBox(
+        modifier = modifier,
+        cornerRadius = 22.dp
     ) {
-        if (leadingIcon != null) {
-            leadingIcon()
-            Spacer(modifier = Modifier.width(8.dp))
-        }
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (trailingIcon != null) {
-            Spacer(modifier = Modifier.width(8.dp))
-            trailingIcon()
+        Row(
+            modifier = Modifier
+                .clickable(onClick = onClick)
+                .height(minHeight)
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            if (leadingIcon != null) {
+                leadingIcon()
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (trailingIcon != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                trailingIcon()
+            }
         }
     }
 }

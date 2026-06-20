@@ -948,6 +948,9 @@ struct AppFeature {
                     return .run { [watchClient, watchTasks] _ in
                         await watchClient.sendTasks(watchTasks)
                     }
+                case .startNextPhase:
+                    return .send(.focus(.startNextPhaseTapped))
+
                 case .requestDashboard:
                     return .run { [watchClient, persistence] _ in
                         let stats = try? await persistence.fetchDailyStats(Date.now)
@@ -1012,26 +1015,28 @@ struct AppFeature {
                     await watchClient.sendSessionState(watchState)
                 }
 
+            case .focus(.waitingForNextPhase):
+                // The tick loop is suspended during the hold, so this is the only trigger
+                // that will push a watch state update when autoStart is OFF. Without this,
+                // the watch never learns the engine entered the waiting state.
+                let watchState = WatchSessionState(from: state.focus)
+                return .run { [watchClient, watchState] _ in
+                    await watchClient.sendSessionState(watchState)
+                }
+
+            case .focus(.startNextPhaseTapped):
+                // The phone is leaving the waiting hold — push fresh state so the watch
+                // transitions away from the waiting view immediately.
+                let watchState = WatchSessionState(from: state.focus)
+                return .run { [watchClient, watchState] _ in
+                    await watchClient.sendSessionState(watchState)
+                }
+
             case .focus(.stopTapped), .focus(.sessionCompleted):
                 let watchState = WatchSessionState(from: state.focus)
                 return .merge(
                     .run { [watchClient, watchState] _ in
                         await watchClient.sendSessionState(watchState)
-                    },
-                    .run { [watchClient] _ in
-                        if let stats = try? await persistence.fetchDailyStats(Date.now),
-                           let prefs = try? await persistence.fetchPreferences() {
-                            let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                            let streakResult = StreakProtectionService.computeProtectedStreak(
-                                history: allStats,
-                                isPro: prefs.isProUser
-                            )
-                            await watchClient.sendStats(
-                                stats.totalFocusMinutes,
-                                stats.sessionsCompleted,
-                                streakResult.days
-                            )
-                        }
                     },
                     {
                         if case .focus(.sessionCompleted) = action {
@@ -1040,23 +1045,24 @@ struct AppFeature {
                             // reliably once the session is actually saved and has the
                             // correct pomodoro counts. Do not send .tasks(.onAppear) here:
                             // that path is guarded by hasLoadedData and would no-op anyway.
-                            return .merge(
-                                .send(.analytics(.onAppear)),
-                                Effect<Action>.run { send in
-                                    if let prefs = try? await persistence.fetchPreferences() {
-                                        let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                                        let streakResult = StreakProtectionService.computeProtectedStreak(
-                                            history: allStats,
-                                            isPro: prefs.isProUser
-                                        )
-                                        if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
-                                            await send(.celebrationTriggered(milestone))
-                                        }
+                            //
+                            // Analytics refresh and Watch stats are sent from
+                            // .focus(.delegate(.sessionPersisted)) so they read committed data.
+                            return Effect<Action>.run { send in
+                                if let prefs = try? await persistence.fetchPreferences() {
+                                    let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                                    let streakResult = StreakProtectionService.computeProtectedStreak(
+                                        history: allStats,
+                                        isPro: prefs.isProUser
+                                    )
+                                    if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
+                                        await send(.celebrationTriggered(milestone))
                                     }
                                 }
-                            )
+                            }
                         }
-                        return .none
+                        // stopTapped: refresh analytics so the dashboard reflects the abandoned session
+                        return .send(.analytics(.refresh))
                     }()
                 )
 
@@ -1193,11 +1199,44 @@ struct AppFeature {
                 // Single explicit refresh path for session events. cancelInFlight ensures
                 // that when taskProgressChanged fires just before sessionPersisted (final
                 // pomodoro), only one fetch runs — the second cancels the first.
-                return .run { [persistence] send in
-                    let items = try await persistence.fetchTasks()
-                    await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
-                }
-                .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true)
+                //
+                // Also refresh analytics dashboard and push full Watch stats here so both
+                // reads happen after saveSession has committed (FIX 1 + FIX 3).
+                return .merge(
+                    .run { [persistence] send in
+                        let items = try await persistence.fetchTasks()
+                        await send(.tasks(.tasksLoaded(items.map { TaskListFeature.TaskItemState.from($0) })))
+                    }
+                    .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true),
+                    .send(.analytics(.refresh)),
+                    .run { [watchClient, persistence] _ in
+                        guard let stats = try? await persistence.fetchDailyStats(Date.now),
+                              let prefs = try? await persistence.fetchPreferences() else { return }
+                        let tasks = (try? await persistence.fetchTasks()) ?? []
+                        let todayTasks = tasks.filter { $0.scheduledForToday }
+                        let startOfDay = Calendar.current.startOfDay(for: Date.now)
+                        let sessions = (try? await persistence.fetchSessions(startOfDay, Date.now)) ?? []
+                        let longestMinutes = sessions.map { Int($0.actualDuration) / 60 }.max() ?? 0
+                        let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                        let streakResult = StreakProtectionService.computeProtectedStreak(
+                            history: allStats,
+                            isPro: prefs.isProUser
+                        )
+                        let dashStats = WatchDashboardStats(
+                            todayMinutes: stats.totalFocusMinutes,
+                            sessionsCompleted: stats.sessionsCompleted,
+                            tasksCompleted: todayTasks.filter(\.isCompleted).count,
+                            tasksTotal: todayTasks.count,
+                            streakDays: streakResult.days,
+                            pomodoroMinutes: stats.pomodoroMinutes,
+                            flowtimeMinutes: stats.flowtimeMinutes,
+                            timeBlockMinutes: stats.timeBlockMinutes,
+                            stopwatchMinutes: stats.stopwatchMinutes,
+                            longestSessionMinutes: longestMinutes
+                        )
+                        await watchClient.sendDashboardStats(dashStats)
+                    }
+                )
 
             case .tasks(.delegate(.showPaywall)):
                 state.focus.showPaywall = true
@@ -1227,6 +1266,21 @@ struct AppFeature {
 extension WatchSessionState {
     init(from focusState: FocusFeature.State, isPhaseTransition: Bool = false) {
         let activeMode = focusState.activeMode ?? focusState.selectedMode
+
+        // During a waiting hold, derive the break/long-break flags from the PENDING
+        // next phase so the watch CTA label ("Start break" / "Start long break" /
+        // "Start focus") reflects what's about to start, not the phase just completed.
+        let phaseForFlags: FocusPhase = focusState.isWaitingForNextPhase
+            ? (focusState.pendingNextPhase ?? focusState.phase)
+            : focusState.phase
+        let isBreak: Bool
+        let isLongBreak: Bool
+        switch phaseForFlags {
+        case .shortBreak, .flowBreak:            isBreak = true;  isLongBreak = false
+        case .longBreak:                         isBreak = true;  isLongBreak = true
+        case .work, .flow, .block, .freeform,
+             .idle, .paused:                     isBreak = false; isLongBreak = false
+        }
         self.init(
             isActive:         focusState.isRunning,
             isPaused:         focusState.isPaused,
@@ -1237,7 +1291,10 @@ extension WatchSessionState {
             pomodoroNumber:   focusState.pomodoroNumber,
             linkedTaskTitle:  focusState.linkedTaskTitle,
             linkedTaskID:     focusState.linkedTaskID?.uuidString,
-            isPhaseTransition: isPhaseTransition
+            isPhaseTransition: isPhaseTransition,
+            isBreakPhase:     isBreak,
+            isLongBreakPhase: isLongBreak,
+            isWaiting:        focusState.isWaitingForNextPhase
         )
     }
 }

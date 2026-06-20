@@ -214,4 +214,17 @@ struct StreakProtectionTests {
         let freeResult = compute(history: history, isPro: false)
         #expect(freeResult.days == 1)  // only today; yesterday has 0 sessions
     }
+
+    @Test("Pro user with zero focus history (only missed days) has zero streak and no protection applied")
+    func proZeroFocusHistory() {
+        let missedDay = DailyStatsDTO(
+            date: calendar.date(byAdding: .day, value: -1, to: today)!,
+            totalFocusMinutes: 0,
+            sessionsCompleted: 0,
+            tasksCompleted: 0
+        )
+        let result = compute(history: [missedDay], isPro: true)
+        #expect(result.days == 0)
+        #expect(result.protectionApplied == false)
+    }
 }

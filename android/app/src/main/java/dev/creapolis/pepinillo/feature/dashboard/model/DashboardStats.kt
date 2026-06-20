@@ -110,6 +110,14 @@ data class DashboardStats(
     val bestDayOfWeek: String = "",
     val focusScore: Int = 0,
     val achievements: List<Achievement> = emptyList(),
+    val completionRate: Double = 0.0,
+)
+
+data class ReflectionPreviews(
+    val weeklyMinutes: Int = 0,
+    val weeklySessions: Int = 0,
+    val monthlyMinutes: Int = 0,
+    val monthlySessions: Int = 0,
 )
 
 val DashboardStats.isEmpty: Boolean

@@ -24,6 +24,8 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.just
 import io.mockk.runs
+import io.mockk.clearMocks
+import io.mockk.verify
 import org.junit.After
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -497,5 +499,42 @@ class FocusViewModelTest {
         assertFalse(state.keepScreenOn)
         assertFalse(state.breakSuggested)
         assertFalse(state.isWaitingForNext)
+    }
+
+    // -----------------------------------------------------------------------
+    // A-C5: FGS lifecycle collector must dedupe on status transitions
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `FGS start is called only on status transition not on every tick emission`() = runTest {
+        // The init collector has already processed the initial Idle emission (stop called
+        // once). Clear the baseline so verifies below count from this point onward.
+        runCurrent()
+        clearMocks(FocusTimerService)
+        every { FocusTimerService.start(any()) } just runs
+        every { FocusTimerService.stop(any()) } just runs
+
+        // Idle -> Running: start exactly once
+        engine.start()
+        runCurrent()
+        verify(exactly = 1) { FocusTimerService.start(context) }
+
+        // Same-status re-emissions (linkedTaskId changes while Running) must NOT call start
+        engine.linkTask("task-a")
+        runCurrent()
+        engine.linkTask("task-b")
+        runCurrent()
+        verify(exactly = 1) { FocusTimerService.start(context) }
+
+        // Running -> Paused: no start/stop (Paused branch is a no-op)
+        engine.pause()
+        runCurrent()
+        verify(exactly = 1) { FocusTimerService.start(context) }
+        verify(exactly = 0) { FocusTimerService.stop(context) }
+
+        // Paused -> Running: status transition -> start called again (total 2)
+        engine.start()
+        runCurrent()
+        verify(exactly = 2) { FocusTimerService.start(context) }
     }
 }

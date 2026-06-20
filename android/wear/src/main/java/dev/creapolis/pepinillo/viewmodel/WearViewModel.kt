@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.wearable.Wearable
 import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearMessageSender
+import dev.creapolis.pepinillo.data.WearSnapshotStore
+import dev.creapolis.pepinillo.data.WearTimerState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -39,13 +41,57 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * Compute the optimistic epoch-ms moment the current phase should end at, so the local
+     * countdown loop in TimerScreen has something to render before the phone pushes the
+     * authoritative value.
+     *
+     * Reuse the last known duration when present; otherwise pick a sensible default per
+     * phase. The phone corrects this on the next sync push.
+     */
+    private fun optimisticPhaseEndMs(current: WearTimerState): Long {
+        val durationMs = current.totalDurationMs.takeIf { it > 0 }
+            ?: defaultPhaseDurationMs(current.mode, current.phase)
+        return System.currentTimeMillis() + durationMs
+    }
+
+    private fun defaultPhaseDurationMs(mode: String, phase: String): Long {
+        // Pomodoro defaults: 25/5/15 minutes. Other modes default to 25 minutes too — this
+        // is only a placeholder so the ring moves until the phone's authoritative push.
+        val minutes = when (phase) {
+            "ShortBreak" -> 5L
+            "LongBreak" -> 15L
+            else -> 25L
+        }
+        return minutes * 60L * 1000L
+    }
+
+    /** Update [WearDataStore] AND mirror to [WearSnapshotStore] so process death doesn't
+     *  revert the user's last action on cold restart. */
+    private fun applyTimerOptimistically(newState: WearTimerState) {
+        WearDataStore.updateTimer(newState)
+        WearSnapshotStore.persistTimerState(getApplication(), newState)
+    }
+
+    private fun applyTasksOptimistically(newTasks: List<dev.creapolis.pepinillo.data.WearTask>) {
+        WearDataStore.updateTasks(newTasks)
+        WearSnapshotStore.persistTasks(getApplication(), newTasks)
+    }
+
     fun startTimer(mode: String) {
-        // Optimistic UI: show Running immediately
-        WearDataStore.updateTimer(
-            timerState.value.copy(
+        // Optimistic UI: show Running immediately with a usable countdown end.
+        val current = timerState.value
+        val durationMs = current.totalDurationMs.takeIf { it > 0 }
+            ?: defaultPhaseDurationMs(mode, "Work")
+        applyTimerOptimistically(
+            current.copy(
                 mode = mode,
+                phase = "Work",
                 status = "Running",
                 phaseLabel = "Focus",
+                progress = 0f,
+                totalDurationMs = durationMs,
+                phaseEndEpochMs = System.currentTimeMillis() + durationMs,
             ),
         )
         WearFocusService.start(getApplication())
@@ -55,9 +101,14 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun pauseTimer() {
-        // Optimistic UI: show Paused immediately
-        WearDataStore.updateTimer(
-            timerState.value.copy(status = "Paused"),
+        // Optimistic UI: show Paused immediately. Clear phaseEnd so the local tick loop
+        // stops; totalDurationMs is preserved so resume can recompute progress.
+        val current = timerState.value
+        applyTimerOptimistically(
+            current.copy(
+                status = "Paused",
+                phaseEndEpochMs = 0L,
+            ),
         )
         WearFocusService.start(getApplication())
         viewModelScope.launch {
@@ -66,9 +117,13 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun resumeTimer() {
-        // Optimistic UI: show Running immediately
-        WearDataStore.updateTimer(
-            timerState.value.copy(status = "Running"),
+        // Optimistic UI: show Running immediately and restart the countdown from "now".
+        val current = timerState.value
+        applyTimerOptimistically(
+            current.copy(
+                status = "Running",
+                phaseEndEpochMs = optimisticPhaseEndMs(current),
+            ),
         )
         WearFocusService.start(getApplication())
         viewModelScope.launch {
@@ -77,13 +132,15 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun stopTimer() {
-        // Optimistic UI: show Idle immediately
-        WearDataStore.updateTimer(
+        // Optimistic UI: show Idle immediately.
+        applyTimerOptimistically(
             timerState.value.copy(
                 status = "Idle",
                 displayTime = timerState.value.displayTime,
                 progress = 1f,
                 phaseLabel = "Listo",
+                phaseEndEpochMs = 0L,
+                totalDurationMs = 0L,
             ),
         )
         WearFocusService.stop(getApplication())
@@ -93,16 +150,27 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun skipPhase() {
-        // Optimistic UI: show Running with next phase
+        // Optimistic UI: show Running with next phase.
+        // When transitioning from Work the watch does not carry sessionsBeforeLongBreak, so it
+        // cannot reliably distinguish ShortBreak from LongBreak. We optimistically use "ShortBreak"
+        // — it is occasionally wrong on the long-break boundary, but every UI check (Skip button
+        // visibility, WaitingForNext labels, WearTheme color) works correctly with a recognised
+        // phase string. The phone will sync the authoritative phase on its next push.
         val current = timerState.value
-        val nextPhase = if (current.phase == "Work") "ShortBreak" else "Work"
+        val nextPhase = when (current.phase) {
+            "Work" -> "ShortBreak" // optimistic; phone corrects to LongBreak if needed on next sync
+            else -> "Work"
+        }
         val nextLabel = if (nextPhase == "Work") "Focus" else "Descanso"
-        WearDataStore.updateTimer(
+        val durationMs = defaultPhaseDurationMs(current.mode, nextPhase)
+        applyTimerOptimistically(
             current.copy(
                 status = "Running",
                 phase = nextPhase,
                 phaseLabel = nextLabel,
-                progress = 1f,
+                progress = 0f,
+                totalDurationMs = durationMs,
+                phaseEndEpochMs = System.currentTimeMillis() + durationMs,
             ),
         )
         WearFocusService.start(getApplication())
@@ -113,7 +181,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
 
     fun completeTask(taskId: String) {
         // Optimistic UI: remove task from list immediately
-        WearDataStore.updateTasks(
+        applyTasksOptimistically(
             tasks.value.filter { it.id != taskId },
         )
         viewModelScope.launch {
@@ -124,7 +192,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleTaskLink(taskId: String, taskTitle: String) {
         if (timerState.value.linkedTaskId == taskId) {
             // Optimistic UI: unlink immediately
-            WearDataStore.updateTimer(
+            applyTimerOptimistically(
                 timerState.value.copy(linkedTaskId = null, linkedTaskName = null),
             )
             viewModelScope.launch {
@@ -132,7 +200,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
             }
         } else {
             // Optimistic UI: link immediately
-            WearDataStore.updateTimer(
+            applyTimerOptimistically(
                 timerState.value.copy(linkedTaskId = taskId, linkedTaskName = taskTitle),
             )
             viewModelScope.launch {

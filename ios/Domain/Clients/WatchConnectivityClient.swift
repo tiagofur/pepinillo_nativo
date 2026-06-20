@@ -30,6 +30,16 @@ struct WatchSessionState: Equatable, Sendable {
     var linkedTaskID: String?
     /// True on the first tick after a phase change — triggers haptic on Watch.
     var isPhaseTransition: Bool = false
+    /// True when the current phase is any break phase (short, long, or flow break).
+    /// Carried as a typed flag so watch UI never has to parse localised strings.
+    var isBreakPhase: Bool = false
+    /// True only when the current phase is a long break.
+    /// Allows watch UI to select the long-break colour variant without string parsing.
+    var isLongBreakPhase: Bool = false
+    /// True when the engine is holding for the user to manually start the next phase
+    /// (autoStartBreaks/autoStartWork is OFF). The watch must suppress Pause/Resume
+    /// and show a phase-aware "Start …" CTA instead.
+    var isWaiting: Bool = false
     /// Timestamp of when this state was generated (for stale-update dedupe on watch).
     var sentAt: TimeInterval = Date().timeIntervalSince1970
 
@@ -75,6 +85,8 @@ enum WatchCommand: Equatable, Sendable {
     case toggleTaskCompleted(id: String)
     case requestTasks
     case requestDashboard
+    /// Watch → iOS: user tapped the "Start Break / Start Focus" CTA during a waiting hold.
+    case startNextPhase
 }
 
 /// Messages received on each side from the counterpart.
@@ -252,6 +264,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             "displayTime":       state.displayTime,
             "phaseLabel":        state.phaseLabel,
             "isPhaseTransition": state.isPhaseTransition,
+            "isBreakPhase":      state.isBreakPhase,
+            "isLongBreakPhase":  state.isLongBreakPhase,
+            "isWaiting":         state.isWaiting,
             "sentAt":            state.sentAt,
         ]
         if let p = state.progress        { sessionDict["progress"]        = p }
@@ -518,6 +533,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         case .toggleTaskCompleted(let id):  dict["action"] = "toggleTask"; dict["taskID"] = id
         case .requestTasks:                 dict["action"] = "requestTasks"
         case .requestDashboard:             dict["action"] = "requestDashboard"
+        case .startNextPhase:               dict["action"] = "startNextPhase"
         }
         return dict
     }
@@ -533,9 +549,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         case "linkTask":      return .linkTask(id: message["taskID"] as? String ?? "")
         case "unlinkTask":    return .unlinkTask
         case "toggleTask":    return .toggleTaskCompleted(id: message["taskID"] as? String ?? "")
-        case "requestTasks":  return .requestTasks
+        case "requestTasks":    return .requestTasks
         case "requestDashboard": return .requestDashboard
-        default:              return nil
+        case "startNextPhase": return .startNextPhase
+        default:               return nil
         }
     }
 
@@ -546,6 +563,12 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
               let displayTime = message["displayTime"] as? String,
               let phaseLabel  = message["phaseLabel"]  as? String
         else { return nil }
+
+        let isLongBreak = message["isLongBreakPhase"] as? Bool ?? false
+        // Invariant: isLongBreakPhase implies isBreakPhase.
+        // An inconsistent payload (isLongBreakPhase=true, isBreakPhase=false) would
+        // hide the Skip button while showing the long-break colour; normalise here.
+        let isBreak = isLongBreak || (message["isBreakPhase"] as? Bool ?? false)
 
         return WatchSessionState(
             isActive:          isActive,
@@ -558,6 +581,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             linkedTaskTitle:   message["linkedTaskTitle"]  as? String,
             linkedTaskID:      message["linkedTaskID"]     as? String,
             isPhaseTransition: message["isPhaseTransition"] as? Bool ?? false,
+            isBreakPhase:      isBreak,
+            isLongBreakPhase:  isLongBreak,
+            isWaiting:         message["isWaiting"]        as? Bool ?? false,
             sentAt:            message["sentAt"]           as? TimeInterval ?? Date().timeIntervalSince1970
         )
     }

@@ -189,15 +189,25 @@ private val PREF_THEME_ID = stringPreferencesKey("selected_theme")
 private val PREF_PHASE_ENUM = stringPreferencesKey("phase_enum")
 private val PREF_THEME_MODE = stringPreferencesKey("theme_mode")
 
+private inline fun <reified T : Enum<T>> safeEnumValueOf(name: String?, default: T): T {
+    if (name == null) return default
+    return enumValues<T>().find { it.name == name } ?: default
+}
+
+private inline fun <reified T : Enum<T>> safeEnumValueOfOrNull(name: String?): T? {
+    if (name == null) return null
+    return enumValues<T>().find { it.name == name }
+}
+
 private fun prefsToTimerState(context: Context, prefs: Preferences): TimerWidgetState {
-    val mode = FocusMode.valueOf(prefs[PREF_MODE] ?: FocusMode.Pomodoro.name)
+    val mode = safeEnumValueOf(prefs[PREF_MODE], FocusMode.Pomodoro)
     return TimerWidgetState(
         mode = mode,
-        selectedMode = prefs[PREF_SELECTED_MODE]?.let { FocusMode.valueOf(it) },
+        selectedMode = prefs[PREF_SELECTED_MODE]?.let { safeEnumValueOfOrNull<FocusMode>(it) },
         displayTime = prefs[PREF_DISPLAY] ?: mode.defaultDisplayTime,
         finishTimestamp = prefs[PREF_FINISH_TIMESTAMP]?.toLongOrNull(),
         phaseLabel = prefs[PREF_PHASE] ?: context.getString(mode.labelRes),
-        status = TimerStatus.valueOf(prefs[PREF_STATUS] ?: TimerStatus.Idle.name),
+        status = safeEnumValueOf(prefs[PREF_STATUS], TimerStatus.Idle),
         progress = prefs[PREF_PROGRESS] ?: 1f,
         isPro = prefs[PREF_FOCUS_IS_PRO] ?: false,
         elapsedMillis = prefs[PREF_ELAPSED]?.toLongOrNull() ?: 0L,
@@ -205,7 +215,7 @@ private fun prefsToTimerState(context: Context, prefs: Preferences): TimerWidget
         sessionsToday = prefs[PREF_SESSIONS] ?: 0,
         linkedTaskTitle = prefs[PREF_LINKED_TASK_TITLE],
         themeId = prefs[PREF_THEME_ID] ?: "materialYou",
-        phase = prefs[PREF_PHASE_ENUM]?.let { FocusPhase.valueOf(it) } ?: FocusPhase.Work,
+        phase = safeEnumValueOf(prefs[PREF_PHASE_ENUM], FocusPhase.Work),
         themeMode = prefs[PREF_THEME_MODE] ?: "System"
     )
 }
@@ -229,8 +239,7 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
 
     // Enforce MaterialYou if not PRO
     val themeId = (if (state.isPro) state.themeId else "materialYou").lowercase()
-    val isMaterialYou = themeId == "materialYou"
-    
+
     val theme = AppTheme.named(themeId)
     val baseAccent = when (mode) {
         FocusMode.Pomodoro -> theme.pomodoroColor
@@ -555,7 +564,7 @@ private fun TimerRing(
 class SelectModeAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val modeName = parameters[ActionParameters.Key<String>("mode")] ?: return
-        val mode = FocusMode.valueOf(modeName)
+        val mode = safeEnumValueOfOrNull<FocusMode>(modeName) ?: return
         
         val currentPrefs = getAppWidgetState<Preferences>(context, PreferencesGlanceStateDefinition, glanceId)
         val isPro = currentPrefs[PREF_FOCUS_IS_PRO] ?: false

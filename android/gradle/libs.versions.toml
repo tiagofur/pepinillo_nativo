@@ -34,6 +34,7 @@ wearComplications = "1.2.1"
 concurrentFutures = "1.2.0"
 mockk = "1.13.13"
 coil = "2.6.0"
+vico = "2.0.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -115,6 +116,9 @@ mlkit-genai-prompt = { group = "com.google.mlkit", name = "genai-prompt", versio
 
 # Coil (Image Loading)
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# Vico (Charts)
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
 
 # Testing
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }

@@ -177,7 +177,7 @@ final class PersistenceStoreRouter: ObservableObject {
         let target = SwiftDataPersistenceService(container: targetContainer)
         let iso = ISO8601DateFormatter()
 
-        let tasks = try source.fetchTasks().filter { !$0.isDeleted }
+        let tasks = try source.fetchTasks().filter { !$0.isLocallyDeleted }
         for task in tasks {
             let subtasks = try source.fetchSubtasks(for: task.id).map {
                 SubTaskSyncDTO(title: $0.title, isFinished: $0.isCompleted)

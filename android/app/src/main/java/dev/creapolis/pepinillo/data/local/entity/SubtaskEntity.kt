@@ -31,4 +31,8 @@ data class SubtaskEntity(
     val sortOrder: Int = 0,
     @ColumnInfo(name = "is_dirty", defaultValue = "1")
     val isDirty: Boolean = true,
+    @ColumnInfo(name = "is_deleted", defaultValue = "0")
+    val isDeleted: Boolean = false,
+    @ColumnInfo(name = "updated_at", defaultValue = "0")
+    val updatedAt: Long = System.currentTimeMillis(),
 )

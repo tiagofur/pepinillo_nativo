@@ -22,7 +22,7 @@ public actor BackgroundPersistenceActor {
 
     func fetchTasks() throws -> [TaskItemDTO] {
         let svc = service
-        let tasks = try svc.fetchTasks().filter { !$0.isDeleted }
+        let tasks = try svc.fetchTasks().filter { !$0.isLocallyDeleted }
         // One batch fetch of subtask counts to avoid an N+1 relationship fault.
         let progress = try svc.subtaskProgressByTask()
         return tasks.map { TaskItemDTO(from: $0, subtaskProgress: progress[$0.id] ?? (0, 0)) }
@@ -102,6 +102,13 @@ public actor BackgroundPersistenceActor {
         try service.fetchSubtasks(for: taskID).map { SubTaskDTO(from: $0) }
     }
 
+    func fetchSubtasksForTasks(taskIDs: [UUID]) throws -> [UUID: [SubTaskDTO]] {
+        let batch = try service.fetchSubtasks(forTaskIDs: taskIDs)
+        return batch.mapValues { subtasks in
+            subtasks.map { SubTaskDTO(from: $0) }
+        }
+    }
+
     func addSubtask(to taskID: UUID, title: String) throws -> SubTaskDTO {
         SubTaskDTO(from: try service.addSubtask(to: taskID, title: title))
     }
@@ -130,6 +137,13 @@ public actor BackgroundPersistenceActor {
 
     func fetchSessionsForTask(taskID: UUID) throws -> [SessionRecordDTO] {
         try service.fetchSessionsForTask(taskID: taskID).map { SessionRecordDTO(from: $0) }
+    }
+
+    func fetchSessionsForTasks(taskIDs: [UUID]) throws -> [UUID: [SessionRecordDTO]] {
+        let batch = try service.fetchSessions(forTaskIDs: taskIDs)
+        return batch.mapValues { sessions in
+            sessions.map { SessionRecordDTO(from: $0) }
+        }
     }
 
     func fetchTaskAnalytics(taskID: UUID) throws -> TaskAnalyticsDTO {

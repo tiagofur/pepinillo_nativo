@@ -45,6 +45,11 @@
     <string name="comp_locked_title">Bloq.</string>
     <string name="comp_timer_desc">Temporizador de foco</string>
 
+    <!-- Notification phase labels -->
+    <string name="phase_focus">Foco</string>
+    <string name="phase_break">Descanso</string>
+    <string name="state_paused_suffix"> (Pausado)</string>
+
     <!-- Metadata labels -->
     <string name="tile_focus_label">Foco</string>
     <string name="tile_tasks_label">Tarefas</string>

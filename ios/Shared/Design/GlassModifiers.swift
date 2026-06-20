@@ -2,6 +2,15 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Shared Glass modifiers for App and Widgets.
+//
+// Availability note (Issue #33):
+// GlassEffectContainer, .glassEffect(), and .glassEffectID() are defined in the
+// SwiftUI SDK shipped with Xcode 16.2+ (forward-declared for the iOS 26 runtime).
+// The compiler resolves these symbols at build time against the SDK headers, so
+// no compile-time stubs are required.  The #available(iOS 26.0, *) guards at each
+// call site are the correct and sufficient mechanism to gate runtime use of these
+// APIs to devices running iOS 26 or later.  Builds targeting iOS 17-25 simulators
+// compile cleanly and fall through to the else-branch at runtime.
 
 import SwiftUI
 

@@ -164,6 +164,8 @@ struct AppFeatureIntegrationTests {
         initialState.focus.linkedTaskID = taskID
         initialState.focus.linkedTaskTitle = "Code the feature"
         initialState.focus.activeMode = .pomodoro
+        initialState.focus.isRunning = true
+        initialState.focus.elapsedSeconds = 25 * 60  // completed work phase
         initialState.tasks.tasks = [
             TaskListFeature.TaskItemState(
                 id: taskID,
@@ -181,7 +183,7 @@ struct AppFeatureIntegrationTests {
             )
         ]
 
-        let incrementedTaskIDs = LockIsolated<[UUID]>([])
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
         let refreshedTask = TaskItemDTO(
             id: taskID,
             title: "Code the feature",
@@ -197,7 +199,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
-            $0.persistenceClient.incrementTaskPomodoros = { id in incrementedTaskIDs.withValue { $0.append(id) } }
+            $0.persistenceClient.saveSession = { result in savedSessions.withValue { $0.append(result) } }
             $0.persistenceClient.fetchTasks = { [refreshedTask] }
             $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
             $0.watchConnectivityClient.sendTasks = { _ in }
@@ -207,13 +209,16 @@ struct AppFeatureIntegrationTests {
 
         await store.send(.focus(.phaseCompleted(.work(number: 1, total: 5))))
 
-        await store.receive(.focus(.delegate(.taskProgressChanged)))
+        await store.receive(.focus(.delegate(.sessionPersisted)))
         await store.receive(.tasks(.tasksLoaded([.from(refreshedTask)]))) {
             $0.tasks.tasks[id: taskID]?.completedPomodoros = 1
             $0.focus.availableTasks[id: taskID]?.completedPomodoros = 1
         }
 
-        #expect(incrementedTaskIDs.value == [taskID])
+        #expect(savedSessions.value.count == 1)
+        #expect(savedSessions.value.first?.mode == .pomodoro)
+        #expect(savedSessions.value.first?.wasCompleted == true)
+        #expect(savedSessions.value.first?.linkedTaskID == taskID)
     }
 
     @Test func appLaunchSetsOnboardingFlagIfPreviouslyCompleted() async {

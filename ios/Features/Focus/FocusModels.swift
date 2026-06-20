@@ -260,6 +260,10 @@ public enum FocusEngineEvent: Sendable {
     case breakSuggested(duration: TimeInterval)
     case midpointReached
     case interrupted
+    /// Emitted when auto-start is OFF for the upcoming phase.
+    /// The engine is now holding — no countdown is running — waiting for the user
+    /// to tap the CTA before the next phase begins.
+    case waitingForNextPhase(FocusPhase)
 }
 
 // MARK: - Session Result (after completion)

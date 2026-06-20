@@ -1,7 +1,7 @@
 # Pepinillo — Unified Features Document
 
-**Version:** 1.3  
-**Last Updated:** 2026-06-11  
+**Version:** 1.4  
+**Last Updated:** 2026-06-12  
 **Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS  
 **Author:** Tiago David + Claude Code  
 **Status:** Active
@@ -761,6 +761,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | -------------------------------------- | --- | ------- | ------- | ------- | ---- |
 | **Focus Engine**                       |     |         |         |         |      |
 | Pomodoro mode                          | ✅  | ✅      | ⬜      | ✅      | FREE |
+| Auto-start settings (phase transition gate) | ✅  | ✅      | ✅      | ✅      | FREE |
 | Flowtime mode                          | ✅  | ✅      | ⬜      | ✅      | APPLE / EVERYWHERE  |
 | Time Block mode                        | ✅  | ✅      | ⬜      | ✅      | APPLE / EVERYWHERE  |
 | Stopwatch/Chrono mode                  | ✅  | ✅      | ⬜      | ✅      | FREE |
@@ -925,6 +926,8 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 
 9. **Unified cloud sync architecture achieved**: Both iOS and Android now have full sync architecture via Go backend. iOS uses TCA-based sync clients (SyncClient, IdentityClient, WebSocketClient) with URLSession. Android uses SyncEngine + Room dirty flags + SyncWebSocketClient (OkHttp). Both platforms support: settings sync (per-key LWW), batch session sync, initial upload on registration, cursor-paginated full sync for new devices, WebSocket real-time notifications, and data merge dialogs for anonymous-to-existing-account transitions. Commercially, backend sync now maps to `Everywhere`, while iOS retains CloudKit as Apple-local sync under Apple Unlock.
 
-10. **WatchConnectivity transport reliability (iOS/watchOS, 2026-06-11)**: Phone→watch updates were previously all sent via `sendMessage`, which is silently dropped when the watch app is backgrounded. Fixed with a transport split: `updateApplicationContext` for state/stats/dashboard (background-safe), `transferUserInfo` for tasks (queued FIFO), `sendMessage` kept only as a fast path when the watch is reachable. This resolves stale complications and dashboard data after the watch app goes to background. Android Wear was already correct — DataClient/DataItems handle background delivery natively.
+10. **Auto-start settings parity alcanzada (iOS, 2026-06-12)**: iOS ahora respeta `autoStartBreaks` y `autoStartWork`. Al completar una fase de trabajo o descanso, si el ajuste correspondiente está desactivado, el motor queda en un estado de espera (sin cuenta regresiva) y la UI presenta un CTA ("Start break" / "Start long break" / "Start focus") que el usuario activa manualmente. watchOS y widgets exponen el estado de espera durante el hold. Localización completa en EN/ES/PT. Android ya contaba con este comportamiento vía `WaitingForNext`; la paridad está cubierta en todas las plataformas. Hardening aplicado sobre 3 rondas de revisión adversarial: guards en engine, reducer, widget-intent y Siri-intent, más flag cross-process `activeSessionIsWaiting`.
 
-11. **Android parity ports (2026-06-11)**: Focus engine tick reduced 10 Hz → 4 Hz (battery, matches iOS). Widget reloads scoped to the affected widget class. Paywall text and CTAs now grow with large font scales (matches iOS Dynamic Type fix, WCAG compliant). Streak promoted to dashboard emotional hero and deduplicated (matches iOS Dashboard P4 design). Timer ring display floor added for count-up modes on both Android phone and Wear OS (matches iOS). Onboarding now uses full-bleed color scenes with a WCAG-compliant skip pill (matches iOS onboarding visual redesign).
+11. **WatchConnectivity transport reliability (iOS/watchOS, 2026-06-11)**: Phone→watch updates were previously all sent via `sendMessage`, which is silently dropped when the watch app is backgrounded. Fixed with a transport split: `updateApplicationContext` for state/stats/dashboard (background-safe), `transferUserInfo` for tasks (queued FIFO), `sendMessage` kept only as a fast path when the watch is reachable. This resolves stale complications and dashboard data after the watch app goes to background. Android Wear was already correct — DataClient/DataItems handle background delivery natively.
+
+12. **Android parity ports (2026-06-11)**: Focus engine tick reduced 10 Hz → 4 Hz (battery, matches iOS). Widget reloads scoped to the affected widget class. Paywall text and CTAs now grow with large font scales (matches iOS Dynamic Type fix, WCAG compliant). Streak promoted to dashboard emotional hero and deduplicated (matches iOS Dashboard P4 design). Timer ring display floor added for count-up modes on both Android phone and Wear OS (matches iOS). Onboarding now uses full-bleed color scenes with a WCAG-compliant skip pill (matches iOS onboarding visual redesign).
