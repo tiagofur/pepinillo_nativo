@@ -8675,6 +8675,126 @@
         }
       }
     },
+    "focus.waiting.cta.hint" : {
+      "comment" : "Focus — accessibility hint for the start-next-phase CTA shown while waiting",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Double tap to start the next phase"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toca dos veces para iniciar la siguiente fase"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque duas vezes para iniciar a próxima fase"
+          }
+        }
+      }
+    },
+    "focus.waiting.start.longbreak" : {
+      "comment" : "Focus — CTA to start the long break when auto-start is off",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Start long break"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar descanso largo"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar pausa longa"
+          }
+        }
+      }
+    },
+    "focus.waiting.start.shortbreak" : {
+      "comment" : "Focus — CTA to start the short break when auto-start is off",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Start break"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar pausa"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar pausa"
+          }
+        }
+      }
+    },
+    "focus.waiting.start.work" : {
+      "comment" : "Focus — CTA to start the next work interval when auto-start is off",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Start focus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar enfoque"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar foco"
+          }
+        }
+      }
+    },
+    "Waiting" : {
+      "comment" : "Focus widget — label shown while waiting to start the next phase",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Waiting"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aguardando"
+          }
+        }
+      }
+    },
     "focus.endsession.title" : {
       "comment" : "Focus — end session confirmation dialog title",
       "extractionState" : "extracted_with_value",

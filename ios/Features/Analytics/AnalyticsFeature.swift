@@ -86,6 +86,7 @@ struct AnalyticsFeature {
 
     enum Action: Equatable {
         case onAppear
+        case refresh
         case periodChanged(State.Period)
         case allDataLoaded(
             snapshots: [DayDataSnapshot],
@@ -150,6 +151,11 @@ struct AnalyticsFeature {
                     loadData(for: state.period),
                     .run { _ in _ = try? await CheckStatsIntent().donate() }
                 )
+
+            case .refresh:
+                guard !state.isLoading else { return .none }
+                state.isLoading = true
+                return loadData(for: state.period)
 
             case .periodChanged(let period):
                 if !state.isProUser && period != .week {

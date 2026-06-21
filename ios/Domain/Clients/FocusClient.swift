@@ -23,6 +23,9 @@ public struct FocusClient: Sendable {
     public var recordInterruption: @Sendable () async -> Void
     /// Skip to next phase.
     public var skipPhase: @Sendable () async -> Void
+    /// Advance from the waiting-for-next-phase hold into the pending next phase.
+    /// Only has an effect when the engine is in the waiting state (auto-start OFF).
+    public var startNextPhase: @Sendable () async -> Void
     /// Update the focus configuration while a session is active (real-time settings sync).
     public var updateConfig: @Sendable (FocusConfig) async -> Void
     /// Observe engine events as an AsyncStream (no-op on watchOS).
@@ -72,6 +75,9 @@ extension FocusClient: DependencyKey {
             skipPhase: {
                 await engine.skipToNextPhase()
             },
+            startNextPhase: {
+                await engine.startNextPhase()
+            },
             updateConfig: { newConfig in
                 await engine.updateConfig(newConfig)
             },
@@ -103,6 +109,7 @@ extension FocusClient: DependencyKey {
             stop: { _ in },
             recordInterruption: {},
             skipPhase: {},
+            startNextPhase: {},
             updateConfig: { _ in },
             events: { .finished },
             currentState: { nil },

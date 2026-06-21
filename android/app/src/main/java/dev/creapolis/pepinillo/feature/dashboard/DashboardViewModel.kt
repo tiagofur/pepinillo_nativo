@@ -15,6 +15,7 @@ import dev.creapolis.pepinillo.feature.dashboard.model.DailyFocus
 import dev.creapolis.pepinillo.feature.dashboard.model.DashboardStats
 import dev.creapolis.pepinillo.feature.dashboard.model.ModeUsage
 import dev.creapolis.pepinillo.feature.dashboard.model.MonthlyReportData
+import dev.creapolis.pepinillo.feature.dashboard.model.ReflectionPreviews
 import dev.creapolis.pepinillo.feature.dashboard.model.TopTaskUsage
 import dev.creapolis.pepinillo.feature.dashboard.model.WeeklyReportData
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -65,6 +66,9 @@ class DashboardViewModel @Inject constructor(
     private val _showMonthlyReview = MutableStateFlow(false)
     val showMonthlyReview: StateFlow<Boolean> = _showMonthlyReview.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     val stats: StateFlow<DashboardStats> = _selectedPeriod.flatMapLatest { period ->
         combine(
             sessionRepository.getTodayStats(),
@@ -94,6 +98,18 @@ class DashboardViewModel @Inject constructor(
         buildMonthlyReport(currentMonthSessions, previousMonthSessions, currentMonthStats)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MonthlyReportData())
 
+    val reflectionPreviews: StateFlow<ReflectionPreviews> = combine(
+        weeklyReport,
+        monthlyReport,
+    ) { weekly, monthly ->
+        ReflectionPreviews(
+            weeklyMinutes = weekly.currentWeekMinutes,
+            weeklySessions = weekly.currentWeekSessions,
+            monthlyMinutes = monthly.currentMonthMinutes,
+            monthlySessions = monthly.currentMonthSessions,
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ReflectionPreviews())
+
     fun setPeriod(period: AnalyticsPeriod) {
         // Free users can only see Week
         // Only users with local premium can access Month/Year analytics
@@ -117,6 +133,15 @@ class DashboardViewModel @Inject constructor(
 
     fun dismissMonthlyReview() {
         _showMonthlyReview.value = false
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _isRefreshing.value = true
+            // Data is already reactive via Room Flows — brief delay for visual feedback
+            kotlinx.coroutines.delay(500)
+            _isRefreshing.value = false
+        }
     }
 
     private fun getStatsForPeriod(period: AnalyticsPeriod) = when (period) {
@@ -167,6 +192,11 @@ class DashboardViewModel @Inject constructor(
         val bestDay = sessionRepository.computeBestDayOfWeek(periodStats)
         val focusScore = computeFocusScore(periodStats)
 
+        // Completion rate from work sessions (rounded to 2 decimal places per spec)
+        val completedCount = workSessions.count { it.wasCompleted }
+        val rawRate = if (periodSessionCount > 0) completedCount.toDouble() / periodSessionCount else 0.0
+        val completionRate = kotlin.math.round(rawRate * 100.0) / 100.0
+
         // Achievements
         val achievements = computeAchievements(allDays, streak)
 
@@ -190,6 +220,7 @@ class DashboardViewModel @Inject constructor(
             bestDayOfWeek = bestDay,
             focusScore = focusScore,
             achievements = achievements,
+            completionRate = completionRate,
         )
     }
 

@@ -81,7 +81,7 @@ struct DashboardView: View {
         .primaryScrollEdgeEffect()
         .background(Color.pepinilloSystemGroupedBackground)
         .scrollContentBackground(.hidden)
-        .refreshable { store.send(.onAppear) }
+        .refreshable { store.send(.refresh) }
         .navigationTitle(String(localized: "Dashboard"))
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {

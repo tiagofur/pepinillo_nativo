@@ -37,7 +37,7 @@ public final class TaskItem {
     public var syncId: String = UUID().uuidString
     public var serverId: Int?
     public var isDirty: Bool = true
-    public var isDeleted: Bool = false
+    public var isLocallyDeleted: Bool = false
     public var syncedAt: Date?
 
     // MARK: - Recurrence
@@ -78,7 +78,7 @@ public final class TaskItem {
         self.isRecurringTemplate = false
         self.scheduledForToday = false
         self.isDirty = true
-        self.isDeleted = false
+        self.isLocallyDeleted = false
         self.subtasks = []
         self.sessions = []
     }

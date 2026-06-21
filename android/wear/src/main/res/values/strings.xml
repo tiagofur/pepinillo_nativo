@@ -47,6 +47,11 @@
     <string name="comp_locked_title">Plus</string>
     <string name="comp_timer_desc">Focus timer</string>
 
+    <!-- Notification phase labels -->
+    <string name="phase_focus">Focus</string>
+    <string name="phase_break">Break</string>
+    <string name="state_paused_suffix"> (Paused)</string>
+
     <!-- Metadata labels -->
     <string name="tile_focus_label">Focus</string>
     <string name="tile_tasks_label">Tasks</string>

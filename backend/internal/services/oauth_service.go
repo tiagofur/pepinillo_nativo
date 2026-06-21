@@ -50,10 +50,10 @@ type googleTokenInfo struct {
 }
 
 type appleTokenInfo struct {
-	Sub           string     `json:"sub"`
-	Email         string     `json:"email"`
-	EmailVerified bool       `json:"email_verified"`
-	Name          *appleName `json:"name,omitempty"`
+	Sub           string          `json:"sub"`
+	Email         string          `json:"email"`
+	EmailVerified json.RawMessage `json:"email_verified"`
+	Name          *appleName      `json:"name,omitempty"`
 }
 
 type appleName struct {
@@ -231,8 +231,9 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 	if tokenInfo.Name != nil {
 		name = fmt.Sprintf("%s %s", tokenInfo.Name.FirstName, tokenInfo.Name.LastName)
 	}
+	emailVerified := parseAppleEmailVerified(tokenInfo.EmailVerified)
 	var emailVerifiedAt *time.Time
-	if tokenInfo.EmailVerified {
+	if emailVerified {
 		now := time.Now().UTC()
 		emailVerifiedAt = &now
 	}
@@ -241,7 +242,7 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 		ID:               uuid.NewString(),
 		Email:            tokenInfo.Email,
 		Name:             name,
-		EmailVerified:    tokenInfo.EmailVerified,
+		EmailVerified:    emailVerified,
 		EmailVerifiedAt:  emailVerifiedAt,
 		SubscriptionTier: "free",
 		AppleID:          &tokenInfo.Sub,
@@ -320,8 +321,8 @@ func (s *OAuthService) UnlinkGoogleAccount(ctx context.Context, userID string) e
 	return s.users.UnlinkGoogleAccount(ctx, userID)
 }
 
-func (s *OAuthService) LinkAppleAccount(ctx context.Context, userID, idToken string) (*domain.User, error) {
-	tokenInfo, err := s.verifyAppleToken(ctx, idToken, "")
+func (s *OAuthService) LinkAppleAccount(ctx context.Context, userID, idToken, nonce string) (*domain.User, error) {
+	tokenInfo, err := s.verifyAppleToken(ctx, idToken, nonce)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidOAuthToken, err)
 	}
@@ -520,15 +521,13 @@ func (s *OAuthService) verifyAppleToken(ctx context.Context, idToken, nonce stri
 		return nil, err
 	}
 
-	if nonce != "" {
-		privateClaims := parsed.PrivateClaims()
-		tokenNonce, ok := privateClaims["nonce"].(string)
-		if !ok {
-			tokenNonce = ""
-		}
-		if err := validateAppleNonce(tokenNonce, nonce); err != nil {
-			return nil, err
-		}
+	privateClaims := parsed.PrivateClaims()
+	tokenNonce, ok := privateClaims["nonce"].(string)
+	if !ok {
+		tokenNonce = ""
+	}
+	if err := validateAppleNonce(tokenNonce, nonce); err != nil {
+		return nil, err
 	}
 
 	return &tokenInfo, nil
@@ -586,8 +585,12 @@ func (s *OAuthService) fetchAppleKeysWithRetry(ctx context.Context, appleKeysURL
 }
 
 func validateAppleNonce(tokenNonce, providedNonce string) error {
+	// Fail closed: a missing raw nonce means replay protection is OFF, which
+	// is never acceptable. Both Apple login and link handlers reject an empty
+	// nonce at the boundary with a 400; this guard protects any future caller
+	// that forgets to enforce it.
 	if providedNonce == "" {
-		return nil
+		return fmt.Errorf("%w: nonce required", ErrInvalidOAuthToken)
 	}
 	if tokenNonce == "" {
 		return errors.New("apple token missing nonce claim")
@@ -611,6 +614,25 @@ func validateAppleIssuedAt(iat, now time.Time) error {
 		return errors.New("apple token too old")
 	}
 	return nil
+}
+
+// parseAppleEmailVerified decodes the apple "email_verified" claim defensively.
+// Apple has historically sent this as a STRING ("true"/"false") even though
+// many JWT libraries expect a bool. Accept both (and missing) without failing.
+func parseAppleEmailVerified(raw json.RawMessage) bool {
+	s := strings.TrimSpace(string(raw))
+	if s == "" {
+		return false
+	}
+	var b bool
+	if err := json.Unmarshal(raw, &b); err == nil {
+		return b
+	}
+	var str string
+	if err := json.Unmarshal(raw, &str); err == nil {
+		return strings.EqualFold(str, "true")
+	}
+	return false
 }
 
 func (s *OAuthService) generateTokens(user *domain.User) (*AuthTokens, error) {

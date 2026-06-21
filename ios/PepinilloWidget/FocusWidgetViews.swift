@@ -326,18 +326,22 @@ private struct WidgetControls: View {
 
     var body: some View {
         HStack(spacing: compact ? 10 : 14) {
-            if entry.isPaused {
-                Button(intent: ResumeFocusFromWidgetIntent()) {
-                    controlIcon("play.fill", color: .green)
+            // Hide pause/resume during the "waiting for next phase" hold.
+            // The engine has no running timer then, so these controls are meaningless.
+            if !entry.isWaiting {
+                if entry.isPaused {
+                    Button(intent: ResumeFocusFromWidgetIntent()) {
+                        controlIcon("play.fill", color: .green)
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Circle())
+                } else {
+                    Button(intent: PauseFocusFromWidgetIntent()) {
+                        controlIcon("pause.fill", color: .orange)
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Circle())
                 }
-                .buttonStyle(.plain)
-                .contentShape(Circle())
-            } else {
-                Button(intent: PauseFocusFromWidgetIntent()) {
-                    controlIcon("pause.fill", color: .orange)
-                }
-                .buttonStyle(.plain)
-                .contentShape(Circle())
             }
 
             Button(intent: StopFocusFromWidgetIntent()) {
@@ -597,9 +601,9 @@ struct FocusWidgetLarge: View {
 
         VStack(spacing: 14) {
             HStack {
-                Text(entry.isPaused ? String(localized: "Paused") : (entry.phase ?? String(localized: "Focusing")))
+                Text(entry.isWaiting ? (entry.phase ?? String(localized: "Waiting")) : (entry.isPaused ? String(localized: "Paused") : (entry.phase ?? String(localized: "Focusing"))))
                     .font(.system(size: 12, weight: .black))
-                    .foregroundStyle(entry.isPaused ? .secondary : .secondary)
+                    .foregroundStyle(renderingMode == .accented ? Color.secondary : (entry.isPaused ? Color.orange : Color.secondary))
                 Spacer()
                 if let pn = entry.pomodoroNumber, let tp = entry.totalPomodoros {
                     Text("\(pn)/\(tp)")
@@ -729,10 +733,13 @@ struct FocusWidgetAccessoryCircular: View {
                 Gauge(value: widgetVisibleProgress(progress, mode: mode)) { EmptyView() }
                     .gaugeStyle(.accessoryCircularCapacity)
             }
-            if entry.isSessionActive && entry.isPaused {
+            if entry.isSessionActive && entry.isWaiting {
+                Image(systemName: "hourglass")
+                    .font(.caption2)
+            } else if entry.isSessionActive && entry.isPaused {
                 Image(systemName: "pause.fill")
                     .font(.caption2)
-                } else {
+            } else {
                 Image(systemName: WidgetModeStyle.style(for: entry.focusMode ?? entry.preferredModeID ?? "pomodoro").systemImage)
                     .font(.caption)
             }
@@ -750,7 +757,13 @@ struct FocusWidgetAccessoryRectangular: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 if entry.isSessionActive {
-                    if entry.isPaused {
+                    if entry.isWaiting {
+                        Text(entry.phase ?? String(localized: "Waiting"))
+                            .font(.headline)
+                        Text(String(localized: "Waiting"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if entry.isPaused {
                         if let timer = entry.timerText {
                             Text(timer)
                                 .font(.headline)

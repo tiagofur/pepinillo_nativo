@@ -29,6 +29,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -141,7 +142,6 @@ class SyncEngine @Inject constructor(
         } catch (e: TransientSyncException) {
             println("[$TAG]syncAll: TRANSIENT ERROR - ${e.message}")
             syncStatusManager.onSyncError(e.message ?: "Sync error, will retry")
-            SyncWorker.scheduleOneTime(context)
             SyncResult.TransientError(e)
         } catch (e: Exception) {
             println("[$TAG]syncAll: FAILED (transient) - ${e::class.simpleName}: ${e.message}")
@@ -331,7 +331,10 @@ class SyncEngine @Inject constructor(
                 println("[$TAG]syncTasks: server returned ${response.tasks.size} tasks")
 
                 for (task in dirtyTasks) {
-                    if (task.isDeleted) continue
+                    if (task.isDeleted) {
+                        taskDao.markSynced(task.id, now, task.serverId ?: 0)
+                        continue
+                    }
                     val serverTask = response.tasks.find { it.syncId == task.id }
                     val serverId = serverTask?.id ?: (task.serverId ?: 0)
                     taskDao.markSynced(task.id, now, serverId)
@@ -543,7 +546,8 @@ class SyncEngine @Inject constructor(
     internal suspend fun syncDailyStats() {
         try {
             // Pull all stats from server for the last 365 days
-            val to = LocalDate.now(ZoneOffset.UTC)
+            // Use the device's local timezone so date boundaries align with the user's calendar.
+            val to = LocalDate.now(ZoneId.systemDefault())
             val from = to.minusDays(365)
             val fromStr = from.format(DateTimeFormatter.ISO_LOCAL_DATE)
             val toStr = to.format(DateTimeFormatter.ISO_LOCAL_DATE)
@@ -584,11 +588,12 @@ class SyncEngine @Inject constructor(
                 Log.w(TAG, "Could not parse stats date: ${dto.date}")
                 continue
             }
-            val startOfDayMillis = date.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            // Compute start-of-day in the device's local timezone to match SessionRepository.startOfDay().
+            // Using UTC here would create duplicate rows for the same calendar date for non-UTC users.
+            val startOfDayMillis = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
             val existing = dailyStatsDao.getStatsForDate(startOfDayMillis)
-            if (existing == null || existing.sessionsCompleted == 0) {
-                // Only upsert if we don't have local data for this date
+            if (existing == null || dto.count > existing.sessionsCompleted) {
                 val pomodoroMinutes = dto.pomodoroDuration / 60
                 val flowtimeMinutes = dto.flowtimeSeconds / 60
                 val timeblockMinutes = dto.timeblockSeconds / 60
@@ -599,12 +604,14 @@ class SyncEngine @Inject constructor(
                     date = startOfDayMillis,
                     totalMinutes = totalMinutes,
                     sessionsCompleted = dto.count,
-                    tasksCompleted = 0, // Not tracked by backend stats
-                    longestSessionMinutes = 0, // Not tracked by backend stats
+                    tasksCompleted = existing?.tasksCompleted ?: 0,
+                    longestSessionMinutes = existing?.longestSessionMinutes ?: 0,
                     pomodoroMinutes = pomodoroMinutes,
                     flowMinutes = flowtimeMinutes,
                     blocksMinutes = timeblockMinutes,
                     stopwatchMinutes = stopwatchMinutes,
+                    isDirty = false,
+                    syncedAt = System.currentTimeMillis(),
                 ))
                 upserted++
             }

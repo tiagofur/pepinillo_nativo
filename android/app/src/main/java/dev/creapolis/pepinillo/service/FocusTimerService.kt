@@ -12,6 +12,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -71,6 +72,7 @@ class FocusTimerService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isCollecting = false
+    private var sessionsBeforeLongBreak = 4
     private var dayChangeReceiver: BroadcastReceiver? = null
 
     companion object {
@@ -93,6 +95,7 @@ class FocusTimerService : Service() {
         private const val KEY_R_ACTIVE = "r_active"
         private const val KEY_R_STATUS = "r_status"
         private const val KEY_R_DAY_START = "r_day_start"
+        private const val KEY_R_LINKED_TASK_ID = "linked_task_id"
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, FocusTimerService::class.java))
@@ -103,6 +106,8 @@ class FocusTimerService : Service() {
         }
 
         fun saveRecoveryState(context: Context, state: FocusTimerState) {
+            // W-8: persist linkedTaskId so restored sessions keep the task link.
+            // putString(key, null) removes the key, which reads back as the null default.
             context.getSharedPreferences(RECOVERY_PREFS, Context.MODE_PRIVATE).edit()
                 .putString(KEY_R_MODE, state.mode.name)
                 .putString(KEY_R_PHASE, state.phase.name)
@@ -110,6 +115,7 @@ class FocusTimerService : Service() {
                 .putLong(KEY_R_TOTAL, state.totalMillis)
                 .putInt(KEY_R_COMPLETED, state.completedSessions)
                 .putString(KEY_R_STATUS, state.status.name)
+                .putString(KEY_R_LINKED_TASK_ID, state.linkedTaskId)
                 .putBoolean(KEY_R_ACTIVE, true)
                 .putLong(KEY_R_DAY_START, SessionRepository.startOfDay(System.currentTimeMillis()))
                 .apply()
@@ -136,6 +142,7 @@ class FocusTimerService : Service() {
                 sessionStartTime = startTime,
                 totalMillis = prefs.getLong(KEY_R_TOTAL, 0L),
                 completedSessions = prefs.getInt(KEY_R_COMPLETED, 0),
+                linkedTaskId = prefs.getString(KEY_R_LINKED_TASK_ID, null),
                 savedDayStart = prefs.getLong(KEY_R_DAY_START, 0L),
             )
         }
@@ -148,6 +155,7 @@ class FocusTimerService : Service() {
         val sessionStartTime: Long,
         val totalMillis: Long,
         val completedSessions: Int,
+        val linkedTaskId: String? = null,
         val savedDayStart: Long = 0L,
     )
 
@@ -168,13 +176,21 @@ class FocusTimerService : Service() {
             addAction(Intent.ACTION_TIME_CHANGED)
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
         }
-        registerReceiver(dayChangeReceiver, filter)
+        ContextCompat.registerReceiver(this, dayChangeReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+    }
+
+    private fun startForegroundCompat(notification: Notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // null intent = START_STICKY restart after process death — attempt recovery
         if (intent == null) {
-            startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
+            startForegroundCompat(buildNotification(focusEngine.state.value))
             val recovery = readRecoveryState(this)
             if (recovery != null) {
                 serviceScope.launch {
@@ -189,6 +205,7 @@ class FocusTimerService : Service() {
                         sessionStartTime = recovery.sessionStartTime,
                         status = recovery.status,
                         savedDayStart = recovery.savedDayStart,
+                        linkedTaskId = recovery.linkedTaskId,
                     )
                 }
             } else {
@@ -200,21 +217,33 @@ class FocusTimerService : Service() {
             return START_STICKY
         }
 
+        // A-C10/B-Cat5: Always call startForeground BEFORE any action-specific branching.
+        // ACTION_PAUSE and ACTION_STOP can be delivered to a freshly-(re)created service
+        // (system reclaimed it, or a Wear/widget click re-launches it after stopSelf). On
+        // Android 12+ startForeground MUST be invoked within 5s of the service starting
+        // regardless of which action triggered it, otherwise the system throws
+        // ForegroundServiceDidNotStartInTimeException. Calling it here once up-front makes
+        // every entry path compliant. stopForeground/stopSelf later in the same invocation
+        // is still legal after startForeground has run.
+        startForegroundCompat(buildNotification(focusEngine.state.value))
+
         when (intent.action) {
             ACTION_PAUSE -> focusEngine.pause()
             ACTION_RESUME -> {
-                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
                 focusEngine.start()
             }
             ACTION_STOP -> {
+                // Capture the current mode before triggering the async stop coroutine,
+                // then push the idle reset values immediately using the default display time
+                // for that mode. This prevents the watch UI from freezing on the last
+                // running timer value while focusEngine.stop() completes asynchronously.
+                val currentMode = focusEngine.state.value.mode
                 focusEngine.stop()
                 clearRecoveryState(this)
-                // Push idle state to watch NOW, before stopping — prevents watch from freezing
-                // on the last running timer value while the coroutine collector shuts down.
                 WearDataLayerHelper.pushIdleState(
                     context = this,
-                    mode = focusEngine.state.value.mode.name,
-                    displayTime = focusEngine.state.value.displayTime,
+                    mode = currentMode.name,
+                    displayTime = "", // Empty string signals idle; watch resets display to full duration
                 )
                 // Clear linked task highlight from tasks widget
                 serviceScope.launch { WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, null) }
@@ -229,8 +258,6 @@ class FocusTimerService : Service() {
             ACTION_START_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
                 val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-                // startForeground BEFORE the suspend call to satisfy Android's 5-second requirement
-                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
                 startCollectingIfNeeded()
                 serviceScope.launch {
                     focusEngine.selectMode(mode)
@@ -245,14 +272,12 @@ class FocusTimerService : Service() {
             ACTION_SELECT_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
                 val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
-                startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
                 startCollectingIfNeeded()
                 serviceScope.launch { focusEngine.selectMode(mode) }
                 return START_STICKY
             }
         }
 
-        startForeground(NOTIFICATION_ID, buildNotification(focusEngine.state.value))
         startCollectingIfNeeded()
 
         return START_STICKY
@@ -268,6 +293,10 @@ class FocusTimerService : Service() {
             var previousStatus: TimerStatus? = null
             var previousMode: dev.creapolis.pepinillo.feature.focus.FocusMode? = null
             var previousThemeId: String? = null
+            // Recovery-write throttle: persist only on status/phase change or once per second.
+            var lastRecoveryWriteMs = 0L
+            var recoveryStatus: TimerStatus? = null
+            var recoveryPhase: dev.creapolis.pepinillo.domain.timer.FocusPhase? = null
 
             combine(
                 focusEngine.state,
@@ -283,6 +312,7 @@ class FocusTimerService : Service() {
                 val themeId = userPrefs.selectedTheme
                 val themeMode = userPrefs.themeMode.name
                 
+                this@FocusTimerService.sessionsBeforeLongBreak = userPrefs.sessionsBeforeLongBreak
                 TimerWidgetUpdateData(timerState, streak, sessionsToday, themeId, themeMode)
             }.collect { info: TimerWidgetUpdateData ->
                 val state = info.state
@@ -314,9 +344,29 @@ class FocusTimerService : Service() {
                     previousMode = state.mode
                     previousThemeId = themeId
                     
+                    // Persist recovery state when relevant state changes (status/phase transition)
+                    // or at most once per second — cuts write rate ~99% while keeping fidelity
+                    // within 1s of process death. Clear only on the first Idle emission.
+                    if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused || state.status == TimerStatus.WaitingForNext) {
+                        val recoveryStatusChanged = state.status != recoveryStatus
+                        val recoveryPhaseChanged = state.phase != recoveryPhase
+                        val throttleElapsed = (now - lastRecoveryWriteMs) >= 1_000L
+                        if (recoveryStatusChanged || recoveryPhaseChanged || throttleElapsed) {
+                            saveRecoveryState(this@FocusTimerService, state)
+                            lastRecoveryWriteMs = now
+                            recoveryStatus = state.status
+                            recoveryPhase = state.phase
+                        }
+                    } else if (state.status == TimerStatus.Idle && recoveryStatus != TimerStatus.Idle) {
+                        // Clear once on transition to Idle, not on every subsequent Idle emission.
+                        clearRecoveryState(this@FocusTimerService)
+                        recoveryStatus = TimerStatus.Idle
+                        recoveryPhase = null
+                    }
+
                     if (shouldUpdateWidget) {
                         lastWidgetUpdate = now
-                        
+
                         val finishTimestamp = if (state.status == TimerStatus.Running) {
                             val remainingMillis = (state.totalMillis - state.elapsedMillis).coerceAtLeast(0L)
                             System.currentTimeMillis() + remainingMillis
@@ -327,7 +377,11 @@ class FocusTimerService : Service() {
                             selectedMode = state.mode,
                             displayTime = state.displayTime,
                             finishTimestamp = finishTimestamp,
-                            phaseLabel = this@FocusTimerService.getString(state.phaseLabelRes),
+                            phaseLabel = if (state.mode == FocusMode.Pomodoro && state.phase == FocusPhase.Work) {
+                                this@FocusTimerService.getString(state.phaseLabelRes, state.completedSessions + 1)
+                            } else {
+                                this@FocusTimerService.getString(state.phaseLabelRes)
+                            },
                             status = state.status,
                             progress = state.progress,
                             linkedTaskName = state.linkedTaskId,
@@ -341,17 +395,10 @@ class FocusTimerService : Service() {
                         )
                         updateWidgetState(this@FocusTimerService, widgetState)
                         FocusTimerWidget().updateAll(context = this@FocusTimerService)
-                        
+
                         // Keep tasks widget in sync with linked task highlight
                         WidgetTaskStateManager.updateLinkedTaskId(this@FocusTimerService, state.linkedTaskId)
                         WearDataLayerHelper.pushTimer(this@FocusTimerService, state, taskTitle)
-
-                        // Persist recovery state
-                        if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused || state.status == TimerStatus.WaitingForNext) {
-                            saveRecoveryState(this@FocusTimerService, state)
-                        } else if (state.status == TimerStatus.Idle) {
-                            clearRecoveryState(this@FocusTimerService)
-                        }
                     }
 
                     if (state.status == TimerStatus.Idle) {
@@ -433,10 +480,12 @@ class FocusTimerService : Service() {
             PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val phaseLabel = if (state.mode == FocusMode.Pomodoro && 
+        val phaseLabel = if (state.mode == FocusMode.Pomodoro &&
             state.phase == dev.creapolis.pepinillo.domain.timer.FocusPhase.Work &&
-            (state.status == TimerStatus.Running || state.status == TimerStatus.Paused)) {
-            getString(R.string.phase_focus_numbered, state.completedSessions + 1)
+            (state.status == TimerStatus.Running || state.status == TimerStatus.Paused ||
+                state.status == TimerStatus.WaitingForNext)) {
+            val focusWord = getString(R.string.phase_focus)
+            "$focusWord ${state.completedSessions + 1}/$sessionsBeforeLongBreak"
         } else {
             getString(state.phaseLabelRes)
         }
@@ -454,7 +503,14 @@ class FocusTimerService : Service() {
         when (state.status) {
             TimerStatus.Running -> builder.addAction(0, getString(R.string.btn_pause), servicePending(1, ACTION_PAUSE))
             TimerStatus.Paused -> builder.addAction(0, getString(R.string.btn_resume), servicePending(2, ACTION_RESUME))
-            TimerStatus.WaitingForNext -> builder.addAction(0, getString(R.string.btn_start_focus), servicePending(2, ACTION_RESUME))
+            TimerStatus.WaitingForNext -> {
+                val actionLabel = when (state.phase) {
+                    dev.creapolis.pepinillo.domain.timer.FocusPhase.ShortBreak -> getString(R.string.btn_start_break)
+                    dev.creapolis.pepinillo.domain.timer.FocusPhase.LongBreak -> getString(R.string.btn_start_long_break)
+                    else -> getString(R.string.btn_start_focus)
+                }
+                builder.addAction(0, actionLabel, servicePending(2, ACTION_RESUME))
+            }
             else -> {}
         }
         builder.addAction(0, getString(R.string.btn_stop), servicePending(3, ACTION_STOP))

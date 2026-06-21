@@ -61,6 +61,7 @@ struct FocusView: View {
             Group {
                 Button("") {
                     if !store.isRunning { store.send(.startTapped()) }
+                    else if store.isWaitingForNextPhase { store.send(.startNextPhaseTapped) }
                     else if store.isPaused { store.send(.resumeTapped) }
                     else { store.send(.pauseTapped) }
                 }
@@ -508,7 +509,47 @@ struct FocusView: View {
     @ViewBuilder
     private var controlButtons: some View {
         HStack(spacing: 12) {
-            if store.isRunning {
+            if store.isRunning && store.isWaitingForNextPhase {
+                // Waiting-for-next-phase state: auto-start is OFF.
+                // Show a stop button and a prominent CTA to start the next phase.
+                Button {
+                    showStopConfirmation = true
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .frame(width: 56, height: 56)
+                        .adaptiveGlassCircle(
+                            id: "stop-button",
+                            namespace: glassNS,
+                            tint: .red,
+                            tintOpacity: 0.50
+                        )
+                }
+                .buttonStyle(.plain)
+                .buttonBorderShape(.circle)
+                .accessibilityLabel(String(localized: "Stop session"))
+
+                Button {
+                    store.send(.startNextPhaseTapped)
+                    HapticManager.impact(.medium)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                        Text(nextPhaseButtonLabel)
+                            .fontWeight(.semibold)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .font(.title3)
+                    .frame(maxWidth: 360)
+                    .frame(minHeight: 64)
+                    .primaryFocusActionGlass(tint: modeColor, namespace: glassNS)
+                }
+                .buttonStyle(.pressable)
+                .accessibilityLabel(nextPhaseButtonLabel)
+                .accessibilityHint(String(localized: "focus.waiting.cta.hint", defaultValue: "Double tap to start the next phase"))
+            } else if store.isRunning {
                 // Stop button — destructive action; red tint reads clearly in both
                 // appearances and is consistent with the confirmation dialog that follows.
                 Button {
@@ -631,6 +672,23 @@ struct FocusView: View {
         .accessibilityLabel(delta < 0
             ? String(localized: "Decrease duration by 5 minutes")
             : String(localized: "Increase duration by 5 minutes"))
+    }
+
+    // MARK: - Waiting-for-next-phase CTA label
+
+    /// The button label shown when the engine is holding between phases.
+    /// Mirrors the phrasing already used in the idle start button and phase labels.
+    private var nextPhaseButtonLabel: String {
+        switch store.pendingNextPhase {
+        case .shortBreak:
+            return String(localized: "focus.waiting.start.shortbreak", defaultValue: "Start break")
+        case .longBreak:
+            return String(localized: "focus.waiting.start.longbreak", defaultValue: "Start long break")
+        case .work, .flow, .block, .freeform:
+            return String(localized: "focus.waiting.start.work", defaultValue: "Start focus")
+        default:
+            return String(localized: "focus.waiting.start.work", defaultValue: "Start focus")
+        }
     }
 
     // MARK: - Mode Theming

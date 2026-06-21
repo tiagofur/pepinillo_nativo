@@ -45,6 +45,11 @@
     <string name="mode_blocks">Bloques</string>
     <string name="mode_chrono">Cronómetro</string>
 
+    <!-- Notification phase labels -->
+    <string name="phase_focus">Enfoque</string>
+    <string name="phase_break">Descanso</string>
+    <string name="state_paused_suffix"> (Pausado)</string>
+
     <!-- Metadata labels -->
     <string name="tile_focus_label">Enfoque</string>
     <string name="tile_tasks_label">Tareas</string>

@@ -18,3 +18,7 @@ type PomodoroSession struct {
 	CreatedAt         time.Time  `json:"createdAt"`
 	UpdatedAt         time.Time  `json:"updatedAt"`
 }
+
+// TableName maps the legacy PomodoroSession struct onto the focus_sessions
+// table that replaced pomodoro_sessions in migration 000007_focus_modes.
+func (PomodoroSession) TableName() string { return "focus_sessions" }

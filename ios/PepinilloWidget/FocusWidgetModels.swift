@@ -20,6 +20,9 @@ struct FocusWidgetEntry: TimelineEntry {
     // Session state (nil if no active session)
     let isSessionActive: Bool
     let isPaused: Bool
+    /// True while the engine is in the "waiting for next phase" hold (tick suspended).
+    /// Pause/Resume widget controls must be hidden/no-op during this state.
+    let isWaiting: Bool
     let focusMode: String?        // FocusMode.rawValue
     let phase: String?
     let timerText: String?        // e.g. "23:14" or "34:02" for elapsed
@@ -51,6 +54,7 @@ struct FocusWidgetEntry: TimelineEntry {
         preferredTimerText: "25:00",
         isSessionActive: false,
         isPaused: false,
+        isWaiting: false,
         focusMode: nil,
         phase: nil,
         timerText: nil,
@@ -75,6 +79,7 @@ struct FocusWidgetEntry: TimelineEntry {
         preferredTimerText: "25:00",
         isSessionActive: false,
         isPaused: false,
+        isWaiting: false,
         focusMode: nil,
         phase: nil,
         timerText: nil,

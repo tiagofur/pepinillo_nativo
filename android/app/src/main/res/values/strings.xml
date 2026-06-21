@@ -19,6 +19,8 @@
     <string name="day_streak">day streak</string>
     <string name="msg_task_linked">Task linked</string>
     <string name="btn_start_focus">Start Focus</string>
+    <string name="btn_start_break">Start Break</string>
+    <string name="btn_start_long_break">Start Long Break</string>
     <string name="btn_pause">Pause</string>
     <string name="btn_resume">Resume</string>
     <string name="btn_stop">Stop</string>
@@ -32,6 +34,7 @@
     <string name="mode_chrono">Stopwatch</string>
 
     <!-- Focus Phases -->
+    <string name="state_ready">Ready</string>
     <string name="phase_focus">Focus</string>
     <string name="phase_short_break">Short Break</string>
     <string name="phase_long_break">Long Break</string>
@@ -426,6 +429,7 @@
     <string name="dashboard_peak_hours">Peak Hours</string>
     <string name="dashboard_best_day">Best Day</string>
     <string name="dashboard_focus_score">Focus Score</string>
+    <string name="dashboard_completion">Completion</string>
     <string name="dashboard_focus_modes">Focus Modes</string>
     <string name="dashboard_achievements">Achievements</string>
     <string name="dashboard_current">Current</string>

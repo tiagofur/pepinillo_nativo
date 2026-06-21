@@ -1,0 +1,1175 @@
+{
+  "_type" : {
+    "_name" : "ActivityLogSection"
+  },
+  "domainType" : {
+    "_type" : {
+      "_name" : "String"
+    },
+    "_value" : "com.apple.dt.unit.cocoaUnitTest"
+  },
+  "duration" : {
+    "_type" : {
+      "_name" : "Double"
+    },
+    "_value" : "64.98364496231079"
+  },
+  "result" : {
+    "_type" : {
+      "_name" : "String"
+    },
+    "_value" : "succeeded"
+  },
+  "startTime" : {
+    "_type" : {
+      "_name" : "Date"
+    },
+    "_value" : "2026-06-12T10:35:09.755-0600"
+  },
+  "subsections" : {
+    "_type" : {
+      "_name" : "Array"
+    },
+    "_values" : [
+      {
+        "_type" : {
+          "_name" : "ActivityLogSection"
+        },
+        "domainType" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "Xcode.IDEActivityLogDomainType.LaunchLog"
+        },
+        "duration" : {
+          "_type" : {
+            "_name" : "Double"
+          },
+          "_value" : "64.04423308372498"
+        },
+        "result" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "succeeded"
+        },
+        "startTime" : {
+          "_type" : {
+            "_name" : "Date"
+          },
+          "_value" : "2026-06-12T10:35:10.695-0600"
+        },
+        "subsections" : {
+          "_type" : {
+            "_name" : "Array"
+          },
+          "_values" : [
+            {
+              "_type" : {
+                "_name" : "ActivityLogSection"
+              },
+              "domainType" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "com.apple.dt.IDE.LogSection"
+              },
+              "duration" : {
+                "_type" : {
+                  "_name" : "Double"
+                },
+                "_value" : "19.274898052215576"
+              },
+              "messages" : {
+                "_type" : {
+                  "_name" : "Array"
+                },
+                "_values" : [
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogMessage"
+                    },
+                    "shortTitle" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Platform: iOS Simulator"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Platform: iOS Simulator"
+                    },
+                    "type" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "notice"
+                    }
+                  },
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogMessage"
+                    },
+                    "shortTitle" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Device Identifier: E8CAE254-17BE-48DE-A5BB-778323D7B34D"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Device Identifier: E8CAE254-17BE-48DE-A5BB-778323D7B34D"
+                    },
+                    "type" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "notice"
+                    }
+                  },
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogMessage"
+                    },
+                    "shortTitle" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Operating System Version: 26.5 (23F77)"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Operating System Version: 26.5 (23F77)"
+                    },
+                    "type" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "notice"
+                    }
+                  },
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogMessage"
+                    },
+                    "shortTitle" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Model: iPhone 17 Pro Max (iPhone18,2)"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Model: iPhone 17 Pro Max (iPhone18,2)"
+                    },
+                    "type" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "notice"
+                    }
+                  },
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogMessage"
+                    },
+                    "shortTitle" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Target Architecture: arm64"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Target Architecture: arm64"
+                    },
+                    "type" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "notice"
+                    }
+                  }
+                ]
+              },
+              "result" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "succeeded"
+              },
+              "startTime" : {
+                "_type" : {
+                  "_name" : "Date"
+                },
+                "_value" : "2026-06-12T10:35:44.698-0600"
+              },
+              "subsections" : {
+                "_type" : {
+                  "_name" : "Array"
+                },
+                "_values" : [
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogCommandInvocationSection",
+                      "_supertype" : {
+                        "_name" : "ActivityLogSection"
+                      }
+                    },
+                    "domainType" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "com.apple.dt.IDE.LogSection"
+                    },
+                    "duration" : {
+                      "_type" : {
+                        "_name" : "Double"
+                      },
+                      "_value" : "0.0006920099258422852"
+                    },
+                    "exitCode" : {
+                      "_type" : {
+                        "_name" : "Int"
+                      },
+                      "_value" : "0"
+                    },
+                    "messages" : {
+                      "_type" : {
+                        "_name" : "Array"
+                      },
+                      "_values" : [
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogMessage"
+                          },
+                          "shortTitle" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Installing on iPhone 17 Pro Max"
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Installing on iPhone 17 Pro Max"
+                          },
+                          "type" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "notice"
+                          }
+                        },
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogMessage"
+                          },
+                          "shortTitle" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Successfully installed"
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Successfully installed"
+                          },
+                          "type" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "notice"
+                          }
+                        }
+                      ]
+                    },
+                    "result" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "succeeded"
+                    },
+                    "startTime" : {
+                      "_type" : {
+                        "_name" : "Date"
+                      },
+                      "_value" : "2026-06-12T10:35:44.699-0600"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Install Actions"
+                    }
+                  },
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogCommandInvocationSection",
+                      "_supertype" : {
+                        "_name" : "ActivityLogSection"
+                      }
+                    },
+                    "commandDetails" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Environment variables:\n__XPC_DYLD_FRAMEWORK_PATH=\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\nXCTestSessionIdentifier=95EA7841-EDD6-494E-8AF5-E92DC68E5277\nRUN_DESTINATION_DEVICE_UDID=6F734CA7-77B5-4978-A85A-2A0A403F40B1\nRUN_DESTINATION_DEVICE_NAME=Clone 1 of iPhone 17 Pro Max\nXCTestBundleInjectPath=\/usr\/lib\/libRPAC.dylib:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\/Pepinillo.app\/Frameworks\/libXCTestBundleInject.dylib:\/Library\/Developer\/CoreSimulator\/Volumes\/iOS_23F77\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 26.5.simruntime\/Contents\/Resources\/RuntimeRoot\/usr\/lib\/libMainThreadChecker.dylib:\/usr\/lib\/libRPAC.dylib:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\/Pepinillo.app\/Frameworks\/libXCTestBundleInject.dylib:\/Library\/Developer\/CoreSimulator\/Volumes\/iOS_23F77\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 26.5.simruntime\/Contents\/Resources\/RuntimeRoot\/usr\/lib\/libMainThreadChecker.dylib:\/usr\/lib\/libRPAC.dylib\nCA_ASSERT_MAIN_THREAD_TRANSACTIONS=0\n__XCODE_BUILT_PRODUCTS_DIR_PATHS=\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\nLLVM_PROFILE_FILE=\/dev\/null\n__XPC_DYLD_LIBRARY_PATH=\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\nDYLD_FRAMEWORK_PATH=\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\/PackageFrameworks:\/Applications\/Xcode.app\/Contents\/Developer\/Platforms\/iPhoneSimulator.platform\/Developer\/Library\/Frameworks:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\/PackageFrameworks:\/Applications\/Xcode.app\/Contents\/Developer\/Platforms\/iPhoneSimulator.platform\/Developer\/Library\/Frameworks\nCA_DEBUG_TRANSACTIONS=0\nXCInjectBundleInto=unused\nDYLD_INSERT_LIBRARIES=\/usr\/lib\/libRPAC.dylib:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\/Pepinillo.app\/Frameworks\/libXCTestBundleInject.dylib:\/Library\/Developer\/CoreSimulator\/Volumes\/iOS_23F77\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 26.5.simruntime\/Contents\/Resources\/RuntimeRoot\/usr\/lib\/libMainThreadChecker.dylib:\/usr\/lib\/libRPAC.dylib:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\/Pepinillo.app\/Frameworks\/libXCTestBundleInject.dylib:\/Library\/Developer\/CoreSimulator\/Volumes\/iOS_23F77\/Library\/Developer\/CoreSimulator\/Profiles\/Runtimes\/iOS 26.5.simruntime\/Contents\/Resources\/RuntimeRoot\/usr\/lib\/libMainThreadChecker.dylib:\/usr\/lib\/libRPAC.dylib\nXCTestConfigurationFilePath=\nXCODE_SCHEME_NAME=Pepinillo Dev\nPERFC_SUPPRESS_SYSTEM_REPORTS=1\nDYLD_LIBRARY_PATH=\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator:\/Applications\/Xcode.app\/Contents\/Developer\/Platforms\/iPhoneSimulator.platform\/Developer\/usr\/lib:\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator:\/Applications\/Xcode.app\/Contents\/Developer\/Platforms\/iPhoneSimulator.platform\/Developer\/usr\/lib\nSQLITE_ENABLE_THREAD_ASSERTIONS=1\nNSUnbufferedIO=YES\nSWIFT_BACKTRACE=enable=no\nXCTestBundlePath=PlugIns\/PepinilloTests.xctest\nOS_ACTIVITY_DT_MODE=YES\nPERFC_RESET_INSERT_LIBRARIES=1\nRUN_DESTINATION_DEVICE_PLATFORM_IDENTIFIER=com.apple.platform.iphonesimulator\n__XPC_LLVM_PROFILE_FILE=\/dev\/null\nAPP_DISTRIBUTOR_ID_OVERRIDE=com.apple.AppStore\nTERM=dumb\nPERFC_ENABLE_PROFILE_MODE=1\nPERFC_ENABLE_EXTENDED_DIAGNOSTIC_FORMAT=1"
+                    },
+                    "domainType" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "com.apple.dt.IDE.LogSection"
+                    },
+                    "duration" : {
+                      "_type" : {
+                        "_name" : "Double"
+                      },
+                      "_value" : "19.274898052215576"
+                    },
+                    "exitCode" : {
+                      "_type" : {
+                        "_name" : "Int"
+                      },
+                      "_value" : "0"
+                    },
+                    "messages" : {
+                      "_type" : {
+                        "_name" : "Array"
+                      },
+                      "_values" : [
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogMessage"
+                          },
+                          "shortTitle" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Launching com.pepinillo.app"
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Launching com.pepinillo.app"
+                          },
+                          "type" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "notice"
+                          }
+                        },
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogMessage"
+                          },
+                          "shortTitle" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Launching suspended and the launcher is responsible for resuming."
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Launching suspended and the launcher is responsible for resuming."
+                          },
+                          "type" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "notice"
+                          }
+                        },
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogMessage"
+                          },
+                          "shortTitle" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Successfully launched PepinilloTests"
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Successfully launched PepinilloTests"
+                          },
+                          "type" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "notice"
+                          }
+                        },
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogMessage"
+                          },
+                          "shortTitle" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Console logging policy: Mirror os_logs to std:err, and read stdio from File Descriptors"
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Console logging policy: Mirror os_logs to std:err, and read stdio from File Descriptors"
+                          },
+                          "type" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "notice"
+                          }
+                        },
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogMessage"
+                          },
+                          "shortTitle" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Resumed target process."
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Resumed target process."
+                          },
+                          "type" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "notice"
+                          }
+                        }
+                      ]
+                    },
+                    "result" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "succeeded"
+                    },
+                    "startTime" : {
+                      "_type" : {
+                        "_name" : "Date"
+                      },
+                      "_value" : "2026-06-12T10:35:44.703-0600"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Launch PepinilloTests"
+                    }
+                  }
+                ]
+              },
+              "title" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "Launch PepinilloTests"
+              }
+            }
+          ]
+        },
+        "title" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "Launch actions"
+        }
+      },
+      {
+        "_type" : {
+          "_name" : "ActivityLogUnitTestSection",
+          "_supertype" : {
+            "_name" : "ActivityLogSection"
+          }
+        },
+        "domainType" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "com.apple.dt.unit.cocoaUnitTest"
+        },
+        "result" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "succeeded"
+        },
+        "startTime" : {
+          "_type" : {
+            "_name" : "Date"
+          },
+          "_value" : "2026-06-12T10:35:44.693-0600"
+        },
+        "subsections" : {
+          "_type" : {
+            "_name" : "Array"
+          },
+          "_values" : [
+            {
+              "_type" : {
+                "_name" : "ActivityLogUnitTestSection",
+                "_supertype" : {
+                  "_name" : "ActivityLogSection"
+                }
+              },
+              "domainType" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "com.apple.dt.IDE.UnitTestLogSection.Worker"
+              },
+              "duration" : {
+                "_type" : {
+                  "_name" : "Double"
+                },
+                "_value" : "0.4294748306274414"
+              },
+              "emittedOutput" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "2026-06-12 10:36:02.314041-0600 Pepinillo[84574:13014014] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric\n2026-06-12 10:36:02.319600-0600 Pepinillo[84574:13013845] [startup] Starting asynchronous bootstrap phase...\n2026-06-12 10:36:02.321508-0600 Pepinillo[84574:13013845] [startup] Attempting to load shared ModelContainer with launch-safe timeout...\n2026-06-12 10:36:02.322291-0600 Pepinillo[84574:13014008] [persistence] Shared store WAL size before open: 288432 bytes — checkpointing now\n2026-06-12 10:36:02.327036-0600 Pepinillo[84574:13014008] [persistence] WAL checkpoint (TRUNCATE) complete: 0\/0 frames flushed\n2026-06-12 10:36:02.327386-0600 Pepinillo[84574:13014008] [persistence] WAL size after TRUNCATE checkpoint: 0 bytes\n2026-06-12 10:36:02.327801-0600 Pepinillo[84574:13014008] [persistence] Shared store WAL size after checkpoint: 0 bytes\n2026-06-12 10:36:02.327884-0600 Pepinillo[84574:13014008] [persistence] Opening shared ModelContainer at: \/Users\/tiagofur\/Library\/Developer\/XCTestDevices\/6F734CA7-77B5-4978-A85A-2A0A403F40B1\/data\/Containers\/Shared\/AppGroup\/C17F1DDF-D462-4837-8070-B2FC3DA3C0CE\/PepinilloLocal.sqlite\n2026-06-12 10:36:02.367301-0600 Pepinillo[84574:13014015] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics\n2026-06-12 10:36:02.370636-0600 Pepinillo[84574:13013845] [startup] ModelContainer loaded successfully, applying...\nIOSurfaceClientSetSurfaceNotify failed e00002c7\n2026-06-12 10:36:02.790089-0600 Pepinillo[84574:13014045] [app-launch] RevenueCat entitlement finished in 0.002417s\n2026-06-12 10:36:02.794671-0600 Pepinillo[84574:13014048] [app-launch] Local preferences launch read finished in 0.006957s\n2026-06-12 10:36:02.795953-0600 Pepinillo[84574:13014014] [app-launch] RevenueCat configure finished in 0.008247s\n◇ Test run started.\n↳ Testing Library Version: 1902\n↳ Target Platform: arm64-apple-ios13.0-simulator\n◇ Suite \"SwiftDataPersistenceService Integration Tests\" started.\n◇ Test \"Soft deleted task sync marks task clean and deletes from DB\" started.\nDEBUG: Created task with syncId=10E3F553-5591-4BC7-866E-A978434CE7C1, serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDirty=false\nDEBUG_SERVICE: softDeleteTask called with id=60DFE900-6FB5-4830-B780-5537CE1079FB\nDEBUG_SERVICE: fetched tasks count = 1\nDEBUG_SERVICE: Found task. serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDeleted=false, isDirty=false\nDEBUG_SERVICE: Synced task — marking deleted\nDEBUG_SERVICE: After mutation: isDeleted=true, isDirty=true\nDEBUG_SERVICE: Context saved successfully\nDEBUG: After softDeleteTask, isDeleted=false, isDirty=true\nDEBUG: fetchedDirty count = 1\nDEBUG: fetchedDirty.first: syncId=10E3F553-5591-4BC7-866E-A978434CE7C1, isDeleted=false, isDirty=true\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:51:9: Expectation failed: (fetchedDirty.first?.isDeleted → false) == true\nDEBUG: allTasks count after sync = 1\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:60:9: Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false\n↳ Task should be physically deleted\/purged from the database after sync\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" failed after 0.298 seconds with 2 issues.\n✘ Suite \"SwiftDataPersistenceService Integration Tests\" failed after 0.301 seconds with 2 issues.\n✘ Test run with 1 test in 1 suite failed after 0.302 seconds with 2 issues.\n◇ Test run started.\n↳ Testing Library Version: 1902\n↳ Target Platform: arm64-apple-ios13.0-simulator\n◇ Suite \"SwiftDataPersistenceService Integration Tests\" started.\n◇ Test \"Soft deleted task sync marks task clean and deletes from DB\" started.\nDEBUG: Created task with syncId=75E87C9D-CEFD-4FDD-AC8E-152F97EE474F, serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDirty=false\nDEBUG_SERVICE: softDeleteTask called with id=724F534B-AABE-4821-8A4C-7365D959A545\nDEBUG_SERVICE: fetched tasks count = 1\nDEBUG_SERVICE: Found task. serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDeleted=false, isDirty=false\nDEBUG_SERVICE: Synced task — marking deleted\nDEBUG_SERVICE: After mutation: isDeleted=true, isDirty=true\nDEBUG_SERVICE: Context saved successfully\nDEBUG: After softDeleteTask, isDeleted=false, isDirty=true\nDEBUG: fetchedDirty count = 1\nDEBUG: fetchedDirty.first: syncId=75E87C9D-CEFD-4FDD-AC8E-152F97EE474F, isDeleted=false, isDirty=true\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:51:9: Expectation failed: (fetchedDirty.first?.isDeleted → false) == true\nDEBUG: allTasks count after sync = 1\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:60:9: Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false\n↳ Task should be physically deleted\/purged from the database after sync\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" failed after 0.129 seconds with 2 issues.\n"
+              },
+              "result" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "succeeded"
+              },
+              "runnablePath" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Build\/Products\/Debug-iphonesimulator\/Pepinillo.app"
+              },
+              "runnableUTI" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "com.apple.application-bundle"
+              },
+              "startTime" : {
+                "_type" : {
+                  "_name" : "Date"
+                },
+                "_value" : "2026-06-12T10:35:44.696-0600"
+              },
+              "subsections" : {
+                "_type" : {
+                  "_name" : "Array"
+                },
+                "_values" : [
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogCommandInvocationSection",
+                      "_supertype" : {
+                        "_name" : "ActivityLogSection"
+                      }
+                    },
+                    "commandDetails" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Logs\/Test\/Test-Pepinillo Dev-2026.06.12_10-35-09--0600.xcresult\/Staging\/1_Test\/Diagnostics\/PepinilloTests-027B59C2-D12E-4044-93FD-FE4AF207E61F-Configuration-Test Scheme Action-Iteration-1\/PepinilloTests-0FEBFC17-69DF-4A14-ADB2-4A2A9C7EAD78\/Session-PepinilloTests-2026-06-12_103542-cnNnyB.log"
+                    },
+                    "domainType" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "com.apple.dt.IDE.UnitTestLogSection"
+                    },
+                    "duration" : {
+                      "_type" : {
+                        "_name" : "Double"
+                      },
+                      "_value" : "6.794929504394531e-05"
+                    },
+                    "exitCode" : {
+                      "_type" : {
+                        "_name" : "Int"
+                      },
+                      "_value" : "0"
+                    },
+                    "messages" : {
+                      "_type" : {
+                        "_name" : "Array"
+                      },
+                      "_values" : [
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogMessage"
+                          },
+                          "location" : {
+                            "_type" : {
+                              "_name" : "DocumentLocation"
+                            },
+                            "concreteTypeName" : {
+                              "_type" : {
+                                "_name" : "String"
+                              },
+                              "_value" : "DVTTextDocumentLocation"
+                            },
+                            "url" : {
+                              "_type" : {
+                                "_name" : "String"
+                              },
+                              "_value" : "file:\/\/\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Logs\/Test\/Test-Pepinillo%20Dev-2026.06.12_10-35-09--0600.xcresult\/Staging\/1_Test\/Diagnostics\/PepinilloTests-027B59C2-D12E-4044-93FD-FE4AF207E61F-Configuration-Test%20Scheme%20Action-Iteration-1\/PepinilloTests-0FEBFC17-69DF-4A14-ADB2-4A2A9C7EAD78\/Session-PepinilloTests-2026-06-12_103542-cnNnyB.log"
+                            }
+                          },
+                          "shortTitle" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Logs\/Test\/Test-Pepinillo Dev-2026.06.12_10-35-09--0600.xcresult\/Staging\/1_Test\/Diagnostics\/PepinilloTests-027B59C2-D12E-4044-93FD-FE4AF207E61F-Configuration-Test Scheme Action-Iteration-1\/PepinilloTests-0FEBFC17-69DF-4A14-ADB2-4A2A9C7EAD78\/Session-PepinilloTests-2026-06-12_103542-cnNnyB.log"
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "\/Users\/tiagofur\/Library\/Developer\/Xcode\/DerivedData\/Pepinillo-heguuaahpkionkapurbnwkldnrxk\/Logs\/Test\/Test-Pepinillo Dev-2026.06.12_10-35-09--0600.xcresult\/Staging\/1_Test\/Diagnostics\/PepinilloTests-027B59C2-D12E-4044-93FD-FE4AF207E61F-Configuration-Test Scheme Action-Iteration-1\/PepinilloTests-0FEBFC17-69DF-4A14-ADB2-4A2A9C7EAD78\/Session-PepinilloTests-2026-06-12_103542-cnNnyB.log"
+                          },
+                          "type" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "notice"
+                          }
+                        }
+                      ]
+                    },
+                    "result" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "succeeded"
+                    },
+                    "startTime" : {
+                      "_type" : {
+                        "_name" : "Date"
+                      },
+                      "_value" : "2026-06-12T10:35:44.696-0600"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Writing diagnostic log for test runner launch."
+                    }
+                  },
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogUnitTestSection",
+                      "_supertype" : {
+                        "_name" : "ActivityLogSection"
+                      }
+                    },
+                    "domainType" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "com.apple.dt.IDE.UnitTestLogSection"
+                    },
+                    "duration" : {
+                      "_type" : {
+                        "_name" : "Double"
+                      },
+                      "_value" : "0.2999598979949951"
+                    },
+                    "emittedOutput" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "2026-06-12 10:36:02.314041-0600 Pepinillo[84574:13014014] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric\n2026-06-12 10:36:02.319600-0600 Pepinillo[84574:13013845] [startup] Starting asynchronous bootstrap phase...\n2026-06-12 10:36:02.321508-0600 Pepinillo[84574:13013845] [startup] Attempting to load shared ModelContainer with launch-safe timeout...\n2026-06-12 10:36:02.322291-0600 Pepinillo[84574:13014008] [persistence] Shared store WAL size before open: 288432 bytes — checkpointing now\n2026-06-12 10:36:02.327036-0600 Pepinillo[84574:13014008] [persistence] WAL checkpoint (TRUNCATE) complete: 0\/0 frames flushed\n2026-06-12 10:36:02.327386-0600 Pepinillo[84574:13014008] [persistence] WAL size after TRUNCATE checkpoint: 0 bytes\n2026-06-12 10:36:02.327801-0600 Pepinillo[84574:13014008] [persistence] Shared store WAL size after checkpoint: 0 bytes\n2026-06-12 10:36:02.327884-0600 Pepinillo[84574:13014008] [persistence] Opening shared ModelContainer at: \/Users\/tiagofur\/Library\/Developer\/XCTestDevices\/6F734CA7-77B5-4978-A85A-2A0A403F40B1\/data\/Containers\/Shared\/AppGroup\/C17F1DDF-D462-4837-8070-B2FC3DA3C0CE\/PepinilloLocal.sqlite\n2026-06-12 10:36:02.367301-0600 Pepinillo[84574:13014015] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics\n2026-06-12 10:36:02.370636-0600 Pepinillo[84574:13013845] [startup] ModelContainer loaded successfully, applying...\nIOSurfaceClientSetSurfaceNotify failed e00002c7\n2026-06-12 10:36:02.790089-0600 Pepinillo[84574:13014045] [app-launch] RevenueCat entitlement finished in 0.002417s\n2026-06-12 10:36:02.794671-0600 Pepinillo[84574:13014048] [app-launch] Local preferences launch read finished in 0.006957s\n2026-06-12 10:36:02.795953-0600 Pepinillo[84574:13014014] [app-launch] RevenueCat configure finished in 0.008247s\n◇ Test run started.\n↳ Testing Library Version: 1902\n↳ Target Platform: arm64-apple-ios13.0-simulator\n◇ Suite \"SwiftDataPersistenceService Integration Tests\" started.\n◇ Test \"Soft deleted task sync marks task clean and deletes from DB\" started.\nDEBUG: Created task with syncId=10E3F553-5591-4BC7-866E-A978434CE7C1, serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDirty=false\nDEBUG_SERVICE: softDeleteTask called with id=60DFE900-6FB5-4830-B780-5537CE1079FB\nDEBUG_SERVICE: fetched tasks count = 1\nDEBUG_SERVICE: Found task. serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDeleted=false, isDirty=false\nDEBUG_SERVICE: Synced task — marking deleted\nDEBUG_SERVICE: After mutation: isDeleted=true, isDirty=true\nDEBUG_SERVICE: Context saved successfully\nDEBUG: After softDeleteTask, isDeleted=false, isDirty=true\nDEBUG: fetchedDirty count = 1\nDEBUG: fetchedDirty.first: syncId=10E3F553-5591-4BC7-866E-A978434CE7C1, isDeleted=false, isDirty=true\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:51:9: Expectation failed: (fetchedDirty.first?.isDeleted → false) == true\nDEBUG: allTasks count after sync = 1\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:60:9: Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false\n↳ Task should be physically deleted\/purged from the database after sync\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" failed after 0.298 seconds with 2 issues.\n✘ Suite \"SwiftDataPersistenceService Integration Tests\" failed after 0.301 seconds with 2 issues.\n"
+                    },
+                    "result" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "succeeded"
+                    },
+                    "startTime" : {
+                      "_type" : {
+                        "_name" : "Date"
+                      },
+                      "_value" : "2026-06-12T10:36:03.214-0600"
+                    },
+                    "subsections" : {
+                      "_type" : {
+                        "_name" : "Array"
+                      },
+                      "_values" : [
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogUnitTestSection",
+                            "_supertype" : {
+                              "_name" : "ActivityLogSection"
+                            }
+                          },
+                          "domainType" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "com.apple.dt.IDE.UnitTestLogSection"
+                          },
+                          "duration" : {
+                            "_type" : {
+                              "_name" : "Double"
+                            },
+                            "_value" : "0.2999598979949951"
+                          },
+                          "emittedOutput" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "◇ Test \"Soft deleted task sync marks task clean and deletes from DB\" started.\nDEBUG: Created task with syncId=10E3F553-5591-4BC7-866E-A978434CE7C1, serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDirty=false\nDEBUG_SERVICE: softDeleteTask called with id=60DFE900-6FB5-4830-B780-5537CE1079FB\nDEBUG_SERVICE: fetched tasks count = 1\nDEBUG_SERVICE: Found task. serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDeleted=false, isDirty=false\nDEBUG_SERVICE: Synced task — marking deleted\nDEBUG_SERVICE: After mutation: isDeleted=true, isDirty=true\nDEBUG_SERVICE: Context saved successfully\nDEBUG: After softDeleteTask, isDeleted=false, isDirty=true\nDEBUG: fetchedDirty count = 1\nDEBUG: fetchedDirty.first: syncId=10E3F553-5591-4BC7-866E-A978434CE7C1, isDeleted=false, isDirty=true\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:51:9: Expectation failed: (fetchedDirty.first?.isDeleted → false) == true\nDEBUG: allTasks count after sync = 1\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:60:9: Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false\n↳ Task should be physically deleted\/purged from the database after sync\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" failed after 0.298 seconds with 2 issues.\n"
+                          },
+                          "messages" : {
+                            "_type" : {
+                              "_name" : "Array"
+                            },
+                            "_values" : [
+                              {
+                                "_type" : {
+                                  "_name" : "ActivityLogMessage"
+                                },
+                                "location" : {
+                                  "_type" : {
+                                    "_name" : "DocumentLocation"
+                                  },
+                                  "concreteTypeName" : {
+                                    "_type" : {
+                                      "_name" : "String"
+                                    },
+                                    "_value" : "DVTTextDocumentLocation"
+                                  },
+                                  "url" : {
+                                    "_type" : {
+                                      "_name" : "String"
+                                    },
+                                    "_value" : "file:\/\/\/Users\/tiagofur\/dev\/pepinillo_nativo\/ios\/Tests\/IntegrationTests\/PersistenceServiceTests.swift#EndingLineNumber=50&StartingLineNumber=50"
+                                  }
+                                },
+                                "shortTitle" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "Expectation failed: (fetchedDirty.first?.isDeleted → false) == true"
+                                },
+                                "title" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "Expectation failed: (fetchedDirty.first?.isDeleted → false) == true"
+                                },
+                                "type" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "test failure"
+                                }
+                              },
+                              {
+                                "_type" : {
+                                  "_name" : "ActivityLogMessage"
+                                },
+                                "location" : {
+                                  "_type" : {
+                                    "_name" : "DocumentLocation"
+                                  },
+                                  "concreteTypeName" : {
+                                    "_type" : {
+                                      "_name" : "String"
+                                    },
+                                    "_value" : "DVTTextDocumentLocation"
+                                  },
+                                  "url" : {
+                                    "_type" : {
+                                      "_name" : "String"
+                                    },
+                                    "_value" : "file:\/\/\/Users\/tiagofur\/dev\/pepinillo_nativo\/ios\/Tests\/IntegrationTests\/PersistenceServiceTests.swift#EndingLineNumber=59&StartingLineNumber=59"
+                                  }
+                                },
+                                "shortTitle" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false: Task should be physically deleted\/purged from the database after sync"
+                                },
+                                "title" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false: Task should be physically deleted\/purged from the database after sync"
+                                },
+                                "type" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "test failure"
+                                }
+                              }
+                            ]
+                          },
+                          "result" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "succeeded"
+                          },
+                          "startTime" : {
+                            "_type" : {
+                              "_name" : "Date"
+                            },
+                            "_value" : "2026-06-12T10:36:03.245-0600"
+                          },
+                          "suiteName" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "PersistenceServiceTests"
+                          },
+                          "summary" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" failed after 0.298 seconds with 2 issues.\n"
+                          },
+                          "testName" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "softDeleteSyncPurgesTask()"
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Run test case softDeleteSyncPurgesTask()"
+                          }
+                        }
+                      ]
+                    },
+                    "suiteName" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "PersistenceServiceTests"
+                    },
+                    "summary" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "✘ Suite \"SwiftDataPersistenceService Integration Tests\" failed after 0.301 seconds with 2 issues.\n"
+                    },
+                    "testsPassedString" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "1 test total, 0 passed"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Run test suite PersistenceServiceTests"
+                    }
+                  },
+                  {
+                    "_type" : {
+                      "_name" : "ActivityLogUnitTestSection",
+                      "_supertype" : {
+                        "_name" : "ActivityLogSection"
+                      }
+                    },
+                    "domainType" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "com.apple.dt.IDE.UnitTestLogSection"
+                    },
+                    "duration" : {
+                      "_type" : {
+                        "_name" : "Double"
+                      },
+                      "_value" : "0.1295149326324463"
+                    },
+                    "emittedOutput" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "✘ Test run with 1 test in 1 suite failed after 0.302 seconds with 2 issues.\n◇ Test run started.\n↳ Testing Library Version: 1902\n↳ Target Platform: arm64-apple-ios13.0-simulator\n◇ Suite \"SwiftDataPersistenceService Integration Tests\" started.\n◇ Test \"Soft deleted task sync marks task clean and deletes from DB\" started.\nDEBUG: Created task with syncId=75E87C9D-CEFD-4FDD-AC8E-152F97EE474F, serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDirty=false\nDEBUG_SERVICE: softDeleteTask called with id=724F534B-AABE-4821-8A4C-7365D959A545\nDEBUG_SERVICE: fetched tasks count = 1\nDEBUG_SERVICE: Found task. serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDeleted=false, isDirty=false\nDEBUG_SERVICE: Synced task — marking deleted\nDEBUG_SERVICE: After mutation: isDeleted=true, isDirty=true\nDEBUG_SERVICE: Context saved successfully\nDEBUG: After softDeleteTask, isDeleted=false, isDirty=true\nDEBUG: fetchedDirty count = 1\nDEBUG: fetchedDirty.first: syncId=75E87C9D-CEFD-4FDD-AC8E-152F97EE474F, isDeleted=false, isDirty=true\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:51:9: Expectation failed: (fetchedDirty.first?.isDeleted → false) == true\nDEBUG: allTasks count after sync = 1\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:60:9: Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false\n↳ Task should be physically deleted\/purged from the database after sync\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" failed after 0.129 seconds with 2 issues.\n"
+                    },
+                    "result" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "succeeded"
+                    },
+                    "startTime" : {
+                      "_type" : {
+                        "_name" : "Date"
+                      },
+                      "_value" : "2026-06-12T10:36:03.831-0600"
+                    },
+                    "subsections" : {
+                      "_type" : {
+                        "_name" : "Array"
+                      },
+                      "_values" : [
+                        {
+                          "_type" : {
+                            "_name" : "ActivityLogUnitTestSection",
+                            "_supertype" : {
+                              "_name" : "ActivityLogSection"
+                            }
+                          },
+                          "domainType" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "com.apple.dt.IDE.UnitTestLogSection"
+                          },
+                          "duration" : {
+                            "_type" : {
+                              "_name" : "Double"
+                            },
+                            "_value" : "0.1295149326324463"
+                          },
+                          "emittedOutput" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "◇ Test run started.\n↳ Testing Library Version: 1902\n↳ Target Platform: arm64-apple-ios13.0-simulator\n◇ Suite \"SwiftDataPersistenceService Integration Tests\" started.\n◇ Test \"Soft deleted task sync marks task clean and deletes from DB\" started.\nDEBUG: Created task with syncId=75E87C9D-CEFD-4FDD-AC8E-152F97EE474F, serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDirty=false\nDEBUG_SERVICE: softDeleteTask called with id=724F534B-AABE-4821-8A4C-7365D959A545\nDEBUG_SERVICE: fetched tasks count = 1\nDEBUG_SERVICE: Found task. serverId=Optional(123), syncedAt=Optional(2026-06-12 16:36:03 +0000), isDeleted=false, isDirty=false\nDEBUG_SERVICE: Synced task — marking deleted\nDEBUG_SERVICE: After mutation: isDeleted=true, isDirty=true\nDEBUG_SERVICE: Context saved successfully\nDEBUG: After softDeleteTask, isDeleted=false, isDirty=true\nDEBUG: fetchedDirty count = 1\nDEBUG: fetchedDirty.first: syncId=75E87C9D-CEFD-4FDD-AC8E-152F97EE474F, isDeleted=false, isDirty=true\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:51:9: Expectation failed: (fetchedDirty.first?.isDeleted → false) == true\nDEBUG: allTasks count after sync = 1\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:60:9: Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false\n↳ Task should be physically deleted\/purged from the database after sync\n"
+                          },
+                          "location" : {
+                            "_type" : {
+                              "_name" : "DocumentLocation"
+                            },
+                            "concreteTypeName" : {
+                              "_type" : {
+                                "_name" : "String"
+                              },
+                              "_value" : "DVTTextDocumentLocation"
+                            },
+                            "url" : {
+                              "_type" : {
+                                "_name" : "String"
+                              },
+                              "_value" : "file:\/\/\/Users\/tiagofur\/dev\/pepinillo_nativo\/ios\/Tests\/IntegrationTests\/PersistenceServiceTests.swift#EndingLineNumber=50&StartingLineNumber=50"
+                            }
+                          },
+                          "messages" : {
+                            "_type" : {
+                              "_name" : "Array"
+                            },
+                            "_values" : [
+                              {
+                                "_type" : {
+                                  "_name" : "ActivityLogMessage"
+                                },
+                                "location" : {
+                                  "_type" : {
+                                    "_name" : "DocumentLocation"
+                                  },
+                                  "concreteTypeName" : {
+                                    "_type" : {
+                                      "_name" : "String"
+                                    },
+                                    "_value" : "DVTTextDocumentLocation"
+                                  },
+                                  "url" : {
+                                    "_type" : {
+                                      "_name" : "String"
+                                    },
+                                    "_value" : "file:\/\/\/Users\/tiagofur\/dev\/pepinillo_nativo\/ios\/Tests\/IntegrationTests\/PersistenceServiceTests.swift#EndingLineNumber=50&StartingLineNumber=50"
+                                  }
+                                },
+                                "shortTitle" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "Expectation failed: (fetchedDirty.first?.isDeleted → false) == true"
+                                },
+                                "title" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "Expectation failed: (fetchedDirty.first?.isDeleted → false) == true"
+                                },
+                                "type" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "test failure"
+                                }
+                              },
+                              {
+                                "_type" : {
+                                  "_name" : "ActivityLogMessage"
+                                },
+                                "location" : {
+                                  "_type" : {
+                                    "_name" : "DocumentLocation"
+                                  },
+                                  "concreteTypeName" : {
+                                    "_type" : {
+                                      "_name" : "String"
+                                    },
+                                    "_value" : "DVTTextDocumentLocation"
+                                  },
+                                  "url" : {
+                                    "_type" : {
+                                      "_name" : "String"
+                                    },
+                                    "_value" : "file:\/\/\/Users\/tiagofur\/dev\/pepinillo_nativo\/ios\/Tests\/IntegrationTests\/PersistenceServiceTests.swift#EndingLineNumber=59&StartingLineNumber=59"
+                                  }
+                                },
+                                "shortTitle" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false: Task should be physically deleted\/purged from the database after sync"
+                                },
+                                "title" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false: Task should be physically deleted\/purged from the database after sync"
+                                },
+                                "type" : {
+                                  "_type" : {
+                                    "_name" : "String"
+                                  },
+                                  "_value" : "test failure"
+                                }
+                              }
+                            ]
+                          },
+                          "result" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "succeeded"
+                          },
+                          "startTime" : {
+                            "_type" : {
+                              "_name" : "Date"
+                            },
+                            "_value" : "2026-06-12T10:36:03.831-0600"
+                          },
+                          "suiteName" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "PersistenceServiceTests"
+                          },
+                          "summary" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "DEBUG: allTasks count after sync = 1\n✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" recorded an issue at PersistenceServiceTests.swift:60:9: Expectation failed: (allTasks → [Pepinillo.TaskItem]).isEmpty → false\n↳ Task should be physically deleted\/purged from the database after sync\n"
+                          },
+                          "testName" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "softDeleteSyncPurgesTask()"
+                          },
+                          "title" : {
+                            "_type" : {
+                              "_name" : "String"
+                            },
+                            "_value" : "Run test case softDeleteSyncPurgesTask()"
+                          }
+                        }
+                      ]
+                    },
+                    "suiteName" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "PersistenceServiceTests"
+                    },
+                    "summary" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "✘ Test \"Soft deleted task sync marks task clean and deletes from DB\" failed after 0.129 seconds with 2 issues.\n"
+                    },
+                    "testsPassedString" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "1 test total, 0 passed"
+                    },
+                    "title" : {
+                      "_type" : {
+                        "_name" : "String"
+                      },
+                      "_value" : "Run test suite PersistenceServiceTests"
+                    }
+                  }
+                ]
+              },
+              "testsPassedString" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "2 tests total, 0 passed"
+              },
+              "title" : {
+                "_type" : {
+                  "_name" : "String"
+                },
+                "_value" : "Pepinillo (84574)"
+              }
+            }
+          ]
+        },
+        "title" : {
+          "_type" : {
+            "_name" : "String"
+          },
+          "_value" : "Test target PepinilloTests"
+        }
+      }
+    ]
+  },
+  "title" : {
+    "_type" : {
+      "_name" : "String"
+    },
+    "_value" : "Test Pepinillo Dev"
+  }
+}

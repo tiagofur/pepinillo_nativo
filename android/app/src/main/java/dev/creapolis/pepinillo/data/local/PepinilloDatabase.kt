@@ -2,6 +2,7 @@ package dev.creapolis.pepinillo.data.local
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.Transaction
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
@@ -29,8 +30,8 @@ import dev.creapolis.pepinillo.data.local.entity.UserEntity
         UserEntity::class,
         PreferenceSyncEntity::class,
     ],
-    version = 8,
-    exportSchema = false,
+    version = 10,
+    exportSchema = true,
 )
 abstract class PepinilloDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
@@ -41,7 +42,54 @@ abstract class PepinilloDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun preferenceSyncDao(): PreferenceSyncDao
 
+    /**
+     * Atomically record a focus session and its daily-stats update.
+     *
+     * Both writes succeed or fail together — partial state (session without stats,
+     * or stats without session) is impossible. Pass null for [updatedStats] when
+     * the session is a break phase that should not affect daily totals; in that
+     * case only the session row is inserted (still inside its own transaction for
+     * consistency with the work-session path).
+     */
+    @Transaction
+    suspend fun recordSessionAtomic(
+        session: FocusSessionEntity,
+        updatedStats: DailyStatsEntity?,
+    ) {
+        focusSessionDao().insertSession(session)
+        updatedStats?.let { dailyStatsDao().upsert(it) }
+    }
+
     companion object {
+        // No-op migration: schema change is metadata-only (added @ColumnInfo(defaultValue=...)
+        // on UserEntity columns that already existed via MIGRATION_5_6 and MIGRATION_7_8).
+        // Room still detects the schema-hash change, so this empty migration is the contract
+        // that acknowledges it. Without it, upgrading from v8 crashes with
+        // "A migration from 8 to 9 was required but not found".
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Intentionally empty — no SQL needed.
+            }
+        }
+
+        /**
+         * v9 → v10: add `is_deleted` and `updated_at` columns to `subtasks`.
+         *
+         * Required for subtask soft-delete support: offline subtask deletes and
+         * completion toggles must be tracked as dirty so the next sync push can
+         * propagate them, instead of being silently lost.
+         */
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE subtasks ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0",
+                )
+                db.execSQL(
+                    "ALTER TABLE subtasks ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0",
+                )
+            }
+        }
+
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE users ADD COLUMN aiCreditsBalance INTEGER NOT NULL DEFAULT 0")

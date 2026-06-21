@@ -91,6 +91,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             let activeModeName = AppGroupDefaults.activeModeName
             let isActive = AppGroupDefaults.isSessionActive && activeModeName != nil
             let isPaused = isActive ? AppGroupDefaults.activeSessionIsPaused : false
+            let isWaiting = isActive ? AppGroupDefaults.activeSessionIsWaiting : false
             let activeMode = isActive ? activeModeName : nil
             let activePhase = isActive ? AppGroupDefaults.activeSessionPhase : nil
             let liveElapsed = isActive ? AppGroupDefaults.activeSessionLiveElapsed() : 0
@@ -141,6 +142,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 preferredTimerText: preferredTimerText,
                 isSessionActive: isActive,
                 isPaused: isPaused,
+                isWaiting: isWaiting,
                 focusMode: activeMode,
                 phase: activePhase,
                 timerText: timerText,
@@ -170,6 +172,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
         let preferredModeID = AppGroupDefaults.widgetSelectedMode ?? configuration.preferredMode.rawValue
         let isActive = AppGroupDefaults.isSessionActive && AppGroupDefaults.activeModeName != nil
         let isPaused = isActive ? AppGroupDefaults.activeSessionIsPaused : false
+        let isWaiting = isActive ? AppGroupDefaults.activeSessionIsWaiting : false
         let liveElapsed = isActive ? AppGroupDefaults.activeSessionLiveElapsed() : 0
         let liveRemaining = isActive ? AppGroupDefaults.activeSessionLiveRemaining() : nil
 
@@ -195,6 +198,7 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             preferredTimerText: idleTimerText(for: preferredModeID, preferences: nil),
             isSessionActive: isActive,
             isPaused: isPaused,
+            isWaiting: isWaiting,
             focusMode: isActive ? AppGroupDefaults.activeModeName : nil,
             phase: isActive ? AppGroupDefaults.activeSessionPhase : nil,
             timerText: timerText,

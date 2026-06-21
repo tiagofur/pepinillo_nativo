@@ -1,233 +1,195 @@
 package dev.creapolis.pepinillo.feature.dashboard.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
+import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
+import com.patrykandpatrick.vico.compose.common.shape.dashedShape
+import com.patrykandpatrick.vico.compose.common.shape.rounded
+import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.data.ColumnCartesianLayerModel
+import com.patrykandpatrick.vico.core.cartesian.decoration.HorizontalLine
+import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.core.common.Fill
+import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import dev.creapolis.pepinillo.feature.dashboard.model.DailyFocus
+
+// ---------------------------------------------------------------------------
+// Pure functions — testable without Compose
+// ---------------------------------------------------------------------------
+
+/** Computes the average minutes from a list of DailyFocus data. */
+fun computeAverageMinutes(data: List<DailyFocus>): Double {
+    if (data.isEmpty()) return 0.0
+    return data.sumOf { it.minutes }.toDouble() / data.size
+}
+
+/** Simple data class for chart entry data mapping. */
+data class ChartEntry(val x: Float, val y: Float)
+
+/** Maps DailyFocus data to chart entries with x=index, y=minutes. */
+fun mapToChartEntries(data: List<DailyFocus>): List<ChartEntry> {
+    return data.mapIndexed { index, daily ->
+        ChartEntry(index.toFloat(), daily.minutes.toFloat())
+    }
+}
+
+/** Formats minutes + sessions into a preview line like "1h 20m in 5 sessions". */
+fun formatPreviewLine(totalMinutes: Int, sessions: Int): String {
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    val sessionLabel = if (sessions == 1) "session" else "sessions"
+    return if (hours > 0) {
+        "${hours}h ${minutes}m in $sessions $sessionLabel"
+    } else {
+        "${minutes}m in $sessions $sessionLabel"
+    }
+}
+
+// ---------------------------------------------------------------------------
+// FocusChart composable — Vico-based implementation
+// ---------------------------------------------------------------------------
 
 @Composable
 fun FocusChart(
     data: List<DailyFocus>,
     accentColor: Color,
     modifier: Modifier = Modifier,
-    barWidth: Dp = when {
-        data.size <= 7 -> 28.dp
-        data.size <= 12 -> 24.dp
-        else -> 8.dp
-    },
-    chartHeight: Dp = when {
-        data.size > 12 -> 100.dp
-        else -> 120.dp
-    },
-    showAllLabels: Boolean = data.size <= 12,
-    onBarSelected: ((Int?) -> Unit)? = null,
 ) {
-    val maxMinutes = (data.maxOfOrNull { it.minutes } ?: 1).coerceAtLeast(1)
-    val trackColor = accentColor.copy(alpha = 0.12f)
+    if (data.isEmpty()) {
+        EmptyChartPlaceholder(modifier = modifier)
+        return
+    }
 
-    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val modelProducer = remember { CartesianChartModelProducer() }
+    val avgMinutes = computeAverageMinutes(data)
+    val dayLabels = remember(data) { data.map { it.dayLabel } }
+    val accentArgb = accentColor.toArgb()
+    val avgArgb = accentColor.copy(alpha = 0.5f).toArgb()
 
-    val scrollable = data.size > 12
-
-    Column(modifier = modifier) {
-        // Detail banner shown when a bar is selected
-        if (selectedIndex != null) {
-            val selected = data.getOrNull(selectedIndex!!)
-            if (selected != null) {
-                SelectedDayDetail(
-                    dayLabel = selected.dayLabel,
-                    minutes = selected.minutes,
-                    accentColor = accentColor,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                )
-            }
-        }
-
-        val content: @Composable () -> Unit = {
-            Row(
-                modifier = if (scrollable) Modifier else Modifier.fillMaxWidth(),
-                horizontalArrangement = if (scrollable) Arrangement.spacedBy(4.dp) else Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.Bottom,
-            ) {
-                data.forEachIndexed { index, day ->
-                    val fraction = day.minutes.toFloat() / maxMinutes
-                    val showLabel = showAllLabels || (data.size > 12 && index % 5 == 0)
-                    val isSelected = selectedIndex == index
-                    val hasSelection = selectedIndex != null
-
-                    // Dim unselected bars when a selection is active
-                    val targetBarColor by animateColorAsState(
-                        targetValue = when {
-                            !hasSelection -> accentColor
-                            isSelected -> accentColor
-                            else -> accentColor.copy(alpha = 0.35f)
-                        },
-                        animationSpec = tween(durationMillis = 200),
-                        label = "barColor",
-                    )
-
-                    val targetTrackColor by animateColorAsState(
-                        targetValue = when {
-                            isSelected -> accentColor.copy(alpha = 0.22f)
-                            else -> trackColor
-                        },
-                        animationSpec = tween(durationMillis = 200),
-                        label = "trackColor",
-                    )
-
-                    val barScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.06f else 1f,
-                        animationSpec = tween(durationMillis = 200),
-                        label = "barScale",
-                    )
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {
-                            val newIndex = if (selectedIndex == index) null else index
-                            selectedIndex = newIndex
-                            onBarSelected?.invoke(newIndex)
-                        },
-                    ) {
-                        // Tooltip above the selected bar
-                        if (isSelected) {
-                            Surface(
-                                color = accentColor,
-                                shape = RoundedCornerShape(6.dp),
-                                tonalElevation = 2.dp,
-                                shadowElevation = 2.dp,
-                            ) {
-                                Text(
-                                    text = "${day.minutes}m",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                )
-                            }
-                        } else {
-                            // Reserve space so layout doesn't jump
-                            Box(modifier = Modifier.height(0.dp))
-                        }
-
-                        Canvas(
-                            modifier = Modifier
-                                .width(barWidth * barScale)
-                                .height(chartHeight),
-                        ) {
-                            val bw = size.width
-                            val bh = size.height
-                            val radius = CornerRadius(bw / 2, bw / 2)
-
-                            drawRoundRect(
-                                color = targetTrackColor,
-                                topLeft = Offset.Zero,
-                                size = Size(bw, bh),
-                                cornerRadius = radius,
-                            )
-
-                            if (fraction > 0f) {
-                                val filledHeight = bh * fraction
-                                drawRoundRect(
-                                    color = targetBarColor,
-                                    topLeft = Offset(0f, bh - filledHeight),
-                                    size = Size(bw, filledHeight),
-                                    cornerRadius = radius,
-                                )
-                            }
-                        }
-
-                        if (showLabel) {
-                            Text(
-                                text = day.dayLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isSelected) {
-                                    accentColor
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        if (scrollable) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-            ) {
-                content()
-            }
-        } else {
-            content()
+    // Populate chart data
+    LaunchedEffect(data) {
+        val yValues = data.map { it.minutes }
+        modelProducer.runTransaction {
+            add(ColumnCartesianLayerModel.partial { series(yValues) })
         }
     }
+
+    // Column layer with rounded corners and accent color
+    val columnLayer = rememberColumnCartesianLayer(
+        columnProvider = ColumnCartesianLayer.ColumnProvider.series(
+            listOf(
+                rememberLineComponent(
+                    fill = Fill(accentArgb),
+                    thickness = 16.dp,
+                    shape = CorneredShape.rounded(4.dp),
+                ),
+            ),
+        ),
+    )
+
+    // Y-axis with minute suffix
+    val yFormatter = remember {
+        CartesianValueFormatter { _, value, _ -> "${value.toInt()}m" }
+    }
+    val startAxis = VerticalAxis.rememberStart(
+        valueFormatter = yFormatter,
+        itemPlacer = VerticalAxis.ItemPlacer.count({ 5 }),
+    )
+
+    // X-axis with day labels
+    val bottomAxis = HorizontalAxis.rememberBottom(
+        itemPlacer = HorizontalAxis.ItemPlacer.segmented(),
+        valueFormatter = CartesianValueFormatter { _, x, _ ->
+            val index = x.toInt()
+            if (index in dayLabels.indices) dayLabels[index] else ""
+        },
+    )
+
+    // Marker tooltip showing "{minutes}m" on bar tap
+    val markerLabel = rememberTextComponent(
+        background = rememberShapeComponent(
+            fill = Fill(accentArgb),
+            shape = CorneredShape.rounded(4.dp),
+        ),
+    )
+    val marker = rememberDefaultCartesianMarker(
+        label = markerLabel,
+        valueFormatter = DefaultCartesianMarker.ValueFormatter { _, targets ->
+            val x = targets.firstOrNull()?.x ?: return@ValueFormatter ""
+            val index = x.toInt()
+            if (index in data.indices) "${data[index].minutes}m" else ""
+        },
+    )
+
+    // Threshold line at average (dashed)
+    val avgLineShape = dashedShape(
+        shape = CorneredShape.rounded(0.dp),
+        dashLength = 5.dp,
+        gapLength = 5.dp,
+    )
+    val avgLabelComponent = rememberTextComponent(
+        color = accentColor.copy(alpha = 0.7f),
+    )
+    val avgLine = remember(avgMinutes) {
+        HorizontalLine(
+            y = { avgMinutes },
+            line = com.patrykandpatrick.vico.core.common.component.LineComponent(
+                Fill(avgArgb),
+                1f,
+                avgLineShape,
+            ),
+            labelComponent = avgLabelComponent,
+            label = { "avg" },
+        )
+    }
+
+    CartesianChartHost(
+        chart = rememberCartesianChart(
+            columnLayer,
+            startAxis = startAxis,
+            bottomAxis = bottomAxis,
+            marker = marker,
+            decorations = listOf(avgLine),
+        ),
+        modelProducer = modelProducer,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(200.dp),
+        zoomState = rememberVicoZoomState(zoomEnabled = false),
+    )
 }
 
 @Composable
-private fun SelectedDayDetail(
-    dayLabel: String,
-    minutes: Int,
-    accentColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = dayLabel,
-            style = MaterialTheme.typography.titleSmall,
-            color = accentColor,
-        )
-        Text(
-            text = "  \u2022  ",
-            style = MaterialTheme.typography.titleSmall,
-            color = accentColor.copy(alpha = 0.5f),
-        )
-        Text(
-            text = "${minutes}min focused",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
+private fun EmptyChartPlaceholder(modifier: Modifier = Modifier) {
+    Text(
+        text = "No focus data yet",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp),
+    )
 }

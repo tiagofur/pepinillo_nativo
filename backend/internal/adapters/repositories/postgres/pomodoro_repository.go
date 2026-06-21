@@ -39,9 +39,13 @@ func (r *PomodoroRepository) UpsertStats(ctx context.Context, stats *domain.Pomo
 		var existing domain.PomodoroStats
 		err := tx.Where("user_id = ? AND date = ?", stats.UserID, stats.Date.Format("2006-01-02")).First(&existing).Error
 		if err == nil {
+			// Trusted lookup hit: use the server-assigned ID.
 			stats.ID = existing.ID
-		}
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			// Lookup missed: never trust a client-supplied ID, force INSERT so
+			// Save cannot overwrite another user's stats row by PK.
+			stats.ID = 0
+		} else {
 			return err
 		}
 		return tx.Save(stats).Error
@@ -61,7 +65,20 @@ func (r *PomodoroRepository) ListStatsByRange(ctx context.Context, userID string
 }
 
 func (r *PomodoroRepository) InsertSession(ctx context.Context, session *domain.PomodoroSession) error {
-	return r.db.WithContext(ctx).Save(session).Error
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// IDOR guard: when the client supplies a session ID, verify any
+		// existing row belongs to the same user before Save-by-PK.
+		if session.ID != "" {
+			var existing domain.PomodoroSession
+			err := tx.Where("id = ?", session.ID).First(&existing).Error
+			if err == nil && existing.UserID != session.UserID {
+				return gorm.ErrRecordNotFound
+			} else if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		}
+		return tx.Save(session).Error
+	})
 }
 
 func (r *PomodoroRepository) ListSessionsByTask(ctx context.Context, userID string, taskID int) ([]domain.PomodoroSession, error) {
@@ -131,7 +148,7 @@ func (r *PomodoroRepository) GetTaskStats(ctx context.Context, userID string, ta
 			COALESCE(SUM(elapsed_seconds), 0) AS total_focus_seconds,
 			COALESCE(SUM(total_pause_seconds), 0) AS total_pause_seconds,
 			CASE WHEN COUNT(*) > 0 THEN COALESCE(SUM(elapsed_seconds), 0) / COUNT(*) ELSE 0 END AS average_focus
-		FROM pomodoro_sessions
+		FROM focus_sessions
 		WHERE user_id = ? AND task_id = ?
 	`, taskID, userID, taskID).Scan(&result).Error
 	if err != nil {

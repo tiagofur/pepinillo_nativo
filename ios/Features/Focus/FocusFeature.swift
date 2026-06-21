@@ -66,6 +66,11 @@ struct FocusFeature {
         // Custom duration (Time Block)
         var customDurationMinutes: Int = 60
 
+        // Waiting-for-next-phase gate (auto-start OFF)
+        // When true, the engine is holding between phases and waiting for user input.
+        var isWaitingForNextPhase: Bool = false
+        var pendingNextPhase: FocusPhase? = nil
+
         // Mode Intelligence
         var modeSuggestion: ModeSuggestion?
 
@@ -107,6 +112,10 @@ struct FocusFeature {
         case breakSuggested(TimeInterval)
         case midpointReached
         case interrupted
+        case waitingForNextPhase(FocusPhase)
+
+        // User action: advance from the waiting-for-next-phase hold
+        case startNextPhaseTapped
 
         // Navigation
         case modeInfoTapped
@@ -118,6 +127,9 @@ struct FocusFeature {
 
         // Day change
         case dayChanged
+
+        // Internal: seed the pomodoro cycle number from DB without clobbering live session state
+        case _pomodoroWorkCountSeeded(Int)
 
         // Mode Intelligence
         case modeSuggested(ModeSuggestion?)
@@ -193,6 +205,7 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionTotalPomodoros = state.selectedMode == .pomodoro ? state.config.pomodorosPerCycle : nil
                 AppGroupDefaults.activeSessionTaskTitle = state.linkedTaskTitle
                 AppGroupDefaults.activeSessionIsPaused = false
+                AppGroupDefaults.activeSessionIsWaiting = false
                 AppGroupDefaults.activeTaskID = state.linkedTaskID?.uuidString
                 
                 // Adopt provided anchors (from widget) or check for recent ones in defaults
@@ -271,24 +284,17 @@ struct FocusFeature {
 
                 return .merge(
                     // Load today's completed pomodoro work sessions from DB
-                    // so the engine starts with the correct cycle position
+                    // so the engine starts with the correct cycle position.
+                    // Uses a dedicated action to avoid clobbering the live engine session state
+                    // with a synthetic FocusSessionState that has a mismatched UUID.
                     .run { [persistence] send in
                         if mode == .pomodoro {
                             let startOfDay = Calendar.current.startOfDay(for: Date.now)
                             let sessions = try await persistence.fetchSessions(startOfDay, Date.now)
                             let pomodoroWorkCount = sessions.filter {
-                                $0.mode == "pomodoro" && ($0.taskID != nil || true)
+                                $0.mode == "pomodoro" && $0.wasCompleted
                             }.count
-                            // Update state via a tick — the engine will pick this up
-                            // We store the DB-derived count for display
-                            await send(.timerTicked(FocusSessionState(
-                                id: UUID(),
-                                mode: .pomodoro,
-                                phase: .work(number: pomodoroWorkCount + 1, total: config.pomodorosPerCycle),
-                                startedAt: Date.now,
-                                pomodoroNumber: pomodoroWorkCount + 1,
-                                totalPomodoros: config.pomodorosPerCycle
-                            )))
+                            await send(._pomodoroWorkCountSeeded(pomodoroWorkCount))
                         }
                     },
                     // Start engine, then observe its events.
@@ -299,12 +305,13 @@ struct FocusFeature {
                         let stream = await focusClient.events()
                         for await event in stream {
                             switch event {
-                            case .tick(let sessionState):         await send(.timerTicked(sessionState))
-                            case .phaseCompleted(let phase):      await send(.phaseCompleted(phase))
-                            case .sessionCompleted(let result):   await send(.sessionCompleted(result))
-                            case .breakSuggested(let duration):   await send(.breakSuggested(duration))
-                            case .midpointReached:                await send(.midpointReached)
-                            case .interrupted:                    await send(.interrupted)
+                            case .tick(let sessionState):               await send(.timerTicked(sessionState))
+                            case .phaseCompleted(let phase):            await send(.phaseCompleted(phase))
+                            case .sessionCompleted(let result):         await send(.sessionCompleted(result))
+                            case .breakSuggested(let duration):         await send(.breakSuggested(duration))
+                            case .midpointReached:                      await send(.midpointReached)
+                            case .interrupted:                          await send(.interrupted)
+                            case .waitingForNextPhase(let nextPhase):   await send(.waitingForNextPhase(nextPhase))
                             }
                         }
                     }
@@ -348,6 +355,7 @@ struct FocusFeature {
                 )
 
             case .pauseTapped:
+                guard !state.isWaitingForNextPhase else { return .none }
                 guard state.isRunning, !state.isPaused else { return .none }
                 let frozenElapsed = AppGroupDefaults.activeSessionLiveElapsed()
                 let frozenRemaining = AppGroupDefaults.activeSessionLiveRemaining()
@@ -375,6 +383,10 @@ struct FocusFeature {
                 )
 
             case .externalPauseApplied(let elapsed, let remaining, let pausedAt):
+                // Defense-in-depth: ignore external pause/resume during the hold.
+                // The engine guard is the primary line; this ensures the reducer also
+                // does not mutate state or forward the call during the hold.
+                guard !state.isWaitingForNextPhase else { return .none }
                 guard state.isRunning else { return .none }
                 state.isPaused = true
                 state.elapsedSeconds = max(0, elapsed)
@@ -406,6 +418,7 @@ struct FocusFeature {
                 )
 
             case .resumeTapped:
+                guard !state.isWaitingForNextPhase else { return .none }
                 guard state.isRunning, state.isPaused else { return .none }
                 state.isPaused = false
                 AppGroupDefaults.activeSessionIsPaused = false
@@ -433,6 +446,8 @@ struct FocusFeature {
                 )
 
             case .externalResumeApplied(let elapsed, let remaining):
+                // Defense-in-depth: ignore external resume during the hold.
+                guard !state.isWaitingForNextPhase else { return .none }
                 guard state.isRunning else { return .none }
                 state.isPaused = false
                 state.elapsedSeconds = max(0, elapsed)
@@ -624,19 +639,39 @@ struct FocusFeature {
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                 WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
 
-                // For Pomodoro work phases, send a phase-end notification
+                // For Pomodoro work phases, persist the completed work interval immediately
+                // so stats update in real time without waiting for the full cycle to end.
+                // saveSession internally handles task.completedPomodoros, so we do NOT
+                // call incrementTaskPomodoros separately to avoid double-counting.
                 var phaseNotificationEffect: Effect<Action> = .none
-                var taskProgressEffect: Effect<Action> = .none
-                if case .work(let number, let total) = completedPhase {
+                var intervalPersistEffect: Effect<Action> = .none
+                if case .work(let number, let total) = completedPhase, mode == .pomodoro {
                     let isLongBreak = number >= total
                     phaseNotificationEffect = .run { [notificationClient] _ in
                         await notificationClient.scheduleWorkPhaseEnd(number, isLongBreak, taskTitle)
                     }
-                    if mode == .pomodoro, let taskID = state.linkedTaskID {
-                        taskProgressEffect = .run { [persistence] send in
-                            try await persistence.incrementTaskPomodoros(taskID)
-                            await send(.delegate(.taskProgressChanged))
-                        }
+                    // Capture values for the persistence effect
+                    let workDuration = state.elapsedSeconds
+                    let intervalStartedAt = Date.now.addingTimeInterval(-workDuration)
+                    let sessionID = UUID()
+                    let linkedTaskID = state.linkedTaskID
+                    let pomNumber = number
+                    let intervalResult = FocusSessionResult(
+                        id: sessionID,
+                        mode: .pomodoro,
+                        phase: .work(number: pomNumber, total: total),
+                        startedAt: intervalStartedAt,
+                        endedAt: Date.now,
+                        targetDuration: config.pomodoroDuration,
+                        actualDuration: workDuration,
+                        wasCompleted: true,
+                        interruptions: state.interruptions,
+                        pomodoroNumber: pomNumber,
+                        linkedTaskID: linkedTaskID
+                    )
+                    intervalPersistEffect = .run { [persistence] send in
+                        try await persistence.saveSession(intervalResult)
+                        await send(.delegate(.sessionPersisted))
                     }
                 }
 
@@ -651,7 +686,7 @@ struct FocusFeature {
                         #endif
                     },
                     phaseNotificationEffect,
-                    taskProgressEffect
+                    intervalPersistEffect
                 )
 
             case .sessionCompleted(let result):
@@ -661,6 +696,17 @@ struct FocusFeature {
                 let sessionID = result.id
                 let actualDuration = result.actualDuration
                 resetState(&state)
+
+                // For Pomodoro, each work interval was already persisted in phaseCompleted.
+                // The final sessionCompleted fires at end-of-cycle (break phase end) or on
+                // stopTapped — neither case should save an additional record to avoid
+                // double-counting focus time. For all other modes, save as usual.
+                let persistEffect: Effect<Action> = result.mode == .pomodoro
+                    ? .none
+                    : .run { [persistence] send in
+                        try await persistence.saveSession(result)
+                        await send(.delegate(.sessionPersisted))
+                    }
 
                 return .merge(
                     // Check preference and present journal sheet if enabled
@@ -680,10 +726,7 @@ struct FocusFeature {
                     .run { [liveActivity] _ in await liveActivity.end(true) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
-                    .run { [persistence] send in
-                        try await persistence.saveSession(result)
-                        await send(.delegate(.sessionPersisted))
-                    },
+                    persistEffect,
                     .run { [notificationClient] _ in
                         await notificationClient.scheduleSessionComplete(modeName, taskTitle)
                     },
@@ -720,6 +763,91 @@ struct FocusFeature {
             case .interrupted:
                 state.interruptions += 1
                 return .none
+
+            case .waitingForNextPhase(let nextPhase):
+                // Engine is now holding — tick timer is suspended. Update UI state so the
+                // view can show the CTA button for the pending next phase.
+                state.isWaitingForNextPhase = true
+                state.pendingNextPhase = nextPhase
+                // Show the pending phase label so the user knows what's coming next.
+                state.phaseLabel = nextPhase.displayName
+
+                // FIX 1: Clear the countdown anchors written by .phaseCompleted so
+                // widgets do not display a phantom live countdown for the pending phase
+                // while we are in the hold (no timer is running). The widget sees
+                // timerEnd = nil and isPaused = true, which it treats as a paused/waiting
+                // state rather than a ticking countdown.
+                AppGroupDefaults.activeSessionTimerEnd = nil
+                AppGroupDefaults.activeSessionTimerStart = nil
+                AppGroupDefaults.activeSessionRemaining = nil
+                AppGroupDefaults.activeSessionProgress = nil
+
+                // Update widget/AppGroup so the lock screen widget reflects the hold state.
+                AppGroupDefaults.activeSessionPhase = nextPhase.displayName
+                AppGroupDefaults.activeSessionIsPaused = true
+                // Signal to widget intents and widget views that the engine is in the
+                // waiting hold, so they suppress pause/resume controls and intents.
+                AppGroupDefaults.activeSessionIsWaiting = true
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+
+                // FIX 2: Build a synthetic waiting state for the Live Activity so it shows
+                // the PENDING phase as paused/waiting, not the completed phase at 0:00.
+                let waitingState: FocusSessionState? = state.activeMode.map { mode in
+                    let target = mode.strategy.targetDuration(config: state.config, phase: nextPhase)
+                    return FocusSessionState(
+                        id: UUID(),
+                        mode: mode,
+                        phase: nextPhase,
+                        startedAt: Date.now,
+                        elapsedSeconds: 0,
+                        targetDuration: target,
+                        remainingSeconds: target,
+                        progress: 0.0,
+                        isPaused: true,
+                        pomodoroNumber: state.pomodoroNumber,
+                        totalPomodoros: state.config.pomodorosPerCycle
+                    )
+                }
+                let taskTitle = state.linkedTaskTitle
+                return .run { [liveActivity] _ in
+                    if let ws = waitingState {
+                        await liveActivity.update(ws, taskTitle)
+                    }
+                }
+
+            case .startNextPhaseTapped:
+                guard state.isWaitingForNextPhase, let pending = state.pendingNextPhase else { return .none }
+                state.isWaitingForNextPhase = false
+                state.pendingNextPhase = nil
+
+                // Update widget anchors for the new phase before the engine emits its first tick.
+                // Also clear the isPaused and isWaiting flags set during the hold.
+                let mode = state.activeMode ?? state.selectedMode
+                let config = state.config
+                AppGroupDefaults.activeSessionIsPaused = false
+                AppGroupDefaults.activeSessionIsWaiting = false
+                if let target = mode.strategy.targetDuration(config: config, phase: pending) {
+                    AppGroupDefaults.activeSessionTimerStart = Date.now
+                    AppGroupDefaults.activeSessionTimerEnd = Date.now.addingTimeInterval(target)
+                    AppGroupDefaults.activeSessionPhase = pending.displayName
+                }
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+
+                let hapticEnabled = state.config.hapticEnabled
+                return .merge(
+                    .run { [focusClient] _ in await focusClient.startNextPhase() },
+                    .run { _ in
+                        guard hapticEnabled else { return }
+                        #if os(iOS)
+                        await MainActor.run {
+                            let generator = UIImpactFeedbackGenerator(style: .medium)
+                            generator.impactOccurred()
+                        }
+                        #endif
+                    }
+                )
 
             case .delegate:
                 return .none
@@ -793,6 +921,24 @@ struct FocusFeature {
 
             case .paywallDismissed:
                 state.showPaywall = false
+                return .none
+
+            // MARK: Pomodoro Cycle Seed
+
+            case ._pomodoroWorkCountSeeded(let count):
+                // Update the displayed pomodoro number without touching elapsedSeconds,
+                // remainingSeconds, progress, or any other live session state that the
+                // engine manages. Only set if the session is still running in pomodoro mode
+                // and the engine hasn't already sent a later tick with a higher number.
+                if state.isRunning, state.activeMode == .pomodoro {
+                    let seeded = count + 1
+                    // Don't regress: if the engine already advanced to a higher number, keep it.
+                    if let current = state.pomodoroNumber {
+                        if seeded > current { state.pomodoroNumber = seeded }
+                    } else {
+                        state.pomodoroNumber = seeded
+                    }
+                }
                 return .none
 
             // MARK: Day Change
@@ -902,6 +1048,8 @@ struct FocusFeature {
         state.linkedTaskID = nil
         state.linkedTaskTitle = nil
         state.modeSuggestion = nil
+        state.isWaitingForNextPhase = false
+        state.pendingNextPhase = nil
         AppGroupDefaults.isSessionActive = false
         AppGroupDefaults.clearActiveSession()
         updateIdleDisplay(&state)

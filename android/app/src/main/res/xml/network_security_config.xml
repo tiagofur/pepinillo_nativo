@@ -7,7 +7,6 @@
         </trust-anchors>
     </base-config>
 
-    <!-- Pin the production API domain -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">api.ppn.creapolis.dev</domain>
         <domain includeSubdomains="true">creapolis.dev</domain>

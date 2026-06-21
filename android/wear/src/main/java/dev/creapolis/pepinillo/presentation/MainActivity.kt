@@ -1,8 +1,12 @@
 package dev.creapolis.pepinillo.presentation
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
@@ -33,9 +38,14 @@ import androidx.lifecycle.lifecycleScope
 class MainActivity : ComponentActivity() {
     private val viewModel: WearViewModel by viewModels()
 
+    private val requestNotificationPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { /* One-shot: result intentionally ignored on first launch. */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WearSnapshotStore.bootstrap(this)
+        maybeRequestNotificationPermission()
         lifecycleScope.launch(Dispatchers.IO) {
             WearDataFetcher.fetchAndApplyAll(this@MainActivity)
             WearDataFetcher.requestSyncFromPhone(this@MainActivity)
@@ -51,6 +61,22 @@ class MainActivity : ComponentActivity() {
         }
         setContent {
             WearApp(viewModel)
+        }
+    }
+
+    /**
+     * On API 33+ the foreground notification posted by WearFocusService requires the
+     * POST_NOTIFICATIONS runtime permission. Without it the call silently no-ops, so we
+     * ask once on first launch.
+     */
+    private fun maybeRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }

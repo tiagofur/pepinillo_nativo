@@ -127,6 +127,112 @@ class WearDataStoreTest {
         assertTrue(WearDataStore.tasks.value.isEmpty())
     }
 
+    // ── org.json-based parser edge cases (C5) ───────────────────────────
+    // The previous regex parser used Regex("\\{[^{}]*}") which broke when a field
+    // value contained `}`. These tests pin the contract for the replacement parser.
+
+    @Test
+    fun `updateTasksFromJson handles closing brace inside string field value`() {
+        // A title containing `}` would have terminated the old regex match early.
+        val json = """[{"id":"t-1","title":"Refactor {foo} class","energyEmoji":"HIGH","pomodoroProgress":"1/3"}]"""
+
+        WearDataStore.updateTasksFromJson(json)
+
+        val tasks = WearDataStore.tasks.value
+        assertEquals(1, tasks.size)
+        assertEquals("t-1", tasks[0].id)
+        assertEquals("Refactor {foo} class", tasks[0].title)
+        assertEquals("HIGH", tasks[0].energyEmoji)
+        assertEquals("1/3", tasks[0].pomodoroProgress)
+    }
+
+    @Test
+    fun `updateTasksFromJson handles multiple braces and quotes in titles`() {
+        val json = """[
+            {"id":"a","title":"Remove } from { \"quoted\" } block","energyEmoji":"","pomodoroProgress":""},
+            {"id":"b","title":"Plain task","energyEmoji":"LOW","pomodoroProgress":"2/4"}
+        ]"""
+
+        WearDataStore.updateTasksFromJson(json)
+
+        val tasks = WearDataStore.tasks.value
+        assertEquals(2, tasks.size)
+        assertEquals("Remove } from { \"quoted\" } block", tasks[0].title)
+        assertEquals("Plain task", tasks[1].title)
+    }
+
+    @Test
+    fun `updateTasksFromJson treats JSON-null fields as empty strings`() {
+        val json = """[{"id":"t-1","title":"Write report","energyEmoji":null,"pomodoroProgress":null}]"""
+
+        WearDataStore.updateTasksFromJson(json)
+
+        val tasks = WearDataStore.tasks.value
+        assertEquals(1, tasks.size)
+        assertEquals("t-1", tasks[0].id)
+        assertEquals("Write report", tasks[0].title)
+        assertEquals("", tasks[0].energyEmoji)
+        assertEquals("", tasks[0].pomodoroProgress)
+    }
+
+    @Test
+    fun `updateTasksFromJson skips entries that are missing id or title`() {
+        val json = """[
+            {"id":"","title":"No id"},
+            {"title":"No id key at all"},
+            {"id":"t-1","title":""},
+            {"id":"t-2","title":"Valid"}
+        ]"""
+
+        WearDataStore.updateTasksFromJson(json)
+
+        val tasks = WearDataStore.tasks.value
+        assertEquals(1, tasks.size)
+        assertEquals("t-2", tasks[0].id)
+        assertEquals("Valid", tasks[0].title)
+    }
+
+    @Test
+    fun `updateTasksFromJson skips non-object array elements`() {
+        val json = """["just-a-string", 42, null, {"id":"t-1","title":"Valid","energyEmoji":"","pomodoroProgress":""}]"""
+
+        WearDataStore.updateTasksFromJson(json)
+
+        val tasks = WearDataStore.tasks.value
+        assertEquals(1, tasks.size)
+        assertEquals("t-1", tasks[0].id)
+    }
+
+    @Test
+    fun `updateTasksFromJson handles blank input and blank-only strings`() {
+        WearDataStore.updateTasks(listOf(WearTask("old", "Old", "", "")))
+
+        WearDataStore.updateTasksFromJson("   ")
+
+        assertTrue(WearDataStore.tasks.value.isEmpty())
+    }
+
+    @Test
+    fun `updateTasksFromJson parses large payload without truncation`() {
+        // 500 tasks — exercises parser scalability beyond what the regex backtracking
+        // handled cleanly.
+        val sb = StringBuilder("[")
+        for (i in 1..500) {
+            if (i > 1) sb.append(',')
+            sb.append("""{"id":"t-$i","title":"Task number $i","energyEmoji":"MED","pomodoroProgress":"$i/4"}""")
+        }
+        sb.append(']')
+
+        WearDataStore.updateTasksFromJson(sb.toString())
+
+        val tasks = WearDataStore.tasks.value
+        assertEquals(500, tasks.size)
+        assertEquals("t-1", tasks.first().id)
+        assertEquals("Task number 1", tasks.first().title)
+        assertEquals("t-500", tasks.last().id)
+        assertEquals("Task number 500", tasks.last().title)
+    }
+
     // ── recordSyncEvent ─────────────────────────────────────────────────
 
     @Test

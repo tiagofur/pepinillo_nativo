@@ -105,9 +105,13 @@ extension SyncClient: DependencyKey {
                 let cachedUser = try await persistence.fetchCachedUser()
                 let userId = cachedUser?.id
 
+                let taskIDsToSync = tasksToSync.map(\.id)
+                let allSubtasksMap = try await persistence.fetchSubtasksForTasks(taskIDsToSync)
+                let allSessionsMap = try await persistence.fetchSessionsForTasks(taskIDsToSync)
+
                 var taskDTOs: [TaskSyncDTO] = []
                 for task in tasksToSync {
-                    let subtasks = try await persistence.fetchSubtasks(task.id)
+                    let subtasks = allSubtasksMap[task.id] ?? []
                     let subTaskDTOs = subtasks.map { SubTaskSyncDTO(
                         id: nil,
                         taskId: task.serverId,
@@ -115,7 +119,7 @@ extension SyncClient: DependencyKey {
                         isFinished: $0.isCompleted
                     ) }
 
-                    let completedSessions = try await persistence.fetchSessionsForTask(task.id).filter(\.wasCompleted)
+                    let completedSessions = (allSessionsMap[task.id] ?? []).filter(\.wasCompleted)
                     var focusedSecondsPomodoro = 0
                     var focusedSecondsFlowtime = 0
                     var focusedSecondsTimeblock = 0
@@ -333,9 +337,13 @@ extension SyncClient: DependencyKey {
                 let cachedUser = try await persistence.fetchCachedUser()
                 let userId = cachedUser?.id
 
+                let tasksToUpload = allTasks.filter { !$0.isDeleted }
+                let taskIDsToUpload = tasksToUpload.map(\.id)
+                let allSubtasksMap = try await persistence.fetchSubtasksForTasks(taskIDsToUpload)
+
                 var taskDTOs: [TaskSyncDTO] = []
-                for task in allTasks where !task.isDeleted {
-                    let subtasks = try await persistence.fetchSubtasks(task.id)
+                for task in tasksToUpload {
+                    let subtasks = allSubtasksMap[task.id] ?? []
                     let subTaskDTOs = subtasks.map { SubTaskSyncDTO(
                         id: nil,
                         taskId: task.serverId,

@@ -121,6 +121,21 @@ func (r *TaskRepository) ListByFinishDate(ctx context.Context, userID string, da
 
 func (r *TaskRepository) Upsert(ctx context.Context, task *domain.Task) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// IDOR guard: when the client supplies an ID, verify the existing row
+		// belongs to the same user before allowing an UPDATE-by-PK via Save.
+		if task.ID != 0 {
+			var existing domain.Task
+			err := tx.Where("id = ?", task.ID).First(&existing).Error
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return gorm.ErrRecordNotFound
+			}
+			if err != nil {
+				return err
+			}
+			if existing.UserID != task.UserID {
+				return gorm.ErrRecordNotFound
+			}
+		}
 		if err := tx.Save(task).Error; err != nil {
 			return err
 		}
@@ -166,6 +181,9 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 			}
 
 			if incoming.SyncID == "" {
+				// No sync id: force INSERT. Never trust a client-supplied ID,
+				// which could overwrite another user's row via Save-by-PK.
+				incoming.ID = 0
 				incoming.UpdatedAt = now
 				if err := tx.Save(&incoming).Error; err != nil {
 					return err
@@ -184,6 +202,9 @@ func (r *TaskRepository) Sync(ctx context.Context, userID string, tasks []domain
 					continue
 				}
 				incoming.ID = existing.ID
+			} else {
+				// Lookup missed: do NOT trust the client-supplied ID; force INSERT.
+				incoming.ID = 0
 			}
 
 			incoming.UpdatedAt = now
@@ -234,48 +255,76 @@ func shouldApplyClientUpdate(existingUpdatedAt, clientUpdatedAt time.Time) bool 
 	return !existingUpdatedAt.After(clientUpdatedAt)
 }
 
-func (r *TaskRepository) UpdateTrackingMode(ctx context.Context, taskID int, mode string) error {
-	return r.db.WithContext(ctx).Model(&domain.Task{}).
-		Where("id = ?", taskID).
-		Update("tracking_mode", mode).Error
+func (r *TaskRepository) UpdateTrackingMode(ctx context.Context, userID string, taskID int, mode string) error {
+	result := r.db.WithContext(ctx).Model(&domain.Task{}).
+		Where("id = ? AND user_id = ?", taskID, userID).
+		Update("tracking_mode", mode)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
-func (r *TaskRepository) IncrementCompletionCount(ctx context.Context, taskID int, mode string) error {
+func (r *TaskRepository) IncrementCompletionCount(ctx context.Context, userID string, taskID int, mode string) error {
 	var updateSQL string
 	switch mode {
 	case "pomodoro":
-		updateSQL = "UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1 WHERE id = ?"
+		updateSQL = "UPDATE tasks SET completed_pomodoros = completed_pomodoros + 1 WHERE id = ? AND user_id = ?"
 	case "flowtime":
-		updateSQL = "UPDATE tasks SET completed_flowtime_sessions = completed_flowtime_sessions + 1 WHERE id = ?"
+		updateSQL = "UPDATE tasks SET completed_flowtime_sessions = completed_flowtime_sessions + 1 WHERE id = ? AND user_id = ?"
 	case "timeblock":
-		updateSQL = "UPDATE tasks SET completed_timeblock_sessions = completed_timeblock_sessions + 1 WHERE id = ?"
+		updateSQL = "UPDATE tasks SET completed_timeblock_sessions = completed_timeblock_sessions + 1 WHERE id = ? AND user_id = ?"
 	case "stopwatch":
-		updateSQL = "UPDATE tasks SET completed_stopwatch_seconds = completed_stopwatch_seconds + 1 WHERE id = ?"
+		updateSQL = "UPDATE tasks SET completed_stopwatch_seconds = completed_stopwatch_seconds + 1 WHERE id = ? AND user_id = ?"
 	default:
 		return nil
 	}
-	return r.db.WithContext(ctx).Exec(updateSQL, taskID).Error
+	result := r.db.WithContext(ctx).Exec(updateSQL, taskID, userID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
-func (r *TaskRepository) IncrementFocusTime(ctx context.Context, taskID int, mode string, seconds int) error {
+func (r *TaskRepository) IncrementFocusTime(ctx context.Context, userID string, taskID int, mode string, seconds int) error {
 	var updateSQL string
 	switch mode {
 	case "pomodoro":
-		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_pomodoro = focused_seconds_pomodoro + ? WHERE id = ?"
+		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_pomodoro = focused_seconds_pomodoro + ? WHERE id = ? AND user_id = ?"
 	case "flowtime":
-		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_flowtime = focused_seconds_flowtime + ? WHERE id = ?"
+		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_flowtime = focused_seconds_flowtime + ? WHERE id = ? AND user_id = ?"
 	case "timeblock":
-		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_timeblock = focused_seconds_timeblock + ? WHERE id = ?"
+		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_timeblock = focused_seconds_timeblock + ? WHERE id = ? AND user_id = ?"
 	case "stopwatch":
-		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_stopwatch = focused_seconds_stopwatch + ? WHERE id = ?"
+		updateSQL = "UPDATE tasks SET focused_seconds = focused_seconds + ?, focused_seconds_stopwatch = focused_seconds_stopwatch + ? WHERE id = ? AND user_id = ?"
 	default:
 		return nil
 	}
-	return r.db.WithContext(ctx).Exec(updateSQL, seconds, seconds, taskID).Error
+	result := r.db.WithContext(ctx).Exec(updateSQL, seconds, seconds, taskID, userID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
-func (r *TaskRepository) SetActiveSession(ctx context.Context, taskID int, sessionID *string) error {
-	return r.db.WithContext(ctx).Model(&domain.Task{}).
-		Where("id = ?", taskID).
-		Update("active_session_id", sessionID).Error
+func (r *TaskRepository) SetActiveSession(ctx context.Context, userID string, taskID int, sessionID *string) error {
+	result := r.db.WithContext(ctx).Model(&domain.Task{}).
+		Where("id = ? AND user_id = ?", taskID, userID).
+		Update("active_session_id", sessionID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }

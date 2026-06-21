@@ -7,6 +7,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import androidx.wear.tiles.TileService
+import com.google.android.gms.wearable.CapabilityInfo
 import com.google.android.gms.wearable.MessageEvent
 import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import com.google.android.gms.wearable.DataEvent
@@ -207,7 +208,29 @@ class WearSyncListenerService : WearableListenerService() {
     }
 
     override fun onPeerConnected(peer: com.google.android.gms.wearable.Node) {
+        @Suppress("DEPRECATION")
         super.onPeerConnected(peer)
+        Log.w(TAG, "onPeerConnected is deprecated since GMS 17.0.0; onCapabilityChanged is preferred")
+        flushAndFetch()
+    }
+
+    override fun onPeerDisconnected(peer: com.google.android.gms.wearable.Node) {
+        super.onPeerDisconnected(peer)
+        processor.onPeerDisconnected(WearDataStore.timerState.value)
+        WearFocusService.stop(this)
+    }
+
+    override fun onCapabilityChanged(capabilityInfo: CapabilityInfo) {
+        super.onCapabilityChanged(capabilityInfo)
+        // Modern reconnect signal (replaces the deprecated onPeerConnected path).
+        // Fires when a node advertising the `pepinillo_phone` capability becomes reachable.
+        if (capabilityInfo.nodes.isNotEmpty()) {
+            Log.d(TAG, "onCapabilityChanged: ${capabilityInfo.nodes.size} phone node(s) reachable")
+            flushAndFetch()
+        }
+    }
+
+    private fun flushAndFetch() {
         scope.launch {
             runCatching { WearMessageSender(this@WearSyncListenerService).flushPendingCommands() }
                 .onFailure { e ->
@@ -217,12 +240,6 @@ class WearSyncListenerService : WearableListenerService() {
 
             WearDataFetcher.fetchAndApplyAll(this@WearSyncListenerService)
         }
-    }
-
-    override fun onPeerDisconnected(peer: com.google.android.gms.wearable.Node) {
-        super.onPeerDisconnected(peer)
-        processor.onPeerDisconnected(WearDataStore.timerState.value)
-        WearFocusService.stop(this)
     }
 
     override fun onDestroy() {

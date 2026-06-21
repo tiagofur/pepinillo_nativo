@@ -150,6 +150,7 @@ class FocusEngine @Inject constructor(
         sessionStartTime: Long,
         status: TimerStatus = TimerStatus.Running,
         savedDayStart: Long = 0L,
+        linkedTaskId: String? = null,
     ) {
         // If the day changed since the last save, reset the cycle counter
         val effectiveCompletedSessions = if (savedDayStart != 0L) {
@@ -175,6 +176,7 @@ class FocusEngine @Inject constructor(
                 status = TimerStatus.WaitingForNext,
                 totalMillis = resolvedTotal,
                 completedSessions = effectiveCompletedSessions,
+                linkedTaskId = linkedTaskId,
             )
             return
         }
@@ -189,6 +191,7 @@ class FocusEngine @Inject constructor(
                 totalMillis = resolvedTotal,
                 completedSessions = effectiveCompletedSessions,
                 sessionStartTime = sessionStartTime,
+                linkedTaskId = linkedTaskId,
             )
             onPhaseComplete()
         } else {
@@ -200,6 +203,7 @@ class FocusEngine @Inject constructor(
                 totalMillis = resolvedTotal,
                 completedSessions = effectiveCompletedSessions,
                 sessionStartTime = sessionStartTime,
+                linkedTaskId = linkedTaskId,
             )
             startTimerLoop()
         }

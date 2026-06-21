@@ -72,7 +72,20 @@ struct ToggleFocusIntent: SetValueIntent {
             // Pro modes (flowtime, timeBlock) fall back to pomodoro for free users.
             let requested = AppGroupDefaults.widgetSelectedMode ?? "pomodoro"
             let mode = widgetResolvedMode(requested: requested, isPro: AppGroupDefaults.isProUser)
-            AppGroupDefaults.startWidgetSession(modeID: mode)
+            if mode == requested {
+                // No downgrade: proceed (Pro user, or free user with a free mode).
+                AppGroupDefaults.startWidgetSession(modeID: mode)
+            } else {
+                // Downgrade: a free user picked a Pro mode. Do NOT overwrite their
+                // selection with pomodoro — route through the app paywall instead,
+                // mirroring StartFocusFromWidgetIntent so CC and the widget grid stay
+                // consistent. This preserves `widgetSelectedMode` for when they upgrade.
+                AppGroupDefaults.externalCommandID = UUID().uuidString
+                AppGroupDefaults.externalCommandIssuedAt = .now
+                AppGroupDefaults.requestedMode = requested
+                AppGroupDefaults.requestedTaskID = nil
+                AppGroupDefaults.externalStartRequested = true
+            }
         } else {
             // Stop current session — mirror StopFocusFromWidgetIntent exactly.
             AppGroupDefaults.externalCommandID = UUID().uuidString
