@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.feature.tasks
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -63,6 +64,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -95,6 +98,7 @@ fun TasksScreen(
     val filteredTasks = uiState.filteredTasks
     val quickAddFocusRequester = remember { FocusRequester() }
     var selectedTaskId by rememberSaveable { mutableStateOf<String?>(null) }
+    var quickAddExpanded by rememberSaveable { mutableStateOf(false) }
 
     // Error snackbar
     var errorResId by remember { mutableStateOf<Int?>(null) }
@@ -189,7 +193,7 @@ fun TasksScreen(
                     description = stringResource(uiState.selectedFilter.emptyDescriptionRes()),
                     icon = uiState.selectedFilter.icon(),
                     tint = uiState.selectedFilter.accentColor(),
-                    onCreateTaskClick = { quickAddFocusRequester.requestFocus() },
+                    onCreateTaskClick = { quickAddExpanded = true },
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
@@ -258,6 +262,8 @@ fun TasksScreen(
                 placeholder = stringResource(uiState.selectedFilter.quickAddPlaceholderRes()),
                 onAdd = viewModel::addQuickTask,
                 focusRequester = quickAddFocusRequester,
+                expanded = quickAddExpanded,
+                onExpandedChange = { quickAddExpanded = it },
             )
         }
 
@@ -353,52 +359,102 @@ private fun QuickAddBar(
     placeholder: String,
     onAdd: (String) -> Unit,
     focusRequester: FocusRequester = FocusRequester(),
+    expanded: Boolean = false,
+    onExpandedChange: (Boolean) -> Unit = {},
 ) {
     var title by rememberSaveable { mutableStateOf("") }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            modifier = Modifier.weight(1f).focusRequester(focusRequester),
-            placeholder = {
-                Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
-            },
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodyLarge,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-            ),
-            shape = RoundedCornerShape(16.dp),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = {
-                if (title.isNotBlank()) {
-                    onAdd(title)
-                    title = ""
+    AnimatedContent(
+        targetState = expanded,
+        label = "quickAddTransition"
+    ) { isExpanded ->
+        if (isExpanded) {
+            var hasFocused by remember { mutableStateOf(false) }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester)
+                        .onFocusChanged { focusState ->
+                            if (focusState.isFocused) {
+                                hasFocused = true
+                            }
+                            if (hasFocused && !focusState.isFocused && title.isBlank()) {
+                                onExpandedChange(false)
+                            }
+                        },
+                    placeholder = {
+                        Text(placeholder, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f))
+                    },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
+                    ),
+                    shape = RoundedCornerShape(16.dp),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        if (title.isNotBlank()) {
+                            onAdd(title)
+                            title = ""
+                            onExpandedChange(false)
+                        }
+                    }),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = {
+                        if (title.isNotBlank()) {
+                            onAdd(title)
+                            title = ""
+                            onExpandedChange(false)
+                        }
+                    },
+                    enabled = title.isNotBlank(),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowUpward,
+                        contentDescription = stringResource(R.string.cd_add_task),
+                        tint = if (title.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    )
                 }
-            }),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        IconButton(
-            onClick = {
-                if (title.isNotBlank()) {
-                    onAdd(title)
-                    title = ""
-                }
-            },
-            enabled = title.isNotBlank(),
-        ) {
-            Icon(
-                Icons.Rounded.Add,
-                contentDescription = stringResource(R.string.cd_add_task),
-                tint = if (title.isNotBlank()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-            )
+            }
+
+            LaunchedEffect(Unit) {
+                focusRequester.requestFocus()
+            }
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { onExpandedChange(true) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = stringResource(R.string.btn_new_task),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+            }
         }
     }
 }

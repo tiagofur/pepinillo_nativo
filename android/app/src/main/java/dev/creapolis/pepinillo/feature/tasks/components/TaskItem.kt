@@ -305,7 +305,7 @@ private fun MetadataRow(
     }
     val metadataItems = mutableListOf<@Composable () -> Unit>()
 
-    // Due date
+    // Due date — always shown when present (overdue / today / future date).
     task.dueDate?.let { dueDate ->
         val isToday = isDueTodayMs(dueDate)
         val isOverdue = isBeforeTodayMs(dueDate)
@@ -333,17 +333,19 @@ private fun MetadataRow(
         }
     }
 
-    // Energy level (icon + label for accessibility — distinguishable without color)
-    metadataItems.add {
-        val color = energyColor(task.energyLevel)
-        MetadataBadge(color = color) {
-            EnergyIcon(energyLevel = task.energyLevel)
-            Text(task.energyLevel.label, style = MaterialTheme.typography.bodySmall, color = color)
+    // Energy level — only when there is no date context competing for the slot.
+    if (task.dueDate == null && !task.scheduledForToday) {
+        metadataItems.add {
+            val color = energyColor(task.energyLevel)
+            MetadataBadge(color = color) {
+                EnergyIcon(energyLevel = task.energyLevel)
+                Text(task.energyLevel.label, style = MaterialTheme.typography.bodySmall, color = color)
+            }
         }
     }
 
-    // Pomodoro count
-    if (task.estimatedPomodoros > 0) {
+    // Pomodoro progress — always shown when estimated or completed > 0.
+    if (task.completedPomodoros > 0 || task.estimatedPomodoros > 0) {
         metadataItems.add {
             val color = MaterialTheme.colorScheme.secondary
             MetadataBadge(color = color) {
@@ -357,7 +359,7 @@ private fun MetadataRow(
         }
     }
 
-    // Subtask progress
+    // Subtask progress — always shown when there are subtasks.
     subtaskProgress?.let { (completed, total) ->
         if (total > 0) {
             metadataItems.add {

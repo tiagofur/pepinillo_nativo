@@ -27,18 +27,21 @@ struct WatchSessionStateTests {
         #expect(idle.linkedTaskTitle == nil)
         #expect(idle.linkedTaskID == nil)
         #expect(idle.isPhaseTransition == false)
-        #expect(idle.isBreakPhase == false)
-        #expect(idle.isLongBreakPhase == false)
     }
 
     @Test func equatableConformance() {
+        // Use an explicit sentAt so the two instances are identical — sentAt is a
+        // transport timestamp (stale-update dedupe) so tests must pin it explicitly.
+        let sentAt: TimeInterval = 1_000_000
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
+            displayTime: "24:30", phaseLabel: "Focus 1/4",
+            sentAt: sentAt
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
+            displayTime: "24:30", phaseLabel: "Focus 1/4",
+            sentAt: sentAt
         )
         #expect(a == b)
     }
@@ -46,11 +49,11 @@ struct WatchSessionStateTests {
     @Test func equatableDiffersOnModeID() {
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
+            displayTime: "24:30", phaseLabel: "Focus 1/4"
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "flowtime",
-            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
+            displayTime: "24:30", phaseLabel: "Focus 1/4"
         )
         #expect(a != b)
     }
@@ -59,12 +62,12 @@ struct WatchSessionStateTests {
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests", sentAt: 100
+            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests"
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests", sentAt: 100
+            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests"
         )
         #expect(a == b)
     }
@@ -73,11 +76,11 @@ struct WatchSessionStateTests {
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, sentAt: 100
+            progress: 0.5
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "24:30", phaseLabel: "Focus 1/4", sentAt: 100
+            displayTime: "24:30", phaseLabel: "Focus 1/4"
         )
         #expect(a != b)
     }
@@ -85,7 +88,7 @@ struct WatchSessionStateTests {
     @Test func phaseTransitionDefaultsToFalse() {
         let state = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "25:00", phaseLabel: "Focus 1/4", sentAt: 100
+            displayTime: "25:00", phaseLabel: "Focus 1/4"
         )
         #expect(state.isPhaseTransition == false)
     }
@@ -106,9 +109,6 @@ struct SessionStateDictionaryTests {
             "displayTime":       state.displayTime,
             "phaseLabel":        state.phaseLabel,
             "isPhaseTransition": state.isPhaseTransition,
-            "isBreakPhase":      state.isBreakPhase,
-            "isLongBreakPhase":  state.isLongBreakPhase,
-            "isWaiting":         state.isWaiting,
             "sentAt":            state.sentAt,
         ]
         if let p = state.progress        { dict["progress"]       = p }
@@ -138,9 +138,6 @@ struct SessionStateDictionaryTests {
             linkedTaskTitle:   message["linkedTaskTitle"]  as? String,
             linkedTaskID:      message["linkedTaskID"]     as? String,
             isPhaseTransition: message["isPhaseTransition"] as? Bool ?? false,
-            isBreakPhase:      message["isBreakPhase"]     as? Bool ?? false,
-            isLongBreakPhase:  message["isLongBreakPhase"] as? Bool ?? false,
-            isWaiting:         message["isWaiting"]        as? Bool ?? false,
             sentAt:            message["sentAt"]           as? TimeInterval ?? Date().timeIntervalSince1970
         )
     }
@@ -151,7 +148,7 @@ struct SessionStateDictionaryTests {
             displayTime: "22:15", phaseLabel: "Focus 2/4",
             progress: 0.11, pomodoroNumber: 2,
             linkedTaskTitle: "Ship v1", linkedTaskID: "ABC-123",
-            isPhaseTransition: true, isBreakPhase: true, isLongBreakPhase: true
+            isPhaseTransition: true
         )
         let dict = encodeSessionState(original)
         let decoded = decodeSessionState(dict)
@@ -175,124 +172,14 @@ struct SessionStateDictionaryTests {
         #expect(decoded == idle)
     }
 
-    @Test func roundTripIsBreakPhaseTrue() {
-        // Verifies the typed flag survives encode → decode for a break phase,
-        // i.e. a Spanish or Portuguese payload ("Pausa Corta", "Descanso") that
-        // would have failed the old phaseLabel.contains("Break") check.
-        let original = WatchSessionState(
-            isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "05:00", phaseLabel: "Pausa Corta",
-            isBreakPhase: true
-        )
-        let dict = encodeSessionState(original)
-        let decoded = decodeSessionState(dict)
-        #expect(decoded?.isBreakPhase == true)
-        #expect(decoded == original)
-    }
-
-    @Test func roundTripIsBreakPhaseFalse() {
-        let original = WatchSessionState(
-            isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "25:00", phaseLabel: "Foco",
-            isBreakPhase: false
-        )
-        let dict = encodeSessionState(original)
-        let decoded = decodeSessionState(dict)
-        #expect(decoded?.isBreakPhase == false)
-    }
-
-    @Test func isBreakPhaseDefaultsToFalseOnLegacyPayload() {
-        // Simulates receiving a payload from an older app version that lacks the key.
-        var dict = encodeSessionState(WatchSessionState(
-            isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "05:00", phaseLabel: "Short Break",
-            isBreakPhase: true
-        ))
-        dict.removeValue(forKey: "isBreakPhase")
-        let decoded = decodeSessionState(dict)
-        // Must not crash and must default to false for backward compatibility.
-        #expect(decoded?.isBreakPhase == false)
-    }
-
-    @Test func roundTripIsLongBreakPhaseTrue() {
-        // Verifies that both isBreakPhase and isLongBreakPhase survive encode → decode
-        // for a long-break phase (e.g. "Descanso Largo" payload that would have failed
-        // the old phaseLabel string-parsing approach).
-        let original = WatchSessionState(
-            isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "15:00", phaseLabel: "Descanso Largo",
-            isBreakPhase: true, isLongBreakPhase: true
-        )
-        let dict = encodeSessionState(original)
-        let decoded = decodeSessionState(dict)
-        #expect(decoded?.isBreakPhase    == true)
-        #expect(decoded?.isLongBreakPhase == true)
-        #expect(decoded == original)
-    }
-
-    @Test func isLongBreakPhaseDefaultsToFalseOnLegacyPayload() {
-        // Simulates receiving a payload from an older app version that lacks the key.
-        var dict = encodeSessionState(WatchSessionState(
-            isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "15:00", phaseLabel: "Long Break",
-            isBreakPhase: true, isLongBreakPhase: true
-        ))
-        dict.removeValue(forKey: "isLongBreakPhase")
-        let decoded = decodeSessionState(dict)
-        // Must not crash and must default to false for backward compatibility.
-        #expect(decoded?.isLongBreakPhase == false)
-    }
-
-    @Test func roundTripIsWaitingTrue() {
-        // Verifies that isWaiting=true survives encode → decode (waiting hold is active).
-        let original = WatchSessionState(
-            isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "05:00", phaseLabel: "Short Break",
-            isBreakPhase: true, isWaiting: true
-        )
-        let dict = encodeSessionState(original)
-        let decoded = decodeSessionState(dict)
-        #expect(decoded?.isWaiting == true)
-        #expect(decoded == original)
-    }
-
-    @Test func roundTripIsWaitingFalse() {
-        // Verifies that isWaiting=false (normal running session) survives encode → decode.
-        let original = WatchSessionState(
-            isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "25:00", phaseLabel: "Focus",
-            isWaiting: false
-        )
-        let dict = encodeSessionState(original)
-        let decoded = decodeSessionState(dict)
-        #expect(decoded?.isWaiting == false)
-    }
-
-    @Test func isWaitingDefaultsToFalseOnLegacyPayload() {
-        // Simulates receiving a payload from an older app version that lacks the key.
-        // Safe legacy default must be false so old watch builds behave as before.
-        var dict = encodeSessionState(WatchSessionState(
-            isActive: true, isPaused: false, modeID: "pomodoro",
-            displayTime: "05:00", phaseLabel: "Short Break",
-            isBreakPhase: true, isWaiting: true
-        ))
-        dict.removeValue(forKey: "isWaiting")
-        let decoded = decodeSessionState(dict)
-        // Must not crash and must default to false for backward compatibility.
-        #expect(decoded?.isWaiting == false)
-    }
-
     @Test func dictionaryContainsRequiredKeys() {
         let dict = encodeSessionState(.idle)
         #expect(dict["type"] as? String == "sessionState")
-        #expect(dict["isActive"]         != nil)
-        #expect(dict["isPaused"]         != nil)
-        #expect(dict["modeID"]           != nil)
-        #expect(dict["displayTime"]      != nil)
-        #expect(dict["phaseLabel"]       != nil)
-        #expect(dict["isBreakPhase"]     != nil)
-        #expect(dict["isLongBreakPhase"] != nil)
-        #expect(dict["isWaiting"]        != nil)
+        #expect(dict["isActive"]    != nil)
+        #expect(dict["isPaused"]    != nil)
+        #expect(dict["modeID"]      != nil)
+        #expect(dict["displayTime"] != nil)
+        #expect(dict["phaseLabel"]  != nil)
     }
 
     @Test func optionalFieldsOmittedWhenNil() {
@@ -350,7 +237,6 @@ struct WatchCommandDictionaryTests {
         case .toggleTaskCompleted(let id):  dict["action"] = "toggleTask"; dict["taskID"] = id
         case .requestTasks:                 dict["action"] = "requestTasks"
         case .requestDashboard:             dict["action"] = "requestDashboard"
-        case .startNextPhase:               dict["action"] = "startNextPhase"
         }
         return dict
     }
@@ -369,7 +255,6 @@ struct WatchCommandDictionaryTests {
         case "toggleTask":       return .toggleTaskCompleted(id: message["taskID"] as? String ?? "")
         case "requestTasks":     return .requestTasks
         case "requestDashboard": return .requestDashboard
-        case "startNextPhase":   return .startNextPhase
         default:                 return nil
         }
     }
@@ -440,14 +325,6 @@ struct WatchCommandDictionaryTests {
         #expect(decoded == cmd)
     }
 
-    @Test func roundTripStartNextPhase() {
-        let cmd = WatchCommand.startNextPhase
-        let dict = encodeCommand(cmd)
-        #expect(dict["type"]   as? String == "command")
-        #expect(dict["action"] as? String == "startNextPhase")
-        #expect(decodeCommand(dict) == cmd)
-    }
-
     @Test func allCommandsRoundTrip() {
         let commands: [WatchCommand] = [
             .startSession(mode: "pomodoro"),
@@ -463,7 +340,6 @@ struct WatchCommandDictionaryTests {
             .toggleTaskCompleted(id: "id-2"),
             .requestTasks,
             .requestDashboard,
-            .startNextPhase,
         ]
         for cmd in commands {
             let roundTripped = decodeCommand(encodeCommand(cmd))
@@ -507,7 +383,6 @@ struct WatchCommandEquatableTests {
         #expect(WatchCommand.unlinkTask == WatchCommand.unlinkTask)
         #expect(WatchCommand.requestTasks == WatchCommand.requestTasks)
         #expect(WatchCommand.requestDashboard == WatchCommand.requestDashboard)
-        #expect(WatchCommand.startNextPhase == WatchCommand.startNextPhase)
     }
 
     @Test func startSessionDiffersOnMode() {
@@ -994,9 +869,6 @@ struct TransportSemanticsContractTests {
             "displayTime":       state.displayTime,
             "phaseLabel":        state.phaseLabel,
             "isPhaseTransition": state.isPhaseTransition,
-            "isBreakPhase":      state.isBreakPhase,
-            "isLongBreakPhase":  state.isLongBreakPhase,
-            "isWaiting":         state.isWaiting,
             "sentAt":            state.sentAt,
             "progress":          state.progress as Any,
             "pomodoroNumber":    state.pomodoroNumber as Any,

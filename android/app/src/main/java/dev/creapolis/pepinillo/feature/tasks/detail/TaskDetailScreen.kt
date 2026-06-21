@@ -242,9 +242,9 @@ fun TaskDetailScreen(
             Text(
                 text = if (uiState.subtasks.isNotEmpty()) {
                     val (completed, total) = uiState.subtaskProgress
-                    "SUBTAREAS ($completed/$total)"
+                    "Subtareas ($completed/$total)"
                 } else {
-                    "SUBTAREAS"
+                    "Subtareas"
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -440,7 +440,7 @@ fun TaskDetailScreen(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { showDatePicker = true }
+                            modifier = Modifier.clickable { showDatePicker = true }.weight(1f)
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.CalendarMonth,
@@ -461,7 +461,7 @@ fun TaskDetailScreen(
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                         ) {
                             Text(
-                                text = stringResource(R.string.task_detail_remove_due_date),
+                                text = stringResource(R.string.cd_delete),
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -472,19 +472,30 @@ fun TaskDetailScreen(
                             .fillMaxWidth()
                             .height(48.dp)
                             .clickable { showDatePicker = true },
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CalendarMonth,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.task_detail_add_due_date),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            )
+                        }
                         Icon(
-                            imageVector = Icons.Rounded.CalendarMonth,
+                            imageVector = Icons.Rounded.ChevronRight,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.task_detail_add_due_date),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
@@ -520,7 +531,7 @@ fun TaskDetailScreen(
         // ── Card 4: Priority & Focus ──
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "PRIORIDAD Y ENFOQUE",
+                text = "Prioridad y enfoque",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
@@ -691,7 +702,7 @@ fun TaskDetailScreen(
                         ) {
                             IconButton(
                                 onClick = { if (task.estimatedPomodoros > 1) viewModel.updateEstimatedPomodoros(task.estimatedPomodoros - 1) },
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(44.dp)
                             ) {
                                 Text("-", style = MaterialTheme.typography.titleLarge)
                             }
@@ -702,7 +713,7 @@ fun TaskDetailScreen(
                             )
                             IconButton(
                                 onClick = { if (task.estimatedPomodoros < 8) viewModel.updateEstimatedPomodoros(task.estimatedPomodoros + 1) },
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(44.dp)
                             ) {
                                 Text("+", style = MaterialTheme.typography.titleLarge)
                             }
@@ -739,7 +750,7 @@ fun TaskDetailScreen(
         // ── Card 5: Recurrence ──
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "RECURRENCIA",
+                text = "Recurrencia",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
@@ -874,7 +885,7 @@ fun TaskDetailScreen(
         // ── Card 6: Notes ──
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "NOTAS",
+                text = "Notas",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
@@ -909,7 +920,7 @@ fun TaskDetailScreen(
         if (uiState.totalFocusTimeMillis > 0) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "HISTORIAL DE ENFOQUE",
+                    text = "Historial de enfoque",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,

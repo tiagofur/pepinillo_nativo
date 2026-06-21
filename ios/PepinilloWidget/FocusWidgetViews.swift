@@ -9,6 +9,15 @@
 import SwiftUI
 import WidgetKit
 
+// MARK: - Tinted Rendering Helpers
+
+/// Returns the appropriate colour for a focus mode element, respecting the widget rendering mode.
+/// In `.accented` (tinted) mode all colours collapse to the system tint, so we switch to
+/// `.primary`/`.secondary` via a sentinel `.clear` that callers swap for the desired semantic.
+private func modeAccentColor(_ mode: String, renderingMode: WidgetRenderingMode) -> Color {
+    renderingMode == .accented ? .primary : ModeColors.color(for: mode)
+}
+
 // MARK: - Reusable Progress Ring
 
 private struct WidgetProgressRing<Content: View>: View {
@@ -119,13 +128,14 @@ private struct WidgetModeQuickStartButton: View {
     let selectedMode: String
     let showsTitle: Bool
     let isProUser: Bool
+    var renderingMode: WidgetRenderingMode = .fullColor
 
     @ViewBuilder
     var body: some View {
         let isProMode = (mode == "flowtime" || mode == "timeBlock")
         let isLocked = isProMode && !isProUser
-        let color = ModeColors.color(for: mode)
-        
+        let color = modeAccentColor(mode, renderingMode: renderingMode)
+
         if isLocked {
             label(isLocked: true)
                 .foregroundStyle(.secondary)
@@ -135,8 +145,9 @@ private struct WidgetModeQuickStartButton: View {
                 label(isLocked: false)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(.white)
-            .background(color, in: Capsule())
+            .foregroundStyle(renderingMode == .accented ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.white))
+            .widgetAccentable(renderingMode == .accented)
+            .background(renderingMode == .accented ? AnyShapeStyle(.secondary.opacity(0.20)) : AnyShapeStyle(color), in: Capsule())
         } else {
             Button(intent: SelectFocusModeFromWidgetIntent(modeID: mode)) {
                 label(isLocked: false)
@@ -167,15 +178,17 @@ private struct WidgetModeQuickStartButton: View {
 private struct WidgetModeIconStartRow: View {
     let selectedMode: String
     let isProUser: Bool
+    var renderingMode: WidgetRenderingMode = .fullColor
 
     var body: some View {
         HStack(spacing: 6) {
             ForEach(widgetSelectableModes, id: \.self) { mode in
                 let style = WidgetModeStyle.style(for: mode)
-                let color = ModeColors.color(for: mode)
+                let color = modeAccentColor(mode, renderingMode: renderingMode)
                 let isProMode = (mode == "flowtime" || mode == "timeBlock")
                 let isLocked = isProMode && !isProUser
-                
+                let isSelected = mode == selectedMode
+
                 if isLocked {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 10, weight: .bold))
@@ -187,15 +200,22 @@ private struct WidgetModeIconStartRow: View {
                     Button(intent: SelectFocusModeFromWidgetIntent(modeID: mode)) {
                         Image(systemName: style.systemImage)
                             .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(mode == selectedMode ? .white : color)
+                            .foregroundStyle(
+                                renderingMode == .accented
+                                    ? (isSelected ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+                                    : (isSelected ? AnyShapeStyle(Color.white) : AnyShapeStyle(color))
+                            )
                             .frame(maxWidth: .infinity)
                             .frame(height: 24)
                             .background(
-                                mode == selectedMode ? color : color.opacity(0.12),
+                                renderingMode == .accented
+                                    ? (isSelected ? AnyShapeStyle(Color.secondary.opacity(0.25)) : AnyShapeStyle(Color.secondary.opacity(0.10)))
+                                    : (isSelected ? AnyShapeStyle(color) : AnyShapeStyle(color.opacity(0.12))),
                                 in: Capsule()
                             )
                     }
                     .buttonStyle(.plain)
+                    .widgetAccentable(renderingMode == .accented && isSelected)
                 }
             }
         }
@@ -206,6 +226,7 @@ private struct WidgetModeQuickStartGrid: View {
     let selectedMode: String
     let showsTitles: Bool
     let isProUser: Bool
+    var renderingMode: WidgetRenderingMode = .fullColor
 
     var body: some View {
         LazyVGrid(
@@ -213,7 +234,13 @@ private struct WidgetModeQuickStartGrid: View {
             spacing: 6
         ) {
             ForEach(widgetSelectableModes, id: \.self) { mode in
-                WidgetModeQuickStartButton(mode: mode, selectedMode: selectedMode, showsTitle: showsTitles, isProUser: isProUser)
+                WidgetModeQuickStartButton(
+                    mode: mode,
+                    selectedMode: selectedMode,
+                    showsTitle: showsTitles,
+                    isProUser: isProUser,
+                    renderingMode: renderingMode
+                )
             }
         }
     }
@@ -223,6 +250,7 @@ private struct WidgetPrimaryStartButton: View {
     let mode: String
     let compact: Bool
     let isProUser: Bool
+    var renderingMode: WidgetRenderingMode = .fullColor
 
     @ViewBuilder
     var body: some View {
@@ -243,7 +271,7 @@ private struct WidgetPrimaryStartButton: View {
             .background(.secondary.opacity(0.12), in: Capsule())
         } else {
             Button(intent: StartFocusFromWidgetIntent(modeID: mode)) {
-                let modeColor = ModeColors.color(for: mode)
+                let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
                 HStack(spacing: 6) {
                     Image(systemName: "play.fill")
                     Text(compact ? String(localized: "Start") : String(localized: "Start \(modeDisplayName(mode))"))
@@ -253,11 +281,15 @@ private struct WidgetPrimaryStartButton: View {
                 .font(.system(size: compact ? 12 : 14, weight: .bold, design: .rounded))
                 .frame(maxWidth: .infinity)
                 .frame(height: compact ? 28 : 38)
-                .foregroundStyle(.white)
-                .background(modeColor.gradient, in: Capsule())
+                .foregroundStyle(renderingMode == .accented ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.white))
+                .background(
+                    renderingMode == .accented ? AnyShapeStyle(Color.secondary.opacity(0.20)) : AnyShapeStyle(modeColor.gradient),
+                    in: Capsule()
+                )
                 .contentShape(Capsule())
             }
             .buttonStyle(.plain)
+            .widgetAccentable(renderingMode == .accented)
         }
     }
 }
@@ -340,12 +372,13 @@ private struct WidgetControls: View {
 struct FocusWidgetSmall: View {
     let entry: FocusWidgetEntry
     @Environment(\.showsWidgetContainerBackground) var showsBackground
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     var body: some View {
         ZStack {
             if entry.isSessionActive, let mode = entry.focusMode {
                 let style = WidgetModeStyle.style(for: mode)
-                let modeColor = ModeColors.color(for: mode)
+                let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
 
                 VStack(spacing: 6) {
                     WidgetProgressRing(
@@ -374,7 +407,7 @@ struct FocusWidgetSmall: View {
             } else {
                 let mode = entry.preferredModeID ?? "pomodoro"
                 let style = WidgetModeStyle.style(for: mode)
-                let modeColor = ModeColors.color(for: mode)
+                let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
 
                 VStack(spacing: 6) {
                     WidgetProgressRing(progress: 0, modeColor: modeColor, lineWidth: 6, countsDown: isCountdownMode(mode)) {
@@ -389,10 +422,10 @@ struct FocusWidgetSmall: View {
 
                     Text(modeDisplayName(mode))
                         .font(.caption2)
-                        .foregroundStyle(modeColor)
+                        .foregroundStyle(renderingMode == .accented ? .secondary : modeColor)
                         .fontWeight(.medium)
 
-                    WidgetPrimaryStartButton(mode: mode, compact: true, isProUser: entry.isProUser)
+                    WidgetPrimaryStartButton(mode: mode, compact: true, isProUser: entry.isProUser, renderingMode: renderingMode)
                 }
                 .padding(0)
             }
@@ -405,6 +438,7 @@ struct FocusWidgetSmall: View {
 struct FocusWidgetMedium: View {
     let entry: FocusWidgetEntry
     @Environment(\.showsWidgetContainerBackground) var showsBackground
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     var body: some View {
         ZStack {
@@ -419,7 +453,7 @@ struct FocusWidgetMedium: View {
     @ViewBuilder
     private func liquidActiveLayout(for mode: String) -> some View {
         let style = WidgetModeStyle.style(for: mode)
-        let modeColor = ModeColors.color(for: mode)
+        let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
         let taskTitle = entry.linkedTaskTitle ?? String(localized: "No task linked")
 
         HStack(alignment: .center, spacing: 18) {
@@ -470,8 +504,9 @@ struct FocusWidgetMedium: View {
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .padding(.horizontal, 7)
                             .padding(.vertical, 4)
-                            .background(modeColor.opacity(0.16), in: Capsule())
-                            .foregroundStyle(modeColor)
+                            .background(modeColor.opacity(renderingMode == .accented ? 0.20 : 0.16), in: Capsule())
+                            .foregroundStyle(renderingMode == .accented ? .primary : modeColor)
+                            .widgetAccentable(renderingMode == .accented)
                     }
                 }
 
@@ -479,7 +514,7 @@ struct FocusWidgetMedium: View {
                     .padding(.top, -1)
 
                 HStack(spacing: 18) {
-                    WidgetMetric(icon: "flame.fill", value: entry.currentStreakDays, label: String(localized: "streak"), color: ModeColors.streak)
+                    WidgetMetric(icon: "flame.fill", value: entry.currentStreakDays, label: String(localized: "streak"), color: renderingMode == .accented ? .primary : ModeColors.streak)
                     WidgetMetric(icon: "checkmark.circle.fill", value: entry.todaySessionsCompleted, label: String(localized: "sessions"), color: .secondary)
                 }
             }
@@ -492,19 +527,19 @@ struct FocusWidgetMedium: View {
     private var liquidIdleLayout: some View {
         let mode = entry.preferredModeID ?? "pomodoro"
         let style = WidgetModeStyle.style(for: mode)
-        let modeColor = ModeColors.color(for: mode)
+        let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
 
         HStack(spacing: 0) {
             ZStack {
                 Circle()
-                    .fill(modeColor.opacity(0.12))
+                    .fill(modeColor.opacity(renderingMode == .accented ? 0.08 : 0.12))
                     .blur(radius: 20)
                     .scaleEffect(1.35)
 
                 WidgetProgressRing(progress: 0, modeColor: modeColor, lineWidth: 10, countsDown: isCountdownMode(mode)) {
                     Text(style.emoji)
                         .font(.system(size: 36))
-                        .shadow(color: modeColor.opacity(0.25), radius: 4)
+                        .shadow(color: modeColor.opacity(renderingMode == .accented ? 0.10 : 0.25), radius: 4)
                 }
             }
             .frame(width: 140)
@@ -529,13 +564,13 @@ struct FocusWidgetMedium: View {
 
                 Text(modeDisplayName(mode))
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(modeColor)
+                    .foregroundStyle(renderingMode == .accented ? .secondary : modeColor)
 
                 Spacer(minLength: 6)
 
-                WidgetPrimaryStartButton(mode: mode, compact: true, isProUser: entry.isProUser)
+                WidgetPrimaryStartButton(mode: mode, compact: true, isProUser: entry.isProUser, renderingMode: renderingMode)
 
-                WidgetModeIconStartRow(selectedMode: mode, isProUser: entry.isProUser)
+                WidgetModeIconStartRow(selectedMode: mode, isProUser: entry.isProUser, renderingMode: renderingMode)
             }
             .padding(0)
         }
@@ -547,6 +582,7 @@ struct FocusWidgetMedium: View {
 struct FocusWidgetLarge: View {
     let entry: FocusWidgetEntry
     @Environment(\.showsWidgetContainerBackground) var showsBackground
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     var body: some View {
         ZStack {
@@ -561,21 +597,22 @@ struct FocusWidgetLarge: View {
     @ViewBuilder
     private func liquidActiveLayout(for mode: String) -> some View {
         let style = WidgetModeStyle.style(for: mode)
-        let modeColor = ModeColors.color(for: mode)
+        let modeColor = modeAccentColor(mode, renderingMode: renderingMode)
 
         VStack(spacing: 14) {
             HStack {
                 Text(entry.isWaiting ? (entry.phase ?? String(localized: "Waiting")) : (entry.isPaused ? String(localized: "Paused") : (entry.phase ?? String(localized: "Focusing"))))
                     .font(.system(size: 12, weight: .black))
-                    .foregroundStyle(entry.isWaiting ? Color.secondary : (entry.isPaused ? Color.orange : Color.secondary))
+                    .foregroundStyle(renderingMode == .accented ? Color.secondary : (entry.isPaused ? Color.orange : Color.secondary))
                 Spacer()
                 if let pn = entry.pomodoroNumber, let tp = entry.totalPomodoros {
                     Text("\(pn)/\(tp)")
                         .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundStyle(modeColor)
+                        .foregroundStyle(renderingMode == .accented ? .primary : modeColor)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
-                        .background(modeColor.opacity(0.14), in: Capsule())
+                        .background(modeColor.opacity(renderingMode == .accented ? 0.20 : 0.14), in: Capsule())
+                        .widgetAccentable(renderingMode == .accented)
                 }
             }
 
@@ -613,7 +650,7 @@ struct FocusWidgetLarge: View {
             if !entry.modeMinutes.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(sortedModes.prefix(3), id: \.key) { mode, minutes in
-                        ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes)
+                        ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes, renderingMode: renderingMode)
                     }
                 }
                 .padding(12)
@@ -627,7 +664,7 @@ struct FocusWidgetLarge: View {
     private var liquidIdleLayout: some View {
         let preferredMode = entry.preferredModeID ?? "pomodoro"
         let style = WidgetModeStyle.style(for: preferredMode)
-        let modeColor = ModeColors.color(for: preferredMode)
+        let modeColor = modeAccentColor(preferredMode, renderingMode: renderingMode)
 
         VStack(spacing: 18) {
             HStack(spacing: 24) {
@@ -649,7 +686,7 @@ struct FocusWidgetLarge: View {
 
                     Text(modeDisplayName(preferredMode))
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(modeColor)
+                        .foregroundStyle(renderingMode == .accented ? .secondary : modeColor)
 
                     Text(String(localized: "Today: \(formattedMinutes(entry.todayFocusMinutes))"))
                         .font(.system(size: 12, weight: .medium))
@@ -658,14 +695,14 @@ struct FocusWidgetLarge: View {
                 Spacer()
             }
 
-            WidgetPrimaryStartButton(mode: preferredMode, compact: false, isProUser: entry.isProUser)
+            WidgetPrimaryStartButton(mode: preferredMode, compact: false, isProUser: entry.isProUser, renderingMode: renderingMode)
 
-            WidgetModeQuickStartGrid(selectedMode: preferredMode, showsTitles: true, isProUser: entry.isProUser)
+            WidgetModeQuickStartGrid(selectedMode: preferredMode, showsTitles: true, isProUser: entry.isProUser, renderingMode: renderingMode)
 
             if !entry.modeMinutes.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(sortedModes, id: \.key) { mode, minutes in
-                        ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes)
+                        ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes, renderingMode: renderingMode)
                     }
                 }
                 .padding(14)
@@ -798,6 +835,11 @@ struct ModeBar: View {
     let mode: String
     let minutes: Int
     let totalMinutes: Int
+    var renderingMode: WidgetRenderingMode = .fullColor
+
+    /// Index within [pomodoro, flowtime, timeBlock, stopwatch] for opacity differentiation.
+    private static let modeOrder = ["pomodoro", "flowtime", "timeBlock", "stopwatch"]
+    private var modeIndex: Int { Self.modeOrder.firstIndex(of: mode) ?? 0 }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -812,7 +854,8 @@ struct ModeBar: View {
                         .fill(Color.secondary.opacity(0.15))
                         .frame(height: 8)
                     Capsule()
-                        .fill(modeColor)
+                        .fill(barColor)
+                        .widgetAccentable(renderingMode == .accented)
                         .frame(
                             width: totalMinutes > 0
                                 ? geo.size.width * CGFloat(minutes) / CGFloat(totalMinutes)
@@ -830,8 +873,14 @@ struct ModeBar: View {
         }
     }
 
-    private var modeColor: Color {
-        ModeColors.color(for: mode)
+    private var barColor: Color {
+        if renderingMode == .accented {
+            // Use opacity levels to distinguish modes under a single tint.
+            let opacities: [Double] = [1.0, 0.65, 0.40, 0.20]
+            let opacity = opacities[min(modeIndex, opacities.count - 1)]
+            return Color.primary.opacity(opacity)
+        }
+        return ModeColors.color(for: mode)
     }
 }
 

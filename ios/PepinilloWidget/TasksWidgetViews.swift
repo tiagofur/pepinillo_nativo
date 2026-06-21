@@ -422,14 +422,16 @@ private struct TaskRowInteractive: View {
 private struct PomodoroProgressDots: View {
     let completed: Int
     let total: Int
+    @Environment(\.widgetRenderingMode) var renderingMode
 
     private var displayTotal: Int { min(total, 6) }
 
     var body: some View {
         HStack(spacing: 2) {
             ForEach(0..<displayTotal, id: \.self) { i in
+                let dotColor: Color = renderingMode == .accented ? .primary : ModeColors.pomodoro
                 Circle()
-                    .fill(i < completed ? ModeColors.pomodoro : ModeColors.pomodoro.opacity(0.2))
+                    .fill(i < completed ? dotColor : dotColor.opacity(0.2))
                     .frame(width: 4, height: 4)
             }
         }

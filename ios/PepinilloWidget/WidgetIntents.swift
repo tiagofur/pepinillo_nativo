@@ -80,11 +80,7 @@ struct PauseFocusFromWidgetIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
-        // No-op during the waiting-for-next-phase hold — the engine has no running
-        // timer, so pausing would corrupt state (completed phase at 0 seconds).
-        guard AppGroupDefaults.isSessionActive,
-              !AppGroupDefaults.activeSessionIsPaused,
-              !AppGroupDefaults.activeSessionIsWaiting else {
+        guard AppGroupDefaults.isSessionActive, !AppGroupDefaults.activeSessionIsPaused else {
             return .result()
         }
 
@@ -119,13 +115,7 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
-        // No-op during the waiting-for-next-phase hold — calling applyExternalResume()
-        // during the hold would invoke startTicking() with remainingSeconds == 0 and
-        // immediately re-fire phaseComplete(), causing double interval persistence and
-        // double pomodoro-number increment.
-        guard AppGroupDefaults.isSessionActive,
-              AppGroupDefaults.activeSessionIsPaused,
-              !AppGroupDefaults.activeSessionIsWaiting else {
+        guard AppGroupDefaults.isSessionActive, AppGroupDefaults.activeSessionIsPaused else {
             return .result()
         }
 
@@ -206,9 +196,7 @@ struct StartFocusWithTaskIntent: AppIntent {
         guard let uuid = UUID(uuidString: taskID) else { return nil }
         let container = try makeWidgetModelContainer()
         let context = ModelContext(container)
-        var descriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate { $0.id == uuid }
-        )
+        var descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == uuid })
         descriptor.fetchLimit = 1
         let tasks = try context.fetch(descriptor)
         return tasks.first?.title
@@ -251,9 +239,7 @@ struct CompleteTaskFromWidgetIntent: AppIntent {
         guard let uuid = UUID(uuidString: taskID) else { return .result() }
         let container = try makeWidgetModelContainer()
         let context = ModelContext(container)
-        var descriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate { $0.id == uuid }
-        )
+        var descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == uuid })
         descriptor.fetchLimit = 1
         let tasks = try context.fetch(descriptor)
         if let task = tasks.first {

@@ -96,6 +96,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>WS_BASE_URL</key>
 	<string>$(WS_BASE_URL)</string>
 </dict>

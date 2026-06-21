@@ -23,12 +23,18 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Summarize
+import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -37,7 +43,6 @@ import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -55,9 +60,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.feature.dashboard.components.FocusChart
 import dev.creapolis.pepinillo.feature.dashboard.components.ModeBreakdown
-import dev.creapolis.pepinillo.feature.dashboard.components.ReflectionActionCard
-import dev.creapolis.pepinillo.feature.dashboard.components.StreakHeroCard
-import dev.creapolis.pepinillo.ui.components.GlassBox
 import dev.creapolis.pepinillo.feature.dashboard.model.Achievement
 import dev.creapolis.pepinillo.feature.dashboard.model.AnalyticsPeriod
 import dev.creapolis.pepinillo.feature.dashboard.model.isEmpty
@@ -82,8 +84,6 @@ fun DashboardScreen(
     val monthlyReport by viewModel.monthlyReport.collectAsState()
     val hasLocalPremium by viewModel.hasLocalPremium.collectAsState()
     val canUseAI by viewModel.canUseAI.collectAsState()
-    val reflectionPreviews by viewModel.reflectionPreviews.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     if (stats.isLoading) {
         Column(
@@ -97,13 +97,8 @@ fun DashboardScreen(
         return
     }
 
-    PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = { viewModel.refresh() },
-        modifier = modifier.fillMaxSize(),
-    ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 24.dp),
@@ -146,6 +141,44 @@ fun DashboardScreen(
                         Icon(
                             Icons.Rounded.AutoAwesome,
                             contentDescription = stringResource(R.string.ai_report_button),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(stringResource(R.string.cd_weekly_review))
+                        }
+                    },
+                    state = rememberTooltipState()
+                ) {
+                    IconButton(onClick = {
+                        if (hasLocalPremium) viewModel.showWeeklyReview() else onNavigateToPaywall()
+                    }) {
+                        Icon(
+                            Icons.Rounded.Summarize,
+                            contentDescription = stringResource(R.string.cd_weekly_review),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                TooltipBox(
+                    positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                    tooltip = {
+                        PlainTooltip {
+                            Text(stringResource(R.string.cd_monthly_review))
+                        }
+                    },
+                    state = rememberTooltipState()
+                ) {
+                    IconButton(onClick = {
+                        if (hasLocalPremium) viewModel.showMonthlyReview() else onNavigateToPaywall()
+                    }) {
+                        Icon(
+                            Icons.Rounded.DateRange,
+                            contentDescription = stringResource(R.string.cd_monthly_review),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -198,41 +231,81 @@ fun DashboardScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // ── STREAK HERO CARD ──
+        // ── STREAK HERO ──
+        // Streak is the emotional centrepiece of the dashboard — shown prominently
+        // above the chart so it anchors the session and motivates continuation.
         StreakHeroCard(
             currentStreak = stats.currentStreak,
             bestStreak = stats.bestStreak,
-            streakProtectionApplied = stats.streakProtectionApplied,
-            periodMinutes = stats.periodMinutes,
-            periodSessions = stats.periodSessions,
+            modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // ── REFLECTION ACTION CARDS ──
+        // ── SUMMARY CARDS (Focus Time + Sessions) ──
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            ReflectionActionCard(
-                title = stringResource(R.string.cd_weekly_review),
-                previewMinutes = reflectionPreviews.weeklyMinutes,
-                previewSessions = reflectionPreviews.weeklySessions,
-                isPremium = hasLocalPremium,
-                onClick = {
-                    if (hasLocalPremium) viewModel.showWeeklyReview() else onNavigateToPaywall()
-                },
+            SummaryCard(
+                title = stringResource(R.string.dashboard_focus_time),
+                value = formatMinutes(stats.periodMinutes, stats.periodSessions > 0),
+                icon = Icons.Rounded.AccessTime,
                 modifier = Modifier.weight(1f),
             )
-            ReflectionActionCard(
+            SummaryCard(
+                title = stringResource(R.string.dashboard_sessions),
+                value = "${stats.periodSessions}",
+                icon = Icons.Rounded.TaskAlt,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // ── REFLECTION ACTION CARDS ──
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            val weeklyPreviewLine = if (!stats.isLoading && (weeklyReport.currentWeekMinutes > 0 || weeklyReport.currentWeekSessions > 0)) {
+                stringResource(
+                    R.string.dashboard_weekly_review_preview,
+                    formatMinutes(weeklyReport.currentWeekMinutes),
+                    weeklyReport.currentWeekSessions
+                )
+            } else {
+                stringResource(R.string.dashboard_weekly_review_subtitle)
+            }
+
+            ReflectionCard(
+                title = stringResource(R.string.cd_weekly_review),
+                subtitle = weeklyPreviewLine,
+                icon = Icons.Rounded.Summarize,
+                tintColor = Color(0xFFFF9800), // Orange
+                onClick = {
+                    if (hasLocalPremium) viewModel.showWeeklyReview() else onNavigateToPaywall()
+                }
+            )
+
+            val monthlyPreviewLine = if (!stats.isLoading && stats.selectedPeriod == AnalyticsPeriod.Month && (monthlyReport.currentMonthMinutes > 0 || monthlyReport.currentMonthSessions > 0)) {
+                stringResource(
+                    R.string.dashboard_monthly_review_preview,
+                    formatMinutes(monthlyReport.currentMonthMinutes),
+                    monthlyReport.currentMonthSessions
+                )
+            } else {
+                stringResource(R.string.dashboard_monthly_review_subtitle)
+            }
+
+            ReflectionCard(
                 title = stringResource(R.string.cd_monthly_review),
-                previewMinutes = reflectionPreviews.monthlyMinutes,
-                previewSessions = reflectionPreviews.monthlySessions,
-                isPremium = hasLocalPremium,
+                subtitle = monthlyPreviewLine,
+                icon = Icons.Rounded.DateRange,
+                tintColor = Color(0xFF9C27B0), // Purple
                 onClick = {
                     if (hasLocalPremium) viewModel.showMonthlyReview() else onNavigateToPaywall()
-                },
-                modifier = Modifier.weight(1f),
+                }
             )
         }
 
@@ -283,12 +356,8 @@ fun DashboardScreen(
                 icon = Icons.Rounded.EmojiEvents,
                 modifier = Modifier.weight(1f),
             )
-            PatternCard(
-                title = stringResource(R.string.dashboard_completion),
-                value = formatCompletionRate(stats.completionRate),
-                icon = Icons.Rounded.AccessTime,
-                modifier = Modifier.weight(1f),
-            )
+            // Placeholder for balance
+            Box(modifier = Modifier.weight(1f))
         }
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -312,7 +381,6 @@ fun DashboardScreen(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-    }
     }
 
     // Weekly Review Bottom Sheet
@@ -396,6 +464,42 @@ private fun PeriodPicker(
 }
 
 @Composable
+private fun SummaryCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun PatternCard(
     title: String,
     value: String,
@@ -437,6 +541,74 @@ private fun PatternCard(
  * Shows the current streak large and centered with flame iconography,
  * and the personal best as a compact secondary stat.
  */
+@Composable
+private fun StreakHeroCard(
+    currentStreak: Int,
+    bestStreak: Int,
+    modifier: Modifier = Modifier,
+) {
+    val streakColor = MaterialTheme.colorScheme.tertiary
+    val streakContainerColor = MaterialTheme.colorScheme.tertiaryContainer
+
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(streakContainerColor.copy(alpha = 0.7f))
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        // Flame icon + large streak number
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.LocalFireDepartment,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = streakColor,
+            )
+            Column {
+                Text(
+                    text = stringResource(R.string.dashboard_days_count, currentStreak),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+                Text(
+                    text = stringResource(R.string.day_streak),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                )
+            }
+        }
+
+        // Personal best — compact secondary stat
+        if (bestStreak > 0) {
+            Column(horizontalAlignment = Alignment.End) {
+                Icon(
+                    imageVector = Icons.Rounded.EmojiEvents,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp).align(Alignment.End),
+                    tint = streakColor.copy(alpha = 0.7f),
+                )
+                Text(
+                    text = stringResource(R.string.dashboard_days_count, bestStreak),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
+                )
+                Text(
+                    text = stringResource(R.string.dashboard_best),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.6f),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun AchievementsRow(achievements: List<Achievement>) {
     Row(
@@ -511,13 +683,18 @@ private fun SectionTitle(title: String) {
 
 @Composable
 private fun DashboardCard(content: @Composable () -> Unit) {
-    GlassBox(
-        modifier = Modifier.fillMaxWidth(),
-        cornerRadius = 20.dp
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = RoundedCornerShape(20.dp),
+            )
+            .padding(20.dp),
     ) {
-        Box(modifier = Modifier.padding(20.dp)) {
-            content()
-        }
+        content()
     }
 }
 
@@ -566,15 +743,72 @@ private fun EmptyDashboardState(
     }
 }
 
-/**
- * Formats a 0.0–1.0 completion rate as a percentage string, e.g. 0.78 → "78%".
- * Returns "–" when the rate is 0.0 (no sessions in the period), matching the
- * em-dash placeholder used by the other PatternCards.
- */
-fun formatCompletionRate(rate: Double): String {
-    if (rate == 0.0) return "\u2013"
-    val percentage = (rate * 100).toInt()
-    return "$percentage%"
+@Composable
+private fun ReflectionCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    tintColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                shape = RoundedCornerShape(20.dp),
+            )
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(tintColor.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp),
+                tint = tintColor,
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            imageVector = Icons.Rounded.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.size(20.dp),
+        )
+    }
+}
+
+private fun formatMinutes(totalMinutes: Int, hasSessions: Boolean = false): String {
+    if (totalMinutes == 0 && hasSessions) return "< 1m"
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
 }
 
 @Preview(showBackground = true)
