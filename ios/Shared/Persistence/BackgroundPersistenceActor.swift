@@ -28,6 +28,21 @@ public actor BackgroundPersistenceActor {
         return tasks.map { TaskItemDTO(from: $0, subtaskProgress: progress[$0.id] ?? (0, 0)) }
     }
 
+    /// Single-row fetch by id (issue #74). Avoids loading the whole task table
+    /// when mutating one task. Returns nil if missing or soft-deleted.
+    func fetchTask(by id: UUID) throws -> TaskItemDTO? {
+        let svc = service
+        guard let task = try svc.fetchTask(by: id) else { return nil }
+        // Single-task subtask progress: fetch on demand.
+        let progress = try svc.subtaskProgressByTask()
+        return TaskItemDTO(from: task, subtaskProgress: progress[task.id] ?? (0, 0))
+    }
+
+    /// Batch persist a new sort order in one transaction (issue #74).
+    func saveTaskOrder(_ order: [(id: UUID, sortOrder: Int)]) throws {
+        try service.saveTaskOrder(order)
+    }
+
     func saveTask(_ taskDTO: TaskItemDTO) throws {
         let svc = service
         let taskID = taskDTO.id
@@ -133,6 +148,25 @@ public actor BackgroundPersistenceActor {
 
     func fetchSessions(from start: Date, to end: Date) throws -> [SessionRecordDTO] {
         try service.fetchSessions(from: start, to: end).map { SessionRecordDTO(from: $0) }
+    }
+
+    // MARK: - Lifetime Aggregate Counts (issue #73)
+    // Cheap SQLite COUNTs bounded by `from`, replacing full-table loads.
+
+    func fetchSessionCount(from start: Date) throws -> Int {
+        try service.fetchSessionCount(from: start)
+    }
+
+    func fetchEarlyBirdSessionCount(from start: Date) throws -> Int {
+        try service.fetchEarlyBirdSessionCount(from: start)
+    }
+
+    func fetchCompletedPomodoroCount(from start: Date) throws -> Int {
+        try service.fetchCompletedPomodoroCount(from: start)
+    }
+
+    func fetchCompletedFlowtimeCount(from start: Date) throws -> Int {
+        try service.fetchCompletedFlowtimeCount(from: start)
     }
 
     func fetchSessionsForTask(taskID: UUID) throws -> [SessionRecordDTO] {

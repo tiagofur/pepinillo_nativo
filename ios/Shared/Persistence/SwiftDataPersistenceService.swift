@@ -36,6 +36,47 @@ public final class SwiftDataPersistenceService {
         return try context.fetch(descriptor)
     }
 
+    /// Fetch a single non-deleted task by id, avoiding a full-table scan when
+    /// mutating one task (issue #74). Returns nil if the task is missing or soft-deleted.
+    public func fetchTask(by id: UUID) throws -> TaskItem? {
+        var descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == id && $0.isLocallyDeleted == false },
+            sortBy: []
+        )
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
+    }
+
+    /// Persist the new sort order for a batch of tasks in a single transaction
+    /// (issue #74 — drag-reorder previously did N sequential `saveTask` calls).
+    /// Each reordered task is marked dirty for sync. Tasks not present in `order`
+    /// are left untouched. Returns the ids that were updated.
+    @discardableResult
+    public func saveTaskOrder(_ order: [(id: UUID, sortOrder: Int)]) throws -> [UUID] {
+        guard !order.isEmpty else { return [] }
+        let ids = order.map { $0.id }
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { ids.contains($0.id) && $0.isLocallyDeleted == false }
+        )
+        let tasks = try context.fetch(descriptor)
+        var orderByID: [UUID: Int] = [:]
+        orderByID.reserveCapacity(order.count)
+        for entry in order { orderByID[entry.id] = entry.sortOrder }
+
+        let now = Date.now
+        var updated: [UUID] = []
+        updated.reserveCapacity(tasks.count)
+        for task in tasks {
+            guard let newOrder = orderByID[task.id] else { continue }
+            task.sortOrder = newOrder
+            task.updatedAt = now
+            task.isDirty = true
+            updated.append(task.id)
+        }
+        try context.save()
+        return updated
+    }
+
     /// One-shot batch of subtask completion counts keyed by parent task id.
     /// Avoids the N+1 relationship fault of touching `task.subtasks` per task
     /// when mapping a full task list to DTOs.
@@ -147,6 +188,63 @@ public final class SwiftDataPersistenceService {
             sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
         )
         return try context.fetch(descriptor)
+    }
+
+    // MARK: - Lifetime Aggregate Counts (issue #73)
+    // These replace loading the entire FocusSessionRecord table just to run
+    // `.filter{...}.count` in Swift. Each uses a scoped `fetchCount` (SQLite COUNT),
+    // bounded to a `from:` start so it never scans before the data we care about.
+
+    /// Total session count since `from` (inclusive on `startedAt`).
+    public func fetchSessionCount(from start: Date) throws -> Int {
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.startedAt >= start }
+        )
+        return try context.fetchCount(descriptor)
+    }
+
+    /// Count of sessions started before 08:00 local since `from`.
+    /// `startedAt` hour is computed in Swift because SwiftData #Predicate cannot
+    /// call `Calendar.component` — we instead fetch the candidate `startedAt`
+    /// values and count in-memory, which still avoids decoding full rows.
+    public func fetchEarlyBirdSessionCount(from start: Date) throws -> Int {
+        var descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { $0.startedAt >= start }
+        )
+        descriptor.propertiesToFetch = [\.startedAt]
+        let dates = try context.fetch(descriptor).map { $0.startedAt }
+        let calendar = Calendar.current
+        return dates.reduce(into: 0) { count, date in
+            if calendar.component(.hour, from: date) < 8 { count += 1 }
+        }
+    }
+
+    /// Count of completed pomodoro work-interval sessions since `from`.
+    public func fetchCompletedPomodoroCount(from start: Date) throws -> Int {
+        // SwiftData #Predicate cannot capture arrays (e.g. workPhases.contains),
+        // so the work-phase membership is expanded into explicit OR clauses.
+        // In real data every completed pomodoro has phase == "work" (assigned by
+        // FocusEngine); the legacy empty-phase edge is intentionally not counted.
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate {
+                $0.startedAt >= start &&
+                $0.mode == "pomodoro" &&
+                $0.wasCompleted == true &&
+                ($0.phase == "work" || $0.phase == "flow" ||
+                 $0.phase == "block" || $0.phase == "freeform")
+            }
+        )
+        return try context.fetchCount(descriptor)
+    }
+
+    /// Count of completed flowtime sessions since `from`.
+    public func fetchCompletedFlowtimeCount(from start: Date) throws -> Int {
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate {
+                $0.startedAt >= start && $0.mode == "flowtime" && $0.wasCompleted == true
+            }
+        )
+        return try context.fetchCount(descriptor)
     }
 
     public func fetchSessionsForTask(taskID: UUID) throws -> [FocusSessionRecord] {

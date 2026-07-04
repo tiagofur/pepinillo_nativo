@@ -126,4 +126,139 @@ struct PersistenceServiceTests {
         #expect(sessionBatch[task2.id]?[0].mode == "pomodoro") // session2_2
         #expect(sessionBatch[task2.id]?[1].mode == "flowtime") // session2_1
     }
+
+    // MARK: - Issue #74: fetchTask(by:) single-row fetch
+
+    @Test("fetchTask(by:) returns the matching non-deleted task only")
+    func fetchTaskByID() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV4.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let taskA = TaskItem(title: "Task A")
+        let taskB = TaskItem(title: "Task B")
+        context.insert(taskA)
+        context.insert(taskB)
+        // Soft-delete B so we can confirm it's excluded.
+        taskB.isLocallyDeleted = true
+        try context.save()
+
+        // Existing id → returns A.
+        let fetched = try service.fetchTask(by: taskA.id)
+        #expect(fetched?.id == taskA.id)
+        #expect(fetched?.title == "Task A")
+
+        // Soft-deleted id → returns nil (does not surface deleted rows).
+        let deleted = try service.fetchTask(by: taskB.id)
+        #expect(deleted == nil)
+
+        // Unknown id → returns nil.
+        let unknown = try service.fetchTask(by: UUID())
+        #expect(unknown == nil)
+    }
+
+    // MARK: - Issue #74: saveTaskOrder batch reorder
+
+    @Test("saveTaskOrder persists new sort orders in a single transaction and marks dirty")
+    func saveTaskOrderBatch() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV4.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let t1 = TaskItem(title: "1"); t1.sortOrder = 0; t1.isDirty = false
+        let t2 = TaskItem(title: "2"); t2.sortOrder = 1; t2.isDirty = false
+        let t3 = TaskItem(title: "3"); t3.sortOrder = 2; t3.isDirty = false
+        context.insert(t1); context.insert(t2); context.insert(t3)
+        try context.save()
+
+        // Reorder: 3, 1, 2 (new sort orders 0, 1, 2)
+        try service.saveTaskOrder([
+            (id: t3.id, sortOrder: 0),
+            (id: t1.id, sortOrder: 1),
+            (id: t2.id, sortOrder: 2),
+        ])
+
+        // Verify persisted order + dirty flag.
+        let fetched = try service.fetchTasks().sorted { $0.sortOrder < $1.sortOrder }
+        #expect(fetched.map(\.title) == ["3", "1", "2"])
+        #expect(fetched.allSatisfy { $0.isDirty == true })
+
+        // Empty input is a no-op.
+        try service.saveTaskOrder([])
+        let refetched = try service.fetchTasks().sorted { $0.sortOrder < $1.sortOrder }
+        #expect(refetched.map(\.title) == ["3", "1", "2"])
+    }
+
+    // MARK: - Issue #73: lifetime aggregate counts
+
+    @Test("Aggregate session counts (lifetime) match manual tallies")
+    func aggregateSessionCounts() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV4.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let cal = Calendar.current
+        func session(_ mode: String, _ phase: String, _ hour: Int, _ completed: Bool) -> FocusSessionRecord {
+            // Pin startedAt to today at the given hour so early-bird (< 8) is deterministic.
+            var comps = cal.dateComponents([.year, .month, .day], from: Date.now)
+            comps.hour = hour
+            comps.minute = 5
+            let startedAt = cal.date(from: comps) ?? Date.now
+            return FocusSessionRecord(
+                mode: mode, phase: phase,
+                startedAt: startedAt, endedAt: startedAt,
+                actualDuration: 1500, targetDuration: nil,
+                wasCompleted: completed, interruptions: 0,
+                pauseCount: 0, totalPauseDuration: 0
+            )
+        }
+
+        let sessions: [FocusSessionRecord] = [
+            session("pomodoro", "work", 6, true),     // early bird + completed pomodoro work
+            session("pomodoro", "work", 10, true),    // completed pomodoro work
+            session("pomodoro", "work", 12, false),   // incomplete pomodoro work
+            session("pomodoro", "work", 9, true),     // completed pomodoro work
+            session("flowtime", "flow", 8, true),     // completed flowtime
+            session("flowtime", "flow", 11, false),   // incomplete flowtime
+            session("timeBlock", "block", 7, true),   // early bird, not pomodoro/flowtime
+        ]
+        sessions.forEach { context.insert($0) }
+        try context.save()
+
+        let from = Date.distantPast
+        #expect(try service.fetchSessionCount(from: from) == 7)
+        // Early bird: started < 08:00 → pomodoro@6 + timeBlock@7 = 2
+        #expect(try service.fetchEarlyBirdSessionCount(from: from) == 2)
+        // Completed pomodoro work-phase: @6, @10, @9 = 3
+        // (In real data every completed pomodoro has phase == "work"; empty-phase
+        // is a legacy edge that the aggregate intentionally does not count.)
+        #expect(try service.fetchCompletedPomodoroCount(from: from) == 3)
+        // Completed flowtime: @8 = 1
+        #expect(try service.fetchCompletedFlowtimeCount(from: from) == 1)
+
+        // Bounds: a `from` in the future excludes everything.
+        let future = Date.now.addingTimeInterval(86_400 * 365)
+        #expect(try service.fetchSessionCount(from: future) == 0)
+    }
 }
