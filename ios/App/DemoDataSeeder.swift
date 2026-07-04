@@ -34,6 +34,17 @@ enum DemoDataSeeder {
         return UserDefaults.standard.bool(forKey: defaultsKey)
     }
 
+    /// Single source of truth for the effective Pro state in DEBUG builds.
+    ///
+    /// When the simulation flag is on, Pro is forced regardless of what SwiftData
+    /// says. This prevents `SettingsFeature.preferencesLoaded` from clobbering the
+    /// simulated state with the persisted (always-false) `prefs.isProUser`.
+    /// In release builds `effectiveIsPro(persisted:)` simply returns `persisted`
+    /// (see the non-DEBUG shim below).
+    nonisolated static func effectiveIsPro(persisted: Bool) -> Bool {
+        shouldSimulatePro || persisted
+    }
+
     static func seedIfNeeded(container: ModelContainer) {
         guard CommandLine.arguments.contains("-seedDemoData") else { return }
 
@@ -338,5 +349,18 @@ enum DemoDataSeeder {
 
         return FocusSessionRecord(from: result)
     }
+}
+#endif
+
+// MARK: - Release shim for effectiveIsPro
+//
+// In DEBUG builds `DemoDataSeeder.effectiveIsPro(persisted:)` is defined inside
+// the `#if DEBUG` enum above. In release builds the Pro simulation does not
+// exist, so this shim returns the persisted value unchanged. This lets callers
+// (AppFeature, SettingsFeature) use `DemoDataSeeder.effectiveIsPro(...)` without
+// their own `#if DEBUG` guards.
+#if !DEBUG
+enum DemoDataSeeder {
+    @inlinable static func effectiveIsPro(persisted: Bool) -> Bool { persisted }
 }
 #endif
