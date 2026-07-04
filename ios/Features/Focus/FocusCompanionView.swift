@@ -215,7 +215,7 @@ struct FocusCompanionView: View {
         HStack(spacing: 12) {
             Image(systemName: "flame.fill")
                 .font(.largeTitle)
-                .foregroundStyle(.orange)
+                .foregroundStyle(theme.streakColor)
                 .contentTransition(.symbolEffect(.replace))
 
             VStack(alignment: .leading, spacing: 2) {

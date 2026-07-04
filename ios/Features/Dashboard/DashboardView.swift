@@ -284,7 +284,7 @@ private struct StreakHeroCard: View {
                     Text(String(localized: "streak.protection.caption",
                                 defaultValue: "Streak protected · Pro skip used"))
                         .font(.subheadline)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.secondary)
                         .accessibilityLabel(String(localized: "streak.protection.accessibility",
                                                    defaultValue: "Streak protected by Pro skip"))
                 } else {
