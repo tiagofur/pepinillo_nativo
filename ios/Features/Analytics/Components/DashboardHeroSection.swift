@@ -119,7 +119,7 @@ struct DashboardHeroSection: View {
                     Text(String(localized: "streak.protection.caption",
                                 defaultValue: "Streak protected · Pro skip used"))
                         .font(.caption)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.secondary)
                         .accessibilityLabel(String(localized: "streak.protection.accessibility",
                                                    defaultValue: "Streak protected by Pro skip"))
                 } else {
