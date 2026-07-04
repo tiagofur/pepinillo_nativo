@@ -176,7 +176,9 @@ struct SettingsFeature {
             healthLoggingEnabled = prefs.healthLoggingEnabled
             adhdFriendlyEnabled = prefs.adhdFriendlyEnabled
             calendarIntegrationEnabled = prefs.calendarIntegrationEnabled
-            isProUser = prefs.isProUser
+            // Honor the DEBUG Pro simulation so it isn't clobbered by the persisted
+            // value (always false under simulation). Issue #95.
+            isProUser = DemoDataSeeder.effectiveIsPro(persisted: prefs.isProUser)
             currentStreakDays = prefs.currentStreakDays
         }
     }
