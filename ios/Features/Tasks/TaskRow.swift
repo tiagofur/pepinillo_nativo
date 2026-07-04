@@ -264,9 +264,9 @@ struct TaskRow: View {
 
     private var cardShadowColor: Color {
         if task.isCompleted {
-            return Color.black.opacity(0.01)
+            return .primary.opacity(0.01)
         } else {
-            return Color.black.opacity(0.05)
+            return .primary.opacity(0.05)
         }
     }
 

@@ -88,7 +88,7 @@ private extension View {
                 .overlay {
                     Capsule()
                         .stroke(
-                            isSelected ? filter.color.opacity(0.4) : Color.white.opacity(0.15),
+                            isSelected ? filter.color.opacity(0.4) : Color.primary.opacity(0.15),
                             lineWidth: 1
                         )
                 }

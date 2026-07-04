@@ -97,7 +97,7 @@ struct DashboardHeroSection: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(width: 22, height: 22)
-                        .background(Color.blue, in: Circle())
+                        .background(theme.streakColor, in: Circle())
                         .offset(x: 2, y: 2)
                         .accessibilityHidden(true)
                 }

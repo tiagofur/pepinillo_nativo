@@ -76,6 +76,9 @@ struct FocusFeature {
 
         // Post-session journal
         @Presents var journal: SessionJournalFeature.State?
+
+        // Persist failure surfaced to the user (issue #75: avoid silent data loss)
+        var sessionSaveError: String?
     }
 
     // MARK: - Actions
@@ -140,11 +143,15 @@ struct FocusFeature {
         case showJournalSheet(sessionID: UUID, modeName: String, actualDuration: TimeInterval)
         case journal(PresentationAction<SessionJournalFeature.Action>)
 
+        // Session save error dismissal (issue #75)
+        case sessionSaveErrorDismissed
+
         // Parent coordination
         case delegate(Delegate)
 
         enum Delegate: Equatable {
             case sessionPersisted
+            case sessionSaveFailed(String)
             case taskProgressChanged
         }
     }
@@ -670,8 +677,12 @@ struct FocusFeature {
                         linkedTaskID: linkedTaskID
                     )
                     intervalPersistEffect = .run { [persistence] send in
-                        try await persistence.saveSession(intervalResult)
-                        await send(.delegate(.sessionPersisted))
+                        do {
+                            try await persistence.saveSession(intervalResult)
+                            await send(.delegate(.sessionPersisted))
+                        } catch {
+                            await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                        }
                     }
                 }
 
@@ -704,8 +715,12 @@ struct FocusFeature {
                 let persistEffect: Effect<Action> = result.mode == .pomodoro
                     ? .none
                     : .run { [persistence] send in
-                        try await persistence.saveSession(result)
-                        await send(.delegate(.sessionPersisted))
+                        do {
+                            try await persistence.saveSession(result)
+                            await send(.delegate(.sessionPersisted))
+                        } catch {
+                            await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                        }
                     }
 
                 return .merge(
@@ -849,7 +864,16 @@ struct FocusFeature {
                     }
                 )
 
+            case .delegate(.sessionSaveFailed(let message)):
+                // Surface persist failure to the user instead of dropping it silently (issue #75)
+                state.sessionSaveError = message
+                return .none
+
             case .delegate:
+                return .none
+
+            case .sessionSaveErrorDismissed:
+                state.sessionSaveError = nil
                 return .none
 
             // MARK: Task Picker

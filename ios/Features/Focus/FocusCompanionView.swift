@@ -224,7 +224,7 @@ struct FocusCompanionView: View {
                     .foregroundStyle(.primary)
                 Text(streakDays == 1
                      ? String(localized: "day streak")
-                     : String(localized: "day streak"))
+                     : String(localized: "days streak"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
