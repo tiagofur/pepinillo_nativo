@@ -486,7 +486,9 @@ public struct UserPreferencesDTO: Sendable, Equatable {
 public struct PersistenceClient: Sendable {
     // Tasks
     public var fetchTasks: @Sendable () async throws -> [TaskItemDTO] = { [] }
+    public var fetchTask: @Sendable (UUID) async throws -> TaskItemDTO? = { _ in nil }
     public var saveTask: @Sendable (TaskItemDTO) async throws -> Void
+    public var saveTaskOrder: @Sendable ([(id: UUID, sortOrder: Int)]) async throws -> Void = { _ in }
     public var incrementTaskPomodoros: @Sendable (UUID) async throws -> Void
     public var deleteTask: @Sendable (UUID) async throws -> Void
 
@@ -501,6 +503,11 @@ public struct PersistenceClient: Sendable {
     // Sessions
     public var saveSession: @Sendable (FocusSessionResult) async throws -> Void
     public var fetchSessions: @Sendable (Date, Date) async throws -> [SessionRecordDTO] = { _, _ in [] }
+    // Lifetime aggregate counts (issue #73) — cheap SQLite COUNTs bounded by `from`.
+    public var fetchSessionCount: @Sendable (Date) async throws -> Int = { _ in 0 }
+    public var fetchEarlyBirdSessionCount: @Sendable (Date) async throws -> Int = { _ in 0 }
+    public var fetchCompletedPomodoroCount: @Sendable (Date) async throws -> Int = { _ in 0 }
+    public var fetchCompletedFlowtimeCount: @Sendable (Date) async throws -> Int = { _ in 0 }
     public var fetchSessionsForTask: @Sendable (UUID) async throws -> [SessionRecordDTO] = { _ in [] }
     public var fetchSessionsForTasks: @Sendable ([UUID]) async throws -> [UUID: [SessionRecordDTO]] = { _ in [:] }
     public var fetchTaskAnalytics: @Sendable (UUID) async throws -> TaskAnalyticsDTO
@@ -585,8 +592,14 @@ extension PersistenceClient: DependencyKey {
             fetchTasks: {
                 try await actorProvider().fetchTasks()
             },
+            fetchTask: { id in
+                try await actorProvider().fetchTask(by: id)
+            },
             saveTask: { taskDTO in
                 try await actorProvider().saveTask(taskDTO)
+            },
+            saveTaskOrder: { order in
+                try await actorProvider().saveTaskOrder(order)
             },
             incrementTaskPomodoros: { id in
                 try await actorProvider().incrementTaskPomodoros(id: id)
@@ -617,6 +630,18 @@ extension PersistenceClient: DependencyKey {
             },
             fetchSessions: { start, end in
                 try await actorProvider().fetchSessions(from: start, to: end)
+            },
+            fetchSessionCount: { from in
+                try await actorProvider().fetchSessionCount(from: from)
+            },
+            fetchEarlyBirdSessionCount: { from in
+                try await actorProvider().fetchEarlyBirdSessionCount(from: from)
+            },
+            fetchCompletedPomodoroCount: { from in
+                try await actorProvider().fetchCompletedPomodoroCount(from: from)
+            },
+            fetchCompletedFlowtimeCount: { from in
+                try await actorProvider().fetchCompletedFlowtimeCount(from: from)
             },
             fetchSessionsForTask: { taskID in
                 try await actorProvider().fetchSessionsForTask(taskID: taskID)

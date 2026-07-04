@@ -315,18 +315,29 @@ struct AnalyticsFeature {
             }
 
             do {
-                // Fetch concurrently: period sessions, all-time sessions, preferences,
-                // and all-time daily stats for streak computation.
+                // Fetch concurrently: period sessions, preferences, all-time daily
+                // stats for streak computation. Achievement counts use scoped SQLite
+                // COUNTs instead of loading the entire FocusSessionRecord table
+                // (issue #73). They are lifetime tallies, querying from
+                // Date.distantPast — but the work happens in SQLite (SELECT COUNT +
+                // predicate) instead of deserializing every row in Swift.
                 async let periodSessionsFetch = persistence.fetchSessions(start, end)
-                async let lifetimeSessionsFetch = persistence.fetchSessions(Date.distantPast, end)
                 async let prefsFetch = persistence.fetchPreferences()
                 async let allStatsFetch = persistence.fetchDailyStatsRange(Date.distantPast, end)
+                async let earlyBirdCountFetch = persistence.fetchEarlyBirdSessionCount(Date.distantPast)
+                async let pomodoroCompletedFetch = persistence.fetchCompletedPomodoroCount(Date.distantPast)
+                async let flowtimeCompletedFetch = persistence.fetchCompletedFlowtimeCount(Date.distantPast)
+                async let allTimeTotalFetch = persistence.fetchSessionCount(Date.distantPast)
 
-                let (periodSessions, lifetimeSessions, prefs, allDailyStats) = try await (
+                let (periodSessions, prefs, allDailyStats,
+                     earlyBirdCount, pomodoroCompleted, flowtimeCompleted, allTimeTotal) = try await (
                     periodSessionsFetch,
-                    lifetimeSessionsFetch,
                     prefsFetch,
-                    allStatsFetch
+                    allStatsFetch,
+                    earlyBirdCountFetch,
+                    pomodoroCompletedFetch,
+                    flowtimeCompletedFetch,
+                    allTimeTotalFetch
                 )
 
                 let snapshots = buildSnapshots(from: periodSessions, calendar: calendar)
@@ -339,19 +350,6 @@ struct AnalyticsFeature {
                     today: end,
                     calendar: calendar
                 )
-
-                // Achievement counts from lifetime data
-                let earlyBirdCount = lifetimeSessions.filter {
-                    calendar.component(.hour, from: $0.startedAt) < 8
-                }.count
-                let workPhases: Set<String> = ["work", "flow", "block", "freeform"]
-                let pomodoroCompleted = lifetimeSessions.filter {
-                    $0.mode == "pomodoro" && $0.wasCompleted && (workPhases.contains($0.phase) || $0.phase.isEmpty)
-                }.count
-                let flowtimeCompleted = lifetimeSessions.filter {
-                    $0.mode == "flowtime" && $0.wasCompleted
-                }.count
-                let allTimeTotal = lifetimeSessions.count
 
                 let achievements = buildAchievements(
                     totalSessions: allTimeTotal,

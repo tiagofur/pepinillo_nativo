@@ -237,6 +237,7 @@ struct WatchCommandDictionaryTests {
         case .toggleTaskCompleted(let id):  dict["action"] = "toggleTask"; dict["taskID"] = id
         case .requestTasks:                 dict["action"] = "requestTasks"
         case .requestDashboard:             dict["action"] = "requestDashboard"
+        case .startNextPhase:               dict["action"] = "startNextPhase"
         }
         return dict
     }

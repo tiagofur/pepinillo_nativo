@@ -339,8 +339,8 @@ struct TaskListFeature {
                     state.detail?.isCompleted = isNowCompleted
                 }
                 return .run { _ in
-                    let items = try await persistence.fetchTasks()
-                    if let item = items.first(where: { $0.id == id }) {
+                    // Single-row fetch instead of a full-table scan (issue #74).
+                    if let item = try await persistence.fetchTask(id) {
                         let updated = TaskItemDTO(
                             id: item.id,
                             title: item.title,
@@ -390,30 +390,19 @@ struct TaskListFeature {
                 state.tasks.move(fromOffsets: source, toOffset: destination)
                 let orderedIDs = state.tasks.ids
                 return .run { _ in
-                    let items = try await persistence.fetchTasks()
-                    for (index, id) in orderedIDs.enumerated() {
-                        if let item = items.first(where: { $0.id == id }) {
-                            let updated = TaskItemDTO(
-                                id: item.id, title: item.title, notes: item.notes,
-                                isCompleted: item.isCompleted, priority: item.priority,
-                                energyLevel: item.energyLevel,
-                                estimatedPomodoros: item.estimatedPomodoros,
-                                completedPomodoros: item.completedPomodoros,
-                                sortOrder: index,
-                                dueDate: item.dueDate,
-                                scheduledForToday: item.scheduledForToday
-                            )
-                            try await persistence.saveTask(updated)
-                        }
+                    // Batch the reorder in a single transaction instead of N
+                    // sequential saveTask round-trips (issue #74).
+                    let order = Array(orderedIDs.enumerated()).map {
+                        (id: $0.element, sortOrder: $0.offset)
                     }
+                    try await persistence.saveTaskOrder(order)
                     WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                 }
 
             case .energyLevelChanged(let id, let level):
                 state.tasks[id: id]?.energyLevel = level
                 return .run { _ in
-                    let items = try await persistence.fetchTasks()
-                    if let item = items.first(where: { $0.id == id }) {
+                    if let item = try await persistence.fetchTask(id) {
                         let updated = TaskItemDTO(
                             id: item.id, title: item.title, notes: item.notes,
                             isCompleted: item.isCompleted, priority: item.priority,
@@ -430,8 +419,7 @@ struct TaskListFeature {
                 state.tasks[id: id]?.recurrenceRule = rule
                 state.tasks[id: id]?.isRecurringTemplate = rule != nil
                 return .run { _ in
-                    let items = try await persistence.fetchTasks()
-                    if let item = items.first(where: { $0.id == id }) {
+                    if let item = try await persistence.fetchTask(id) {
                         let updated = TaskItemDTO(
                             id: item.id, title: item.title, notes: item.notes,
                             isCompleted: item.isCompleted, priority: item.priority,
@@ -448,8 +436,7 @@ struct TaskListFeature {
             case .taskScheduledForToday(let id, let scheduled):
                 state.tasks[id: id]?.scheduledForToday = scheduled
                 return .run { _ in
-                    let items = try await persistence.fetchTasks()
-                    if let item = items.first(where: { $0.id == id }) {
+                    if let item = try await persistence.fetchTask(id) {
                         let updated = TaskItemDTO(
                             id: item.id, title: item.title, notes: item.notes,
                             isCompleted: item.isCompleted, priority: item.priority,
