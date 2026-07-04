@@ -35,6 +35,18 @@ struct DashboardView: View {
                 if store.isLoading {
                     AnalyticsPlaceholder()
                         .redacted(reason: .placeholder)
+                } else if let loadError = store.loadError {
+                    ContentUnavailableView {
+                        Label(String(localized: "Couldn't Load Data"), systemImage: "exclamationmark.triangle")
+                    } description: {
+                        Text(loadError)
+                    } actions: {
+                        Button(String(localized: "Retry")) { store.send(.retryTapped) }
+                            .buttonStyle(.borderedProminent)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 48)
+                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 } else if store.chartData.isEmpty && store.sessionsCompleted == 0 {
                     ContentUnavailableView(
                         String(localized: "No Data Yet"),
@@ -251,7 +263,7 @@ private struct StreakHeroCard: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(width: 24, height: 24)
-                        .background(Color.blue, in: Circle())
+                        .background(theme.streakColor, in: Circle())
                         .offset(x: 3, y: 3)
                         .accessibilityHidden(true)
                 }

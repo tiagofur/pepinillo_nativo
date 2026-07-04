@@ -27,6 +27,7 @@ struct AnalyticsFeature {
         var weeklyInsights: [FocusInsight] = []
         var isLoading: Bool = false
         var hasLoadedData: Bool = false
+        var loadError: String?
         var isProUser: Bool = false
         @Presents var weeklyReview: WeeklyReviewFeature.State?
         @Presents var monthlyReview: MonthlyReviewFeature.State?
@@ -44,7 +45,13 @@ struct AnalyticsFeature {
             case month = "30D"
             case year  = "Year"
 
-            var displayName: String { rawValue }
+            var displayName: String {
+                switch self {
+                case .week:  return String(localized: "7D")
+                case .month: return String(localized: "30D")
+                case .year:  return String(localized: "Year")
+                }
+            }
 
             var days: Int {
                 switch self {
@@ -97,6 +104,8 @@ struct AnalyticsFeature {
             achievements: [UserAchievement],
             weeklyInsights: [FocusInsight]
         )
+        case loadFailed(String)
+        case retryTapped
         case weeklyReviewTapped
         case weeklyReviewDismissed
         case weeklyReview(PresentationAction<WeeklyReviewFeature.Action>)
@@ -232,6 +241,17 @@ struct AnalyticsFeature {
 
                 return .none
 
+            case let .loadFailed(message):
+                state.isLoading = false
+                state.hasLoadedData = false
+                state.loadError = message
+                return .none
+
+            case .retryTapped:
+                state.loadError = nil
+                state.isLoading = true
+                return loadData(for: state.period)
+
             case .weeklyReviewTapped:
                 guard state.isProUser else { return .send(.paywallRequested) }
                 state.weeklyReview = WeeklyReviewFeature.State()
@@ -286,7 +306,7 @@ struct AnalyticsFeature {
     // MARK: - Data Loading
 
     private func loadData(for period: State.Period) -> Effect<Action> {
-        .run { send in
+        .run { [persistence] send in
             let calendar = Calendar.current
             let end = Date.now
             guard let start = calendar.date(byAdding: .day, value: -(period.days - 1), to: end) else {
@@ -294,76 +314,80 @@ struct AnalyticsFeature {
                 return
             }
 
-            // Fetch concurrently: period sessions, all-time sessions, preferences,
-            // and all-time daily stats for streak computation.
-            async let periodSessionsFetch = persistence.fetchSessions(start, end)
-            async let lifetimeSessionsFetch = persistence.fetchSessions(Date.distantPast, end)
-            async let prefsFetch = persistence.fetchPreferences()
-            async let allStatsFetch = persistence.fetchDailyStatsRange(Date.distantPast, end)
+            do {
+                // Fetch concurrently: period sessions, all-time sessions, preferences,
+                // and all-time daily stats for streak computation.
+                async let periodSessionsFetch = persistence.fetchSessions(start, end)
+                async let lifetimeSessionsFetch = persistence.fetchSessions(Date.distantPast, end)
+                async let prefsFetch = persistence.fetchPreferences()
+                async let allStatsFetch = persistence.fetchDailyStatsRange(Date.distantPast, end)
 
-            let (periodSessions, lifetimeSessions, prefs, allDailyStats) = try await (
-                periodSessionsFetch,
-                lifetimeSessionsFetch,
-                prefsFetch,
-                allStatsFetch
-            )
-
-            let snapshots = buildSnapshots(from: periodSessions, calendar: calendar)
-            let insights = buildInsights(from: periodSessions, calendar: calendar)
-
-            // Compute protected streak on-the-fly from full DailyStats history.
-            let streakResult = StreakProtectionService.computeProtectedStreak(
-                history: allDailyStats,
-                isPro: prefs.isProUser,
-                today: end,
-                calendar: calendar
-            )
-
-            // Achievement counts from lifetime data
-            let earlyBirdCount = lifetimeSessions.filter {
-                calendar.component(.hour, from: $0.startedAt) < 8
-            }.count
-            let workPhases: Set<String> = ["work", "flow", "block", "freeform"]
-            let pomodoroCompleted = lifetimeSessions.filter {
-                $0.mode == "pomodoro" && $0.wasCompleted && (workPhases.contains($0.phase) || $0.phase.isEmpty)
-            }.count
-            let flowtimeCompleted = lifetimeSessions.filter {
-                $0.mode == "flowtime" && $0.wasCompleted
-            }.count
-            let allTimeTotal = lifetimeSessions.count
-
-            let achievements = buildAchievements(
-                totalSessions: allTimeTotal,
-                currentStreak: streakResult.days,
-                pomodoroCompleted: pomodoroCompleted,
-                flowtimeCompleted: flowtimeCompleted,
-                earlyBirdCount: earlyBirdCount
-            )
-
-            // Generate weekly insights (C6)
-            let insightsService = InsightsService()
-            let dailyStatsDTOs = snapshots.map { snap in
-                DailyStatsDTO(
-                    date: snap.date,
-                    totalFocusMinutes: snap.totalFocusSeconds / 60,
-                    sessionsCompleted: snap.sessionsCompleted,
-                    tasksCompleted: 0
+                let (periodSessions, lifetimeSessions, prefs, allDailyStats) = try await (
+                    periodSessionsFetch,
+                    lifetimeSessionsFetch,
+                    prefsFetch,
+                    allStatsFetch
                 )
-            }
-            let weeklyInsights = insightsService.generateWeeklyInsights(
-                sessions: periodSessions,
-                dailyStats: dailyStatsDTOs
-            )
 
-            await send(.allDataLoaded(
-                snapshots: snapshots,
-                insights: insights,
-                streakDays: streakResult.days,
-                longestStreak: prefs.longestStreakDays,
-                streakProtectionApplied: streakResult.protectionApplied,
-                achievements: achievements,
-                weeklyInsights: weeklyInsights
-            ))
+                let snapshots = buildSnapshots(from: periodSessions, calendar: calendar)
+                let insights = buildInsights(from: periodSessions, calendar: calendar)
+
+                // Compute protected streak on-the-fly from full DailyStats history.
+                let streakResult = StreakProtectionService.computeProtectedStreak(
+                    history: allDailyStats,
+                    isPro: prefs.isProUser,
+                    today: end,
+                    calendar: calendar
+                )
+
+                // Achievement counts from lifetime data
+                let earlyBirdCount = lifetimeSessions.filter {
+                    calendar.component(.hour, from: $0.startedAt) < 8
+                }.count
+                let workPhases: Set<String> = ["work", "flow", "block", "freeform"]
+                let pomodoroCompleted = lifetimeSessions.filter {
+                    $0.mode == "pomodoro" && $0.wasCompleted && (workPhases.contains($0.phase) || $0.phase.isEmpty)
+                }.count
+                let flowtimeCompleted = lifetimeSessions.filter {
+                    $0.mode == "flowtime" && $0.wasCompleted
+                }.count
+                let allTimeTotal = lifetimeSessions.count
+
+                let achievements = buildAchievements(
+                    totalSessions: allTimeTotal,
+                    currentStreak: streakResult.days,
+                    pomodoroCompleted: pomodoroCompleted,
+                    flowtimeCompleted: flowtimeCompleted,
+                    earlyBirdCount: earlyBirdCount
+                )
+
+                // Generate weekly insights (C6)
+                let insightsService = InsightsService()
+                let dailyStatsDTOs = snapshots.map { snap in
+                    DailyStatsDTO(
+                        date: snap.date,
+                        totalFocusMinutes: snap.totalFocusSeconds / 60,
+                        sessionsCompleted: snap.sessionsCompleted,
+                        tasksCompleted: 0
+                    )
+                }
+                let weeklyInsights = insightsService.generateWeeklyInsights(
+                    sessions: periodSessions,
+                    dailyStats: dailyStatsDTOs
+                )
+
+                await send(.allDataLoaded(
+                    snapshots: snapshots,
+                    insights: insights,
+                    streakDays: streakResult.days,
+                    longestStreak: prefs.longestStreakDays,
+                    streakProtectionApplied: streakResult.protectionApplied,
+                    achievements: achievements,
+                    weeklyInsights: weeklyInsights
+                ))
+            } catch {
+                await send(.loadFailed(error.localizedDescription))
+            }
         }
     }
 

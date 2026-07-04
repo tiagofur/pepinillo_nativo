@@ -27,7 +27,6 @@ struct TaskListFeature {
         var selectedTaskID: UUID?
         var selectedPlanFilter: PlanFilter = .today
         var recentlyDeletedTask: TaskItemState?
-        var successMessage: String?
         var isProUser: Bool = false
         /// When true the task list renders sections by energy level.
         var isGroupedByEnergy: Bool = false
@@ -159,7 +158,6 @@ struct TaskListFeature {
         case taskDeleted(UUID)
         case undoDeleteTask
         case undoTimerExpired
-        case successMessageDismissed
         case taskMoved(IndexSet, Int)
         case energyLevelChanged(UUID, EnergyLevel)
         case recurrenceChanged(UUID, String?)
@@ -308,7 +306,6 @@ struct TaskListFeature {
                 )
                 state.tasks.append(newTask)
                 state.newTaskTitle = ""
-                state.successMessage = String(localized: "Task added")
 
                 return .run { send in
                     let dto = TaskItemDTO(
@@ -319,8 +316,6 @@ struct TaskListFeature {
                     )
                     try await persistence.saveTask(dto)
                     WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
-                    try await Task.sleep(for: .seconds(1.5))
-                    await send(.successMessageDismissed)
                 }
 
             case .taskTapped(let id):
@@ -390,10 +385,6 @@ struct TaskListFeature {
                     try? await spotlight.deindexTask(taskID)
                     WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                 }
-
-            case .successMessageDismissed:
-                state.successMessage = nil
-                return .none
 
             case .taskMoved(let source, let destination):
                 state.tasks.move(fromOffsets: source, toOffset: destination)

@@ -120,6 +120,19 @@ struct FocusView: View {
             SessionJournalView(store: journalStore)
                 .pepinilloSheetStyle()
         }
+        .alert(
+            String(localized: "focus.sessionSaveError.title", defaultValue: "Couldn't Save Session"),
+            isPresented: Binding(
+                get: { store.sessionSaveError != nil },
+                set: { if !$0 { store.send(.sessionSaveErrorDismissed) } }
+            )
+        ) {
+            Button("OK", role: .cancel) { store.send(.sessionSaveErrorDismissed) }
+        } message: {
+            if let sessionSaveError = store.sessionSaveError {
+                Text(String(localized: "focus.sessionSaveError.message", defaultValue: "Your focus time was completed but couldn't be saved. \(sessionSaveError)"))
+            }
+        }
     }
 
     // MARK: - iPad Portrait Layout (timer top, metrics bottom)
