@@ -199,6 +199,7 @@ struct AppView: View {
                     )
                     .withAmbientBackground()
                 }
+                .tabContentAccent()
             }
 
             Tab(
@@ -208,6 +209,7 @@ struct AppView: View {
             ) {
                 PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
                     .systemContentBackground(grouped: true)
+                    .tabContentAccent()
             }
 
             Tab(
@@ -219,6 +221,7 @@ struct AppView: View {
                     DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
                 }
                 .systemContentBackground(grouped: true)
+                .tabContentAccent()
             }
 
             Tab(
@@ -228,10 +231,17 @@ struct AppView: View {
             ) {
                 AccountView(store: store)
                     .systemContentBackground(grouped: true)
+                    .tabContentAccent()
             }
         }
         .tabViewStyle(.sidebarAdaptable)
         .conditionalTabBarMinimize()
+        // Monochromatic tab bar — the selected tab icon uses .primary (black in
+        // light mode, white in dark) instead of AccentColor. Color lives in the
+        // content (timer ring, charts, chips) and in primary CTAs, not in the
+        // navigation chrome. See HIG "Tab bars": prefer monochromatic appearance
+        // when the content layer is already colorful.
+        .tint(.primary)
         .animation(.snappy(duration: 0.25), value: store.selectedTab)
         .focusedValue(\.appStore, store)
     }
@@ -251,6 +261,8 @@ struct AppView: View {
                     .tag(tab)
             }
         }
+        // Monochromatic tab bar (matches iOS 18+ adaptableTabView).
+        .tint(.primary)
         .animation(.snappy(duration: 0.25), value: store.selectedTab)
         .focusedValue(\.appStore, store)
     }
@@ -270,20 +282,40 @@ struct AppView: View {
                 )
                 .withAmbientBackground()
             }
+            .tabContentAccent()
 
         case .plan:
             PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
                 .systemContentBackground(grouped: true)
+                .tabContentAccent()
 
         case .dashboard:
             NavigationStack {
                 DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
             }
             .systemContentBackground(grouped: true)
+            .tabContentAccent()
 
         case .account:
             AccountView(store: store)
                 .systemContentBackground(grouped: true)
+                .tabContentAccent()
         }
+    }
+}
+
+// MARK: - Tab content tint restoration
+
+private extension View {
+    /// Restores the AccentColor tint inside tab content.
+    ///
+    /// `AppView` applies `.tint(.primary)` on the TabView to give the tab bar a
+    /// monochromatic look (color lives in content + CTAs, per HIG). Because
+    /// `.tint` propagates via the environment, that neutral tint would also
+    /// reach buttons/CTAs inside each tab. This modifier re-scopes the
+    /// AccentColor (now Apple blue) so primary actions keep their color while
+    /// the tab bar stays neutral.
+    func tabContentAccent() -> some View {
+        self.tint(Color.accentColor)
     }
 }
