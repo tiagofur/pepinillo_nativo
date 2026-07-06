@@ -434,6 +434,8 @@ struct FocusView: View {
                 Text(store.displayTime)
                     .font(NumericFont.timer())
                     .contentTransition(.numericText())
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
 
                 // Pomodoro counter
                 if store.activeMode == .pomodoro, let num = store.pomodoroNumber {

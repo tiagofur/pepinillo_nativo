@@ -107,9 +107,11 @@ struct DashboardHeroSection: View {
             VStack(alignment: .leading, spacing: 5) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(streakDays)")
-                        .font(NumericFont.heroStat(size: 38))
+                        .font(NumericFont.heroStat())
                         .foregroundStyle(.primary)
                         .contentTransition(.numericText())
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
                     Text(String(localized: "day streak"))
                         .font(.headline)
                         .foregroundStyle(.primary)
@@ -155,7 +157,7 @@ struct DashboardHeroSection: View {
             
             VStack(alignment: .leading, spacing: 0) {
                 Text(value)
-                    .font(NumericFont.heroStat(size: 24))
+                    .font(NumericFont.heroStat())
                     .foregroundStyle(.primary)
                 Text(label)
                     .font(.caption)

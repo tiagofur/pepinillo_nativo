@@ -272,9 +272,11 @@ private struct StreakHeroCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(streakDays)")
-                        .font(NumericFont.heroStat(size: 42))
+                        .font(NumericFont.heroStat())
                         .foregroundStyle(.primary)
                         .contentTransition(.numericText())
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
                     Text(String(localized: "day streak"))
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(.primary)
@@ -354,7 +356,7 @@ private struct DashboardCompactStats: View {
                 .foregroundStyle(color)
                 .accessibilityHidden(true)
             Text(value)
-                .font(NumericFont.kpi(size: 20))
+                .font(NumericFont.kpi())
                 .foregroundStyle(.primary)
             Text(label)
                 .font(.caption)

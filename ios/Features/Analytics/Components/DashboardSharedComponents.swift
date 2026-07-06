@@ -27,7 +27,7 @@ struct SummaryCard: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(value)
-                    .font(NumericFont.kpi(size: 24))
+                    .font(NumericFont.kpi())
                     .foregroundStyle(.primary)
                 Text(title)
                     .font(.caption)
