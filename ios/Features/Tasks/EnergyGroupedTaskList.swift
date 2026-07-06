@@ -59,6 +59,8 @@ struct EnergySuggestionBanner: View {
                     .foregroundStyle(.secondary)
                     .padding(6)
                     .background(.quaternary, in: Circle())
+                    .frame(minWidth: 44, minHeight: 44)  // HIG 44pt minimum (issue #90)
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(String(localized: "Dismiss energy suggestion"))

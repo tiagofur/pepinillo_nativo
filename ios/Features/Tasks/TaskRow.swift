@@ -102,6 +102,8 @@ struct TaskRow: View {
                 onStartFocus()
             } label: {
                 Label(String(localized: "Start Focus"), systemImage: "play.circle")
+                    .frame(minWidth: 44, minHeight: 44)  // HIG 44pt minimum (issue #90)
+                    .contentShape(Rectangle())
             }
             .disabled(task.isCompleted)
         }
@@ -118,6 +120,8 @@ struct TaskRow: View {
                 .font(.title3)
                 .foregroundStyle(checkboxColor)
                 .contentTransition(.symbolEffect(.replace))
+                .frame(minWidth: 44, minHeight: 44)  // HIG 44pt minimum (issue #90)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(task.isCompleted
