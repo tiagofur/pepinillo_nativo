@@ -118,6 +118,19 @@ struct PlanTaskList: View {
         } message: {
             Text(store.importError ?? "")
         }
+        // Separate alert for DB load failures — distinct from Reminders import
+        // errors. Previously both surfaced under "Import Failed" (issue #88).
+        .alert(
+            String(localized: "Couldn't Load Tasks"),
+            isPresented: Binding(
+                get: { store.loadError != nil },
+                set: { if !$0 { store.send(.loadErrorDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.loadErrorDismissed) }
+        } message: {
+            Text(store.loadError ?? "")
+        }
     }
 
     // MARK: - Task List Content

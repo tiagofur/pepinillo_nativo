@@ -158,20 +158,24 @@ struct TaskDetailView: View {
                         } label: {
                             Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(subtask.isCompleted ? .green : .secondary)
+                                .frame(minWidth: 44, minHeight: 44)  // HIG 44pt minimum (issue #90)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
 
                         Text(subtask.title)
                             .strikethrough(subtask.isCompleted)
                             .foregroundStyle(subtask.isCompleted ? .secondary : .primary)
-                        
+
                         Spacer()
-                        
+
                         Button {
                             store.send(.subtaskDeleted(subtask.id))
                         } label: {
                             Image(systemName: "xmark.circle")
                                 .foregroundStyle(.tertiary)
+                                .frame(minWidth: 44, minHeight: 44)  // HIG 44pt minimum (issue #90)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                     }

@@ -598,25 +598,32 @@ struct FocusFeature {
                 // We use floor to check if a second has passed since the last write
                 let lastElapsed = AppGroupDefaults.activeSessionElapsed
                 let significantChange = abs(elapsed - lastElapsed) >= 1.0 || state.isPaused
-                
-                if significantChange {
-                    AppGroupDefaults.activeSessionElapsed = elapsed
-                    AppGroupDefaults.activeSessionRemaining = sessionState.remainingSeconds
-                    AppGroupDefaults.activeSessionPhase = state.phaseLabel
-                    AppGroupDefaults.activeSessionProgress = sessionState.progress
-                    AppGroupDefaults.activeSessionPomodoroNumber = sessionState.pomodoroNumber
-                    AppGroupDefaults.activeSessionTotalPomodoros = sessionState.totalPomodoros
-                    AppGroupDefaults.activeSessionTaskTitle = taskTitle
-                }
 
                 // Throttle Live Activity to 1Hz (ActivityKit rate limits; display shows whole seconds).
                 // Notification update already runs every 30s.
                 guard significantChange else { return .none }
+
+                // Capture all values up-front so the effect runs off the main actor.
+                // Previously these 8 cross-process App-Group writes ran synchronously
+                // on the main actor (TCA reducer) at ~1Hz for the whole session (issue #84).
+                let remaining = sessionState.remainingSeconds
+                let phaseLabel = state.phaseLabel
+                let progress = sessionState.progress
+                let pomodoroNumber = state.pomodoroNumber
+                let totalPomodoros = sessionState.totalPomodoros
                 let displayTime = state.displayTime
                 let modeName = mode.rawValue
-                let phaseLabel = state.phaseLabel
                 let shouldUpdateNotification = Int(elapsed) > 0 && Int(elapsed) % 30 == 0 && Int(elapsed) != Int(lastElapsed)
                 return .run { [liveActivity, notificationClient] _ in
+                    // App-Group writes (off the main actor now)
+                    AppGroupDefaults.activeSessionElapsed = elapsed
+                    AppGroupDefaults.activeSessionRemaining = remaining
+                    AppGroupDefaults.activeSessionPhase = phaseLabel
+                    AppGroupDefaults.activeSessionProgress = progress
+                    AppGroupDefaults.activeSessionPomodoroNumber = pomodoroNumber
+                    AppGroupDefaults.activeSessionTotalPomodoros = totalPomodoros
+                    AppGroupDefaults.activeSessionTaskTitle = taskTitle
+
                     await liveActivity.update(sessionState, taskTitle)
                     if shouldUpdateNotification {
                         await notificationClient.updateActiveSession(displayTime, modeName, phaseLabel)

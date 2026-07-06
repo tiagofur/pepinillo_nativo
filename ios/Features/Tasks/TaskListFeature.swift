@@ -24,6 +24,10 @@ struct TaskListFeature {
         var sortOrder: SortOrder = .custom
         var newTaskTitle: String = ""
         var importError: String?
+        /// Separate error for DB load failures (issue #88) — previously conflated
+        /// with `importError`, which surfaced as a misleading "Import Failed" alert
+        /// for generic fetch errors.
+        var loadError: String?
         var selectedTaskID: UUID?
         var selectedPlanFilter: PlanFilter = .today
         var recentlyDeletedTask: TaskItemState?
@@ -183,6 +187,7 @@ struct TaskListFeature {
         case remindersImported([TaskItemState])
         case remindersImportFailed(String)
         case importErrorDismissed
+        case loadErrorDismissed
     }
 
     private enum _UndoTimerID: Hashable { case undoTimer }
@@ -252,7 +257,7 @@ struct TaskListFeature {
 
             case .tasksLoadFailed(let message):
                 state.isLoading = false
-                state.importError = message
+                state.loadError = message
                 return .none
 
             case .filterChanged(let filter):
@@ -535,6 +540,10 @@ struct TaskListFeature {
 
             case .importErrorDismissed:
                 state.importError = nil
+                return .none
+
+            case .loadErrorDismissed:
+                state.loadError = nil
                 return .none
 
             case .delegate:
