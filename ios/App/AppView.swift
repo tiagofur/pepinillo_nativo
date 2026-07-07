@@ -42,6 +42,14 @@ struct AppView: View {
                 }
             }
         }
+        .overlay(alignment: .top) {
+            if store.isOffline {
+                OfflineBanner()
+                    .padding(.top, 4)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(MotionTokens.snappy, value: store.isOffline)
         .environment(\.appTheme, activeTheme)
         .preferredColorScheme(preferredColorScheme)
         .onAppear {
@@ -317,5 +325,28 @@ private extension View {
     /// the tab bar stays neutral.
     func tabContentAccent() -> some View {
         self.tint(Color.accentColor)
+    }
+}
+
+// MARK: - Offline Banner (issue #89)
+
+private struct OfflineBanner: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "wifi.slash")
+                .font(.subheadline.weight(.semibold))
+            Text(String(localized: "You're offline. Changes will sync when you reconnect."))
+                .font(.caption.weight(.medium))
+                .lineLimit(2)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(
+            Capsule(style: .continuous)
+                .fill(Color.orange.opacity(0.9))
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String(localized: "Offline. Changes will sync when you reconnect."))
     }
 }
