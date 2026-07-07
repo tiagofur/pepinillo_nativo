@@ -38,6 +38,10 @@ struct AppFeature {
         /// succession with identical capabilities.
         var lastSyncedCapabilities: UserCapabilities? = nil
 
+        /// Connectivity state from NetworkClient (issue #89). `true` = offline.
+        /// Drives the offline banner in AppView.
+        var isOffline: Bool = false
+
         // Celebration overlay
         var pendingCelebration: CelebrationMilestone? = nil
 
@@ -185,6 +189,9 @@ struct AppFeature {
         case cachedUserLoaded(CachedUserDTO?)
         case tokenRefreshFailed
 
+        // Connectivity (issue #89)
+        case connectivityChanged(Bool)  // true = connected
+
         // Sign in with Apple
         case signInWithAppleSucceeded(AppleUserInfo)
         case signInWithAppleFailed
@@ -211,6 +218,7 @@ struct AppFeature {
     @Dependency(\.syncClient) var syncClient
     @Dependency(\.webSocketClient) var webSocketClient
     @Dependency(\.syncModeClient) var syncModeClient
+    @Dependency(\.networkClient) var networkClient
 
     private enum CancelID {
         case transactionListener
@@ -219,6 +227,7 @@ struct AppFeature {
         case externalCommandObserver
         case webSocket
         case softSync
+        case networkConnectivity
         /// Deduplicates rapid-fire taskProgressChanged + sessionPersisted refreshes.
         case sessionTaskRefresh
     }
@@ -430,7 +439,14 @@ struct AppFeature {
                     // Load tasks early so they are available for focus linking
                     .send(.tasks(.onAppear)),
                     // Reconcile widget/intent commands even if they arrived before bootstrap finished.
-                    .send(.consumeExternalCommands)
+                    .send(.consumeExternalCommands),
+                    // Observe network connectivity for the offline banner (issue #89)
+                    .run { [networkClient] send in
+                        for await isConnected in networkClient.observeConnectivity() {
+                            await send(.connectivityChanged(isConnected))
+                        }
+                    }
+                    .cancellable(id: CancelID.networkConnectivity)
                 )
 
             case .requestNotificationPermission:
@@ -679,6 +695,12 @@ struct AppFeature {
                 state.displayName = nil
                 state.userEmail = nil
                 webSocketClient.disconnect()
+                return .none
+
+            // MARK: - Connectivity (issue #89)
+
+            case .connectivityChanged(let isConnected):
+                state.isOffline = !isConnected
                 return .none
 
             // MARK: - Sign in with Apple
