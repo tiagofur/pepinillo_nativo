@@ -110,7 +110,7 @@ struct ForgotPasswordFeature {
 
             case .sendCodeTapped:
                 guard !state.email.isEmpty else {
-                    state.errorMessage = "Please enter your email address"
+                    state.errorMessage = String(localized: "Please enter your email address")
                     return .none
                 }
                 state.isLoading = true
@@ -140,15 +140,15 @@ struct ForgotPasswordFeature {
 
             case .resetPasswordTapped:
                 guard !state.code.isEmpty else {
-                    state.errorMessage = "Please enter the code we sent to your email"
+                    state.errorMessage = String(localized: "Please enter the code we sent to your email")
                     return .none
                 }
                 guard !state.newPassword.isEmpty else {
-                    state.errorMessage = "Please enter a new password"
+                    state.errorMessage = String(localized: "Please enter a new password")
                     return .none
                 }
                 guard state.newPassword == state.confirmPassword else {
-                    state.errorMessage = "Passwords do not match"
+                    state.errorMessage = String(localized: "Passwords do not match")
                     return .none
                 }
                 if let validationError = validatePassword(state.newPassword) {

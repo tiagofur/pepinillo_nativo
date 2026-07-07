@@ -115,7 +115,7 @@ struct EditProfileFeature {
 
             case .uploadResponse(.failure(let error)):
                 state.isUploading = false
-                state.errorMessage = "Upload failed: \(error.userMessage)"
+                state.errorMessage = String(localized: "Upload failed: \(error.userMessage)")
                 return .none
 
             case .saveTapped:
@@ -123,7 +123,7 @@ struct EditProfileFeature {
                 let trimmedEmail = state.email.trimmingCharacters(in: .whitespacesAndNewlines)
 
                 guard !trimmedName.isEmpty else {
-                    state.errorMessage = "Name cannot be empty"
+                    state.errorMessage = String(localized: "Name cannot be empty")
                     return .none
                 }
                 state.isLoading = true
