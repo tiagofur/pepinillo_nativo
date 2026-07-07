@@ -129,7 +129,7 @@ struct TaskDetailFeature {
     @Dependency(\.persistenceClient) var persistence
     @Dependency(\.dismiss) var dismiss
 
-    private enum CancelID { case load }
+    private enum CancelID { case load, widgetReload }
 
     var body: some ReducerOf<Self> {
         Reduce { state, action in
@@ -306,11 +306,20 @@ struct TaskDetailFeature {
 
     private func save(_ state: State) -> Effect<Action> {
         let dto = state.toDTO()
+        // Persist immediately (no data loss), but debounce the widget timeline
+        // reload so rapid edits (e.g. typing in the title/notes field) don't
+        // re-invoke the timeline provider in a separate process on every
+        // keystroke (issue #77). cancelInFlight cancels any pending reload when
+        // a new edit arrives, so only the last edit within ~1s triggers a reload.
         return .merge(
             .run { _ in
                 try await persistence.saveTask(dto)
-                WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
             },
+            .run { _ in
+                try await Task.sleep(for: .seconds(1))
+                WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+            }
+            .cancellable(id: CancelID.widgetReload, cancelInFlight: true),
             .send(.delegate(.taskUpdated(dto)))
         )
     }

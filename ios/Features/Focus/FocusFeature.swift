@@ -496,7 +496,12 @@ struct FocusFeature {
                     .run { [liveActivity] _ in await liveActivity.end(false) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
-                    .run { _ in WidgetCenter.shared.reloadAllTimelines() },
+                    // Scoped reloads instead of reloadAllTimelines() (issue #77).
+                    .run { _ in
+                        WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    },
                     .cancel(id: CancelID.engineObservation)
                 )
 
@@ -761,8 +766,12 @@ struct FocusFeature {
                             result.endedAt
                         )
                     },
-                    // Refresh widgets with updated stats
-                    .run { _ in WidgetCenter.shared.reloadAllTimelines() },
+                    // Refresh widgets with updated stats — scoped reloads (issue #77).
+                    .run { _ in
+                        WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    },
                     // Donate intent for Siri Suggestions
                     .run { _ in
                         let intent = StartFocusIntent()

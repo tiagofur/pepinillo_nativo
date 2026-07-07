@@ -567,7 +567,10 @@ struct AppFeature {
                     } else {
                         webSocketClient.disconnect()
                     }
-                    WidgetCenter.shared.reloadAllTimelines()
+                    // Scoped reloads instead of reloadAllTimelines() (issue #77).
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     appLaunchLogger.info("Soft sync finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                     // Reconcile may swap the active store (local → CloudKit); refresh the task
                     // list so in-memory state reflects the now-active container.
@@ -603,7 +606,10 @@ struct AppFeature {
                     } else {
                         webSocketClient.disconnect()
                     }
-                    WidgetCenter.shared.reloadAllTimelines()
+                    // Scoped reloads instead of reloadAllTimelines() (issue #77).
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     appLaunchLogger.info("Soft sync update finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                     // Reconcile may swap the active store (local → CloudKit); refresh the task
                     // list so in-memory state reflects the now-active container.
