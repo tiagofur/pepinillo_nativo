@@ -803,75 +803,44 @@ private extension View {
 
 struct TimerCircleView: View {
     let store: StoreOf<FocusFeature>
-    
+
     @Environment(\.appTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    
+
     @State private var ringScale: CGFloat = 1.0
     // C6: breathe scale for emoji mode icon (SF Symbols use .symbolEffect, emojis use scaleEffect)
     @State private var breatheScale: CGFloat = 1.0
-    
+
     private static let countUpRingDisplayFloor: Double = 0.04
 
     var body: some View {
         ZStack {
-            // Background track ring — always visible, mode-tinted
-            Circle()
-                .stroke(modeColor.opacity(0.18), lineWidth: 13)
+            // Background track ring + count-up idle treatment. Extracted into a
+            // subview that only depends on mode/phase/running — NOT on the 4Hz
+            // ticking properties (displayTime/progress/elapsed), so it does not
+            // re-diff on every tick (issue #80).
+            TimerRingStaticLayer(
+                modeColor: modeColor,
+                currentMode: currentMode,
+                isRunning: store.isRunning
+            )
 
-            // Count-up idle treatment: dashed tick overlay to signal "will fill".
-            if currentMode.direction == .countUp && !(store.isRunning) {
-                Circle()
-                    .stroke(
-                        modeColor.opacity(0.30),
-                        style: StrokeStyle(lineWidth: 13, lineCap: .butt, dash: [4, 10])
-                    )
-            }
+            // Progress arc — the only ring part that must update per tick.
+            TimerProgressArc(
+                ringProgress: timerRingProgress,
+                gradient: modeGradient
+            )
 
-            // Progress arc — countdown: remaining arc; count-up: accruing arc while running
-            if let ringProgress = timerRingProgress {
-                Circle()
-                    .trim(from: 0, to: CGFloat(ringProgress))
-                    .stroke(
-                        modeGradient,
-                        style: StrokeStyle(lineWidth: 13, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(-90))
-                    .conditionalAnimation(.linear(duration: 0.1), value: ringProgress)
-            }
-
-            // Center content
-            VStack(spacing: 4) {
-                // Mode icon — smaller above digits, no overlap
-                Text(store.modeIcon)
-                    .font(.system(size: 28, design: .default))
-                    .scaleEffect(breatheScale)
-                    .conditionalAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breatheScale)
-                    .onChange(of: store.isRunning) { _, running in
-                        breatheScale = running ? 1.06 : 1.0
-                    }
-                    .id(store.phase)
-                    .transition(reduceMotion ? .opacity : .asymmetric(
-                        insertion: .scale(scale: 0.7).combined(with: .opacity),
-                        removal: .scale(scale: 1.3).combined(with: .opacity)
-                    ))
-
-                // Time display — dominant focal point
-                Text(store.displayTime)
-                    .font(NumericFont.timer())
-                    .contentTransition(.numericText())
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-
-                // Pomodoro counter
-                if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
-                    Text("\(num) / \(store.config.pomodorosPerCycle)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            // Center content — time text, icon, pomodoro counter. The hottest
+            // re-render path (displayTime changes 4×/sec); isolated so the ring
+            // geometry above is not recomputed when only digits change.
+            TimerCenterContent(
+                store: store,
+                breatheScale: $breatheScale,
+                reduceMotion: reduceMotion
+            )
         }
         .aspectRatio(1, contentMode: .fit)
         // P2 item 5: spring scale on mode change
@@ -892,7 +861,7 @@ struct TimerCircleView: View {
         .accessibilityLabel(timerAccessibilityLabel)
         .accessibilityValue(timerAccessibilityValue)
     }
-    
+
     private var currentMode: FocusMode {
         store.activeMode ?? store.selectedMode
     }
@@ -904,7 +873,7 @@ struct TimerCircleView: View {
     private var modeGradient: AngularGradient {
         theme.ringGradient(for: currentMode, phase: store.phase)
     }
-    
+
     private var timerRingProgress: Double? {
         switch currentMode.direction {
         case .countDown:
@@ -945,5 +914,95 @@ struct TimerCircleView: View {
             parts.append(String(localized: "Pomodoro \(num) of \(store.config.pomodorosPerCycle)"))
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+// MARK: - Timer subviews (issue #80)
+//
+// Each subview observes a narrow slice of state so SwiftUI only re-diffs the
+// part that actually changed on a given tick. The timer ticks at 4Hz; without
+// this split the entire ZStack (geometry, gradients, transitions) recomputed
+// 4×/sec even though only the digits and the progress arc need to move.
+
+/// Static ring layers (background track + count-up idle dashes). Depends only on
+/// mode color, mode direction, and whether the session is running — none of
+/// which change between ticks.
+private struct TimerRingStaticLayer: View, Equatable {
+    let modeColor: Color
+    let currentMode: FocusMode
+    let isRunning: Bool
+
+    var body: some View {
+        // Background track ring — always visible, mode-tinted
+        Circle()
+            .stroke(modeColor.opacity(0.18), lineWidth: 13)
+
+        // Count-up idle treatment: dashed tick overlay to signal "will fill".
+        if currentMode.direction == .countUp && !isRunning {
+            Circle()
+                .stroke(
+                    modeColor.opacity(0.30),
+                    style: StrokeStyle(lineWidth: 13, lineCap: .butt, dash: [4, 10])
+                )
+        }
+    }
+}
+
+/// Progress arc — the only ring part that updates per tick.
+private struct TimerProgressArc: View {
+    let ringProgress: Double?
+    let gradient: AngularGradient
+
+    var body: some View {
+        if let ringProgress {
+            Circle()
+                .trim(from: 0, to: CGFloat(ringProgress))
+                .stroke(
+                    gradient,
+                    style: StrokeStyle(lineWidth: 13, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-90))
+                .conditionalAnimation(.linear(duration: 0.1), value: ringProgress)
+        }
+    }
+}
+
+/// Center content (icon, time digits, pomodoro counter) — the hottest
+/// re-render path because displayTime changes every tick.
+private struct TimerCenterContent: View {
+    let store: StoreOf<FocusFeature>
+    @Binding var breatheScale: CGFloat
+    let reduceMotion: Bool
+
+    var body: some View {
+        VStack(spacing: 4) {
+            // Mode icon — smaller above digits, no overlap
+            Text(store.modeIcon)
+                .font(.system(size: 28, design: .default))
+                .scaleEffect(breatheScale)
+                .conditionalAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breatheScale)
+                .onChange(of: store.isRunning) { _, running in
+                    breatheScale = running ? 1.06 : 1.0
+                }
+                .id(store.phase)
+                .transition(reduceMotion ? .opacity : .asymmetric(
+                    insertion: .scale(scale: 0.7).combined(with: .opacity),
+                    removal: .scale(scale: 1.3).combined(with: .opacity)
+                ))
+
+            // Time display — dominant focal point
+            Text(store.displayTime)
+                .font(NumericFont.timer())
+                .contentTransition(.numericText())
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+
+            // Pomodoro counter
+            if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
+                Text("\(num) / \(store.config.pomodorosPerCycle)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 }
