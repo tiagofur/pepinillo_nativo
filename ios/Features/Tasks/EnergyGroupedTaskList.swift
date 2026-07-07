@@ -182,6 +182,7 @@ struct EnergyGroupedTaskList: View {
                                 store.send(.recurrenceChanged(task.id, rule))
                             }
                         )
+                        .equatable()  // Skip re-render when `task` is unchanged (issue #81)
                         .swipeActions(edge: .leading, allowsFullSwipe: true) {
                             Button {
                                 store.send(.taskScheduledForToday(task.id, !task.scheduledForToday))
