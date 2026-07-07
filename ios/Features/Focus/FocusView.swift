@@ -18,8 +18,6 @@ struct FocusView: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var showStopConfirmation = false
     @Namespace private var glassNS
-    // C6: breathe scale for emoji mode icon (SF Symbols use .symbolEffect, emojis use scaleEffect)
-    @State private var breatheScale: CGFloat = 1.0
 
     init(
         store: StoreOf<FocusFeature>,
@@ -278,7 +276,7 @@ struct FocusView: View {
             ZStack {
                 FocusAmbientGlow(color: modeColor)
 
-                timerCircle
+                TimerCircleView(store: store)
                     .padding(.horizontal, 24)
             }
             .frame(maxWidth: timerMaxSize, maxHeight: timerMaxSize)
@@ -380,144 +378,7 @@ struct FocusView: View {
         }
     }
 
-    // MARK: - Timer Circle
 
-    // MARK: - Ring scale state (P2: spring on mode change)
-    @State private var ringScale: CGFloat = 1.0
-
-    @ViewBuilder
-    private var timerCircle: some View {
-        ZStack {
-            // Background track ring — always visible, mode-tinted
-            Circle()
-                .stroke(modeColor.opacity(0.18), lineWidth: 13)
-
-            // Count-up idle treatment: dashed tick overlay to signal "will fill".
-            // lineCap .butt keeps dashes crisp; .round inflated the dash width to blobs.
-            if currentMode.direction == .countUp && !(store.isRunning) {
-                Circle()
-                    .stroke(
-                        modeColor.opacity(0.30),
-                        style: StrokeStyle(lineWidth: 13, lineCap: .butt, dash: [4, 10])
-                    )
-            }
-
-            // Progress arc — countdown: remaining arc; count-up: accruing arc while running
-            if let ringProgress = timerRingProgress {
-                Circle()
-                    .trim(from: 0, to: CGFloat(ringProgress))
-                    .stroke(
-                        modeGradient,
-                        style: StrokeStyle(lineWidth: 13, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(-90))
-                    .conditionalAnimation(.linear(duration: 0.1), value: ringProgress)
-            }
-
-            // Center content
-            VStack(spacing: 4) {
-                // Mode icon — smaller above digits, no overlap
-                Text(store.modeIcon)
-                    .font(.system(size: 28, design: .default))
-                    .scaleEffect(breatheScale)
-                    .conditionalAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breatheScale)
-                    .onChange(of: store.isRunning) { _, running in
-                        breatheScale = running ? 1.06 : 1.0
-                    }
-                    .id(store.phase)
-                    .transition(reduceMotion ? .opacity : .asymmetric(
-                        insertion: .scale(scale: 0.7).combined(with: .opacity),
-                        removal: .scale(scale: 1.3).combined(with: .opacity)
-                    ))
-
-                // Time display — dominant focal point
-                Text(store.displayTime)
-                    .font(NumericFont.timer())
-                    .contentTransition(.numericText())
-                    .minimumScaleFactor(0.5)
-                    .lineLimit(1)
-
-                // Pomodoro counter
-                if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
-                    Text("\(num) / \(store.config.pomodorosPerCycle)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .aspectRatio(1, contentMode: .fit)
-        // P2 item 5: spring scale on mode change
-        .scaleEffect(ringScale)
-        .onChange(of: store.selectedMode) { _, _ in
-            guard !reduceMotion else { return }
-            withAnimation(MotionTokens.bouncy.speed(1.4)) {
-                ringScale = 0.92
-            }
-            // Spring back after a short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                withAnimation(MotionTokens.bouncy) {
-                    ringScale = 1.0
-                }
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(timerAccessibilityLabel)
-        .accessibilityValue(timerAccessibilityValue)
-    }
-
-    // timerRingProgress:
-    // • Countdown modes: fraction of time REMAINING (full at start → empty at zero)
-    // • Count-up modes while running: derive a "minute-cycle" fill (resets each 60 min)
-    //   so the ring is never an empty gray circle. A 4% display floor ensures a visible arc
-    //   even at <2 min (raw progress would otherwise be a sub-pixel sliver).
-    //   Floor applies ONLY while running and only when raw progress < floor.
-    // • Count-up modes at rest: nil (dashed overlay handles the visual instead)
-    private static let countUpRingDisplayFloor: Double = 0.04
-
-    private var timerRingProgress: Double? {
-        switch currentMode.direction {
-        case .countDown:
-            let completed = store.progress.map { min(max($0, 0), 1) } ?? 0
-            return 1 - completed
-        case .countUp:
-            guard store.isRunning else { return nil }
-            // Fill the ring as elapsed seconds progress within each 60-min cycle.
-            // Cycle resets at 60 min so very long sessions remain readable.
-            let elapsed = store.elapsedSeconds
-            let cycle: Double = 60 * 60  // 1 hour
-            let positionInCycle = elapsed.truncatingRemainder(dividingBy: cycle)
-            let raw = min(positionInCycle / cycle, 1.0)
-            // Apply display floor so the arc reads as "active" immediately on start.
-            return max(raw, Self.countUpRingDisplayFloor)
-        }
-    }
-
-    private var timerAccessibilityLabel: String {
-        let mode = currentMode.displayName
-        if store.isRunning {
-            return store.isPaused
-                ? String(localized: "\(mode) session paused")
-                : String(localized: "\(mode) session in progress")
-        }
-        return String(localized: "\(mode) timer")
-    }
-
-    private var timerAccessibilityValue: String {
-        var parts: [String] = [store.displayTime]
-        if let ringProgress = timerRingProgress {
-            let percentage = Int(ringProgress * 100)
-            switch currentMode.direction {
-            case .countDown:
-                parts.append(String(localized: "\(percentage) percent remaining"))
-            case .countUp:
-                parts.append(String(localized: "\(percentage) percent complete"))
-            }
-        }
-        if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
-            parts.append(String(localized: "Pomodoro \(num) of \(store.config.pomodorosPerCycle)"))
-        }
-        return parts.joined(separator: ", ")
-    }
 
     // MARK: - Control Buttons
 
@@ -935,5 +796,154 @@ private extension View {
                 .clipShape(Capsule())
                 .shadow(color: tint.opacity(0.35), radius: 14, y: 7)
         }
+    }
+}
+
+// MARK: - Timer Circle View
+
+struct TimerCircleView: View {
+    let store: StoreOf<FocusFeature>
+    
+    @Environment(\.appTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    
+    @State private var ringScale: CGFloat = 1.0
+    // C6: breathe scale for emoji mode icon (SF Symbols use .symbolEffect, emojis use scaleEffect)
+    @State private var breatheScale: CGFloat = 1.0
+    
+    private static let countUpRingDisplayFloor: Double = 0.04
+
+    var body: some View {
+        ZStack {
+            // Background track ring — always visible, mode-tinted
+            Circle()
+                .stroke(modeColor.opacity(0.18), lineWidth: 13)
+
+            // Count-up idle treatment: dashed tick overlay to signal "will fill".
+            if currentMode.direction == .countUp && !(store.isRunning) {
+                Circle()
+                    .stroke(
+                        modeColor.opacity(0.30),
+                        style: StrokeStyle(lineWidth: 13, lineCap: .butt, dash: [4, 10])
+                    )
+            }
+
+            // Progress arc — countdown: remaining arc; count-up: accruing arc while running
+            if let ringProgress = timerRingProgress {
+                Circle()
+                    .trim(from: 0, to: CGFloat(ringProgress))
+                    .stroke(
+                        modeGradient,
+                        style: StrokeStyle(lineWidth: 13, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(-90))
+                    .conditionalAnimation(.linear(duration: 0.1), value: ringProgress)
+            }
+
+            // Center content
+            VStack(spacing: 4) {
+                // Mode icon — smaller above digits, no overlap
+                Text(store.modeIcon)
+                    .font(.system(size: 28, design: .default))
+                    .scaleEffect(breatheScale)
+                    .conditionalAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breatheScale)
+                    .onChange(of: store.isRunning) { _, running in
+                        breatheScale = running ? 1.06 : 1.0
+                    }
+                    .id(store.phase)
+                    .transition(reduceMotion ? .opacity : .asymmetric(
+                        insertion: .scale(scale: 0.7).combined(with: .opacity),
+                        removal: .scale(scale: 1.3).combined(with: .opacity)
+                    ))
+
+                // Time display — dominant focal point
+                Text(store.displayTime)
+                    .font(NumericFont.timer())
+                    .contentTransition(.numericText())
+                    .minimumScaleFactor(0.5)
+                    .lineLimit(1)
+
+                // Pomodoro counter
+                if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
+                    Text("\(num) / \(store.config.pomodorosPerCycle)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        // P2 item 5: spring scale on mode change
+        .scaleEffect(ringScale)
+        .onChange(of: store.selectedMode) { _, _ in
+            guard !reduceMotion else { return }
+            withAnimation(MotionTokens.bouncy.speed(1.4)) {
+                ringScale = 0.92
+            }
+            // Spring back after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                withAnimation(MotionTokens.bouncy) {
+                    ringScale = 1.0
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(timerAccessibilityLabel)
+        .accessibilityValue(timerAccessibilityValue)
+    }
+    
+    private var currentMode: FocusMode {
+        store.activeMode ?? store.selectedMode
+    }
+
+    private var modeColor: Color {
+        theme.color(for: currentMode, phase: store.phase)
+    }
+
+    private var modeGradient: AngularGradient {
+        theme.ringGradient(for: currentMode, phase: store.phase)
+    }
+    
+    private var timerRingProgress: Double? {
+        switch currentMode.direction {
+        case .countDown:
+            let completed = store.progress.map { min(max($0, 0), 1) } ?? 0
+            return 1 - completed
+        case .countUp:
+            guard store.isRunning else { return nil }
+            let elapsed = store.elapsedSeconds
+            let cycle: Double = 60 * 60  // 1 hour
+            let positionInCycle = elapsed.truncatingRemainder(dividingBy: cycle)
+            let raw = min(positionInCycle / cycle, 1.0)
+            return max(raw, Self.countUpRingDisplayFloor)
+        }
+    }
+
+    private var timerAccessibilityLabel: String {
+        let mode = currentMode.displayName
+        if store.isRunning {
+            return store.isPaused
+                ? String(localized: "\(mode) session paused")
+                : String(localized: "\(mode) session in progress")
+        }
+        return String(localized: "\(mode) timer")
+    }
+
+    private var timerAccessibilityValue: String {
+        var parts: [String] = [store.displayTime]
+        if let ringProgress = timerRingProgress {
+            let percentage = Int(ringProgress * 100)
+            switch currentMode.direction {
+            case .countDown:
+                parts.append(String(localized: "\(percentage) percent remaining"))
+            case .countUp:
+                parts.append(String(localized: "\(percentage) percent complete"))
+            }
+        }
+        if store.activeMode == .pomodoro, let num = store.pomodoroNumber {
+            parts.append(String(localized: "Pomodoro \(num) of \(store.config.pomodorosPerCycle)"))
+        }
+        return parts.joined(separator: ", ")
     }
 }
