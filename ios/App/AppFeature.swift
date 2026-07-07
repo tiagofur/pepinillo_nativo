@@ -32,6 +32,11 @@ struct AppFeature {
 
         // Subscription
         var subscriptionState: SubscriptionState = .free
+        /// Last capabilities the soft-sync was run for (issue #78). Avoids
+        /// running the full reconcile/sync pipeline twice when
+        /// `subscriptionStateLoaded` and `subscriptionUpdated` arrive in quick
+        /// succession with identical capabilities.
+        var lastSyncedCapabilities: UserCapabilities? = nil
 
         // Celebration overlay
         var pendingCelebration: CelebrationMilestone? = nil
@@ -540,82 +545,10 @@ struct AppFeature {
                 return .none
 
             case .subscriptionStateLoaded(let sub):
-                #if DEBUG
-                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .pepinilloPlus : sub
-                #else
-                let effectiveSub = sub
-                #endif
-                state.subscriptionState = effectiveSub
-                let isPro = effectiveSub.isPro
-                let canSync = effectiveSub.isEverywhere
-                state.focus.isProUser = isPro
-                state.settings.isProUser = isPro
-                state.analytics.isProUser = isPro
-                state.tasks.isProUser = isPro
-                AppGroupDefaults.userCapabilities = effectiveSub.capabilities
-                AppGroupDefaults.isProUser = isPro
-                AppGroupDefaults.canBackendSync = canSync
-                AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
-                if isPro { state.focus.showPaywall = false }
-                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] send in
-                    try? await Task.sleep(for: .seconds(3))
-                    let start = Date.now
-                    await syncModeClient.reconcile(capabilities)
-                    if capabilities.backendSync, await keychain.hasTokens() {
-                        try? await syncClient.syncAll()
-                        await webSocketClient.connect()
-                    } else {
-                        webSocketClient.disconnect()
-                    }
-                    // Scoped reloads instead of reloadAllTimelines() (issue #77).
-                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
-                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
-                    appLaunchLogger.info("Soft sync finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
-                    // Reconcile may swap the active store (local → CloudKit); refresh the task
-                    // list so in-memory state reflects the now-active container.
-                    await send(.tasks(.refresh))
-                }
-                .cancellable(id: CancelID.softSync, cancelInFlight: true)
+                return applySubscriptionUpdate(sub, state: &state)
 
             case .subscriptionUpdated(let sub):
-                #if DEBUG
-                let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .pepinilloPlus : sub
-                #else
-                let effectiveSub = sub
-                #endif
-                state.subscriptionState = effectiveSub
-                let isPro = effectiveSub.isPro
-                let canSync = effectiveSub.isEverywhere
-                state.focus.isProUser = isPro
-                state.settings.isProUser = isPro
-                state.analytics.isProUser = isPro
-                state.tasks.isProUser = isPro
-                AppGroupDefaults.userCapabilities = effectiveSub.capabilities
-                AppGroupDefaults.isProUser = isPro
-                AppGroupDefaults.canBackendSync = canSync
-                AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
-                if isPro { state.focus.showPaywall = false }
-                return .run { [syncModeClient, keychain, syncClient, webSocketClient, capabilities = effectiveSub.capabilities] send in
-                    try? await Task.sleep(for: .seconds(3))
-                    let start = Date.now
-                    await syncModeClient.reconcile(capabilities)
-                    if capabilities.backendSync, await keychain.hasTokens() {
-                        try? await syncClient.syncAll()
-                        await webSocketClient.connect()
-                    } else {
-                        webSocketClient.disconnect()
-                    }
-                    // Scoped reloads instead of reloadAllTimelines() (issue #77).
-                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
-                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
-                    appLaunchLogger.info("Soft sync update finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
-                    // Reconcile may swap the active store (local → CloudKit); refresh the task
-                    // list so in-memory state reflects the now-active container.
-                    await send(.tasks(.refresh))
-                }
-                .cancellable(id: CancelID.softSync, cancelInFlight: true)
+                return applySubscriptionUpdate(sub, state: &state)
 
             case .celebrationTriggered(let milestone):
                 state.pendingCelebration = milestone
@@ -1264,6 +1197,66 @@ struct AppFeature {
         .ifLet(\.$emailVerification, action: \.emailVerification) {
             EmailVerificationFeature()
         }
+    }
+
+    // MARK: - Subscription helpers
+
+    /// Shared handler for `subscriptionStateLoaded` and `subscriptionUpdated`
+    /// (issue #78). Both actions previously carried the same propagate+sync
+    /// logic copy-pasted; when they arrived in quick succession (the common
+    /// case at launch), the full reconcile/sync pipeline ran twice on the
+    /// foreground critical path.
+    ///
+    /// Propagation of Pro flags always runs. The soft sync only runs when the
+    /// capabilities actually changed since the last sync (`lastSyncedCapabilities`).
+    private func applySubscriptionUpdate(_ sub: SubscriptionState, state: inout State) -> Effect<Action> {
+        #if DEBUG
+        let effectiveSub = DemoDataSeeder.shouldSimulatePro ? .pepinilloPlus : sub
+        #else
+        let effectiveSub = sub
+        #endif
+        state.subscriptionState = effectiveSub
+        let isPro = effectiveSub.isPro
+        let canSync = effectiveSub.isEverywhere
+        state.focus.isProUser = isPro
+        state.settings.isProUser = isPro
+        state.analytics.isProUser = isPro
+        state.tasks.isProUser = isPro
+        AppGroupDefaults.userCapabilities = effectiveSub.capabilities
+        AppGroupDefaults.isProUser = isPro
+        AppGroupDefaults.canBackendSync = canSync
+        AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
+        if isPro { state.focus.showPaywall = false }
+
+        // Dedupe: skip the expensive soft sync when capabilities are unchanged
+        // since the last run. Both subscription actions commonly arrive together
+        // at launch with the same capabilities.
+        let capabilities = effectiveSub.capabilities
+        guard state.lastSyncedCapabilities != capabilities else {
+            appLaunchLogger.info("Soft sync skipped — capabilities unchanged (issue #78 dedupe)")
+            return .none
+        }
+        state.lastSyncedCapabilities = capabilities
+
+        return .run { send in
+            try? await Task.sleep(for: .seconds(3))
+            let start = Date.now
+            await syncModeClient.reconcile(capabilities)
+            if capabilities.backendSync, await keychain.hasTokens() {
+                try? await syncClient.syncAll()
+                await webSocketClient.connect()
+            } else {
+                webSocketClient.disconnect()
+            }
+            WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+            WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+            appLaunchLogger.info("Soft sync finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
+            // Reconcile may swap the active store (local → CloudKit); refresh the task
+            // list so in-memory state reflects the now-active container.
+            await send(.tasks(.refresh))
+        }
+        .cancellable(id: CancelID.softSync, cancelInFlight: true)
     }
 }
 
