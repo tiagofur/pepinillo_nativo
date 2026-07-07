@@ -8,7 +8,7 @@ import ComposableArchitecture
 
 // MARK: - Task Row
 
-struct TaskRow: View {
+struct TaskRow: View, Equatable {
     let task: TaskListFeature.TaskItemState
     let onTap: () -> Void
     let onComplete: () -> Void
@@ -16,6 +16,14 @@ struct TaskRow: View {
     var onScheduledForTodayToggled: (() -> Void)?
     var onEnergyChanged: ((EnergyLevel) -> Void)?
     var onRecurrenceChanged: ((String?) -> Void)?
+
+    // Equatable by visual state only (issue #81). Closures are intentionally
+    // ignored: they change identity on every parent re-render but do not affect
+    // what the row draws, so skipping the re-render when `task` is unchanged is
+    // correct and avoids re-running chipData/Calendar math per row.
+    nonisolated static func == (lhs: TaskRow, rhs: TaskRow) -> Bool {
+        lhs.task == rhs.task
+    }
 
     var body: some View {
         Button(action: onTap) {

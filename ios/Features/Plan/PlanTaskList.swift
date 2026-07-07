@@ -137,10 +137,14 @@ struct PlanTaskList: View {
 
     @ViewBuilder
     private var taskListContent: some View {
+        // Compute the filtered list ONCE per body evaluation (issue #81).
+        // Previously `filteredTasks` was a computed property read ~7 times,
+        // each re-running the full filter over every task.
+        let tasks = filteredTasks
         if store.isLoading {
             ProgressView()
                 .frame(maxHeight: .infinity)
-        } else if filteredTasks.isEmpty {
+        } else if tasks.isEmpty {
             ContentUnavailableView {
                 Label {
                     Text(emptyTitle)
@@ -157,13 +161,14 @@ struct PlanTaskList: View {
             // Energy-grouped mode: sections by level, reorder disabled across sections
             EnergyGroupedTaskList(
                 store: store,
-                filteredTasks: filteredTasks,
+                filteredTasks: tasks,
                 currentDate: Date.now
             )
         } else {
             // Flat list mode (existing behaviour, reordering intact)
+            let taskIDs = tasks.map(\.id)
             List {
-                ForEach(filteredTasks) { task in
+                ForEach(tasks) { task in
                     TaskRow(
                         task: task,
                         onTap: { store.send(.taskTapped(task.id)) },
@@ -179,6 +184,7 @@ struct PlanTaskList: View {
                             store.send(.recurrenceChanged(task.id, rule))
                         }
                     )
+                    .equatable()  // Skip re-render when `task` is unchanged (issue #81)
                     .modifier(OptionalMatchedSource(id: task.id, namespace: heroNamespace))
                     .swipeActions(edge: .leading, allowsFullSwipe: true) {
                         Button {
@@ -200,8 +206,8 @@ struct PlanTaskList: View {
                 }
                 .onDelete { indexSet in
                     if let index = indexSet.first {
-                        taskToDelete = filteredTasks[index].id
-                        store.send(.taskDeleted(filteredTasks[index].id))
+                        taskToDelete = tasks[index].id
+                        store.send(.taskDeleted(tasks[index].id))
                     }
                 }
                 .onMove { source, destination in
@@ -216,7 +222,7 @@ struct PlanTaskList: View {
             .scrollContentBackground(.hidden)
             .background(Color.clear)
             .primaryScrollEdgeEffect()
-            .conditionalAnimation(.smooth(duration: 0.3), value: filteredTasks.map(\.id))
+            .conditionalAnimation(.smooth(duration: 0.3), value: taskIDs)
             .refreshable { store.send(.refresh) }
         }
     }
