@@ -431,6 +431,15 @@ public final class SwiftDataPersistenceService {
             predicate: #Predicate { $0.isRecurringTemplate == true }
         )
         let templates = try context.fetch(descriptor)
+        guard !templates.isEmpty else { return }
+
+        // Single batch fetch of all instances created today (issue #85).
+        // Previously this did one fetch PER template (N+1 pattern).
+        let todayInstancesDescriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.createdAt >= today }
+        )
+        let todayInstances = try context.fetch(todayInstancesDescriptor)
+        let alreadyGeneratedTemplateIDs = Set(todayInstances.compactMap { $0.recurringTemplateID })
 
         for template in templates {
             guard let nextOccurrence = template.nextOccurrence,
@@ -440,15 +449,8 @@ public final class SwiftDataPersistenceService {
                 continue
             }
 
-            // Check if we already generated an instance for today
-            let templateID = template.id
-            let checkDescriptor = FetchDescriptor<TaskItem>(
-                predicate: #Predicate {
-                    $0.recurringTemplateID == templateID && $0.createdAt >= today
-                }
-            )
-            let existing = try context.fetch(checkDescriptor)
-            guard existing.isEmpty else { continue }
+            // Check if we already generated an instance for today (in-memory)
+            guard !alreadyGeneratedTemplateIDs.contains(template.id) else { continue }
 
             // Create a new instance from the template
             let instance = TaskItem(
@@ -583,15 +585,18 @@ public final class SwiftDataPersistenceService {
     /// Mark tasks as synced (clean) after successful sync.
     public func markTasksSynced(syncIds: [String], syncTimestamp: String) throws {
         let now = Date.now
-        
+        // Build a Set for O(1) membership lookup (issue #85).
+        // Previously `syncIds.contains(task.syncId)` was O(M) per task → O(N×M) total.
+        let syncIdSet = Set(syncIds)
+
         // Fetch candidate tasks to update and purge in-memory, avoiding SwiftData loop variable predicate bugs
         let descriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate { $0.isDirty == true || $0.isLocallyDeleted == true }
         )
         let tasks = try context.fetch(descriptor)
-        
+
         for task in tasks {
-            if syncIds.contains(task.syncId) {
+            if syncIdSet.contains(task.syncId) {
                 if task.isLocallyDeleted {
                     context.delete(task)
                 } else {
@@ -600,7 +605,7 @@ public final class SwiftDataPersistenceService {
                 }
             }
         }
-        
+
         // Purge any remaining soft-deleted tasks that are clean
         let deletedDescriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate { $0.isLocallyDeleted == true && $0.isDirty == false }
@@ -780,21 +785,20 @@ public final class SwiftDataPersistenceService {
     }
 
     public func markSessionsSynced(ids: [UUID]) throws {
-        // Fetch only the records we need to mark, one predicate lookup per id.
-        // #Predicate cannot capture a [UUID] array directly in SwiftData, so we
-        // iterate with a limit-1 descriptor per id — still vastly cheaper than
-        // loading the entire FocusSessionRecord table.
+        // Single batch fetch + in-memory filtering (issue #85).
+        // Previously this did N round-trips (one fetch per id) because
+        // #Predicate was thought to not capture [UUID] — but array `contains`
+        // works fine in SwiftData predicates (verified in #74).
+        guard !ids.isEmpty else { return }
         let now = Date.now
-        for id in ids {
-            let idCopy = id
-            var descriptor = FetchDescriptor<FocusSessionRecord>(
-                predicate: #Predicate { $0.id == idCopy }
-            )
-            descriptor.fetchLimit = 1
-            if let record = try context.fetch(descriptor).first {
-                record.isDirty = false
-                record.syncedAt = now
-            }
+        let idSet = ids
+        let descriptor = FetchDescriptor<FocusSessionRecord>(
+            predicate: #Predicate { idSet.contains($0.id) }
+        )
+        let records = try context.fetch(descriptor)
+        for record in records {
+            record.isDirty = false
+            record.syncedAt = now
         }
         try context.save()
     }
