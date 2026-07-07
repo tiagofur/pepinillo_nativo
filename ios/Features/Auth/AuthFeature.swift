@@ -117,7 +117,7 @@ struct AuthFeature {
 
             case .loginTapped:
                 guard !state.email.isEmpty, !state.password.isEmpty else {
-                    state.errorMessage = "Please fill in all fields"
+                    state.errorMessage = String(localized: "Please fill in all fields")
                     return .none
                 }
                 state.isLoading = true
@@ -136,7 +136,7 @@ struct AuthFeature {
 
             case .registerTapped:
                 guard !state.name.isEmpty, !state.email.isEmpty, !state.password.isEmpty else {
-                    state.errorMessage = "Please fill in all fields"
+                    state.errorMessage = String(localized: "Please fill in all fields")
                     return .none
                 }
                 if let validationError = validatePassword(state.password) {
@@ -239,7 +239,7 @@ struct AuthFeature {
 
             case .initialSyncFailed(let message):
                 state.isSyncing = false
-                state.errorMessage = "Sync failed: \(message)"
+                state.errorMessage = String(localized: "Sync failed: \(message)")
                 return .none
 
             case .mergeTapped:

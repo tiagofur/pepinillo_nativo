@@ -417,18 +417,30 @@ public enum APIClientError: Error, Equatable, Sendable {
 
     public var userMessage: String {
         switch self {
-        case .invalidCredentials: return "Invalid email or password"
-        case .emailAlreadyExists: return "An account with this email already exists"
-        case .weakPassword: return "Password needs 8+ chars with uppercase, lowercase, and a number"
-        case .invalidEmail: return "Please enter a valid email address"
-        case .missingRequiredFields: return "Please fill in all fields"
-        case .invalidRefreshToken, .sessionExpired: return "Session expired. Please sign in again."
-        case .networkError: return "No internet connection. You can still use the app offline."
-        case .invalidURL: return "Unable to connect to the server. Please try again later."
-        case .serverError: return "Server error. Please try again later."
-        case .unknown(let msg): return msg
-        case .invalidResetCode: return "Invalid reset code. Please check and try again."
-        case .resetCodeExpired: return "Reset code has expired. Please request a new one."
+        case .invalidCredentials:
+            return String(localized: "Invalid email or password")
+        case .emailAlreadyExists:
+            return String(localized: "An account with this email already exists")
+        case .weakPassword:
+            return String(localized: "Password needs 8+ chars with uppercase, lowercase, and a number")
+        case .invalidEmail:
+            return String(localized: "Please enter a valid email address")
+        case .missingRequiredFields:
+            return String(localized: "Please fill in all fields")
+        case .invalidRefreshToken, .sessionExpired:
+            return String(localized: "Session expired. Please sign in again.")
+        case .networkError:
+            return String(localized: "No internet connection. You can still use the app offline.")
+        case .invalidURL:
+            return String(localized: "Unable to connect to the server. Please try again later.")
+        case .serverError:
+            return String(localized: "Server error. Please try again later.")
+        case .unknown(let msg):
+            return msg
+        case .invalidResetCode:
+            return String(localized: "Invalid reset code. Please check and try again.")
+        case .resetCodeExpired:
+            return String(localized: "Reset code has expired. Please request a new one.")
         }
     }
 
