@@ -622,6 +622,8 @@
     <string name="profile_btn_backup">Backup &amp; Sync</string>
     <string name="profile_desc_backup_active">Cloud sync is active</string>
     <string name="profile_btn_signout">Sign Out</string>
+    <string name="profile_signout_confirm_title">Sign out?</string>
+    <string name="profile_signout_confirm_desc">You can sign back in anytime. Your synced data stays safe in your account.</string>
     <string name="profile_btn_delete_account">Delete Account</string>
     <string name="profile_desc_delete_account">Irreversible data removal</string>
     <string name="profile_version_format">Pepinillo v%1$s</string>

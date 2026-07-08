@@ -68,6 +68,7 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteConfirmation by remember { mutableStateOf(false) }
+    var showSignOutConfirmation by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -281,10 +282,7 @@ fun ProfileScreen(
                     icon = Icons.AutoMirrored.Rounded.ExitToApp,
                     label = stringResource(R.string.profile_btn_signout),
                     subtitle = uiState.user?.email ?: "",
-                    onClick = {
-                        viewModel.logout()
-                        onSignOutClick()
-                    },
+                    onClick = { showSignOutConfirmation = true },
                 )
                 ProfileDivider()
                 ActionRow(
@@ -339,6 +337,30 @@ fun ProfileScreen(
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            },
+        )
+    }
+
+    if (showSignOutConfirmation) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showSignOutConfirmation = false },
+            title = { Text(stringResource(R.string.profile_signout_confirm_title)) },
+            text = { Text(stringResource(R.string.profile_signout_confirm_desc)) },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        showSignOutConfirmation = false
+                        viewModel.logout()
+                        onSignOutClick()
+                    },
+                ) {
+                    Text(stringResource(R.string.profile_btn_signout))
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showSignOutConfirmation = false }) {
                     Text(stringResource(R.string.btn_cancel))
                 }
             },

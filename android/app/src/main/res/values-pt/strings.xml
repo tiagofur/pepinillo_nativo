@@ -355,6 +355,8 @@
     <string name="profile_btn_backup">Backup e Sincronização</string>
     <string name="profile_desc_backup_active">Sincronização na nuvem ativa</string>
     <string name="profile_btn_signout">Sair</string>
+    <string name="profile_signout_confirm_title">Sair?</string>
+    <string name="profile_signout_confirm_desc">Pode voltar a entrar quando quiser. Os seus dados sincronizados ficam seguros na sua conta.</string>
     <string name="profile_btn_delete_account">Excluir Conta</string>
     <string name="profile_desc_delete_account">Remoção irreversível de dados</string>
     <string name="profile_version_format">Pepinillo v%1$s</string>
