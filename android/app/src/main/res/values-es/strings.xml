@@ -18,6 +18,9 @@
     <string name="sessions_today">sesiones hoy</string>
     <string name="day_streak">d\u00edas de racha</string>
     <string name="msg_task_linked">Tarea vinculada</string>
+    <string name="msg_session_save_failed">No se pudo guardar tu sesión. ¿Reintentar?</string>
+    <string name="msg_session_saved">Sesión guardada</string>
+    <string name="btn_retry">Reintentar</string>
     <string name="btn_start_focus">Iniciar Enfoque</string>
     <string name="btn_start_break">Iniciar Descanso</string>
     <string name="btn_start_long_break">Iniciar Descanso Largo</string>

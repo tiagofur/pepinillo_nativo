@@ -39,6 +39,10 @@ class FocusEngine @Inject constructor(
     private val _workSessionCompleted = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val workSessionCompleted: SharedFlow<String> = _workSessionCompleted.asSharedFlow()
 
+    /** Emits a snapshot of a work session that failed to persist, so the UI can offer retry. */
+    private val _sessionSaveFailed = MutableSharedFlow<FailedSession>(extraBufferCapacity = 1)
+    val sessionSaveFailed: SharedFlow<FailedSession> = _sessionSaveFailed.asSharedFlow()
+
     private var timerJob: Job? = null
     private var prefsObserverJob: Job? = null
 
@@ -500,15 +504,60 @@ class FocusEngine @Inject constructor(
             targetDurationMillis = targetMillis,
         )
 
+        if (sessionId == null) {
+            // Persistence failed (DB I/O, constraint, disk full). Surface it so the UI can offer retry,
+            // instead of silently losing the session. Pomodoro count is NOT incremented on failure
+            // to preserve consistency (no +1 pomodoro without a recorded session).
+            _sessionSaveFailed.tryEmit(
+                FailedSession(
+                    mode = s.mode.name,
+                    startTime = s.sessionStartTime,
+                    endTime = now,
+                    durationMillis = s.elapsedMillis,
+                    linkedTaskId = s.linkedTaskId,
+                    phase = s.phase.name,
+                    wasCompleted = wasCompleted,
+                    interruptions = interruptionCount,
+                    pauseCount = pauseCount,
+                    totalPauseMillis = totalPauseMillis,
+                    pomodoroNumber = if (s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.Work) pomodoroNumber else null,
+                    targetDurationMillis = targetMillis,
+                ),
+            )
+            return
+        }
+
         // Emit event for work session completion (for journal UI)
-        if (sessionId != null && s.phase == FocusPhase.Work) {
+        if (s.phase == FocusPhase.Work) {
             _workSessionCompleted.tryEmit(sessionId)
         }
 
-        // Increment pomodoro count on linked task if this was a work phase
+        // Increment pomodoro count on linked task only after a successful save (consistency).
         if (s.linkedTaskId != null && s.phase == FocusPhase.Work) {
             taskRepository.incrementPomodoros(s.linkedTaskId)
         }
+    }
+
+    /** Re-attempt persisting a [FailedSession]. Returns the new session id, or null if it failed again. */
+    suspend fun retrySaveSession(failed: FailedSession): String? {
+        val sessionId = sessionRepository.recordSession(
+            mode = failed.mode,
+            startTime = failed.startTime,
+            endTime = failed.endTime,
+            durationMillis = failed.durationMillis,
+            linkedTaskId = failed.linkedTaskId,
+            phase = failed.phase,
+            wasCompleted = failed.wasCompleted,
+            interruptions = failed.interruptions,
+            pauseCount = failed.pauseCount,
+            totalPauseMillis = failed.totalPauseMillis,
+            pomodoroNumber = failed.pomodoroNumber,
+            targetDurationMillis = failed.targetDurationMillis,
+        )
+        if (sessionId != null && failed.phase == FocusPhase.Work.name && failed.linkedTaskId != null) {
+            taskRepository.incrementPomodoros(failed.linkedTaskId)
+        }
+        return sessionId
     }
 
     private fun getTotalMillis(mode: FocusMode, phase: FocusPhase, prefs: UserPreferences): Long = when {
@@ -519,3 +568,19 @@ class FocusEngine @Inject constructor(
         else -> 0L
     }
 }
+
+/** Snapshot of a session whose persistence failed, retained so the UI can offer retry. */
+data class FailedSession(
+    val mode: String,
+    val startTime: Long,
+    val endTime: Long,
+    val durationMillis: Long,
+    val linkedTaskId: String?,
+    val phase: String,
+    val wasCompleted: Boolean,
+    val interruptions: Int,
+    val pauseCount: Int,
+    val totalPauseMillis: Long,
+    val pomodoroNumber: Int?,
+    val targetDurationMillis: Long?,
+)

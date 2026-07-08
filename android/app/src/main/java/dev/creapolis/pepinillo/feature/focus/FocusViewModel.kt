@@ -19,6 +19,7 @@ import dev.creapolis.pepinillo.domain.soundscape.Soundscape
 import dev.creapolis.pepinillo.domain.soundscape.SoundscapeManager
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
+import dev.creapolis.pepinillo.domain.timer.FailedSession
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabelRes
@@ -95,6 +96,10 @@ class FocusViewModel @Inject constructor(
     val successMessage: StateFlow<Int?> = _successMessage.asStateFlow()
     val showTaskPicker: StateFlow<Boolean> = _showTaskPicker.asStateFlow()
 
+    /** Retains the last session whose save failed, so the user can retry via the snackbar. */
+    private val _lastFailedSession = MutableStateFlow<FailedSession?>(null)
+    val lastFailedSession: StateFlow<FailedSession?> = _lastFailedSession.asStateFlow()
+
     val activeTasks: StateFlow<List<Task>> = taskRepository.getActiveTasks()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -136,6 +141,13 @@ class FocusViewModel @Inject constructor(
                     TimerStatus.Idle -> FocusTimerService.stop(context)
                     TimerStatus.Paused -> { /* service stays alive while paused */ }
                 }
+            }
+        }
+
+        // Surface session-save failures so the UI can offer retry instead of silent data loss.
+        viewModelScope.launch {
+            focusEngine.sessionSaveFailed.collect { failed ->
+                _lastFailedSession.value = failed
             }
         }
 
@@ -452,5 +464,21 @@ class FocusViewModel @Inject constructor(
     private fun computeDate(): String {
         val dateFormat = SimpleDateFormat("EEEE, MMMM d", Locale.getDefault())
         return dateFormat.format(Date())
+    }
+
+    /** Re-attempt persisting the last failed session; clears the failure state on success. */
+    fun retrySessionSave() {
+        val failed = _lastFailedSession.value ?: return
+        viewModelScope.launch {
+            val newId = focusEngine.retrySaveSession(failed)
+            if (newId != null) {
+                _lastFailedSession.value = null
+                _successMessage.value = R.string.msg_session_saved
+            }
+        }
+    }
+
+    fun dismissSessionSaveError() {
+        _lastFailedSession.value = null
     }
 }

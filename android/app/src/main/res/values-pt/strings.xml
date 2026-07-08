@@ -10,6 +10,9 @@
     <string name="sessions_today">sess\u00f5es hoje</string>
     <string name="day_streak">dias de sequ\u00eancia</string>
     <string name="msg_task_linked">Tarefa vinculada</string>
+    <string name="msg_session_save_failed">Não foi possível guardar a sua sessão. Tentar novamente?</string>
+    <string name="msg_session_saved">Sessão guardada</string>
+    <string name="btn_retry">Tentar novamente</string>
     <string name="btn_start_focus">Iniciar Foco</string>
     <string name="btn_start_break">Iniciar Descanso</string>
     <string name="btn_start_long_break">Iniciar Descanso Longo</string>
