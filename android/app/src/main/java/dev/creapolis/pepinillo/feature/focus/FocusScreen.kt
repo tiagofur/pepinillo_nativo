@@ -94,7 +94,7 @@ import dev.creapolis.pepinillo.feature.focus.components.ModeChip
 import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
-import dev.creapolis.pepinillo.ui.components.SuccessToast
+import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -220,7 +220,15 @@ fun FocusScreen(
         animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
         label = "buttonCornerRadius",
     )
-    val successMsg by viewModel.successMessage.collectAsState()
+    val snackbarController = LocalSnackbarController.current
+    LaunchedEffect(viewModel.successMessage) {
+        viewModel.successMessage.collect { resId ->
+            if (resId != null) {
+                snackbarController?.show(message = resId)
+                viewModel.dismissSuccessMessage()
+            }
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
@@ -574,14 +582,6 @@ fun FocusScreen(
                 }
             }
         }
-
-        SuccessToast(
-            message = successMsg,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 24.dp),
-            onDismiss = { viewModel.dismissSuccessMessage() },
-        )
     }
 
     if (uiState.showTaskPicker) {

@@ -40,6 +40,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,6 +59,8 @@ import dev.creapolis.pepinillo.feature.auth.ForgotPasswordScreen
 import dev.creapolis.pepinillo.feature.auth.LoginScreen
 import dev.creapolis.pepinillo.feature.auth.RegisterScreen
 import dev.creapolis.pepinillo.feature.onboarding.OnboardingScreen
+import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
+import dev.creapolis.pepinillo.ui.components.rememberSnackbarController
 import kotlinx.coroutines.flow.first
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.AIReportScreen
@@ -244,9 +247,13 @@ fun PepinilloApp(
     val isImeVisible = WindowInsets.isImeVisible
     val showBottomBar = currentRoute in topLevelRoutes && !isPipMode && !isImeVisible
 
+    val snackbarController = rememberSnackbarController()
+
+    CompositionLocalProvider(LocalSnackbarController provides snackbarController) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         contentWindowInsets = WindowInsets.systemBars,
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarController.hostState) },
         bottomBar = {
             AnimatedVisibility(
                 visible = showBottomBar,
@@ -538,4 +545,5 @@ fun PepinilloApp(
             }
         }
     }
+    } // CompositionLocalProvider(LocalSnackbarController)
 }
