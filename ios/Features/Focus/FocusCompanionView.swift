@@ -105,6 +105,9 @@ struct FocusCompanionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card))
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "Active task: \(store.linkedTaskTitle ?? "none")"))
+        .accessibilityHint(String(localized: "Double tap to change or unlink the task"))
     }
 
     @ViewBuilder
@@ -153,6 +156,9 @@ struct FocusCompanionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card))
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "Sounds: \(store.selectedSoundscape == .none ? "none" : store.selectedSoundscape.displayName)"))
+        .accessibilityHint(String(localized: "Double tap to choose focus audio"))
     }
 
     // MARK: - Today Sessions Card
@@ -207,6 +213,8 @@ struct FocusCompanionView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String(localized: "Today: \(sessionsToday) \(sessionsToday == 1 ? "session" : "sessions"), \(totalFocusMinutesToday) minutes"))
     }
 
     // MARK: - Streak Card
@@ -234,6 +242,8 @@ struct FocusCompanionView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(String(localized: "\(streakDays) \(streakDays == 1 ? "day streak" : "days streak")"))
     }
 
     // MARK: - Next Scheduled Task Card
@@ -266,5 +276,8 @@ struct FocusCompanionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card))
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(String(localized: "Up next: \(task.title)"))
+        .accessibilityHint(String(localized: "Double tap to link this task to your session"))
     }
 }
