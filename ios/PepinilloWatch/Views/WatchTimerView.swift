@@ -123,6 +123,12 @@ struct WatchTimerView: View {
             .frame(maxWidth: .infinity)
             .frame(height: 120)
             .padding(.top, -4)
+            // VoiceOver: combine the ring into one element with a descriptive
+            // label + value (phase, time, percentage). Ported from the iOS
+            // FocusView timer a11y pattern (issue #91).
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(timerAccessibilityLabel)
+            .accessibilityValue(store.displayTime)
 
             // Phase label
             Text(store.phaseLabel)
@@ -308,6 +314,16 @@ struct WatchTimerView: View {
     }
 
     // MARK: - Helpers
+
+    private var timerAccessibilityLabel: String {
+        let mode = store.selectedMode.displayName
+        if store.isSessionActive {
+            return store.isPaused
+                ? String(localized: "\(mode) session paused")
+                : String(localized: "\(mode) session in progress")
+        }
+        return String(localized: "\(mode) timer")
+    }
 
     private var modeColor: Color {
         let base = colorFor(store.selectedMode)
