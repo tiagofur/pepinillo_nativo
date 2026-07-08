@@ -430,6 +430,17 @@
     <string name="dashboard_best_day">Best Day</string>
     <string name="dashboard_focus_score">Focus Score</string>
     <string name="dashboard_completion">Completion</string>
+    <string name="dashboard_longest_session">Longest</string>
+    <string name="dashboard_today">Today</string>
+    <string name="dashboard_today_sessions_compact">%1$d sessions today</string>
+    <string name="streak_protected">Protected</string>
+    <string name="cd_streak_protected">Streak protection active</string>
+    <string name="dashboard_focus_score_qualitative_low">Warming up</string>
+    <string name="dashboard_focus_score_qualitative_medium">Solid</string>
+    <string name="dashboard_focus_score_qualitative_high">On fire</string>
+    <string name="dashboard_focus_score_value">%1$d/100</string>
+    <string name="dashboard_completion_value">%1$d%%</string>
+    <string name="dashboard_longest_value">%1$s longest</string>
     <string name="dashboard_focus_modes">Focus Modes</string>
     <string name="dashboard_achievements">Achievements</string>
     <string name="dashboard_current">Current</string>
