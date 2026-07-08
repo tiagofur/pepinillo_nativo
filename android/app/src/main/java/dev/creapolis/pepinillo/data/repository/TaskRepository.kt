@@ -2,9 +2,11 @@ package dev.creapolis.pepinillo.data.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.creapolis.pepinillo.di.ApplicationScope
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
@@ -20,15 +22,25 @@ import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dev.creapolis.pepinillo.widget.WidgetTask
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.isActive
 import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "TaskRepository"
+
+/** Debounce window for Wear/widget refreshes after a task mutation burst (e.g. typing). */
+private const val REFRESH_DEBOUNCE_MS = 400L
+
+/** Unique-work name so a burst of widget-refresh requests collapses into one run. */
+private const val WIDGET_REFRESH_WORK = "pepinillo_widget_refresh"
 
 @Singleton
 class TaskRepository @Inject constructor(
@@ -39,7 +51,24 @@ class TaskRepository @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val featureGate: FeatureGate,
     @ApplicationContext private val appContext: Context,
+    @ApplicationScope private val appScope: CoroutineScope,
 ) {
+    /** Coalesces rapid refreshWearData calls (e.g. one per keystroke) into a single execution. */
+    private val refreshTrigger = kotlinx.coroutines.channels.Channel<Unit>(
+        capacity = kotlinx.coroutines.channels.Channel.CONFLATED,
+    )
+
+    init {
+        // Drain rapid refresh requests (e.g. one per keystroke in task title/notes) into a single
+        // Wear + widget push, debounced so we don't reload all active tasks + history per keystroke.
+        appScope.launch {
+            for (signal in refreshTrigger) {
+                performWearAndWidgetRefresh()
+                // Coalesce bursts: a tiny delay absorbs trailing keystrokes that arrive while we work.
+                delay(REFRESH_DEBOUNCE_MS)
+            }
+        }
+    }
     fun getAllTasks(): Flow<List<Task>> =
         taskDao.getAllTasks()
             .map { entities -> entities.map { it.toDomain() } }
@@ -188,12 +217,21 @@ class TaskRepository @Inject constructor(
         focusSessionDao.getSessionsForTask(taskId)
             .catch { e -> Log.e(TAG, "Error loading sessions for $taskId", e); emit(emptyList()) }
 
-    /** Push updated task list to Wear and widgets immediately. */
-    private suspend fun refreshWearData() {
-        // Widgets via WorkManager
-        workManager.enqueue(OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build())
+    /** Signal a Wear + widget refresh. Coalesced and debounced — safe to call per keystroke. */
+    private fun refreshWearData() {
+        refreshTrigger.trySend(Unit)
+    }
 
-        // Wear direct push (WorkManager fails for wear)
+    /** Actual Wear + widget push. Runs once per burst, off the call site's coroutine. */
+    private suspend fun performWearAndWidgetRefresh() {
+        // Widgets via WorkManager — unique + KEEP so a burst collapses into one pending run.
+        workManager.enqueueUniqueWork(
+            WIDGET_REFRESH_WORK,
+            ExistingWorkPolicy.KEEP,
+            OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
+        )
+
+        // Wear direct push (WorkManager doesn't reach the watch).
         runCatching {
             val activeTasks = taskDao.getActiveTasks().first().map { it.toDomain() }
             val widgetTasks = activeTasks.take(5).map { WidgetTask.fromTask(it) }
