@@ -135,9 +135,13 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            // Notify system that we are ready to draw
-            LaunchedEffect(Unit) {
-                isAppReady = true
+            // Hold the splash until the persisted theme has been seeded by the Application,
+            // so we never draw a frame with the default theme for users who chose another.
+            val themeSeeded by ThemeController.isSeeded.collectAsState()
+            LaunchedEffect(themeSeeded) {
+                if (themeSeeded) {
+                    isAppReady = true
+                }
             }
             val subscriptionState by subscriptionManager.subscriptionState.collectAsState()
             val themeMode by ThemeController.themeMode.collectAsState()
