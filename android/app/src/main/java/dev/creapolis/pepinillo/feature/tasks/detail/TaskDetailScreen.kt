@@ -90,6 +90,7 @@ fun TaskDetailScreen(
     onBack: () -> Unit,
     onNavigateToPaywall: () -> Unit,
     onNavigateToAnalytics: (String) -> Unit,
+    onStartFocusTask: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TaskDetailViewModel = hiltViewModel(),
 ) {
@@ -965,7 +966,7 @@ fun TaskDetailScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Button(
-                onClick = { /* Start session logic */ },
+                onClick = { onStartFocusTask(task.id) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 enabled = !task.isCompleted

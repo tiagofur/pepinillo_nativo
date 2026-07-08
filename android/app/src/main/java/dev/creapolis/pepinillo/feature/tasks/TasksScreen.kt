@@ -340,6 +340,11 @@ fun TasksScreen(
                     onNavigateToAnalytics = { taskId ->
                         selectedTaskId = null
                         onNavigateToAnalytics(taskId)
+                    },
+                    onStartFocusTask = { taskId ->
+                        selectedTaskId = null
+                        viewModel.startFocusOnTask(taskId)
+                        onStartFocusTask()
                     }
                 )
             }
