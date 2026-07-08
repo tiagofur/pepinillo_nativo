@@ -214,7 +214,7 @@ fun ProfileScreen(
         ) {
             StatMiniCard(
                 icon = Icons.Rounded.Timer,
-                value = "${uiState.totalFocusTimeMinutes / 60}h",
+                value = formatDurationMinutes(uiState.totalFocusTimeMinutes),
                 label = stringResource(R.string.profile_stat_focus_time),
                 modifier = Modifier.weight(1f),
             )
@@ -579,4 +579,16 @@ private fun achievementIcon(name: String): ImageVector = when (name) {
     "Star" -> Icons.Rounded.Star
     "Timer" -> Icons.Rounded.Timer
     else -> Icons.Rounded.EmojiEvents
+}
+
+/** Formats minutes as "Xh Ym" (or "Ym" under an hour), instead of truncating to integer hours. */
+private fun formatDurationMinutes(totalMinutes: Long): String {
+    val total = totalMinutes.toInt()
+    val hours = total / 60
+    val minutes = total % 60
+    return when {
+        hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
+        hours > 0 -> "${hours}h"
+        else -> "${minutes}m"
+    }
 }

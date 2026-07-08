@@ -3,7 +3,7 @@ package dev.creapolis.pepinillo.feature.dashboard.model
 enum class AnalyticsPeriod(val label: String) {
     Week("7D"),
     Month("30D"),
-    Year("Year"),
+    Year("365D"),
 }
 
 enum class Trend {

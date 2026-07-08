@@ -500,6 +500,19 @@ class FocusTimerService : Service() {
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
 
+        // Native countdown chronometer for timed phases (Pomodoro/breaks) while running.
+        // Avoids rewriting the notification text every tick and renders a live countdown on the lock screen.
+        if (state.status == TimerStatus.Running &&
+            state.mode != FocusMode.Flow &&
+            state.mode != FocusMode.Chrono &&
+            state.totalMillis > 0L
+        ) {
+            val remainingMs = (state.totalMillis - state.elapsedMillis).coerceAtLeast(0L)
+            builder.setUsesChronometer(true)
+            builder.setChronometerCountDown(true)
+            builder.setWhen(System.currentTimeMillis() + remainingMs)
+        }
+
         when (state.status) {
             TimerStatus.Running -> builder.addAction(0, getString(R.string.btn_pause), servicePending(1, ACTION_PAUSE))
             TimerStatus.Paused -> builder.addAction(0, getString(R.string.btn_resume), servicePending(2, ACTION_RESUME))
