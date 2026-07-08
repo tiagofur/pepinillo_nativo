@@ -622,6 +622,8 @@
     <string name="profile_btn_backup">Respaldo y Sincro</string>
     <string name="profile_desc_backup_active">Sincronización en la nube activa</string>
     <string name="profile_btn_signout">Cerrar Sesión</string>
+    <string name="profile_signout_confirm_title">¿Cerrar sesión?</string>
+    <string name="profile_signout_confirm_desc">Puedes volver a entrar cuando quieras. Tus datos sincronizados quedan seguros en tu cuenta.</string>
     <string name="profile_btn_delete_account">Eliminar Cuenta</string>
     <string name="profile_desc_delete_account">Eliminación irreversible de datos</string>
     <string name="profile_version_format">Pepinillo v%1$s</string>
