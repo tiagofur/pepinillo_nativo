@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -89,6 +90,10 @@ private const val SYNC_DEBOUNCE_MS = 30_000L
 private const val DURATION_NAV_MS = 220
 private const val DURATION_NAV_DETAIL_MS = 280
 
+/** Translucent scrims so the gesture-nav buttons stay legible over content. */
+private const val LIGHT_NAV_SCRIM = 0xE6FFFFFF.toInt()
+private const val DARK_NAV_SCRIM = 0x801B1B1B.toInt()
+
 /**
  * Secondary-route (detail/push) transition: a subtle slide-up + fade that reads as
  * "stacking" on top of the current screen. Applied per-composable to override the
@@ -136,7 +141,18 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
-        enableEdgeToEdge()
+        // Edge-to-edge with explicit system bar styles so status/nav bar icons keep contrast
+        // over transparent bars regardless of content underneath (e.g. the dashboard hero).
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.auto(
+                android.graphics.Color.TRANSPARENT,
+                android.graphics.Color.TRANSPARENT,
+            ),
+            navigationBarStyle = SystemBarStyle.auto(
+                LIGHT_NAV_SCRIM,
+                DARK_NAV_SCRIM,
+            ),
+        )
         super.onCreate(savedInstanceState)
         var isAppReady by mutableStateOf(false)
 

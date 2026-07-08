@@ -99,6 +99,7 @@ fun PepinilloTheme(
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,
+            shapes = PepinilloShapes,
             content = content,
         )
     }
