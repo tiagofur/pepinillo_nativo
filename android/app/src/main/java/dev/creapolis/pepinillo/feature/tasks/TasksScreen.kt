@@ -80,7 +80,7 @@ import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.feature.tasks.components.TaskItem
-import dev.creapolis.pepinillo.ui.components.SuccessToast
+import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
 import dev.creapolis.pepinillo.ui.components.TasksListSkeleton
 import kotlinx.coroutines.delay
 
@@ -100,13 +100,20 @@ fun TasksScreen(
     var selectedTaskId by rememberSaveable { mutableStateOf<String?>(null) }
     var quickAddExpanded by rememberSaveable { mutableStateOf(false) }
 
-    // Error snackbar
-    var errorResId by remember { mutableStateOf<Int?>(null) }
+    // Route transient messages (success, errors) through the app-wide SnackbarHost
+    // instead of bespoke overlays. Undo is handled below via the controller's action.
+    val snackbarController = LocalSnackbarController.current
     LaunchedEffect(Unit) {
         viewModel.errorEvent.collect { resId ->
-            errorResId = resId
-            delay(3000)
-            errorResId = null
+            snackbarController?.show(message = resId)
+        }
+    }
+    LaunchedEffect(viewModel.successMessage) {
+        viewModel.successMessage.collect { resId ->
+            if (resId != null) {
+                snackbarController?.show(message = resId)
+                viewModel.dismissSuccessMessage()
+            }
         }
     }
 
@@ -267,60 +274,19 @@ fun TasksScreen(
             )
         }
 
-        // ── Undo Snackbar ──
+        // ── Undo via the app-wide SnackbarHost ──
+        // The VM already expires undoEvent after 5s; we surface it as a snackbar with an Undo action.
         val undoState by viewModel.undoEvent.collectAsState()
-        undoState?.let { undo ->
-            Snackbar(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp),
-                action = {
-                    TextButton(
-                        onClick = { viewModel.undoDelete() },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.inversePrimary,
-                        ),
-                    ) {
-                        Text(stringResource(R.string.btn_undo))
-                    }
-                },
-                dismissAction = {
-                    TextButton(
-                        onClick = { viewModel.dismissUndo() },
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.7f),
-                        ),
-                    ) {
-                        Text("\u2715")
-                    }
-                },
-            ) {
-                Text(text = stringResource(R.string.tasks_deleted_msg, undo.task.title))
-            }
+        LaunchedEffect(undoState) {
+            val undo = undoState ?: return@LaunchedEffect
+            snackbarController?.show(
+                message = R.string.tasks_deleted_msg,
+                undo.task.title,
+                actionLabel = R.string.btn_undo,
+                duration = androidx.compose.material3.SnackbarDuration.Long,
+                onAction = { viewModel.undoDelete() },
+            )
         }
-
-        // ── Error Snackbar ──
-        errorResId?.let { resId ->
-            if (undoState == null) {
-                Snackbar(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(16.dp),
-                ) {
-                    Text(text = stringResource(resId))
-                }
-            }
-        }
-
-        // ── Success Toast ──
-        val successMsg by viewModel.successMessage.collectAsState()
-        SuccessToast(
-            message = successMsg,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 88.dp),
-            onDismiss = { viewModel.dismissSuccessMessage() },
-        )
 
         if (selectedTaskId != null) {
             val detailViewModel: TaskDetailViewModel = hiltViewModel(key = selectedTaskId!!)
