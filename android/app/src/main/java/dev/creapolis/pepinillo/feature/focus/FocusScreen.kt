@@ -312,10 +312,10 @@ fun FocusScreen(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     AnimatedVisibility(visible = uiState.selectedMode == FocusMode.Pomodoro && sessionActive) {
-                        Text(
-                            text = "${uiState.completedSessions + 1}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        CycleProgressPips(
+                            completed = uiState.completedSessions,
+                            total = uiState.sessionsBeforeLongBreak.coerceAtLeast(1),
+                            modifier = Modifier.padding(top = 6.dp),
                         )
                     }
                 }
@@ -693,5 +693,42 @@ private fun CompactFocusChip(
 private fun FocusScreenPreview() {
     PepinilloTheme {
         FocusScreen()
+    }
+}
+
+/**
+ * Row of pips showing progress through the Pomodoro cycle toward the long break.
+ * Filled pips = completed work sessions; the current/active pip is emphasized;
+ * remaining pips are dimmed. Replaces the bare "completedSessions + 1" number.
+ */
+@Composable
+private fun CycleProgressPips(
+    completed: Int,
+    total: Int,
+    modifier: Modifier = Modifier,
+) {
+    val activeColor = MaterialTheme.colorScheme.primary
+    val dimColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+    val activeIndex = completed.coerceIn(0, total - 1)
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        for (i in 0 until total) {
+            val isDone = i < completed
+            val isActive = i == activeIndex && completed < total
+            val color = when {
+                isDone -> activeColor
+                isActive -> activeColor.copy(alpha = 0.6f)
+                else -> dimColor
+            }
+            Box(
+                modifier = Modifier
+                    .size(width = 14.dp, height = 5.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(3.dp))
+                    .background(color),
+            )
+        }
     }
 }
