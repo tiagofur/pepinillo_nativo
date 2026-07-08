@@ -127,6 +127,17 @@ fun FocusScreen(
         ringScaleTarget = 1.0f
     }
 
+    // Phase-completion celebration: when a Pomodoro completes (completedSessions bumps),
+    // fire a punch-out ring scale to mark the moment. Previously the ring silently swapped phase.
+    LaunchedEffect(uiState.completedSessions, uiState.selectedMode) {
+        if (uiState.completedSessions > 0 && uiState.selectedMode == FocusMode.Pomodoro) {
+            ringScaleTarget = 1.08f
+            delay(120)
+            ringScaleTarget = 1.0f
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
     // Breathing scale for emoji when running
     val infiniteTransition = rememberInfiniteTransition(label = "breathe")
     val breatheScale by if (uiState.isRunning) {
