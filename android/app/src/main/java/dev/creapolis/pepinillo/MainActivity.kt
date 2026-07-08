@@ -19,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -83,6 +84,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 private const val SYNC_DEBOUNCE_MS = 30_000L
+
+/** Nav transition durations (ms). */
+private const val DURATION_NAV_MS = 220
+private const val DURATION_NAV_DETAIL_MS = 280
+
+/**
+ * Secondary-route (detail/push) transition: a subtle slide-up + fade that reads as
+ * "stacking" on top of the current screen. Applied per-composable to override the
+ * default tab fade for routes reached via navigate() (analytics, calendar, settings, …).
+ */
+private val SecondaryEnterTransition: AnimatedContentTransitionScope<*>.() -> androidx.compose.animation.EnterTransition = {
+    fadeIn(tween(DURATION_NAV_DETAIL_MS)) +
+        slideInVertically(initialOffsetY = { it / 12 }, animationSpec = tween(DURATION_NAV_DETAIL_MS))
+}
+private val SecondaryPopExitTransition: AnimatedContentTransitionScope<*>.() -> androidx.compose.animation.ExitTransition = {
+    fadeOut(tween(DURATION_NAV_DETAIL_MS)) +
+        slideOutVertically(targetOffsetY = { it / 12 }, animationSpec = tween(DURATION_NAV_DETAIL_MS))
+}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -253,6 +272,12 @@ fun PepinilloApp(
             navController = navController,
             startDestination = TopLevelDestination.Focus.route,
             modifier = Modifier.padding(innerPadding),
+            // Default transition for push/pop: a gentle Material axis-Z slide + fade.
+            // This replaces the previous hard cut between every screen.
+            enterTransition = { fadeIn(tween(DURATION_NAV_MS)) },
+            exitTransition = { fadeOut(tween(DURATION_NAV_MS)) },
+            popEnterTransition = { fadeIn(tween(DURATION_NAV_MS)) },
+            popExitTransition = { fadeOut(tween(DURATION_NAV_MS)) },
         ) {
             composable(TopLevelDestination.Focus.route) {
                 FocusScreen(
@@ -291,7 +316,11 @@ fun PepinilloApp(
                     },
                 )
             }
-            composable("tasks/{taskId}/analytics") {
+            composable(
+                "tasks/{taskId}/analytics",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 TaskAnalyticsScreen(
                     onBack = { navController.popBackStack() },
                 )
@@ -310,15 +339,27 @@ fun PepinilloApp(
                     onNavigateToAIReport = { navController.navigate("ai_report") },
                 )
             }
-            composable("ai_report") {
+            composable(
+                "ai_report",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 AIReportScreen(
                     onBack = { navController.popBackStack() },
                 )
             }
-            composable("calendar") {
+            composable(
+                "calendar",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 CalendarScreen(onBack = { navController.popBackStack() })
             }
-            composable("profile") {
+            composable(
+                "profile",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 ProfileScreen(
                     onBackClick = { navController.popBackStack() },
                     onSignInClick = { navController.navigate("login") },
@@ -338,22 +379,42 @@ fun PepinilloApp(
                     onNavigateToPaywall = { navController.navigate("paywall") },
                 )
             }
-            composable("help") {
+            composable(
+                "help",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 HelpSupportScreen(onBack = { navController.popBackStack() })
             }
-            composable("about") {
+            composable(
+                "about",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 AboutScreen(onBack = { navController.popBackStack() })
             }
-            composable("export") {
+            composable(
+                "export",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 ExportScreen(onBack = { navController.popBackStack() })
             }
-            composable("settings") {
+            composable(
+                "settings",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 SettingsScreen(
                     onNavigateToAppSetup = { navController.navigate("app_setup") },
                     onNavigateToPaywall = { navController.navigate("paywall") },
                 )
             }
-            composable("app_setup") {
+            composable(
+                "app_setup",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 AppSetupScreen(
                     onBack = { navController.popBackStack() },
                 )
@@ -427,7 +488,11 @@ fun PepinilloApp(
                 )
             }
 
-            composable("paywall") {
+            composable(
+                "paywall",
+                enterTransition = SecondaryEnterTransition,
+                popExitTransition = SecondaryPopExitTransition,
+            ) {
                 PaywallScreen(
                     onDismiss = { navController.popBackStack() },
                 )
