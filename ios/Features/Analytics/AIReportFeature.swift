@@ -142,13 +142,17 @@ struct AIReportFeature {
         )
     }
 
-    /// Load a cached report from UserDefaults (lightweight cache for the current period).
+    /// Load a cached report from the Caches directory (issue #86).
+    /// Previously cached in UserDefaults, which is loaded into memory at launch
+    /// and never purged — large AI report payloads (including the full `rawPayload`
+    /// JSON) inflated cold-start memory and polluted the defaults plist.
     /// The cache key is scoped to the current user ID so that after an account switch,
     /// user B never sees user A's cached report.
     private func loadCachedReport(period: ReportPeriod, periodStart: Date) async throws -> ProductivityReportDTO? {
         let userScope = (try? await persistence.fetchCachedUser())?.id ?? "anonymous"
-        let key = "cachedReport_\(userScope)_\(period.rawValue)"
-        guard let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        guard let url = Self.cacheURL(for: userScope, period: period.rawValue),
+              FileManager.default.fileExists(atPath: url.path) else { return nil }
+        guard let data = try? Data(contentsOf: url) else { return nil }
 
         struct CachedReport: Codable {
             let dto: CodableReportDTO
@@ -164,11 +168,11 @@ struct AIReportFeature {
         return cached.dto.toDTO()
     }
 
-    /// Cache a report to UserDefaults.
+    /// Cache a report to the Caches directory.
     /// Key is user-scoped to prevent cross-user cache leaks on account switch.
     private func cacheReport(_ dto: ProductivityReportDTO) async throws {
         let userScope = (try? await persistence.fetchCachedUser())?.id ?? "anonymous"
-        let key = "cachedReport_\(userScope)_\(dto.period)"
+        guard let url = Self.cacheURL(for: userScope, period: dto.period) else { return }
 
         struct CachedReport: Codable {
             let dto: CodableReportDTO
@@ -177,18 +181,39 @@ struct AIReportFeature {
 
         let cached = CachedReport(dto: CodableReportDTO(from: dto), cachedAt: .now)
         if let data = try? JSONEncoder().encode(cached) {
-            UserDefaults.standard.set(data, forKey: key)
+            // Ensure the directory exists (it may not on first run).
+            let dir = url.deletingLastPathComponent()
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try? data.write(to: url, options: .atomic)
         }
     }
 
-    /// Remove all cached AI reports from UserDefaults.
+    /// Remove all cached AI reports from the Caches directory.
     /// Call this on sign-out and account deletion so the next user starts fresh.
     static func clearAllCachedReports() {
-        let defaults = UserDefaults.standard
-        let prefix = "cachedReport_"
-        defaults.dictionaryRepresentation().keys
-            .filter { $0.hasPrefix(prefix) }
-            .forEach { defaults.removeObject(forKey: $0) }
+        // Issue #86: previously used defaults.dictionaryRepresentation() which
+        // loads ALL system defaults into memory just to filter a prefix. Now we
+        // enumerate the cache directory directly — no memory overhead.
+        guard let cacheDir = cacheDirectory() else { return }
+        let fm = FileManager.default
+        guard let entries = try? fm.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: nil) else { return }
+        for fileURL in entries where fileURL.lastPathComponent.hasPrefix("cachedReport_") {
+            try? fm.removeItem(at: fileURL)
+        }
+    }
+
+    // MARK: - Cache directory helpers
+
+    /// The Caches subdirectory for AI reports.
+    private static func cacheDirectory() -> URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent("com.pepinillo.reports", isDirectory: true)
+    }
+
+    /// File URL for a specific user+period cache entry.
+    private static func cacheURL(for userScope: String, period: String) -> URL? {
+        cacheDirectory()?.appendingPathComponent("cachedReport_\(userScope)_\(period).json")
     }
 }
 
