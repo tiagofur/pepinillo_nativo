@@ -370,7 +370,7 @@ struct TaskDetailView: View {
 
                 if store.completedPomodoros > 0 {
                     LabeledContent(String(localized: "Completed")) {
-                        Text("🍅 \(store.completedPomodoros)/\(store.estimatedPomodoros)")
+                        Text(String(localized: "🍅 \(store.completedPomodoros)/\(store.estimatedPomodoros)"))
                             .foregroundStyle(.secondary)
                     }
                 }
