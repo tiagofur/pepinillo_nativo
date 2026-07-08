@@ -55,13 +55,15 @@ data class TasksUiState(
 
 val TasksUiState.filteredTasks: List<Task>
     get() {
+        // Compute "today" once per evaluation instead of allocating 3 Calendars per task.
+        val todayNorm = getNormalizedLocalDate()
         // 1. Plan category filter
         val statusFiltered = when (selectedFilter) {
             // Today: explicitly scheduled today OR due today OR overdue
             TaskFilter.Today -> tasks.filter { task ->
                 !task.isCompleted && (
                     task.scheduledForToday ||
-                    (task.dueDate != null && (isDueTodayMs(task.dueDate) || isBeforeTodayMs(task.dueDate)))
+                    (task.dueDate != null && (isDueTodayMs(task.dueDate, todayNorm) || isBeforeTodayMs(task.dueDate, todayNorm)))
                 )
             }
             // Inbox: no due date, not scheduled today
@@ -73,7 +75,7 @@ val TasksUiState.filteredTasks: List<Task>
                 !task.isCompleted &&
                     !task.scheduledForToday &&
                     task.dueDate != null &&
-                    isUpcomingMs(task.dueDate)
+                    isUpcomingMs(task.dueDate, todayNorm)
             }
             TaskFilter.Completed -> tasks.filter { it.isCompleted }
         }
@@ -123,22 +125,19 @@ private fun getNormalizedDueDate(millis: Long): Calendar {
     }
 }
 
-private fun isDueTodayMs(millis: Long): Boolean {
+private fun isDueTodayMs(millis: Long, todayNorm: Calendar): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
-    val todayNorm = getNormalizedLocalDate()
     return dueNorm == todayNorm
 }
 
-private fun isBeforeTodayMs(millis: Long): Boolean {
+private fun isBeforeTodayMs(millis: Long, todayNorm: Calendar): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
-    val todayNorm = getNormalizedLocalDate()
     return dueNorm.before(todayNorm)
 }
 
-private fun isUpcomingMs(millis: Long): Boolean {
+private fun isUpcomingMs(millis: Long, todayNorm: Calendar): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
-    val todayNorm = getNormalizedLocalDate()
-    val weekEndNorm = getNormalizedLocalDate().apply {
+    val weekEndNorm = (todayNorm.clone() as Calendar).apply {
         add(Calendar.DAY_OF_YEAR, 7)
     }
     return dueNorm.after(todayNorm) && !dueNorm.after(weekEndNorm)

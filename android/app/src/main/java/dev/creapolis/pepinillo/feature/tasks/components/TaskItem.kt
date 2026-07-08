@@ -114,9 +114,11 @@ fun TaskItem(
     // Use null to mean "no priority set" — Color.Transparent would render invisible
     val priorityColor = task.priority.priorityColor().takeIf { it != Color.Transparent }
 
-    val isDueToday = task.dueDate != null && isDueTodayMs(task.dueDate)
+    // "Today" computed once per row per recomposition, instead of allocating 3 Calendars per helper call.
+    val todayNorm = remember { getNormalizedLocalDate() }
+    val isDueToday = task.dueDate != null && isDueTodayMs(task.dueDate, todayNorm)
 
-    val isOverdue = task.dueDate != null && isBeforeTodayMs(task.dueDate)
+    val isOverdue = task.dueDate != null && isBeforeTodayMs(task.dueDate, todayNorm)
 
     val isScheduledToday = task.scheduledForToday
 
@@ -303,12 +305,13 @@ private fun MetadataRow(
             timeZone = java.util.TimeZone.getTimeZone("UTC")
         }
     }
+    val todayNorm = remember { getNormalizedLocalDate() }
     val metadataItems = mutableListOf<@Composable () -> Unit>()
 
     // Due date — always shown when present (overdue / today / future date).
     task.dueDate?.let { dueDate ->
-        val isToday = isDueTodayMs(dueDate)
-        val isOverdue = isBeforeTodayMs(dueDate)
+        val isToday = isDueTodayMs(dueDate, todayNorm)
+        val isOverdue = isBeforeTodayMs(dueDate, todayNorm)
         val color = when {
             isOverdue -> MaterialTheme.colorScheme.error
             isToday -> Color(0xFFFF8A00)
@@ -460,15 +463,13 @@ private fun getNormalizedDueDate(millis: Long): java.util.Calendar {
     }
 }
 
-private fun isDueTodayMs(millis: Long): Boolean {
+private fun isDueTodayMs(millis: Long, todayNorm: java.util.Calendar): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
-    val todayNorm = getNormalizedLocalDate()
     return dueNorm == todayNorm
 }
 
-private fun isBeforeTodayMs(millis: Long): Boolean {
+private fun isBeforeTodayMs(millis: Long, todayNorm: java.util.Calendar): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
-    val todayNorm = getNormalizedLocalDate()
     return dueNorm.before(todayNorm)
 }
 
