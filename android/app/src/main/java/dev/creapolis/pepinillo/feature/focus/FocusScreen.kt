@@ -362,6 +362,28 @@ fun FocusScreen(
                 )
             }
 
+            // Distinguish "Waiting for next phase" from "Paused": surface a confirmation
+            // banner so the user knows the previous phase finished and a tap starts the next one.
+            AnimatedVisibility(
+                visible = uiState.isWaitingForNext && !uiState.breakSuggested,
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                Text(
+                    text = stringResource(R.string.msg_focus_complete_text),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(top = 10.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f))
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                )
+            }
+
             Spacer(modifier = Modifier.weight(if (sessionActive) 0.8f else 1f))
 
             Row(
