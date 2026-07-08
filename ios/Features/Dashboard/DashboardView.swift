@@ -306,8 +306,8 @@ private struct StreakHeroCard: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             streakProtectionApplied
-                ? "\(streakDays) day streak, protected by Pro"
-                : "\(streakDays) day streak"
+                ? String(localized: "\(streakDays) day streak, protected by Pro")
+                : String(localized: "\(streakDays) day streak")
         )
     }
 }

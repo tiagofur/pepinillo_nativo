@@ -54,7 +54,7 @@ struct SettingsView: View {
     private var pomodoroSection: some View {
         Section {
             Stepper(
-                "\(store.pomodoroDurationMinutes) min focus",
+                String(localized: "\(store.pomodoroDurationMinutes) min focus"),
                 value: Binding(
                     get: { store.pomodoroDurationMinutes },
                     set: { store.send(.pomodoroDurationChanged($0)) }
@@ -62,7 +62,7 @@ struct SettingsView: View {
                 in: 1...120, step: 5
             )
             Stepper(
-                "\(store.shortBreakMinutes) min short break",
+                String(localized: "\(store.shortBreakMinutes) min short break"),
                 value: Binding(
                     get: { store.shortBreakMinutes },
                     set: { store.send(.shortBreakChanged($0)) }
@@ -70,7 +70,7 @@ struct SettingsView: View {
                 in: 1...30, step: 1
             )
             Stepper(
-                "\(store.longBreakMinutes) min long break",
+                String(localized: "\(store.longBreakMinutes) min long break"),
                 value: Binding(
                     get: { store.longBreakMinutes },
                     set: { store.send(.longBreakChanged($0)) }
@@ -78,7 +78,7 @@ struct SettingsView: View {
                 in: 5...60, step: 5
             )
             Stepper(
-                "\(store.pomodorosPerCycle) before long break",
+                String(localized: "\(store.pomodorosPerCycle) before long break"),
                 value: Binding(
                     get: { store.pomodorosPerCycle },
                     set: { store.send(.pomodorosPerCycleChanged($0)) }
@@ -110,7 +110,7 @@ struct SettingsView: View {
     private var timeBlockSection: some View {
         Section {
             Stepper(
-                "\(store.blockDurationMinutes) min block",
+                String(localized: "\(store.blockDurationMinutes) min block"),
                 value: Binding(
                     get: { store.blockDurationMinutes },
                     set: { store.send(.blockDurationChanged($0)) }
@@ -135,7 +135,7 @@ struct SettingsView: View {
     private var flowtimeSection: some View {
         Section {
             Stepper(
-                "\(store.flowtimeMinMinutes) min minimum session",
+                String(localized: "\(store.flowtimeMinMinutes) min minimum session"),
                 value: Binding(
                     get: { store.flowtimeMinMinutes },
                     set: { store.send(.flowtimeMinMinutesChanged($0)) }
