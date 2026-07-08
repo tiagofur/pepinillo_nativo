@@ -25,9 +25,12 @@ import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -237,6 +240,9 @@ fun DashboardScreen(
         StreakHeroCard(
             currentStreak = stats.currentStreak,
             bestStreak = stats.bestStreak,
+            streakProtectionApplied = stats.streakProtectionApplied,
+            todayMinutes = stats.todayMinutes,
+            todaySessions = stats.todaySessions,
             modifier = Modifier.fillMaxWidth(),
         )
 
@@ -352,12 +358,23 @@ fun DashboardScreen(
         ) {
             PatternCard(
                 title = stringResource(R.string.dashboard_focus_score),
-                value = "${stats.focusScore}",
+                value = stringResource(R.string.dashboard_focus_score_value, stats.focusScore),
                 icon = Icons.Rounded.EmojiEvents,
+                subtitle = focusScoreQualifier(stats.focusScore)
+                    ?.let { stringResource(it) },
                 modifier = Modifier.weight(1f),
             )
-            // Placeholder for balance
-            Box(modifier = Modifier.weight(1f))
+            // Longest session — was an empty placeholder; now surfaces a computed-but-unshown stat.
+            PatternCard(
+                title = stringResource(R.string.dashboard_longest_session),
+                value = if (stats.longestSessionMinutes > 0) {
+                    formatMinutes(stats.longestSessionMinutes)
+                } else {
+                    "\u2013"
+                },
+                icon = Icons.Rounded.HourglassTop,
+                modifier = Modifier.weight(1f),
+            )
         }
 
         Spacer(modifier = Modifier.height(28.dp))
@@ -505,6 +522,7 @@ private fun PatternCard(
     value: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
 ) {
     Column(
         modifier = modifier
@@ -527,6 +545,15 @@ private fun PatternCard(
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
         )
+        if (subtitle != null) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+            )
+        }
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = title,
@@ -545,64 +572,114 @@ private fun PatternCard(
 private fun StreakHeroCard(
     currentStreak: Int,
     bestStreak: Int,
+    streakProtectionApplied: Boolean,
+    todayMinutes: Int,
+    todaySessions: Int,
     modifier: Modifier = Modifier,
 ) {
     val streakColor = MaterialTheme.colorScheme.tertiary
     val streakContainerColor = MaterialTheme.colorScheme.tertiaryContainer
 
-    Row(
+    Column(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
             .background(streakContainerColor.copy(alpha = 0.7f))
             .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        // Flame icon + large streak number
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(
-                imageVector = Icons.Rounded.LocalFireDepartment,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = streakColor,
-            )
-            Column {
-                Text(
-                    text = stringResource(R.string.dashboard_days_count, currentStreak),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+            // Flame icon + large streak number
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.LocalFireDepartment,
+                    contentDescription = stringResource(R.string.cd_streak),
+                    modifier = Modifier.size(40.dp),
+                    tint = streakColor,
                 )
+                Column {
+                    Text(
+                        text = stringResource(R.string.dashboard_days_count, currentStreak),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                    Text(
+                        text = stringResource(R.string.day_streak),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            // Personal best — compact secondary stat
+            if (bestStreak > 0) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Icon(
+                        imageVector = Icons.Rounded.EmojiEvents,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp).align(Alignment.End),
+                        tint = streakColor.copy(alpha = 0.7f),
+                    )
+                    Text(
+                        text = stringResource(R.string.dashboard_days_count, bestStreak),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
+                    )
+                    Text(
+                        text = stringResource(R.string.dashboard_best),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.6f),
+                    )
+                }
+            }
+        }
+
+        // Protection badge — surfaces streakProtectionApplied (was computed but never shown).
+        if (streakProtectionApplied) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Shield,
+                    contentDescription = stringResource(R.string.cd_streak_protected),
+                    tint = streakColor,
+                    modifier = Modifier.size(14.dp),
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = stringResource(R.string.day_streak),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                    text = stringResource(R.string.streak_protected),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = streakColor,
                 )
             }
         }
 
-        // Personal best — compact secondary stat
-        if (bestStreak > 0) {
-            Column(horizontalAlignment = Alignment.End) {
+        // Today anchor — surfaces todayMinutes/todaySessions (were computed but never shown).
+        // For a daily focus app "how am I doing today?" is the #1 question.
+        if (todayMinutes > 0 || todaySessions > 0) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Icon(
-                    imageVector = Icons.Rounded.EmojiEvents,
+                    imageVector = Icons.Rounded.Schedule,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp).align(Alignment.End),
-                    tint = streakColor.copy(alpha = 0.7f),
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.7f),
+                    modifier = Modifier.size(14.dp),
                 )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = stringResource(R.string.dashboard_days_count, bestStreak),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    text = "${formatMinutes(todayMinutes)} \u00B7 " +
+                        stringResource(R.string.dashboard_today_sessions_compact, todaySessions),
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
-                )
-                Text(
-                    text = stringResource(R.string.dashboard_best),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.6f),
                 )
             }
         }
@@ -809,6 +886,14 @@ private fun formatMinutes(totalMinutes: Int, hasSessions: Boolean = false): Stri
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+}
+
+/** Maps a 0–100 focus score to a qualitative resource string, or null when not meaningful. */
+private fun focusScoreQualifier(score: Int): Int? = when {
+    score <= 0 -> null
+    score < 40 -> R.string.dashboard_focus_score_qualitative_low
+    score < 75 -> R.string.dashboard_focus_score_qualitative_medium
+    else -> R.string.dashboard_focus_score_qualitative_high
 }
 
 @Preview(showBackground = true)
