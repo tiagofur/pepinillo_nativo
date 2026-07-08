@@ -229,6 +229,17 @@ fun FocusScreen(
             }
         }
     }
+    // Surface session-save failures with a Retry action instead of silent data loss.
+    val failedSession by viewModel.lastFailedSession.collectAsState()
+    LaunchedEffect(failedSession) {
+        val failed = failedSession ?: return@LaunchedEffect
+        snackbarController?.show(
+            message = R.string.msg_session_save_failed,
+            actionLabel = R.string.btn_retry,
+            duration = androidx.compose.material3.SnackbarDuration.Long,
+            onAction = { viewModel.retrySessionSave() },
+        )
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
