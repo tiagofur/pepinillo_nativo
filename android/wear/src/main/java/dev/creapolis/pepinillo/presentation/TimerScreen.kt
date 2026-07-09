@@ -30,6 +30,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -200,13 +203,24 @@ private fun TimerActiveLayout(
                 textAlign = TextAlign.Center,
             )
 
-            // Timer display
+            // Timer display — TalkBack reads a rich description (phase + time + progress)
+            // instead of the raw "05:23" string which it parses awkwardly as separate digits.
+            val timeAnnouncement = buildString {
+                append(state.phaseLabel)
+                append(", ")
+                append(localDisplayTime)
+                state.linkedTaskName?.let { append(", ").append(it) }
+            }
             Text(
                 text = localDisplayTime,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Light,
                 color = MaterialTheme.colors.onSurface,
                 textAlign = TextAlign.Center,
+                modifier = Modifier.clearAndSetSemantics {
+                    contentDescription = timeAnnouncement
+                    liveRegion = androidx.compose.ui.semantics.LiveRegionMode.Polite
+                },
             )
 
             // Phase label
