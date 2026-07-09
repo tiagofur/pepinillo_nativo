@@ -19,6 +19,7 @@ import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.local.dao.TaskSyncUpdate
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
@@ -222,10 +223,16 @@ class SyncEngine @Inject constructor(
 
                     // 4. Process response — upsert returned data
                     mergeServerTasks(response.tasks)
-                    for (task in allTasks) {
-                        val serverTask = response.tasks.find { it.syncId == task.id }
-                        val serverId = serverTask?.id ?: (task.serverId ?: 0)
-                        taskDao.markSynced(task.id, now, serverId)
+                    // O(1) syncId→serverId lookup instead of O(N×M) .find{} per task.
+                    val serverIdBySyncId = response.tasks.associate { it.syncId to it.id }
+                    val taskUpdates = allTasks.map { task ->
+                        TaskSyncUpdate(
+                            taskId = task.id,
+                            serverId = serverIdBySyncId[task.id] ?: (task.serverId ?: 0),
+                        )
+                    }
+                    if (taskUpdates.isNotEmpty()) {
+                        taskDao.markSyncedBatch(taskUpdates, now)
                     }
 
                     val sessionEntities = response.sessions
@@ -236,8 +243,8 @@ class SyncEngine @Inject constructor(
                     }
                     // Resolve inbound task links for server sessions
                     resolveInboundTaskLinks(response.sessions)
-                    for (session in allSessions) {
-                        sessionDao.markSynced(session.id, now)
+                    if (allSessions.isNotEmpty()) {
+                        sessionDao.markSyncedBatch(allSessions.map { it.id }, now)
                     }
 
                     // Apply returned settings
@@ -330,14 +337,18 @@ class SyncEngine @Inject constructor(
                 val now = System.currentTimeMillis()
                 println("[$TAG]syncTasks: server returned ${response.tasks.size} tasks")
 
-                for (task in dirtyTasks) {
-                    if (task.isDeleted) {
-                        taskDao.markSynced(task.id, now, task.serverId ?: 0)
-                        continue
+                // Build a syncId→serverId map ONCE for O(1) lookup instead of O(N×M) .find{} per task.
+                val serverIdBySyncId = response.tasks.associate { it.syncId to it.id }
+                val updates = dirtyTasks.map { task ->
+                    val serverId = if (task.isDeleted) {
+                        task.serverId ?: 0
+                    } else {
+                        serverIdBySyncId[task.id] ?: (task.serverId ?: 0)
                     }
-                    val serverTask = response.tasks.find { it.syncId == task.id }
-                    val serverId = serverTask?.id ?: (task.serverId ?: 0)
-                    taskDao.markSynced(task.id, now, serverId)
+                    TaskSyncUpdate(taskId = task.id, serverId = serverId)
+                }
+                if (updates.isNotEmpty()) {
+                    taskDao.markSyncedBatch(updates, now)
                 }
 
                 mergeServerTasks(response.tasks)
@@ -491,9 +502,9 @@ class SyncEngine @Inject constructor(
 
                 println("[$TAG]syncSessions: upserted ${entities.size} sessions from server")
 
-                // Mark local dirty sessions as synced
-                for (session in dirtySessions) {
-                    sessionDao.markSynced(session.id, now)
+                // Mark local dirty sessions as synced — single transaction batch.
+                if (dirtySessions.isNotEmpty()) {
+                    sessionDao.markSyncedBatch(dirtySessions.map { it.id }, now)
                 }
 
                 // Store server timestamp for next incremental sync
@@ -517,18 +528,23 @@ class SyncEngine @Inject constructor(
      * Falls back to server-ID-based lookup when taskSyncId is absent but taskId is present.
      */
     private suspend fun resolveInboundTaskLinks(serverSessions: List<PomodoroSessionDto>) {
+        // Batch the task lookups instead of one query per session (was N+1).
+        val bySyncId = serverSessions.mapNotNull { it.taskSyncId }.filter { it.isNotEmpty() }.distinct()
+        val byServerId = serverSessions.mapNotNull { it.taskId }.distinct()
+
+        val syncIdMap: Map<String, String> = if (bySyncId.isNotEmpty()) {
+            taskDao.getTasksByIds(bySyncId).associate { it.id to it.id }
+        } else emptyMap()
+        val serverIdMap: Map<Int, String> = if (byServerId.isNotEmpty()) {
+            taskDao.getTasksByServerIds(byServerId).associate { (it.serverId ?: 0) to it.id }
+        } else emptyMap()
+
         var resolved = 0
         for (dto in serverSessions) {
             if (dto.id.isEmpty()) continue
             val localTaskId = when {
-                !dto.taskSyncId.isNullOrEmpty() -> {
-                    // Preferred: direct UUID match
-                    taskDao.getTaskById(dto.taskSyncId)?.id
-                }
-                dto.taskId != null -> {
-                    // Fallback: lookup by server integer ID
-                    taskDao.getTaskByServerId(dto.taskId)?.id
-                }
+                !dto.taskSyncId.isNullOrEmpty() -> syncIdMap[dto.taskSyncId]
+                dto.taskId != null -> serverIdMap[dto.taskId]
                 else -> null
             }
             if (localTaskId != null) {

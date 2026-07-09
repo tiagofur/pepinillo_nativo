@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import kotlinx.coroutines.flow.Flow
@@ -38,6 +39,17 @@ interface FocusSessionDao {
 
     @Query("UPDATE focus_sessions SET is_dirty = 0, synced_at = :syncedAt WHERE id = :sessionId")
     suspend fun markSynced(sessionId: String, syncedAt: Long)
+
+    /**
+     * Marks many sessions as synced in a single transaction. All sessions share the same syncedAt,
+     * so this collapses N separate UPDATEs into one committed transaction.
+     */
+    @Transaction
+    suspend fun markSyncedBatch(sessionIds: List<String>, syncedAt: Long) {
+        for (id in sessionIds) {
+            markSynced(id, syncedAt)
+        }
+    }
 
     @Query("SELECT * FROM focus_sessions WHERE created_at >= :startTime AND created_at < :endTime ORDER BY created_at DESC")
     suspend fun getSessionsInRangeSync(startTime: Long, endTime: Long): List<FocusSessionEntity>
