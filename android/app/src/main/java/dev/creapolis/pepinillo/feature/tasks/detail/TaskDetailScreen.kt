@@ -79,6 +79,7 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.priorityColor
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -207,7 +208,7 @@ fun TaskDetailScreen(
                         if (task.isCompleted) {
                             Icon(
                                 imageVector = Icons.Rounded.Check,
-                                contentDescription = "Completed",
+                                contentDescription = stringResource(R.string.cd_task_completed),
                                 modifier = Modifier.size(16.dp),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                             )
@@ -292,7 +293,7 @@ fun TaskDetailScreen(
                                         if (subtask.isCompleted) {
                                             Icon(
                                                 imageVector = Icons.Rounded.Check,
-                                                contentDescription = "Completed",
+                                                contentDescription = stringResource(R.string.cd_task_completed),
                                                 modifier = Modifier.size(14.dp),
                                                 tint = MaterialTheme.colorScheme.onPrimary
                                             )
@@ -311,7 +312,7 @@ fun TaskDetailScreen(
                             IconButton(onClick = { viewModel.deleteSubtask(subtask.id) }) {
                                 Icon(
                                     imageVector = Icons.Rounded.Close,
-                                    contentDescription = "Delete subtask",
+                                    contentDescription = stringResource(R.string.cd_delete_subtask),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -324,7 +325,7 @@ fun TaskDetailScreen(
                         OutlinedTextField(
                             value = newSubtaskTitle,
                             onValueChange = { newSubtaskTitle = it },
-                            placeholder = { Text("Añadir subtarea...", style = MaterialTheme.typography.bodyMedium) },
+                            placeholder = { Text(stringResource(R.string.task_add_subtask_hint), style = MaterialTheme.typography.bodyMedium) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -354,7 +355,7 @@ fun TaskDetailScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Rounded.Lock,
-                                    contentDescription = "Lock",
+                                    contentDescription = stringResource(R.string.cd_lock),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -397,7 +398,7 @@ fun TaskDetailScreen(
                         Icon(
                             imageVector = Icons.Rounded.LocalFireDepartment,
                             contentDescription = null,
-                            tint = Color(0xFFFF8A00),
+                            tint = DomainColors.DueToday,
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -412,7 +413,7 @@ fun TaskDetailScreen(
                         onCheckedChange = { viewModel.toggleScheduledForToday() },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
-                            checkedTrackColor = Color(0xFFFF8A00),
+                            checkedTrackColor = DomainColors.DueToday,
                             uncheckedThumbColor = MaterialTheme.colorScheme.outline,
                             uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
                         )
@@ -732,12 +733,12 @@ fun TaskDetailScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = "Completados",
+                                text = stringResource(R.string.task_completed_pomodoros_label),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "🍅 ${task.completedPomodoros}/${task.estimatedPomodoros}",
+                                text = stringResource(R.string.task_pomodoro_progress, task.completedPomodoros, task.estimatedPomodoros),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -751,7 +752,7 @@ fun TaskDetailScreen(
         // ── Card 5: Recurrence ──
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Recurrencia",
+                text = stringResource(R.string.task_recurrence_label),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
@@ -873,7 +874,7 @@ fun TaskDetailScreen(
                             }
                             Icon(
                                 imageVector = Icons.Rounded.Lock,
-                                contentDescription = "Lock",
+                                contentDescription = stringResource(R.string.cd_lock),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                                 modifier = Modifier.size(18.dp)
                             )
@@ -983,7 +984,7 @@ fun TaskDetailScreen(
             ) {
                 Icon(Icons.Filled.BarChart, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Ver estadísticas")
+                Text(stringResource(R.string.task_view_stats))
             }
 
             TextButton(

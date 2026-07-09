@@ -68,6 +68,7 @@ import dev.creapolis.pepinillo.feature.dashboard.model.AnalyticsPeriod
 import dev.creapolis.pepinillo.feature.dashboard.model.isEmpty
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.components.DashboardSkeleton
+import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -288,7 +289,7 @@ fun DashboardScreen(
                 title = stringResource(R.string.cd_weekly_review),
                 subtitle = weeklyPreviewLine,
                 icon = Icons.Rounded.Summarize,
-                tintColor = Color(0xFFFF9800), // Orange
+                tintColor = DomainColors.ReviewWeekly, // Orange
                 onClick = {
                     if (hasLocalPremium) viewModel.showWeeklyReview() else onNavigateToPaywall()
                 }
@@ -308,7 +309,7 @@ fun DashboardScreen(
                 title = stringResource(R.string.cd_monthly_review),
                 subtitle = monthlyPreviewLine,
                 icon = Icons.Rounded.DateRange,
-                tintColor = Color(0xFF9C27B0), // Purple
+                tintColor = DomainColors.ReviewMonthly, // Purple
                 onClick = {
                     if (hasLocalPremium) viewModel.showMonthlyReview() else onNavigateToPaywall()
                 }

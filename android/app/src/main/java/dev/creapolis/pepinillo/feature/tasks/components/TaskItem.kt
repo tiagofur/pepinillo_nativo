@@ -64,6 +64,7 @@ import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.EnergyColors
 import dev.creapolis.pepinillo.ui.theme.priorityColor
 import java.text.SimpleDateFormat
@@ -132,7 +133,7 @@ fun TaskItem(
         targetValue = when {
             task.isCompleted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
             isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.06f)
-            isDueToday -> Color(0xFFFF8A00).copy(alpha = 0.06f)
+            isDueToday -> DomainColors.DueToday.copy(alpha = 0.06f)
             isScheduledToday -> brandGreen().copy(alpha = 0.06f)
             else -> Color.Transparent
         },
@@ -144,7 +145,7 @@ fun TaskItem(
         targetValue = when {
             task.isCompleted -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
             isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
-            isDueToday -> Color(0xFFFF8A00).copy(alpha = 0.35f)
+            isDueToday -> DomainColors.DueToday.copy(alpha = 0.35f)
             isScheduledToday -> brandGreen().copy(alpha = 0.35f)
             else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
         },
@@ -314,7 +315,7 @@ private fun MetadataRow(
         val isOverdue = isBeforeTodayMs(dueDate, todayNorm)
         val color = when {
             isOverdue -> MaterialTheme.colorScheme.error
-            isToday -> Color(0xFFFF8A00)
+            isToday -> DomainColors.DueToday
             else -> MaterialTheme.colorScheme.onSurfaceVariant
         }
         metadataItems.add {

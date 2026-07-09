@@ -1,11 +1,13 @@
 package dev.creapolis.pepinillo.feature.dashboard.components
 
+import dev.creapolis.pepinillo.R
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -185,7 +187,7 @@ fun FocusChart(
 @Composable
 private fun EmptyChartPlaceholder(modifier: Modifier = Modifier) {
     Text(
-        text = "No focus data yet",
+        text = stringResource(R.string.chart_no_data),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier
