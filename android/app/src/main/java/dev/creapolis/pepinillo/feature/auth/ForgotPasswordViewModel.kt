@@ -1,9 +1,11 @@
 package dev.creapolis.pepinillo.feature.auth
 
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import kotlinx.coroutines.channels.Channel
@@ -26,7 +28,7 @@ data class ForgotPasswordUiState(
     val newPassword: String = "",
     val confirmPassword: String = "",
     val isLoading: Boolean = false,
-    val errorMessage: String? = null,
+    @field:StringRes val errorMessageRes: Int? = null,
     val isPasswordVisible: Boolean = false,
     val isConfirmPasswordVisible: Boolean = false,
 )
@@ -48,19 +50,19 @@ class ForgotPasswordViewModel @Inject constructor(
     val events = _events.receiveAsFlow()
 
     fun onEmailChange(value: String) {
-        _uiState.value = _uiState.value.copy(email = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(email = value, errorMessageRes = null)
     }
 
     fun onCodeChange(value: String) {
-        _uiState.value = _uiState.value.copy(code = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(code = value, errorMessageRes = null)
     }
 
     fun onNewPasswordChange(value: String) {
-        _uiState.value = _uiState.value.copy(newPassword = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(newPassword = value, errorMessageRes = null)
     }
 
     fun onConfirmPasswordChange(value: String) {
-        _uiState.value = _uiState.value.copy(confirmPassword = value, errorMessage = null)
+        _uiState.value = _uiState.value.copy(confirmPassword = value, errorMessageRes = null)
     }
 
     fun togglePasswordVisibility() {
@@ -74,11 +76,11 @@ class ForgotPasswordViewModel @Inject constructor(
     fun sendCode() {
         val email = _uiState.value.email.trim()
         if (email.isBlank()) {
-            _uiState.value = _uiState.value.copy(errorMessage = "Please enter your email address")
+            _uiState.value = _uiState.value.copy(errorMessageRes = R.string.forgot_enter_email)
             return
         }
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessageRes = null)
             when (val result = apiClient.forgotPassword(email)) {
                 is NetworkResult.Success -> {
                     _uiState.value = _uiState.value.copy(
@@ -89,14 +91,14 @@ class ForgotPasswordViewModel @Inject constructor(
                 is NetworkResult.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = mapError(result.code, result.message),
+                        errorMessageRes = mapError(result.code, result.message),
                     )
                 }
                 is NetworkResult.NetworkError -> {
                     Log.e("ForgotPasswordViewModel", "Network error", result.exception)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = mapNetworkError(result.exception),
+                        errorMessageRes = mapNetworkError(result.exception),
                     )
                 }
             }
@@ -108,7 +110,7 @@ class ForgotPasswordViewModel @Inject constructor(
             code = "",
             newPassword = "",
             confirmPassword = "",
-            errorMessage = null,
+            errorMessageRes = null,
         )
         sendCode()
     }
@@ -117,19 +119,19 @@ class ForgotPasswordViewModel @Inject constructor(
         val state = _uiState.value
         val passwordError = validatePassword(state.newPassword)
         if (passwordError != null) {
-            _uiState.value = state.copy(errorMessage = passwordError)
+            _uiState.value = state.copy(errorMessageRes = passwordError)
             return
         }
         if (state.newPassword != state.confirmPassword) {
-            _uiState.value = state.copy(errorMessage = "Passwords do not match")
+            _uiState.value = state.copy(errorMessageRes = R.string.forgot_passwords_no_match)
             return
         }
         if (state.code.isBlank()) {
-            _uiState.value = state.copy(errorMessage = "Please enter the code from your email")
+            _uiState.value = state.copy(errorMessageRes = R.string.forgot_enter_code)
             return
         }
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessageRes = null)
             when (val result = apiClient.resetPassword(state.email.trim(), state.code.trim(), state.newPassword)) {
                 is NetworkResult.Success -> {
                     _uiState.value = _uiState.value.copy(isLoading = false)
@@ -138,14 +140,14 @@ class ForgotPasswordViewModel @Inject constructor(
                 is NetworkResult.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = mapError(result.code, result.message),
+                        errorMessageRes = mapError(result.code, result.message),
                     )
                 }
                 is NetworkResult.NetworkError -> {
                     Log.e("ForgotPasswordViewModel", "Network error", result.exception)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        errorMessage = mapNetworkError(result.exception),
+                        errorMessageRes = mapNetworkError(result.exception),
                     )
                 }
             }
@@ -156,27 +158,32 @@ class ForgotPasswordViewModel @Inject constructor(
         viewModelScope.launch { _events.send(ForgotPasswordEvent.NavigateBack) }
     }
 
-    private fun validatePassword(password: String): String? {
-        if (password.length < 8) return "Password must be at least 8 characters"
-        if (!password.any { it.isUpperCase() }) return "Password needs at least one uppercase letter"
-        if (!password.any { it.isLowerCase() }) return "Password needs at least one lowercase letter"
-        if (!password.any { it.isDigit() }) return "Password needs at least one number"
-        return null
+    @StringRes
+    private fun validatePassword(password: String): Int? = when {
+        password.length < 8 -> R.string.forgot_password_min_length
+        !password.any { it.isUpperCase() } -> R.string.forgot_password_uppercase
+        !password.any { it.isLowerCase() } -> R.string.forgot_password_lowercase
+        !password.any { it.isDigit() } -> R.string.forgot_password_number
+        else -> null
     }
 
-    private fun mapError(code: Int, message: String): String = when {
-        message == "invalid_code" || message == "code_expired" -> "The code is invalid or has expired. Please request a new one."
-        message == "user_not_found" || message == "email_not_found" -> "No account found with that email address"
-        message == "missing_required_fields" -> "Please fill in all fields"
-        code in 500..599 -> "Server error. Please try again later."
-        else -> "Error: $message"
+    /** Map a server error to a localized StringRes — never surfaces the raw server message. */
+    @StringRes
+    private fun mapError(code: Int, message: String): Int = when {
+        message == "invalid_code" || message == "code_expired" -> R.string.forgot_code_invalid
+        message == "user_not_found" || message == "email_not_found" -> R.string.forgot_no_account
+        message == "missing_required_fields" -> R.string.forgot_missing_fields
+        code in 500..599 -> R.string.error_server
+        else -> R.string.error_unknown
     }
 
-    private fun mapNetworkError(exception: Throwable): String = when (exception) {
-        is java.net.UnknownHostException -> "Cannot resolve server: ${exception.message}"
-        is java.net.ConnectException -> "Connection refused: ${exception.message}"
-        is java.net.SocketTimeoutException -> "Connection timed out"
-        is javax.net.ssl.SSLException -> "SSL error: ${exception.message}"
-        else -> "Network error: ${exception::class.simpleName} - ${exception.message}"
+    /** Map a network exception to a localized StringRes — never leaks exception class/message. */
+    @StringRes
+    private fun mapNetworkError(exception: Throwable): Int = when (exception) {
+        is java.net.UnknownHostException -> R.string.error_no_connection
+        is java.net.ConnectException -> R.string.error_connection_refused
+        is java.net.SocketTimeoutException -> R.string.error_timeout
+        is javax.net.ssl.SSLException -> R.string.error_ssl
+        else -> R.string.error_unknown
     }
 }

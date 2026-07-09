@@ -24,7 +24,7 @@ data class PaywallUiState(
     val selectedProductId: String? = null,
     val isPurchasing: Boolean = false,
     val isPro: Boolean = false,
-    val error: String? = null,
+    @field:androidx.annotation.StringRes val errorRes: Int? = null,
 )
 
 @HiltViewModel
@@ -35,15 +35,15 @@ class PaywallViewModel @Inject constructor(
 
     private val _selectedProductId = MutableStateFlow<String?>(null)
     private val _isPurchasing = MutableStateFlow(false)
-    private val _error = MutableStateFlow<String?>(null)
+    private val _errorRes = MutableStateFlow<Int?>(null)
 
     val uiState: StateFlow<PaywallUiState> = combine(
         subscriptionManager.products,
         _selectedProductId,
         _isPurchasing,
         subscriptionManager.subscriptionState,
-        _error,
-    ) { products, selectedId, purchasing, subState, error ->
+        _errorRes,
+    ) { products, selectedId, purchasing, subState, errorRes ->
         PaywallUiState(
             products = products,
             selectedProductId = selectedId ?: products.find {
@@ -51,7 +51,7 @@ class PaywallViewModel @Inject constructor(
             }?.productId,
             isPurchasing = purchasing,
             isPro = subState.hasLocalPremium,
-            error = error,
+            errorRes = errorRes,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PaywallUiState())
 
@@ -71,7 +71,7 @@ class PaywallViewModel @Inject constructor(
         val product = uiState.value.products.find { it.productId == selectedId } ?: return
 
         _isPurchasing.value = true
-        _error.value = null
+        _errorRes.value = null
 
         viewModelScope.launch {
             subscriptionManager.launchPurchaseFlow(activity, product)
@@ -85,16 +85,16 @@ class PaywallViewModel @Inject constructor(
     fun restorePurchases() {
         viewModelScope.launch {
             _isPurchasing.value = true
-            _error.value = null
+            _errorRes.value = null
             subscriptionManager.checkExistingPurchases()
             _isPurchasing.value = false
             if (!subscriptionManager.subscriptionState.value.hasLocalPremium) {
-                _error.value = "No active subscription found"
+                _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_no_subscription
             }
         }
     }
 
     fun clearError() {
-        _error.value = null
+        _errorRes.value = null
     }
 }

@@ -246,10 +246,10 @@ fun PaywallScreen(
         }
 
         // ── ERROR ──
-        uiState.error?.let { error ->
+        uiState.errorRes?.let { errorRes ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = error,
+                text = stringResource(errorRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,

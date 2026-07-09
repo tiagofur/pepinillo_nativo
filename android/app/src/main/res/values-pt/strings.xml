@@ -742,4 +742,26 @@
     <string name="achievement_marathon_title">Maratona</string>
     <string name="achievement_marathon_subtitle">Foque 4 horas num só dia</string>
 
+    <!-- i18n: forgot-password + generic errors -->
+    <string name="forgot_enter_email">Introduza o seu email</string>
+    <string name="forgot_passwords_no_match">As palavras-passe não coincidem</string>
+    <string name="forgot_enter_code">Introduza o código do seu email</string>
+    <string name="forgot_password_min_length">A palavra-passe deve ter pelo menos 8 caracteres</string>
+    <string name="forgot_password_uppercase">A palavra-passe precisa de pelo menos uma maiúscula</string>
+    <string name="forgot_password_lowercase">A palavra-passe precisa de pelo menos uma minúscula</string>
+    <string name="forgot_password_number">A palavra-passe precisa de pelo menos um número</string>
+    <string name="forgot_code_invalid">O código é inválido ou expirou. Solicite um novo.</string>
+    <string name="forgot_no_account">Nenhuma conta encontrada com esse email</string>
+    <string name="forgot_missing_fields">Por favor, preencha todos os campos</string>
+    <string name="error_server">Erro do servidor. Tente novamente mais tarde.</string>
+    <string name="error_unknown">Algo correu mal. Tente novamente.</string>
+    <string name="error_no_connection">Sem ligação à internet. Verifique a sua rede.</string>
+    <string name="error_connection_refused">Não foi possível ligar ao servidor. Tente novamente mais tarde.</string>
+    <string name="error_timeout">O pedido excedeu o tempo limite. Tente novamente.</string>
+    <string name="error_ssl">Não foi possível estabelecer uma ligação segura.</string>
+    <string name="error_delete_account_failed">Não foi possível eliminar a sua conta. Tente novamente.</string>
+    <string name="error_upload_failed">Não foi possível enviar a foto. Tente novamente.</string>
+    <string name="error_read_image">Não foi possível ler a imagem selecionada.</string>
+    <string name="paywall_no_subscription">Nenhuma subscrição ativa encontrada</string>
+
 </resources>

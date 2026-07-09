@@ -1,11 +1,12 @@
 package dev.creapolis.pepinillo.feature.profile
 
 import android.content.Context
-import dev.creapolis.pepinillo.R
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.UpdateProfileRequest
@@ -36,7 +37,7 @@ data class ProfileUiState(
     val totalSessions: Int = 0,
     val bestStreak: Int = 0,
     val achievements: List<Achievement> = emptyList(),
-    val error: String? = null,
+    val errorRes: Int? = null,
     val isEditSheetVisible: Boolean = false,
     val editName: String = "",
     val editImageUrl: String? = null,
@@ -151,7 +152,7 @@ class ProfileViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    error = result.exceptionOrNull()?.message,
+                    errorRes = if (result.isFailure) R.string.error_unknown else null,
                 )
             }
         }
@@ -179,10 +180,10 @@ class ProfileViewModel @Inject constructor(
                     onSuccess()
                 }
                 is NetworkResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = "Failed to delete account: ${result.message}") }
+                    _uiState.update { it.copy(isLoading = false, errorRes = R.string.error_delete_account_failed) }
                 }
                 is NetworkResult.NetworkError -> {
-                    _uiState.update { it.copy(isLoading = false, error = "No internet connection") }
+                    _uiState.update { it.copy(isLoading = false, errorRes = R.string.error_no_connection) }
                 }
             }
         }
@@ -213,7 +214,7 @@ class ProfileViewModel @Inject constructor(
                 it.copy(
                     isSaving = false,
                     isEditSheetVisible = !result.isSuccess,
-                    error = result.exceptionOrNull()?.message,
+                    errorRes = if (result.isFailure) R.string.error_unknown else null,
                 )
             }
         }
@@ -237,19 +238,19 @@ class ProfileViewModel @Inject constructor(
                         }
                     }
                     is NetworkResult.Error -> {
-                        _uiState.update { it.copy(isUploading = false, error = "Upload failed: ${result.message}") }
+                        _uiState.update { it.copy(isUploading = false, errorRes = R.string.error_upload_failed) }
                     }
                     is NetworkResult.NetworkError -> {
-                        _uiState.update { it.copy(isUploading = false, error = "No internet connection") }
+                        _uiState.update { it.copy(isUploading = false, errorRes = R.string.error_no_connection) }
                     }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isUploading = false, error = "Failed to read image") }
+                _uiState.update { it.copy(isUploading = false, errorRes = R.string.error_read_image) }
             }
         }
     }
 
     fun clearError() {
-        _uiState.update { it.copy(error = null) }
+        _uiState.update { it.copy(errorRes = null) }
     }
 }

@@ -144,8 +144,8 @@ fun AIReportScreen(
 
         when {
             state.isGenerating -> LoadingState()
-            state.error != null && state.report == null -> ErrorState(
-                error = state.error!!,
+            state.errorRes != null && state.report == null -> ErrorState(
+                error = state.errorRes?.let { stringResource(it) } ?: "",
                 onRetry = { viewModel.retry() },
             )
             state.report != null -> ReportContent(state = state)
