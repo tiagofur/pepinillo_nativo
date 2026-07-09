@@ -763,5 +763,6 @@
     <string name="error_upload_failed">Não foi possível enviar a foto. Tente novamente.</string>
     <string name="error_read_image">Não foi possível ler a imagem selecionada.</string>
     <string name="paywall_no_subscription">Nenhuma subscrição ativa encontrada</string>
+    <string name="banner_offline">Sem ligação — as alterações sincronizam ao reconectar</string>
 
 </resources>

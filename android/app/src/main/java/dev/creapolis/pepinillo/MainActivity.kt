@@ -28,7 +28,21 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
@@ -122,6 +136,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var authStore: AuthStore
     @Inject lateinit var prefsRepository: UserPreferencesRepository
     @Inject lateinit var subscriptionManager: SubscriptionManager
+    @Inject lateinit var syncStatusManager: dev.creapolis.pepinillo.data.sync.SyncStatusManager
 
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -200,7 +215,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     PepinilloApp(
                         prefsRepository = prefsRepository,
-                        isPipMode = isPipMode
+                        isPipMode = isPipMode,
+                        syncStatusManager = syncStatusManager,
                     )
                 }
         }
@@ -236,7 +252,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun PepinilloApp(
     prefsRepository: UserPreferencesRepository,
-    isPipMode: Boolean = false
+    isPipMode: Boolean = false,
+    syncStatusManager: dev.creapolis.pepinillo.data.sync.SyncStatusManager,
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -246,6 +263,9 @@ fun PepinilloApp(
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
     val isImeVisible = WindowInsets.isImeVisible
     val showBottomBar = currentRoute in topLevelRoutes && !isPipMode && !isImeVisible
+
+    // Global connectivity indicator: a subtle banner when offline.
+    val isOnline by syncStatusManager.isOnline.collectAsState()
 
     val snackbarController = rememberSnackbarController()
 
@@ -291,10 +311,13 @@ fun PepinilloApp(
             }
         },
     ) { innerPadding ->
-        NavHost(
+        Column(modifier = Modifier.padding(innerPadding)) {
+            // Offline banner — surfaces connectivity state that previously only lived in Settings.
+            OfflineBanner(isOnline = isOnline)
+            NavHost(
             navController = navController,
             startDestination = TopLevelDestination.Focus.route,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.fillMaxSize(),
             // Default transition for push/pop: a gentle Material axis-Z slide + fade.
             // This replaces the previous hard cut between every screen.
             enterTransition = { fadeIn(tween(DURATION_NAV_MS)) },
@@ -544,6 +567,42 @@ fun PepinilloApp(
                 )
             }
         }
+        } // Column
     }
     } // CompositionLocalProvider(LocalSnackbarController)
+}
+
+/**
+ * Subtle offline banner shown at the top of the app content when there's no connection.
+ * Surfaces connectivity state that previously only lived in Settings (SyncStatusManager.isOnline).
+ */
+@Composable
+private fun OfflineBanner(isOnline: Boolean) {
+    androidx.compose.animation.AnimatedVisibility(
+        visible = !isOnline,
+        enter = slideInVertically { -it } + fadeIn(),
+        exit = slideOutVertically { -it } + fadeOut(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.errorContainer)
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.CloudOff,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.banner_offline),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+            )
+        }
+    }
 }
