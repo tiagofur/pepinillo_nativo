@@ -138,7 +138,6 @@ class AIReportViewModel @Inject constructor(
                 highlights = json.encodeToString(response.highlights),
                 insights = json.encodeToString(response.insights),
                 recommendations = json.encodeToString(response.recommendations),
-                rawPayload = json.encodeToString(response),
             )
             reportDao.insertReport(entity)
         } catch (e: Exception) {

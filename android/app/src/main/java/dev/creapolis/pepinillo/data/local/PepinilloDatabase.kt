@@ -30,7 +30,7 @@ import dev.creapolis.pepinillo.data.local.entity.UserEntity
         UserEntity::class,
         PreferenceSyncEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class PepinilloDatabase : RoomDatabase() {
@@ -79,6 +79,36 @@ abstract class PepinilloDatabase : RoomDatabase() {
          * completion toggles must be tracked as dirty so the next sync push can
          * propagate them, instead of being silently lost.
          */
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Drop the redundant raw_payload column: it stored the entire AI report JSON alongside
+                // the already-parsed columns (highlights/insights/recommendations) and was never read back.
+                // Recreate the table (SQLite < 3.35 lacks ALTER TABLE DROP COLUMN).
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS productivity_reports_new (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        period TEXT NOT NULL,
+                        period_start INTEGER NOT NULL,
+                        period_end INTEGER NOT NULL,
+                        generated_at INTEGER NOT NULL,
+                        title TEXT NOT NULL,
+                        highlights TEXT NOT NULL,
+                        insights TEXT NOT NULL,
+                        recommendations TEXT NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("""
+                    INSERT INTO productivity_reports_new
+                        (id, period, period_start, period_end, generated_at, title, highlights, insights, recommendations)
+                    SELECT
+                        id, period, period_start, period_end, generated_at, title, highlights, insights, recommendations
+                    FROM productivity_reports
+                """.trimIndent())
+                db.execSQL("DROP TABLE productivity_reports")
+                db.execSQL("ALTER TABLE productivity_reports_new RENAME TO productivity_reports")
+            }
+        }
+
         val MIGRATION_9_10 = object : Migration(9, 10) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
