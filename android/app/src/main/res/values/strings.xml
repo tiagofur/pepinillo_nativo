@@ -757,4 +757,5 @@
     <string name="error_upload_failed">Could not upload the photo. Please try again.</string>
     <string name="error_read_image">Could not read the selected image.</string>
     <string name="paywall_no_subscription">No active subscription found</string>
+    <string name="banner_offline">You\'re offline — changes will sync when you reconnect</string>
 </resources>
