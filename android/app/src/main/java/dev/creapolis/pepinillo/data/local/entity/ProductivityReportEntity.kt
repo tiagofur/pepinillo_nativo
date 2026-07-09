@@ -15,5 +15,4 @@ data class ProductivityReportEntity(
     val highlights: String,
     val insights: String,
     val recommendations: String,
-    @ColumnInfo(name = "raw_payload") val rawPayload: String,
 )
