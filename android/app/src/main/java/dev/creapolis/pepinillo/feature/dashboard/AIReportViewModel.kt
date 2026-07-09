@@ -24,7 +24,7 @@ data class AIReportUiState(
     val period: String = "week",
     val report: AIReportResponse? = null,
     val isGenerating: Boolean = false,
-    val error: String? = null,
+    @field:androidx.annotation.StringRes val errorRes: Int? = null,
     val creditsLeft: Int = 0,
 )
 
@@ -101,7 +101,7 @@ class AIReportViewModel @Inject constructor(
         if (_state.value.isGenerating) return
 
         viewModelScope.launch {
-            _state.value = _state.value.copy(isGenerating = true, error = null)
+            _state.value = _state.value.copy(isGenerating = true, errorRes = null)
 
             try {
                 val payload = reportDataBuilder.buildPayload(_state.value.period)
@@ -110,7 +110,7 @@ class AIReportViewModel @Inject constructor(
                 _state.value = _state.value.copy(
                     report = response,
                     isGenerating = false,
-                    error = null,
+                    errorRes = null,
                 )
                 cacheReport(response)
                 cleanupOldReports()
@@ -118,7 +118,7 @@ class AIReportViewModel @Inject constructor(
                 Log.e(TAG, "Error generating report", e)
                 _state.value = _state.value.copy(
                     isGenerating = false,
-                    error = "An unexpected error occurred.",
+                    errorRes = dev.creapolis.pepinillo.R.string.error_unknown,
                 )
             }
         }

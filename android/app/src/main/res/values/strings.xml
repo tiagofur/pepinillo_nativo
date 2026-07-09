@@ -735,4 +735,26 @@
     <string name="achievement_centurion_subtitle">Complete 100 sessions</string>
     <string name="achievement_marathon_title">Marathon</string>
     <string name="achievement_marathon_subtitle">Focus for 4 hours in a single day</string>
+
+    <!-- i18n: forgot-password + generic errors (were hard-coded English + leaked server/exception messages) -->
+    <string name="forgot_enter_email">Please enter your email address</string>
+    <string name="forgot_passwords_no_match">Passwords do not match</string>
+    <string name="forgot_enter_code">Please enter the code from your email</string>
+    <string name="forgot_password_min_length">Password must be at least 8 characters</string>
+    <string name="forgot_password_uppercase">Password needs at least one uppercase letter</string>
+    <string name="forgot_password_lowercase">Password needs at least one lowercase letter</string>
+    <string name="forgot_password_number">Password needs at least one number</string>
+    <string name="forgot_code_invalid">The code is invalid or has expired. Please request a new one.</string>
+    <string name="forgot_no_account">No account found with that email address</string>
+    <string name="forgot_missing_fields">Please fill in all fields</string>
+    <string name="error_server">Server error. Please try again later.</string>
+    <string name="error_unknown">Something went wrong. Please try again.</string>
+    <string name="error_no_connection">No internet connection. Please check your network.</string>
+    <string name="error_connection_refused">Could not reach the server. Please try again later.</string>
+    <string name="error_timeout">The request timed out. Please try again.</string>
+    <string name="error_ssl">A secure connection could not be established.</string>
+    <string name="error_delete_account_failed">Could not delete your account. Please try again.</string>
+    <string name="error_upload_failed">Could not upload the photo. Please try again.</string>
+    <string name="error_read_image">Could not read the selected image.</string>
+    <string name="paywall_no_subscription">No active subscription found</string>
 </resources>

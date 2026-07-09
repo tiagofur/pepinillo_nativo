@@ -735,4 +735,26 @@
     <string name="achievement_centurion_subtitle">Completa 100 sesiones</string>
     <string name="achievement_marathon_title">Maratón</string>
     <string name="achievement_marathon_subtitle">Enfoca 4 horas en un solo día</string>
+
+    <!-- i18n: forgot-password + generic errors -->
+    <string name="forgot_enter_email">Introduce tu correo electrónico</string>
+    <string name="forgot_passwords_no_match">Las contraseñas no coinciden</string>
+    <string name="forgot_enter_code">Introduce el código de tu correo</string>
+    <string name="forgot_password_min_length">La contraseña debe tener al menos 8 caracteres</string>
+    <string name="forgot_password_uppercase">La contraseña necesita al menos una mayúscula</string>
+    <string name="forgot_password_lowercase">La contraseña necesita al menos una minúscula</string>
+    <string name="forgot_password_number">La contraseña necesita al menos un número</string>
+    <string name="forgot_code_invalid">El código no es válido o ha caducado. Solicita uno nuevo.</string>
+    <string name="forgot_no_account">No se encontró ninguna cuenta con ese correo</string>
+    <string name="forgot_missing_fields">Por favor, rellena todos los campos</string>
+    <string name="error_server">Error del servidor. Inténtalo más tarde.</string>
+    <string name="error_unknown">Algo salió mal. Inténtalo de nuevo.</string>
+    <string name="error_no_connection">Sin conexión a internet. Comprueba tu red.</string>
+    <string name="error_connection_refused">No se pudo conectar al servidor. Inténtalo más tarde.</string>
+    <string name="error_timeout">La solicitud superó el tiempo de espera. Inténtalo de nuevo.</string>
+    <string name="error_ssl">No se pudo establecer una conexión segura.</string>
+    <string name="error_delete_account_failed">No se pudo eliminar tu cuenta. Inténtalo de nuevo.</string>
+    <string name="error_upload_failed">No se pudo subir la foto. Inténtalo de nuevo.</string>
+    <string name="error_read_image">No se pudo leer la imagen seleccionada.</string>
+    <string name="paywall_no_subscription">No se encontró ninguna suscripción activa</string>
 </resources>

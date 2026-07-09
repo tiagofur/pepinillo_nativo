@@ -137,10 +137,10 @@ private fun EnterEmailStep(
         shape = RoundedCornerShape(12.dp),
     )
 
-    if (uiState.errorMessage != null) {
+    if (uiState.errorMessageRes != null) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = uiState.errorMessage,
+            text = stringResource(uiState.errorMessageRes),
             color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodySmall,
         )
@@ -258,10 +258,10 @@ private fun EnterCodeStep(
         shape = RoundedCornerShape(12.dp),
     )
 
-    if (uiState.errorMessage != null) {
+    if (uiState.errorMessageRes != null) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = uiState.errorMessage,
+            text = stringResource(uiState.errorMessageRes),
             color = MaterialTheme.colorScheme.error,
             style = MaterialTheme.typography.bodySmall,
         )
