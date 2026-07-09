@@ -28,6 +28,14 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     suspend fun getTaskById(taskId: String): TaskEntity?
 
+    /** Batch lookup by sync ids — returns a Map for O(1) membership in sync loops. */
+    @Query("SELECT * FROM tasks WHERE id IN (:ids)")
+    suspend fun getTasksByIds(ids: List<String>): List<TaskEntity>
+
+    /** Batch lookup by server ids — returns a Map for O(1) membership in sync fallback lookups. */
+    @Query("SELECT * FROM tasks WHERE server_id IN (:serverIds)")
+    suspend fun getTasksByServerIds(serverIds: List<Int>): List<TaskEntity>
+
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     fun getTaskByIdFlow(taskId: String): Flow<TaskEntity?>
 
@@ -92,6 +100,18 @@ interface TaskDao {
     @Query("UPDATE tasks SET is_dirty = 0, synced_at = :syncedAt, server_id = :serverId WHERE id = :taskId")
     suspend fun markSynced(taskId: String, syncedAt: Long, serverId: Int)
 
+    /**
+     * Marks many tasks as synced in a single transaction. Each entry carries its own serverId
+     * (the server-assigned id varies per task), so we loop internally but commit once.
+     * Replaces N separate UPDATE transactions in SyncEngine.
+     */
+    @Transaction
+    suspend fun markSyncedBatch(updates: List<TaskSyncUpdate>, syncedAt: Long) {
+        for (u in updates) {
+            markSynced(u.taskId, syncedAt, u.serverId)
+        }
+    }
+
     @Query("UPDATE tasks SET is_deleted = 1, is_dirty = 1, updated_at = :now WHERE id = :taskId")
     suspend fun softDelete(taskId: String, now: Long = System.currentTimeMillis())
 
@@ -132,3 +152,9 @@ interface TaskDao {
         }
     }
 }
+
+/** Carrier for batch mark-synced: a task id plus its server-assigned id. */
+data class TaskSyncUpdate(
+    val taskId: String,
+    val serverId: Int,
+)
