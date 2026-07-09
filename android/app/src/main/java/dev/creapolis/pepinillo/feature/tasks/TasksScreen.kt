@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircleOutline
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Inbox
@@ -218,14 +219,20 @@ fun TasksScreen(
                         items = filteredTasks,
                         key = { _, task -> task.id },
                     ) { _, task ->
-                        // Swipe-to-delete
+                        // Swipe EndToStart = delete, StartToEnd = complete (standard task-app gestures).
                         val dismissState = rememberSwipeToDismissBoxState(
                             confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.EndToStart) {
-                                    viewModel.deleteTask(task.id)
-                                    true
-                                } else {
-                                    false
+                                when (value) {
+                                    SwipeToDismissBoxValue.EndToStart -> {
+                                        viewModel.deleteTask(task.id)
+                                        true
+                                    }
+                                    SwipeToDismissBoxValue.StartToEnd -> {
+                                        viewModel.toggleTaskCompletion(task.id)
+                                        // Don't dismiss — keep the row visible (now toggled to completed).
+                                        false
+                                    }
+                                    SwipeToDismissBoxValue.Settled -> false
                                 }
                             },
                         )
@@ -233,22 +240,32 @@ fun TasksScreen(
                         SwipeToDismissBox(
                             state = dismissState,
                             backgroundContent = {
+                                val isCompleteSwipe = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
+                                val bgColor = if (isCompleteSwipe) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
+                                val fgColor = if (isCompleteSwipe) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onError
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(MaterialTheme.colorScheme.error)
+                                        .background(bgColor)
                                         .padding(horizontal = 20.dp),
-                                    contentAlignment = Alignment.CenterEnd,
+                                    contentAlignment = if (isCompleteSwipe) Alignment.CenterStart else Alignment.CenterEnd,
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Rounded.Delete,
-                                        contentDescription = stringResource(R.string.cd_delete),
-                                        tint = MaterialTheme.colorScheme.onError,
+                                        imageVector = if (isCompleteSwipe) Icons.Rounded.Check else Icons.Rounded.Delete,
+                                        contentDescription = if (isCompleteSwipe) null else stringResource(R.string.cd_delete),
+                                        tint = fgColor,
                                     )
                                 }
                             },
-                            enableDismissFromStartToEnd = false,
                         ) {
                         TaskItem(
                             task = task,
