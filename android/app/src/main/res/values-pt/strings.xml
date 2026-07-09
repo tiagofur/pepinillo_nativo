@@ -710,4 +710,36 @@
     <string name="task_detail_repeat_pro">Repetir (Pepinillo+)</string>
     <string name="btn_done">Concluído</string>
 
+    <!-- i18n: streak card + chart strings -->
+    <string name="streak_start">Comece a sua sequência!</string>
+    <string name="streak_focus_time">Tempo de foco</string>
+    <string name="chart_no_data">Ainda não há dados de foco</string>
+    <string name="chart_avg">média</string>
+    <string name="chart_preview_minutes_hours">%1$s em %2$d %3$s</string>
+    <string name="chart_preview_minutes">%1$s em %2$d %3$s</string>
+
+    <!-- i18n: TaskDetailScreen strings -->
+    <string name="task_add_subtask_hint">Adicionar subtarefa…</string>
+    <string name="task_completed_pomodoros_label">Concluídos</string>
+    <string name="task_recurrence_label">Recorrência</string>
+    <string name="task_view_stats">Ver estatísticas</string>
+    <string name="task_pomodoro_progress">🍅 %1$d/%2$d</string>
+    <string name="cd_task_completed">Concluída</string>
+    <string name="cd_delete_subtask">Eliminar subtarefa</string>
+    <string name="cd_lock">Bloquear</string>
+
+    <!-- i18n: Settings steppers a11y -->
+    <string name="cd_decrease">Reduzir</string>
+    <string name="cd_increase">Aumentar</string>
+
+    <!-- i18n: achievements -->
+    <string name="achievement_first_focus_title">Primeiro Foco</string>
+    <string name="achievement_first_focus_subtitle">Complete a sua primeira sessão de foco</string>
+    <string name="achievement_on_fire_title">Em Chamas</string>
+    <string name="achievement_on_fire_subtitle">Atinja uma sequência de 7 dias</string>
+    <string name="achievement_centurion_title">Centurião</string>
+    <string name="achievement_centurion_subtitle">Complete 100 sessões</string>
+    <string name="achievement_marathon_title">Maratona</string>
+    <string name="achievement_marathon_subtitle">Foque 4 horas num só dia</string>
+
 </resources>

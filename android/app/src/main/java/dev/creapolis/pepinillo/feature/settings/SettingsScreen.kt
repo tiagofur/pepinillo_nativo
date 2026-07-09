@@ -845,7 +845,7 @@ private fun StepperRow(
             ) {
                 Icon(
                     Icons.Rounded.Remove,
-                    contentDescription = "Decrease",
+                    contentDescription = stringResource(R.string.cd_decrease),
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -859,7 +859,7 @@ private fun StepperRow(
             ) {
                 Icon(
                     Icons.Rounded.Add,
-                    contentDescription = "Increase",
+                    contentDescription = stringResource(R.string.cd_increase),
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

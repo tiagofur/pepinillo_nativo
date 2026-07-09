@@ -703,4 +703,36 @@
     <string name="btn_new_task">Nueva tarea</string>
     <string name="task_overdue">Atrasada</string>
     <string name="task_due_today">Vence hoy</string>
+
+    <!-- i18n: streak card + chart strings -->
+    <string name="streak_start">¡Empieza tu racha!</string>
+    <string name="streak_focus_time">Tiempo de enfoque</string>
+    <string name="chart_no_data">Aún no hay datos de enfoque</string>
+    <string name="chart_avg">prom</string>
+    <string name="chart_preview_minutes_hours">%1$s en %2$d %3$s</string>
+    <string name="chart_preview_minutes">%1$s en %2$d %3$s</string>
+
+    <!-- i18n: TaskDetailScreen strings -->
+    <string name="task_add_subtask_hint">Añadir subtarea…</string>
+    <string name="task_completed_pomodoros_label">Completados</string>
+    <string name="task_recurrence_label">Recurrencia</string>
+    <string name="task_view_stats">Ver estadísticas</string>
+    <string name="task_pomodoro_progress">🍅 %1$d/%2$d</string>
+    <string name="cd_task_completed">Completada</string>
+    <string name="cd_delete_subtask">Eliminar subtarea</string>
+    <string name="cd_lock">Bloquear</string>
+
+    <!-- i18n: Settings steppers a11y -->
+    <string name="cd_decrease">Reducir</string>
+    <string name="cd_increase">Aumentar</string>
+
+    <!-- i18n: achievements -->
+    <string name="achievement_first_focus_title">Primer Enfoque</string>
+    <string name="achievement_first_focus_subtitle">Completa tu primera sesión de enfoque</string>
+    <string name="achievement_on_fire_title">En Llamas</string>
+    <string name="achievement_on_fire_subtitle">Alcanza una racha de 7 días</string>
+    <string name="achievement_centurion_title">Centurión</string>
+    <string name="achievement_centurion_subtitle">Completa 100 sesiones</string>
+    <string name="achievement_marathon_title">Maratón</string>
+    <string name="achievement_marathon_subtitle">Enfoca 4 horas en un solo día</string>
 </resources>

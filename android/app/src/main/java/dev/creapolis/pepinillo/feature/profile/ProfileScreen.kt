@@ -250,8 +250,8 @@ fun ProfileScreen(
                 if (index > 0) ProfileDivider()
                 AchievementRow(
                     icon = achievementIcon(achievement.icon),
-                    title = achievement.title,
-                    subtitle = achievement.subtitle,
+                    title = stringResource(achievement.titleRes),
+                    subtitle = stringResource(achievement.subtitleRes),
                     isUnlocked = achievement.isUnlocked,
                 )
             }

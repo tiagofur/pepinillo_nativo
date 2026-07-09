@@ -1,5 +1,7 @@
 package dev.creapolis.pepinillo.feature.dashboard
 
+import dev.creapolis.pepinillo.ui.theme.DomainColors
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -105,7 +107,7 @@ fun MonthlyReviewSheet(
                         Icons.Rounded.CheckCircle,
                         contentDescription = null,
                         modifier = Modifier.size(28.dp),
-                        tint = Color(0xFF4CAF50),
+                        tint = DomainColors.Positive,
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -159,7 +161,7 @@ fun MonthlyReviewSheet(
                             Icons.Rounded.Star,
                             contentDescription = null,
                             modifier = Modifier.size(28.dp),
-                            tint = Color(0xFFFFD700),
+                            tint = DomainColors.Gold,
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
@@ -288,8 +290,8 @@ private fun MonthlyTrendCard(
     modifier: Modifier = Modifier,
 ) {
     val trendColor = when (trend) {
-        Trend.Up -> Color(0xFF4CAF50)
-        Trend.Down -> Color(0xFFF44336)
+        Trend.Up -> DomainColors.Positive
+        Trend.Down -> DomainColors.Negative
         Trend.Neutral -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val trendIcon = when (trend) {

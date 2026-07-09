@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.feature.profile
 
 import android.content.Context
+import dev.creapolis.pepinillo.R
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,8 +23,8 @@ import javax.inject.Inject
 
 data class Achievement(
     val icon: String,
-    val title: String,
-    val subtitle: String,
+    val titleRes: Int,
+    val subtitleRes: Int,
     val isUnlocked: Boolean,
 )
 
@@ -98,26 +99,26 @@ class ProfileViewModel @Inject constructor(
                 val achievements = listOf(
                     Achievement(
                         icon = "EmojiEvents",
-                        title = "First Focus",
-                        subtitle = "Complete your first focus session",
+                        titleRes = R.string.achievement_first_focus_title,
+                        subtitleRes = R.string.achievement_first_focus_subtitle,
                         isUnlocked = totalSessions >= 1,
                     ),
                     Achievement(
                         icon = "LocalFireDepartment",
-                        title = "On Fire",
-                        subtitle = "Reach a 7-day streak",
+                        titleRes = R.string.achievement_on_fire_title,
+                        subtitleRes = R.string.achievement_on_fire_subtitle,
                         isUnlocked = bestStreak >= 7,
                     ),
                     Achievement(
                         icon = "Star",
-                        title = "Centurion",
-                        subtitle = "Complete 100 sessions",
+                        titleRes = R.string.achievement_centurion_title,
+                        subtitleRes = R.string.achievement_centurion_subtitle,
                         isUnlocked = totalSessions >= 100,
                     ),
                     Achievement(
                         icon = "Timer",
-                        title = "Marathon",
-                        subtitle = "Focus for 4 hours in a single day",
+                        titleRes = R.string.achievement_marathon_title,
+                        subtitleRes = R.string.achievement_marathon_subtitle,
                         isUnlocked = totalMinutes >= 240,
                     ),
                 )

@@ -1,5 +1,7 @@
 package dev.creapolis.pepinillo.feature.tasks
 
+import dev.creapolis.pepinillo.ui.theme.DomainColors
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.spring
@@ -609,8 +611,8 @@ private fun TaskFilter.icon(): ImageVector = when (this) {
 
 @Composable
 private fun TaskFilter.accentColor(): Color = when (this) {
-    TaskFilter.Today -> Color(0xFFFF8A00)
-    TaskFilter.Inbox -> Color(0xFF1A73E8)
-    TaskFilter.Upcoming -> Color(0xFF8E24AA)
-    TaskFilter.Completed -> Color(0xFF2E7D32)
+    TaskFilter.Today -> DomainColors.DueToday
+    TaskFilter.Inbox -> DomainColors.FilterInbox
+    TaskFilter.Upcoming -> DomainColors.FilterUpcoming
+    TaskFilter.Completed -> DomainColors.Positive
 }
