@@ -283,7 +283,6 @@ fun TaskItem(
                 Spacer(modifier = Modifier.width(4.dp))
                 IconButton(
                     onClick = onStartFocus,
-                    modifier = Modifier.size(40.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.PlayArrow,

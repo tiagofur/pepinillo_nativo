@@ -181,7 +181,7 @@ fun TaskDetailScreen(
 
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(48.dp)
                         .clickable(
                             onClick = { viewModel.toggleCompletion() }
                         ),
@@ -275,7 +275,7 @@ fun TaskDetailScreen(
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(36.dp)
+                                        .size(48.dp)
                                         .clickable { viewModel.toggleSubtask(subtask.id) },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -704,7 +704,6 @@ fun TaskDetailScreen(
                         ) {
                             IconButton(
                                 onClick = { if (task.estimatedPomodoros > 1) viewModel.updateEstimatedPomodoros(task.estimatedPomodoros - 1) },
-                                modifier = Modifier.size(44.dp)
                             ) {
                                 Text("-", style = MaterialTheme.typography.titleLarge)
                             }
@@ -715,7 +714,6 @@ fun TaskDetailScreen(
                             )
                             IconButton(
                                 onClick = { if (task.estimatedPomodoros < 8) viewModel.updateEstimatedPomodoros(task.estimatedPomodoros + 1) },
-                                modifier = Modifier.size(44.dp)
                             ) {
                                 Text("+", style = MaterialTheme.typography.titleLarge)
                             }
