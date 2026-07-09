@@ -53,6 +53,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -841,6 +845,12 @@ private fun ReflectionCard(
                 shape = RoundedCornerShape(20.dp),
             )
             .clickable(onClick = onClick)
+            // Merge children into a single a11y node announced as a button: title + subtitle.
+            // Without this, TalkBack reads the icon, title, subtitle, and chevron as separate items.
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = "$title. $subtitle"
+            }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
