@@ -25,6 +25,10 @@ struct FocusActivityAttributes: ActivityAttributes {
         var pomodoroNumber: Int?         // only for Pomodoro: e.g., 3
         var totalPomodoros: Int?         // only for Pomodoro: e.g., 4
         var isPaused: Bool
+        /// Phase anchor for Text(timerInterval:) live countdown/count-up while backgrounded.
+        var timerStart: Date?
+        /// Countdown end anchor; nil for count-up modes.
+        var timerEnd: Date?
     }
 }
 
@@ -41,18 +45,58 @@ extension FocusActivityAttributes {
         )
     }
 
-    /// Create an initial content state snapshot.
+    /// Create an initial content state snapshot from the live session.
     static func initialContent(from state: FocusSessionState) -> ContentState {
-        ContentState(
-            elapsedSeconds: 0,
+        contentState(from: state, taskName: nil)
+    }
+
+    /// Build dynamic content for start/update, including timer anchors for system-driven ticks.
+    static func contentState(
+        from state: FocusSessionState,
+        taskName: String?,
+        now: Date = .now
+    ) -> ContentState {
+        let anchors = timerAnchors(from: state, now: now)
+        return ContentState(
+            elapsedSeconds: Int(state.elapsedSeconds),
             remainingSeconds: state.remainingSeconds.map(Int.init),
             focusMode: state.mode.rawValue,
             phase: state.phase.displayName,
-            taskName: nil,
+            taskName: taskName,
             progress: state.progress,
             pomodoroNumber: state.pomodoroNumber,
-            totalPomodoros: nil,  // Set by caller from FocusConfig.pomodorosPerCycle
-            isPaused: false
+            totalPomodoros: state.totalPomodoros,
+            isPaused: state.isPaused,
+            timerStart: anchors.start,
+            timerEnd: anchors.end
         )
+    }
+
+    /// Compute timer anchors so Live Activity views can use Text(timerInterval:) off-process.
+    static func timerAnchors(
+        from state: FocusSessionState,
+        now: Date = .now
+    ) -> (start: Date?, end: Date?) {
+        guard !state.isPaused else { return (nil, nil) }
+
+        switch state.mode.direction {
+        case .countDown:
+            guard let remaining = state.remainingSeconds else { return (nil, nil) }
+            let end = now.addingTimeInterval(remaining)
+            let start = now.addingTimeInterval(-state.elapsedSeconds)
+            return (start, end)
+        case .countUp:
+            let start = now.addingTimeInterval(-state.elapsedSeconds)
+            return (start, nil)
+        }
+    }
+
+    /// When the system should treat content as stale and request a refresh from the app.
+    static func staleDate(for state: FocusSessionState, now: Date = .now) -> Date? {
+        guard !state.isPaused else { return nil }
+        if state.mode.direction == .countDown, let remaining = state.remainingSeconds {
+            return now.addingTimeInterval(remaining)
+        }
+        return nil
     }
 }

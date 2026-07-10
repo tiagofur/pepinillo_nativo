@@ -19,6 +19,8 @@ struct LiveActivityClient: Sendable {
     var end: @Sendable (Bool) async -> Void = { _ in }
     /// Whether ActivityKit Live Activities are enabled on this device.
     var isAvailable: @Sendable () -> Bool = { false }
+    /// Clear or reclaim orphan Live Activities after a cold launch.
+    var reconcileOnLaunch: @Sendable () async -> Void = {}
 }
 
 // MARK: - Dependency Registration
@@ -30,14 +32,16 @@ extension LiveActivityClient: DependencyKey {
         start: { _, _ in },
         update: { _, _ in },
         end: { _ in },
-        isAvailable: { false }
+        isAvailable: { false },
+        reconcileOnLaunch: {}
     )
 
     static let testValue = LiveActivityClient(
         start: { _, _ in },
         update: { _, _ in },
         end: { _ in },
-        isAvailable: { false }
+        isAvailable: { false },
+        reconcileOnLaunch: {}
     )
 }
 

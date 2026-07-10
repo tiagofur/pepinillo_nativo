@@ -203,7 +203,11 @@ private final class AppBootstrap: ObservableObject {
                 }
             }
             if #available(iOS 16.2, *) {
-                $0.liveActivityClient = LiveActivityManager.makeClient()
+                let liveActivityClient = LiveActivityManager.makeClient()
+                $0.liveActivityClient = liveActivityClient
+                Task {
+                    await liveActivityClient.reconcileOnLaunch()
+                }
             }
         }
         phase = .ready

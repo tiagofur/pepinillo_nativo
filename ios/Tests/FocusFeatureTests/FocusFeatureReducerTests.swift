@@ -68,6 +68,47 @@ struct FocusFeatureReducerTests {
 
     // MARK: - Starting Sessions
 
+    @Test func startSessionStartsLiveActivityAfterEngineStart() async {
+        let liveActivityStarted = LockIsolated(false)
+        let engineSession = FocusSessionState(
+            id: UUID(),
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            startedAt: .now,
+            elapsedSeconds: 0,
+            targetDuration: 25 * 60,
+            remainingSeconds: 25 * 60,
+            progress: 0,
+            pomodoroNumber: 1,
+            totalPomodoros: 4
+        )
+
+        let store = TestStore(
+            initialState: FocusFeature.State(selectedMode: .pomodoro)
+        ) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
+            $0.focusClient.currentState = { engineSession }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.liveActivityClient.isAvailable = { true }
+            $0.liveActivityClient.start = { _, _ in
+                liveActivityStarted.setValue(true)
+            }
+            $0.soundscapeClient.play = { _, _ in }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.notificationClient.requestAuthorization = { false }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.startTapped())
+        await store.finish()
+
+        #expect(liveActivityStarted.value == true)
+    }
+
     @Test func startPomodoroSetsCorrectState() async {
         let store = TestStore(
             initialState: FocusFeature.State(selectedMode: .pomodoro)
