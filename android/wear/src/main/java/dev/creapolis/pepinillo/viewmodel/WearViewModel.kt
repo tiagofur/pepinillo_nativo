@@ -138,7 +138,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 status = "Idle",
                 displayTime = timerState.value.displayTime,
                 progress = 1f,
-                phaseLabel = "Listo",
+                phaseLabel = "Ready",
                 phaseEndEpochMs = 0L,
                 totalDurationMs = 0L,
             ),
@@ -161,7 +161,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
             "Work" -> "ShortBreak" // optimistic; phone corrects to LongBreak if needed on next sync
             else -> "Work"
         }
-        val nextLabel = if (nextPhase == "Work") "Focus" else "Descanso"
+        val nextLabel = if (nextPhase == "Work") "Focus" else "Break"
         val durationMs = defaultPhaseDurationMs(current.mode, nextPhase)
         applyTimerOptimistically(
             current.copy(

@@ -30,6 +30,8 @@
     <string name="sessions">Sessions</string>
     <string name="streak">Streak</string>
     <string name="days">%d days</string>
+    <string name="stats_unlock_history">Unlock History</string>
+    <string name="stats_unlock_desc">Streaks, tasks &amp; trends with Pepinillo+</string>
     <string name="completed_tasks">Completed tasks</string>
 
     <!-- Tiles -->

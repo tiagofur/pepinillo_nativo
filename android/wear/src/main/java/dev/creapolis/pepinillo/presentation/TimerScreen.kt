@@ -135,10 +135,15 @@ private fun TimerActiveLayout(
     onSkip: () -> Unit,
 ) {
     var showStopConfirm by remember { mutableStateOf(false) }
+    var stopCountdown by remember { mutableStateOf(3) }
 
     if (showStopConfirm) {
         LaunchedEffect(Unit) {
-            delay(3_000)
+            stopCountdown = 3
+            repeat(3) {
+                delay(1_000)
+                stopCountdown = 2 - it
+            }
             showStopConfirm = false
         }
     }
@@ -269,11 +274,19 @@ private fun TimerActiveLayout(
                         contentColor = if (showStopConfirm) Color.White else MaterialTheme.colors.onSurface,
                     ),
                 ) {
-                    Icon(
-                        imageVector = if (showStopConfirm) Icons.Filled.Check else Icons.Filled.Stop,
-                        contentDescription = if (showStopConfirm) "Confirm stop" else "Stop",
-                        modifier = Modifier.size(20.dp),
-                    )
+                    if (showStopConfirm) {
+                        Text(
+                            text = "$stopCountdown",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.Stop,
+                            contentDescription = "Stop",
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
 
                 // Pause / Resume (52x52, primary action — biggest)
