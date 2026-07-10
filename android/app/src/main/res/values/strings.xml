@@ -245,6 +245,7 @@
     <string name="btn_skip">Skip</string>
     <string name="btn_next">Next</string>
     <string name="btn_get_started">Get Started</string>
+    <string name="btn_start_first_focus">Start First Focus</string>
 
     <!-- Forgot Password -->
     <string name="forgot_password_title">Forgot Password</string>
