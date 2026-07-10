@@ -100,7 +100,10 @@ class TaskRepository @Inject constructor(
 
     suspend fun updateTask(task: Task): Result<Unit> =
         runCatching {
-            taskDao.updateTask(task.toEntity().copy(updatedAt = System.currentTimeMillis(), isDirty = true))
+            val existing = taskDao.getTaskById(task.id)
+                ?: error("Task ${task.id} not found")
+            val now = System.currentTimeMillis()
+            taskDao.updateTask(task.mergeInto(existing, now))
         }
             .onFailure { Log.e(TAG, "Error updating task ${task.id}", it) }
             .onSuccess { refreshWearData() }
@@ -296,6 +299,37 @@ private fun Task.toEntity() = TaskEntity(
     isRecurringTemplate = isRecurringTemplate,
     recurringTemplateID = recurringTemplateID,
     createdAt = createdAt,
+)
+
+/**
+ * Merge domain fields from [Task] onto an existing [TaskEntity], preserving sync metadata
+ * (serverId, syncedAt, isDeleted) and entity-only columns (nextOccurrence) that the
+ * domain model does not carry. Room @Update overwrites every column, so defaults from
+ * [toEntity] would otherwise wipe server linkage after a local edit.
+ */
+private fun Task.mergeInto(existing: TaskEntity, updatedAt: Long = System.currentTimeMillis()) = TaskEntity(
+    id = id,
+    title = title,
+    notes = notes,
+    isCompleted = isCompleted,
+    completedAt = completedAt,
+    energyLevel = energyLevel.name,
+    priority = priority.name,
+    estimatedPomodoros = estimatedPomodoros,
+    completedPomodoros = completedPomodoros,
+    sortOrder = sortOrder,
+    dueDate = dueDate,
+    scheduledForToday = scheduledForToday,
+    recurrenceRule = recurrenceRule,
+    nextOccurrence = existing.nextOccurrence,
+    isRecurringTemplate = isRecurringTemplate,
+    recurringTemplateID = recurringTemplateID,
+    createdAt = createdAt,
+    updatedAt = updatedAt,
+    serverId = existing.serverId,
+    isDirty = true,
+    isDeleted = existing.isDeleted,
+    syncedAt = existing.syncedAt,
 )
 
 private fun SubtaskEntity.toDomain() = Subtask(
