@@ -565,11 +565,11 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        // Inbox shows [A, C, D]. Move A (index 0) to index 2 -> [C, D, A].
+        // Inbox shows [A, C, D]. SwiftUI onMove(0, 2) inserts before index 2 -> [C, A, D].
         await store.send(.taskMoved(IndexSet(integer: 0), 2)) {
             $0.tasks[id: inboxC]?.sortOrder = 0
-            $0.tasks[id: inboxD]?.sortOrder = 2
-            $0.tasks[id: inboxA]?.sortOrder = 3
+            $0.tasks[id: inboxA]?.sortOrder = 2
+            $0.tasks[id: inboxD]?.sortOrder = 3
             $0.tasks[id: todayB]?.sortOrder = 1
             $0.tasks.sort { $0.sortOrder < $1.sortOrder }
         }
@@ -577,11 +577,11 @@ struct TaskListFeatureTests {
         let expectedOrder: [(UUID, Int)] = [
             (inboxC, 0),
             (todayB, 1),
-            (inboxD, 2),
-            (inboxA, 3),
+            (inboxA, 2),
+            (inboxD, 3),
         ]
         #expect(savedOrder.value.map { ($0.id, $0.sortOrder) }.elementsEqual(expectedOrder) { $0.0 == $1.0 && $0.1 == $1.1 })
-        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox).ids == [inboxC, inboxD, inboxA])
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox).ids == [inboxC, inboxA, inboxD])
     }
 
     @Test func taskMovedInTodayFilterPreservesNonTodayTasks() async {
@@ -606,8 +606,8 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        // Today shows [A, C]. Swap by moving index 0 to index 1 -> [C, A].
-        await store.send(.taskMoved(IndexSet(integer: 0), 1)) {
+        // Today shows [A, C]. SwiftUI onMove(0, 2) moves past the last row -> [C, A].
+        await store.send(.taskMoved(IndexSet(integer: 0), 2)) {
             $0.tasks[id: todayC]?.sortOrder = 0
             $0.tasks[id: todayA]?.sortOrder = 2
             $0.tasks[id: inboxB]?.sortOrder = 1
