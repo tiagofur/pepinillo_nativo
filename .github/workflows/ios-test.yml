@@ -1,0 +1,99 @@
+name: iOS Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-test.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 120
+
+    defaults:
+      run:
+        working-directory: ios
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Print Xcode version
+        run: xcodebuild -version
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-spm-xcode-${{ hashFiles('ios/project.yml', 'ios/**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-xcode-
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Trust Swift package macros (CI)
+        run: |
+          defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
+          defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidation -bool YES
+
+      - name: Resolve simulator
+        id: sim
+        run: |
+          pick_simulator() {
+            xcrun simctl list devices available \
+              | grep -E "$1" \
+              | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' \
+              | head -1
+          }
+          DEST=$(pick_simulator 'iPhone 17 Pro \(')
+          if [ -z "$DEST" ]; then
+            DEST=$(pick_simulator 'iPhone 16 Pro \(')
+          fi
+          if [ -z "$DEST" ]; then
+            echo "No suitable iPhone simulator found"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "id=$DEST" >> "$GITHUB_OUTPUT"
+          echo "Using simulator ID: $DEST"
+
+      - name: Build for testing
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -scheme "Pepinillo Dev" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.id }}" \
+            -configuration Debug \
+            -clonedSourcePackagesDirPath "$HOME/Library/Caches/org.swift.swiftpm" \
+            CODE_SIGNING_ALLOWED=NO \
+            build-for-testing
+
+      - name: Run persistence integration tests
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -scheme "Pepinillo Dev" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.id }}" \
+            -configuration Debug \
+            -clonedSourcePackagesDirPath "$HOME/Library/Caches/org.swift.swiftpm" \
+            CODE_SIGNING_ALLOWED=NO \
+            test-without-building \
+            -only-testing:PepinilloTests/IntegrationTests/LocalToCloudStoreMigratorTests \
+            -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests

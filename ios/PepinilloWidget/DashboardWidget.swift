@@ -21,8 +21,8 @@ struct DashboardHomeScreenWidget: Widget {
             DashboardWidgetEntryView(entry: entry)
                 .pepinilloWidgetBackground()
         }
-        .configurationDisplayName(LocalizedStringResource("widget.dashboard.displayname", defaultValue: "Dashboard"))
-        .description(LocalizedStringResource("widget.dashboard.description", defaultValue: "Weekly focus stats and progress at a glance."))
+        .configurationDisplayName(String(localized: LocalizedStringResource("widget.dashboard.displayname", defaultValue: "Dashboard")))
+        .description(String(localized: LocalizedStringResource("widget.dashboard.description", defaultValue: "Weekly focus stats and progress at a glance.")))
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

@@ -23,8 +23,8 @@ struct FocusHomeScreenWidget: Widget {
                 .pepinilloWidgetBackground(mode: entry.focusMode ?? entry.preferredModeID)
                 .widgetURL(URL(string: "pepinillo://focus"))
         }
-        .configurationDisplayName(LocalizedStringResource("widget.focus.home.displayname", defaultValue: "Focus Timer"))
-        .description(LocalizedStringResource("widget.focus.home.description", defaultValue: "See your daily focus progress and active timer."))
+        .configurationDisplayName(String(localized: LocalizedStringResource("widget.focus.home.displayname", defaultValue: "Focus Timer")))
+        .description(String(localized: LocalizedStringResource("widget.focus.home.description", defaultValue: "See your daily focus progress and active timer.")))
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -43,8 +43,8 @@ struct FocusLockScreenWidget: Widget {
                 .containerBackground(.fill.tertiary, for: .widget)
                 .widgetURL(URL(string: "pepinillo://focus"))
         }
-        .configurationDisplayName(LocalizedStringResource("widget.focus.lockscreen.displayname", defaultValue: "Focus"))
-        .description(LocalizedStringResource("widget.focus.lockscreen.description", defaultValue: "Quick glance at your focus session."))
+        .configurationDisplayName(String(localized: LocalizedStringResource("widget.focus.lockscreen.displayname", defaultValue: "Focus")))
+        .description(String(localized: LocalizedStringResource("widget.focus.lockscreen.description", defaultValue: "Quick glance at your focus session.")))
         #if os(iOS)
         .supportedFamilies([.accessoryCircular, .accessoryRectangular])
         #else
