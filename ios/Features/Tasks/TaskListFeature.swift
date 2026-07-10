@@ -346,19 +346,7 @@ struct TaskListFeature {
                 return .run { _ in
                     // Single-row fetch instead of a full-table scan (issue #74).
                     if let item = try await persistence.fetchTask(id) {
-                        let updated = TaskItemDTO(
-                            id: item.id,
-                            title: item.title,
-                            notes: item.notes,
-                            isCompleted: isNowCompleted,
-                            priority: item.priority,
-                            energyLevel: item.energyLevel,
-                            estimatedPomodoros: item.estimatedPomodoros,
-                            completedPomodoros: item.completedPomodoros,
-                            sortOrder: item.sortOrder,
-                            dueDate: item.dueDate,
-                            scheduledForToday: item.scheduledForToday
-                        )
+                        let updated = item.updating(isCompleted: isNowCompleted)
                         try await persistence.saveTask(updated)
                         WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     }
@@ -408,13 +396,7 @@ struct TaskListFeature {
                 state.tasks[id: id]?.energyLevel = level
                 return .run { _ in
                     if let item = try await persistence.fetchTask(id) {
-                        let updated = TaskItemDTO(
-                            id: item.id, title: item.title, notes: item.notes,
-                            isCompleted: item.isCompleted, priority: item.priority,
-                            energyLevel: level, estimatedPomodoros: item.estimatedPomodoros,
-                            completedPomodoros: item.completedPomodoros, sortOrder: item.sortOrder,
-                            dueDate: item.dueDate, scheduledForToday: item.scheduledForToday
-                        )
+                        let updated = item.updating(energyLevel: level)
                         try await persistence.saveTask(updated)
                         WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     }

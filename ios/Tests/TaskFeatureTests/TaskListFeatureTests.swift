@@ -8,6 +8,52 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
+private func recurringTaskDTO(
+    id: UUID,
+    rule: String = RecurrencePreset.weekly.rawValue
+) -> TaskItemDTO {
+    TaskItemDTO(
+        id: id,
+        title: "Recurring Task",
+        isCompleted: false,
+        energyLevel: .deep,
+        recurrenceRule: rule,
+        isRecurringTemplate: true
+    )
+}
+
+private func basicTaskDTO(
+    id: UUID,
+    title: String = "Task",
+    isCompleted: Bool = false,
+    energyLevel: EnergyLevel = .deep
+) -> TaskItemDTO {
+    TaskItemDTO(
+        id: id,
+        title: title,
+        isCompleted: isCompleted,
+        energyLevel: energyLevel
+    )
+}
+
+private func recurringTaskState(id: UUID) -> TaskListFeature.TaskItemState {
+    TaskListFeature.TaskItemState(
+        id: id,
+        title: "Recurring Task",
+        isCompleted: false,
+        priority: .none,
+        energyLevel: .deep,
+        estimatedPomodoros: 1,
+        completedPomodoros: 0,
+        subtaskProgress: .init(completed: 0, total: 0),
+        recurrenceRule: RecurrencePreset.weekly.rawValue,
+        isRecurringTemplate: true,
+        scheduledForToday: false,
+        sortOrder: 0,
+        createdAt: Date()
+    )
+}
+
 @MainActor
 struct TaskListFeatureTests {
 
@@ -88,6 +134,7 @@ struct TaskListFeatureTests {
             TaskListFeature()
         } withDependencies: {
             $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID, title: "Write tests") }
             $0.persistenceClient.saveTask = { _ in }
         }
 
@@ -205,6 +252,7 @@ struct TaskListFeatureTests {
             TaskListFeature()
         } withDependencies: {
             $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID, title: "Flexible Task") }
             $0.persistenceClient.saveTask = { _ in }
         }
 
@@ -325,6 +373,7 @@ struct TaskListFeatureTests {
             TaskListFeature()
         } withDependencies: {
             $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID, title: "Multi-Level Task") }
             $0.persistenceClient.saveTask = { _ in }
         }
 
@@ -338,4 +387,139 @@ struct TaskListFeatureTests {
             $0.tasks[id: taskID]?.energyLevel = .deep
         }
     }
+
+    // MARK: - Recurrence Preservation (issue #178)
+
+    @Test func completeTaskPreservesRecurrenceOnSave() async throws {
+        let taskID = UUID()
+        let fetchedTask = recurringTaskDTO(id: taskID)
+        let savedTask = LockIsolated<TaskItemDTO?>(nil)
+
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [recurringTaskState(id: taskID)]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in fetchedTask }
+            $0.persistenceClient.saveTask = { savedTask.setValue($0) }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.taskCompleted(taskID)) {
+            $0.tasks[id: taskID]?.isCompleted = true
+        }
+
+        let saved = try #require(savedTask.value)
+        #expect(saved.isCompleted == true)
+        #expect(saved.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(saved.isRecurringTemplate == true)
+    }
+
+    @Test func completeTaskPreservesRecurrenceAfterReload() async {
+        let taskID = UUID()
+        let persistedTask = LockIsolated(recurringTaskDTO(id: taskID))
+
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [recurringTaskState(id: taskID)]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in persistedTask.value }
+            $0.persistenceClient.saveTask = { persistedTask.setValue($0) }
+            $0.persistenceClient.fetchTasks = { [persistedTask] in [persistedTask.value] }
+            $0.persistenceClient.generateRecurringTasks = { }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.taskCompleted(taskID)) {
+            $0.tasks[id: taskID]?.isCompleted = true
+        }
+
+        await store.send(.refresh) {
+            $0.isLoading = true
+        }
+
+        let reloadedState = TaskListFeature.TaskItemState.from(persistedTask.value)
+        await store.receive(.tasksLoaded([reloadedState])) {
+            $0.tasks = IdentifiedArrayOf(uniqueElements: [reloadedState])
+            $0.isLoading = false
+            $0.hasLoadedData = true
+        }
+
+        #expect(persistedTask.value.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(persistedTask.value.isRecurringTemplate == true)
+        #expect(store.state.tasks[id: taskID]?.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(store.state.tasks[id: taskID]?.isRecurringTemplate == true)
+    }
+
+    @Test func energyLevelChangedPreservesRecurrenceOnSave() async throws {
+        let taskID = UUID()
+        let fetchedTask = recurringTaskDTO(id: taskID)
+        let savedTask = LockIsolated<TaskItemDTO?>(nil)
+
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [recurringTaskState(id: taskID)]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in fetchedTask }
+            $0.persistenceClient.saveTask = { savedTask.setValue($0) }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.energyLevelChanged(taskID, .shallow)) {
+            $0.tasks[id: taskID]?.energyLevel = .shallow
+        }
+
+        let saved = try #require(savedTask.value)
+        #expect(saved.energyLevel == .shallow)
+        #expect(saved.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(saved.isRecurringTemplate == true)
+    }
+
+    @Test func energyLevelChangedPreservesRecurrenceAfterReload() async {
+        let taskID = UUID()
+        let persistedTask = LockIsolated(recurringTaskDTO(id: taskID))
+
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [recurringTaskState(id: taskID)]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in persistedTask.value }
+            $0.persistenceClient.saveTask = { persistedTask.setValue($0) }
+            $0.persistenceClient.fetchTasks = { [persistedTask] in [persistedTask.value] }
+            $0.persistenceClient.generateRecurringTasks = { }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.energyLevelChanged(taskID, .admin)) {
+            $0.tasks[id: taskID]?.energyLevel = .admin
+        }
+
+        await store.send(.refresh) {
+            $0.isLoading = true
+        }
+
+        let reloadedState = TaskListFeature.TaskItemState.from(persistedTask.value)
+        await store.receive(.tasksLoaded([reloadedState])) {
+            $0.tasks = IdentifiedArrayOf(uniqueElements: [reloadedState])
+            $0.isLoading = false
+            $0.hasLoadedData = true
+        }
+
+        #expect(persistedTask.value.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(persistedTask.value.isRecurringTemplate == true)
+        #expect(store.state.tasks[id: taskID]?.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(store.state.tasks[id: taskID]?.isRecurringTemplate == true)
+    }
+
 }
