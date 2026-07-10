@@ -347,6 +347,13 @@
     <string name="review_current_streak">Racha Actual</string>
     <string name="review_top_tasks">Tareas Principales</string>
     <string name="review_delta_minutes">%1$dm</string>
+    <string name="review_headline_up">Enfocaste %1$s esta semana — ¡%2$s más que la semana pasada!</string>
+    <string name="review_headline_down">Enfocaste %1$s esta semana — %2$s menos que la semana pasada.</string>
+    <string name="review_headline_steady">Enfocaste %1$s esta semana, manteniéndote estable.</string>
+    <string name="review_headline_streak">🔥 ¡Racha de %1$d días y contando!</string>
+    <string name="review_monthly_headline_up">Enfocaste %1$s este mes — ¡%2$s más!</string>
+    <string name="review_monthly_headline_down">Enfocaste %1$s este mes — %2$s menos.</string>
+    <string name="review_monthly_headline_steady">Enfocaste %1$s este mes, manteniéndote estable.</string>
 
     <!-- Paywall -->
     <string name="paywall_title">Eleva tu Enfoque</string>

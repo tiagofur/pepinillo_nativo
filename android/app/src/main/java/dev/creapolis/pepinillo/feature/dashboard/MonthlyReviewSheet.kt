@@ -70,6 +70,16 @@ fun MonthlyReviewSheet(
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── HERO HEADLINE — emotional "wrap-up" sentence ──
+            MonthlyReviewHeadline(
+                minutes = report.currentMonthMinutes,
+                hasSessions = report.currentMonthSessions > 0,
+                trend = report.minutesTrend,
+                deltaMinutes = abs(report.minutesDelta),
+            )
+
             Spacer(modifier = Modifier.height(20.dp))
 
             // -- COMPARISON CARDS --
@@ -367,4 +377,34 @@ private fun formatMonthlyMinutes(totalMinutes: Int, hasSessions: Boolean = false
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+}
+
+/** Monthly version of the hero headline — trend only (monthly data has no streak). */
+@Composable
+private fun MonthlyReviewHeadline(
+    minutes: Int,
+    hasSessions: Boolean,
+    trend: dev.creapolis.pepinillo.feature.dashboard.model.Trend,
+    deltaMinutes: Int,
+) {
+    val timeStr = formatMonthlyMinutes(minutes, hasSessions)
+    val headlineRes = when (trend) {
+        dev.creapolis.pepinillo.feature.dashboard.model.Trend.Up -> R.string.review_monthly_headline_up
+        dev.creapolis.pepinillo.feature.dashboard.model.Trend.Down -> R.string.review_monthly_headline_down
+        dev.creapolis.pepinillo.feature.dashboard.model.Trend.Neutral -> R.string.review_monthly_headline_steady
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+            .padding(16.dp),
+    ) {
+        Text(
+            text = stringResource(headlineRes, timeStr, "${deltaMinutes}m"),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+    }
 }

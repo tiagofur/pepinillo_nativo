@@ -421,6 +421,13 @@
     <string name="review_current_streak">Current Streak</string>
     <string name="review_top_tasks">Top Tasks</string>
     <string name="review_delta_minutes">%1$dm</string>
+    <string name="review_headline_up">You focused %1$s this week — up %2$s from last week!</string>
+    <string name="review_headline_down">You focused %1$s this week — down %2$s from last week.</string>
+    <string name="review_headline_steady">You focused %1$s this week, holding steady.</string>
+    <string name="review_headline_streak">🔥 %1$d-day streak and counting!</string>
+    <string name="review_monthly_headline_up">You focused %1$s this month — up %2$s!</string>
+    <string name="review_monthly_headline_down">You focused %1$s this month — down %2$s.</string>
+    <string name="review_monthly_headline_steady">You focused %1$s this month, holding steady.</string>
 
     <!-- Dashboard Content -->
     <string name="dashboard_title">Dashboard</string>
