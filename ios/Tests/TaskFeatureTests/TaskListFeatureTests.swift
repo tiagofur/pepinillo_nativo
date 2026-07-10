@@ -89,7 +89,7 @@ struct TaskListFeatureTests {
                 subtaskProgress: .init(completed: 0, total: 0),
                 recurrenceRule: nil,
                 isRecurringTemplate: false,
-                scheduledForToday: false,
+                scheduledForToday: true,
                 sortOrder: 0,
                 createdAt: testDate
             ))
@@ -223,7 +223,7 @@ struct TaskListFeatureTests {
                 subtaskProgress: .init(completed: 0, total: 0),
                 recurrenceRule: nil,
                 isRecurringTemplate: false,
-                scheduledForToday: false,
+                scheduledForToday: true,
                 sortOrder: 0,
                 createdAt: testDate
             ))
@@ -520,6 +520,148 @@ struct TaskListFeatureTests {
         #expect(persistedTask.value.isRecurringTemplate == true)
         #expect(store.state.tasks[id: taskID]?.recurrenceRule == RecurrencePreset.weekly.rawValue)
         #expect(store.state.tasks[id: taskID]?.isRecurringTemplate == true)
+    }
+
+    // MARK: - Issue #180: Plan-aware quick-add
+
+    @Test func planQuickAddDefaultsTodaySchedulesForToday() {
+        let defaults = TaskListFeature.planQuickAddDefaults(for: .today)
+        #expect(defaults.scheduledForToday == true)
+        #expect(defaults.dueDate == nil)
+    }
+
+    @Test func planQuickAddDefaultsInboxLeavesTaskUnscheduled() {
+        let defaults = TaskListFeature.planQuickAddDefaults(for: .inbox)
+        #expect(defaults.scheduledForToday == false)
+        #expect(defaults.dueDate == nil)
+    }
+
+    @Test func planQuickAddDefaultsUpcomingSetsTomorrowDueDate() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let defaults = TaskListFeature.planQuickAddDefaults(for: .upcoming, now: now)
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now))
+
+        #expect(defaults.scheduledForToday == false)
+        #expect(defaults.dueDate == tomorrow)
+    }
+
+    @Test func addTaskInInboxFilterStaysInInbox() async {
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.selectedPlanFilter = .inbox
+
+        let savedTask = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.saveTask = { savedTask.setValue($0) }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        await store.send(.newTaskTitleChanged("Inbox task")) {
+            $0.newTaskTitle = "Inbox task"
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(makeTask(
+                id: testID,
+                title: "Inbox task",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0
+            ))
+        }
+
+        let saved = savedTask.value
+        #expect(saved?.scheduledForToday == false)
+        #expect(saved?.dueDate == nil)
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox, now: testDate).ids == [testID])
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .today, now: testDate).isEmpty)
+    }
+
+    @Test func addTaskInUpcomingFilterSetsDueDateAndAppearsInUpcoming() async {
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let tomorrow = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: testDate))!
+        var initialState = TaskListFeature.State()
+        initialState.selectedPlanFilter = .upcoming
+
+        let savedTask = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.saveTask = { savedTask.setValue($0) }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        await store.send(.newTaskTitleChanged("Upcoming task")) {
+            $0.newTaskTitle = "Upcoming task"
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(makeTask(
+                id: testID,
+                title: "Upcoming task",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0,
+                dueDate: tomorrow
+            ))
+        }
+
+        let saved = savedTask.value
+        #expect(saved?.scheduledForToday == false)
+        #expect(saved?.dueDate == tomorrow)
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .upcoming, now: testDate).ids == [testID])
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox, now: testDate).isEmpty)
+    }
+
+    @Test func addTaskInCompletedFilterDoesNotAutoComplete() async {
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_700_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.selectedPlanFilter = .completed
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        await store.send(.newTaskTitleChanged("New active task")) {
+            $0.newTaskTitle = "New active task"
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(makeTask(
+                id: testID,
+                title: "New active task",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0
+            ))
+        }
+
+        #expect(store.state.tasks[id: testID]?.isCompleted == false)
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .completed, now: testDate).isEmpty)
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox, now: testDate).ids == [testID])
     }
 
     // MARK: - Issue #179: Filtered plan reorder
