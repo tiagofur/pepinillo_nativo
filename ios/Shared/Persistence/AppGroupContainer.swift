@@ -576,6 +576,34 @@ enum AppGroupDefaults {
         defaults?.removeObject(forKey: "externalCommandIssuedAt")
     }
 
+    /// Cold-launch reconciliation for App Group session snapshots vs the in-process Focus engine.
+    ///
+    /// **Restore** — when `externalStartRequested` is true, a widget/Siri/Control Center
+    /// action wrote an optimistic snapshot and `AppFeature.consumeExternalCommands` adopts it
+    /// into `FocusEngine` via `startTapped(timerStart:timerEnd:)`. Do not clear in that case.
+    ///
+    /// **Clear** — when `isSessionActive` is true but the engine is not running and there is
+    /// no pending external start, the previous process was killed mid-session. The App Group
+    /// snapshot is a ghost: widgets, Control Center, and Live Activity must return to idle.
+    /// Call this *before* `LiveActivityManager.reconcileOnLaunch()` on cold launch so orphan
+    /// activities are dismissed rather than adopted.
+    ///
+    /// Manual QA (#173): start a Pomodoro from Focus, force-quit mid-session, relaunch — Focus
+    /// tab is idle and home/lock widgets show idle (not a running timer).
+    enum SessionReconcilePolicy {
+        /// Returns `true` when a ghost session was cleared.
+        static func clearGhostSessionIfNeeded(engineIsRunning: Bool) -> Bool {
+            guard isSessionActive,
+                  !engineIsRunning,
+                  !externalStartRequested else {
+                return false
+            }
+            clearActiveSession()
+            clearExternalCommands()
+            return true
+        }
+    }
+
     /// Clear active session info when session ends.
     static func clearActiveSession() {
         defaults?.set(false, forKey: "isSessionActive")

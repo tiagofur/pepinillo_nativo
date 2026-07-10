@@ -171,6 +171,66 @@ struct AppGroupContainerTests {
         #expect(abs(timerEnd.timeIntervalSince(timerStart) - 25 * 60) < 1)
     }
 
+    @Test("ghost session reconcile clears stale App Group snapshot when engine is idle")
+    func ghostSessionReconcileClearsStaleSnapshot() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        let issuedAt = Date(timeIntervalSince1970: 1_800_200_000)
+        AppGroupDefaults.isSessionActive = true
+        AppGroupDefaults.activeModeName = "pomodoro"
+        AppGroupDefaults.activeSessionTimerStart = issuedAt
+        AppGroupDefaults.activeSessionTimerEnd = issuedAt.addingTimeInterval(25 * 60)
+        AppGroupDefaults.externalStartRequested = false
+
+        let cleared = AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(engineIsRunning: false)
+        #expect(cleared == true)
+        #expect(AppGroupDefaults.isSessionActive == false)
+        #expect(AppGroupDefaults.activeModeName == nil)
+        #expect(AppGroupDefaults.activeSessionTimerStart == nil)
+        #expect(AppGroupDefaults.activeSessionTimerEnd == nil)
+    }
+
+    @Test("ghost session reconcile preserves widget restore path when external start is pending")
+    func ghostSessionReconcilePreservesPendingExternalStart() throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.pomodoroDuration = 25 * 60
+
+        let issuedAt = Date(timeIntervalSince1970: 1_800_200_100)
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
+
+        let cleared = AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(engineIsRunning: false)
+        #expect(cleared == false)
+        #expect(AppGroupDefaults.isSessionActive == true)
+        #expect(AppGroupDefaults.externalStartRequested == true)
+        let timerStart = try #require(AppGroupDefaults.activeSessionTimerStart)
+        #expect(timerStart == issuedAt)
+    }
+
+    @Test("ghost session reconcile is a no-op when the engine is running")
+    func ghostSessionReconcileSkipsWhenEngineIsRunning() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        AppGroupDefaults.isSessionActive = true
+        AppGroupDefaults.activeModeName = "pomodoro"
+
+        let cleared = AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(engineIsRunning: true)
+        #expect(cleared == false)
+        #expect(AppGroupDefaults.isSessionActive == true)
+        #expect(AppGroupDefaults.activeModeName == "pomodoro")
+    }
+
     @Test("StartFocusWithTaskIntent preserves the task and creates a widget-started session")
     func startFocusWithTaskIntentWritesTaskSession() async throws {
         let saved = AppGroupDefaultsSnapshot.capture()

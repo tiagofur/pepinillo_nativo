@@ -13,6 +13,7 @@ import UserNotifications
 import ActivityKit
 import ComposableArchitecture
 import OSLog
+import WidgetKit
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -205,6 +206,14 @@ private final class AppBootstrap: ObservableObject {
             if #available(iOS 16.2, *) {
                 let liveActivityClient = LiveActivityManager.makeClient()
                 $0.liveActivityClient = liveActivityClient
+                // Clear ghost App Group sessions before Live Activity reconcile (#173).
+                // reconcileOnLaunch adopts activities when isSessionActive is true; a killed
+                // mid-session process leaves that flag set while FocusEngine is still idle.
+                if AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(engineIsRunning: false) {
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                }
                 Task {
                     await liveActivityClient.reconcileOnLaunch()
                 }
