@@ -35,8 +35,13 @@ fun DataMergeDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onUseAccountOnly) {
-                Text(stringResource(R.string.merge_btn_account_only))
+            androidx.compose.foundation.layout.Column {
+                TextButton(onClick = onUseAccountOnly) {
+                    Text(stringResource(R.string.merge_btn_account_only))
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.merge_btn_cancel))
+                }
             }
         },
     )
