@@ -37,6 +37,7 @@ struct PersistenceStoreRouterTests {
         return dir
     }
 
+    @MainActor
     private func fetchTaskTitles(in container: ModelContainer) throws -> [String] {
         let context = container.mainContext
         let tasks = try context.fetch(FetchDescriptor<TaskItem>())
