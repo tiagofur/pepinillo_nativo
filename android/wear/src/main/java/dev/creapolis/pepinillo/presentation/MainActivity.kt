@@ -12,10 +12,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import androidx.wear.compose.material.HorizontalPageIndicator
@@ -42,8 +45,23 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission(),
     ) { /* One-shot: result intentionally ignored on first launch. */ }
 
+    // Always-on / ambient support: track ambient state to dim the UI and reduce refresh rate.
+    private var isAmbient by mutableStateOf(false)
+    private val ambientCallback = object : AmbientLifecycleObserver.AmbientLifecycleCallback {
+        override fun onEnterAmbient(ambientDetails: AmbientLifecycleObserver.AmbientDetails) {
+            isAmbient = true
+        }
+        override fun onExitAmbient() {
+            isAmbient = false
+        }
+        override fun onUpdateAmbient() {}
+    }
+    private lateinit var ambientObserver: AmbientLifecycleObserver
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ambientObserver = AmbientLifecycleObserver(this, ambientCallback)
+        lifecycle.addObserver(ambientObserver)
         WearSnapshotStore.bootstrap(this)
         maybeRequestNotificationPermission()
         lifecycleScope.launch(Dispatchers.IO) {
@@ -60,7 +78,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         setContent {
-            WearApp(viewModel)
+            WearApp(viewModel, isAmbient = isAmbient)
         }
     }
 
@@ -85,7 +103,7 @@ private const val TOTAL_PAGES = 3
 
 @OptIn(androidx.wear.compose.foundation.ExperimentalWearFoundationApi::class)
 @Composable
-private fun WearApp(viewModel: WearViewModel) {
+private fun WearApp(viewModel: WearViewModel, isAmbient: Boolean = false) {
     val timerState by viewModel.timerState.collectAsStateWithLifecycle()
     val tasks by viewModel.tasks.collectAsStateWithLifecycle()
     val stats by viewModel.stats.collectAsStateWithLifecycle()
@@ -112,14 +130,18 @@ private fun WearApp(viewModel: WearViewModel) {
 
     WearTheme {
         Scaffold(
-            timeText = { TimeText() },
-            vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
+            // In ambient mode: hide chrome (TimeText, vignette, page indicator) to minimize
+            // lit pixels and burn-in risk — only the dimmed timer display remains.
+            timeText = { if (!isAmbient) TimeText() },
+            vignette = { if (!isAmbient) Vignette(vignettePosition = VignettePosition.TopAndBottom) },
             pageIndicator = {
-                HorizontalPageIndicator(
-                    pageIndicatorState = pageIndicatorState,
-                    selectedColor = MaterialTheme.colors.primary,
-                    unselectedColor = MaterialTheme.colors.onSurface.copy(alpha = 0.3f),
-                )
+                if (!isAmbient) {
+                    HorizontalPageIndicator(
+                        pageIndicatorState = pageIndicatorState,
+                        selectedColor = MaterialTheme.colors.primary,
+                        unselectedColor = MaterialTheme.colors.onSurface.copy(alpha = 0.3f),
+                    )
+                }
             },
         ) {
             HorizontalPager(
@@ -143,6 +165,7 @@ private fun WearApp(viewModel: WearViewModel) {
                         syncStatusLabel = syncStatus.label,
                         isSyncStale = syncStatus.isStale,
                         isPro = isPro,
+                        isAmbient = isAmbient,
                         onStartMode = viewModel::startTimer,
                         onPause = viewModel::pauseTimer,
                         onResume = viewModel::resumeTimer,

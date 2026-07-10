@@ -69,6 +69,7 @@ fun TimerScreen(
     syncStatusLabel: String? = null,
     isSyncStale: Boolean = false,
     isPro: Boolean = false,
+    isAmbient: Boolean = false,
     onStartMode: (String) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
@@ -78,8 +79,25 @@ fun TimerScreen(
     val haptics = LocalHapticFeedback.current
     val modeColor = WearModeColors.forModeAndPhase(state.mode, state.phase)
 
-    when (state.status) {
-        "Running", "Paused" -> TimerActiveLayout(
+    when {
+        // Ambient: render minimal — dimmed time text on black, no colors/icons/chrome.
+        // Minimizes lit pixels and burn-in risk during always-on.
+        isAmbient && (state.status == "Running" || state.status == "Paused") -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = state.displayTime,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Light,
+                    color = Color.White.copy(alpha = 0.4f),
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+
+        state.status == "Running" || state.status == "Paused" -> TimerActiveLayout(
             state = state,
             modeColor = modeColor,
             onPause = {
@@ -100,7 +118,7 @@ fun TimerScreen(
             },
         )
 
-        "WaitingForNext" -> WaitingForNextLayout(
+        state.status == "WaitingForNext" -> WaitingForNextLayout(
             state = state,
             modeColor = modeColor,
             onResume = {
@@ -113,7 +131,7 @@ fun TimerScreen(
             },
         )
 
-        "Disconnected" -> DisconnectedLayout(
+        state.status == "Disconnected" -> DisconnectedLayout(
             pendingCommandCount = pendingCommandCount,
         )
 
