@@ -51,10 +51,12 @@ data class TasksUiState(
     val energyFilter: EnergyLevel? = null,
     val isLoading: Boolean = true,
     val isPro: Boolean = false,
+    /** Pre-computed filtered+sorted list. Memoized in the VM combine so it recalculates
+     *  only when tasks/filter/sort/energy change — not on every recomposition. */
+    val filteredTasks: List<Task> = emptyList(),
 )
 
-val TasksUiState.filteredTasks: List<Task>
-    get() {
+private fun TasksUiState.computeFilteredTasks(): List<Task> {
         // Compute "today" once per evaluation instead of allocating 3 Calendars per task.
         val todayNorm = getNormalizedLocalDate()
         // 1. Plan category filter
@@ -185,7 +187,7 @@ class TasksViewModel @Inject constructor(
         _energyFilter,
         featureGate.subscriptionState,
     ) { tasks, filter, sort, energy, subState ->
-        TasksUiState(
+        val base = TasksUiState(
             tasks = tasks,
             selectedFilter = filter,
             selectedSort = sort,
@@ -193,6 +195,7 @@ class TasksViewModel @Inject constructor(
             isLoading = false,
             isPro = subState.hasLocalPremium,
         )
+        base.copy(filteredTasks = base.computeFilteredTasks())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TasksUiState())
 
     fun selectFilter(filter: TaskFilter) {
