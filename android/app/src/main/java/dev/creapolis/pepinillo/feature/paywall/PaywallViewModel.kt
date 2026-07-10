@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.core.billing.ProductInfo
+import dev.creapolis.pepinillo.core.billing.PurchaseResult
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
@@ -74,11 +75,18 @@ class PaywallViewModel @Inject constructor(
         _errorRes.value = null
 
         viewModelScope.launch {
-            subscriptionManager.launchPurchaseFlow(activity, product)
-            // Wait until the premium status transitions to active, then stop collecting.
-            // Using first { } instead of collect { } to avoid leaking an infinite flow collector.
-            subscriptionManager.subscriptionState.first { it.hasLocalPremium }
+            val result = subscriptionManager.launchPurchaseFlow(activity, product)
             _isPurchasing.value = false
+            when (result) {
+                PurchaseResult.Success -> {
+                    // Wait briefly for entitlement to propagate, then stop collecting.
+                    subscriptionManager.subscriptionState.first { it.hasLocalPremium }
+                }
+                PurchaseResult.Cancelled -> { /* expected — do nothing, no error message */ }
+                PurchaseResult.Failed -> {
+                    _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_purchase_failed
+                }
+            }
         }
     }
 

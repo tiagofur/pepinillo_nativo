@@ -35,6 +35,9 @@ private val SUPPORTED_ENTITLEMENT_IDS = listOf(
     "pro",
 )
 
+/** Result of a purchase attempt — distinguishes user cancel from real failure. */
+enum class PurchaseResult { Success, Cancelled, Failed }
+
 data class ProductInfo(
     val productId: String,
     val title: String,
@@ -141,22 +144,21 @@ class SubscriptionManager @Inject constructor(
         }
     }
 
-    fun launchPurchaseFlow(activity: Activity, product: ProductInfo) {
-        scope.launch {
-            suspendCancellableCoroutine { cont ->
-                Purchases.sharedInstance.purchaseWith(
-                    purchaseParams = PurchaseParams.Builder(activity, product.`package`).build(),
-                    onSuccess = { _, customerInfo ->
-                        Log.d(TAG, "Purchase successful for ${product.productId}")
-                        scope.launch { checkExistingPurchases() }
-                        if (cont.isActive) cont.resume(Unit)
-                    },
-                    onError = { error, userCancelled ->
-                        Log.e(TAG, "Purchase failed: ${error.message}")
-                        if (cont.isActive) cont.resume(Unit)
-                    },
-                )
-            }
+    suspend fun launchPurchaseFlow(activity: Activity, product: ProductInfo): PurchaseResult {
+        return suspendCancellableCoroutine { cont ->
+            Purchases.sharedInstance.purchaseWith(
+                purchaseParams = PurchaseParams.Builder(activity, product.`package`).build(),
+                onSuccess = { _, customerInfo ->
+                    Log.d(TAG, "Purchase successful for ${product.productId}")
+                    scope.launch { checkExistingPurchases() }
+                    if (cont.isActive) cont.resume(PurchaseResult.Success)
+                },
+                onError = { error, userCancelled ->
+                    Log.e(TAG, "Purchase failed: ${error.message}")
+                    val result = if (userCancelled) PurchaseResult.Cancelled else PurchaseResult.Failed
+                    if (cont.isActive) cont.resume(result)
+                },
+            )
         }
     }
 
