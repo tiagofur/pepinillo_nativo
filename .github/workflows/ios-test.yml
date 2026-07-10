@@ -1,0 +1,59 @@
+name: iOS Tests
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-test.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    defaults:
+      run:
+        working-directory: ios
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: List available simulators
+        run: xcrun simctl list devices available | grep -E "iPhone (16|17)" | head -5
+
+      - name: Build and test
+        run: |
+          DEST=$(xcrun simctl list devices available | grep -E "iPhone 16 Pro \(" | head -1 | sed -E 's/.*\(([^)]+)\).*/\1/')
+          if [ -z "$DEST" ]; then
+            DEST=$(xcrun simctl list devices available | grep -E "iPhone 16 \(" | head -1 | sed -E 's/.*\(([^)]+)\).*/\1/')
+          fi
+          if [ -z "$DEST" ]; then
+            echo "No suitable iPhone simulator found"
+            xcrun simctl list devices available
+            exit 1
+          fi
+          echo "Using simulator ID: $DEST"
+          set -o pipefail
+          xcodebuild \
+            -scheme "Pepinillo Dev" \
+            -destination "platform=iOS Simulator,id=$DEST" \
+            -configuration Debug \
+            test \
+            -only-testing:PepinilloTests/IntegrationTests/LocalToCloudStoreMigratorTests \
+            -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests
