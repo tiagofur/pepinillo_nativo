@@ -1,5 +1,10 @@
 package dev.creapolis.pepinillo.presentation
 
+import android.app.Activity
+import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
@@ -590,6 +596,11 @@ private fun IdleLayout(
 
             Spacer(modifier = Modifier.height(6.dp))
 
+            // Voice input — the most native watch affordance for "start focus".
+            VoiceStartChip(onStartMode = onStartMode)
+
+            Spacer(modifier = Modifier.height(6.dp))
+
             // Mode buttons in 2x2 grid
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -642,6 +653,63 @@ private fun formatMinutes(totalMinutes: Int): String {
 }
 
 // ─────────────────────────── Shared ───────────────────────────────────────
+
+/**
+ * Voice input chip: launches the system speech recognizer and maps spoken mode names
+ * to the corresponding focus mode. "Start focus" / "start pomodoro" → Pomodoro, etc.
+ * The most native watch affordance for hands-free timer start.
+ */
+@Composable
+private fun VoiceStartChip(onStartMode: (String) -> Unit) {
+    val voiceLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spoken = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+                ?.lowercase()
+            val mode = when {
+                spoken == null -> null
+                spoken.contains("flow") -> "Flow"
+                spoken.contains("block") -> "Blocks"
+                spoken.contains("chrono") || spoken.contains("stopwatch") -> "Chrono"
+                else -> "Pomodoro"
+            }
+            if (mode != null) onStartMode(mode)
+        }
+    }
+
+    Button(
+        onClick = {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a focus mode")
+            }
+            voiceLauncher.launch(intent)
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(
+            backgroundColor = MaterialTheme.colors.surface,
+            contentColor = MaterialTheme.colors.primary,
+        ),
+    ) {
+        Icon(
+            imageVector = Icons.Default.Mic,
+            contentDescription = "Voice start",
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(modifier = Modifier.size(4.dp))
+        Text(
+            text = "Voice start",
+            style = MaterialTheme.typography.caption2,
+            color = MaterialTheme.colors.primary,
+        )
+    }
+}
 
 @Composable
 private fun ModeButton(
