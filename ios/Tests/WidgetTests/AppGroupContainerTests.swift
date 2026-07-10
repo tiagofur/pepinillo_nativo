@@ -83,6 +83,30 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.lastAppleCloudActivationError == "iCloud unavailable")
     }
 
+    @Test("extensionModelStoreURL maps activeSyncMode to the correct SQLite file")
+    func extensionStoreURLSelection() {
+        #expect(extensionModelStoreURL(for: .local).lastPathComponent == AppGroup.storeFileName)
+        #expect(extensionModelStoreURL(for: .backend).lastPathComponent == AppGroup.storeFileName)
+        #expect(extensionModelStoreURL(for: .appleCloud).lastPathComponent == AppGroup.appleCloudStoreFileName)
+        #expect(extensionModelStoreURL(for: .local) == AppGroup.storeURL)
+        #expect(extensionModelStoreURL(for: .appleCloud) == AppGroup.appleCloudStoreURL)
+    }
+
+    @Test("extension container cache invalidates when activeSyncMode changes")
+    func extensionContainerCacheInvalidatesOnSyncModeChange() throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        defer { resetExtensionModelContainerCacheForTesting() }
+
+        AppGroupDefaults.activeSyncMode = .local
+        let localContainer = try makeWidgetModelContainer()
+
+        AppGroupDefaults.activeSyncMode = .appleCloud
+        let appleCloudContainer = try makeWidgetModelContainer()
+
+        #expect(ObjectIdentifier(localContainer) != ObjectIdentifier(appleCloudContainer))
+    }
+
     @Test("widget duration cache falls back when stored value is zero")
     func widgetDurationCacheFallsBackWhenZero() {
         let saved = AppGroupDefaultsSnapshot.capture()
