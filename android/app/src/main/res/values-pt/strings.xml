@@ -408,6 +408,12 @@
     <string name="auth_error_password_uppercase">A senha precisa de pelo menos uma letra maiúscula</string>
     <string name="auth_error_password_lowercase">A senha precisa de pelo menos uma letra minúscula</string>
     <string name="auth_error_password_digit">A senha precisa de pelo menos um número</string>
+    <string name="auth_rule_length">8+ caracteres</string>
+    <string name="auth_rule_uppercase">Maiúscula</string>
+    <string name="auth_rule_lowercase">Minúscula</string>
+    <string name="auth_rule_digit">Número</string>
+    <string name="auth_google_logo">Logo do Google</string>
+    <string name="merge_btn_cancel">Cancelar</string>
     <string name="auth_error_invalid_code">Código inválido ou expirado</string>
     <string name="auth_error_already_verified">O email já está verificado</string>
     <string name="auth_error_verification_failed">Verificação falhou. Verifique o código e tente novamente.</string>

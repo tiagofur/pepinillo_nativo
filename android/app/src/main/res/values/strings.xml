@@ -683,6 +683,12 @@
     <string name="auth_error_password_uppercase">Password needs at least one uppercase letter</string>
     <string name="auth_error_password_lowercase">Password needs at least one lowercase letter</string>
     <string name="auth_error_password_digit">Password needs at least one number</string>
+    <string name="auth_rule_length">8+ characters</string>
+    <string name="auth_rule_uppercase">Uppercase letter</string>
+    <string name="auth_rule_lowercase">Lowercase letter</string>
+    <string name="auth_rule_digit">Number</string>
+    <string name="auth_google_logo">Google logo</string>
+    <string name="merge_btn_cancel">Cancel</string>
     <string name="auth_error_invalid_code">Invalid or expired verification code</string>
     <string name="auth_error_already_verified">Email is already verified</string>
     <string name="auth_error_verification_failed">Verification failed. Please check the code and try again.</string>

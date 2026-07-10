@@ -2,15 +2,21 @@ package dev.creapolis.pepinillo.feature.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Login
+import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
@@ -143,12 +149,21 @@ fun RegisterScreen(
         )
 
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = stringResource(R.string.auth_password_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+        // Live password rule indicators — light up green as the user types each rule.
+        val hasLength = password.length >= 8
+        val hasUpper = password.any { it.isUpperCase() }
+        val hasLower = password.any { it.isLowerCase() }
+        val hasDigit = password.any { it.isDigit() }
+        Row(
             modifier = Modifier.fillMaxWidth().padding(start = 16.dp),
-        )
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            PasswordRuleChip(text = stringResource(R.string.auth_rule_length), met = hasLength)
+            PasswordRuleChip(text = stringResource(R.string.auth_rule_uppercase), met = hasUpper)
+            PasswordRuleChip(text = stringResource(R.string.auth_rule_lowercase), met = hasLower)
+            PasswordRuleChip(text = stringResource(R.string.auth_rule_digit), met = hasDigit)
+        }
 
         if (uiState.error != null) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -203,6 +218,12 @@ fun RegisterScreen(
                     modifier = Modifier.height(20.dp),
                 )
             } else {
+                Icon(
+                    imageVector = Icons.Rounded.Login,
+                    contentDescription = stringResource(R.string.auth_google_logo),
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(stringResource(R.string.auth_btn_google), style = MaterialTheme.typography.titleMedium)
             }
         }
@@ -212,5 +233,25 @@ fun RegisterScreen(
         TextButton(onClick = onNavigateToLogin) {
             Text(stringResource(R.string.auth_already_have_account))
         }
+    }
+}
+
+/** Compact rule chip that turns green with a check when the rule is met. */
+@Composable
+private fun PasswordRuleChip(text: String, met: Boolean) {
+    val color = if (met) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = if (met) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(14.dp),
+        )
+        Spacer(modifier = Modifier.width(2.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+        )
     }
 }

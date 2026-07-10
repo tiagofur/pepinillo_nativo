@@ -683,6 +683,12 @@
     <string name="auth_error_password_uppercase">La contraseña necesita al menos una mayúscula</string>
     <string name="auth_error_password_lowercase">La contraseña necesita al menos una minúscula</string>
     <string name="auth_error_password_digit">La contraseña necesita al menos un número</string>
+    <string name="auth_rule_length">8+ caracteres</string>
+    <string name="auth_rule_uppercase">Mayúscula</string>
+    <string name="auth_rule_lowercase">Minúscula</string>
+    <string name="auth_rule_digit">Número</string>
+    <string name="auth_google_logo">Logo de Google</string>
+    <string name="merge_btn_cancel">Cancelar</string>
     <string name="auth_error_invalid_code">Código inválido o expirado</string>
     <string name="auth_error_already_verified">El email ya está verificado</string>
     <string name="auth_error_verification_failed">Verificación fallida. Revisá el código e intentá de nuevo.</string>
