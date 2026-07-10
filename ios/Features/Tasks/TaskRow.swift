@@ -16,13 +16,15 @@ struct TaskRow: View, Equatable {
     var onScheduledForTodayToggled: (() -> Void)?
     var onEnergyChanged: ((EnergyLevel) -> Void)?
     var onRecurrenceChanged: ((String?) -> Void)?
+    var onPaywallTapped: (() -> Void)?
+    var isProUser: Bool = false
 
     // Equatable by visual state only (issue #81). Closures are intentionally
     // ignored: they change identity on every parent re-render but do not affect
     // what the row draws, so skipping the re-render when `task` is unchanged is
     // correct and avoids re-running chipData/Calendar math per row.
     nonisolated static func == (lhs: TaskRow, rhs: TaskRow) -> Bool {
-        lhs.task == rhs.task
+        lhs.task == rhs.task && lhs.isProUser == rhs.isProUser
     }
 
     var body: some View {
@@ -83,25 +85,39 @@ struct TaskRow: View, Equatable {
                 )
             }
 
-            // Recurrence
-            Menu {
-                ForEach(RecurrencePreset.allCases, id: \.self) { preset in
-                    Button {
-                        onRecurrenceChanged?(preset.rawValue)
-                    } label: {
-                        Label(preset.displayName, systemImage: preset.icon)
+            // Recurrence — Pro-gated in list context menu (issue #181)
+            if isProUser {
+                Menu {
+                    ForEach(RecurrencePreset.allCases, id: \.self) { preset in
+                        Button {
+                            onRecurrenceChanged?(preset.rawValue)
+                        } label: {
+                            Label(preset.displayName, systemImage: preset.icon)
+                        }
                     }
-                }
-                if task.recurrenceRule != nil {
-                    Divider()
-                    Button(role: .destructive) {
-                        onRecurrenceChanged?(nil)
-                    } label: {
-                        Label(String(localized: "Remove Recurrence"), systemImage: "xmark")
+                    if task.recurrenceRule != nil {
+                        Divider()
+                        Button(role: .destructive) {
+                            onRecurrenceChanged?(nil)
+                        } label: {
+                            Label(String(localized: "Remove Recurrence"), systemImage: "xmark")
+                        }
                     }
+                } label: {
+                    Label(String(localized: "Repeat"), systemImage: "arrow.clockwise")
                 }
-            } label: {
-                Label(String(localized: "Repeat"), systemImage: "arrow.clockwise")
+            } else if task.recurrenceRule != nil {
+                Button(role: .destructive) {
+                    onRecurrenceChanged?(nil)
+                } label: {
+                    Label(String(localized: "Remove Recurrence"), systemImage: "xmark")
+                }
+            } else {
+                Button {
+                    onPaywallTapped?()
+                } label: {
+                    Label(String(localized: "Set Repeat (Pepinillo+)"), systemImage: "lock")
+                }
             }
 
             Divider()

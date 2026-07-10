@@ -169,6 +169,7 @@ struct TaskListFeature {
         case startFocusOnTask(UUID)
         case groupByEnergyToggled
         case energySuggestionDismissed
+        case paywallRequested
 
         // Delegation
         case delegate(Delegate)
@@ -423,6 +424,10 @@ struct TaskListFeature {
                 }
 
             case .recurrenceChanged(let id, let rule):
+                // Recurrence is a Pro feature (issue #181) — match TaskDetailFeature guard.
+                if rule != nil && !state.isProUser {
+                    return .send(.delegate(.showPaywall))
+                }
                 state.tasks[id: id]?.recurrenceRule = rule
                 state.tasks[id: id]?.isRecurringTemplate = rule != nil
                 return .run { _ in
@@ -464,6 +469,9 @@ struct TaskListFeature {
             case .energySuggestionDismissed:
                 state.energySuggestionDismissed = true
                 return .none
+
+            case .paywallRequested:
+                return .send(.delegate(.showPaywall))
 
             case .startFocusOnTask:
                 // Handled by AppFeature to switch tabs + link task

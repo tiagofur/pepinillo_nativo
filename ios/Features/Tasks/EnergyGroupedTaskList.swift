@@ -180,7 +180,9 @@ struct EnergyGroupedTaskList: View {
                             },
                             onRecurrenceChanged: { rule in
                                 store.send(.recurrenceChanged(task.id, rule))
-                            }
+                            },
+                            onPaywallTapped: { store.send(.paywallRequested) },
+                            isProUser: store.isProUser
                         )
                         .equatable()  // Skip re-render when `task` is unchanged (issue #81)
                         .swipeActions(edge: .leading, allowsFullSwipe: true) {
