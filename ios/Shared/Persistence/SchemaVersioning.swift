@@ -31,7 +31,7 @@ import SwiftUI
 /// Captures the exact schema at launch. Never modify this enum after shipping —
 /// create SchemaV2 instead and add a migration stage.
 enum SchemaV1: VersionedSchema {
-    static let versionIdentifier = Schema.Version(1, 0, 0)
+    static var versionIdentifier: Schema.Version { Schema.Version(1, 0, 0) }
 
     static var models: [any PersistentModel.Type] {
         [
@@ -288,7 +288,7 @@ enum SchemaV1: VersionedSchema {
 /// Adds CachedUser model for backend auth sync.
 /// Lightweight migration — only adds a new table, no existing model changes.
 enum SchemaV2: VersionedSchema {
-    static let versionIdentifier = Schema.Version(2, 0, 0)
+    static var versionIdentifier: Schema.Version { Schema.Version(2, 0, 0) }
 
     static var models: [any PersistentModel.Type] {
         [
@@ -581,7 +581,7 @@ enum SchemaV2: VersionedSchema {
 /// V3 as shipped: TaskItem gains isDirty/syncId/serverId/isDeleted/syncedAt.
 /// FocusSessionRecord is unchanged from V2 (isDirty/syncedAt were added later in V4).
 enum SchemaV3: VersionedSchema {
-    static let versionIdentifier = Schema.Version(3, 0, 0)
+    static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
 
     static var models: [any PersistentModel.Type] {
         [
@@ -912,7 +912,7 @@ enum SchemaV3: VersionedSchema {
 ///   ProductivityReport:  (all existing fields — unchanged from V3)
 ///   CachedUser:          (all existing fields — unchanged from V3)
 enum SchemaV4: VersionedSchema {
-    static let versionIdentifier = Schema.Version(4, 0, 0)
+    static var versionIdentifier: Schema.Version { Schema.Version(4, 0, 0) }
 
     /// References the live @Model classes so that ModelContainer registers the correct
     /// Swift types. Application code (FetchDescriptor, ModelContext) uses these live types.
