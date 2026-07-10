@@ -293,6 +293,10 @@ struct TaskListFeature {
                 let newID = uuid()
                 let sortOrder = state.tasks.count
                 let now = date.now
+                let quickAddDefaults = Self.planQuickAddDefaults(
+                    for: state.selectedPlanFilter,
+                    now: now
+                )
                 let newTask = TaskItemState(
                     id: newID,
                     title: title,
@@ -304,8 +308,8 @@ struct TaskListFeature {
                     subtaskProgress: .init(completed: 0, total: 0),
                     recurrenceRule: nil,
                     isRecurringTemplate: false,
-                    dueDate: nil,
-                    scheduledForToday: state.filter == .today,
+                    dueDate: quickAddDefaults.dueDate,
+                    scheduledForToday: quickAddDefaults.scheduledForToday,
                     sortOrder: sortOrder,
                     createdAt: now
                 )
@@ -317,7 +321,9 @@ struct TaskListFeature {
                         id: newID,
                         title: title,
                         sortOrder: sortOrder,
-                        scheduledForToday: newTask.scheduledForToday
+                        dueDate: quickAddDefaults.dueDate,
+                        scheduledForToday: quickAddDefaults.scheduledForToday,
+                        createdAt: now
                     )
                     try await persistence.saveTask(dto)
                     WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
@@ -548,6 +554,24 @@ struct TaskListFeature {
         }
         .ifLet(\.$detail, action: \.detail) {
             TaskDetailFeature()
+        }
+    }
+
+    /// Default scheduling fields for Plan quick-add based on the active filter (issue #180).
+    static func planQuickAddDefaults(
+        for filter: PlanFilter,
+        now: Date = .now
+    ) -> (scheduledForToday: Bool, dueDate: Date?) {
+        let cal = Calendar.current
+        switch filter {
+        case .today:
+            return (true, nil)
+        case .inbox, .completed:
+            return (false, nil)
+        case .upcoming:
+            let startOfToday = cal.startOfDay(for: now)
+            let dueDate = cal.date(byAdding: .day, value: 1, to: startOfToday)
+            return (false, dueDate)
         }
     }
 
