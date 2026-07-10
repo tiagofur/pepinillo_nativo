@@ -99,7 +99,8 @@ private fun WearApp(viewModel: WearViewModel) {
         isConnected = timerState.isConnected,
     )
 
-    val showTimeText = timerState.status != "Running" && timerState.status != "Paused"
+    // Always show the wall-clock — it's the #1 checked info on a watch.
+    // Previously hidden during Running/Paused, which was jarring during 25-min sessions.
 
     val pageIndicatorState = remember {
         object : PageIndicatorState {
@@ -111,7 +112,7 @@ private fun WearApp(viewModel: WearViewModel) {
 
     WearTheme {
         Scaffold(
-            timeText = { if (showTimeText) TimeText() },
+            timeText = { TimeText() },
             vignette = { Vignette(vignettePosition = VignettePosition.TopAndBottom) },
             pageIndicator = {
                 HorizontalPageIndicator(

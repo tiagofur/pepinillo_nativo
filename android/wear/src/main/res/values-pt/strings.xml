@@ -22,6 +22,8 @@
     <string name="sessions">Sess\u00f5es</string>
     <string name="streak">Sequ\u00eancia</string>
     <string name="days">%d dias</string>
+    <string name="stats_unlock_history">Desbloquear Histórico</string>
+    <string name="stats_unlock_desc">Sequências, tarefas e tendências com Pepinillo+</string>
     <string name="completed_tasks">Tarefas concluídas</string>
 
     <!-- Modes -->

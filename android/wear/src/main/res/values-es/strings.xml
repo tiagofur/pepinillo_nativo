@@ -22,6 +22,8 @@
     <string name="sessions">Sesiones</string>
     <string name="streak">Racha</string>
     <string name="days">%d d\u00edas</string>
+    <string name="stats_unlock_history">Desbloquear Historial</string>
+    <string name="stats_unlock_desc">Rachas, tareas y tendencias con Pepinillo+</string>
     <string name="completed_tasks">Tareas completadas</string>
 
     <!-- Tiles -->

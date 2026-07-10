@@ -54,27 +54,72 @@ fun StatsScreen(
     }
 
     if (!isPro) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
+        // Tease value: show today's focus time + sessions (free), gate history/streak/tasks behind Pro.
+        ScalingLazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .onRotaryScrollEvent { event ->
+                    coroutineScope.launch {
+                        listState.scrollBy(event.verticalScrollPixels)
+                    }
+                    true
+                }
+                .focusRequester(focusRequester)
+                .focusable(),
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(horizontal = 16.dp),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Locked",
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colors.primary,
+            item {
+                ListHeader {
+                    Text(
+                        text = stringResource(R.string.today),
+                        color = MaterialTheme.colors.primary,
+                    )
+                }
+            }
+            item {
+                StatChip(
+                    emoji = "⏱",
+                    label = stringResource(R.string.focus_time),
+                    value = formatMinutes(state.totalMinutes),
                 )
+            }
+            item {
+                StatChip(
+                    emoji = "✅",
+                    label = stringResource(R.string.sessions),
+                    value = "${state.sessions}",
+                )
+            }
+            item {
                 androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Unlock detailed stats with Pepinillo+",
-                    style = MaterialTheme.typography.caption2,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colors.onSurface,
-                )
+            }
+            item {
+                ListHeader {
+                    Text(
+                        text = stringResource(R.string.stats_unlock_history),
+                        color = MaterialTheme.colors.primary,
+                    )
+                }
+            }
+            item {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colors.primary,
+                    )
+                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.stats_unlock_desc),
+                        style = MaterialTheme.typography.caption2,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colors.onSurface,
+                    )
+                }
             }
         }
         return
