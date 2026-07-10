@@ -494,6 +494,9 @@ struct FocusFeature {
                 let wasRunning = state.isRunning
                 resetState(&state)
                 guard wasRunning else { return .none }
+                // Do NOT cancel engineObservation here — it races with stop(false) and can
+                // drop .sessionCompleted before abandon persistence runs (issue #170).
+                // sessionCompleted cancels observation after handling the result.
                 return .merge(
                     .run { _ in await focusClient.stop(false) },
                     .run { [liveActivity] _ in await liveActivity.end(false) },
@@ -504,8 +507,7 @@ struct FocusFeature {
                         WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                         WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                         WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
-                    },
-                    .cancel(id: CancelID.engineObservation)
+                    }
                 )
 
             case .skipPhaseTapped:
@@ -723,13 +725,29 @@ struct FocusFeature {
                 let actualDuration = result.actualDuration
                 resetState(&state)
 
-                // For Pomodoro, each work interval was already persisted in phaseCompleted.
-                // The final sessionCompleted fires at end-of-cycle (break phase end) or on
-                // stopTapped — neither case should save an additional record to avoid
-                // double-counting focus time. For all other modes, save as usual.
-                let persistEffect: Effect<Action> = result.mode == .pomodoro
-                    ? .none
-                    : .run { [persistence] send in
+                // Pomodoro: full work intervals are persisted in phaseCompleted. Natural
+                // cycle completion needs no extra record. Manual stop mid-work persists
+                // partial progress (wasCompleted=false) so stats reflect abandoned pomodoros.
+                // Non-pomodoro modes always persist here (complete or abandoned).
+                let persistEffect: Effect<Action>
+                switch result.mode {
+                case .pomodoro:
+                    if wasCompleted {
+                        persistEffect = .none
+                    } else if case .work = result.phase {
+                        persistEffect = .run { [persistence] send in
+                            do {
+                                try await persistence.saveSession(result)
+                                await send(.delegate(.sessionPersisted))
+                            } catch {
+                                await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                            }
+                        }
+                    } else {
+                        persistEffect = .none
+                    }
+                default:
+                    persistEffect = .run { [persistence] send in
                         do {
                             try await persistence.saveSession(result)
                             await send(.delegate(.sessionPersisted))
@@ -737,8 +755,9 @@ struct FocusFeature {
                             await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
                         }
                     }
+                }
 
-                return .merge(
+                var completionEffects: [Effect<Action>] = [
                     // Check preference and present journal sheet if enabled
                     .run { [persistence] send in
                         if wasCompleted {
@@ -753,37 +772,44 @@ struct FocusFeature {
                         }
                     },
                     .cancel(id: CancelID.engineObservation),
-                    .run { [liveActivity] _ in await liveActivity.end(true) },
+                    .run { [liveActivity] _ in await liveActivity.end(wasCompleted) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
                     persistEffect,
-                    .run { [notificationClient] _ in
-                        await notificationClient.scheduleSessionComplete(modeName, taskTitle)
-                    },
-                    // Log to Apple Health if enabled
-                    .run { [healthClient, persistence] _ in
-                        let prefs = try await persistence.fetchPreferences()
-                        guard prefs.healthLoggingEnabled, healthClient.isAuthorized() else { return }
-                        try await healthClient.logMindfulMinutes(
-                            result.startedAt,
-                            result.endedAt
-                        )
-                    },
                     // Refresh widgets with updated stats — scoped reloads (issue #77).
                     .run { _ in
                         WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                         WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                         WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
-                    },
-                    // Donate intent for Siri Suggestions
-                    .run { _ in
-                        let intent = StartFocusIntent()
-                        if let mode = FocusModeEntity.allModes.first(where: { $0.id == modeName }) {
-                            intent.mode = mode
-                        }
-                        _ = try? await intent.donate()
                     }
-                )
+                ]
+
+                if wasCompleted {
+                    completionEffects.append(contentsOf: [
+                        .run { [notificationClient] _ in
+                            await notificationClient.scheduleSessionComplete(modeName, taskTitle)
+                        },
+                        // Log to Apple Health if enabled
+                        .run { [healthClient, persistence] _ in
+                            let prefs = try await persistence.fetchPreferences()
+                            guard prefs.healthLoggingEnabled, healthClient.isAuthorized() else { return }
+                            try await healthClient.logMindfulMinutes(
+                                result.startedAt,
+                                result.endedAt
+                            )
+                        },
+                        // Donate intent for Siri Suggestions
+                        .run { _ in
+                            let intent = StartFocusIntent()
+                            if let mode = FocusModeEntity.allModes.first(where: { $0.id == modeName }) {
+                                intent.mode = mode
+                            }
+                            _ = try? await intent.donate()
+                        }
+                    ])
+                }
+
+                return .merge(completionEffects)
 
             case .breakSuggested(let duration):
                 let minutes = Int(duration / 60)

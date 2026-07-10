@@ -360,6 +360,36 @@ struct FocusEngineStopTests {
         await engine.stop()
         #expect(await engine.currentState() == nil)
     }
+
+    @Test func stopWithCompletedFalseEmitsAbandonedSessionCompleted() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .flowtime)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let result = await withTaskGroup(of: FocusSessionResult?.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return nil }
+                for await event in events {
+                    if case .sessionCompleted(let result) = event {
+                        return result
+                    }
+                }
+                return nil
+            }
+            group.addTask {
+                await engine.stop(completed: false)
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+
+        #expect(result?.mode == .flowtime)
+        #expect(result?.wasCompleted == false)
+        #expect(await engine.currentState() == nil)
+    }
 }
 
 // MARK: - Interruptions
