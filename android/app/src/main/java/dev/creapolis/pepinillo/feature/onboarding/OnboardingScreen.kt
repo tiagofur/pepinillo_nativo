@@ -20,11 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Analytics
-import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Rocket
-import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
-import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -67,21 +64,6 @@ private fun onboardingPages() = listOf(
         descRes = R.string.onboarding_modes_desc,
     ),
     OnboardingPage(
-        icon = Icons.Rounded.CloudSync,
-        titleRes = R.string.onboarding_everywhere_title,
-        descRes = R.string.onboarding_everywhere_desc,
-    ),
-    OnboardingPage(
-        icon = Icons.Rounded.TaskAlt,
-        titleRes = R.string.onboarding_tasks_title,
-        descRes = R.string.onboarding_tasks_desc,
-    ),
-    OnboardingPage(
-        icon = Icons.Rounded.Widgets,
-        titleRes = R.string.onboarding_widgets_title,
-        descRes = R.string.onboarding_widgets_desc,
-    ),
-    OnboardingPage(
         icon = Icons.Rounded.Analytics,
         titleRes = R.string.onboarding_ready_title,
         descRes = R.string.onboarding_ready_desc,
@@ -97,9 +79,6 @@ private fun onboardingPages() = listOf(
 private fun pageBackground(index: Int): Color = when (index) {
     0 -> MaterialTheme.colorScheme.primaryContainer
     1 -> MaterialTheme.colorScheme.tertiaryContainer
-    2 -> MaterialTheme.colorScheme.secondaryContainer
-    3 -> MaterialTheme.colorScheme.primaryContainer
-    4 -> MaterialTheme.colorScheme.tertiaryContainer
     else -> MaterialTheme.colorScheme.secondaryContainer
 }
 
@@ -111,9 +90,6 @@ private fun pageBackground(index: Int): Color = when (index) {
 private fun pageContentColor(index: Int): Color = when (index) {
     0 -> MaterialTheme.colorScheme.onPrimaryContainer
     1 -> MaterialTheme.colorScheme.onTertiaryContainer
-    2 -> MaterialTheme.colorScheme.onSecondaryContainer
-    3 -> MaterialTheme.colorScheme.onPrimaryContainer
-    4 -> MaterialTheme.colorScheme.onTertiaryContainer
     else -> MaterialTheme.colorScheme.onSecondaryContainer
 }
 
@@ -275,7 +251,7 @@ fun OnboardingScreen(
                 ),
             ) {
                 Text(
-                    text = if (isLastPage) stringResource(R.string.btn_get_started) else stringResource(R.string.btn_next),
+                    text = if (isLastPage) stringResource(R.string.btn_start_first_focus) else stringResource(R.string.btn_next),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }

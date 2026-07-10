@@ -245,6 +245,7 @@
     <string name="btn_skip">Omitir</string>
     <string name="btn_next">Siguiente</string>
     <string name="btn_get_started">Comenzar</string>
+    <string name="btn_start_first_focus">Iniciar Primer Enfoque</string>
 
     <!-- Forgot Password -->
     <string name="forgot_password_title">Olvid\u00e9 mi contrase\u00f1a</string>
