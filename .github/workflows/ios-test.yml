@@ -96,4 +96,5 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             test-without-building \
             -only-testing:PepinilloTests/IntegrationTests/LocalToCloudStoreMigratorTests \
+            -only-testing:PepinilloTests/IntegrationTests/PersistenceStoreRouterTests \
             -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests
