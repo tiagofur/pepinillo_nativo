@@ -100,4 +100,5 @@ jobs:
             -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
             -only-testing:PepinilloTests/WidgetTests/FocusActivityAttributesTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusEngineTests \
-            -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests
+            -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests \
+            -only-testing:PepinilloTests/SiriIntentsTests/SiriPauseResumeIntentTests

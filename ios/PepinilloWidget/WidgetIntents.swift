@@ -80,28 +80,9 @@ struct PauseFocusFromWidgetIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
-        guard AppGroupDefaults.isSessionActive, !AppGroupDefaults.activeSessionIsPaused else {
+        guard AppGroupDefaults.requestExternalPause() else {
             return .result()
         }
-
-        // Calculate and freeze remaining/elapsed time before pausing.
-        let now = Date.now
-        let elapsed = AppGroupDefaults.activeSessionLiveElapsed(at: now)
-        let remaining = AppGroupDefaults.activeSessionLiveRemaining(at: now)
-        AppGroupDefaults.activeSessionElapsed = elapsed
-        AppGroupDefaults.activeSessionRemaining = remaining
-
-        if let remaining {
-            let duration = max(elapsed + remaining, 1)
-            AppGroupDefaults.activeSessionProgress = min(max(elapsed / duration, 0), 1)
-        }
-
-        AppGroupDefaults.externalCommandID = UUID().uuidString
-        AppGroupDefaults.externalCommandIssuedAt = now
-        AppGroupDefaults.externalResumeRequested = false
-        AppGroupDefaults.externalPauseRequested = true
-        AppGroupDefaults.activeSessionIsPaused = true
-        AppGroupDefaults.activeSessionPausedAt = now
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -115,30 +96,9 @@ struct ResumeFocusFromWidgetIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult {
-        guard AppGroupDefaults.isSessionActive, AppGroupDefaults.activeSessionIsPaused else {
+        guard AppGroupDefaults.requestExternalResume() else {
             return .result()
         }
-
-        // Recalculate anchors before resuming.
-        let now = Date.now
-        if let remaining = AppGroupDefaults.activeSessionRemaining {
-            let elapsed = AppGroupDefaults.activeSessionElapsed
-            let duration = max(elapsed + remaining, 1)
-            AppGroupDefaults.activeSessionTimerEnd = now.addingTimeInterval(remaining)
-            AppGroupDefaults.activeSessionTimerStart = now.addingTimeInterval(-elapsed)
-            AppGroupDefaults.activeSessionProgress = min(max(elapsed / duration, 0), 1)
-            AppGroupDefaults.activeSessionRemaining = nil
-        } else {
-            AppGroupDefaults.activeSessionTimerStart = now.addingTimeInterval(-AppGroupDefaults.activeSessionElapsed)
-        }
-
-        AppGroupDefaults.activeSessionElapsed = AppGroupDefaults.activeSessionLiveElapsed(at: now)
-        AppGroupDefaults.externalCommandID = UUID().uuidString
-        AppGroupDefaults.externalCommandIssuedAt = now
-        AppGroupDefaults.externalPauseRequested = false
-        AppGroupDefaults.externalResumeRequested = true
-        AppGroupDefaults.activeSessionIsPaused = false
-        AppGroupDefaults.activeSessionPausedAt = nil
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }

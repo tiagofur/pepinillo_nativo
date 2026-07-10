@@ -194,3 +194,88 @@ struct SiriIntentsTests {
         #expect(PepinilloShortcuts.appShortcuts.count >= 2)
     }
 }
+
+// MARK: - Pause / Resume Focus Intents
+
+@Suite("Siri Pause/Resume Intents", .serialized, .appGroupDefaultsSerialized)
+struct SiriPauseResumeIntentTests {
+
+    @Test("PauseFocusIntent writes the same external pause protocol as the widget")
+    func pauseFocusIntentWritesPauseAnchors() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        let issuedAt = Date(timeIntervalSince1970: 1_800_400_000)
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.externalStartRequested = false
+
+        let before = Date.now
+        _ = try await PauseFocusIntent().perform()
+        let after = Date.now
+
+        #expect(PauseFocusIntent.openAppWhenRun == false)
+        #expect(AppGroupDefaults.externalPauseRequested == true)
+        #expect(AppGroupDefaults.externalResumeRequested == false)
+        #expect(AppGroupDefaults.activeSessionIsPaused == true)
+        #expect(AppGroupDefaults.externalCommandID != nil)
+
+        let issued = try #require(AppGroupDefaults.externalCommandIssuedAt)
+        let pausedAt = try #require(AppGroupDefaults.activeSessionPausedAt)
+        #expect(issued >= before && issued <= after)
+        #expect(pausedAt == issued)
+        #expect(AppGroupDefaults.activeSessionElapsed > 0)
+        #expect(AppGroupDefaults.activeSessionRemaining != nil)
+    }
+
+    @Test("ResumeFocusIntent writes the same external resume protocol as the widget")
+    func resumeFocusIntentWritesResumeAnchors() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        let issuedAt = Date(timeIntervalSince1970: 1_800_400_100)
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.externalStartRequested = false
+        #expect(AppGroupDefaults.requestExternalPause(at: issuedAt.addingTimeInterval(60)) == true)
+        AppGroupDefaults.clearExternalCommands()
+
+        let before = Date.now
+        _ = try await ResumeFocusIntent().perform()
+        let after = Date.now
+
+        #expect(ResumeFocusIntent.openAppWhenRun == false)
+        #expect(AppGroupDefaults.externalResumeRequested == true)
+        #expect(AppGroupDefaults.externalPauseRequested == false)
+        #expect(AppGroupDefaults.activeSessionIsPaused == false)
+        #expect(AppGroupDefaults.activeSessionPausedAt == nil)
+        #expect(AppGroupDefaults.externalCommandID != nil)
+
+        let issued = try #require(AppGroupDefaults.externalCommandIssuedAt)
+        #expect(issued >= before && issued <= after)
+        #expect(AppGroupDefaults.activeSessionTimerStart != nil)
+        #expect(AppGroupDefaults.activeSessionTimerEnd != nil)
+    }
+
+    @Test("PauseFocusIntent rejects pause when session is already paused")
+    func pauseFocusIntentRejectsAlreadyPausedSession() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.isSessionActive = true
+        AppGroupDefaults.activeSessionIsPaused = true
+
+        _ = try await PauseFocusIntent().perform()
+
+        #expect(AppGroupDefaults.externalPauseRequested == false)
+        #expect(AppGroupDefaults.externalCommandIssuedAt == nil)
+    }
+}

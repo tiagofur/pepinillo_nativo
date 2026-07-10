@@ -509,6 +509,58 @@ enum AppGroupDefaults {
         return activeSessionRemaining
     }
 
+    /// Freeze live elapsed/remaining and request an external pause (widget, Siri, etc.).
+    /// Returns `false` when no active, unpaused session exists.
+    @discardableResult
+    static func requestExternalPause(at now: Date = .now) -> Bool {
+        guard isSessionActive, !activeSessionIsPaused else { return false }
+
+        let elapsed = activeSessionLiveElapsed(at: now)
+        let remaining = activeSessionLiveRemaining(at: now)
+        activeSessionElapsed = elapsed
+        activeSessionRemaining = remaining
+
+        if let remaining {
+            let duration = max(elapsed + remaining, 1)
+            activeSessionProgress = min(max(elapsed / duration, 0), 1)
+        }
+
+        externalCommandID = UUID().uuidString
+        externalCommandIssuedAt = now
+        externalResumeRequested = false
+        externalPauseRequested = true
+        activeSessionIsPaused = true
+        activeSessionPausedAt = now
+        return true
+    }
+
+    /// Re-anchor timers and request an external resume (widget, Siri, etc.).
+    /// Returns `false` when no active, paused session exists.
+    @discardableResult
+    static func requestExternalResume(at now: Date = .now) -> Bool {
+        guard isSessionActive, activeSessionIsPaused else { return false }
+
+        if let remaining = activeSessionRemaining {
+            let elapsed = activeSessionElapsed
+            let duration = max(elapsed + remaining, 1)
+            activeSessionTimerEnd = now.addingTimeInterval(remaining)
+            activeSessionTimerStart = now.addingTimeInterval(-elapsed)
+            activeSessionProgress = min(max(elapsed / duration, 0), 1)
+            activeSessionRemaining = nil
+        } else {
+            activeSessionTimerStart = now.addingTimeInterval(-activeSessionElapsed)
+        }
+
+        activeSessionElapsed = activeSessionLiveElapsed(at: now)
+        externalCommandID = UUID().uuidString
+        externalCommandIssuedAt = now
+        externalPauseRequested = false
+        externalResumeRequested = true
+        activeSessionIsPaused = false
+        activeSessionPausedAt = nil
+        return true
+    }
+
     /// Write a complete optimistic session snapshot so widgets can switch to
     /// running immediately, while the app later starts the real FocusEngine.
     static func startWidgetSession(

@@ -231,6 +231,68 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.activeModeName == "pomodoro")
     }
 
+    @Test("requestExternalPause freezes elapsed, remaining, and command anchors")
+    func requestExternalPauseWritesPauseProtocol() throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        let issuedAt = Date(timeIntervalSince1970: 1_800_300_000)
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.externalStartRequested = false
+
+        let pauseAt = issuedAt.addingTimeInterval(90)
+        let paused = AppGroupDefaults.requestExternalPause(at: pauseAt)
+
+        #expect(paused == true)
+        #expect(AppGroupDefaults.externalPauseRequested == true)
+        #expect(AppGroupDefaults.externalResumeRequested == false)
+        #expect(AppGroupDefaults.activeSessionIsPaused == true)
+        #expect(AppGroupDefaults.externalCommandID != nil)
+        #expect(AppGroupDefaults.externalCommandIssuedAt == pauseAt)
+        #expect(AppGroupDefaults.activeSessionPausedAt == pauseAt)
+        #expect(AppGroupDefaults.activeSessionElapsed == 90)
+        #expect(AppGroupDefaults.activeSessionRemaining == (25 * 60) - 90)
+        #expect(AppGroupDefaults.activeSessionProgress != nil)
+    }
+
+    @Test("requestExternalResume re-anchors timers and clears pause state")
+    func requestExternalResumeWritesResumeProtocol() throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        let issuedAt = Date(timeIntervalSince1970: 1_800_300_100)
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.externalStartRequested = false
+
+        let pauseAt = issuedAt.addingTimeInterval(120)
+        #expect(AppGroupDefaults.requestExternalPause(at: pauseAt) == true)
+        AppGroupDefaults.clearExternalCommands()
+
+        let resumeAt = pauseAt.addingTimeInterval(30)
+        let resumed = AppGroupDefaults.requestExternalResume(at: resumeAt)
+
+        #expect(resumed == true)
+        #expect(AppGroupDefaults.externalResumeRequested == true)
+        #expect(AppGroupDefaults.externalPauseRequested == false)
+        #expect(AppGroupDefaults.activeSessionIsPaused == false)
+        #expect(AppGroupDefaults.activeSessionPausedAt == nil)
+        #expect(AppGroupDefaults.externalCommandIssuedAt == resumeAt)
+        #expect(AppGroupDefaults.activeSessionRemaining == nil)
+
+        let timerStart = try #require(AppGroupDefaults.activeSessionTimerStart)
+        let timerEnd = try #require(AppGroupDefaults.activeSessionTimerEnd)
+        #expect(timerStart == resumeAt.addingTimeInterval(-120))
+        #expect(timerEnd == resumeAt.addingTimeInterval((25 * 60) - 120))
+    }
+
     @Test("StartFocusWithTaskIntent preserves the task and creates a widget-started session")
     func startFocusWithTaskIntentWritesTaskSession() async throws {
         let saved = AppGroupDefaultsSnapshot.capture()

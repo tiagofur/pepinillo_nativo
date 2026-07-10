@@ -565,6 +565,36 @@ struct FocusEngineTimerTests {
         #expect(AppGroupDefaults.externalPauseRequested == false)
     }
 
+    @Test func externalPauseWithCommandTimestampsFreezesSessionInBackground() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        let engine = FocusEngine()
+        await engine.start(mode: .stopwatch)
+        let runningState = try #require(await waitForPositiveElapsed(engine))
+        let elapsedAtPause = runningState.elapsedSeconds
+        let pauseAt = Date.now
+
+        AppGroupDefaults.isSessionActive = true
+        AppGroupDefaults.activeSessionTimerStart = runningState.startedAt
+        AppGroupDefaults.requestExternalPause(at: pauseAt)
+
+        var pausedState: FocusSessionState?
+        for _ in 0..<40 {
+            pausedState = await engine.currentState()
+            if pausedState?.isPaused == true { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+
+        let paused = try #require(pausedState)
+        #expect(paused.isPaused == true)
+        #expect(paused.elapsedSeconds == elapsedAtPause)
+        #expect(AppGroupDefaults.externalPauseRequested == false)
+    }
+
     @Test func countdownModeHasProgress() async throws {
         let engine = FocusEngine()
         await engine.start(mode: .pomodoro)
