@@ -70,6 +70,17 @@ fun WeeklyReviewSheet(
                 color = MaterialTheme.colorScheme.onSurface,
             )
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // ── HERO HEADLINE — emotional "wrap-up" sentence tying the data together ──
+            ReviewHeadline(
+                minutes = report.currentWeekMinutes,
+                hasSessions = report.currentWeekSessions > 0,
+                trend = report.minutesTrend,
+                deltaMinutes = abs(report.minutesDelta),
+                streak = report.currentStreak,
+            )
+
             Spacer(modifier = Modifier.height(20.dp))
 
             // ── COMPARISON CARDS ──
@@ -326,4 +337,47 @@ private fun formatMinutes(totalMinutes: Int, hasSessions: Boolean = false): Stri
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
     return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
+}
+
+/**
+ * Emotional "wrap-up" headline that composes a sentence from the data — the difference
+ * between a stat-list and a Spotify-Wrapped-style moment. Shows the focus-time trend sentence
+ * plus a streak callout when active.
+ */
+@Composable
+private fun ReviewHeadline(
+    minutes: Int,
+    hasSessions: Boolean,
+    trend: Trend,
+    deltaMinutes: Int,
+    streak: Int,
+) {
+    val timeStr = formatMinutes(minutes, hasSessions)
+    val headlineRes = when (trend) {
+        Trend.Up -> R.string.review_headline_up
+        Trend.Down -> R.string.review_headline_down
+        Trend.Neutral -> R.string.review_headline_steady
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
+            .padding(16.dp),
+    ) {
+        Text(
+            text = stringResource(headlineRes, timeStr, "${deltaMinutes}m"),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+        if (streak > 0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.review_headline_streak, streak),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
 }

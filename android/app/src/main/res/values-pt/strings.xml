@@ -700,6 +700,13 @@
     <string name="review_current_streak">Sequência Atual</string>
     <string name="review_top_tasks">Principais Tarefas</string>
     <string name="review_delta_minutes">%1$dm</string>
+    <string name="review_headline_up">Focou %1$s esta semana — mais %2$s do que na semana passada!</string>
+    <string name="review_headline_down">Focou %1$s esta semana — %2$s a menos do que na semana passada.</string>
+    <string name="review_headline_steady">Focou %1$s esta semana, mantendo-se estável.</string>
+    <string name="review_headline_streak">🔥 Sequência de %1$d dias e a contar!</string>
+    <string name="review_monthly_headline_up">Focou %1$s este mês — mais %2$s!</string>
+    <string name="review_monthly_headline_down">Focou %1$s este mês — %2$s a menos.</string>
+    <string name="review_monthly_headline_steady">Focou %1$s este mês, mantendo-se estável.</string>
 
     <!-- AI Report extras -->
     <string name="ai_credits_left">%1$d créditos restantes este mês</string>
