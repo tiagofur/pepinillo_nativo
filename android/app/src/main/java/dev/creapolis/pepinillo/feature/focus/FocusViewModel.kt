@@ -32,6 +32,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.sample
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -207,7 +209,10 @@ class FocusViewModel @Inject constructor(
 
     val uiState: StateFlow<FocusUiState> = combine(
         combine(
-            focusEngine.state,
+            // Sample the ticking engine state at most once per second (4Hz → 1Hz) for the uiState
+            // combine. displayTime/progress only need ~1Hz granularity; the timer ring subview
+            // reads the raw engine flow for smoother animation. This cuts body recomposition 75%.
+            focusEngine.state.sample(1.seconds),
             sessionRepository.getTodaySessionCount(),
             sessionRepository.getAllDaysWithSessions(),
             _linkedTaskName,
