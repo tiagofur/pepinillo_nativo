@@ -23,31 +23,7 @@ struct PlanTaskList: View {
     // MARK: - Filtered tasks
 
     private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
-        // Hoist Calendar/Date work out of the per-item loop so each value is
-        // computed once per view-body evaluation rather than once per task.
-        let cal = Calendar.current
-        let now = Date.now
-        switch filter {
-        case .today:
-            let startOfToday = cal.startOfDay(for: now)
-            return store.tasks.filter { task in
-                guard !task.isCompleted else { return false }
-                if task.scheduledForToday { return true }
-                guard let due = task.dueDate else { return false }
-                return cal.isDateInToday(due) || due < startOfToday
-            }
-        case .inbox:
-            return store.tasks.filter { !$0.isCompleted && !$0.scheduledForToday && $0.dueDate == nil }
-        case .upcoming:
-            let startOfToday = cal.startOfDay(for: now)
-            let weekFromNow = cal.date(byAdding: .day, value: 7, to: now) ?? now
-            return store.tasks.filter { task in
-                guard !task.isCompleted, !task.scheduledForToday, let due = task.dueDate else { return false }
-                return due > startOfToday && !cal.isDateInToday(due) && due <= weekFromNow
-            }
-        case .completed:
-            return store.tasks.filter { $0.isCompleted }
-        }
+        TaskListFeature.planFilteredTasks(store.tasks, filter: filter)
     }
 
     // MARK: - Body

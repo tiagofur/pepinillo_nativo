@@ -522,4 +522,125 @@ struct TaskListFeatureTests {
         #expect(store.state.tasks[id: taskID]?.isRecurringTemplate == true)
     }
 
+    // MARK: - Issue #179: Filtered plan reorder
+
+    @Test func planFilteredTasksInboxExcludesTodayAndCompleted() {
+        let inboxID = UUID(0)
+        let todayID = UUID(1)
+        let completedID = UUID(2)
+
+        let tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> = [
+            makeTask(id: inboxID, title: "Inbox", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+            makeTask(id: todayID, title: "Today", scheduledForToday: true, isCompleted: false, sortOrder: 1),
+            makeTask(id: completedID, title: "Done", scheduledForToday: false, isCompleted: true, sortOrder: 2),
+        ]
+
+        let filtered = TaskListFeature.planFilteredTasks(tasks, filter: .inbox)
+
+        #expect(filtered.ids == [inboxID])
+    }
+
+    @Test func taskMovedInInboxFilterReordersOnlyVisibleTasks() async {
+        let inboxA = UUID(0)
+        let todayB = UUID(1)
+        let inboxC = UUID(2)
+        let inboxD = UUID(3)
+
+        var initialState = TaskListFeature.State()
+        initialState.selectedPlanFilter = .inbox
+        initialState.tasks = [
+            makeTask(id: inboxA, title: "Inbox A", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+            makeTask(id: todayB, title: "Today B", scheduledForToday: true, isCompleted: false, sortOrder: 1),
+            makeTask(id: inboxC, title: "Inbox C", scheduledForToday: false, isCompleted: false, sortOrder: 2),
+            makeTask(id: inboxD, title: "Inbox D", scheduledForToday: false, isCompleted: false, sortOrder: 3),
+        ]
+
+        let savedOrder = LockIsolated<[(id: UUID, sortOrder: Int)]>([])
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTaskOrder = { order in savedOrder.setValue(order) }
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
+        }
+
+        store.exhaustivity = .off
+
+        // Inbox shows [A, C, D]. SwiftUI onMove(0, 2) inserts before index 2 -> [C, A, D].
+        await store.send(.taskMoved(IndexSet(integer: 0), 2)) {
+            $0.tasks[id: inboxC]?.sortOrder = 0
+            $0.tasks[id: inboxA]?.sortOrder = 2
+            $0.tasks[id: inboxD]?.sortOrder = 3
+            $0.tasks[id: todayB]?.sortOrder = 1
+            $0.tasks.sort { $0.sortOrder < $1.sortOrder }
+        }
+
+        let expectedOrder: [(UUID, Int)] = [
+            (inboxC, 0),
+            (todayB, 1),
+            (inboxA, 2),
+            (inboxD, 3),
+        ]
+        #expect(savedOrder.value.map { ($0.id, $0.sortOrder) }.elementsEqual(expectedOrder) { $0.0 == $1.0 && $0.1 == $1.1 })
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox).ids == [inboxC, inboxA, inboxD])
+    }
+
+    @Test func taskMovedInTodayFilterPreservesNonTodayTasks() async {
+        let todayA = UUID(0)
+        let inboxB = UUID(1)
+        let todayC = UUID(2)
+
+        var initialState = TaskListFeature.State()
+        initialState.selectedPlanFilter = .today
+        initialState.tasks = [
+            makeTask(id: todayA, title: "Today A", scheduledForToday: true, isCompleted: false, sortOrder: 0),
+            makeTask(id: inboxB, title: "Inbox B", scheduledForToday: false, isCompleted: false, sortOrder: 1),
+            makeTask(id: todayC, title: "Today C", scheduledForToday: true, isCompleted: false, sortOrder: 2),
+        ]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTaskOrder = { _ in }
+            $0.date = .constant(Date(timeIntervalSince1970: 1_700_000_000))
+        }
+
+        store.exhaustivity = .off
+
+        // Today shows [A, C]. SwiftUI onMove(0, 2) moves past the last row -> [C, A].
+        await store.send(.taskMoved(IndexSet(integer: 0), 2)) {
+            $0.tasks[id: todayC]?.sortOrder = 0
+            $0.tasks[id: todayA]?.sortOrder = 2
+            $0.tasks[id: inboxB]?.sortOrder = 1
+            $0.tasks.sort { $0.sortOrder < $1.sortOrder }
+        }
+
+        #expect(store.state.tasks[id: inboxB]?.sortOrder == 1)
+        #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .today).ids == [todayC, todayA])
+    }
+
+    private func makeTask(
+        id: UUID,
+        title: String,
+        scheduledForToday: Bool,
+        isCompleted: Bool,
+        sortOrder: Int,
+        dueDate: Date? = nil
+    ) -> TaskListFeature.TaskItemState {
+        TaskListFeature.TaskItemState(
+            id: id,
+            title: title,
+            isCompleted: isCompleted,
+            priority: .none,
+            energyLevel: .deep,
+            estimatedPomodoros: 1,
+            completedPomodoros: 0,
+            subtaskProgress: .init(completed: 0, total: 0),
+            recurrenceRule: nil,
+            isRecurringTemplate: false,
+            dueDate: dueDate,
+            scheduledForToday: scheduledForToday,
+            sortOrder: sortOrder,
+            createdAt: Date(timeIntervalSince1970: 1_000_000)
+        )
+    }
 }

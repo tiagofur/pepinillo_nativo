@@ -380,14 +380,28 @@ struct TaskListFeature {
                 }
 
             case .taskMoved(let source, let destination):
-                state.tasks.move(fromOffsets: source, toOffset: destination)
-                let orderedIDs = state.tasks.ids
+                // PlanTaskList drag indices refer to the active Plan filter subset,
+                // not the full task array (issue #179).
+                let now = date.now
+                var filtered = Self.planFilteredTasks(
+                    state.tasks,
+                    filter: state.selectedPlanFilter,
+                    now: now
+                )
+                guard !filtered.isEmpty else { return .none }
+
+                let sortOrders = filtered.map(\.sortOrder)
+                filtered.move(fromOffsets: source, toOffset: destination)
+
+                for (index, id) in filtered.ids.enumerated() {
+                    state.tasks[id: id]?.sortOrder = sortOrders[index]
+                }
+                state.tasks.sort { $0.sortOrder < $1.sortOrder }
+
+                let order = state.tasks.map { (id: $0.id, sortOrder: $0.sortOrder) }
                 return .run { _ in
                     // Batch the reorder in a single transaction instead of N
                     // sequential saveTask round-trips (issue #74).
-                    let order = Array(orderedIDs.enumerated()).map {
-                        (id: $0.element, sortOrder: $0.offset)
-                    }
                     try await persistence.saveTaskOrder(order)
                     WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                 }
@@ -534,6 +548,37 @@ struct TaskListFeature {
         }
         .ifLet(\.$detail, action: \.detail) {
             TaskDetailFeature()
+        }
+    }
+
+    /// Tasks visible for a Plan sidebar filter. Shared by PlanTaskList and
+    /// `taskMoved` so drag indices map to the same subset (issue #179).
+    static func planFilteredTasks(
+        _ tasks: IdentifiedArrayOf<TaskItemState>,
+        filter: PlanFilter,
+        now: Date = .now
+    ) -> IdentifiedArrayOf<TaskItemState> {
+        let cal = Calendar.current
+        switch filter {
+        case .today:
+            let startOfToday = cal.startOfDay(for: now)
+            return tasks.filter { task in
+                guard !task.isCompleted else { return false }
+                if task.scheduledForToday { return true }
+                guard let due = task.dueDate else { return false }
+                return cal.isDateInToday(due) || due < startOfToday
+            }
+        case .inbox:
+            return tasks.filter { !$0.isCompleted && !$0.scheduledForToday && $0.dueDate == nil }
+        case .upcoming:
+            let startOfToday = cal.startOfDay(for: now)
+            let weekFromNow = cal.date(byAdding: .day, value: 7, to: now) ?? now
+            return tasks.filter { task in
+                guard !task.isCompleted, !task.scheduledForToday, let due = task.dueDate else { return false }
+                return due > startOfToday && !cal.isDateInToday(due) && due <= weekFromNow
+            }
+        case .completed:
+            return tasks.filter { $0.isCompleted }
         }
     }
 }
