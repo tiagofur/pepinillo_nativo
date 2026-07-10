@@ -117,6 +117,39 @@ public struct TaskItemDTO: Sendable, Equatable, Identifiable {
         self.syncedAt = task.syncedAt
         self.updatedAt = task.updatedAt
     }
+
+    /// Returns a copy with selective field overrides. Use after `fetchTask` to
+    /// avoid partial DTO rebuilds that wipe recurrence/sync metadata (issue #178).
+    public func updating(
+        isCompleted: Bool? = nil,
+        energyLevel: EnergyLevel? = nil
+    ) -> TaskItemDTO {
+        TaskItemDTO(
+            id: id,
+            title: title,
+            notes: notes,
+            isCompleted: isCompleted ?? self.isCompleted,
+            priority: priority,
+            energyLevel: energyLevel ?? self.energyLevel,
+            estimatedPomodoros: estimatedPomodoros,
+            completedPomodoros: completedPomodoros,
+            sortOrder: sortOrder,
+            subtasksCompleted: subtasksCompleted,
+            subtasksTotal: subtasksTotal,
+            recurrenceRule: recurrenceRule,
+            isRecurringTemplate: isRecurringTemplate,
+            dueDate: dueDate,
+            scheduledForToday: scheduledForToday,
+            completedAt: completedAt,
+            createdAt: createdAt,
+            syncId: syncId,
+            serverId: serverId,
+            isDirty: isDirty,
+            isDeleted: isDeleted,
+            syncedAt: syncedAt,
+            updatedAt: updatedAt
+        )
+    }
 }
 
 /// Sendable representation of SubTask for crossing concurrency boundaries
