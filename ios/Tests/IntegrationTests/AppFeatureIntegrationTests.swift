@@ -497,6 +497,44 @@ struct AppFeatureIntegrationTests {
 
     // MARK: - Widget Command Reconciliation
 
+    @Test func consumeExternalCommandsClearsGhostSessionAfterProcessKill() async {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        let issuedAt = Date(timeIntervalSince1970: 1_800_300_000)
+        AppGroupDefaults.isSessionActive = true
+        AppGroupDefaults.activeModeName = "pomodoro"
+        AppGroupDefaults.activeSessionTimerStart = issuedAt
+        AppGroupDefaults.activeSessionTimerEnd = issuedAt.addingTimeInterval(25 * 60)
+        AppGroupDefaults.activeSessionElapsed = 120
+        AppGroupDefaults.externalStartRequested = false
+
+        let liveActivityEnded = LockIsolated(false)
+        let notificationsCleared = LockIsolated(false)
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.liveActivityClient.end = { _ in liveActivityEnded.withValue { $0 = true } }
+            $0.notificationClient.clearActiveSession = { notificationsCleared.withValue { $0 = true } }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.consumeExternalCommands)
+
+        #expect(AppGroupDefaults.isSessionActive == false)
+        #expect(AppGroupDefaults.activeModeName == nil)
+        #expect(AppGroupDefaults.activeSessionTimerStart == nil)
+        #expect(liveActivityEnded.value == true)
+        #expect(notificationsCleared.value == true)
+        #expect(store.state.focus.isRunning == false)
+    }
+
     @Test func appBecameActiveConsumesWidgetStartedSessionWithAnchors() async throws {
         let savedDefaults = AppGroupDefaultsSnapshot.capture()
         defer { savedDefaults.restore() }

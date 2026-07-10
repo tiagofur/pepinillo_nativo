@@ -219,6 +219,7 @@ struct AppFeature {
     @Dependency(\.webSocketClient) var webSocketClient
     @Dependency(\.syncModeClient) var syncModeClient
     @Dependency(\.networkClient) var networkClient
+    @Dependency(\.liveActivityClient) var liveActivityClient
 
     private enum CancelID {
         case transactionListener
@@ -472,6 +473,20 @@ struct AppFeature {
                 return .none
 
             case .consumeExternalCommands:
+                let ghostSessionClearedEffects: () -> Effect<Action> = { [liveActivityClient, notificationClient] in
+                    .merge(
+                        .run { _ in
+                            WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                            WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        },
+                        .run { _ in
+                            await liveActivityClient.end(false)
+                            await notificationClient.clearActiveSession()
+                        }
+                    )
+                }
+
                 // Check for external commands from Siri, widgets, or Control Center
                 if AppGroupDefaults.externalStartRequested {
                     let requestedModeID = AppGroupDefaults.requestedMode ?? AppGroupDefaults.activeModeName
@@ -496,7 +511,15 @@ struct AppFeature {
                 
                 if AppGroupDefaults.externalStopRequested {
                     AppGroupDefaults.clearExternalCommands()
-                    return state.focus.isRunning ? .send(.focus(.stopTapped)) : .none
+                    if state.focus.isRunning {
+                        return .send(.focus(.stopTapped))
+                    }
+                    if AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(
+                        engineIsRunning: state.focus.isRunning
+                    ) {
+                        return ghostSessionClearedEffects()
+                    }
+                    return .none
                 }
                 
                 if AppGroupDefaults.externalResumeRequested {
@@ -525,6 +548,13 @@ struct AppFeature {
                 }
                 
                 AppGroupDefaults.clearExternalCommands()
+
+                // Killed mid-session: App Group still says active but FocusEngine is idle.
+                if AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(
+                    engineIsRunning: state.focus.isRunning
+                ) {
+                    return ghostSessionClearedEffects()
+                }
                 
                 // Sync idle mode selection from widget to app if no session is running
                 if !state.focus.isRunning, let widgetModeID = AppGroupDefaults.widgetSelectedMode,
