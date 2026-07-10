@@ -45,6 +45,9 @@ public actor FocusEngine {
     private var pauseCount: Int = 0
     private var phaseBeforePause: FocusPhase?
 
+    // Flowtime: emit breakSuggested once per flow phase when threshold is reached
+    private var breakSuggestionEmitted = false
+
     // Event broadcasting
     private var eventContinuation: AsyncStream<FocusEngineEvent>.Continuation?
     private(set) var events: AsyncStream<FocusEngineEvent>?
@@ -140,6 +143,7 @@ public actor FocusEngine {
         self.state = sessionState
         self.phaseStartDate = effectiveStart
         self.totalPausedDuration = 0
+        self.breakSuggestionEmitted = false
 
         startTicking()
     }
@@ -440,8 +444,21 @@ public actor FocusEngine {
         let effectiveElapsed = rawElapsed - totalPausedDuration
         current.elapsedSeconds = max(0, effectiveElapsed)
 
-        // Update remaining/progress for countdown modes
-        if strategy.hasTarget, let target = current.targetDuration {
+        // Flowtime: optionally suggest a break once the minimum session threshold is met.
+        if current.mode == .flowtime,
+           current.phase == .flow,
+           config.flowtimeShowBreakSuggestion,
+           !breakSuggestionEmitted {
+            let minSeconds = TimeInterval(config.flowtimeMinSessionMinutes * 60)
+            if effectiveElapsed >= minSeconds {
+                breakSuggestionEmitted = true
+                let duration = strategy.suggestedBreakDuration(afterFocusing: effectiveElapsed)
+                emit(.breakSuggested(duration: duration))
+            }
+        }
+
+        // Update remaining/progress for phases with a target (Pomodoro, TimeBlock, Flowtime break).
+        if let target = current.targetDuration {
             let remaining = max(0, target - effectiveElapsed)
             current.remainingSeconds = remaining
             current.progress = 1.0 - (remaining / target)
@@ -583,6 +600,10 @@ public actor FocusEngine {
         phaseStartDate = Date.now
         totalPausedDuration = 0
 
+        if current.mode == .flowtime, resolvedPhase == .flow {
+            breakSuggestionEmitted = false
+        }
+
         startTicking()
         emit(.tick(current))
     }
@@ -623,5 +644,6 @@ public actor FocusEngine {
         pauseCount = 0
         phaseBeforePause = nil
         pendingNextPhase = nil
+        breakSuggestionEmitted = false
     }
 }

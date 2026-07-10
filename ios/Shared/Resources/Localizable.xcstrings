@@ -15057,6 +15057,22 @@
         }
       }
     },
+    "Take break" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tomar descanso"
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fazer pausa"
+          }
+        }
+      }
+    },
     "Skip to next phase" : {
       "localizations" : {
         "es" : {

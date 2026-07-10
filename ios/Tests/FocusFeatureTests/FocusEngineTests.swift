@@ -644,6 +644,150 @@ struct FocusEngineConfigTests {
     }
 }
 
+// MARK: - Flowtime Break Lifecycle
+
+@Suite("FocusEngine — Flowtime Breaks", .serialized)
+struct FocusEngineFlowtimeBreakTests {
+
+    @Test func takeBreakAdvancesToFlowBreak() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .flowtime)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.skipToNextPhase()
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.phase.isBreak == true)
+        if case .flowBreak(let duration) = state?.phase {
+            #expect(duration == 5 * 60) // < 25 min focus → 5 min break
+        } else {
+            Issue.record("Expected .flowBreak after take break, got \(String(describing: state?.phase))")
+        }
+        #expect(state?.targetDuration == 5 * 60)
+        #expect(state?.remainingSeconds == 5 * 60)
+        #expect(state?.progress != nil)
+    }
+
+    @Test func flowBreakCountsDown() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .flowtime)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.skipToNextPhase()
+        try await Task.sleep(for: .milliseconds(300))
+
+        let initialRemaining = await engine.currentState()?.remainingSeconds
+        #expect(initialRemaining == 5 * 60)
+
+        try await Task.sleep(for: .milliseconds(300))
+        let laterRemaining = await engine.currentState()?.remainingSeconds
+        #expect((laterRemaining ?? 0) < (initialRemaining ?? 0))
+    }
+
+    @Test func flowBreakCompletesAndReturnsToFlow() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .flowtime)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.skipToNextPhase()
+        try await Task.sleep(for: .milliseconds(300))
+
+        let breakTarget = await engine.currentState()?.targetDuration ?? 0
+        await engine.syncExternalState(elapsed: breakTarget, remaining: 0)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.phase == .flow)
+        #expect(state?.targetDuration == nil)
+        #expect(state?.remainingSeconds == nil)
+        #expect(state?.progress == nil)
+    }
+
+    @Test func skipFlowBreakReturnsToFlow() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .flowtime)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.skipToNextPhase()
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(await engine.currentState()?.phase.isBreak == true)
+
+        await engine.skipToNextPhase()
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.phase == .flow)
+    }
+
+    @Test func breakSuggestedUsesConfigThreshold() async throws {
+        let engine = FocusEngine()
+        var config = FocusConfig.default
+        config.flowtimeMinSessionMinutes = 1
+        config.flowtimeShowBreakSuggestion = true
+
+        let startDate = Date.now.addingTimeInterval(-90)
+        await engine.start(mode: .flowtime, config: config, timerStart: startDate)
+
+        let suggestedDuration = await firstBreakSuggestion(from: engine, within: .milliseconds(500))
+        #expect(suggestedDuration == 5 * 60) // 90s focus → 5 min suggested break
+    }
+
+    @Test func breakSuggestedRespectsDisabledFlag() async throws {
+        let engine = FocusEngine()
+        var config = FocusConfig.default
+        config.flowtimeMinSessionMinutes = 1
+        config.flowtimeShowBreakSuggestion = false
+
+        let startDate = Date.now.addingTimeInterval(-90)
+        await engine.start(mode: .flowtime, config: config, timerStart: startDate)
+
+        let suggestedDuration = await firstBreakSuggestion(from: engine, within: .milliseconds(500))
+        #expect(suggestedDuration == nil)
+    }
+
+    private func firstBreakSuggestion(from engine: FocusEngine, within timeout: Duration) async -> TimeInterval? {
+        await withTaskGroup(of: TimeInterval?.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return nil }
+                for await event in events {
+                    if case .breakSuggested(let duration) = event {
+                        return duration
+                    }
+                }
+                return nil
+            }
+            group.addTask {
+                try? await Task.sleep(for: timeout)
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+    }
+
+    @Test func pauseDuringFlowBreakResumesBreakPhase() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .flowtime)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.skipToNextPhase()
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.pause()
+        #expect(await engine.currentState()?.phase == .paused)
+
+        await engine.resume()
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.isPaused == false)
+        #expect(state?.phase.isBreak == true)
+    }
+}
+
 // MARK: - Daily Pomodoro Seed
 
 @Suite("FocusEngine — Daily Pomodoro Seed")

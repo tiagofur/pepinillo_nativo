@@ -90,7 +90,7 @@ struct FlowtimeStrategyTests {
         #expect(strategy.mode == .flowtime)
         #expect(strategy.direction == .countUp)
         #expect(strategy.hasTarget == false)
-        #expect(strategy.supportsAutoAdvance == false)
+        #expect(strategy.supportsAutoAdvance == true)
     }
 
     @Test func initialPhaseIsFlow() {

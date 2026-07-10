@@ -472,8 +472,36 @@ struct FocusView: View {
                 .buttonBorderShape(.circle)
                 .accessibilityLabel(store.isPaused ? String(localized: "Resume session") : String(localized: "Pause session"))
 
-                // Skip phase (Pomodoro only — skip break)
-                if store.activeMode == .pomodoro && store.phase.isBreak {
+                // Flowtime: take break during flow, or skip an active break
+                if store.activeMode == .flowtime && store.phase == .flow {
+                    Button {
+                        store.send(.skipPhaseTapped)
+                        HapticManager.selection()
+                    } label: {
+                        Image(systemName: "cup.and.saucer.fill")
+                            .font(.title2)
+                            .foregroundStyle(.primary)
+                            .frame(width: 56, height: 56)
+                            .adaptiveGlassCircle(id: "take-break-button", namespace: glassNS)
+                    }
+                    .buttonStyle(.plain)
+                    .buttonBorderShape(.circle)
+                    .accessibilityLabel(String(localized: "Take break"))
+                } else if store.activeMode == .flowtime && store.phase.isBreak {
+                    Button {
+                        store.send(.skipPhaseTapped)
+                    } label: {
+                        Image(systemName: "forward.fill")
+                            .font(.title2)
+                            .foregroundStyle(.primary)
+                            .frame(width: 56, height: 56)
+                            .adaptiveGlassCircle(id: "skip-button", namespace: glassNS)
+                    }
+                    .buttonStyle(.plain)
+                    .buttonBorderShape(.circle)
+                    .accessibilityLabel(String(localized: "Skip to next phase"))
+                } else if store.activeMode == .pomodoro && store.phase.isBreak {
+                    // Pomodoro: skip break
                     Button {
                         store.send(.skipPhaseTapped)
                     } label: {

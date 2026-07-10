@@ -19,7 +19,9 @@ struct FlowtimeStrategy: FocusModeStrategy, Sendable {
     let mode = FocusMode.flowtime
     let direction = TimerDirection.countUp
     let hasTarget = false
-    let supportsAutoAdvance = false  // User decides when to take a break
+    /// Flow phases are open-ended (user decides when to break). Break phases auto-advance
+    /// back to flow when the countdown completes.
+    let supportsAutoAdvance = true
 
     func initialPhase(config: FocusConfig) -> FocusPhase {
         .flow
