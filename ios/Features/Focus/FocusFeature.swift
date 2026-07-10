@@ -131,9 +131,6 @@ struct FocusFeature {
         // Day change
         case dayChanged
 
-        // Internal: seed the pomodoro cycle number from DB without clobbering live session state
-        case _pomodoroWorkCountSeeded(Int)
-
         // Mode Intelligence
         case modeSuggested(ModeSuggestion?)
         case modeSuggestionAccepted
@@ -290,25 +287,31 @@ struct FocusFeature {
                 let soundscapeVolume = state.soundscapeVolume
 
                 return .merge(
-                    // Load today's completed pomodoro work sessions from DB
-                    // so the engine starts with the correct cycle position.
-                    // Uses a dedicated action to avoid clobbering the live engine session state
-                    // with a synthetic FocusSessionState that has a mismatched UUID.
-                    .run { [persistence] send in
+                    // Load today's completed pomodoro work sessions from DB, then start the engine
+                    // with the seeded cycle position so long-break decisions are correct.
+                    // These MUST be sequential: start() creates a fresh AsyncStream,
+                    // and events() must read it after start() completes.
+                    .run { [focusClient, persistence] send in
+                        let completedWorkSessionsToday: Int
                         if mode == .pomodoro {
                             let startOfDay = Calendar.current.startOfDay(for: Date.now)
                             let sessions = try await persistence.fetchSessions(startOfDay, Date.now)
-                            let pomodoroWorkCount = sessions.filter {
+                            completedWorkSessionsToday = sessions.filter {
                                 $0.mode == "pomodoro" && $0.wasCompleted
                             }.count
-                            await send(._pomodoroWorkCountSeeded(pomodoroWorkCount))
+                        } else {
+                            completedWorkSessionsToday = 0
                         }
-                    },
-                    // Start engine, then observe its events.
-                    // These MUST be sequential: start() creates a fresh AsyncStream,
-                    // and events() must read it after start() completes.
-                    .run { [focusClient] send in
-                        await focusClient.start(mode, config, taskID, customDuration, engineTimerStart, engineTimerEnd)
+
+                        await focusClient.start(
+                            mode,
+                            config,
+                            taskID,
+                            customDuration,
+                            engineTimerStart,
+                            engineTimerEnd,
+                            completedWorkSessionsToday
+                        )
                         let stream = await focusClient.events()
                         for await event in stream {
                             switch event {
@@ -961,24 +964,6 @@ struct FocusFeature {
 
             case .paywallDismissed:
                 state.showPaywall = false
-                return .none
-
-            // MARK: Pomodoro Cycle Seed
-
-            case ._pomodoroWorkCountSeeded(let count):
-                // Update the displayed pomodoro number without touching elapsedSeconds,
-                // remainingSeconds, progress, or any other live session state that the
-                // engine manages. Only set if the session is still running in pomodoro mode
-                // and the engine hasn't already sent a later tick with a higher number.
-                if state.isRunning, state.activeMode == .pomodoro {
-                    let seeded = count + 1
-                    // Don't regress: if the engine already advanced to a higher number, keep it.
-                    if let current = state.pomodoroNumber {
-                        if seeded > current { state.pomodoroNumber = seeded }
-                    } else {
-                        state.pomodoroNumber = seeded
-                    }
-                }
                 return .none
 
             // MARK: Day Change

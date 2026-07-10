@@ -71,7 +71,8 @@ public actor FocusEngine {
         linkedTaskID: UUID? = nil,
         customDuration: TimeInterval? = nil,
         timerStart: Date? = nil,
-        timerEnd: Date? = nil
+        timerEnd: Date? = nil,
+        completedWorkSessionsToday: Int = 0
     ) {
         // Cancel any existing session
         stop(completed: false)
@@ -85,7 +86,6 @@ public actor FocusEngine {
         let strategy = mode.strategy
         self.strategy = strategy
         self.config = config
-        self.currentPomodoroNumber = 1
 
         // Use custom duration for Time Block if provided
         var effectiveConfig = config
@@ -94,12 +94,19 @@ public actor FocusEngine {
         }
         self.config = effectiveConfig
 
+        let seededPomodoroNumber = mode == .pomodoro
+            ? effectiveConfig.nextPomodoroNumber(completedWorkSessionsToday: completedWorkSessionsToday)
+            : 1
+        self.currentPomodoroNumber = seededPomodoroNumber
+
         let initialPhase = strategy.initialPhase(config: effectiveConfig)
         let targetDuration = strategy.targetDuration(config: effectiveConfig, phase: initialPhase)
 
-        // Pomodoro starts at work(1, total)
+        // Pomodoro starts at work(N, total) where N reflects today's completed sessions.
         let phase: FocusPhase
-        if case .work(_, let total) = initialPhase {
+        if case .work(_, let total) = initialPhase, mode == .pomodoro {
+            phase = .work(number: seededPomodoroNumber, total: total)
+        } else if case .work(_, let total) = initialPhase {
             phase = .work(number: 1, total: total)
         } else {
             phase = initialPhase
@@ -126,7 +133,7 @@ public actor FocusEngine {
             remainingSeconds: effectiveRemaining,
             progress: targetDuration != nil ? min(max(effectiveElapsed / targetDuration!, 0), 1) : nil,
             linkedTaskID: linkedTaskID,
-            pomodoroNumber: mode == .pomodoro ? 1 : nil,
+            pomodoroNumber: mode == .pomodoro ? seededPomodoroNumber : nil,
             totalPomodoros: mode == .pomodoro ? effectiveConfig.pomodorosPerCycle : nil
         )
 

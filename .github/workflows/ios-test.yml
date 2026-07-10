@@ -85,7 +85,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build-for-testing
 
-      - name: Run persistence integration tests
+      - name: Run targeted tests
         run: |
           set -o pipefail
           xcodebuild \
@@ -97,4 +97,6 @@ jobs:
             test-without-building \
             -only-testing:PepinilloTests/IntegrationTests/LocalToCloudStoreMigratorTests \
             -only-testing:PepinilloTests/IntegrationTests/PersistenceStoreRouterTests \
-            -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests
+            -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
+            -only-testing:PepinilloTests/FocusFeatureTests/FocusEngineTests \
+            -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests
