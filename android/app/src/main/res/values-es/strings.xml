@@ -765,5 +765,9 @@
     <string name="error_upload_failed">No se pudo subir la foto. Inténtalo de nuevo.</string>
     <string name="error_read_image">No se pudo leer la imagen seleccionada.</string>
     <string name="paywall_no_subscription">No se encontró ninguna suscripción activa</string>
+    <string name="paywall_purchase_failed">La compra falló. Inténtalo de nuevo.</string>
+    <string name="paywall_per_month">~%1$s/mes</string>
+    <string name="paywall_save_pct">Ahorra %1$d%%</string>
+    <string name="paywall_risk_reversal">Cancela cuando quieras. Mantén tus datos.</string>
     <string name="banner_offline">Sin conexión — los cambios se sincronizarán al reconectar</string>
 </resources>

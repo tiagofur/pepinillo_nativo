@@ -191,6 +191,13 @@ fun PaywallScreen(
                     isSelected = isSelected,
                     isFeatured = isAnnual,
                     onClick = { viewModel.selectProduct(product.productId) },
+                    // Per-month equivalent for annual — boosts conversion.
+                    subtitle = if (isAnnual && product.priceMicros > 0) {
+                        val monthlyMicros = product.priceMicros / 12
+                        val currency = product.formattedPrice.takeWhile { !it.isDigit() }.trim()
+                        val monthlyStr = currency + "%.2f".format(monthlyMicros / 1_000_000.0)
+                        stringResource(R.string.paywall_per_month, monthlyStr)
+                    } else null,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -210,7 +217,18 @@ fun PaywallScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Risk-reversal line — aids conversion by reducing purchase anxiety.
+        Text(
+            text = stringResource(R.string.paywall_risk_reversal),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // ── PURCHASE BUTTON ──
         // heightIn instead of fixed height so the label can wrap at large font scales
@@ -419,6 +437,7 @@ private fun ProductCard(
     isSelected: Boolean,
     isFeatured: Boolean,
     onClick: () -> Unit,
+    subtitle: String? = null,
 ) {
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary
@@ -470,6 +489,14 @@ private fun ProductCard(
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(MaterialTheme.colorScheme.primary)
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 2.dp),
                         )
                     }
                 }
