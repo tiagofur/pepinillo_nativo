@@ -512,6 +512,114 @@ struct FocusFeatureReducerTests {
         #expect(savedSessions.value.first?.wasCompleted == false)
     }
 
+    // MARK: - Pomodoro Journal Linkage (issue #171)
+
+    @Test func phaseCompletedWorkIntervalTracksPersistedSessionForJournal() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.phase = .work(number: 2, total: 4)
+        state.elapsedSeconds = 25 * 60
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+            $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.phaseCompleted(.work(number: 2, total: 4)))
+
+        #expect(savedSessions.value.count == 1)
+        let persisted = savedSessions.value[0]
+        #expect(store.state.lastPersistedPomodoroSessionID == persisted.id)
+        #expect(store.state.lastPersistedPomodoroDuration == 25 * 60)
+        #expect(persisted.actualDuration == 25 * 60)
+        #expect(persisted.phase == .work(number: 2, total: 4))
+    }
+
+    @Test func completedPomodoroCycleJournalUsesPersistedWorkIntervalID() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+        let persistedWorkID = UUID()
+        let workDuration: TimeInterval = 25 * 60
+        let breakDuration: TimeInterval = 15 * 60
+        let engineSessionID = UUID()
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.phase = .longBreak
+        state.lastPersistedPomodoroSessionID = persistedWorkID
+        state.lastPersistedPomodoroDuration = workDuration
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.notificationClient.scheduleSessionComplete = { _, _ in }
+            $0.healthClient.isAuthorized = { false }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+        }
+
+        store.exhaustivity = .off
+
+        let result = makeSessionResult(
+            mode: .pomodoro,
+            phase: .longBreak,
+            wasCompleted: true,
+            actualDuration: breakDuration
+        )
+        // Override engine session id — journal must not use this UUID.
+        let engineResult = FocusSessionResult(
+            id: engineSessionID,
+            mode: result.mode,
+            phase: result.phase,
+            startedAt: result.startedAt,
+            endedAt: result.endedAt,
+            targetDuration: result.targetDuration,
+            actualDuration: result.actualDuration,
+            wasCompleted: result.wasCompleted,
+            interruptions: result.interruptions,
+            pomodoroNumber: result.pomodoroNumber,
+            linkedTaskID: result.linkedTaskID,
+            pauseCount: result.pauseCount,
+            totalPauseDuration: result.totalPauseDuration
+        )
+
+        await store.send(.sessionCompleted(engineResult)) {
+            $0.isRunning = false
+            $0.activeMode = nil
+            $0.lastPersistedPomodoroSessionID = nil
+            $0.lastPersistedPomodoroDuration = nil
+        }
+
+        await store.receive(.showJournalSheet(
+            sessionID: persistedWorkID,
+            modeName: "pomodoro",
+            actualDuration: workDuration
+        )) {
+            $0.journal = SessionJournalFeature.State(
+                sessionID: persistedWorkID,
+                modeName: "pomodoro",
+                durationFormatted: "25:00"
+            )
+        }
+
+        #expect(savedSessions.value.isEmpty)
+        #expect(engineSessionID != persistedWorkID)
+    }
+
     @Test func completedPomodoroCycleDoesNotDoublePersist() async {
         let savedSessions = LockIsolated<[FocusSessionResult]>([])
 

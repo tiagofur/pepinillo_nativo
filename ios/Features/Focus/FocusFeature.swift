@@ -77,6 +77,12 @@ struct FocusFeature {
         // Post-session journal
         @Presents var journal: SessionJournalFeature.State?
 
+        // Last Pomodoro work interval persisted in phaseCompleted (issue #171).
+        // sessionCompleted uses the engine session UUID, but work intervals are saved
+        // under fresh IDs — journal must link to the persisted record, not the engine.
+        var lastPersistedPomodoroSessionID: UUID?
+        var lastPersistedPomodoroDuration: TimeInterval?
+
         // Persist failure surfaced to the user (issue #75: avoid silent data loss)
         var sessionSaveError: String?
     }
@@ -678,6 +684,8 @@ struct FocusFeature {
                     let workDuration = state.elapsedSeconds
                     let intervalStartedAt = Date.now.addingTimeInterval(-workDuration)
                     let sessionID = UUID()
+                    state.lastPersistedPomodoroSessionID = sessionID
+                    state.lastPersistedPomodoroDuration = workDuration
                     let linkedTaskID = state.linkedTaskID
                     let pomNumber = number
                     let intervalResult = FocusSessionResult(
@@ -723,6 +731,17 @@ struct FocusFeature {
                 let wasCompleted = result.wasCompleted
                 let sessionID = result.id
                 let actualDuration = result.actualDuration
+                // Completed Pomodoro cycles persist work in phaseCompleted under a
+                // separate UUID; journal must target that record and its focus duration.
+                let journalSessionID: UUID
+                let journalDuration: TimeInterval
+                if result.mode == .pomodoro, wasCompleted {
+                    journalSessionID = state.lastPersistedPomodoroSessionID ?? sessionID
+                    journalDuration = state.lastPersistedPomodoroDuration ?? actualDuration
+                } else {
+                    journalSessionID = sessionID
+                    journalDuration = actualDuration
+                }
                 resetState(&state)
 
                 // Pomodoro: full work intervals are persisted in phaseCompleted. Natural
@@ -764,9 +783,9 @@ struct FocusFeature {
                             let prefs = try await persistence.fetchPreferences()
                             if prefs.showJournalAfterSession {
                                 await send(.showJournalSheet(
-                                    sessionID: sessionID,
+                                    sessionID: journalSessionID,
                                     modeName: modeName,
-                                    actualDuration: actualDuration
+                                    actualDuration: journalDuration
                                 ))
                             }
                         }
@@ -1101,6 +1120,8 @@ struct FocusFeature {
         state.modeSuggestion = nil
         state.isWaitingForNextPhase = false
         state.pendingNextPhase = nil
+        state.lastPersistedPomodoroSessionID = nil
+        state.lastPersistedPomodoroDuration = nil
         AppGroupDefaults.isSessionActive = false
         AppGroupDefaults.clearActiveSession()
         updateIdleDisplay(&state)
