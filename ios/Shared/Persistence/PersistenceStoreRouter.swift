@@ -11,6 +11,13 @@ import OSLog
 
 private let syncRouterLogger = Logger(subsystem: "com.pepinillo.app", category: "sync-router")
 
+#if DEBUG
+/// Test hooks for integration tests that exercise reconcile without CloudKit.
+enum PersistenceStoreRouterTesting {
+    nonisolated(unsafe) static var migrationOverride: ((ModelContainer, ModelContainer) throws -> Void)?
+}
+#endif
+
 /// Thread-safe holder for the currently-active BackgroundPersistenceActor.
 /// The router updates it on the main actor when the active store swaps; the live
 /// PersistenceClient reads it from arbitrary async contexts. The held value is
@@ -70,13 +77,17 @@ final class PersistenceStoreRouter: ObservableObject {
 
     func reconcile(capabilities: UserCapabilities) async {
         if capabilities.backendSync {
-            exportAppleCloudDataToLocalForBackendIfNeeded()
-            switchToLocal(mode: .backend, status: .backendActive)
+            do {
+                try await exportAppleCloudDataToLocalIfNeeded(markDirtyForBackend: true)
+                switchToLocal(mode: .backend, status: .backendActive)
+            } catch {
+                handleAppleCloudExportFailure(error, context: "backend export")
+            }
             return
         }
 
         guard capabilities.appleCloudSync else {
-            switchToLocal(mode: .local, status: .localOnly)
+            await demoteToLocalIfNeeded()
             return
         }
 
@@ -92,11 +103,32 @@ final class PersistenceStoreRouter: ObservableObject {
         AppGroupDefaults.syncStatus = status
     }
 
+    private func demoteToLocalIfNeeded() async {
+        let wasOnAppleCloud = AppGroupDefaults.activeSyncMode == .appleCloud && appleCloudContainer != nil
+
+        do {
+            try await exportAppleCloudDataToLocalIfNeeded()
+            if wasOnAppleCloud {
+                clearAppleCloudMigrationState()
+            }
+            switchToLocal(mode: .local, status: .localOnly)
+        } catch {
+            handleAppleCloudExportFailure(error, context: "demotion export")
+        }
+    }
+
     private func activateAppleCloud() async {
         if let appleCloudContainer {
-            setActiveContainer(appleCloudContainer)
-            AppGroupDefaults.activeSyncMode = .appleCloud
-            AppGroupDefaults.syncStatus = .appleCloudActive
+            AppGroupDefaults.lastAppleCloudActivationError = nil
+
+            do {
+                try await seedAppleCloudFromLocalIfNeeded(into: appleCloudContainer)
+                setActiveContainer(appleCloudContainer)
+                AppGroupDefaults.activeSyncMode = .appleCloud
+                AppGroupDefaults.syncStatus = .appleCloudActive
+            } catch {
+                handleAppleCloudActivationFailure(error)
+            }
             return
         }
 
@@ -105,48 +137,59 @@ final class PersistenceStoreRouter: ObservableObject {
 
         do {
             let container = try await openAppleCloudContainerWithTimeout()
-            let didMigrate = UserDefaults.standard.bool(forKey: "pepAppleCloudInitialMigrationComplete")
-            if !didMigrate {
-                // Perform the data copy off the main thread; only the container swap
-                // (below) needs to happen on @MainActor.
-                let source = localContainer
-                try await Self.importLegacyStoreIfNeeded(into: source)
-                try await Self.migrateDataOffMain(from: source, to: container)
-                UserDefaults.standard.set(true, forKey: "pepAppleCloudInitialMigrationComplete")
-            }
+            try await seedAppleCloudFromLocalIfNeeded(into: container)
 
             appleCloudContainer = container
             setActiveContainer(container)
             AppGroupDefaults.activeSyncMode = .appleCloud
             AppGroupDefaults.syncStatus = .appleCloudActive
         } catch {
-            syncRouterLogger.error("Apple Cloud activation failed: \(String(describing: error), privacy: .public)")
-            AppGroupDefaults.activeSyncMode = .local
-            AppGroupDefaults.syncStatus = .appleCloudUnavailable
-            AppGroupDefaults.lastAppleCloudActivationError = String(describing: error)
-            setActiveContainer(localContainer)
+            handleAppleCloudActivationFailure(error)
         }
     }
 
-    private func exportAppleCloudDataToLocalForBackendIfNeeded() {
+    private func exportAppleCloudDataToLocalIfNeeded(markDirtyForBackend: Bool = false) async throws {
         guard AppGroupDefaults.activeSyncMode == .appleCloud, let appleCloudContainer else { return }
 
-        // Capture containers as Sendable references before leaving the main actor.
         let source = appleCloudContainer
         let target = localContainer
+        try await Self.migrateDataOffMain(
+            from: source,
+            to: target,
+            markDirtyForBackend: markDirtyForBackend
+        )
+    }
 
-        Task.detached(priority: .utility) { [weak self] in
-            do {
-                try await Self.migrateDataOffMain(from: source, to: target)
-                try SwiftDataPersistenceService(container: target).markAllSyncableDataDirty()
-            } catch {
-                syncRouterLogger.error("Apple Cloud export to backend-local store failed: \(String(describing: error), privacy: .public)")
-                await MainActor.run {
-                    AppGroupDefaults.lastAppleCloudActivationError = String(describing: error)
-                }
-            }
-            _ = self // suppress unused warning; weak ref keeps router alive during detach
+    private func seedAppleCloudFromLocalIfNeeded(into cloudContainer: ModelContainer) async throws {
+        let migrationKey = LocalToCloudStoreMigrator.appleCloudInitialMigrationCompleteKey
+        guard UserDefaults.standard.bool(forKey: migrationKey) == false else { return }
+
+        let source = localContainer
+        try await Self.importLegacyStoreIfNeeded(into: source)
+        try await Self.migrateDataOffMain(from: source, to: cloudContainer)
+        UserDefaults.standard.set(true, forKey: migrationKey)
+    }
+
+    private func clearAppleCloudMigrationState() {
+        UserDefaults.standard.set(false, forKey: LocalToCloudStoreMigrator.appleCloudInitialMigrationCompleteKey)
+    }
+
+    private func handleAppleCloudExportFailure(_ error: Error, context: String) {
+        syncRouterLogger.error(
+            "Apple Cloud \(context, privacy: .public) failed: \(String(describing: error), privacy: .public)"
+        )
+        AppGroupDefaults.lastAppleCloudActivationError = String(describing: error)
+        if AppGroupDefaults.activeSyncMode == .appleCloud {
+            AppGroupDefaults.syncStatus = .appleCloudUnavailable
         }
+    }
+
+    private func handleAppleCloudActivationFailure(_ error: Error) {
+        syncRouterLogger.error("Apple Cloud activation failed: \(String(describing: error), privacy: .public)")
+        AppGroupDefaults.activeSyncMode = .local
+        AppGroupDefaults.syncStatus = .appleCloudUnavailable
+        AppGroupDefaults.lastAppleCloudActivationError = String(describing: error)
+        setActiveContainer(localContainer)
     }
 
     private func openAppleCloudContainerWithTimeout() async throws -> ModelContainer {
@@ -166,10 +209,14 @@ final class PersistenceStoreRouter: ObservableObject {
     /// long as they are not shared with any other thread.
     private nonisolated static func migrateDataOffMain(
         from sourceContainer: ModelContainer,
-        to targetContainer: ModelContainer
+        to targetContainer: ModelContainer,
+        markDirtyForBackend: Bool = false
     ) async throws {
         try await Task.detached(priority: .utility) {
             try Self._migrateDataSync(from: sourceContainer, to: targetContainer)
+            if markDirtyForBackend {
+                try SwiftDataPersistenceService(container: targetContainer).markAllSyncableDataDirty()
+            }
         }.value
     }
 
@@ -183,6 +230,22 @@ final class PersistenceStoreRouter: ObservableObject {
         from sourceContainer: ModelContainer,
         to targetContainer: ModelContainer
     ) throws {
+        #if DEBUG
+        if let override = PersistenceStoreRouterTesting.migrationOverride {
+            try override(sourceContainer, targetContainer)
+            return
+        }
+        #endif
         try LocalToCloudStoreMigrator.migrate(from: sourceContainer, to: targetContainer)
     }
+
+    #if DEBUG
+    /// Activates a pre-opened stand-in Cloud store without hitting CloudKit.
+    func activateAppleCloudContainerForTesting(_ container: ModelContainer) {
+        appleCloudContainer = container
+        setActiveContainer(container)
+        AppGroupDefaults.activeSyncMode = .appleCloud
+        AppGroupDefaults.syncStatus = .appleCloudActive
+    }
+    #endif
 }

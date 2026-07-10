@@ -13,6 +13,8 @@ private let migratorLogger = Logger(subsystem: "com.pepinillo.app", category: "s
 
 enum LocalToCloudStoreMigrator {
     static let legacyImportCompleteKey = "pepLegacyCloudKitStoreImportComplete"
+    /// Set after the first local→Apple Cloud seed; cleared on demotion so re-buy re-merges local deltas.
+    static let appleCloudInitialMigrationCompleteKey = "pepAppleCloudInitialMigrationComplete"
 
     /// Full store-to-store copy. Safe to call from a background thread; each
     /// container gets its own ephemeral `ModelContext`.
