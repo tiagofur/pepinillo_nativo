@@ -110,6 +110,7 @@ final class PersistenceStoreRouter: ObservableObject {
                 // Perform the data copy off the main thread; only the container swap
                 // (below) needs to happen on @MainActor.
                 let source = localContainer
+                try await Self.importLegacyStoreIfNeeded(into: source)
                 try await Self.migrateDataOffMain(from: source, to: container)
                 UserDefaults.standard.set(true, forKey: "pepAppleCloudInitialMigrationComplete")
             }
@@ -172,63 +173,16 @@ final class PersistenceStoreRouter: ObservableObject {
         }.value
     }
 
-    private nonisolated static func _migrateDataSync(from sourceContainer: ModelContainer, to targetContainer: ModelContainer) throws {
-        let source = SwiftDataPersistenceService(container: sourceContainer)
-        let target = SwiftDataPersistenceService(container: targetContainer)
-        let iso = ISO8601DateFormatter()
+    private nonisolated static func importLegacyStoreIfNeeded(into localContainer: ModelContainer) async throws {
+        try await Task.detached(priority: .utility) {
+            try LocalToCloudStoreMigrator.importLegacyStoreIfNeeded(into: localContainer)
+        }.value
+    }
 
-        let tasks = try source.fetchTasks().filter { !$0.isLocallyDeleted }
-        for task in tasks {
-            let subtasks = try source.fetchSubtasks(for: task.id).map {
-                SubTaskSyncDTO(title: $0.title, isFinished: $0.isCompleted)
-            }
-            try target.upsertTaskFromServer(TaskSyncDTO(
-                id: task.serverId,
-                syncId: task.syncId,
-                title: task.title,
-                description: task.notes,
-                energyLevel: task.energyLevel.rawValue,
-                recurrenceRule: task.recurrenceRule,
-                recurringTemplateId: task.recurringTemplateID?.uuidString,
-                createdDate: iso.string(from: task.createdAt),
-                finishDate: task.dueDate.map { iso.string(from: $0) },
-                isFinished: task.isCompleted,
-                priority: task.priority.rawValue,
-                estimatedPomodoros: task.estimatedPomodoros,
-                completedPomodoros: task.completedPomodoros,
-                isDeleted: false,
-                subTasks: subtasks.isEmpty ? nil : subtasks,
-                updatedAt: iso.string(from: task.updatedAt)
-            ), saveImmediately: false)
-        }
-
-        let sessions = try source.fetchSessions(from: .distantPast, to: .distantFuture)
-        for session in sessions {
-            try target.upsertSessionFromServer(FocusSessionSyncDTO(
-                id: session.id.uuidString,
-                taskId: session.task?.serverId,
-                taskSyncId: session.task?.syncId,
-                startedAt: iso.string(from: session.startedAt),
-                endedAt: session.endedAt.map { iso.string(from: $0) },
-                mode: session.mode,
-                phase: session.phase,
-                durationSeconds: Int(session.actualDuration),
-                elapsedSeconds: Int(session.actualDuration),
-                pauseCount: session.pauseCount,
-                totalPauseSeconds: Int(session.totalPauseDuration),
-                wasCompleted: session.wasCompleted,
-                createdAt: iso.string(from: session.startedAt),
-                updatedAt: iso.string(from: session.startedAt)
-            ), saveImmediately: false)
-        }
-
-        let prefs = try source.fetchPreferences()
-        try target.applyPreferencesDTO(UserPreferencesDTO(from: prefs))
-
-        if let user = try source.fetchCachedUser() {
-            try target.saveCachedUser(CachedUserDTO(from: user))
-        }
-
-        try target.save()
+    private nonisolated static func _migrateDataSync(
+        from sourceContainer: ModelContainer,
+        to targetContainer: ModelContainer
+    ) throws {
+        try LocalToCloudStoreMigrator.migrate(from: sourceContainer, to: targetContainer)
     }
 }
