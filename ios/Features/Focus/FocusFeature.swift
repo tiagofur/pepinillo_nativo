@@ -297,7 +297,7 @@ struct FocusFeature {
                     // with the seeded cycle position so long-break decisions are correct.
                     // These MUST be sequential: start() creates a fresh AsyncStream,
                     // and events() must read it after start() completes.
-                    .run { [focusClient, persistence] send in
+                    .run { [focusClient, persistence, liveActivity] send in
                         let completedWorkSessionsToday: Int
                         if mode == .pomodoro {
                             let startOfDay = Calendar.current.startOfDay(for: Date.now)
@@ -318,6 +318,12 @@ struct FocusFeature {
                             engineTimerEnd,
                             completedWorkSessionsToday
                         )
+
+                        // Start Live Activity after the engine is running (avoids nil currentState race).
+                        if liveActivity.isAvailable(), let snapshot = await focusClient.currentState() {
+                            await liveActivity.start(snapshot, linkedTitle)
+                        }
+
                         let stream = await focusClient.events()
                         for await event in stream {
                             switch event {
@@ -332,14 +338,6 @@ struct FocusFeature {
                         }
                     }
                     .cancellable(id: CancelID.engineObservation, cancelInFlight: true),
-                    // Start Live Activity if available
-                    .run { [focusClient, liveActivity] _ in
-                        guard liveActivity.isAvailable() else { return }
-                        let snapshot = await focusClient.currentState()
-                        if let s = snapshot {
-                            await liveActivity.start(s, linkedTitle)
-                        }
-                    },
                     // Start soundscape
                     .run { [soundscapeClient] _ in
                         await soundscapeClient.play(soundscape, soundscapeVolume)

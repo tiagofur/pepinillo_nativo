@@ -98,5 +98,6 @@ jobs:
             -only-testing:PepinilloTests/IntegrationTests/LocalToCloudStoreMigratorTests \
             -only-testing:PepinilloTests/IntegrationTests/PersistenceStoreRouterTests \
             -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
+            -only-testing:PepinilloTests/WidgetTests/FocusActivityAttributesTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusEngineTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests

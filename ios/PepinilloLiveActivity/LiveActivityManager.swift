@@ -17,24 +17,48 @@ actor LiveActivityManager {
 
     private var activity: Activity<FocusActivityAttributes>?
 
+    // MARK: - Launch reconciliation
+
+    /// Adopt or dismiss system Live Activities left behind after a process kill.
+    func reconcileOrphanActivitiesOnLaunch() async {
+        let existing = Activity<FocusActivityAttributes>.activities
+        guard !existing.isEmpty else { return }
+
+        let hasActiveSession = AppGroupDefaults.isSessionActive
+            && AppGroupDefaults.activeModeName != nil
+
+        if !hasActiveSession {
+            await endAllActivities()
+            return
+        }
+
+        // Reclaim the most recent activity so updates resume without creating duplicates.
+        let adopted = existing.max(by: { $0.content.state.elapsedSeconds < $1.content.state.elapsedSeconds })
+            ?? existing[0]
+        activity = adopted
+
+        for orphan in existing where orphan.id != adopted.id {
+            await orphan.end(nil, dismissalPolicy: .immediate)
+        }
+    }
+
     // MARK: - Public API
 
     func startActivity(sessionState: FocusSessionState, taskName: String?) async {
-        // End any existing activity
-        await endActivity(wasCompleted: false)
+        await endAllActivities()
 
         guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
 
         var attributes = FocusActivityAttributes.from(state: sessionState)
         attributes.taskName = taskName
 
-        var initialContent = FocusActivityAttributes.initialContent(from: sessionState)
-        initialContent.taskName = taskName
+        let initialContent = FocusActivityAttributes.contentState(from: sessionState, taskName: taskName)
+        let staleDate = FocusActivityAttributes.staleDate(for: sessionState)
 
         do {
             activity = try Activity<FocusActivityAttributes>.request(
                 attributes: attributes,
-                content: ActivityContent(state: initialContent, staleDate: nil),
+                content: ActivityContent(state: initialContent, staleDate: staleDate),
                 pushType: nil
             )
         } catch {
@@ -43,27 +67,28 @@ actor LiveActivityManager {
     }
 
     func updateActivity(sessionState: FocusSessionState, taskName: String?) async {
+        if activity == nil, !Activity<FocusActivityAttributes>.activities.isEmpty {
+            await reconcileOrphanActivitiesOnLaunch()
+        }
         guard let current = activity else { return }
 
-        let newState = FocusActivityAttributes.ContentState(
-            elapsedSeconds: Int(sessionState.elapsedSeconds),
-            remainingSeconds: sessionState.remainingSeconds.map(Int.init),
-            focusMode: sessionState.mode.rawValue,
-            phase: sessionState.phase.displayName,
-            taskName: taskName,
-            progress: sessionState.progress,
-            pomodoroNumber: sessionState.pomodoroNumber,
-            totalPomodoros: sessionState.totalPomodoros,
-            isPaused: sessionState.isPaused
-        )
+        let newState = FocusActivityAttributes.contentState(from: sessionState, taskName: taskName)
+        let staleDate = FocusActivityAttributes.staleDate(for: sessionState)
 
-        await current.update(ActivityContent(state: newState, staleDate: nil))
+        await current.update(ActivityContent(state: newState, staleDate: staleDate))
     }
 
     func endActivity(wasCompleted: Bool) async {
-        guard let current = activity else { return }
+        await endAllActivities()
+    }
+
+    // MARK: - Private
+
+    private func endAllActivities() async {
         activity = nil
-        await current.end(nil, dismissalPolicy: .immediate)
+        for existing in Activity<FocusActivityAttributes>.activities {
+            await existing.end(nil, dismissalPolicy: .immediate)
+        }
     }
 
     // MARK: - LiveActivityClient factory
@@ -85,6 +110,9 @@ actor LiveActivityManager {
             },
             isAvailable: {
                 ActivityAuthorizationInfo().areActivitiesEnabled
+            },
+            reconcileOnLaunch: {
+                await LiveActivityManager.shared.reconcileOrphanActivitiesOnLaunch()
             }
         )
     }
