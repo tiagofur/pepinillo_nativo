@@ -663,23 +663,61 @@ func makeAppleCloudModelContainer() throws -> ModelContainer {
 
 // MARK: - Widget / Extension Container (non-CloudKit, non-MainActor)
 
+/// Selects the SQLite store extensions should read based on the app's active sync mode.
+/// Widgets and Siri run in separate processes and open the store without CloudKit sync,
+/// but they must target the same on-disk file the main app is writing to.
+func extensionModelStoreURL(for syncMode: AppGroupDefaults.SyncMode) -> URL {
+    switch syncMode {
+    case .appleCloud:
+        return AppGroup.appleCloudStoreURL
+    case .local, .backend:
+        return AppGroup.storeURL
+    }
+}
+
 private final class SharedModelContainerCache: @unchecked Sendable {
     static let shared = SharedModelContainerCache()
     private let lock = NSLock()
     private var container: ModelContainer?
+    private var cachedSyncMode: AppGroupDefaults.SyncMode?
 
     func getOrCreateContainer() throws -> ModelContainer {
         lock.lock()
         defer { lock.unlock() }
-        if let container {
+
+        let activeMode = AppGroupDefaults.activeSyncMode
+        if let container, let cachedSyncMode, cachedSyncMode == activeMode {
             return container
         }
-        persistenceLogger.info("SharedModelContainerCache: Initializing shared container for extensions...")
-        let newContainer = try makeModelContainer(at: AppGroup.storeURL)
+
+        let storeURL = extensionModelStoreURL(for: activeMode)
+        try ensureDirectoryExists(for: storeURL)
+        persistenceLogger.info(
+            "SharedModelContainerCache: Opening extension container for mode \(activeMode.rawValue, privacy: .public) at: \(storeURL.path, privacy: .public)"
+        )
+        let newContainer = try makeModelContainer(at: storeURL)
         container = newContainer
+        cachedSyncMode = activeMode
         return newContainer
     }
+
+    #if DEBUG
+    /// Clears the in-process extension container cache so tests can observe mode switches.
+    func resetForTesting() {
+        lock.lock()
+        defer { lock.unlock() }
+        container = nil
+        cachedSyncMode = nil
+    }
+    #endif
 }
+
+#if DEBUG
+/// Test hook for verifying extension store routing across sync-mode changes.
+func resetExtensionModelContainerCacheForTesting() {
+    SharedModelContainerCache.shared.resetForTesting()
+}
+#endif
 
 /// Non-isolated version for WidgetKit extension process.
 /// WidgetKit runs in a separate process — no @MainActor, no CloudKit sync.
