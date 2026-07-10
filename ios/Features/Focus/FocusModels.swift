@@ -135,6 +135,13 @@ public struct FocusConfig: Codable, Sendable, Equatable {
     public var autoStartBreaks: Bool = true
     public var autoStartWork: Bool = false
 
+    /// Next Pomodoro work number given how many work sessions were already completed today.
+    /// Wraps at `pomodorosPerCycle` so a full cycle restarts at 1.
+    public func nextPomodoroNumber(completedWorkSessionsToday: Int) -> Int {
+        let cycle = max(1, pomodorosPerCycle)
+        return (completedWorkSessionsToday % cycle) + 1
+    }
+
     // Time Block settings
     public var defaultBlockDuration: TimeInterval = 60 * 60    // 1 hour
     public var blockMidpointCheckIn: Bool = false               // optional halfway reminder

@@ -643,3 +643,83 @@ struct FocusEngineConfigTests {
         #expect(state?.totalPomodoros == 4)
     }
 }
+
+// MARK: - Daily Pomodoro Seed
+
+@Suite("FocusEngine — Daily Pomodoro Seed")
+struct FocusEngineDailyPomodoroSeedTests {
+
+    @Test func startWithNoCompletedSessionsUsesPomodoroOne() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, completedWorkSessionsToday: 0)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.pomodoroNumber == 1)
+
+        if case .work(let number, let total) = state?.phase {
+            #expect(number == 1)
+            #expect(total == 4)
+        } else {
+            Issue.record("Expected .work(1, 4), got \(String(describing: state?.phase))")
+        }
+    }
+
+    @Test func startWithThreeCompletedSessionsUsesPomodoroFour() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, completedWorkSessionsToday: 3)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.pomodoroNumber == 4)
+
+        if case .work(let number, let total) = state?.phase {
+            #expect(number == 4)
+            #expect(total == 4)
+        } else {
+            Issue.record("Expected .work(4, 4), got \(String(describing: state?.phase))")
+        }
+    }
+
+    @Test func startWrapsCompletedSessionsAtCycleBoundary() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, completedWorkSessionsToday: 4)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.pomodoroNumber == 1)
+
+        if case .work(let number, let total) = state?.phase {
+            #expect(number == 1)
+            #expect(total == 4)
+        } else {
+            Issue.record("Expected .work(1, 4) after full cycle, got \(String(describing: state?.phase))")
+        }
+    }
+
+    @Test func seededFourthPomodoroAdvancesToLongBreak() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, completedWorkSessionsToday: 3)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.skipToNextPhase()
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.phase == .longBreak,
+                "Expected long break after completing seeded pomodoro 4, got \(String(describing: state?.phase))")
+    }
+
+    @Test func seededThirdPomodoroAdvancesToShortBreak() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, completedWorkSessionsToday: 2)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.skipToNextPhase()
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = await engine.currentState()
+        #expect(state?.phase == .shortBreak,
+                "Expected short break after completing seeded pomodoro 3, got \(String(describing: state?.phase))")
+    }
+}

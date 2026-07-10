@@ -74,7 +74,7 @@ struct FocusFeatureReducerTests {
         ) {
             FocusFeature()
         } withDependencies: {
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -108,7 +108,7 @@ struct FocusFeatureReducerTests {
         let store = TestStore(initialState: state) {
             FocusFeature()
         } withDependencies: {
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -142,7 +142,7 @@ struct FocusFeatureReducerTests {
         let store = TestStore(initialState: state) {
             FocusFeature()
         } withDependencies: {
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -259,6 +259,46 @@ struct FocusFeatureReducerTests {
     }
 
     // MARK: - Custom Duration
+
+    @Test func startPomodoroPassesCompletedWorkCountToEngine() async {
+        let completedSessions = (0..<3).map { _ in
+            SessionRecordDTO(
+                id: UUID(),
+                startedAt: Date.now,
+                endedAt: Date.now,
+                mode: "pomodoro",
+                phase: "work",
+                targetDuration: 25 * 60,
+                actualDuration: 25 * 60,
+                wasCompleted: true,
+                interruptions: 0,
+                taskID: nil
+            )
+        }
+
+        let receivedCompletedCount = LockIsolated<Int?>(nil)
+        let store = TestStore(
+            initialState: FocusFeature.State(selectedMode: .pomodoro)
+        ) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.start = { _, _, _, _, _, _, completedCount in
+                receivedCompletedCount.setValue(completedCount)
+            }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.fetchSessions = { _, _ in completedSessions }
+            $0.notificationClient.requestAuthorization = { false }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.startTapped())
+        #expect(receivedCompletedCount.value == 3)
+    }
 
     @Test func customDurationIsClamped() async {
         let store = TestStore(

@@ -89,7 +89,7 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.soundscapeClient.play = { _, _ in }
             $0.watchConnectivityClient.sendSessionState = { _ in }
@@ -253,7 +253,7 @@ struct AppFeatureIntegrationTests {
             $0.syncClient.syncAll = { }
             $0.webSocketClient.connect = { }
             $0.webSocketClient.disconnect = { }
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -297,7 +297,7 @@ struct AppFeatureIntegrationTests {
             $0.syncClient.syncAll = { }
             $0.webSocketClient.connect = { }
             $0.webSocketClient.disconnect = { }
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -456,7 +456,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.watchConnectivityClient.sendSessionState = { _ in }
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -480,7 +480,7 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.watchConnectivityClient.sendSessionState = { _ in }
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -515,7 +515,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.watchConnectivityClient.sendSessionState = { _ in }
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
@@ -589,7 +589,7 @@ struct AppFeatureIntegrationTests {
             $0.watchConnectivityClient.sendSessionState = { _ in }
             $0.watchConnectivityClient.sendTasks = { _ in }
             $0.spotlightClient.indexTasks = { _ in }
-            $0.focusClient.start = { _, _, _, _, _, _ in }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }

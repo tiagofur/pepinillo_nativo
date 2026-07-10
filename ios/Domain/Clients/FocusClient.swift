@@ -12,7 +12,7 @@ import ComposableArchitecture
 @DependencyClient
 public struct FocusClient: Sendable {
     /// Start a new focus session.
-    public var start: @Sendable (FocusMode, FocusConfig, UUID?, TimeInterval?, Date?, Date?) async -> Void
+    public var start: @Sendable (FocusMode, FocusConfig, UUID?, TimeInterval?, Date?, Date?, Int) async -> Void
     /// Pause the active session.
     public var pause: @Sendable () async -> Void
     /// Resume a paused session.
@@ -50,14 +50,15 @@ extension FocusClient: DependencyKey {
         let engine = FocusEngine()
 
         return FocusClient(
-            start: { mode, config, taskID, duration, timerStart, timerEnd in
+            start: { mode, config, taskID, duration, timerStart, timerEnd, completedWorkSessionsToday in
                 await engine.start(
                     mode: mode,
                     config: config,
                     linkedTaskID: taskID,
                     customDuration: duration,
                     timerStart: timerStart,
-                    timerEnd: timerEnd
+                    timerEnd: timerEnd,
+                    completedWorkSessionsToday: completedWorkSessionsToday
                 )
             },
             pause: {
@@ -103,7 +104,7 @@ extension FocusClient: DependencyKey {
         #else
         // watchOS uses WatchConnectivity instead of local FocusEngine
         return FocusClient(
-            start: { _, _, _, _, _, _ in },
+            start: { _, _, _, _, _, _, _ in },
             pause: {},
             resume: {},
             stop: { _ in },
@@ -123,7 +124,7 @@ extension FocusClient: DependencyKey {
 
     public static let testValue: FocusClient = {
         var client = FocusClient()
-        client.start = { _, _, _, _, _, _ in }
+        client.start = { _, _, _, _, _, _, _ in }
         return client
     }()
 }
