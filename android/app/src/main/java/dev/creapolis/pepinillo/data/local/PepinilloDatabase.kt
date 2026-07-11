@@ -60,6 +60,35 @@ abstract class PepinilloDatabase : RoomDatabase() {
         updatedStats?.let { dailyStatsDao().upsert(it) }
     }
 
+    /**
+     * Atomically replace the sync-managed snapshot: wipe tasks, subtasks, sessions,
+     * daily stats, and preference-sync metadata, then upsert the fetched server data.
+     * All deletes and inserts succeed or fail together — a crash mid-apply cannot
+     * leave an empty or partial database.
+     */
+    @Transaction
+    suspend fun replaceSyncSnapshot(
+        tasks: List<TaskEntity>,
+        subtasks: List<SubtaskEntity>,
+        sessions: List<FocusSessionEntity>,
+    ) {
+        taskDao().deleteAll()
+        subtaskDao().deleteAll()
+        focusSessionDao().deleteAll()
+        dailyStatsDao().deleteAll()
+        preferenceSyncDao().deleteAll()
+
+        if (tasks.isNotEmpty()) {
+            taskDao().upsertAll(tasks)
+        }
+        if (subtasks.isNotEmpty()) {
+            subtaskDao().insertAll(subtasks)
+        }
+        if (sessions.isNotEmpty()) {
+            focusSessionDao().upsertSessions(sessions)
+        }
+    }
+
     companion object {
         // No-op migration: schema change is metadata-only (added @ColumnInfo(defaultValue=...)
         // on UserEntity columns that already existed via MIGRATION_5_6 and MIGRATION_7_8).

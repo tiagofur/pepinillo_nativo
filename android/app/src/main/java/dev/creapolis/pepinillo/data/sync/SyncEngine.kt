@@ -155,6 +155,14 @@ class SyncEngine @Inject constructor(
     // ── Local Data Check ──
 
     suspend fun hasLocalData(): Boolean {
+        // User-created offline data must be uploaded, even if a prior pull failed.
+        if (taskDao.getDirtyTasks().isNotEmpty() || sessionDao.getDirtySessions().isNotEmpty()) {
+            return true
+        }
+        // Partial/incomplete initial pull — retry pull, do not upload a broken snapshot.
+        if (!syncMetadataStore.initialPullComplete) {
+            return false
+        }
         val taskCount = taskDao.getTaskCount()
         val sessionCount = sessionDao.getSessionCount()
         return taskCount > 0 || sessionCount > 0

@@ -7,10 +7,8 @@ import dev.creapolis.pepinillo.core.network.PaginatedTaskPage
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import dev.creapolis.pepinillo.core.network.TaskDto
-import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
-import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
-import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -26,11 +24,9 @@ import org.junit.Test
 class InitialSyncManagerTest {
 
     private lateinit var apiClient: PepinilloApiClient
+    private lateinit var database: PepinilloDatabase
     private lateinit var taskDao: TaskDao
-    private lateinit var subtaskDao: SubtaskDao
     private lateinit var sessionDao: FocusSessionDao
-    private lateinit var dailyStatsDao: DailyStatsDao
-    private lateinit var preferenceSyncDao: PreferenceSyncDao
     private lateinit var settingsSyncEngine: SettingsSyncEngine
     private lateinit var syncMetadataStore: SyncMetadataStore
     private lateinit var manager: InitialSyncManager
@@ -38,21 +34,17 @@ class InitialSyncManagerTest {
     @Before
     fun setUp() {
         apiClient = mockk(relaxed = true)
+        database = mockk(relaxed = true)
         taskDao = mockk(relaxed = true)
-        subtaskDao = mockk(relaxed = true)
         sessionDao = mockk(relaxed = true)
-        dailyStatsDao = mockk(relaxed = true)
-        preferenceSyncDao = mockk(relaxed = true)
         settingsSyncEngine = mockk(relaxed = true)
         syncMetadataStore = mockk(relaxed = true)
 
         manager = InitialSyncManager(
             apiClient = apiClient,
+            database = database,
             taskDao = taskDao,
-            subtaskDao = subtaskDao,
             sessionDao = sessionDao,
-            dailyStatsDao = dailyStatsDao,
-            preferenceSyncDao = preferenceSyncDao,
             settingsSyncEngine = settingsSyncEngine,
             syncMetadataStore = syncMetadataStore,
         )
@@ -83,14 +75,12 @@ class InitialSyncManagerTest {
         val task1 = TaskDto(id = 1, syncId = "t-1", title = "Task 1", updatedAt = "2025-01-01T00:00:00Z")
         val task2 = TaskDto(id = 2, syncId = "t-2", title = "Task 2", updatedAt = "2025-01-02T00:00:00Z")
 
-        // First page: 1 task with cursor
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
         } returns NetworkResult.Success(
             fullSyncResponse(tasks = listOf(task1), taskNextCursor = "cursor-page-2")
         )
 
-        // Second page: 1 task, no more cursor
         coEvery {
             apiClient.getFullSync(taskCursor = "cursor-page-2", sessionCursor = any(), limit = 100)
         } returns NetworkResult.Success(
@@ -100,8 +90,14 @@ class InitialSyncManagerTest {
         val result = manager.performInitialSync()
         assertEquals(InitialSyncManager.InitialSyncResult.Success, result)
 
-        // Verify both pages of tasks were upserted
-        coVerify(exactly = 2) { taskDao.upsertAll(any()) }
+        // Both pages accumulated, then applied in a single transactional snapshot
+        coVerify(exactly = 1) {
+            database.replaceSyncSnapshot(
+                tasks = match { it.size == 2 },
+                subtasks = any(),
+                sessions = any(),
+            )
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -117,12 +113,17 @@ class InitialSyncManagerTest {
         val result = manager.performInitialSync()
         assertEquals(InitialSyncManager.InitialSyncResult.Success, result)
 
-        // No tasks to upsert
-        coVerify(exactly = 0) { taskDao.upsertAll(any()) }
+        coVerify(exactly = 1) {
+            database.replaceSyncSnapshot(
+                tasks = emptyList(),
+                subtasks = emptyList(),
+                sessions = emptyList(),
+            )
+        }
     }
 
     // -----------------------------------------------------------------------
-    // performInitialSync -- stores serverTimestamp
+    // performInitialSync -- stores serverTimestamp and initialPullComplete
     // -----------------------------------------------------------------------
 
     @Test
@@ -136,14 +137,32 @@ class InitialSyncManagerTest {
         manager.performInitialSync()
 
         verify { syncMetadataStore.lastSessionSyncAt = "2025-06-15T12:00:00Z" }
+        verify { syncMetadataStore.initialPullComplete = true }
     }
 
     // -----------------------------------------------------------------------
-    // wipeAndSync -- fetches first, then wipes (download-then-swap)
+    // performInitialSync -- fetch failure writes nothing
     // -----------------------------------------------------------------------
 
     @Test
-    fun `wipeAndSync clears all tables after successful download`() = runTest {
+    fun `performInitialSync fetch failure writes nothing`() = runTest {
+        coEvery {
+            apiClient.getFullSync(any(), any(), any())
+        } returns NetworkResult.NetworkError(RuntimeException("timeout"))
+
+        val result = manager.performInitialSync()
+
+        assertTrue(result is InitialSyncManager.InitialSyncResult.Error)
+        coVerify(exactly = 0) { database.replaceSyncSnapshot(any(), any(), any()) }
+        verify(exactly = 0) { syncMetadataStore.initialPullComplete = true }
+    }
+
+    // -----------------------------------------------------------------------
+    // wipeAndSync -- uses transactional apply after successful download
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `wipeAndSync applies snapshot transactionally after successful download`() = runTest {
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
         } returns NetworkResult.Success(fullSyncResponse())
@@ -151,25 +170,23 @@ class InitialSyncManagerTest {
         val result = manager.wipeAndSync()
         assertEquals(InitialSyncManager.InitialSyncResult.Success, result)
 
-        coVerify { taskDao.deleteAll() }
-        coVerify { subtaskDao.deleteAll() }
-        coVerify { sessionDao.deleteAll() }
-        coVerify { dailyStatsDao.deleteAll() }
-        coVerify { preferenceSyncDao.deleteAll() }
+        coVerify(exactly = 1) {
+            database.replaceSyncSnapshot(any(), any(), any())
+        }
+        verify { syncMetadataStore.initialPullComplete = true }
     }
 
     @Test
-    fun `wipeAndSync fetches all server pages before wiping local data`() = runTest {
+    fun `wipeAndSync fetches all server pages before applying snapshot`() = runTest {
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
         } returns NetworkResult.Success(fullSyncResponse())
 
         manager.wipeAndSync()
 
-        // Fetch must complete before any deleteAll is called
         coVerifyOrder {
             apiClient.getFullSync(any(), any(), any())
-            taskDao.deleteAll()
+            database.replaceSyncSnapshot(any(), any(), any())
         }
     }
 
@@ -186,13 +203,8 @@ class InitialSyncManagerTest {
         val result = manager.wipeAndSync()
 
         assertTrue(result is InitialSyncManager.InitialSyncResult.Error)
-
-        // No DAO wipe should have been called
-        coVerify(exactly = 0) { taskDao.deleteAll() }
-        coVerify(exactly = 0) { subtaskDao.deleteAll() }
-        coVerify(exactly = 0) { sessionDao.deleteAll() }
-        coVerify(exactly = 0) { dailyStatsDao.deleteAll() }
-        coVerify(exactly = 0) { preferenceSyncDao.deleteAll() }
+        coVerify(exactly = 0) { database.replaceSyncSnapshot(any(), any(), any()) }
+        verify(exactly = 0) { syncMetadataStore.initialPullComplete = true }
     }
 
     @Test
@@ -204,9 +216,7 @@ class InitialSyncManagerTest {
         val result = manager.wipeAndSync()
 
         assertTrue(result is InitialSyncManager.InitialSyncResult.Error)
-
-        coVerify(exactly = 0) { taskDao.deleteAll() }
-        coVerify(exactly = 0) { sessionDao.deleteAll() }
+        coVerify(exactly = 0) { database.replaceSyncSnapshot(any(), any(), any()) }
     }
 
     // -----------------------------------------------------------------------
@@ -219,7 +229,6 @@ class InitialSyncManagerTest {
         val session1 = PomodoroSessionDto(id = "s-1", startedAt = "2025-01-01T00:00:00Z", createdAt = "2025-01-01T00:00:00Z", updatedAt = "2025-01-01T00:00:00Z")
         val session2 = PomodoroSessionDto(id = "s-2", startedAt = "2025-01-02T00:00:00Z", createdAt = "2025-01-02T00:00:00Z", updatedAt = "2025-01-02T00:00:00Z")
 
-        // Page 1: tasks done (hasMore=false), sessions still have more
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
         } returns NetworkResult.Success(
@@ -231,8 +240,6 @@ class InitialSyncManagerTest {
             )
         )
 
-        // Page 2: only session cursor provided (tasks done), server returns task page 1 again
-        // — the implementation must ignore/skip the task items because tasksDone=true
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = "session-cursor-2", limit = 100)
         } returns NetworkResult.Success(
@@ -247,8 +254,14 @@ class InitialSyncManagerTest {
         val result = manager.performInitialSync()
         assertEquals(InitialSyncManager.InitialSyncResult.Success, result)
 
-        // Tasks must be upserted exactly once (page 1 only); page 2 task items are skipped
-        coVerify(exactly = 1) { taskDao.upsertAll(any()) }
+        // Tasks accumulated exactly once across both pages (page 2 task items skipped)
+        coVerify(exactly = 1) {
+            database.replaceSyncSnapshot(
+                tasks = match { it.size == 1 },
+                subtasks = any(),
+                sessions = match { it.size == 2 },
+            )
+        }
     }
 
     @Test
@@ -257,7 +270,6 @@ class InitialSyncManagerTest {
         val session1 = PomodoroSessionDto(id = "s-1", startedAt = "2025-01-01T00:00:00Z", createdAt = "2025-01-01T00:00:00Z", updatedAt = "2025-01-01T00:00:00Z")
         val session2 = PomodoroSessionDto(id = "s-2", startedAt = "2025-01-02T00:00:00Z", createdAt = "2025-01-02T00:00:00Z", updatedAt = "2025-01-02T00:00:00Z")
 
-        // Page 1: tasks done, sessions paginated
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = null, limit = 100)
         } returns NetworkResult.Success(
@@ -269,7 +281,6 @@ class InitialSyncManagerTest {
             )
         )
 
-        // Page 2: server resends task1 (common server behavior for cursor=null) plus session2
         coEvery {
             apiClient.getFullSync(taskCursor = null, sessionCursor = "session-cursor-2", limit = 100)
         } returns NetworkResult.Success(
@@ -283,9 +294,13 @@ class InitialSyncManagerTest {
 
         manager.wipeAndSync()
 
-        // After wipe, tasks are applied once from accumulated list (task1 deduplicated)
-        // upsertAll is called exactly once with 1 task (not 2)
-        coVerify(exactly = 1) { taskDao.upsertAll(match { it.size == 1 }) }
+        coVerify(exactly = 1) {
+            database.replaceSyncSnapshot(
+                tasks = match { it.size == 1 },
+                subtasks = any(),
+                sessions = match { it.size == 2 },
+            )
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -300,6 +315,7 @@ class InitialSyncManagerTest {
 
         val result = manager.performInitialSync()
         assertEquals(InitialSyncManager.InitialSyncResult.NotAuthenticated, result)
+        coVerify(exactly = 0) { database.replaceSyncSnapshot(any(), any(), any()) }
     }
 
     // -----------------------------------------------------------------------
@@ -314,5 +330,6 @@ class InitialSyncManagerTest {
 
         val result = manager.performInitialSync()
         assertTrue(result is InitialSyncManager.InitialSyncResult.Error)
+        coVerify(exactly = 0) { database.replaceSyncSnapshot(any(), any(), any()) }
     }
 }
