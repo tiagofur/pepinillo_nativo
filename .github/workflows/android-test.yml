@@ -40,6 +40,8 @@ jobs:
         run: |
           ./gradlew :app:testDebugUnitTest --no-daemon \
             --tests 'dev.creapolis.pepinillo.data.repository.*' \
+            --tests 'dev.creapolis.pepinillo.data.sync.FocusModeSyncMapperTest' \
+            --tests 'dev.creapolis.pepinillo.data.sync.FocusPhaseSyncMapperTest' \
             --tests 'dev.creapolis.pepinillo.feature.dashboard.DashboardScreenTest' \
             --tests 'dev.creapolis.pepinillo.core.auth.*' \
             --tests 'dev.creapolis.pepinillo.core.billing.*' \

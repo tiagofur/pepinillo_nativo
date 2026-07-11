@@ -644,7 +644,7 @@ class SyncEngine @Inject constructor(
         startedAt = startTime.toRfc3339(),
         endedAt = endTime.let { if (it > 0L) it.toRfc3339() else null },
         mode = FocusModeSyncMapper.toServerMode(mode),
-        phase = phase ?: "work",
+        phase = FocusPhaseSyncMapper.toServerPhase(phase ?: "Work"),
         durationSeconds = (durationMillis / 1000).toInt(),
         elapsedSeconds = (durationMillis / 1000).toInt(),
         wasCompleted = wasCompleted,
@@ -658,17 +658,6 @@ class SyncEngine @Inject constructor(
         updatedAt = (createdAt ?: startTime).toRfc3339(),
     )
 
-    private fun mapPhase(serverPhase: String): String = when (serverPhase.lowercase()) {
-        "work" -> "Work"
-        "short_break" -> "Short Break"
-        "long_break" -> "Long Break"
-        "flow" -> "Flow"
-        "break" -> "Break"
-        "check_in" -> "Check In"
-        "freeform" -> "Freeform"
-        else -> serverPhase
-    }
-
     private fun PomodoroSessionDto.toEntity() = FocusSessionEntity(
         id = id,
         mode = FocusModeSyncMapper.toLocalMode(mode),
@@ -676,7 +665,7 @@ class SyncEngine @Inject constructor(
         endTime = if (endedAt != null) parseRfc3339(endedAt) else parseRfc3339(startedAt) + (durationSeconds * 1000L),
         durationMillis = durationSeconds * 1000L,
         linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
-        phase = mapPhase(phase),
+        phase = FocusPhaseSyncMapper.toLocalPhase(phase),
         createdAt = parseRfc3339(createdAt),
         wasCompleted = wasCompleted,
         interruptions = interruptions,
