@@ -762,6 +762,85 @@ struct TaskListFeatureTests {
 
     // MARK: - Issue #179: Filtered plan reorder
 
+    // MARK: - Issue #182: Upcoming includes all future dues
+
+    @Test func planFilteredTasksUpcomingIncludesDueBeyondSevenDays() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let cal = Calendar.current
+        let dueInTenDays = cal.date(byAdding: .day, value: 10, to: cal.startOfDay(for: now))!
+        let taskID = UUID(0)
+
+        let tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> = [
+            makeTask(
+                id: taskID,
+                title: "Far future",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0,
+                dueDate: dueInTenDays
+            ),
+        ]
+
+        let upcoming = TaskListFeature.planFilteredTasks(tasks, filter: .upcoming, now: now)
+        #expect(upcoming.ids == [taskID])
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .today, now: now).isEmpty)
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .inbox, now: now).isEmpty)
+    }
+
+    @Test func planFilteredTasksUpcomingStillIncludesDueWithinSevenDays() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let cal = Calendar.current
+        let dueInThreeDays = cal.date(byAdding: .day, value: 3, to: cal.startOfDay(for: now))!
+        let taskID = UUID(0)
+
+        let tasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> = [
+            makeTask(
+                id: taskID,
+                title: "Soon",
+                scheduledForToday: false,
+                isCompleted: false,
+                sortOrder: 0,
+                dueDate: dueInThreeDays
+            ),
+        ]
+
+        #expect(TaskListFeature.planFilteredTasks(tasks, filter: .upcoming, now: now).ids == [taskID])
+    }
+
+    @Test func everyIncompleteTaskAppearsInExactlyOneActivePlanList() {
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let cal = Calendar.current
+        let startOfToday = cal.startOfDay(for: now)
+        let tomorrow = cal.date(byAdding: .day, value: 1, to: startOfToday)!
+        let dueInTenDays = cal.date(byAdding: .day, value: 10, to: startOfToday)!
+        let yesterday = cal.date(byAdding: .day, value: -1, to: startOfToday)!
+
+        let scenarios: [TaskListFeature.TaskItemState] = [
+            makeTask(id: UUID(0), title: "Inbox", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+            makeTask(id: UUID(1), title: "Scheduled today", scheduledForToday: true, isCompleted: false, sortOrder: 1),
+            makeTask(id: UUID(2), title: "Due today", scheduledForToday: false, isCompleted: false, sortOrder: 2, dueDate: startOfToday),
+            makeTask(id: UUID(3), title: "Overdue", scheduledForToday: false, isCompleted: false, sortOrder: 3, dueDate: yesterday),
+            makeTask(id: UUID(4), title: "Due tomorrow", scheduledForToday: false, isCompleted: false, sortOrder: 4, dueDate: tomorrow),
+            makeTask(id: UUID(5), title: "Due in 10 days", scheduledForToday: false, isCompleted: false, sortOrder: 5, dueDate: dueInTenDays),
+            makeTask(
+                id: UUID(6),
+                title: "Scheduled today with far due",
+                scheduledForToday: true,
+                isCompleted: false,
+                sortOrder: 6,
+                dueDate: dueInTenDays
+            ),
+        ]
+
+        for task in scenarios {
+            let tasks = IdentifiedArrayOf<TaskListFeature.TaskItemState>(uniqueElements: [task])
+            let activeFilters = PlanFilter.allCases.filter { filter in
+                filter != .completed && !TaskListFeature.planFilteredTasks(tasks, filter: filter, now: now).isEmpty
+            }
+            #expect(activeFilters.count == 1, "Task '\(task.title)' should appear in exactly one active list, got \(activeFilters)")
+        }
+    }
+
     @Test func planFilteredTasksInboxExcludesTodayAndCompleted() {
         let inboxID = UUID(0)
         let todayID = UUID(1)

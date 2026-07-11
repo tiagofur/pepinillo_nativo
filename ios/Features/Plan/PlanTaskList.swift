@@ -220,7 +220,7 @@ struct PlanTaskList: View {
         switch filter {
         case .today:     return String(localized: "Add tasks below to plan your day.")
         case .inbox:     return String(localized: "All tasks are organized.")
-        case .upcoming:  return String(localized: "No tasks due in the next 7 days.")
+        case .upcoming:  return String(localized: "No tasks with future due dates.")
         case .completed: return String(localized: "Complete a task to see it here.")
         }
     }
