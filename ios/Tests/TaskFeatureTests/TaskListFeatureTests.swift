@@ -664,6 +664,102 @@ struct TaskListFeatureTests {
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .inbox, now: testDate).ids == [testID])
     }
 
+    // MARK: - Issue #181: PRO recurrence gate from list
+
+    @Test func recurrenceChangedByFreeUserShowsPaywall() async {
+        let taskID = UUID()
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = false
+        initialState.tasks = [
+            makeTask(id: taskID, title: "Task", scheduledForToday: true, isCompleted: false, sortOrder: 0)
+        ]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID) }
+            $0.persistenceClient.saveTask = { _ in }
+        }
+
+        await store.send(.recurrenceChanged(taskID, RecurrencePreset.weekly.rawValue))
+        await store.receive(.delegate(.showPaywall))
+        #expect(store.state.tasks[id: taskID]?.recurrenceRule == nil)
+    }
+
+    @Test func recurrenceChangedByProUserPersists() async {
+        let taskID = UUID()
+        let savedTask = LockIsolated<TaskItemDTO?>(nil)
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = true
+        initialState.tasks = [
+            makeTask(id: taskID, title: "Task", scheduledForToday: true, isCompleted: false, sortOrder: 0)
+        ]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID) }
+            $0.persistenceClient.saveTask = { savedTask.setValue($0) }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.recurrenceChanged(taskID, RecurrencePreset.weekly.rawValue)) {
+            $0.tasks[id: taskID]?.recurrenceRule = RecurrencePreset.weekly.rawValue
+            $0.tasks[id: taskID]?.isRecurringTemplate = true
+        }
+
+        let saved = savedTask.value
+        #expect(saved?.recurrenceRule == RecurrencePreset.weekly.rawValue)
+        #expect(saved?.isRecurringTemplate == true)
+    }
+
+    @Test func freeUserCanRemoveRecurrenceFromList() async {
+        let taskID = UUID()
+        let savedTask = LockIsolated<TaskItemDTO?>(nil)
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = false
+        initialState.tasks = [
+            makeTask(
+                id: taskID,
+                title: "Recurring",
+                scheduledForToday: true,
+                isCompleted: false,
+                sortOrder: 0
+            )
+        ]
+        initialState.tasks[id: taskID]?.recurrenceRule = RecurrencePreset.weekly.rawValue
+        initialState.tasks[id: taskID]?.isRecurringTemplate = true
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in
+                recurringTaskDTO(id: taskID)
+            }
+            $0.persistenceClient.saveTask = { savedTask.setValue($0) }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.recurrenceChanged(taskID, nil)) {
+            $0.tasks[id: taskID]?.recurrenceRule = nil
+            $0.tasks[id: taskID]?.isRecurringTemplate = false
+        }
+
+        #expect(savedTask.value?.recurrenceRule == nil)
+        #expect(savedTask.value?.isRecurringTemplate == false)
+    }
+
+    @Test func paywallRequestedForwardsToDelegate() async {
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        }
+
+        await store.send(.paywallRequested)
+        await store.receive(.delegate(.showPaywall))
+    }
+
     // MARK: - Issue #179: Filtered plan reorder
 
     @Test func planFilteredTasksInboxExcludesTodayAndCompleted() {
