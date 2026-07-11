@@ -185,6 +185,21 @@ class FocusEngine @Inject constructor(
             return
         }
 
+        // Restore Paused without starting timer loop (pause wall time must not advance elapsed)
+        if (status == TimerStatus.Paused) {
+            _state.value = FocusTimerState(
+                mode = mode,
+                phase = phase,
+                status = TimerStatus.Paused,
+                elapsedMillis = elapsedMillis,
+                totalMillis = resolvedTotal,
+                completedSessions = effectiveCompletedSessions,
+                sessionStartTime = sessionStartTime,
+                linkedTaskId = linkedTaskId,
+            )
+            return
+        }
+
         // If the phase already completed while the process was dead, handle it
         if (mode != FocusMode.Flow && mode != FocusMode.Chrono && elapsedMillis >= resolvedTotal) {
             _state.value = FocusTimerState(
