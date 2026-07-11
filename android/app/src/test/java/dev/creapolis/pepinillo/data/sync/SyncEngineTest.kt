@@ -25,6 +25,8 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -48,6 +50,7 @@ class SyncEngineTest {
     private lateinit var syncStatusManager: SyncStatusManager
     private lateinit var subscriptionManager: SubscriptionManager
     private lateinit var context: Context
+    private lateinit var syncLock: SyncLock
     private lateinit var syncEngine: SyncEngine
 
     @Before
@@ -65,9 +68,10 @@ class SyncEngineTest {
         syncStatusManager = mockk(relaxed = true)
         subscriptionManager = mockk(relaxed = true)
         context = mockk(relaxed = true)
+        syncLock = SyncLock()
 
         every { userPreferencesRepository.preferences } returns flowOf(UserPreferences())
-        coEvery { settingsSyncEngine.syncSettings() } returns Result.success(Unit)
+        coEvery { settingsSyncEngine.syncSettingsImpl() } returns Result.success(Unit)
 
         // Default: Everywhere+ so existing syncAll tests still reach the sync logic
         every { subscriptionManager.subscriptionState } returns MutableStateFlow(
@@ -88,8 +92,26 @@ class SyncEngineTest {
             syncMetadataStore = syncMetadataStore,
             syncStatusManager = syncStatusManager,
             subscriptionManager = subscriptionManager,
+            syncLock = syncLock,
         )
     }
+
+    private fun createSyncEngine(): SyncEngine = SyncEngine(
+        context = context,
+        taskDao = taskDao,
+        subtaskDao = subtaskDao,
+        sessionDao = sessionDao,
+        dailyStatsDao = dailyStatsDao,
+        preferenceSyncDao = preferenceSyncDao,
+        userPreferencesRepository = userPreferencesRepository,
+        apiClient = apiClient,
+        authStore = authStore,
+        settingsSyncEngine = settingsSyncEngine,
+        syncMetadataStore = syncMetadataStore,
+        syncStatusManager = syncStatusManager,
+        subscriptionManager = subscriptionManager,
+        syncLock = syncLock,
+    )
 
     // -----------------------------------------------------------------------
     // syncAll -- skip when anonymous
@@ -103,7 +125,7 @@ class SyncEngineTest {
         assertEquals(SyncResult.NotAuthenticated, result)
 
         // No sync calls should have been made
-        coVerify(exactly = 0) { settingsSyncEngine.syncSettings() }
+        coVerify(exactly = 0) { settingsSyncEngine.syncSettingsImpl() }
     }
 
     // -----------------------------------------------------------------------
@@ -117,27 +139,13 @@ class SyncEngineTest {
             SubscriptionState(tier = SubscriptionTier.PEPINILLO_PLUS)
         )
         // Re-create engine so it picks up the new subscriptionManager state
-        syncEngine = SyncEngine(
-            context = context,
-            taskDao = taskDao,
-            subtaskDao = subtaskDao,
-            sessionDao = sessionDao,
-            dailyStatsDao = dailyStatsDao,
-            preferenceSyncDao = preferenceSyncDao,
-            userPreferencesRepository = userPreferencesRepository,
-            apiClient = apiClient,
-            authStore = authStore,
-            settingsSyncEngine = settingsSyncEngine,
-            syncMetadataStore = syncMetadataStore,
-            syncStatusManager = syncStatusManager,
-            subscriptionManager = subscriptionManager,
-        )
+        syncEngine = createSyncEngine()
 
         val result = syncEngine.syncAll()
 
         // Should return Success (no error) but make zero network calls
         assertEquals(SyncResult.Success, result)
-        coVerify(exactly = 0) { settingsSyncEngine.syncSettings() }
+        coVerify(exactly = 0) { settingsSyncEngine.syncSettingsImpl() }
         coVerify(exactly = 0) { apiClient.syncTasks(any()) }
         coVerify(exactly = 0) { apiClient.syncSessions(any()) }
     }
@@ -148,26 +156,12 @@ class SyncEngineTest {
         every { subscriptionManager.subscriptionState } returns MutableStateFlow(
             SubscriptionState(tier = SubscriptionTier.FREE)
         )
-        syncEngine = SyncEngine(
-            context = context,
-            taskDao = taskDao,
-            subtaskDao = subtaskDao,
-            sessionDao = sessionDao,
-            dailyStatsDao = dailyStatsDao,
-            preferenceSyncDao = preferenceSyncDao,
-            userPreferencesRepository = userPreferencesRepository,
-            apiClient = apiClient,
-            authStore = authStore,
-            settingsSyncEngine = settingsSyncEngine,
-            syncMetadataStore = syncMetadataStore,
-            syncStatusManager = syncStatusManager,
-            subscriptionManager = subscriptionManager,
-        )
+        syncEngine = createSyncEngine()
 
         val result = syncEngine.syncAll()
 
         assertEquals(SyncResult.Success, result)
-        coVerify(exactly = 0) { settingsSyncEngine.syncSettings() }
+        coVerify(exactly = 0) { settingsSyncEngine.syncSettingsImpl() }
     }
 
     @Test
@@ -177,21 +171,7 @@ class SyncEngineTest {
         every { subscriptionManager.subscriptionState } returns MutableStateFlow(
             SubscriptionState(tier = SubscriptionTier.EVERYWHERE_MONTHLY)
         )
-        syncEngine = SyncEngine(
-            context = context,
-            taskDao = taskDao,
-            subtaskDao = subtaskDao,
-            sessionDao = sessionDao,
-            dailyStatsDao = dailyStatsDao,
-            preferenceSyncDao = preferenceSyncDao,
-            userPreferencesRepository = userPreferencesRepository,
-            apiClient = apiClient,
-            authStore = authStore,
-            settingsSyncEngine = settingsSyncEngine,
-            syncMetadataStore = syncMetadataStore,
-            syncStatusManager = syncStatusManager,
-            subscriptionManager = subscriptionManager,
-        )
+        syncEngine = createSyncEngine()
 
         coEvery { taskDao.getDirtyTasks() } returns emptyList()
         coEvery { apiClient.getTasks() } returns NetworkResult.Success(emptyList())
@@ -207,7 +187,7 @@ class SyncEngineTest {
         val result = syncEngine.syncAll()
 
         assertEquals(SyncResult.Success, result)
-        coVerify { settingsSyncEngine.syncSettings() }
+        coVerify { settingsSyncEngine.syncSettingsImpl() }
     }
 
     // -----------------------------------------------------------------------
@@ -236,7 +216,7 @@ class SyncEngineTest {
         assertEquals(SyncResult.Success, result)
 
         // Verify all phases were called
-        coVerify { settingsSyncEngine.syncSettings() }
+        coVerify { settingsSyncEngine.syncSettingsImpl() }
         coVerify { taskDao.getDirtyTasks() }
         coVerify { sessionDao.getDirtySessions() }
         coVerify { apiClient.getStats(any(), any()) }
@@ -249,7 +229,7 @@ class SyncEngineTest {
     @Test
     fun `syncAll returns NotAuthenticated on auth failure`() = runTest {
         every { authStore.getAccessToken() } returns "valid-token"
-        coEvery { settingsSyncEngine.syncSettings() } returns
+        coEvery { settingsSyncEngine.syncSettingsImpl() } returns
             Result.failure(AuthenticationException("401"))
 
         val result = syncEngine.syncAll()
@@ -623,6 +603,43 @@ class SyncEngineTest {
     // -----------------------------------------------------------------------
     // syncTasks -- auth failure
     // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncTasks serializes concurrent calls through SyncLock`() = runTest {
+        val dirtyTask = TaskEntity(
+            id = "task-1",
+            title = "Test",
+            createdAt = 1000L,
+            updatedAt = 2000L,
+            isDirty = true,
+        )
+        val executionOrder = mutableListOf<String>()
+        var activeCalls = 0
+        var maxConcurrent = 0
+
+        coEvery { taskDao.getDirtyTasks() } coAnswers {
+            executionOrder.add("start")
+            activeCalls++
+            maxConcurrent = maxOf(maxConcurrent, activeCalls)
+            delay(50)
+            activeCalls--
+            executionOrder.add("end")
+            listOf(dirtyTask)
+        }
+        coEvery { subtaskDao.getSubtasksForTaskSync(any()) } returns emptyList()
+        coEvery { apiClient.syncTasks(any()) } returns NetworkResult.Success(
+            TaskSyncResponse(tasks = emptyList()),
+        )
+
+        val first = async { syncEngine.syncTasks() }
+        val second = async { syncEngine.syncTasks() }
+        first.await()
+        second.await()
+
+        assertEquals(1, maxConcurrent)
+        assertEquals(listOf("start", "end", "start", "end"), executionOrder)
+        coVerify(exactly = 2) { apiClient.syncTasks(any()) }
+    }
 
     @Test
     fun `syncTasks throws AuthenticationException on 401`() = runTest {

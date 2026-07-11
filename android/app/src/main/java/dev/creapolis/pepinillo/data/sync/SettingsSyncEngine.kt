@@ -22,6 +22,7 @@ class SettingsSyncEngine @Inject constructor(
     private val preferenceSyncDao: PreferenceSyncDao,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val apiClient: PepinilloApiClient,
+    private val syncLock: SyncLock,
 ) {
     // Preference keys that should sync (exclude device-specific ones)
     private val syncableKeys = setOf(
@@ -37,7 +38,10 @@ class SettingsSyncEngine @Inject constructor(
     // onboarding_completed, onboarding_page, timer_notifications_enabled,
     // daily_reminder_enabled, daily_reminder_hour, daily_reminder_minute
 
-    suspend fun syncSettings(): Result<Unit> = runCatching {
+    suspend fun syncSettings(): Result<Unit> = syncLock.withLock { syncSettingsImpl() }
+
+    /** Unlocked body; [SyncEngine.syncAllImpl] calls this while already holding [SyncLock]. */
+    internal suspend fun syncSettingsImpl(): Result<Unit> = runCatching {
         // 1. Get dirty preferences from PreferenceSyncDao
         val dirtyPrefs = preferenceSyncDao.getDirtyPreferences()
         if (dirtyPrefs.isEmpty()) {
