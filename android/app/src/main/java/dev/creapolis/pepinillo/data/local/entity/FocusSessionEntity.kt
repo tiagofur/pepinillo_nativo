@@ -21,6 +21,8 @@ data class FocusSessionEntity(
     val phase: String? = null,
     @ColumnInfo(name = "created_at")
     val createdAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "updated_at")
+    val updatedAt: Long = System.currentTimeMillis(),
     // Productivity data fields
     @ColumnInfo(name = "was_completed", defaultValue = "1")
     val wasCompleted: Boolean = true,

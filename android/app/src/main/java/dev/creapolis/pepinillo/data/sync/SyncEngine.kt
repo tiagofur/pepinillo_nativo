@@ -497,22 +497,20 @@ class SyncEngine @Inject constructor(
                 val now = System.currentTimeMillis()
                 println("[$TAG]syncSessions: server returned ${response.sessions.size} sessions")
 
-                // Upsert all returned sessions locally
-                val entities = response.sessions
-                    .filter { it.id.isNotEmpty() }
-                    .map { it.toEntity() }
-                if (entities.isNotEmpty()) {
-                    sessionDao.upsertSessions(entities)
-                }
+                mergeServerSessions(response.sessions)
 
                 // Resolve inbound taskSyncId → local task UUID for each server session
                 resolveInboundTaskLinks(response.sessions)
 
-                println("[$TAG]syncSessions: upserted ${entities.size} sessions from server")
-
-                // Mark local dirty sessions as synced — single transaction batch.
+                // Mark only pushed sessions that were merged from server or are no longer dirty.
                 if (dirtySessions.isNotEmpty()) {
-                    sessionDao.markSyncedBatch(dirtySessions.map { it.id }, now)
+                    val pushedIds = dirtySessions.map { it.id }
+                    val toMarkSynced = pushedIds.filter { id ->
+                        sessionDao.getSessionById(id)?.isDirty == false
+                    }
+                    if (toMarkSynced.isNotEmpty()) {
+                        sessionDao.markSyncedBatch(toMarkSynced, now)
+                    }
                 }
 
                 // Store server timestamp for next incremental sync
@@ -528,6 +526,42 @@ class SyncEngine @Inject constructor(
                 throw TransientSyncException("syncSessions network error: ${result.exception.message}")
             }
         }
+    }
+
+    private suspend fun mergeServerSessions(serverSessions: List<PomodoroSessionDto>) {
+        val now = System.currentTimeMillis()
+        var inserted = 0
+        var updated = 0
+        var skipped = 0
+        for (serverSession in serverSessions) {
+            if (serverSession.id.isEmpty()) continue
+            val local = sessionDao.getSessionById(serverSession.id)
+            val serverUpdatedAt = serverSession.serverUpdatedAtMillis()
+            if (local == null) {
+                sessionDao.upsertSession(serverSession.toEntity())
+                inserted++
+            } else if (local.isDirty && local.updatedAt > serverUpdatedAt) {
+                skipped++
+            } else if (serverUpdatedAt > local.updatedAt || local.isDirty) {
+                sessionDao.upsertSession(
+                    serverSession.toEntity().copy(
+                        id = local.id,
+                        linkedTaskId = local.linkedTaskId,
+                        isDirty = false,
+                        syncedAt = now,
+                    ),
+                )
+                updated++
+            } else {
+                skipped++
+            }
+        }
+        println("[$TAG]mergeServerSessions: inserted=$inserted, updated=$updated, skipped=$skipped")
+    }
+
+    private fun PomodoroSessionDto.serverUpdatedAtMillis(): Long {
+        val parsed = parseRfc3339(updatedAt)
+        return if (parsed > 0L) parsed else parseRfc3339(createdAt)
     }
 
     /**
@@ -662,8 +696,8 @@ class SyncEngine @Inject constructor(
         pomodoroNumber = pomodoroNumber,
         satisfactionRating = satisfactionRating,
         journalNote = journalNote,
-        createdAt = (createdAt ?: startTime).toRfc3339(),
-        updatedAt = (createdAt ?: startTime).toRfc3339(),
+        createdAt = createdAt.toRfc3339(),
+        updatedAt = updatedAt.toRfc3339(),
     )
 
     private fun PomodoroSessionDto.toEntity() = FocusSessionEntity(
@@ -675,6 +709,7 @@ class SyncEngine @Inject constructor(
         linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
         phase = FocusPhaseSyncMapper.toLocalPhase(phase),
         createdAt = parseRfc3339(createdAt),
+        updatedAt = serverUpdatedAtMillis(),
         wasCompleted = wasCompleted,
         interruptions = interruptions,
         pauseCount = pauseCount,

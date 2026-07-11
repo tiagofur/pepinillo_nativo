@@ -274,6 +274,8 @@ class SyncEngineTest {
             isDirty = true,
         )
         coEvery { sessionDao.getDirtySessions() } returns listOf(dirtySession)
+        coEvery { sessionDao.getSessionById("session-1") } returns dirtySession
+        coEvery { sessionDao.getSessionById("server-session-1") } returns null
         coEvery { taskDao.getTaskById(any()) } returns null
 
         val serverSession = PomodoroSessionDto(
@@ -284,6 +286,7 @@ class SyncEngineTest {
             phase = "work",
             durationSeconds = 1500,
             createdAt = "2025-01-01T00:00:00Z",
+            updatedAt = "2025-01-01T00:00:00Z",
         )
         coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(
             SessionSyncResponse(
@@ -294,9 +297,150 @@ class SyncEngineTest {
 
         syncEngine.syncSessions()
 
-        // Verify sessions were upserted
-        coVerify { sessionDao.upsertSessions(any()) }
-        // Verify dirty sessions were marked synced
+        coVerify { sessionDao.upsertSession(any()) }
+        coVerify(exactly = 0) { sessionDao.upsertSessions(any()) }
+        // Local dirty session was not merged/cleared — must stay dirty and unmarked.
+        coVerify(exactly = 0) { sessionDao.markSyncedBatch(any(), any()) }
+    }
+
+    @Test
+    fun `syncSessions does not overwrite dirty local session when local updatedAt is newer`() = runTest {
+        every { authStore.getUserId() } returns "user-1"
+        every { syncMetadataStore.lastSessionSyncAt } returns null
+
+        val dirtySession = FocusSessionEntity(
+            id = "session-1",
+            mode = "Pomodoro",
+            startTime = 1_000L,
+            endTime = 2_000L,
+            durationMillis = 1_000L,
+            journalNote = "local journal",
+            satisfactionRating = 5,
+            createdAt = 1_000L,
+            updatedAt = 1_740_000_000_000L,
+            isDirty = true,
+        )
+        coEvery { sessionDao.getDirtySessions() } returns listOf(dirtySession)
+        coEvery { sessionDao.getSessionById("session-1") } returns dirtySession
+        coEvery { taskDao.getTaskById(any()) } returns null
+
+        val staleServerSession = PomodoroSessionDto(
+            id = "session-1",
+            startedAt = "2025-01-01T00:00:00Z",
+            endedAt = "2025-01-01T00:25:00Z",
+            mode = "pomodoro",
+            phase = "work",
+            durationSeconds = 1500,
+            journalNote = null,
+            satisfactionRating = null,
+            createdAt = "2025-01-01T00:00:00Z",
+            updatedAt = "2025-01-01T00:00:00Z",
+        )
+        coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(
+            SessionSyncResponse(
+                sessions = listOf(staleServerSession),
+                serverTimestamp = "2025-06-15T12:00:00Z",
+            )
+        )
+
+        syncEngine.syncSessions()
+
+        coVerify(exactly = 0) { sessionDao.upsertSession(match { it.id == "session-1" }) }
+        coVerify(exactly = 0) { sessionDao.markSyncedBatch(any(), any()) }
+    }
+
+    @Test
+    fun `syncSessions preserves journal when concurrent server payload is older`() = runTest {
+        every { authStore.getUserId() } returns "user-1"
+        every { syncMetadataStore.lastSessionSyncAt } returns null
+
+        val journalNote = "deep work on API refactor"
+        val dirtySession = FocusSessionEntity(
+            id = "session-1",
+            mode = "Pomodoro",
+            startTime = 1_000L,
+            endTime = 2_000L,
+            durationMillis = 1_000L,
+            journalNote = journalNote,
+            satisfactionRating = 4,
+            createdAt = 1_000L,
+            updatedAt = 1_740_000_000_000L,
+            isDirty = true,
+        )
+        coEvery { sessionDao.getDirtySessions() } returns listOf(dirtySession)
+        coEvery { sessionDao.getSessionById("session-1") } returns dirtySession
+        coEvery { taskDao.getTaskById(any()) } returns null
+
+        val serverSession = PomodoroSessionDto(
+            id = "session-1",
+            startedAt = "2025-01-01T00:00:00Z",
+            endedAt = "2025-01-01T00:25:00Z",
+            mode = "pomodoro",
+            phase = "work",
+            durationSeconds = 1500,
+            journalNote = "stale server copy",
+            satisfactionRating = 1,
+            createdAt = "2025-01-01T00:00:00Z",
+            updatedAt = "2025-01-01T00:00:00Z",
+        )
+        coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(
+            SessionSyncResponse(
+                sessions = listOf(serverSession),
+                serverTimestamp = "2025-06-15T12:00:00Z",
+            )
+        )
+
+        syncEngine.syncSessions()
+
+        coVerify(exactly = 0) { sessionDao.upsertSession(match { it.journalNote != journalNote }) }
+        coVerify(exactly = 0) { sessionDao.markSyncedBatch(any(), any()) }
+        assertEquals(journalNote, dirtySession.journalNote)
+        assertTrue(dirtySession.isDirty)
+    }
+
+    @Test
+    fun `syncSessions marks pushed session synced when server merge clears dirty flag`() = runTest {
+        every { authStore.getUserId() } returns "user-1"
+        every { syncMetadataStore.lastSessionSyncAt } returns null
+
+        val dirtySession = FocusSessionEntity(
+            id = "session-1",
+            mode = "Pomodoro",
+            startTime = 1_000L,
+            endTime = 2_000L,
+            durationMillis = 1_000L,
+            createdAt = 1_000L,
+            updatedAt = 1_000L,
+            isDirty = true,
+        )
+        val mergedSession = dirtySession.copy(isDirty = false, syncedAt = 9_999L)
+        coEvery { sessionDao.getDirtySessions() } returns listOf(dirtySession)
+        coEvery { sessionDao.getSessionById("session-1") } returnsMany listOf(
+            dirtySession,
+            mergedSession,
+        )
+        coEvery { taskDao.getTaskById(any()) } returns null
+
+        val serverSession = PomodoroSessionDto(
+            id = "session-1",
+            startedAt = "2025-06-15T12:00:00Z",
+            endedAt = "2025-06-15T12:25:00Z",
+            mode = "pomodoro",
+            phase = "work",
+            durationSeconds = 1500,
+            createdAt = "2025-01-01T00:00:00Z",
+            updatedAt = "2025-06-15T12:00:00Z",
+        )
+        coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(
+            SessionSyncResponse(
+                sessions = listOf(serverSession),
+                serverTimestamp = "2025-06-15T12:00:00Z",
+            )
+        )
+
+        syncEngine.syncSessions()
+
+        coVerify { sessionDao.upsertSession(match { it.id == "session-1" && !it.isDirty }) }
         coVerify { sessionDao.markSyncedBatch(listOf("session-1"), any()) }
     }
 

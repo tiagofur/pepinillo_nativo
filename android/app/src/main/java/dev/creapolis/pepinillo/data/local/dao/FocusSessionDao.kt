@@ -30,8 +30,8 @@ interface FocusSessionDao {
     @Query("SELECT COUNT(*) FROM focus_sessions WHERE created_at >= :startOfDay AND mode = 'Pomodoro' AND phase = 'Work'")
     suspend fun getTodayPomodoroWorkCount(startOfDay: Long): Int
 
-    @Query("UPDATE focus_sessions SET journal_note = :journalNote, satisfaction_rating = :satisfactionRating, is_dirty = 1 WHERE id = :sessionId")
-    suspend fun updateJournalEntry(sessionId: String, journalNote: String?, satisfactionRating: Int?)
+    @Query("UPDATE focus_sessions SET journal_note = :journalNote, satisfaction_rating = :satisfactionRating, is_dirty = 1, updated_at = :now WHERE id = :sessionId")
+    suspend fun updateJournalEntry(sessionId: String, journalNote: String?, satisfactionRating: Int?, now: Long)
 
     // Sync queries
     @Query("SELECT * FROM focus_sessions WHERE is_dirty = 1")

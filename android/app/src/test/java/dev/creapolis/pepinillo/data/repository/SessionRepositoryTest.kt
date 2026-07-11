@@ -28,7 +28,7 @@ private class FakeFocusSessionDao : FocusSessionDao {
     override fun getSessionsInRange(startTime: Long, endTime: Long): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
     override fun getSessionsForTask(taskId: String): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
     override suspend fun getTodayPomodoroWorkCount(startOfDay: Long): Int = 0
-    override suspend fun updateJournalEntry(sessionId: String, journalNote: String?, satisfactionRating: Int?) = Unit
+    override suspend fun updateJournalEntry(sessionId: String, journalNote: String?, satisfactionRating: Int?, now: Long) = Unit
     override suspend fun getDirtySessions(): List<FocusSessionEntity> = emptyList()
     override suspend fun markSynced(sessionId: String, syncedAt: Long) = Unit
     override suspend fun getSessionsInRangeSync(startTime: Long, endTime: Long): List<FocusSessionEntity> = emptyList()
