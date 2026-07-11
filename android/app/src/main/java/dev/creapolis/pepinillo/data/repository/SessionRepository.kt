@@ -67,6 +67,7 @@ class SessionRepository @Inject constructor(
     ): String? {
         if (durationMillis <= 0 || startTime <= 0 || endTime <= startTime) return null
         val sessionId = java.util.UUID.randomUUID().toString()
+        val now = System.currentTimeMillis()
         runCatching {
             sessionDao.insertSession(
                 FocusSessionEntity(
@@ -77,6 +78,8 @@ class SessionRepository @Inject constructor(
                     durationMillis = durationMillis,
                     linkedTaskId = linkedTaskId,
                     phase = phase,
+                    createdAt = now,
+                    updatedAt = now,
                     wasCompleted = wasCompleted,
                     interruptions = interruptions,
                     pauseCount = pauseCount,
@@ -115,7 +118,7 @@ class SessionRepository @Inject constructor(
 
     suspend fun saveJournalEntry(sessionId: String, note: String?, rating: Int?) {
         runCatching {
-            sessionDao.updateJournalEntry(sessionId, note, rating)
+            sessionDao.updateJournalEntry(sessionId, note, rating, System.currentTimeMillis())
         }.onFailure { Log.e(TAG, "Error saving journal entry", it) }
     }
 

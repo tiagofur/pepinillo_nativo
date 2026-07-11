@@ -294,6 +294,7 @@ class InitialSyncManager @Inject constructor(
         linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
         phase = FocusPhaseSyncMapper.toLocalPhase(phase),
         createdAt = parseRfc3339(createdAt),
+        updatedAt = parseRfc3339(updatedAt).let { if (it > 0L) it else parseRfc3339(createdAt) },
         wasCompleted = wasCompleted,
         interruptions = interruptions,
         pauseCount = pauseCount,

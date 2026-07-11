@@ -40,6 +40,7 @@ object DatabaseModule {
                 PepinilloDatabase.MIGRATION_8_9,
                 PepinilloDatabase.MIGRATION_9_10,
                 PepinilloDatabase.MIGRATION_10_11,
+                PepinilloDatabase.MIGRATION_11_12,
             )
             .build()
     }

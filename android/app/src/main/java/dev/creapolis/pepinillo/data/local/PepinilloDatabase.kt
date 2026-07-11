@@ -30,7 +30,7 @@ import dev.creapolis.pepinillo.data.local.entity.UserEntity
         UserEntity::class,
         PreferenceSyncEntity::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
 )
 abstract class PepinilloDatabase : RoomDatabase() {
@@ -108,6 +108,21 @@ abstract class PepinilloDatabase : RoomDatabase() {
          * completion toggles must be tracked as dirty so the next sync push can
          * propagate them, instead of being silently lost.
          */
+        /**
+         * v11 → v12: add `updated_at` to `focus_sessions` for LWW session sync.
+         * Existing rows inherit `created_at` so dirty-journal guards have a baseline timestamp.
+         */
+        val MIGRATION_11_12 = object : Migration(11, 12) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE focus_sessions ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0",
+                )
+                db.execSQL(
+                    "UPDATE focus_sessions SET updated_at = created_at WHERE updated_at = 0",
+                )
+            }
+        }
+
         val MIGRATION_10_11 = object : Migration(10, 11) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 // Drop the redundant raw_payload column: it stored the entire AI report JSON alongside
