@@ -516,7 +516,7 @@
     <string name="tasks_empty_inbox_title">Inbox limpio</string>
     <string name="tasks_empty_inbox_desc">Todas las tareas capturadas están organizadas.</string>
     <string name="tasks_empty_upcoming_title">Nada próximo</string>
-    <string name="tasks_empty_upcoming_desc">No hay tareas con fecha en los próximos 7 días.</string>
+    <string name="tasks_empty_upcoming_desc">No hay tareas con fecha de vencimiento futura.</string>
     <string name="tasks_empty_completed_title">Sin tareas completadas</string>
     <string name="tasks_empty_completed_desc">Completa una tarea para verla aquí.</string>
     <string name="btn_done">Listo</string>

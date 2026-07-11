@@ -516,7 +516,7 @@
     <string name="tasks_empty_inbox_title">Inbox Clear</string>
     <string name="tasks_empty_inbox_desc">All captured tasks are organized.</string>
     <string name="tasks_empty_upcoming_title">Nothing Upcoming</string>
-    <string name="tasks_empty_upcoming_desc">No tasks due in the next 7 days.</string>
+    <string name="tasks_empty_upcoming_desc">No tasks with future due dates.</string>
     <string name="tasks_empty_completed_title">No Completed Tasks</string>
     <string name="tasks_empty_completed_desc">Complete a task to see it here.</string>
     <string name="btn_done">Done</string>

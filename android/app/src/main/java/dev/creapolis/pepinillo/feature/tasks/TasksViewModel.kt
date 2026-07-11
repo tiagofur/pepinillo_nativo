@@ -72,7 +72,7 @@ private fun TasksUiState.computeFilteredTasks(): List<Task> {
             TaskFilter.Inbox -> tasks.filter { task ->
                 !task.isCompleted && !task.scheduledForToday && task.dueDate == null
             }
-            // Upcoming: due strictly after today and within 7 days
+            // Upcoming: all future dues (strictly after today). Issue #182.
             TaskFilter.Upcoming -> tasks.filter { task ->
                 !task.isCompleted &&
                     !task.scheduledForToday &&
@@ -137,12 +137,9 @@ private fun isBeforeTodayMs(millis: Long, todayNorm: Calendar): Boolean {
     return dueNorm.before(todayNorm)
 }
 
-private fun isUpcomingMs(millis: Long, todayNorm: Calendar): Boolean {
+internal fun isUpcomingMs(millis: Long, todayNorm: Calendar): Boolean {
     val dueNorm = getNormalizedDueDate(millis)
-    val weekEndNorm = (todayNorm.clone() as Calendar).apply {
-        add(Calendar.DAY_OF_YEAR, 7)
-    }
-    return dueNorm.after(todayNorm) && !dueNorm.after(weekEndNorm)
+    return dueNorm.after(todayNorm)
 }
 
 private fun priorityOrdinal(p: TaskPriority) = when (p) {
