@@ -297,7 +297,7 @@ class SyncEngineTest {
         // Verify sessions were upserted
         coVerify { sessionDao.upsertSessions(any()) }
         // Verify dirty sessions were marked synced
-        coVerify { sessionDao.markSynced("session-1", any()) }
+        coVerify { sessionDao.markSyncedBatch(listOf("session-1"), any()) }
     }
 
     // -----------------------------------------------------------------------
@@ -398,6 +398,70 @@ class SyncEngineTest {
         val result = syncEngine.initialUpload()
         assertTrue(result is InitialUploadResult.Success)
         assertEquals(true, (result as InitialUploadResult.Success).hasExistingData)
+    }
+
+    // -----------------------------------------------------------------------
+    // hasLocalData -- gating with initialPullComplete and dirty rows
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `hasLocalData returns true when dirty tasks exist`() = runTest {
+        coEvery { taskDao.getDirtyTasks() } returns listOf(
+            TaskEntity(id = "t-1", title = "Dirty", createdAt = 1L, updatedAt = 1L, isDirty = true),
+        )
+        coEvery { sessionDao.getDirtySessions() } returns emptyList()
+
+        assertTrue(syncEngine.hasLocalData())
+    }
+
+    @Test
+    fun `hasLocalData returns true when dirty sessions exist`() = runTest {
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { sessionDao.getDirtySessions() } returns listOf(
+            FocusSessionEntity(
+                id = "s-1",
+                mode = "Pomodoro",
+                startTime = 1000L,
+                endTime = 2000L,
+                durationMillis = 1000L,
+                isDirty = true,
+            ),
+        )
+
+        assertTrue(syncEngine.hasLocalData())
+    }
+
+    @Test
+    fun `hasLocalData returns false when initial pull incomplete despite row counts`() = runTest {
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { sessionDao.getDirtySessions() } returns emptyList()
+        every { syncMetadataStore.initialPullComplete } returns false
+        coEvery { taskDao.getTaskCount() } returns 5
+        coEvery { sessionDao.getSessionCount() } returns 3
+
+        assertEquals(false, syncEngine.hasLocalData())
+    }
+
+    @Test
+    fun `hasLocalData returns true when initial pull complete and data exists`() = runTest {
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { sessionDao.getDirtySessions() } returns emptyList()
+        every { syncMetadataStore.initialPullComplete } returns true
+        coEvery { taskDao.getTaskCount() } returns 2
+        coEvery { sessionDao.getSessionCount() } returns 0
+
+        assertTrue(syncEngine.hasLocalData())
+    }
+
+    @Test
+    fun `hasLocalData returns false when initial pull complete but database empty`() = runTest {
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { sessionDao.getDirtySessions() } returns emptyList()
+        every { syncMetadataStore.initialPullComplete } returns true
+        coEvery { taskDao.getTaskCount() } returns 0
+        coEvery { sessionDao.getSessionCount() } returns 0
+
+        assertEquals(false, syncEngine.hasLocalData())
     }
 
     // -----------------------------------------------------------------------

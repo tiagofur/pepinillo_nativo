@@ -8,11 +8,9 @@ import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
 import dev.creapolis.pepinillo.core.network.PreferenceSyncItem
 import dev.creapolis.pepinillo.core.network.SubTaskDto
 import dev.creapolis.pepinillo.core.network.TaskDto
-import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
-import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
-import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
-import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
@@ -27,11 +25,9 @@ private const val TAG = "InitialSyncManager"
 @Singleton
 class InitialSyncManager @Inject constructor(
     private val apiClient: PepinilloApiClient,
+    private val database: PepinilloDatabase,
     private val taskDao: TaskDao,
-    private val subtaskDao: SubtaskDao,
     private val sessionDao: FocusSessionDao,
-    private val dailyStatsDao: DailyStatsDao,
-    private val preferenceSyncDao: PreferenceSyncDao,
     private val settingsSyncEngine: SettingsSyncEngine,
     private val syncMetadataStore: SyncMetadataStore,
 ) {
@@ -41,105 +37,34 @@ class InitialSyncManager @Inject constructor(
         data class Error(val exception: Exception) : InitialSyncResult()
     }
 
+    private sealed class FetchResult {
+        data class Success(val data: FullSyncFetchResult) : FetchResult()
+        data object NotAuthenticated : FetchResult()
+        data class Error(val exception: Exception) : FetchResult()
+    }
+
+    private data class FullSyncFetchResult(
+        val tasks: List<TaskDto>,
+        val sessions: List<PomodoroSessionDto>,
+        val settings: List<PreferenceSyncItem>,
+        val serverTimestamp: String?,
+    )
+
     /**
      * Pull all data from the server using cursor-paginated /sync/full endpoint.
      * Used on first login when Room is empty, or after [wipeAndSync].
      *
-     * Per-stream "done" flags prevent asymmetric pagination from re-requesting a
-     * finished stream: once a stream reports hasMore=false its cursor is kept null
-     * so the server does not restart it from page 1, which would produce duplicate
-     * items accumulated across pages.
+     * All pages are fetched into memory first; the database is updated in a single
+     * [PepinilloDatabase.replaceSyncSnapshot] transaction only after a full download.
      */
     suspend fun performInitialSync(): InitialSyncResult {
         return try {
             Log.d(TAG, "performInitialSync: STARTING")
-
-            var taskCursor: String? = null
-            var sessionCursor: String? = null
-            var serverTimestamp: String? = null
-            var isFirstPage = true
-            var totalTasks = 0
-            var totalSessions = 0
-
-            // Tracks whether each stream has been fully consumed. Once a stream is
-            // done we stop passing its cursor so the server does not restart it from
-            // page 1, preventing duplicate items when streams paginate at different rates.
-            var tasksDone = false
-            var sessionsDone = false
-
-            var hasMoreData = true
-            while (hasMoreData) {
-                val response = apiClient.getFullSync(
-                    taskCursor = if (tasksDone) null else taskCursor,
-                    sessionCursor = if (tasksDone) sessionCursor else if (isFirstPage) null else sessionCursor,
-                    limit = 100,
-                )
-
-                when (response) {
-                    is NetworkResult.Success -> {
-                        val data = response.data
-                        serverTimestamp = data.serverTimestamp
-
-                        // Process tasks only while the task stream is still active
-                        if (!tasksDone) {
-                            if (data.tasks.items.isNotEmpty()) {
-                                val taskEntities = data.tasks.items.map { it.toEntity() }
-                                taskDao.upsertAll(taskEntities)
-                                for (taskDto in data.tasks.items) {
-                                    if (taskDto.subTasks.isNotEmpty()) {
-                                        mergeSubtasks(taskDto.toEntity().id, taskDto.subTasks)
-                                    }
-                                }
-                                totalTasks += data.tasks.items.size
-                                Log.d(TAG, "performInitialSync: inserted ${data.tasks.items.size} tasks (total=$totalTasks)")
-                            }
-                            tasksDone = !data.tasks.hasMore
-                            taskCursor = if (tasksDone) null else data.tasks.nextCursor
-                        }
-
-                        // Process sessions only while the session stream is still active
-                        if (!sessionsDone) {
-                            if (isFirstPage || tasksDone) {
-                                processSessionsPage(data)
-                                totalSessions += data.sessions.items.size
-                                sessionsDone = !data.sessions.hasMore
-                                sessionCursor = if (sessionsDone) null else data.sessions.nextCursor
-                                Log.d(TAG, "performInitialSync: inserted ${data.sessions.items.size} sessions (total=$totalSessions)")
-                            }
-                        }
-
-                        // Settings are only returned on the first page (server contract)
-                        if (isFirstPage) {
-                            if (data.settings.isNotEmpty()) {
-                                Log.d(TAG, "performInitialSync: applying ${data.settings.size} settings")
-                                settingsSyncEngine.applyServerPreferences(data.settings)
-                            }
-                            isFirstPage = false
-                        }
-
-                        hasMoreData = !tasksDone || !sessionsDone
-                    }
-
-                    is NetworkResult.Error -> {
-                        Log.e(TAG, "performInitialSync: API error ${response.code} ${response.message}")
-                        if (response.code == 401) return InitialSyncResult.NotAuthenticated
-                        return InitialSyncResult.Error(
-                            SyncException("Full sync failed: ${response.code} ${response.message}"),
-                        )
-                    }
-
-                    is NetworkResult.NetworkError -> {
-                        Log.e(TAG, "performInitialSync: network error", response.exception)
-                        return InitialSyncResult.Error(Exception(response.exception))
-                    }
-                }
+            when (val fetch = fetchAllFullSyncPages()) {
+                is FetchResult.Success -> applyFetchedSnapshot(fetch.data, "performInitialSync")
+                is FetchResult.NotAuthenticated -> InitialSyncResult.NotAuthenticated
+                is FetchResult.Error -> InitialSyncResult.Error(fetch.exception)
             }
-
-            // Store sync timestamp for future incremental syncs
-            serverTimestamp?.let { syncMetadataStore.lastSessionSyncAt = it }
-
-            Log.d(TAG, "performInitialSync: SUCCESS ($totalTasks tasks, $totalSessions sessions)")
-            InitialSyncResult.Success
         } catch (e: Exception) {
             Log.e(TAG, "performInitialSync: FAILED", e)
             InitialSyncResult.Error(e)
@@ -151,133 +76,152 @@ class InitialSyncManager @Inject constructor(
      * Used when user chooses "Use Account Only" in the merge dialog.
      *
      * Download-then-swap: ALL server pages are fetched into memory first. Local
-     * storage is only wiped after a successful full download. A failure at any
-     * point during the download leaves local data completely intact.
-     *
-     * Per-stream "done" flags prevent asymmetric pagination from re-requesting a
-     * finished stream (same guarantee as [performInitialSync]).
+     * storage is only replaced after a successful full download via
+     * [PepinilloDatabase.replaceSyncSnapshot]. A failure at any point during the
+     * download returns an error and leaves local data completely intact.
      */
     suspend fun wipeAndSync(): InitialSyncResult {
         return try {
-            Log.d(TAG, "wipeAndSync: fetching server data")
-
-            // ── Phase 1: Fetch ALL server pages into memory ──────────────────────
-            // Local storage is not touched during this phase. Any network/server
-            // failure here returns an error and leaves local data intact.
-            val allServerTasks = mutableListOf<TaskDto>()
-            val allServerSessions = mutableListOf<PomodoroSessionDto>()
-            var serverSettings = emptyList<PreferenceSyncItem>()
-            var serverTimestamp: String? = null
-
-            var taskCursor: String? = null
-            var sessionCursor: String? = null
-            var isFirstPage = true
-            var tasksDone = false
-            var sessionsDone = false
-            var hasMoreData = true
-
-            while (hasMoreData) {
-                val response = apiClient.getFullSync(
-                    taskCursor = if (tasksDone) null else taskCursor,
-                    sessionCursor = if (tasksDone) sessionCursor else if (isFirstPage) null else sessionCursor,
-                    limit = 100,
-                )
-
-                when (response) {
-                    is NetworkResult.Success -> {
-                        val data = response.data
-                        serverTimestamp = data.serverTimestamp
-
-                        if (!tasksDone) {
-                            allServerTasks.addAll(data.tasks.items)
-                            tasksDone = !data.tasks.hasMore
-                            taskCursor = if (tasksDone) null else data.tasks.nextCursor
-                        }
-
-                        if (!sessionsDone) {
-                            if (isFirstPage || tasksDone) {
-                                allServerSessions.addAll(data.sessions.items)
-                                sessionsDone = !data.sessions.hasMore
-                                sessionCursor = if (sessionsDone) null else data.sessions.nextCursor
-                            }
-                        }
-
-                        if (isFirstPage) {
-                            serverSettings = data.settings
-                            isFirstPage = false
-                        }
-
-                        hasMoreData = !tasksDone || !sessionsDone
-                    }
-
-                    is NetworkResult.Error -> {
-                        Log.e(TAG, "wipeAndSync: API error ${response.code} ${response.message}")
-                        if (response.code == 401) return InitialSyncResult.NotAuthenticated
-                        return InitialSyncResult.Error(
-                            SyncException("wipeAndSync fetch failed: ${response.code} ${response.message}"),
-                        )
-                    }
-
-                    is NetworkResult.NetworkError -> {
-                        Log.e(TAG, "wipeAndSync: network error during fetch", response.exception)
-                        return InitialSyncResult.Error(Exception(response.exception))
-                    }
-                }
+            Log.d(TAG, "wipeAndSync: STARTING")
+            when (val fetch = fetchAllFullSyncPages()) {
+                is FetchResult.Success -> applyFetchedSnapshot(fetch.data, "wipeAndSync")
+                is FetchResult.NotAuthenticated -> InitialSyncResult.NotAuthenticated
+                is FetchResult.Error -> InitialSyncResult.Error(fetch.exception)
             }
-
-            Log.d(TAG, "wipeAndSync: fetch complete (${allServerTasks.size} tasks, ${allServerSessions.size} sessions), wiping local data")
-
-            // ── Phase 2: Wipe local storage ──────────────────────────────────────
-            // Only reached after a successful full download.
-            taskDao.deleteAll()
-            subtaskDao.deleteAll()
-            sessionDao.deleteAll()
-            dailyStatsDao.deleteAll()
-            preferenceSyncDao.deleteAll()
-
-            // ── Phase 3: Apply fetched data ──────────────────────────────────────
-            if (allServerTasks.isNotEmpty()) {
-                taskDao.upsertAll(allServerTasks.map { it.toEntity() })
-                for (taskDto in allServerTasks) {
-                    if (taskDto.subTasks.isNotEmpty()) {
-                        mergeSubtasks(taskDto.toEntity().id, taskDto.subTasks)
-                    }
-                }
-            }
-
-            if (allServerSessions.isNotEmpty()) {
-                val sessionEntities = allServerSessions
-                    .filter { it.id.isNotEmpty() }
-                    .map { it.toEntity() }
-                sessionDao.upsertSessions(sessionEntities)
-                resolveInboundTaskLinks(allServerSessions)
-            }
-
-            if (serverSettings.isNotEmpty()) {
-                settingsSyncEngine.applyServerPreferences(serverSettings)
-            }
-
-            serverTimestamp?.let { syncMetadataStore.lastSessionSyncAt = it }
-
-            Log.d(TAG, "wipeAndSync: SUCCESS")
-            InitialSyncResult.Success
         } catch (e: Exception) {
             Log.e(TAG, "wipeAndSync: FAILED", e)
             InitialSyncResult.Error(e)
         }
     }
 
-    // ── Private Helpers ──
+    /**
+     * Fetch every page from /sync/full into memory. No database writes occur here.
+     *
+     * Per-stream "done" flags prevent asymmetric pagination from re-requesting a
+     * finished stream: once a stream reports hasMore=false its cursor is kept null
+     * so the server does not restart it from page 1, which would produce duplicate
+     * items accumulated across pages.
+     */
+    private suspend fun fetchAllFullSyncPages(): FetchResult {
+        val allServerTasks = mutableListOf<TaskDto>()
+        val allServerSessions = mutableListOf<PomodoroSessionDto>()
+        var serverSettings = emptyList<PreferenceSyncItem>()
+        var serverTimestamp: String? = null
 
-    private suspend fun processSessionsPage(data: FullSyncResponse) {
-        val sessionEntities = data.sessions.items
+        var taskCursor: String? = null
+        var sessionCursor: String? = null
+        var isFirstPage = true
+        var tasksDone = false
+        var sessionsDone = false
+        var hasMoreData = true
+
+        while (hasMoreData) {
+            val response = apiClient.getFullSync(
+                taskCursor = if (tasksDone) null else taskCursor,
+                sessionCursor = if (tasksDone) sessionCursor else if (isFirstPage) null else sessionCursor,
+                limit = 100,
+            )
+
+            when (response) {
+                is NetworkResult.Success -> {
+                    val data = response.data
+                    serverTimestamp = data.serverTimestamp
+
+                    if (!tasksDone) {
+                        allServerTasks.addAll(data.tasks.items)
+                        tasksDone = !data.tasks.hasMore
+                        taskCursor = if (tasksDone) null else data.tasks.nextCursor
+                    }
+
+                    if (!sessionsDone) {
+                        if (isFirstPage || tasksDone) {
+                            allServerSessions.addAll(data.sessions.items)
+                            sessionsDone = !data.sessions.hasMore
+                            sessionCursor = if (sessionsDone) null else data.sessions.nextCursor
+                        }
+                    }
+
+                    if (isFirstPage) {
+                        serverSettings = data.settings
+                        isFirstPage = false
+                    }
+
+                    hasMoreData = !tasksDone || !sessionsDone
+                }
+
+                is NetworkResult.Error -> {
+                    Log.e(TAG, "fetchAllFullSyncPages: API error ${response.code} ${response.message}")
+                    if (response.code == 401) return FetchResult.NotAuthenticated
+                    return FetchResult.Error(
+                        SyncException("Full sync failed: ${response.code} ${response.message}"),
+                    )
+                }
+
+                is NetworkResult.NetworkError -> {
+                    Log.e(TAG, "fetchAllFullSyncPages: network error", response.exception)
+                    return FetchResult.Error(Exception(response.exception))
+                }
+            }
+        }
+
+        return FetchResult.Success(
+            FullSyncFetchResult(
+                tasks = allServerTasks,
+                sessions = allServerSessions,
+                settings = serverSettings,
+                serverTimestamp = serverTimestamp,
+            ),
+        )
+    }
+
+    /**
+     * Apply a fully-fetched server snapshot atomically, then resolve session links
+     * and settings outside the wipe/upsert transaction.
+     */
+    private suspend fun applyFetchedSnapshot(
+        fetchResult: FullSyncFetchResult,
+        logPrefix: String,
+    ): InitialSyncResult {
+        val taskEntities = fetchResult.tasks.map { it.toEntity() }
+        val subtaskEntities = buildSubtaskEntities(fetchResult.tasks)
+        val sessionEntities = fetchResult.sessions
             .filter { it.id.isNotEmpty() }
             .map { it.toEntity() }
-        if (sessionEntities.isNotEmpty()) {
-            sessionDao.upsertSessions(sessionEntities)
+
+        Log.d(
+            TAG,
+            "$logPrefix: applying snapshot (${taskEntities.size} tasks, ${sessionEntities.size} sessions)",
+        )
+
+        database.replaceSyncSnapshot(taskEntities, subtaskEntities, sessionEntities)
+
+        resolveInboundTaskLinks(fetchResult.sessions)
+
+        if (fetchResult.settings.isNotEmpty()) {
+            Log.d(TAG, "$logPrefix: applying ${fetchResult.settings.size} settings")
+            settingsSyncEngine.applyServerPreferences(fetchResult.settings)
         }
-        // Resolve inbound task links: taskSyncId/taskId → local task UUID
-        resolveInboundTaskLinks(data.sessions.items)
+
+        fetchResult.serverTimestamp?.let { syncMetadataStore.lastSessionSyncAt = it }
+        syncMetadataStore.initialPullComplete = true
+
+        Log.d(TAG, "$logPrefix: SUCCESS")
+        return InitialSyncResult.Success
+    }
+
+    private fun buildSubtaskEntities(tasks: List<TaskDto>): List<SubtaskEntity> {
+        return tasks.flatMap { taskDto ->
+            val localTaskId = taskDto.toEntity().id
+            taskDto.subTasks.mapIndexed { index, dto ->
+                SubtaskEntity(
+                    taskId = localTaskId,
+                    title = dto.title ?: "",
+                    isCompleted = dto.isFinished,
+                    sortOrder = index,
+                    isDirty = false,
+                )
+            }
+        }
     }
 
     /**
@@ -306,20 +250,6 @@ class InitialSyncManager @Inject constructor(
         if (resolved > 0) {
             Log.d(TAG, "resolveInboundTaskLinks: resolved $resolved session→task links")
         }
-    }
-
-    private suspend fun mergeSubtasks(localTaskId: String, serverSubtasks: List<SubTaskDto>) {
-        subtaskDao.deleteSubtasksForTask(localTaskId)
-        val entities = serverSubtasks.mapIndexed { index, dto ->
-            SubtaskEntity(
-                taskId = localTaskId,
-                title = dto.title ?: "",
-                isCompleted = dto.isFinished,
-                sortOrder = index,
-                isDirty = false,
-            )
-        }
-        subtaskDao.insertAll(entities)
     }
 
     // ── DTO → Entity converters (mirrors SyncEngine patterns) ──
