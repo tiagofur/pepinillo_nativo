@@ -8,12 +8,17 @@ import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
+import dev.creapolis.pepinillo.data.local.entity.TaskEntity
+import dev.creapolis.pepinillo.feature.tasks.model.Task
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -66,7 +71,36 @@ class TaskRepositoryTest {
             sessionRepository = sessionRepository,
             featureGate = featureGate,
             appContext = appContext,
+            appScope = CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined),
         )
+    }
+
+    // ── updateTask: sync metadata must survive domain-field edits ───────────
+
+    @Test
+    fun `updateTask preserves serverId syncedAt and isDeleted from existing row`() = runTest {
+        val existing = TaskEntity(
+            id = "task-synced",
+            title = "Old title",
+            serverId = 42,
+            isDirty = false,
+            isDeleted = false,
+            syncedAt = 1_700_000_000_000L,
+        )
+        val updated = Task(id = "task-synced", title = "New title")
+        val entitySlot = slot<TaskEntity>()
+
+        coEvery { taskDao.getTaskById("task-synced") } returns existing
+        coEvery { taskDao.updateTask(capture(entitySlot)) } returns Unit
+
+        val result = repo.updateTask(updated)
+
+        assertTrue(result.isSuccess)
+        assertEquals(42, entitySlot.captured.serverId)
+        assertEquals(1_700_000_000_000L, entitySlot.captured.syncedAt)
+        assertEquals(false, entitySlot.captured.isDeleted)
+        assertEquals(true, entitySlot.captured.isDirty)
+        assertEquals("New title", entitySlot.captured.title)
     }
 
     // ── toggleCompletion: atomic single-statement UPDATE ──────────────────
