@@ -12,15 +12,37 @@ on:
       - 'ios/**'
       - '.github/workflows/ios-test.yml'
   workflow_dispatch:
+    inputs:
+      suite:
+        description: Test suite to run
+        required: false
+        default: auto
+        type: choice
+        options:
+          - auto
+          - fast
+          - full
+
+# Cancel stale runs on the same PR/branch — avoids stacking macOS jobs in queue.
+concurrency:
+  group: ios-test-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
     runs-on: macos-15
-    timeout-minutes: 120
+    # PRs: fail fast on simulator hangs. Main: allow integration + timer suites.
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 25 || 45 }}
 
     defaults:
       run:
         working-directory: ios
+
+    env:
+      # Pin SPM location so cache + xcodebuild share the same package checkout.
+      CLONED_SOURCE_PACKAGES_PATH: ${{ github.workspace }}/.spm-cache
+      # auto = fast on PR, full on push/main
+      TEST_SUITE: ${{ github.event.inputs.suite || 'auto' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -36,11 +58,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            ${{ env.CLONED_SOURCE_PACKAGES_PATH }}
             ~/Library/Caches/org.swift.swiftpm
-            ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-spm-xcode-${{ hashFiles('ios/project.yml', 'ios/**/Package.resolved') }}
+          key: ${{ runner.os }}-spm-${{ hashFiles('ios/project.yml', 'ios/**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-spm-xcode-
+            ${{ runner.os }}-spm-
+
+      - name: Cache Homebrew downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Homebrew
+          key: ${{ runner.os }}-brew-v1
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -53,7 +81,7 @@ jobs:
           defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
           defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidation -bool YES
 
-      - name: Resolve simulator
+      - name: Resolve and boot simulator
         id: sim
         run: |
           pick_simulator() {
@@ -62,15 +90,18 @@ jobs:
               | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' \
               | head -1
           }
-          DEST=$(pick_simulator 'iPhone 17 Pro \(')
+          # Prefer smaller simulators — faster boot, same test coverage for unit tests.
+          DEST=$(pick_simulator 'iPhone 16 \(')
           if [ -z "$DEST" ]; then
-            DEST=$(pick_simulator 'iPhone 16 Pro \(')
+            DEST=$(pick_simulator 'iPhone 17 \(')
           fi
           if [ -z "$DEST" ]; then
             echo "No suitable iPhone simulator found"
             xcrun simctl list devices available
             exit 1
           fi
+          xcrun simctl boot "$DEST" 2>/dev/null || true
+          xcrun simctl bootstatus "$DEST" -b
           echo "id=$DEST" >> "$GITHUB_OUTPUT"
           echo "Using simulator ID: $DEST"
 
@@ -81,20 +112,65 @@ jobs:
             -scheme "Pepinillo Dev" \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.id }}" \
             -configuration Debug \
-            -clonedSourcePackagesDirPath "$HOME/Library/Caches/org.swift.swiftpm" \
+            -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
+            -skipPackageUpdates \
             CODE_SIGNING_ALLOWED=NO \
             build-for-testing
 
-      - name: Run targeted tests
+      - name: Select test suite
+        id: suite
+        run: |
+          suite="$TEST_SUITE"
+          if [ "$suite" = "auto" ]; then
+            if [ "${{ github.event_name }}" = "pull_request" ]; then
+              suite="fast"
+            else
+              suite="full"
+            fi
+          fi
+          echo "mode=$suite" >> "$GITHUB_OUTPUT"
+          echo "Running $suite test suite"
+
+      - name: Run targeted tests (fast — PR gate)
+        if: steps.suite.outputs.mode == 'fast'
+        timeout-minutes: 12
+        run: |
+          set -o pipefail
+          # Fast gate (~60 tests, ~2–3 min). Skips integration + FocusEngine timer
+          # suites that intermittently hang the simulator on GHA (issue: 2h stalls).
+          xcodebuild \
+            -scheme "Pepinillo Dev" \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.id }}" \
+            -configuration Debug \
+            -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
+            CODE_SIGNING_ALLOWED=NO \
+            test-without-building \
+            -parallel-testing-enabled NO \
+            -maximum-concurrent-test-simulator-destinations 1 \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 120 \
+            -only-testing:PepinilloTests/TaskListFeatureTests \
+            -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests \
+            -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
+            -only-testing:PepinilloTests/WidgetTests/FocusActivityAttributesTests \
+            -only-testing:PepinilloTests/SiriIntentsTests/SiriPauseResumeIntentTests
+
+      - name: Run targeted tests (full — main)
+        if: steps.suite.outputs.mode == 'full'
+        timeout-minutes: 20
         run: |
           set -o pipefail
           xcodebuild \
             -scheme "Pepinillo Dev" \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.id }}" \
             -configuration Debug \
-            -clonedSourcePackagesDirPath "$HOME/Library/Caches/org.swift.swiftpm" \
+            -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_PATH" \
             CODE_SIGNING_ALLOWED=NO \
             test-without-building \
+            -parallel-testing-enabled NO \
+            -maximum-concurrent-test-simulator-destinations 1 \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 180 \
             -only-testing:PepinilloTests/IntegrationTests/LocalToCloudStoreMigratorTests \
             -only-testing:PepinilloTests/IntegrationTests/PersistenceStoreRouterTests \
             -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
