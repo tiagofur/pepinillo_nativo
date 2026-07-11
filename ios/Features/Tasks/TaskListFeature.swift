@@ -598,16 +598,17 @@ struct TaskListFeature {
                 guard !task.isCompleted else { return false }
                 if task.scheduledForToday { return true }
                 guard let due = task.dueDate else { return false }
-                return cal.isDateInToday(due) || due < startOfToday
+                return cal.isDate(due, inSameDayAs: now) || due < startOfToday
             }
         case .inbox:
             return tasks.filter { !$0.isCompleted && !$0.scheduledForToday && $0.dueDate == nil }
         case .upcoming:
             let startOfToday = cal.startOfDay(for: now)
-            let weekFromNow = cal.date(byAdding: .day, value: 7, to: now) ?? now
             return tasks.filter { task in
                 guard !task.isCompleted, !task.scheduledForToday, let due = task.dueDate else { return false }
-                return due > startOfToday && !cal.isDateInToday(due) && due <= weekFromNow
+                // All future dues (strictly after today). Issue #182: tasks due beyond 7 days
+                // were invisible because Upcoming capped at one week.
+                return due > startOfToday && !cal.isDate(due, inSameDayAs: now)
             }
         case .completed:
             return tasks.filter { $0.isCompleted }

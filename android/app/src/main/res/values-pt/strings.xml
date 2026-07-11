@@ -191,7 +191,7 @@
     <string name="tasks_empty_inbox_title">Inbox limpo</string>
     <string name="tasks_empty_inbox_desc">Todas as tarefas capturadas estão organizadas.</string>
     <string name="tasks_empty_upcoming_title">Nada próximo</string>
-    <string name="tasks_empty_upcoming_desc">Nenhuma tarefa com prazo nos próximos 7 dias.</string>
+    <string name="tasks_empty_upcoming_desc">Nenhuma tarefa com prazo futuro.</string>
     <string name="tasks_empty_completed_title">Sem tarefas concluídas</string>
     <string name="tasks_empty_completed_desc">Conclua uma tarefa para vê-la aqui.</string>
     <string name="tasks_btn_create_first">Criar tarefa</string>
