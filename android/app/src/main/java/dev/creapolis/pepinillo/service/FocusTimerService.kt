@@ -95,6 +95,7 @@ class FocusTimerService : Service() {
         private const val KEY_R_ACTIVE = "r_active"
         private const val KEY_R_STATUS = "r_status"
         private const val KEY_R_DAY_START = "r_day_start"
+        private const val KEY_R_ELAPSED = "r_elapsed"
         private const val KEY_R_LINKED_TASK_ID = "linked_task_id"
 
         fun start(context: Context) {
@@ -112,6 +113,7 @@ class FocusTimerService : Service() {
                 .putString(KEY_R_MODE, state.mode.name)
                 .putString(KEY_R_PHASE, state.phase.name)
                 .putLong(KEY_R_START, state.sessionStartTime)
+                .putLong(KEY_R_ELAPSED, state.elapsedMillis)
                 .putLong(KEY_R_TOTAL, state.totalMillis)
                 .putInt(KEY_R_COMPLETED, state.completedSessions)
                 .putString(KEY_R_STATUS, state.status.name)
@@ -140,6 +142,7 @@ class FocusTimerService : Service() {
                 phase = FocusPhase.entries.find { it.name == phaseName } ?: FocusPhase.Work,
                 status = status,
                 sessionStartTime = startTime,
+                elapsedMillis = prefs.getLong(KEY_R_ELAPSED, 0L),
                 totalMillis = prefs.getLong(KEY_R_TOTAL, 0L),
                 completedSessions = prefs.getInt(KEY_R_COMPLETED, 0),
                 linkedTaskId = prefs.getString(KEY_R_LINKED_TASK_ID, null),
@@ -153,6 +156,7 @@ class FocusTimerService : Service() {
         val phase: FocusPhase,
         val status: TimerStatus = TimerStatus.Running,
         val sessionStartTime: Long,
+        val elapsedMillis: Long = 0L,
         val totalMillis: Long,
         val completedSessions: Int,
         val linkedTaskId: String? = null,
@@ -195,7 +199,7 @@ class FocusTimerService : Service() {
             if (recovery != null) {
                 serviceScope.launch {
                     val elapsed = if (recovery.status == TimerStatus.WaitingForNext) 0L
-                    else (System.currentTimeMillis() - recovery.sessionStartTime).coerceAtLeast(0L)
+                    else recovery.elapsedMillis
                     focusEngine.restoreState(
                         mode = recovery.mode,
                         phase = recovery.phase,

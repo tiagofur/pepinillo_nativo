@@ -501,6 +501,51 @@ class FocusEngineTest {
     }
 
     @Test
+    fun `restoreState with Paused status restores paused state without starting timer`() = runTest {
+        val savedElapsed = 10 * 60 * 1000L
+        val total = 25 * 60 * 1000L
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = savedElapsed,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = System.currentTimeMillis() - 30 * 60 * 1000L,
+            status = TimerStatus.Paused,
+        )
+        testScope.testScheduler.runCurrent()
+
+        val state = engine.state.value
+        assertEquals(TimerStatus.Paused, state.status)
+        assertEquals(savedElapsed, state.elapsedMillis)
+        assertEquals(FocusMode.Pomodoro, state.mode)
+        assertEquals(FocusPhase.Work, state.phase)
+    }
+
+    @Test
+    fun `restoreState after pause scenario uses saved elapsed not wall-clock delta`() = runTest {
+        // User focused 10 min, paused, then process died 20 min later.
+        val savedElapsed = 10 * 60 * 1000L
+        val total = 25 * 60 * 1000L
+        val sessionStart = System.currentTimeMillis() - 30 * 60 * 1000L
+
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = savedElapsed,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = sessionStart,
+            status = TimerStatus.Paused,
+        )
+        testScope.testScheduler.runCurrent()
+
+        assertEquals(savedElapsed, engine.state.value.elapsedMillis)
+        assertEquals(TimerStatus.Paused, engine.state.value.status)
+        assertTrue("Saved elapsed should be less than total", savedElapsed < total)
+    }
+
+    @Test
     fun `restoreState restores Running state`() = runTest {
         val startTime = System.currentTimeMillis() - 60_000L
         engine.restoreState(
