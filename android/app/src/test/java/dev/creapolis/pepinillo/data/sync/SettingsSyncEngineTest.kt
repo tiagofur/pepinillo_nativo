@@ -23,6 +23,7 @@ class SettingsSyncEngineTest {
     private lateinit var preferenceSyncDao: PreferenceSyncDao
     private lateinit var userPreferencesRepository: UserPreferencesRepository
     private lateinit var apiClient: PepinilloApiClient
+    private lateinit var syncLock: SyncLock
     private lateinit var engine: SettingsSyncEngine
 
     @Before
@@ -30,6 +31,7 @@ class SettingsSyncEngineTest {
         preferenceSyncDao = mockk(relaxed = true)
         userPreferencesRepository = mockk(relaxed = true)
         apiClient = mockk(relaxed = true)
+        syncLock = SyncLock()
 
         every { userPreferencesRepository.preferences } returns flowOf(UserPreferences())
 
@@ -37,6 +39,7 @@ class SettingsSyncEngineTest {
             preferenceSyncDao = preferenceSyncDao,
             userPreferencesRepository = userPreferencesRepository,
             apiClient = apiClient,
+            syncLock = syncLock,
         )
     }
 

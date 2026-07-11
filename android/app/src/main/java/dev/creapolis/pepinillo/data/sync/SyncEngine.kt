@@ -88,6 +88,7 @@ class SyncEngine @Inject constructor(
     private val syncMetadataStore: SyncMetadataStore,
     private val syncStatusManager: SyncStatusManager,
     private val subscriptionManager: SubscriptionManager,
+    private val syncLock: SyncLock,
 ) {
     private fun Long.toRfc3339(): String {
         val instant = Instant.ofEpochMilli(this)
@@ -103,7 +104,9 @@ class SyncEngine @Inject constructor(
         }
     }
 
-    suspend fun syncAll(): SyncResult {
+    suspend fun syncAll(): SyncResult = syncLock.withLock { syncAllImpl() }
+
+    private suspend fun syncAllImpl(): SyncResult {
         if (authStore.getAccessToken() == null) {
             println("[$TAG]syncAll: NOT AUTHENTICATED")
             return SyncResult.NotAuthenticated
@@ -119,16 +122,16 @@ class SyncEngine @Inject constructor(
         return try {
             println("[$TAG]syncAll: STARTING")
             // Phase 1: Sync settings/preferences first
-            settingsSyncEngine.syncSettings().onFailure { e ->
+            settingsSyncEngine.syncSettingsImpl().onFailure { e ->
                 println("[$TAG]syncSettings: FAILED - ${e::class.simpleName}: ${e.message}")
                 if (e is AuthenticationException) throw e
                 // Non-fatal: log but continue with other sync phases
             }
             // Pre-compute task ID mapping before syncTasks purges soft-deleted rows
             val taskIdMap = buildTaskIdMap()
-            syncTasks()
-            syncSessions(taskIdMap)
-            syncDailyStats()
+            syncTasksImpl()
+            syncSessionsImpl(taskIdMap)
+            syncDailyStatsImpl()
             println("[$TAG]syncAll: SUCCESS")
             syncStatusManager.onSyncSuccess()
             SyncResult.Success
@@ -170,7 +173,9 @@ class SyncEngine @Inject constructor(
 
     // ── Initial Upload ──
 
-    suspend fun initialUpload(): InitialUploadResult {
+    suspend fun initialUpload(): InitialUploadResult = syncLock.withLock { initialUploadImpl() }
+
+    private suspend fun initialUploadImpl(): InitialUploadResult {
         if (authStore.getAccessToken() == null) {
             println("[$TAG]initialUpload: NOT AUTHENTICATED")
             return InitialUploadResult.NotAuthenticated
@@ -313,7 +318,9 @@ class SyncEngine @Inject constructor(
 
     // ── Task Sync ──
 
-    internal suspend fun syncTasks() {
+    suspend fun syncTasks() = syncLock.withLock { syncTasksImpl() }
+
+    internal suspend fun syncTasksImpl() {
         val dirtyTasks = taskDao.getDirtyTasks()
 
         if (dirtyTasks.isEmpty()) {
@@ -471,7 +478,10 @@ class SyncEngine @Inject constructor(
      *   sync purges soft-deleted rows. When null the map is built on-the-fly
      *   (safe for callers that don't run task sync first, e.g. initialUpload).
      */
-    internal suspend fun syncSessions(precomputedTaskIdMap: Map<String, Int>? = null) {
+    suspend fun syncSessions(precomputedTaskIdMap: Map<String, Int>? = null) =
+        syncLock.withLock { syncSessionsImpl(precomputedTaskIdMap) }
+
+    internal suspend fun syncSessionsImpl(precomputedTaskIdMap: Map<String, Int>? = null) {
         val dirtySessions = sessionDao.getDirtySessions()
         val userId = authStore.getUserId() ?: ""
         val taskIdMap = precomputedTaskIdMap ?: buildTaskIdMap()
@@ -601,7 +611,9 @@ class SyncEngine @Inject constructor(
 
     // ── Daily Stats Sync ──
 
-    internal suspend fun syncDailyStats() {
+    suspend fun syncDailyStats() = syncLock.withLock { syncDailyStatsImpl() }
+
+    internal suspend fun syncDailyStatsImpl() {
         try {
             // Pull all stats from server for the last 365 days
             // Use the device's local timezone so date boundaries align with the user's calendar.

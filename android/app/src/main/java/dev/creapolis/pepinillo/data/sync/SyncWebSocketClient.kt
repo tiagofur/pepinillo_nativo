@@ -10,8 +10,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -50,13 +48,6 @@ class SyncWebSocketClient @Inject constructor(
     @Volatile private var awaitingPong = false
 
     private val connectionLock = Any()
-
-    /**
-     * Serializes sync calls triggered by incoming WS messages so they do not race
-     * with each other (e.g. concurrent task_updated + sync_required) nor stomp on
-     * SyncWorker. Kept here intentionally to avoid editing SyncEngine.kt.
-     */
-    private val syncMutex = Mutex()
 
     private val client = OkHttpClient.Builder()
         .readTimeout(0, TimeUnit.MILLISECONDS) // No timeout for WebSocket
@@ -168,18 +159,18 @@ class SyncWebSocketClient @Inject constructor(
         // Run JSON parsing + sync engine work off the main thread. The shared
         // @ApplicationScope is confined to Dispatchers.Main (FocusEngine and
         // SoundscapeManager rely on that single-thread guarantee), so we override
-        // the dispatcher only for this push-driven path. Sync calls are serialized
-        // through syncMutex so concurrent WS messages do not race.
+        // the dispatcher only for this push-driven path. SyncEngine/SettingsSyncEngine
+        // serialize work through the shared SyncLock.
         scope.launch(Dispatchers.Default) {
             try {
                 val json = JSONObject(text)
                 when (json.optString("type")) {
                     "pong" -> awaitingPong = false
-                    "task_updated" -> syncMutex.withLock { syncEngine.syncTasks() }
-                    "sessions_synced" -> syncMutex.withLock { syncEngine.syncSessions() }
-                    "settings_updated" -> syncMutex.withLock { settingsSyncEngine.syncSettings() }
-                    "stats_updated" -> syncMutex.withLock { syncEngine.syncDailyStats() }
-                    "sync_required" -> syncMutex.withLock { syncEngine.syncAll() }
+                    "task_updated" -> syncEngine.syncTasks()
+                    "sessions_synced" -> syncEngine.syncSessions()
+                    "settings_updated" -> settingsSyncEngine.syncSettings()
+                    "stats_updated" -> syncEngine.syncDailyStats()
+                    "sync_required" -> syncEngine.syncAll()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error handling WebSocket message", e)
