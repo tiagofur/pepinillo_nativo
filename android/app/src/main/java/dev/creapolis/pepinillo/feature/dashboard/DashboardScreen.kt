@@ -892,6 +892,9 @@ private fun ReflectionCard(
     }
 }
 
+internal fun formatCompletionRate(rate: Double): String =
+    if (rate == 0.0) "\u2013" else "${(rate * 100).toInt()}%"
+
 private fun formatMinutes(totalMinutes: Int, hasSessions: Boolean = false): String {
     if (totalMinutes == 0 && hasSessions) return "< 1m"
     val hours = totalMinutes / 60
