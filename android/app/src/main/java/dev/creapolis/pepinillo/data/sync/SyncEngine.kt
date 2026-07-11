@@ -643,7 +643,7 @@ class SyncEngine @Inject constructor(
         taskId = serverTaskId,
         startedAt = startTime.toRfc3339(),
         endedAt = endTime.let { if (it > 0L) it.toRfc3339() else null },
-        mode = mapMode(mode),
+        mode = FocusModeSyncMapper.toServerMode(mode),
         phase = phase ?: "work",
         durationSeconds = (durationMillis / 1000).toInt(),
         elapsedSeconds = (durationMillis / 1000).toInt(),
@@ -658,14 +658,6 @@ class SyncEngine @Inject constructor(
         updatedAt = (createdAt ?: startTime).toRfc3339(),
     )
 
-    private fun mapMode(localMode: String): String = when (localMode.lowercase()) {
-        "pomodoro" -> "pomodoro"
-        "flowtime", "flow" -> "flowtime"
-        "timeblock", "time block", "timeblocking" -> "timeblock"
-        "stopwatch" -> "stopwatch"
-        else -> "pomodoro"
-    }
-
     private fun mapPhase(serverPhase: String): String = when (serverPhase.lowercase()) {
         "work" -> "Work"
         "short_break" -> "Short Break"
@@ -677,17 +669,9 @@ class SyncEngine @Inject constructor(
         else -> serverPhase
     }
 
-    private fun mapModeFromServer(serverMode: String): String = when (serverMode.lowercase()) {
-        "pomodoro" -> "Pomodoro"
-        "flowtime" -> "Flowtime"
-        "timeblock" -> "TimeBlock"
-        "stopwatch" -> "Stopwatch"
-        else -> "Pomodoro"
-    }
-
     private fun PomodoroSessionDto.toEntity() = FocusSessionEntity(
         id = id,
-        mode = mapModeFromServer(mode),
+        mode = FocusModeSyncMapper.toLocalMode(mode),
         startTime = parseRfc3339(startedAt),
         endTime = if (endedAt != null) parseRfc3339(endedAt) else parseRfc3339(startedAt) + (durationSeconds * 1000L),
         durationMillis = durationSeconds * 1000L,

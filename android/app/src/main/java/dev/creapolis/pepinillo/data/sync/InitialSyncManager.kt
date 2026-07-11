@@ -355,14 +355,6 @@ class InitialSyncManager @Inject constructor(
         syncedAt = System.currentTimeMillis(),
     )
 
-    private fun mapModeFromServer(serverMode: String): String = when (serverMode.lowercase()) {
-        "pomodoro" -> "Pomodoro"
-        "flowtime" -> "Flowtime"
-        "timeblock" -> "TimeBlock"
-        "stopwatch" -> "Stopwatch"
-        else -> "Pomodoro"
-    }
-
     private fun mapPhase(serverPhase: String): String = when (serverPhase.lowercase()) {
         "work" -> "Work"
         "short_break" -> "Short Break"
@@ -376,7 +368,7 @@ class InitialSyncManager @Inject constructor(
 
     private fun PomodoroSessionDto.toEntity() = FocusSessionEntity(
         id = id,
-        mode = mapModeFromServer(mode),
+        mode = FocusModeSyncMapper.toLocalMode(mode),
         startTime = parseRfc3339(startedAt),
         endTime = if (endedAt != null) parseRfc3339(endedAt) else parseRfc3339(startedAt) + (durationSeconds * 1000L),
         durationMillis = durationSeconds * 1000L,
