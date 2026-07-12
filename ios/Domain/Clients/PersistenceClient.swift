@@ -530,6 +530,8 @@ public struct PersistenceClient: Sendable {
     public var saveTaskOrder: @Sendable ([(id: UUID, sortOrder: Int)]) async throws -> Void = { _ in }
     public var incrementTaskPomodoros: @Sendable (UUID) async throws -> Void
     public var deleteTask: @Sendable (UUID) async throws -> Void
+    /// Clears soft-delete on an existing row, or re-inserts when the row was hard-deleted (undo).
+    public var restoreTask: @Sendable (TaskItemDTO) async throws -> Void
 
     // Subtasks
     public var fetchSubtasks: @Sendable (UUID) async throws -> [SubTaskDTO] = { _ in [] }
@@ -645,6 +647,9 @@ extension PersistenceClient: DependencyKey {
             },
             deleteTask: { id in
                 try await actorProvider().deleteTask(id: id)
+            },
+            restoreTask: { taskDTO in
+                try await actorProvider().restoreTask(taskDTO)
             },
             fetchSubtasks: { taskID in
                 try await actorProvider().fetchSubtasks(for: taskID)

@@ -81,6 +81,25 @@ struct TaskListFeature {
                 createdAt: dto.createdAt
             )
         }
+
+        func toDTO() -> TaskItemDTO {
+            TaskItemDTO(
+                id: id,
+                title: title,
+                notes: notes,
+                isCompleted: isCompleted,
+                priority: priority,
+                energyLevel: energyLevel,
+                estimatedPomodoros: estimatedPomodoros,
+                completedPomodoros: completedPomodoros,
+                sortOrder: sortOrder,
+                recurrenceRule: recurrenceRule,
+                isRecurringTemplate: isRecurringTemplate,
+                dueDate: dueDate,
+                scheduledForToday: scheduledForToday,
+                createdAt: createdAt
+            )
+        }
     }
 
     enum TaskFilter: String, CaseIterable, Equatable {
@@ -161,7 +180,7 @@ struct TaskListFeature {
         case taskCompleted(UUID)
         case taskDeleted(UUID)
         case undoDeleteTask
-        case undoTimerExpired
+        case undoTimerExpired(UUID)
         case taskMoved(IndexSet, Int)
         case energyLevelChanged(UUID, EnergyLevel)
         case recurrenceChanged(UUID, String?)
@@ -191,7 +210,7 @@ struct TaskListFeature {
         case loadErrorDismissed
     }
 
-    private enum _UndoTimerID: Hashable { case undoTimer }
+    private enum _UndoTimerID: Hashable { case undoTimer(UUID) }
     private enum _SpotlightIndexID: Hashable { case indexTasks }
 
     @Dependency(\.persistenceClient) var persistence
@@ -363,28 +382,40 @@ struct TaskListFeature {
                 guard let task = state.tasks[id: id] else { return .none }
                 state.recentlyDeletedTask = task
                 state.tasks.remove(id: id)
-                return .run { send in
-                    try await Task.sleep(for: .seconds(5))
-                    await send(.undoTimerExpired)
-                }
-                .cancellable(id: _UndoTimerID.undoTimer, cancelInFlight: true)
+                // Soft-delete immediately (issue #183). The undo timer only dismisses the
+                // banner; it must not be the sole persistence path — cancelInFlight on a
+                // single timer dropped earlier deletes when another task was removed.
+                return .merge(
+                    .run { [spotlight] _ in
+                        try await persistence.deleteTask(id)
+                        try? await spotlight.deindexTask(id)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    },
+                    .run { send in
+                        try await Task.sleep(for: .seconds(5))
+                        await send(.undoTimerExpired(id))
+                    }
+                    .cancellable(id: _UndoTimerID.undoTimer(id), cancelInFlight: false)
+                )
 
             case .undoDeleteTask:
-                if let task = state.recentlyDeletedTask {
-                    state.tasks.append(task)
-                }
-                state.recentlyDeletedTask = nil
-                return .cancel(id: _UndoTimerID.undoTimer)
-
-            case .undoTimerExpired:
                 guard let task = state.recentlyDeletedTask else { return .none }
                 let taskID = task.id
+                state.tasks.append(task)
                 state.recentlyDeletedTask = nil
-                return .run { [spotlight] _ in
-                    try await persistence.deleteTask(taskID)
-                    try? await spotlight.deindexTask(taskID)
-                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                return .merge(
+                    .cancel(id: _UndoTimerID.undoTimer(taskID)),
+                    .run { _ in
+                        try await persistence.restoreTask(task.toDTO())
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    }
+                )
+
+            case .undoTimerExpired(let id):
+                if state.recentlyDeletedTask?.id == id {
+                    state.recentlyDeletedTask = nil
                 }
+                return .none
 
             case .taskMoved(let source, let destination):
                 // PlanTaskList drag indices refer to the active Plan filter subset,
