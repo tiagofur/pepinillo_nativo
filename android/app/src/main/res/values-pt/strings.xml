@@ -777,6 +777,7 @@
     <string name="error_upload_failed">Não foi possível enviar a foto. Tente novamente.</string>
     <string name="error_read_image">Não foi possível ler a imagem selecionada.</string>
     <string name="paywall_no_subscription">Nenhuma subscrição ativa encontrada</string>
+    <string name="paywall_restore_failed">Não foi possível restaurar as compras. Tente novamente.</string>
     <string name="paywall_purchase_failed">A compra falhou. Tente novamente.</string>
     <string name="paywall_per_month">~%1$s/mês</string>
     <string name="paywall_save_pct">Poupe %1$d%%</string>

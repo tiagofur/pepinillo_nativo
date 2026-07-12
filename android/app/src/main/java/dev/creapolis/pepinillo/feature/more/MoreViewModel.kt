@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.FeatureGate
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.core.billing.SubscriptionTier
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
@@ -33,7 +34,8 @@ class MoreViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val featureGate: FeatureGate,
     private val apiClient: PepinilloApiClient,
-    private val syncWebSocketClient: SyncWebSocketClient
+    private val syncWebSocketClient: SyncWebSocketClient,
+    private val subscriptionManager: SubscriptionManager,
 ) : ViewModel() {
 
     val uiState: StateFlow<MoreUiState> = combine(
@@ -54,6 +56,7 @@ class MoreViewModel @Inject constructor(
             syncWebSocketClient.disconnect()
             val refreshToken = authStore.getRefreshToken()
             apiClient.logout(refreshToken)
+            subscriptionManager.logOut()
             userRepository.clearCache()
             authStore.clearAll()
         }

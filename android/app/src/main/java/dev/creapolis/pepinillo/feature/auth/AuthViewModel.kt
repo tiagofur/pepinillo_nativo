@@ -15,6 +15,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.BuildConfig
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.identity.IdentityManager
 import dev.creapolis.pepinillo.core.network.AuthResponse
 import dev.creapolis.pepinillo.core.network.NetworkResult
@@ -51,6 +52,7 @@ class AuthViewModel @Inject constructor(
     private val initialSyncManager: InitialSyncManager,
     private val identityManager: IdentityManager,
     private val syncWebSocketClient: SyncWebSocketClient,
+    private val subscriptionManager: SubscriptionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState(
@@ -174,6 +176,7 @@ class AuthViewModel @Inject constructor(
             syncWebSocketClient.disconnect()
             val refreshToken = authStore.getRefreshToken()
             apiClient.logout(refreshToken)
+            subscriptionManager.logOut()
             userRepository.clearCache()
             authStore.clearAll()
             identityManager.refreshState()
@@ -251,6 +254,7 @@ class AuthViewModel @Inject constructor(
             response.user.email,
         )
         userRepository.cacheUserFromDto(response.user)
+        subscriptionManager.logIn(response.user.id)
         identityManager.refreshState()
 
         // Email/password users must verify before accessing data endpoints

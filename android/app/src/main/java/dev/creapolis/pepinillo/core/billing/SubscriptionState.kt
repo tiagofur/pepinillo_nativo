@@ -39,6 +39,15 @@ object PepinilloProducts {
 
     val ALL_IDS = listOf(PEPINILLO_PLUS, EVERYWHERE_MONTHLY, EVERYWHERE_ANNUAL)
 
+    fun isEverywhereProduct(productId: String): Boolean =
+        productId == EVERYWHERE_MONTHLY ||
+            productId == EVERYWHERE_ANNUAL ||
+            productId.contains("monthly") ||
+            productId.contains("annual")
+
+    fun isLifetimeProduct(productId: String): Boolean =
+        productId == PEPINILLO_PLUS || productId.contains("lifetime")
+
     fun tierForProduct(productId: String): SubscriptionTier = when (productId) {
         EVERYWHERE_ANNUAL -> SubscriptionTier.EVERYWHERE_ANNUAL
         EVERYWHERE_MONTHLY -> SubscriptionTier.EVERYWHERE_MONTHLY

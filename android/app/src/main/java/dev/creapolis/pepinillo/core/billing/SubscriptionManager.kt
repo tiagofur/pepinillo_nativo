@@ -3,22 +3,27 @@ package dev.creapolis.pepinillo.core.billing
 import android.app.Activity
 import android.content.Context
 import android.util.Log
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
-import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.logInWith
+import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.purchaseWith
+import com.revenuecat.purchases.restorePurchasesWith
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -26,14 +31,6 @@ import kotlin.coroutines.resume
 
 private const val TAG = "SubscriptionManager"
 private const val REVENUECAT_API_KEY = BuildConfig.REVENUECAT_API_KEY
-
-private val SUPPORTED_ENTITLEMENT_IDS = listOf(
-    "everywhere_plus",
-    "pepinillo_plus",
-    // Legacy fallbacks while RevenueCat migration rolls out.
-    "premium",
-    "pro",
-)
 
 /** Result of a purchase attempt — distinguishes user cancel from real failure. */
 enum class PurchaseResult { Success, Cancelled, Failed }
@@ -47,6 +44,23 @@ data class ProductInfo(
     val billingPeriod: String?,
     val `package`: Package,
 )
+
+sealed class PurchaseFlowResult {
+    data object Cancelled : PurchaseFlowResult()
+    data class Failed(val message: String?) : PurchaseFlowResult()
+    data class Success(
+        val state: SubscriptionState,
+        val verification: PurchaseVerificationTarget?,
+    ) : PurchaseFlowResult()
+}
+
+sealed class RestoreFlowResult {
+    data class Failed(val message: String?) : RestoreFlowResult()
+    data class Success(
+        val state: SubscriptionState,
+        val verification: PurchaseVerificationTarget?,
+    ) : RestoreFlowResult()
+}
 
 @Singleton
 class SubscriptionManager @Inject constructor(
@@ -69,26 +83,23 @@ class SubscriptionManager @Inject constructor(
     private fun initializeRevenueCat() {
         if (isInitialized) return
         try {
-            // Check if already configured (by Application class)
-            if (Purchases.isConfigured) {
-                isInitialized = true
-                checkEntitlements()
-                return
+            if (!Purchases.isConfigured) {
+                Purchases.configure(PurchasesConfiguration.Builder(context, REVENUECAT_API_KEY).build())
+                Log.d(TAG, "RevenueCat initialized in Manager")
             }
-            Purchases.configure(PurchasesConfiguration.Builder(context, REVENUECAT_API_KEY).build())
-            Log.d(TAG, "RevenueCat initialized in Manager")
+            Purchases.sharedInstance.updatedCustomerInfoListener =
+                UpdatedCustomerInfoListener { customerInfo ->
+                    applyCustomerInfo(customerInfo)
+                }
             isInitialized = true
-            checkEntitlements()
+            scope.launch { refreshCustomerInfo() }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize RevenueCat: ${e.message}", e)
         }
     }
 
     suspend fun connect() {
-        // RevenueCat is initialized in init block
-        if (!isInitialized) {
-            initializeRevenueCat()
-        }
+        if (!isInitialized) initializeRevenueCat()
     }
 
     suspend fun queryProducts() {
@@ -103,9 +114,6 @@ class SubscriptionManager @Inject constructor(
                     },
                     onSuccess = { offerings ->
                         val allProducts = mutableListOf<ProductInfo>()
-
-                        // Use only the current (active) offering to avoid duplicates
-                        // when the same products appear across multiple offerings.
                         val targetOffering = offerings.current
                             ?: offerings["default"]
                             ?: run {
@@ -121,7 +129,7 @@ class SubscriptionManager @Inject constructor(
                                     title = product.title,
                                     description = product.description,
                                     formattedPrice = product.price.formatted,
-                                    priceMicros = (product.price.amountMicros),
+                                    priceMicros = product.price.amountMicros,
                                     billingPeriod = when (product.period?.unit?.name) {
                                         "MONTH" -> "P1M"
                                         "YEAR" -> "P1Y"
@@ -144,73 +152,120 @@ class SubscriptionManager @Inject constructor(
         }
     }
 
-    suspend fun launchPurchaseFlow(activity: Activity, product: ProductInfo): PurchaseResult {
+    suspend fun launchPurchaseFlow(activity: Activity, product: ProductInfo): PurchaseFlowResult {
+        if (!isInitialized) connect()
+
         return suspendCancellableCoroutine { cont ->
             Purchases.sharedInstance.purchaseWith(
                 purchaseParams = PurchaseParams.Builder(activity, product.`package`).build(),
-                onSuccess = { _, customerInfo ->
+                onSuccess = { storeTransaction, customerInfo ->
                     Log.d(TAG, "Purchase successful for ${product.productId}")
-                    scope.launch { checkExistingPurchases() }
-                    if (cont.isActive) cont.resume(PurchaseResult.Success)
+                    val state = applyCustomerInfo(customerInfo)
+                    val verification = purchaseVerificationTarget(
+                        customerInfo = customerInfo,
+                        productId = product.productId,
+                        storeTransaction = storeTransaction,
+                    )
+                    if (cont.isActive) {
+                        cont.resume(
+                            if (state.hasLocalPremium) {
+                                PurchaseFlowResult.Success(state, verification)
+                            } else {
+                                PurchaseFlowResult.Failed("Purchase completed but entitlement not active")
+                            },
+                        )
+                    }
                 },
                 onError = { error, userCancelled ->
                     Log.e(TAG, "Purchase failed: ${error.message}")
-                    val result = if (userCancelled) PurchaseResult.Cancelled else PurchaseResult.Failed
-                    if (cont.isActive) cont.resume(result)
+                    if (cont.isActive) {
+                        cont.resume(
+                            if (userCancelled) {
+                                PurchaseFlowResult.Cancelled
+                            } else {
+                                PurchaseFlowResult.Failed(error.message)
+                            },
+                        )
+                    }
                 },
             )
         }
     }
 
-    private fun checkEntitlements() {
-        scope.launch {
-            suspendCancellableCoroutine { cont ->
-                Purchases.sharedInstance.getCustomerInfoWith(
-                    onError = { error ->
-                        Log.e(TAG, "Failed to get customer info: ${error.message}")
-                        if (cont.isActive) cont.resume(Unit)
-                    },
-                    onSuccess = { customerInfo ->
-                        val activeEntitlementId = resolveActiveEntitlementId(customerInfo)
-                        if (activeEntitlementId != null) {
-                            val activeProductId = resolveActiveProductId(customerInfo)
-                            val tier = resolveTier(activeEntitlementId, activeProductId)
-                            _subscriptionState.value = SubscriptionState(
-                                tier = tier,
-                                activeProductId = activeProductId,
-                            )
-                            Log.d(
-                                TAG,
-                                "Subscription active: entitlement=$activeEntitlementId tier=$tier product=${activeProductId ?: "n/a"}",
-                            )
-                        } else {
-                            _subscriptionState.value = SubscriptionState()
-                            Log.d(TAG, "No active supported entitlement")
-                        }
+    suspend fun restorePurchases(): RestoreFlowResult {
+        if (!isInitialized) connect()
 
-                        if (cont.isActive) cont.resume(Unit)
-                    },
-                )
-            }
+        return suspendCancellableCoroutine { cont ->
+            Purchases.sharedInstance.restorePurchasesWith(
+                onError = { error ->
+                    Log.e(TAG, "Restore failed: ${error.message}")
+                    if (cont.isActive) cont.resume(RestoreFlowResult.Failed(error.message))
+                },
+                onSuccess = { customerInfo ->
+                    Log.d(TAG, "Restore completed")
+                    val state = applyCustomerInfo(customerInfo)
+                    val verification = purchaseVerificationTarget(
+                        customerInfo = customerInfo,
+                        productId = state.activeProductId,
+                    )
+                    if (cont.isActive) {
+                        cont.resume(RestoreFlowResult.Success(state, verification))
+                    }
+                },
+            )
         }
     }
 
-    suspend fun checkExistingPurchases() {
+    suspend fun logIn(appUserId: String) {
+        if (!isInitialized) connect()
+        if (appUserId.isBlank()) return
+
+        suspendCancellableCoroutine { cont ->
+            Purchases.sharedInstance.logInWith(
+                appUserID = appUserId,
+                onError = { error ->
+                    Log.e(TAG, "RevenueCat logIn failed: ${error.message}")
+                    if (cont.isActive) cont.resume(Unit)
+                },
+                onSuccess = { customerInfo, _ ->
+                    applyCustomerInfo(customerInfo)
+                    if (cont.isActive) cont.resume(Unit)
+                },
+            )
+        }
+    }
+
+    suspend fun logOut() {
+        if (!isInitialized) return
+
+        suspendCancellableCoroutine { cont ->
+            Purchases.sharedInstance.logOutWith(
+                onError = { error ->
+                    Log.e(TAG, "RevenueCat logOut failed: ${error.message}")
+                    if (cont.isActive) cont.resume(Unit)
+                },
+                onSuccess = { customerInfo ->
+                    applyCustomerInfo(customerInfo)
+                    if (cont.isActive) cont.resume(Unit)
+                },
+            )
+        }
+    }
+
+    suspend fun refreshCustomerInfo() {
         if (!isInitialized) connect()
 
         suspendCancellableCoroutine { cont ->
-            try {
-                Purchases.sharedInstance.invalidateCustomerInfoCache()
-                checkEntitlements()
-                // Small delay to allow checkEntitlements to complete
-                scope.launch {
-                    kotlinx.coroutines.delay(500)
+            Purchases.sharedInstance.getCustomerInfoWith(
+                onError = { error ->
+                    Log.e(TAG, "Failed to get customer info: ${error.message}")
                     if (cont.isActive) cont.resume(Unit)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Exception checking purchases: ${e.message}", e)
-                if (cont.isActive) cont.resume(Unit)
-            }
+                },
+                onSuccess = { customerInfo ->
+                    applyCustomerInfo(customerInfo)
+                    if (cont.isActive) cont.resume(Unit)
+                },
+            )
         }
     }
 
@@ -231,31 +286,9 @@ class SubscriptionManager @Inject constructor(
         )
     }
 
-    private fun resolveActiveEntitlementId(customerInfo: com.revenuecat.purchases.CustomerInfo): String? {
-        return SUPPORTED_ENTITLEMENT_IDS.firstOrNull { entitlementId ->
-            customerInfo.entitlements[entitlementId]?.isActive == true
-        }
-    }
-
-    private fun resolveActiveProductId(customerInfo: com.revenuecat.purchases.CustomerInfo): String? {
-        return customerInfo.activeSubscriptions.firstOrNull { productId ->
-            productId in PepinilloProducts.ALL_IDS
-        } ?: customerInfo.nonSubscriptionTransactions
-            .map { it.productIdentifier }
-            .firstOrNull { productId -> productId in PepinilloProducts.ALL_IDS }
-    }
-
-    private fun resolveTier(activeEntitlementId: String, activeProductId: String?): SubscriptionTier {
-        if (activeProductId != null) {
-            val mappedTier = PepinilloProducts.tierForProduct(activeProductId)
-            if (mappedTier != SubscriptionTier.FREE) return mappedTier
-        }
-
-        return when (activeEntitlementId) {
-            "everywhere_plus" -> SubscriptionTier.EVERYWHERE_MONTHLY
-            "pepinillo_plus" -> SubscriptionTier.PEPINILLO_PLUS
-            "premium", "pro" -> SubscriptionTier.PEPINILLO_PLUS
-            else -> SubscriptionTier.FREE
-        }
+    private fun applyCustomerInfo(customerInfo: CustomerInfo): SubscriptionState {
+        val state = subscriptionStateFromCustomerInfo(customerInfo)
+        _subscriptionState.value = state
+        return state
     }
 }
