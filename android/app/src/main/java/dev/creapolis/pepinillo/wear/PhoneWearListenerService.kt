@@ -15,6 +15,7 @@ import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.service.FocusTimerService
 import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.widget.WidgetTask
@@ -68,11 +69,16 @@ class PhoneWearListenerService : WearableListenerService() {
     override fun onMessageReceived(messageEvent: MessageEvent) {
         when (messageEvent.path) {
             WearDataLayerHelper.CMD_TIMER_START -> {
-                val mode = messageEvent.data.toString(StandardCharsets.UTF_8).ifBlank { "Pomodoro" }
+                val modeName = messageEvent.data.toString(StandardCharsets.UTF_8).ifBlank { "Pomodoro" }
+                val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
+                if (!featureGate.canUseMode(mode)) {
+                    Log.w(TAG, "Blocked timer start for mode $modeName — not available on current plan")
+                    return
+                }
                 startForegroundService(
                     Intent(this, FocusTimerService::class.java).apply {
                         action = FocusTimerService.ACTION_START_MODE
-                        putExtra("mode", mode)
+                        putExtra("mode", modeName)
                     },
                 )
             }

@@ -30,6 +30,8 @@ class WearSnapshotStoreTest {
             linkedTaskName = "Write design doc",
             completedSessions = 3,
             phaseEndEpochMs = 1_709_000_000_000L,
+            phaseStartEpochMs = 1_708_999_500_000L,
+            remainingDurationMs = 5L * 60L * 1000L,
             totalDurationMs = 25L * 60L * 1000L,
         )
 
@@ -47,6 +49,8 @@ class WearSnapshotStoreTest {
         assertEquals(state.linkedTaskName, restored.linkedTaskName)
         assertEquals(state.completedSessions, restored.completedSessions)
         assertEquals(state.phaseEndEpochMs, restored.phaseEndEpochMs)
+        assertEquals(state.phaseStartEpochMs, restored.phaseStartEpochMs)
+        assertEquals(state.remainingDurationMs, restored.remainingDurationMs)
         assertEquals(state.totalDurationMs, restored.totalDurationMs)
     }
 

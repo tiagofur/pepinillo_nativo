@@ -27,6 +27,8 @@ object WearSnapshotStore {
     private const val KEY_STOPWATCH_COLOR = "stopwatch_color"
     private const val KEY_STREAK_COLOR = "streak_color"
     private const val KEY_PHASE_END_EPOCH_MS = "phase_end_epoch_ms"
+    private const val KEY_PHASE_START_EPOCH_MS = "phase_start_epoch_ms"
+    private const val KEY_REMAINING_DURATION_MS = "remaining_duration_ms"
     private const val KEY_TOTAL_DURATION_MS = "total_duration_ms"
     private const val KEY_IS_PRO = "is_pro"
 
@@ -53,6 +55,8 @@ object WearSnapshotStore {
             .putString(KEY_LINKED_TASK_NAME, state.linkedTaskName)
             .putInt(KEY_COMPLETED_SESSIONS, state.completedSessions)
             .putLong(KEY_PHASE_END_EPOCH_MS, state.phaseEndEpochMs)
+            .putLong(KEY_PHASE_START_EPOCH_MS, state.phaseStartEpochMs)
+            .putLong(KEY_REMAINING_DURATION_MS, state.remainingDurationMs)
             .putLong(KEY_TOTAL_DURATION_MS, state.totalDurationMs)
             .apply()
     }
@@ -97,6 +101,8 @@ object WearSnapshotStore {
             linkedTaskName = prefs.getString(KEY_LINKED_TASK_NAME, null),
             completedSessions = prefs.getInt(KEY_COMPLETED_SESSIONS, 0),
             phaseEndEpochMs = prefs.getLong(KEY_PHASE_END_EPOCH_MS, 0L),
+            phaseStartEpochMs = prefs.getLong(KEY_PHASE_START_EPOCH_MS, 0L),
+            remainingDurationMs = prefs.getLong(KEY_REMAINING_DURATION_MS, 0L),
             totalDurationMs = prefs.getLong(KEY_TOTAL_DURATION_MS, 0L),
         )
     }
