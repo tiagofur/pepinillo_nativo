@@ -6,6 +6,7 @@ import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -28,6 +29,8 @@ import io.mockk.unmockkStatic
 import org.junit.BeforeClass
 import org.junit.AfterClass
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -195,6 +198,38 @@ class FocusEngineTest {
         engine.pause()
         engine.start()
         assertEquals(originalStartTime, engine.state.value.sessionStartTime)
+    }
+
+    @Test
+    fun `rapid start then stop ends Idle immediately`() = runTest {
+        coEvery { sessionRepository.getTodayPomodoroWorkCount() } returns 0
+        engine.start()
+        engine.stop()
+        testScope.advanceUntilIdle()
+        assertEquals(TimerStatus.Idle, engine.state.value.status)
+    }
+
+    @Test
+    fun `stop cancels in-flight pomodoro start job`() = runTest {
+        coEvery { sessionRepository.getTodayPomodoroWorkCount() } coAnswers {
+            delay(500)
+            2
+        }
+        val raceScope = TestScope(StandardTestDispatcher(testScheduler))
+        val raceEngine = FocusEngine(
+            sessionRepository = sessionRepository,
+            taskRepository = taskRepository,
+            prefsRepo = prefsRepo,
+            feedbackManager = feedbackManager,
+            scope = raceScope,
+        )
+
+        raceEngine.start()
+        raceEngine.stop()
+        assertEquals(TimerStatus.Idle, raceEngine.state.value.status)
+
+        raceScope.advanceUntilIdle()
+        assertEquals(TimerStatus.Idle, raceEngine.state.value.status)
     }
 
     @Test
