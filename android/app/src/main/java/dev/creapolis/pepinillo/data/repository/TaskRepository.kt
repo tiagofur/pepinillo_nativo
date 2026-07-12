@@ -125,6 +125,23 @@ class TaskRepository @Inject constructor(
         }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }
             .onSuccess { refreshWearData() }
 
+    /**
+     * Complete-only path for widget/wear — idempotent (already-completed tasks succeed without toggling back).
+     */
+    suspend fun completeTaskFromWear(taskId: String): Result<Unit> =
+        runCatching {
+            val entity = taskDao.getTaskById(taskId) ?: error("Task $taskId not found")
+            if (entity.isCompleted) return@runCatching
+
+            val hasRecurrence = !entity.recurrenceRule.isNullOrBlank()
+            if (hasRecurrence && featureGate.canUseRecurrence()) {
+                advanceRecurringTask(entity)
+            } else {
+                taskDao.completeTaskAtomic(taskId)
+            }
+        }.onFailure { Log.e(TAG, "Error completing task $taskId from wear/widget", it) }
+            .onSuccess { refreshWearData() }
+
     suspend fun deleteTask(taskId: String): Result<Unit> =
         runCatching { taskDao.softDelete(taskId) }
             .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }

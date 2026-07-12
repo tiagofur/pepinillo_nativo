@@ -5,10 +5,18 @@ import android.util.Log
 import androidx.glance.appwidget.updateAll
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
+import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
+import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
+import dev.creapolis.pepinillo.core.billing.FeatureGate
+import kotlinx.coroutines.flow.first
+import java.util.Calendar
 
 private const val TAG = "CompleteTaskWorker"
 
@@ -17,10 +25,15 @@ class CompleteTaskWorker @AssistedInject constructor(
     @Assisted private val appContext: Context,
     @Assisted params: WorkerParameters,
     private val taskRepository: TaskRepository,
+    private val sessionRepository: SessionRepository,
+    private val featureGate: FeatureGate,
 ) : CoroutineWorker(appContext, params) {
 
     companion object {
         const val KEY_TASK_ID = "task_id"
+        const val WORK_PREFIX = "complete_task_"
+
+        fun uniqueWorkName(taskId: String): String = "$WORK_PREFIX$taskId"
     }
 
     override suspend fun doWork(): Result {
@@ -28,16 +41,50 @@ class CompleteTaskWorker @AssistedInject constructor(
             Log.e(TAG, "No task_id provided")
             return Result.failure()
         }
-        return runCatching {
-            taskRepository.toggleCompletion(taskId)
-            // Widget content will be refreshed by the next WidgetRefreshWorker run (≤ 15 min).
-            // For immediate feedback, also trigger an update now.
-            TasksWidget().updateAll(appContext)
-            Log.d(TAG, "Task $taskId completed from widget")
-            Result.success()
-        }.getOrElse { e ->
-            Log.e(TAG, "Failed to complete task $taskId", e)
-            Result.retry()
+
+        val result = taskRepository.completeTaskFromWear(taskId)
+        return result.fold(
+            onSuccess = {
+                TasksWidget().updateAll(appContext)
+                refreshDailyStatsWidget()
+                Log.d(TAG, "Task $taskId completed from widget")
+                Result.success()
+            },
+            onFailure = { e ->
+                Log.e(TAG, "Failed to complete task $taskId", e)
+                Result.retry()
+            },
+        )
+    }
+
+    private suspend fun refreshDailyStatsWidget() {
+        runCatching {
+            val stats = sessionRepository.getTodayStats().first()
+            val allDays = sessionRepository.getAllDaysWithSessions().first()
+            val streak = StreakProtectionService.computeProtectedStreak(
+                history = allDays,
+                isPro = featureGate.isPro,
+            ).days
+            val startOfDay = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val completedToday = taskRepository.getCompletedTodayCount(startOfDay)
+
+            WidgetStateManager.updateDailyStats(
+                context = appContext,
+                totalMinutes = stats?.totalMinutes ?: 0,
+                sessions = stats?.sessionsCompleted ?: 0,
+                streak = streak,
+                completedTasksToday = completedToday,
+            )
+        }.onFailure { e ->
+            Log.w(TAG, "Direct stats widget refresh failed — enqueueing WidgetRefreshWorker", e)
+            WorkManager.getInstance(appContext).enqueue(
+                OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
+            )
         }
     }
 }

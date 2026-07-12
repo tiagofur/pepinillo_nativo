@@ -42,6 +42,7 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -88,6 +89,7 @@ data class WidgetTask(
 
 private val PREF_TASKS_JSON = stringPreferencesKey("tasks_json")
 private val PREF_COMPLETED_TODAY = intPreferencesKey("completed_today")
+private val PREF_ACTIVE_COUNT = intPreferencesKey("active_count")
 private val PREF_LINKED_TASK_ID = stringPreferencesKey("linked_task_id")
 private const val MAX_WIDGET_TASKS = 5
 
@@ -178,6 +180,7 @@ class TasksWidget : GlanceAppWidget() {
             )
             val taskRepo = entryPoint.taskRepository()
             val activeTasks = taskRepo.getActiveTasks().first()
+            val activeCount = activeTasks.size
             val widgetTasks = activeTasks.take(MAX_WIDGET_TASKS).map { task ->
                 val energyEmoji = when (task.energyLevel) {
                     EnergyLevel.Deep -> "\uD83D\uDD25"
@@ -197,6 +200,7 @@ class TasksWidget : GlanceAppWidget() {
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
                 prefs.toMutablePreferences().apply {
                     this[PREF_TASKS_JSON] = tasksToJson(widgetTasks)
+                    this[PREF_ACTIVE_COUNT] = activeCount
                 }
             }
         } catch (_: Exception) {
@@ -215,6 +219,7 @@ class TasksWidget : GlanceAppWidget() {
 private fun TasksContent() {
     val prefs = currentState<Preferences>()
     val tasks = tasksFromJson(prefs[PREF_TASKS_JSON])
+    val activeCount = prefs[PREF_ACTIVE_COUNT] ?: tasks.size
     val linkedTaskId = prefs[PREF_LINKED_TASK_ID]
     val context = LocalContext.current
 
@@ -232,7 +237,7 @@ private fun TasksContent() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "\uD83D\uDCCB " + context.getString(R.string.widget_plan_title, tasks.size),
+                text = "\uD83D\uDCCB " + context.getString(R.string.widget_plan_title, activeCount),
                 style = TextStyle(
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
@@ -273,6 +278,26 @@ private fun LinkedTaskRow(task: WidgetTask) {
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Box(
+            modifier = GlanceModifier
+                .cornerRadius(12.dp)
+                .clickable(
+                    actionRunCallback<CompleteTaskWidgetAction>(
+                        actionParametersOf(taskIdParam to task.id),
+                    ),
+                )
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "\u25CB",
+                style = TextStyle(
+                    fontSize = 18.sp,
+                    color = ColorProvider(R.color.widget_white),
+                ),
+            )
+        }
+        Spacer(modifier = GlanceModifier.width(4.dp))
         Text(
             text = "\u25B6",
             style = TextStyle(
@@ -419,7 +444,9 @@ class CompleteTaskWidgetAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val taskId = parameters[taskIdParam] ?: return
         // Dispatch to CompleteTaskWorker so Hilt/Room are available
-        WorkManager.getInstance(context).enqueue(
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            CompleteTaskWorker.uniqueWorkName(taskId),
+            ExistingWorkPolicy.KEEP,
             OneTimeWorkRequestBuilder<CompleteTaskWorker>()
                 .setInputData(workDataOf(CompleteTaskWorker.KEY_TASK_ID to taskId))
                 .build(),

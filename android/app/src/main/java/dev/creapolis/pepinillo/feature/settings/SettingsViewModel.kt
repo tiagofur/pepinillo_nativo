@@ -3,9 +3,7 @@ package dev.creapolis.pepinillo.feature.settings
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
+
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.BuildConfig
@@ -21,7 +19,7 @@ import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.sync.SyncState
 import dev.creapolis.pepinillo.data.sync.SyncStatusManager
 import dev.creapolis.pepinillo.feature.focus.FocusMode
-import dev.creapolis.pepinillo.service.DailyReminderWorker
+import dev.creapolis.pepinillo.service.DailyReminderScheduler
 import dev.creapolis.pepinillo.ui.theme.AppTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
@@ -31,8 +29,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 data class SettingsUiState(
@@ -225,26 +221,11 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun scheduleDailyReminder(hour: Int, minute: Int) {
-        val now = Calendar.getInstance()
-        val target = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hour)
-            set(Calendar.MINUTE, minute)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-            if (before(now)) add(Calendar.DAY_OF_YEAR, 1)
-        }
-        val initialDelay = target.timeInMillis - now.timeInMillis
-
-        val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(24, TimeUnit.HOURS)
-            .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
-            .build()
-
-        WorkManager.getInstance(context)
-            .enqueueUniquePeriodicWork("daily_reminder", ExistingPeriodicWorkPolicy.REPLACE, request)
+        DailyReminderScheduler.schedule(context, hour, minute)
     }
 
     private fun cancelDailyReminder() {
-        WorkManager.getInstance(context).cancelUniqueWork("daily_reminder")
+        DailyReminderScheduler.cancel(context)
     }
 
     fun requestSync() {

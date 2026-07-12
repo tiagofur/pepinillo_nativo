@@ -128,7 +128,13 @@ private val SecondaryPopExitTransition: AnimatedContentTransitionScope<*>.() -> 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        const val EXTRA_NAV_ROUTE = "nav_route"
+        const val ROUTE_PAYWALL = "paywall"
+    }
+
     private var isPipMode by mutableStateOf(false)
+    private var pendingNavRoute by mutableStateOf<String?>(null)
 
     private val focusViewModel: FocusViewModel by viewModels()
 
@@ -172,6 +178,7 @@ class MainActivity : ComponentActivity() {
             ),
         )
         super.onCreate(savedInstanceState)
+        pendingNavRoute = intent?.getStringExtra(EXTRA_NAV_ROUTE)
         var isAppReady by mutableStateOf(false)
 
         // Keep the splash screen on-screen until the app is ready
@@ -217,9 +224,17 @@ class MainActivity : ComponentActivity() {
                         prefsRepository = prefsRepository,
                         isPipMode = isPipMode,
                         syncStatusManager = syncStatusManager,
+                        initialNavRoute = pendingNavRoute,
+                        onNavRouteConsumed = { pendingNavRoute = null },
                     )
                 }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        pendingNavRoute = intent.getStringExtra(EXTRA_NAV_ROUTE)
     }
 
     override fun onPictureInPictureModeChanged(
@@ -254,8 +269,17 @@ fun PepinilloApp(
     prefsRepository: UserPreferencesRepository,
     isPipMode: Boolean = false,
     syncStatusManager: dev.creapolis.pepinillo.data.sync.SyncStatusManager,
+    initialNavRoute: String? = null,
+    onNavRouteConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
+
+    LaunchedEffect(initialNavRoute) {
+        initialNavRoute?.let { route ->
+            navController.navigate(route) { launchSingleTop = true }
+            onNavRouteConsumed()
+        }
+    }
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
