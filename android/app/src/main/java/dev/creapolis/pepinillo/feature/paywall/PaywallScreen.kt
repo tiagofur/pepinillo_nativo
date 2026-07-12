@@ -73,8 +73,7 @@ fun PaywallScreen(
     val uiState by viewModel.uiState.collectAsState()
     val activity = LocalContext.current as? Activity
 
-    if (uiState.isPro) {
-        // Auto-dismiss if user became pro
+    if (uiState.shouldAutoDismiss) {
         onDismiss()
         return
     }

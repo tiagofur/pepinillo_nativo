@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.UpdateProfileRequest
 import dev.creapolis.pepinillo.data.local.entity.UserEntity
@@ -52,6 +53,7 @@ class ProfileViewModel @Inject constructor(
     private val authStore: AuthStore,
     private val apiClient: PepinilloApiClient,
     private val syncWebSocketClient: SyncWebSocketClient,
+    private val subscriptionManager: SubscriptionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -163,6 +165,7 @@ class ProfileViewModel @Inject constructor(
             syncWebSocketClient.disconnect()
             val refreshToken = authStore.getRefreshToken()
             apiClient.logout(refreshToken)
+            subscriptionManager.logOut()
             userRepository.clearCache()
             authStore.clearAll()
         }
@@ -174,6 +177,7 @@ class ProfileViewModel @Inject constructor(
             when (val result = apiClient.deleteAccount()) {
                 is NetworkResult.Success -> {
                     syncWebSocketClient.disconnect()
+                    subscriptionManager.logOut()
                     userRepository.clearCache()
                     authStore.clearAll()
                     _uiState.update { it.copy(isLoading = false, isLoggedIn = false, user = null) }
