@@ -17,6 +17,7 @@ import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
 import dev.creapolis.pepinillo.data.WearSnapshotStore
+import dev.creapolis.pepinillo.data.WearTimerDisplay
 import dev.creapolis.pepinillo.data.WearTimerState
 import dev.creapolis.pepinillo.data.WearThemeColors
 
@@ -25,7 +26,7 @@ class FocusTileService : TileService() {
     companion object {
         private const val RESOURCES_VERSION = "1"
         private const val REFRESH_IDLE_MS = 60_000L
-        private const val REFRESH_ACTIVE_MS = 1_000L
+        private const val REFRESH_ACTIVE_MS = 15_000L
     }
 
     override fun onTileRequest(
@@ -54,34 +55,23 @@ class FocusTileService : TileService() {
         val colors = WearSnapshotStore.readThemeColors(this)
         val isPro = WearSnapshotStore.readIsPro(this)
 
-        // When running, recalculate displayTime and progress from the end epoch
-        val liveState = if (state.status == "Running" && state.phaseEndEpochMs > 0 && state.totalDurationMs > 0) {
-            val now = System.currentTimeMillis()
-            val remainingMs = (state.phaseEndEpochMs - now).coerceAtLeast(0L)
-            val totalSec = (remainingMs + 999) / 1000 // ceiling so we don't show 0:00 prematurely
-            val mins = totalSec / 60
-            val secs = totalSec % 60
-            val liveDisplayTime = "%02d:%02d".format(mins, secs)
-            val elapsedMs = (state.totalDurationMs - remainingMs).coerceAtLeast(0L)
-            val liveProgress = if (state.totalDurationMs > 0) {
-                (elapsedMs.toFloat() / state.totalDurationMs.toFloat()).coerceIn(0f, 1f)
-            } else {
-                state.progress
-            }
-            state.copy(displayTime = liveDisplayTime, progress = liveProgress)
+        val liveState = if (state.status == "Running") {
+            val ticked = WearTimerDisplay.tick(state)
+            state.copy(displayTime = ticked.displayTime, progress = ticked.progress)
         } else {
             state
         }
 
-        val isActive = liveState.status == "Running"
-        val refreshMs = if (isActive) REFRESH_ACTIVE_MS else REFRESH_IDLE_MS
+        val isActiveSession = liveState.status == "Running" || liveState.status == "Paused"
+        val refreshMs = if (isActiveSession) REFRESH_ACTIVE_MS else REFRESH_IDLE_MS
 
-        val root = if (!isPro) {
+        val root = if (!isPro && isProOnlyMode(liveState.mode) && liveState.status != "Idle") {
             buildLockedLayout(modeColor(liveState.mode, colors).toInt())
         } else {
             when (liveState.status) {
                 "Running" -> buildRunningLayout(liveState, colors)
                 "Paused" -> buildPausedLayout(liveState, colors)
+                "WaitingForNext" -> buildWaitingForNextLayout(liveState, colors)
                 else -> buildIdleLayout(liveState, stats, colors)
             }
         }
@@ -105,19 +95,21 @@ class FocusTileService : TileService() {
             .build()
     }
 
+    private fun isProOnlyMode(mode: String): Boolean = mode == "Flow" || mode == "Blocks"
+
     private fun modeColor(mode: String, colors: WearThemeColors): Long = when (mode) {
         "Pomodoro" -> colors.pomodoroColor
-        "Flowtime" -> colors.flowtimeColor
-        "TimeBlock" -> colors.timeBlockColor
-        "Stopwatch" -> colors.stopwatchColor
+        "Flow" -> colors.flowtimeColor
+        "Blocks" -> colors.timeBlockColor
+        "Chrono" -> colors.stopwatchColor
         else -> 0xFFE84D3D
     }
 
     private fun modeEmoji(mode: String): String = when (mode) {
         "Pomodoro" -> "\uD83C\uDF45"
-        "Flowtime" -> "\uD83C\uDF0A"
-        "TimeBlock" -> "\u23F3"
-        "Stopwatch" -> "\u23F1\uFE0F"
+        "Flow" -> "\uD83C\uDF0A"
+        "Blocks" -> "\u23F3"
+        "Chrono" -> "\u23F1\uFE0F"
         else -> "\uD83C\uDF45"
     }
 
@@ -209,7 +201,11 @@ class FocusTileService : TileService() {
         colors: WearThemeColors,
     ): LayoutElementBuilders.LayoutElement {
         val color = modeColor(state.mode, colors)
-        val sessionLabel = "${state.phaseLabel} \u00b7 ${state.completedSessions + 1}/4"
+        val sessionLabel = if (state.mode == "Pomodoro") {
+            "${state.phaseLabel} \u00b7 ${state.completedSessions + 1}/4"
+        } else {
+            state.phaseLabel
+        }
 
         return LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())
@@ -256,6 +252,48 @@ class FocusTileService : TileService() {
                     .addContent(text(state.displayTime, 28f, bold = true))
                     .addContent(spacer(4f))
                     .addContent(text("\u23F8 " + getString(dev.creapolis.pepinillo.R.string.tile_paused), 14f, color = 0xFFAAAAAA.toInt()))
+                    .build(),
+            )
+            .build()
+    }
+
+    private fun buildWaitingForNextLayout(
+        state: WearTimerState,
+        colors: WearThemeColors,
+    ): LayoutElementBuilders.LayoutElement {
+        val color = modeColor(state.mode, colors)
+        val isBreakNext = state.phase == "ShortBreak" || state.phase == "LongBreak"
+        val title = if (isBreakNext) {
+            getString(dev.creapolis.pepinillo.R.string.focus_complete)
+        } else {
+            getString(dev.creapolis.pepinillo.R.string.break_finished)
+        }
+        val actionLabel = if (isBreakNext) {
+            getString(dev.creapolis.pepinillo.R.string.start_break)
+        } else {
+            getString(dev.creapolis.pepinillo.R.string.start_focus)
+        }
+
+        return LayoutElementBuilders.Box.Builder()
+            .setWidth(DimensionBuilders.expand())
+            .setHeight(DimensionBuilders.expand())
+            .setVerticalAlignment(VERTICAL_ALIGN_CENTER)
+            .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+            .setModifiers(clickableModifiers())
+            .addContent(progressArc(1f, (color and 0x00FFFFFFL) or 0x66000000L))
+            .addContent(
+                LayoutElementBuilders.Column.Builder()
+                    .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)
+                    .addContent(text(title, 16f, bold = true))
+                    .addContent(spacer(6f))
+                    .addContent(text(actionLabel, 14f, color = color.toInt()))
+                    .apply {
+                        val taskName = state.linkedTaskName
+                        if (!taskName.isNullOrEmpty()) {
+                            addContent(spacer(4f))
+                            addContent(text(taskName.take(20), 13f, color = 0xFF888888.toInt()))
+                        }
+                    }
                     .build(),
             )
             .build()

@@ -11,6 +11,15 @@ import org.junit.Before
 import org.junit.Test
 
 /**
+ * S7 wear ViewModel contract tests (optimistic timer/task updates).
+ *
+ * Related S7 coverage elsewhere:
+ * - [dev.creapolis.pepinillo.data.WearPendingCommandQueueTest] — queue coalesce (#391)
+ * - [dev.creapolis.pepinillo.data.WearSyncStatusFormatterTest] — sync labels (#393)
+ * - [dev.creapolis.pepinillo.service.WearSyncProcessorTest] — sync sink pipeline (#389)
+ * - [dev.creapolis.pepinillo.data.WearTimerDisplayTest] — local tick (#389)
+ * - [dev.creapolis.pepinillo.core.billing.FeatureGateTest] — PhoneWearListener pro gate (#390)
+ *
  * Tests verifying the optimistic-update patterns used by WearViewModel.
  *
  * WearViewModel delegates all optimistic state mutations to [WearDataStore],

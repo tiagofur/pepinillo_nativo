@@ -8,6 +8,20 @@
     <string name="connecting_to_phone">Conectando con el tel\u00e9fono</string>
     <string name="queued">%d en cola</string>
     <string name="start">Iniciar</string>
+    <string name="voice_start">Inicio por voz</string>
+    <string name="voice_start_prompt">Di un modo de enfoque</string>
+    <string name="cd_stop">Detener</string>
+    <string name="cd_pause">Pausar</string>
+    <string name="cd_resume">Reanudar</string>
+    <string name="cd_skip">Saltar</string>
+    <string name="cd_locked">Bloqueado</string>
+    <string name="cd_voice_start">Inicio por voz</string>
+
+    <!-- Sync status -->
+    <string name="sync_waiting_first">Esperando primera sync</string>
+    <string name="sync_disconnected_last">Sin conexi\u00f3n \u00b7 \u00faltima %1$s</string>
+    <string name="sync_stale">Sync atrasada \u00b7 %1$s</string>
+    <string name="sync_ok">Sync %1$s</string>
 
     <!-- TasksScreen -->
     <string name="tasks_count">Tareas (%d)</string>
@@ -27,7 +41,7 @@
     <string name="completed_tasks">Tareas completadas</string>
 
     <!-- Tiles -->
-    <string name="tile_tasks_title">Tareas (%1$d/%2$d listas)</string>
+    <string name="tile_tasks_title">Tareas (%d)</string>
     <string name="tile_no_tasks">Sin tareas</string>
     <string name="tile_locked_tasks">Desbloquea el Tile de Tareas</string>
     <string name="tile_locked_focus">Desbloquea el Tile de Enfoque</string>

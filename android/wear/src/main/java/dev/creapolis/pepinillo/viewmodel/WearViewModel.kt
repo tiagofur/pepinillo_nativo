@@ -9,7 +9,6 @@ import dev.creapolis.pepinillo.data.WearMessageSender
 import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.data.WearTimerDisplay
 import dev.creapolis.pepinillo.data.WearTimerState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -33,21 +32,11 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
             }
     }
 
-    init {
-        viewModelScope.launch {
-            while (true) {
-                refreshNodeDiagnostics()
-                delay(5_000)
-            }
-        }
-    }
-
     private fun defaultPhaseDurationMs(mode: String, phase: String): Long {
-        // Pomodoro defaults: 25/5/15 minutes. Other modes default to 25 minutes too — this
-        // is only a placeholder so the ring moves until the phone's authoritative push.
-        val minutes = when (phase) {
-            "ShortBreak" -> 5L
-            "LongBreak" -> 15L
+        val minutes = when {
+            phase == "ShortBreak" -> 5L
+            phase == "LongBreak" -> 15L
+            mode == "Blocks" && phase == "Work" -> 60L
             else -> 25L
         }
         return minutes * 60L * 1000L
@@ -63,6 +52,12 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
     private fun applyTasksOptimistically(newTasks: List<dev.creapolis.pepinillo.data.WearTask>) {
         WearDataStore.updateTasks(newTasks)
         WearSnapshotStore.persistTasks(getApplication(), newTasks)
+    }
+
+    fun refreshDiagnosticsOnResume() {
+        viewModelScope.launch {
+            refreshNodeDiagnostics()
+        }
     }
 
     fun startTimer(mode: String) {

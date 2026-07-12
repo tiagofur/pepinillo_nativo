@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.ambient.AmbientLifecycleObserver
@@ -57,6 +58,11 @@ class MainActivity : ComponentActivity() {
         override fun onUpdateAmbient() {}
     }
     private lateinit var ambientObserver: AmbientLifecycleObserver
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshDiagnosticsOnResume()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,7 +118,9 @@ private fun WearApp(viewModel: WearViewModel, isAmbient: Boolean = false) {
     val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
 
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { TOTAL_PAGES })
+    val resources = LocalContext.current.resources
     val syncStatus = WearSyncStatusFormatter.format(
+        resources = resources,
         lastSyncAtMillis = lastSyncAtMillis,
         isConnected = timerState.isConnected,
     )

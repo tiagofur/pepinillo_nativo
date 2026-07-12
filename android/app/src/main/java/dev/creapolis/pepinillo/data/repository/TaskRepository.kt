@@ -125,6 +125,26 @@ class TaskRepository @Inject constructor(
         }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }
             .onSuccess { refreshWearData() }
 
+    /**
+     * Idempotent complete from the Wear app — never un-completes a task.
+     * Recurring tasks advance to the next occurrence like [toggleCompletion] when completing.
+     */
+    suspend fun completeTaskFromWear(taskId: String): Result<Unit> =
+        runCatching {
+            val entity = taskDao.getTaskById(taskId) ?: error("Task $taskId not found")
+            if (entity.isCompleted) {
+                Log.d(TAG, "Task $taskId already completed — wear complete is a no-op")
+                return@runCatching
+            }
+            val hasRecurrence = !entity.recurrenceRule.isNullOrBlank()
+            if (hasRecurrence && featureGate.canUseRecurrence()) {
+                advanceRecurringTask(entity)
+            } else {
+                taskDao.completeIfIncompleteAtomic(taskId)
+            }
+        }.onFailure { Log.e(TAG, "Error completing task $taskId from wear", it) }
+            .onSuccess { refreshWearData() }
+
     suspend fun deleteTask(taskId: String): Result<Unit> =
         runCatching { taskDao.softDelete(taskId) }
             .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }

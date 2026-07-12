@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/** S7 (#389): verifies timer/tasks sync updates persistence and surface refresh hooks. */
 class WearSyncProcessorTest {
 
     @Test

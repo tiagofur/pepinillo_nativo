@@ -88,6 +88,7 @@ object WearDataFetcher {
                             val isPro = map.getBoolean("isPro", false)
                             Log.d(TAG, "User DataItem found, isPro=$isPro")
                             WearDataStore.updateIsPro(isPro)
+                            WearSnapshotStore.persistIsPro(context, isPro)
                         }
 
                         "/pepinillo/theme" -> {
@@ -101,6 +102,7 @@ object WearDataFetcher {
                                 streakColor = map.getLong("streakColor"),
                             )
                             WearDataStore.updateThemeColors(colors)
+                            WearSnapshotStore.persistThemeColors(context, colors)
                         }
                     }
                 }

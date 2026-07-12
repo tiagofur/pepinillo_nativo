@@ -6,6 +6,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * S7 (#391): pending timer commands coalesce per path; non-timer commands are preserved.
+ */
 class WearPendingCommandQueueTest {
 
     @Test
@@ -23,6 +26,34 @@ class WearPendingCommandQueueTest {
         assertEquals(40, commands.size)
         assertEquals("/cmd/5", commands.first().path)
         assertEquals("/cmd/44", commands.last().path)
+    }
+
+    @Test
+    fun `enqueue coalesces timer commands keeping latest per path`() {
+        val start1 = PendingCommand("/pepinillo/cmd/timer/start", "Pomodoro".toByteArray())
+        val start2 = PendingCommand("/pepinillo/cmd/timer/start", "Flow".toByteArray())
+        val pause1 = PendingCommand("/pepinillo/cmd/timer/pause", byteArrayOf())
+        val pause2 = PendingCommand("/pepinillo/cmd/timer/pause", byteArrayOf(1))
+        val task = PendingCommand("/pepinillo/cmd/task/complete", "task-1".toByteArray())
+
+        var commands = listOf(start1, pause1, task)
+        commands = WearPendingCommandQueue.enqueue(
+            existing = commands,
+            path = start2.path,
+            data = start2.data,
+        )
+        commands = WearPendingCommandQueue.enqueue(
+            existing = commands,
+            path = pause2.path,
+            data = pause2.data,
+        )
+
+        assertEquals(3, commands.size)
+        assertEquals("/pepinillo/cmd/task/complete", commands[0].path)
+        assertEquals("/pepinillo/cmd/timer/start", commands[1].path)
+        assertArrayEquals("Flow".toByteArray(), commands[1].data)
+        assertEquals("/pepinillo/cmd/timer/pause", commands[2].path)
+        assertArrayEquals(byteArrayOf(1), commands[2].data)
     }
 
     @Test

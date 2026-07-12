@@ -27,15 +27,21 @@ import dev.creapolis.pepinillo.tile.FocusTileService
 import dev.creapolis.pepinillo.tile.TasksTileService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Date
 
 private const val TAG = "WearSyncListener"
+private const val REFRESH_DEBOUNCE_MS = 2_000L
 
 class WearSyncListenerService : WearableListenerService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var refreshJob: Job? = null
+    private var focusServiceActive = false
+
     private val processor = WearSyncProcessor(
         object : WearSyncSink {
             override fun updateTimer(state: WearTimerState) {
@@ -68,7 +74,7 @@ class WearSyncListenerService : WearableListenerService() {
             }
 
             override fun refreshWearSurfaces() {
-                this@WearSyncListenerService.refreshWearSurfaces()
+                this@WearSyncListenerService.scheduleRefreshWearSurfaces()
             }
 
             override fun recordSyncEvent() {
@@ -77,7 +83,15 @@ class WearSyncListenerService : WearableListenerService() {
         },
     )
 
-    private fun refreshWearSurfaces() {
+    private fun scheduleRefreshWearSurfaces() {
+        refreshJob?.cancel()
+        refreshJob = scope.launch {
+            delay(REFRESH_DEBOUNCE_MS)
+            refreshWearSurfacesNow()
+        }
+    }
+
+    private fun refreshWearSurfacesNow() {
         try {
             TileService.getUpdater(this).requestUpdate(FocusTileService::class.java)
             TileService.getUpdater(this).requestUpdate(TasksTileService::class.java)
@@ -96,6 +110,20 @@ class WearSyncListenerService : WearableListenerService() {
         val now = Date().time
         WearDataStore.updateLastSyncAtMillis(now)
         WearSnapshotStore.persistLastSyncAtMillis(this, now)
+    }
+
+    private fun ensureFocusServiceStarted() {
+        if (!focusServiceActive) {
+            focusServiceActive = true
+            WearFocusService.start(this@WearSyncListenerService)
+        }
+    }
+
+    private fun stopFocusServiceIfNeeded(status: String) {
+        if (status == "Idle") {
+            focusServiceActive = false
+            WearFocusService.stop(this@WearSyncListenerService)
+        }
     }
 
     override fun onMessageReceived(messageEvent: MessageEvent) {
@@ -173,11 +201,10 @@ class WearSyncListenerService : WearableListenerService() {
                         totalDurationMs = totalMillis,
                     )
                     processor.onTimerData(timerState)
-                    
-                    if (status == "Running" || status == "Paused") {
-                        WearFocusService.start(this@WearSyncListenerService)
-                    } else {
-                        WearFocusService.stop(this@WearSyncListenerService)
+
+                    when (status) {
+                        "Running", "Paused", "WaitingForNext" -> ensureFocusServiceStarted()
+                        "Idle" -> stopFocusServiceIfNeeded(status)
                     }
                 }
 
@@ -255,6 +282,7 @@ class WearSyncListenerService : WearableListenerService() {
     }
 
     override fun onDestroy() {
+        refreshJob?.cancel()
         scope.cancel()
         super.onDestroy()
     }

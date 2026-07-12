@@ -53,7 +53,7 @@ class TasksTileService : TileService() {
         val stats = WearSnapshotStore.readStats(this)
         val isPro = WearSnapshotStore.readIsPro(this)
         val root = if (isPro) {
-            buildLayout(tasks, stats.completedTasks, tasks.size)
+            buildLayout(tasks, tasks.size)
         } else {
             buildLockedLayout()
         }
@@ -114,10 +114,9 @@ class TasksTileService : TileService() {
 
     private fun buildLayout(
         tasks: List<WearTask>,
-        completedCount: Int,
-        totalCount: Int,
+        activeCount: Int,
     ): LayoutElementBuilders.LayoutElement {
-        val titleText = getString(dev.creapolis.pepinillo.R.string.tile_tasks_title, completedCount, totalCount)
+        val titleText = getString(dev.creapolis.pepinillo.R.string.tile_tasks_title, activeCount)
 
         val column = LayoutElementBuilders.Column.Builder()
             .setHorizontalAlignment(HORIZONTAL_ALIGN_CENTER)

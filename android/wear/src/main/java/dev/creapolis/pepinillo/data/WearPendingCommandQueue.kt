@@ -9,9 +9,18 @@ internal data class PendingCommand(
 
 internal object WearPendingCommandQueue {
     const val MAX_PENDING_COMMANDS = 40
+    private const val TIMER_CMD_PREFIX = "/pepinillo/cmd/timer/"
 
-    fun enqueue(existing: List<PendingCommand>, path: String, data: ByteArray): List<PendingCommand> =
-        (existing + PendingCommand(path = path, data = data)).takeLast(MAX_PENDING_COMMANDS)
+    fun enqueue(existing: List<PendingCommand>, path: String, data: ByteArray): List<PendingCommand> {
+        val newCommand = PendingCommand(path = path, data = data)
+        val merged = if (path.startsWith(TIMER_CMD_PREFIX)) {
+            // Keep only the latest command per timer path (start/pause/resume/stop/skip).
+            existing.filterNot { it.path == path } + newCommand
+        } else {
+            existing + newCommand
+        }
+        return merged.takeLast(MAX_PENDING_COMMANDS)
+    }
 
     suspend fun flush(
         existing: List<PendingCommand>,

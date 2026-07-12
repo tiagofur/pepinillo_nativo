@@ -173,6 +173,57 @@ class TaskRepositoryTest {
         coVerify(exactly = 0) { taskDao.insertTask(any()) }
     }
 
+    // ── completeTaskFromWear: idempotent complete-only from watch ─────────
+
+    @Test
+    fun `completeTaskFromWear delegates to atomic complete for plain tasks`() = runTest {
+        coEvery { taskDao.getTaskById("task-1") } returns TaskEntity(id = "task-1", title = "Plain")
+
+        repo.completeTaskFromWear("task-1")
+
+        coVerify(exactly = 1) { taskDao.completeIfIncompleteAtomic("task-1", any()) }
+        coVerify(exactly = 0) { taskDao.toggleCompletionAtomic(any(), any()) }
+    }
+
+    @Test
+    fun `completeTaskFromWear is a no-op when task is already completed`() = runTest {
+        coEvery { taskDao.getTaskById("task-done") } returns TaskEntity(
+            id = "task-done",
+            title = "Done",
+            isCompleted = true,
+            completedAt = 1_700_000_000_000L,
+        )
+
+        repo.completeTaskFromWear("task-done")
+
+        coVerify(exactly = 0) { taskDao.completeIfIncompleteAtomic(any(), any()) }
+        coVerify(exactly = 0) { taskDao.toggleCompletionAtomic(any(), any()) }
+        coVerify(exactly = 0) { taskDao.updateTask(any()) }
+    }
+
+    @Test
+    fun `completeTaskFromWear advances recurring task instead of leaving it completed`() = runTest {
+        val today = dev.creapolis.pepinillo.domain.tasks.RecurrenceCalculator.startOfLocalDay()
+        val existing = TaskEntity(
+            id = "task-recur",
+            title = "Daily",
+            recurrenceRule = RecurrenceOption.Daily.rrule,
+            dueDate = today.timeInMillis,
+            isCompleted = false,
+        )
+        val entitySlot = slot<TaskEntity>()
+
+        coEvery { taskDao.getTaskById("task-recur") } returns existing
+        coEvery { taskDao.updateTask(capture(entitySlot)) } returns Unit
+
+        repo.completeTaskFromWear("task-recur")
+
+        coVerify(exactly = 0) { taskDao.completeIfIncompleteAtomic(any(), any()) }
+        assertEquals(false, entitySlot.captured.isCompleted)
+        assertEquals(null, entitySlot.captured.completedAt)
+        assertTrue(entitySlot.captured.nextOccurrence != null)
+    }
+
     @Test
     fun `toggleCompletion propagates DAO failure as Result failure`() = runTest {
         coEvery { taskDao.toggleCompletionAtomic(any(), any()) } throws RuntimeException("db locked")

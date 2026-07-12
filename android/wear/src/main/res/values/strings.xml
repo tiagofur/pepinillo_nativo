@@ -10,6 +10,20 @@
     <string name="connecting_to_phone">Connecting to phone</string>
     <string name="queued">%d queued</string>
     <string name="start">Start</string>
+    <string name="voice_start">Voice start</string>
+    <string name="voice_start_prompt">Say a focus mode</string>
+    <string name="cd_stop">Stop</string>
+    <string name="cd_pause">Pause</string>
+    <string name="cd_resume">Resume</string>
+    <string name="cd_skip">Skip</string>
+    <string name="cd_locked">Locked</string>
+    <string name="cd_voice_start">Voice start</string>
+
+    <!-- Sync status -->
+    <string name="sync_waiting_first">Waiting for first sync</string>
+    <string name="sync_disconnected_last">No connection · last %1$s</string>
+    <string name="sync_stale">Sync delayed · %1$s</string>
+    <string name="sync_ok">Synced %1$s</string>
 
     <!-- Modes -->
     <string name="mode_pomodoro">Pomodoro</string>
@@ -35,7 +49,7 @@
     <string name="completed_tasks">Completed tasks</string>
 
     <!-- Tiles -->
-    <string name="tile_tasks_title">Tasks (%1$d/%2$d done)</string>
+    <string name="tile_tasks_title">Tasks (%d)</string>
     <string name="tile_no_tasks">No tasks</string>
     <string name="tile_locked_tasks">Unlock Tasks tile</string>
     <string name="tile_locked_focus">Unlock Focus tile</string>

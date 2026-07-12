@@ -9,6 +9,7 @@ import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.WearableListenerService
 import dagger.hilt.android.AndroidEntryPoint
 import dev.creapolis.pepinillo.core.billing.FeatureGate
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
@@ -39,6 +40,7 @@ class PhoneWearListenerService : WearableListenerService() {
     @Inject lateinit var sessionRepository: SessionRepository
     @Inject lateinit var prefsRepo: UserPreferencesRepository
     @Inject lateinit var featureGate: FeatureGate
+    @Inject lateinit var subscriptionManager: SubscriptionManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -57,8 +59,9 @@ class PhoneWearListenerService : WearableListenerService() {
         // Push tasks + stats directly (bypass WorkManager)
         pushTasksAndStatsDirectly()
 
-        // Push current theme to watch
+        // Push current theme and pro status to watch
         pushThemeDirectly()
+        pushUserStatusDirectly()
 
         // Also trigger widget refresh
         WorkManager.getInstance(this).enqueue(
@@ -119,7 +122,7 @@ class PhoneWearListenerService : WearableListenerService() {
                     Log.d(TAG, "Completing task $taskId from watch")
                     scope.launch {
                         runCatching {
-                            taskRepository.toggleCompletion(taskId)
+                            taskRepository.completeTaskFromWear(taskId)
                             Log.d(TAG, "Task $taskId completed — pushing updated tasks")
                             pushTasksAndStatsDirectly()
                         }.onFailure { e ->
@@ -160,6 +163,8 @@ class PhoneWearListenerService : WearableListenerService() {
             WearDataLayerHelper.CMD_REQUEST_SYNC -> {
                 Log.d(TAG, "Watch requested sync — pushing directly")
                 pushTasksAndStatsDirectly()
+                pushThemeDirectly()
+                pushUserStatusDirectly()
             }
 
             else -> {
@@ -213,6 +218,18 @@ class PhoneWearListenerService : WearableListenerService() {
                 Log.d(TAG, "Theme pushed: $themeId")
             }.onFailure { e ->
                 Log.e(TAG, "Failed to push theme", e)
+            }
+        }
+    }
+
+    private fun pushUserStatusDirectly() {
+        scope.launch {
+            runCatching {
+                val isPro = subscriptionManager.subscriptionState.value.hasLocalPremium
+                WearDataLayerHelper.pushUserStatus(this@PhoneWearListenerService, isPro)
+                Log.d(TAG, "User status pushed: isPro=$isPro")
+            }.onFailure { e ->
+                Log.e(TAG, "Failed to push user status", e)
             }
         }
     }

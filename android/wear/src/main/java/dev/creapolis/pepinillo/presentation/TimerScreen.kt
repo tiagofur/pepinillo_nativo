@@ -329,7 +329,7 @@ private fun TimerActiveLayout(
                     } else {
                         Icon(
                             imageVector = Icons.Filled.Stop,
-                            contentDescription = "Stop",
+                            contentDescription = stringResource(R.string.cd_stop),
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -346,7 +346,9 @@ private fun TimerActiveLayout(
                 ) {
                     Icon(
                         imageVector = if (state.status == "Running") Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (state.status == "Running") "Pause" else "Resume",
+                        contentDescription = stringResource(
+                            if (state.status == "Running") R.string.cd_pause else R.string.cd_resume,
+                        ),
                         modifier = Modifier.size(24.dp),
                     )
                 }
@@ -363,7 +365,7 @@ private fun TimerActiveLayout(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.SkipNext,
-                            contentDescription = "Skip",
+                            contentDescription = stringResource(R.string.cd_skip),
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -701,6 +703,7 @@ private fun formatMinutes(totalMinutes: Int): String {
  */
 @Composable
 private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val voiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
@@ -724,7 +727,7 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
         onClick = {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a focus mode")
+                putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.voice_start_prompt))
             }
             voiceLauncher.launch(intent)
         },
@@ -739,12 +742,12 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Mic,
-            contentDescription = "Voice start",
+            contentDescription = stringResource(R.string.cd_voice_start),
             modifier = Modifier.size(16.dp),
         )
         Spacer(modifier = Modifier.size(4.dp))
         Text(
-            text = "Voice start",
+            text = stringResource(R.string.voice_start),
             style = MaterialTheme.typography.caption2,
             color = MaterialTheme.colors.primary,
         )
@@ -775,7 +778,7 @@ private fun ModeButton(
             if (isLocked) {
                 Icon(
                     imageVector = Icons.Default.Lock,
-                    contentDescription = "Locked",
+                    contentDescription = stringResource(R.string.cd_locked),
                     modifier = Modifier.size(12.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
