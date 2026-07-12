@@ -134,19 +134,30 @@ class WearSyncListenerService : WearableListenerService() {
             when (path) {
                 WearDataPaths.PATH_TIMER -> {
                     val linkedId = dataMap.getString("linkedTaskId", "")
+                    val mode = dataMap.getString("mode", "Pomodoro")
                     val status = dataMap.getString("status", "Idle")
                     val elapsedMillis = dataMap.getLong("elapsedMillis")
                     val totalMillis = dataMap.getLong("totalMillis")
                     val timestamp = dataMap.getLong("timestamp")
-                    // Compute the epoch time when the phase ends so the watch can
-                    // independently count down without waiting for the next sync.
+                    val isCountUp = mode == "Flow" || mode == "Chrono"
+                    // Epoch anchors so the watch can tick locally between phone syncs.
+                    val phaseStartEpochMs = if (status == "Running") {
+                        timestamp - elapsedMillis
+                    } else {
+                        0L
+                    }
                     val phaseEndEpochMs = if (status == "Running" && totalMillis > 0) {
                         timestamp + (totalMillis - elapsedMillis)
                     } else {
                         0L
                     }
+                    val remainingDurationMs = if (status == "Paused") {
+                        if (isCountUp) elapsedMillis else (totalMillis - elapsedMillis).coerceAtLeast(0L)
+                    } else {
+                        0L
+                    }
                     val timerState = WearTimerState(
-                        mode = dataMap.getString("mode", "Pomodoro"),
+                        mode = mode,
                         phase = dataMap.getString("phase", "Work"),
                         status = status,
                         displayTime = dataMap.getString("displayTime", "00:00"),
@@ -157,6 +168,8 @@ class WearSyncListenerService : WearableListenerService() {
                         linkedTaskName = dataMap.getString("linkedTaskName", "").ifEmpty { null },
                         completedSessions = dataMap.getInt("completedSessions", 0),
                         phaseEndEpochMs = phaseEndEpochMs,
+                        phaseStartEpochMs = phaseStartEpochMs,
+                        remainingDurationMs = remainingDurationMs,
                         totalDurationMs = totalMillis,
                     )
                     processor.onTimerData(timerState)
@@ -217,7 +230,6 @@ class WearSyncListenerService : WearableListenerService() {
     override fun onPeerDisconnected(peer: com.google.android.gms.wearable.Node) {
         super.onPeerDisconnected(peer)
         processor.onPeerDisconnected(WearDataStore.timerState.value)
-        WearFocusService.stop(this)
     }
 
     override fun onCapabilityChanged(capabilityInfo: CapabilityInfo) {

@@ -13,6 +13,8 @@ import androidx.wear.ongoing.OngoingActivity
 import androidx.wear.ongoing.Status
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.WearDataStore
+import dev.creapolis.pepinillo.data.WearSnapshotStore
+import dev.creapolis.pepinillo.data.WearTimerDisplay
 import dev.creapolis.pepinillo.data.WearTimerState
 import dev.creapolis.pepinillo.presentation.MainActivity
 import kotlinx.coroutines.CoroutineScope
@@ -28,10 +30,12 @@ class WearFocusService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        WearSnapshotStore.bootstrap(applicationContext)
         createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        WearSnapshotStore.bootstrap(applicationContext)
         if (!isStarted) {
             isStarted = true
             startForegroundWithNotification()
@@ -63,7 +67,7 @@ class WearFocusService : Service() {
     private fun observeTimerState() {
         WearDataStore.timerState
             .onEach { timerState ->
-                if (timerState.status != "Running" && timerState.status != "Paused") {
+                if (timerState.status == "Idle") {
                     stopSelf()
                 } else {
                     val notification = buildNotification(timerState)
@@ -80,10 +84,12 @@ class WearFocusService : Service() {
             "ShortBreak", "LongBreak" -> getString(R.string.phase_break)
             else -> state.phaseLabel
         }
+        val ticked = WearTimerDisplay.tick(state)
+        val displayTime = ticked.displayTime
         val text = if (state.linkedTaskName != null) {
-            "${state.linkedTaskName} • ${state.displayTime}"
+            "${state.linkedTaskName} • $displayTime"
         } else {
-            state.displayTime
+            displayTime
         }
 
         val intent = Intent(this, MainActivity::class.java).apply {
@@ -107,7 +113,10 @@ class WearFocusService : Service() {
 
         // Build OngoingActivity Status
         val statusBuilder = Status.Builder()
-        if (state.status == "Running" && state.phaseEndEpochMs > 0L) {
+        if (state.status == "Running" && WearTimerDisplay.isCountUpMode(state.mode) && state.phaseStartEpochMs > 0L) {
+            statusBuilder.addTemplate("#time# • $title")
+            statusBuilder.addPart("time", Status.StopwatchPart(state.phaseStartEpochMs))
+        } else if (state.status == "Running" && state.phaseEndEpochMs > 0L) {
             val now = System.currentTimeMillis()
             val remainingMs = state.phaseEndEpochMs - now
             if (remainingMs > 0) {

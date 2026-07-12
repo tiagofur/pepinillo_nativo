@@ -22,6 +22,11 @@
         android:supportsRtl="true"
         android:localeConfig="@xml/locales_config"
         android:theme="@style/Theme.Pepinillo">
+
+        <meta-data
+            android:name="com.google.android.gms.wearable.capability"
+            android:resource="@xml/wear" />
+
         <!-- Remove default WorkManager initializer (app uses on-demand init) -->
         <provider
             android:name="androidx.startup.InitializationProvider"

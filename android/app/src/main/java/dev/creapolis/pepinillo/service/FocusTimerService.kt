@@ -295,6 +295,7 @@ class FocusTimerService : Service() {
         serviceScope.launch {
             var lastWidgetUpdate = 0L
             var previousStatus: TimerStatus? = null
+            var previousPhase: FocusPhase? = null
             var previousMode: dev.creapolis.pepinillo.feature.focus.FocusMode? = null
             var previousThemeId: String? = null
             // Recovery-write throttle: persist only on status/phase change or once per second.
@@ -341,10 +342,27 @@ class FocusTimerService : Service() {
                     val statusChanged = state.status != previousStatus
                     val modeChanged = state.mode != previousMode
                     val themeChanged = themeId != previousThemeId
+
+                    val phaseCompletedForWaiting = previousStatus == TimerStatus.Running &&
+                        state.status == TimerStatus.WaitingForNext &&
+                        previousPhase != null
+                    val phaseChangedWhileRunning = previousStatus == TimerStatus.Running &&
+                        state.status == TimerStatus.Running &&
+                        previousPhase != null &&
+                        state.phase != previousPhase
+                    if (phaseCompletedForWaiting || phaseChangedWhileRunning) {
+                        WearDataLayerHelper.pushPhaseComplete(
+                            context = this@FocusTimerService,
+                            mode = state.mode.name,
+                            completedPhase = previousPhase!!.name,
+                            scope = serviceScope,
+                        )
+                    }
                     
                     val shouldUpdateWidget = statusChanged || modeChanged || themeChanged || (now - lastWidgetUpdate >= 30000)
                     
                     previousStatus = state.status
+                    previousPhase = state.phase
                     previousMode = state.mode
                     previousThemeId = themeId
                     

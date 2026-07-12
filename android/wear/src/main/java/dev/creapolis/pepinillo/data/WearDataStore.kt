@@ -143,8 +143,12 @@ data class WearTimerState(
     val linkedTaskId: String? = null,
     val linkedTaskName: String? = null,
     val completedSessions: Int = 0,
-    /** Epoch millis when the current phase ends (only meaningful when status == Running). */
+    /** Epoch millis when the current phase ends (countdown modes, status == Running). */
     val phaseEndEpochMs: Long = 0L,
+    /** Epoch millis when the current phase started (count-up modes, status == Running). */
+    val phaseStartEpochMs: Long = 0L,
+    /** Remaining countdown ms or elapsed ms at pause — used to resume without resetting. */
+    val remainingDurationMs: Long = 0L,
     /** Total duration of the current phase in milliseconds. */
     val totalDurationMs: Long = 0L,
 )

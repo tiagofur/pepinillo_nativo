@@ -59,6 +59,7 @@ import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import dev.creapolis.pepinillo.data.WearStatsState
+import dev.creapolis.pepinillo.data.WearTimerDisplay
 import dev.creapolis.pepinillo.data.WearTimerState
 
 @Composable
@@ -83,12 +84,29 @@ fun TimerScreen(
         // Ambient: render minimal — dimmed time text on black, no colors/icons/chrome.
         // Minimizes lit pixels and burn-in risk during always-on.
         isAmbient && (state.status == "Running" || state.status == "Paused") -> {
+            var ambientDisplayTime by remember { mutableStateOf(state.displayTime) }
+            LaunchedEffect(
+                state.status,
+                state.phaseEndEpochMs,
+                state.phaseStartEpochMs,
+                state.totalDurationMs,
+                state.mode,
+            ) {
+                if (state.status == "Running") {
+                    while (true) {
+                        ambientDisplayTime = WearTimerDisplay.tick(state).displayTime
+                        delay(100)
+                    }
+                } else {
+                    ambientDisplayTime = state.displayTime
+                }
+            }
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = state.displayTime,
+                    text = ambientDisplayTime,
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Light,
                     color = Color.White.copy(alpha = 0.4f),
@@ -178,18 +196,22 @@ private fun TimerActiveLayout(
     // Keys: only restart the countdown loop when the phase/status fundamentally changes.
     // Avoid displayTime/progress as keys — they update every 30s from the phone push
     // and would restart the local tick loop unnecessarily.
-    LaunchedEffect(state.status, state.phaseEndEpochMs, state.totalDurationMs) {
-        if (state.status == "Running" && state.phaseEndEpochMs > 0 && state.totalDurationMs > 0) {
+    LaunchedEffect(
+        state.status,
+        state.phaseEndEpochMs,
+        state.phaseStartEpochMs,
+        state.totalDurationMs,
+        state.mode,
+    ) {
+        val canTick = state.status == "Running" && (
+            (state.phaseEndEpochMs > 0 && state.totalDurationMs > 0) ||
+                (WearTimerDisplay.isCountUpMode(state.mode) && state.phaseStartEpochMs > 0)
+            )
+        if (canTick) {
             while (true) {
-                val now = System.currentTimeMillis()
-                val rem = (state.phaseEndEpochMs - now).coerceAtLeast(0L)
-                localProgress = (1f - (rem.toFloat() / state.totalDurationMs)).coerceIn(0f, 1f)
-                
-                val totalSeconds = (rem + 999) / 1000
-                val minutes = totalSeconds / 60
-                val seconds = totalSeconds % 60
-                localDisplayTime = String.format(java.util.Locale.US, "%02d:%02d", minutes, seconds)
-                
+                val ticked = WearTimerDisplay.tick(state)
+                localProgress = ticked.progress
+                localDisplayTime = ticked.displayTime
                 delay(100)
             }
         } else {
@@ -615,7 +637,7 @@ private fun IdleLayout(
             Spacer(modifier = Modifier.height(6.dp))
 
             // Voice input — the most native watch affordance for "start focus".
-            VoiceStartChip(onStartMode = onStartMode)
+            VoiceStartChip(isPro = isPro, onStartMode = onStartMode)
 
             Spacer(modifier = Modifier.height(6.dp))
 
@@ -678,7 +700,7 @@ private fun formatMinutes(totalMinutes: Int): String {
  * The most native watch affordance for hands-free timer start.
  */
 @Composable
-private fun VoiceStartChip(onStartMode: (String) -> Unit) {
+private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
     val voiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
@@ -689,8 +711,8 @@ private fun VoiceStartChip(onStartMode: (String) -> Unit) {
                 ?.lowercase()
             val mode = when {
                 spoken == null -> null
-                spoken.contains("flow") -> "Flow"
-                spoken.contains("block") -> "Blocks"
+                spoken.contains("flow") -> if (isPro) "Flow" else null
+                spoken.contains("block") -> if (isPro) "Blocks" else null
                 spoken.contains("chrono") || spoken.contains("stopwatch") -> "Chrono"
                 else -> "Pomodoro"
             }

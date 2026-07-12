@@ -352,14 +352,16 @@ class WearViewModelTest {
     }
 
     @Test
-    fun `resumeTimer optimistic update recomputes phaseEndEpochMs from preserved totalDurationMs`() {
-        // Pretend we already had a 20-minute phase total. Pause zeroed phaseEnd.
+    fun `resumeTimer optimistic update recomputes phaseEndEpochMs from preserved remainingDurationMs`() {
+        val remainingMs = 15L * 60L * 1000L
         WearDataStore.updateTimer(
             WearTimerState(
                 mode = "Pomodoro",
                 status = "Paused",
                 phase = "Work",
-                totalDurationMs = 20L * 60L * 1000L,
+                displayTime = "15:00",
+                totalDurationMs = 25L * 60L * 1000L,
+                remainingDurationMs = remainingMs,
                 phaseEndEpochMs = 0L,
             ),
         )
@@ -367,20 +369,20 @@ class WearViewModelTest {
         val before = System.currentTimeMillis()
         // Replay WearViewModel.resumeTimer()
         val current = WearDataStore.timerState.value
-        val durationMs = current.totalDurationMs.takeIf { it > 0 } ?: 25L * 60L * 1000L
         WearDataStore.updateTimer(
             current.copy(
                 status = "Running",
-                phaseEndEpochMs = System.currentTimeMillis() + durationMs,
+                phaseEndEpochMs = System.currentTimeMillis() + remainingMs,
+                remainingDurationMs = 0L,
             ),
         )
         val after = System.currentTimeMillis()
 
         val timer = WearDataStore.timerState.value
         assertEquals("Running", timer.status)
-        // Should reuse the preserved 20-minute duration, not the default 25-minute one.
-        assertEquals(20L * 60L * 1000L, timer.totalDurationMs)
-        assertTrue(timer.phaseEndEpochMs in before + durationMs..after + durationMs + 1L)
+        assertEquals(25L * 60L * 1000L, timer.totalDurationMs)
+        assertEquals(0L, timer.remainingDurationMs)
+        assertTrue(timer.phaseEndEpochMs in before + remainingMs..after + remainingMs + 1L)
     }
 
     @Test
@@ -423,26 +425,64 @@ class WearViewModelTest {
     }
 
     @Test
-    fun `pauseTimer optimistic update clears phaseEndEpochMs so the tick loop stops`() {
+    fun `pauseTimer optimistic update preserves remaining duration and freezes display`() {
+        val now = System.currentTimeMillis()
+        val remainingMs = 12L * 60L * 1000L + 30L * 1000L
         WearDataStore.updateTimer(
             WearTimerState(
                 status = "Running",
-                phaseEndEpochMs = System.currentTimeMillis() + 60_000L,
+                phaseEndEpochMs = now + remainingMs,
                 totalDurationMs = 25L * 60L * 1000L,
             ),
         )
 
-        // Replay WearViewModel.pauseTimer() — preserves totalDurationMs so resume works.
+        // Replay WearViewModel.pauseTimer()
         val current = WearDataStore.timerState.value
         WearDataStore.updateTimer(
-            current.copy(status = "Paused", phaseEndEpochMs = 0L),
+            current.copy(
+                status = "Paused",
+                displayTime = "12:30",
+                remainingDurationMs = remainingMs,
+                phaseEndEpochMs = 0L,
+                phaseStartEpochMs = 0L,
+            ),
         )
 
         val timer = WearDataStore.timerState.value
         assertEquals("Paused", timer.status)
+        assertEquals("12:30", timer.displayTime)
+        assertEquals(remainingMs, timer.remainingDurationMs)
         assertEquals(0L, timer.phaseEndEpochMs)
-        // totalDurationMs preserved so resume can recompute end-time.
         assertEquals(25L * 60L * 1000L, timer.totalDurationMs)
+    }
+
+    @Test
+    fun `resumeTimer count-up restores phaseStartEpochMs from preserved elapsed`() {
+        val elapsedMs = 4L * 60L * 1000L + 10L * 1000L
+        WearDataStore.updateTimer(
+            WearTimerState(
+                mode = "Flow",
+                status = "Paused",
+                displayTime = "04:10",
+                remainingDurationMs = elapsedMs,
+            ),
+        )
+
+        val before = System.currentTimeMillis()
+        val current = WearDataStore.timerState.value
+        WearDataStore.updateTimer(
+            current.copy(
+                status = "Running",
+                phaseStartEpochMs = System.currentTimeMillis() - elapsedMs,
+                remainingDurationMs = 0L,
+            ),
+        )
+        val after = System.currentTimeMillis()
+
+        val timer = WearDataStore.timerState.value
+        assertEquals("Running", timer.status)
+        assertEquals(0L, timer.remainingDurationMs)
+        assertTrue(timer.phaseStartEpochMs in before - elapsedMs..after - elapsedMs + 1L)
     }
 
     @Test

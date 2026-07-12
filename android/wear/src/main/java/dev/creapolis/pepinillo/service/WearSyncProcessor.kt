@@ -44,7 +44,8 @@ internal class WearSyncProcessor(
     }
 
     fun onPeerDisconnected(currentTimer: WearTimerState) {
-        val disconnected = currentTimer.copy(isConnected = false, status = "Disconnected")
+        // Preserve status/phase/timing so the watch can keep ticking locally while offline.
+        val disconnected = currentTimer.copy(isConnected = false)
         sink.updateTimer(disconnected)
         sink.persistTimer(disconnected)
         sink.refreshWearSurfaces()

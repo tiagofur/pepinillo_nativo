@@ -23,17 +23,29 @@ object WearDataFetcher {
                     when (path) {
                         WearDataPaths.PATH_TIMER -> {
                             val lid = map.getString("linkedTaskId", "")
+                            val mode = map.getString("mode", "Pomodoro")
                             val status = map.getString("status", "Idle")
                             val elapsedMillis = map.getLong("elapsedMillis")
                             val totalMillis = map.getLong("totalMillis")
                             val timestamp = map.getLong("timestamp")
+                            val isCountUp = mode == "Flow" || mode == "Chrono"
+                            val phaseStartEpochMs = if (status == "Running") {
+                                timestamp - elapsedMillis
+                            } else {
+                                0L
+                            }
                             val phaseEndEpochMs = if (status == "Running" && totalMillis > 0) {
                                 timestamp + (totalMillis - elapsedMillis)
                             } else {
                                 0L
                             }
+                            val remainingDurationMs = if (status == "Paused") {
+                                if (isCountUp) elapsedMillis else (totalMillis - elapsedMillis).coerceAtLeast(0L)
+                            } else {
+                                0L
+                            }
                             val timerState = WearTimerState(
-                                mode = map.getString("mode", "Pomodoro"),
+                                mode = mode,
                                 phase = map.getString("phase", "Work"),
                                 status = status,
                                 displayTime = map.getString("displayTime", "00:00"),
@@ -44,6 +56,8 @@ object WearDataFetcher {
                                 linkedTaskName = map.getString("linkedTaskName", "").ifEmpty { null },
                                 completedSessions = map.getInt("completedSessions", 0),
                                 phaseEndEpochMs = phaseEndEpochMs,
+                                phaseStartEpochMs = phaseStartEpochMs,
+                                remainingDurationMs = remainingDurationMs,
                                 totalDurationMs = totalMillis,
                             )
                             WearDataStore.updateTimer(timerState)

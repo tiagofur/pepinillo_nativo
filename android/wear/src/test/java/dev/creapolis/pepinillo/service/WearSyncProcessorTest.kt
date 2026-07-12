@@ -42,16 +42,24 @@ class WearSyncProcessorTest {
     }
 
     @Test
-    fun `peer disconnect updates and persists disconnected timer plus surface refresh`() {
+    fun `peer disconnect preserves status and timing but clears connection`() {
         val sink = FakeSink()
         val processor = WearSyncProcessor(sink)
-        val running = WearTimerState(status = "Running", isConnected = true, displayTime = "04:00")
+        val running = WearTimerState(
+            status = "Running",
+            isConnected = true,
+            displayTime = "04:00",
+            phaseEndEpochMs = 1_709_000_060_000L,
+            totalDurationMs = 25L * 60L * 1000L,
+        )
 
         processor.onPeerDisconnected(running)
 
-        assertEquals("Disconnected", sink.updatedTimer?.status)
+        assertEquals("Running", sink.updatedTimer?.status)
         assertEquals(false, sink.updatedTimer?.isConnected)
-        assertEquals("Disconnected", sink.persistedTimer?.status)
+        assertEquals("04:00", sink.updatedTimer?.displayTime)
+        assertEquals(1_709_000_060_000L, sink.updatedTimer?.phaseEndEpochMs)
+        assertEquals("Running", sink.persistedTimer?.status)
         assertEquals(1, sink.refreshCalls)
         assertTrue(sink.markSyncedCalls == 0)
     }
