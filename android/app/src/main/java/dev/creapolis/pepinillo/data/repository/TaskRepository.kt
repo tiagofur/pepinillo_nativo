@@ -16,6 +16,8 @@ import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
+import dev.creapolis.pepinillo.domain.tasks.RecurrenceCalculator
+
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.Subtask
 import dev.creapolis.pepinillo.feature.tasks.model.Task
@@ -110,9 +112,16 @@ class TaskRepository @Inject constructor(
 
     suspend fun toggleCompletion(taskId: String): Result<Unit> =
         runCatching {
-            // Atomic single-statement UPDATE — no read-modify-write, so concurrent
-            // toggles cannot lose an update.
-            taskDao.toggleCompletionAtomic(taskId)
+            val entity = taskDao.getTaskById(taskId) ?: error("Task $taskId not found")
+            val completing = !entity.isCompleted
+            val hasRecurrence = !entity.recurrenceRule.isNullOrBlank()
+
+            if (completing && hasRecurrence && featureGate.canUseRecurrence()) {
+                advanceRecurringTask(entity)
+            } else {
+                // Atomic single-statement UPDATE — no read-modify-write race for plain toggles.
+                taskDao.toggleCompletionAtomic(taskId)
+            }
         }.onFailure { Log.e(TAG, "Error toggling task $taskId", it) }
             .onSuccess { refreshWearData() }
 
@@ -132,15 +141,10 @@ class TaskRepository @Inject constructor(
             .onFailure { Log.e(TAG, "Error deleting task $taskId", it) }
             .onSuccess { refreshWearData() }
 
-    /** Restore a previously soft-deleted task. */
+    /** Restore a previously soft-deleted task without domain round-trip (preserves serverId). */
     suspend fun restoreTask(task: Task): Result<Unit> =
         runCatching {
-            val entity = task.toEntity().copy(
-                isDeleted = false,
-                isDirty = true,
-                updatedAt = System.currentTimeMillis(),
-            )
-            taskDao.insertTask(entity)
+            taskDao.restoreSoftDelete(task.id)
         }
             .onFailure { Log.e(TAG, "Error restoring task ${task.id}", it) }
             .onSuccess { refreshWearData() }
@@ -226,6 +230,32 @@ class TaskRepository @Inject constructor(
     }
 
     /** Actual Wear + widget push. Runs once per burst, off the call site's coroutine. */
+    /**
+     * Completing a recurring task advances due/nextOccurrence and keeps the row active
+     * instead of leaving it in Completed (series must not die on first complete).
+     */
+    private suspend fun advanceRecurringTask(entity: TaskEntity) {
+        val rule = entity.recurrenceRule ?: return
+        val now = System.currentTimeMillis()
+        val today = RecurrenceCalculator.startOfLocalDay(now)
+        val reference = entity.dueDate?.let { maxOf(it, today.timeInMillis) } ?: today.timeInMillis
+        val nextDue = RecurrenceCalculator.nextOccurrenceMillis(rule, reference)
+        val scheduledForToday = RecurrenceCalculator.isSameLocalDay(nextDue, today)
+
+        taskDao.updateTask(
+            entity.copy(
+                isCompleted = false,
+                completedAt = null,
+                dueDate = nextDue,
+                nextOccurrence = nextDue,
+                isRecurringTemplate = true,
+                scheduledForToday = scheduledForToday,
+                updatedAt = now,
+                isDirty = true,
+            ),
+        )
+    }
+
     private suspend fun performWearAndWidgetRefresh() {
         // Widgets via WorkManager — unique + KEEP so a burst collapses into one pending run.
         workManager.enqueueUniqueWork(
@@ -307,30 +337,45 @@ private fun Task.toEntity() = TaskEntity(
  * domain model does not carry. Room @Update overwrites every column, so defaults from
  * [toEntity] would otherwise wipe server linkage after a local edit.
  */
-private fun Task.mergeInto(existing: TaskEntity, updatedAt: Long = System.currentTimeMillis()) = TaskEntity(
-    id = id,
-    title = title,
-    notes = notes,
-    isCompleted = isCompleted,
-    completedAt = completedAt,
-    energyLevel = energyLevel.name,
-    priority = priority.name,
-    estimatedPomodoros = estimatedPomodoros,
-    completedPomodoros = completedPomodoros,
-    sortOrder = sortOrder,
-    dueDate = dueDate,
-    scheduledForToday = scheduledForToday,
-    recurrenceRule = recurrenceRule,
-    nextOccurrence = existing.nextOccurrence,
-    isRecurringTemplate = isRecurringTemplate,
-    recurringTemplateID = recurringTemplateID,
-    createdAt = createdAt,
-    updatedAt = updatedAt,
-    serverId = existing.serverId,
-    isDirty = true,
-    isDeleted = existing.isDeleted,
-    syncedAt = existing.syncedAt,
-)
+private fun Task.mergeInto(existing: TaskEntity, updatedAt: Long = System.currentTimeMillis()): TaskEntity {
+    val recurrenceAdded = recurrenceRule != null && existing.recurrenceRule == null
+    val recurrenceCleared = recurrenceRule == null && existing.recurrenceRule != null
+    val nextOccurrence = when {
+        recurrenceCleared -> null
+        recurrenceAdded && recurrenceRule != null ->
+            RecurrenceCalculator.nextOccurrenceMillis(
+                recurrenceRule,
+                dueDate ?: RecurrenceCalculator.startOfLocalDay().timeInMillis,
+            )
+        else -> existing.nextOccurrence
+    }
+
+    return TaskEntity(
+        id = id,
+        title = title,
+        notes = notes,
+        // Completion is owned by toggleCompletion — detail edits must not clobber it.
+        isCompleted = existing.isCompleted,
+        completedAt = existing.completedAt,
+        energyLevel = energyLevel.name,
+        priority = priority.name,
+        estimatedPomodoros = estimatedPomodoros,
+        completedPomodoros = completedPomodoros,
+        sortOrder = sortOrder,
+        dueDate = dueDate,
+        scheduledForToday = scheduledForToday,
+        recurrenceRule = recurrenceRule,
+        nextOccurrence = nextOccurrence,
+        isRecurringTemplate = recurrenceRule != null,
+        recurringTemplateID = recurringTemplateID,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        serverId = existing.serverId,
+        isDirty = true,
+        isDeleted = existing.isDeleted,
+        syncedAt = existing.syncedAt,
+    )
+}
 
 private fun SubtaskEntity.toDomain() = Subtask(
     id = id,

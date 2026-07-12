@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 data class TaskDetailUiState(
@@ -85,6 +87,8 @@ class TaskDetailViewModel @Inject constructor(
     private val _errorEvent = MutableSharedFlow<String>()
     val errorEvent: SharedFlow<String> = _errorEvent.asSharedFlow()
 
+    private val updateMutex = Mutex()
+
     val uiState: StateFlow<TaskDetailUiState> = taskIdFlow
         .flatMapLatest { id ->
             if (id == null) {
@@ -109,10 +113,13 @@ class TaskDetailViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), TaskDetailUiState())
 
     private inline fun updateTask(crossinline transform: (Task) -> Task) {
-        val current = uiState.value.task ?: return
+        val taskId = currentTaskId
         viewModelScope.launch {
-            taskRepository.updateTask(transform(current)).onFailure {
-                _errorEvent.emit("Failed to update task")
+            updateMutex.withLock {
+                val latest = taskRepository.getTaskById(taskId) ?: return@withLock
+                taskRepository.updateTask(transform(latest)).onFailure {
+                    _errorEvent.emit("Failed to update task")
+                }
             }
         }
     }
@@ -129,7 +136,12 @@ class TaskDetailViewModel @Inject constructor(
             _showPaywall.value = true
             return
         }
-        updateTask { it.copy(recurrenceRule = option.rrule) }
+        updateTask {
+            it.copy(
+                recurrenceRule = option.rrule,
+                isRecurringTemplate = option != RecurrenceOption.None,
+            )
+        }
     }
 
     fun toggleCompletion() {
