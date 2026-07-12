@@ -22,6 +22,13 @@ type refreshRequest struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+// deleteAccountRequest carries the optional Apple authorization code so the
+// backend can revoke Sign in with Apple user tokens during account deletion (#196).
+type deleteAccountRequest struct {
+	RefreshToken           string  `json:"refreshToken"`
+	AppleAuthorizationCode *string `json:"appleAuthorizationCode"`
+}
+
 type forgotPasswordRequest struct {
 	Email string `json:"email"`
 }
@@ -112,7 +119,10 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 
 func (h *AuthHandler) DeleteAccount(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(string)
-	if err := h.auth.DeleteAccount(c.Context(), userID); err != nil {
+	var req deleteAccountRequest
+	// Body is optional for backwards compat — older clients send no body.
+	_ = c.BodyParser(&req)
+	if err := h.auth.DeleteAccount(c.Context(), userID, req.AppleAuthorizationCode); err != nil {
 		return err
 	}
 	return c.SendStatus(fiber.StatusNoContent)

@@ -359,12 +359,14 @@ struct AuthView: View {
                         return
                     }
                     let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
+                    let authorizationCode: String? = cred.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
                     onAppleSignIn?(AppleUserInfo(
                         userID: cred.user,
                         displayName: cred.fullName?.formatted(),
                         email: cred.email,
                         identityToken: identityToken,
-                        nonce: currentNonce
+                        nonce: currentNonce,
+                        authorizationCode: authorizationCode
                     ))
                 case .failure:
                     onAppleSignInFailed?()

@@ -240,7 +240,12 @@ func main() {
 		cfg.JWTRefreshTTLSeconds,
 		googleClientIDs,
 		cfg.AppleBundleID,
+		cfg.AppleTeamID,
+		cfg.AppleKeyID,
+		cfg.ApplePrivateKey,
 	)
+	// Wire OAuth into AuthService so DeleteAccount can revoke Apple tokens (#196).
+	authService.SetOAuthService(oauthService)
 
 	focusRepo := postgres.NewFocusRepository(db)
 

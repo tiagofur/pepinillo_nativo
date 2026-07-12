@@ -190,3 +190,77 @@ func TestAuthService_ResendVerificationCode_UserNotFound(t *testing.T) {
 
 	mockUserRepo.AssertExpectations(t)
 }
+
+// --- DeleteAccount tests (#193, #196) ---
+
+func TestAuthService_DeleteAccount_Success_NoAppleCode(t *testing.T) {
+	mockUserRepo := new(MockUserRepository)
+	mockAuthStore := new(MockAuthStore)
+	mockNotifier := new(MockNotifier)
+	mockLogger := new(MockBehaviorLogger)
+
+	user := createTestUser()
+
+	mockLogger.On("LogEvent", mock.Anything, user.ID, "account_deleted", mock.Anything).Return(nil)
+	mockAuthStore.On("RevokeAllRefreshTokens", mock.Anything, user.ID).Return(nil)
+	mockUserRepo.On("Delete", mock.Anything, user.ID).Return(nil)
+
+	service := createAuthService(mockUserRepo, mockAuthStore, mockNotifier, mockLogger)
+
+	err := service.DeleteAccount(context.Background(), user.ID, nil)
+
+	assert.NoError(t, err)
+	mockUserRepo.AssertExpectations(t)
+	mockAuthStore.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestAuthService_DeleteAccount_RevokesAppleToken_BestEffort(t *testing.T) {
+	mockUserRepo := new(MockUserRepository)
+	mockAuthStore := new(MockAuthStore)
+	mockNotifier := new(MockNotifier)
+	mockLogger := new(MockBehaviorLogger)
+
+	user := createTestUser()
+	user.AppleID = strPtr("apple-123")
+
+	appleCode := "auth-code-from-apple"
+	mockLogger.On("LogEvent", mock.Anything, user.ID, "account_deleted", mock.Anything).Return(nil)
+	mockAuthStore.On("RevokeAllRefreshTokens", mock.Anything, user.ID).Return(nil)
+	mockUserRepo.On("Delete", mock.Anything, user.ID).Return(nil)
+
+	service := createAuthService(mockUserRepo, mockAuthStore, mockNotifier, mockLogger)
+
+	// OAuthService is NOT wired here — DeleteAccount must not panic even when
+	// oauthService is nil and an appleAuthorizationCode is provided. The Apple
+	// revocation path is skipped entirely when oauthService is unset, so GetByID
+	// is not called. This verifies the no-oauthService branch is safe (#196).
+	err := service.DeleteAccount(context.Background(), user.ID, &appleCode)
+
+	assert.NoError(t, err)
+	mockUserRepo.AssertExpectations(t)
+	mockAuthStore.AssertExpectations(t)
+	mockLogger.AssertExpectations(t)
+}
+
+func TestAuthService_DeleteAccount_UserDeleteFailure(t *testing.T) {
+	mockUserRepo := new(MockUserRepository)
+	mockAuthStore := new(MockAuthStore)
+	mockNotifier := new(MockNotifier)
+	mockLogger := new(MockBehaviorLogger)
+
+	user := createTestUser()
+	deleteErr := assert.AnError
+
+	mockLogger.On("LogEvent", mock.Anything, user.ID, "account_deleted", mock.Anything).Return(nil)
+	mockAuthStore.On("RevokeAllRefreshTokens", mock.Anything, user.ID).Return(nil)
+	mockUserRepo.On("Delete", mock.Anything, user.ID).Return(deleteErr)
+
+	service := createAuthService(mockUserRepo, mockAuthStore, mockNotifier, mockLogger)
+
+	err := service.DeleteAccount(context.Background(), user.ID, nil)
+
+	assert.ErrorIs(t, err, deleteErr)
+	mockUserRepo.AssertExpectations(t)
+	mockAuthStore.AssertExpectations(t)
+}

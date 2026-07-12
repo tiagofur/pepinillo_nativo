@@ -58,6 +58,10 @@ struct AppFeature {
         var userEmail: String? = nil
         var cachedUser: CachedUserDTO? = nil
         var isSignedIn: Bool { cachedUser != nil || appleUserID != nil }
+        /// Error surfaced when account deletion fails (#193). Non-nil presents an alert.
+        var deleteAccountError: String? = nil
+        /// True while the backend account-deletion request is in flight (#193).
+        var isDeletingAccount: Bool = false
         var pendingExternalStartModeID: String?
         var pendingExternalStartTaskID: String?
         var pendingExternalStartTimerStart: Date?
@@ -197,7 +201,10 @@ struct AppFeature {
         case signInWithAppleFailed
         case signOutTapped
         case deleteAccountTapped
+        case deleteAccountSucceeded
+        case deleteAccountFailed(String)
         case appleCredentialStateChecked(String, Bool)
+        case appleCredentialRevoked
 
         // Day change
         case dayChanged
@@ -229,6 +236,7 @@ struct AppFeature {
         case webSocket
         case softSync
         case networkConnectivity
+        case appleCredentialRevocation
         /// Deduplicates rapid-fire taskProgressChanged + sessionPersisted refreshes.
         case sessionTaskRefresh
     }
@@ -422,6 +430,16 @@ struct AppFeature {
                             )
                             try? await persistence.saveCachedUser(dto)
                             await send(.cachedUserLoaded(dto))
+                        } catch let error as APIClientError {
+                            // Definitive session expiry (refresh rejected 401/403) — the
+                            // APIClient already cleared keychain tokens as a silent side
+                            // effect, so we MUST propagate this to the state layer,
+                            // otherwise cachedUser/prefs/RevenueCat linger and the user
+                            // stays "signed in" with dead credentials (#194).
+                            if case .sessionExpired = error {
+                                await send(.tokenRefreshFailed)
+                            }
+                            // Other errors (network, timeout, 5xx) — use cached data silently.
                         } catch {
                             // Network error or timeout — use cached data silently
                         }
@@ -447,7 +465,17 @@ struct AppFeature {
                             await send(.connectivityChanged(isConnected))
                         }
                     }
-                    .cancellable(id: CancelID.networkConnectivity)
+                    .cancellable(id: CancelID.networkConnectivity),
+                    // Observe Apple credential revocation mid-session (#195). Without this
+                    // a revoke only surfaces on the next cold start's checkCredentialState,
+                    // leaving the session alive for the rest of the foreground run.
+                    .run { [appleClient] send in
+                        let stream = await appleClient.observeCredentialRevocation()
+                        for await _ in stream {
+                            await send(.appleCredentialRevoked)
+                        }
+                    }
+                    .cancellable(id: CancelID.appleCredentialRevocation)
                 )
 
             case .requestNotificationPermission:
@@ -652,6 +680,15 @@ struct AppFeature {
                     if !normalizedEmail.isEmpty {
                         state.userEmail = normalizedEmail
                     }
+                    // Email verification gate on cold-start restore (#192).
+                    // AuthFeature persists tokens + CachedUser BEFORE the verification
+                    // sheet, so a force-quit during verification left an unverified
+                    // session that bypassed the gate on relaunch. Re-present the
+                    // verification sheet for unverified users — UNLESS they are signed
+                    // in with Apple, whose credential state implies a verified account.
+                    if !user.emailVerified && state.appleUserID == nil && state.emailVerification == nil {
+                        state.emailVerification = EmailVerificationFeature.State(email: user.email)
+                    }
                 }
                 return .none
 
@@ -691,6 +728,13 @@ struct AppFeature {
                     }
                 }
 
+            case .emailVerification(.presented(.delegate(.signOutRequested))):
+                // User tapped the escape hatch on the verification sheet. Clear the
+                // unverified persisted session so the next launch presents AuthView
+                // instead of bypassing the gate (#192).
+                state.emailVerification = nil
+                return performSignOutCleanup(&state)
+
             case .emailVerification:
                 return .none
 
@@ -702,30 +746,17 @@ struct AppFeature {
                 return .none
 
             case .profile(.presented(.delegate(.signedOut))):
-                state.cachedUser = nil
-                state.appleUserID = nil
-                state.displayName = nil
-                state.userEmail = nil
-                state.profile = nil  // dismiss profile sheet
-                webSocketClient.disconnect()
-                return .run { send in
-                    var prefs = try await persistence.fetchPreferences()
-                    prefs.appleUserID = nil
-                    prefs.displayName = nil
-                    prefs.userEmail = nil
-                    try await persistence.savePreferences(prefs)
-                }
+                return performSignOutCleanup(&state, dismissProfile: true)
 
             case .profile:
                 return .none
 
             case .tokenRefreshFailed:
-                state.cachedUser = nil
-                state.appleUserID = nil
-                state.displayName = nil
-                state.userEmail = nil
-                webSocketClient.disconnect()
-                return .none
+                // Session expired (refresh rejected 401/403). Run the full sign-out
+                // cleanup so the app returns to the signed-out state — previously this
+                // handler only cleared in-memory fields while tokens/cachedUser/prefs/RC
+                // lingered, and it was never even dispatched (#194).
+                return performSignOutCleanup(&state)
 
             // MARK: - Connectivity (issue #89)
 
@@ -734,6 +765,12 @@ struct AppFeature {
                 return .none
 
             // MARK: - Sign in with Apple
+
+            case .appleCredentialRevoked:
+                // Mid-session Apple credential revocation notification (#195). Perform
+                // a full sign-out without waiting for the next cold-start credential
+                // check — otherwise the session lingers until the app is force-quit.
+                return performSignOutCleanup(&state)
 
             case .appleCredentialStateChecked(let userID, let authorized):
                 if authorized {
@@ -749,22 +786,20 @@ struct AppFeature {
                         }
                     }
                 } else {
-                    // Credential revoked — clear local state
-                    state.appleUserID = nil
-                    state.displayName = nil
-                    state.userEmail = nil
-                    return .run { send in
-                        var prefs = try await persistence.fetchPreferences()
-                        prefs.appleUserID = nil
-                        prefs.displayName = nil
-                        prefs.userEmail = nil
-                        try await persistence.savePreferences(prefs)
-                    }
+                    // Credential revoked by user (Settings → Apple ID → Sign in with Apple → Stop)
+                    // or system. This must be a full sign-out — previously only appleUserID and
+                    // prefs were cleared, leaving cachedUser/tokens/RevenueCat alive so the user
+                    // remained "signed in" (#195).
+                    return performSignOutCleanup(&state)
                 }
 
             case .signInWithAppleSucceeded(let info):
                 state.auth = nil  // dismiss auth sheet if open
                 state.appleUserID = info.userID
+                // If the email-verification gate was prematurely shown on cold-start
+                // (cachedUserLoaded arrived before appleCredentialStateChecked), dismiss
+                // it now: an authorized Apple credential implies a verified account (#192).
+                state.emailVerification = nil
                 // Apple only provides displayName on the very first sign-in ever.
                 // Fall back to cached user name, then existing displayName, then email prefix.
                 let resolvedName = info.displayName
@@ -780,6 +815,10 @@ struct AppFeature {
                         prefs.appleUserID = info.userID
                         if let name = info.displayName { prefs.displayName = name }
                         if let email = info.email { prefs.userEmail = email }
+                        // Persist the Apple authorization code so it is available for
+                        // backend-side token revocation on account deletion (#196).
+                        // Apple only hands this out on interactive SIWA completions.
+                        if let code = info.authorizationCode { prefs.appleAuthorizationCode = code }
                         try await persistence.savePreferences(prefs)
                         // Identify user in RevenueCat
                         await subscriptionClient.logIn(info.userID)
@@ -826,53 +865,47 @@ struct AppFeature {
                 return .none
 
             case .signOutTapped:
-                state.appleUserID = nil
-                state.displayName = nil
-                state.userEmail = nil
-                state.cachedUser = nil
-                webSocketClient.disconnect()
-                return .run { [keychain, apiClient, persistence] send in
-                    if let refreshToken = await keychain.loadRefreshToken() {
-                        try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))
-                    }
-                    try? await keychain.deleteTokens()
-                    try? await persistence.deleteCachedUser()
-                    var prefs = try await persistence.fetchPreferences()
-                    prefs.appleUserID = nil
-                    prefs.displayName = nil
-                    prefs.userEmail = nil
-                    try await persistence.savePreferences(prefs)
-                    // Clear per-user AI report cache so the next user starts fresh
-                    AIReportFeature.clearAllCachedReports()
-                    // Reset to anonymous in RevenueCat
-                    await subscriptionClient.logOut()
-                }
+                return performSignOutCleanup(&state, notifyBackendLogout: true)
 
             case .deleteAccountTapped:
-                state.appleUserID = nil
-                state.displayName = nil
-                state.userEmail = nil
-                state.cachedUser = nil
-                webSocketClient.disconnect()
+                // Account deletion is a destructive, server-authoritative operation.
+                // Previously the network call was wrapped in `try?`, so a backend failure
+                // was silently swallowed and local state was cleared anyway — leaving the
+                // user "signed out" with a live server account (#193, App Store 5.1.1(v)).
+                // We now: (1) call the backend WITHOUT try? and surface hard errors,
+                // (2) only clear local state on confirmed success, (3) wipe local user PII.
+                state.isDeletingAccount = true
+                state.deleteAccountError = nil
                 return .run { [keychain, apiClient, persistence] send in
-                    // Call backend to delete data
-                    try? await apiClient.deleteAccount()
-
-                    // Cleanup local state
-                    try? await keychain.deleteTokens()
-                    try? await persistence.deleteCachedUser()
-                    var prefs = try await persistence.fetchPreferences()
-                    prefs.appleUserID = nil
-                    prefs.displayName = nil
-                    prefs.userEmail = nil
-                    try await persistence.savePreferences(prefs)
-
-                    // Clear per-user AI report cache
-                    AIReportFeature.clearAllCachedReports()
-
-                    // Reset to anonymous in RevenueCat
-                    await subscriptionClient.logOut()
+                    let refreshToken = await keychain.loadRefreshToken()
+                    let prefs = try await persistence.fetchPreferences()
+                    let appleAuthCode = prefs.appleAuthorizationCode
+                    do {
+                        try await apiClient.deleteAccount(
+                            DeleteAccountRequest(
+                                refreshToken: refreshToken,
+                                appleAuthorizationCode: appleAuthCode
+                            )
+                        )
+                        await send(.deleteAccountSucceeded)
+                    } catch let error as APIClientError {
+                        await send(.deleteAccountFailed(error.userMessage))
+                    } catch {
+                        await send(.deleteAccountFailed(String(localized: "Could not delete account. Check your connection and try again.")))
+                    }
                 }
+
+            case .deleteAccountSucceeded:
+                // Server confirmed deletion — now it is safe to wipe everything local.
+                state.isDeletingAccount = false
+                state.deleteAccountError = nil
+                return performSignOutCleanup(&state, wipeLocalUserData: true)
+
+            case .deleteAccountFailed(let message):
+                // Backend rejected the delete — keep the session intact so the user can retry.
+                state.isDeletingAccount = false
+                state.deleteAccountError = message
+                return .none
 
             // MARK: - Notification Action Bridge
 
@@ -1309,6 +1342,61 @@ struct AppFeature {
             await send(.tasks(.refresh))
         }
         .cancellable(id: CancelID.softSync, cancelInFlight: true)
+    }
+
+    // MARK: - Session cleanup (shared sign-out path)
+
+    /// Single source of truth for tearing down a signed-in session.
+    ///
+    /// Previously this cleanup logic was copy-pasted across five entry points
+    /// (`signOutTapped`, `deleteAccountTapped`, `tokenRefreshFailed`,
+    /// `appleCredentialStateChecked` unauthorized, and `profile(.signedOut)`)
+    /// with materially different behavior — several paths leaked tokens, cached
+    /// user, RevenueCat identity, or AI report cache, and `tokenRefreshFailed`
+    /// was dead code that was never even dispatched (#194, #195).
+    ///
+    /// - Parameters:
+    ///   - wipeLocalUserData: When `true` (account deletion), also deletes all
+    ///     local tasks/sessions/stats so the next user starts clean (#193).
+    ///   - notifyBackendLogout: When `true` (explicit sign-out), revokes the
+    ///     refresh token on the backend. Skipped for expiry/revoke paths where
+    ///     the backend session is already invalid.
+    ///   - dismissProfile: When `true`, dismisses the profile sheet if present.
+    private func performSignOutCleanup(
+        _ state: inout State,
+        wipeLocalUserData: Bool = false,
+        notifyBackendLogout: Bool = false,
+        dismissProfile: Bool = false
+    ) -> Effect<Action> {
+        // Clear in-memory auth state synchronously so the UI flips immediately.
+        state.cachedUser = nil
+        state.appleUserID = nil
+        state.displayName = nil
+        state.userEmail = nil
+        if dismissProfile { state.profile = nil }
+        webSocketClient.disconnect()
+        return .run { [keychain, apiClient, persistence, subscriptionClient] _ in
+            if notifyBackendLogout, let refreshToken = await keychain.loadRefreshToken() {
+                try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))
+            }
+            try? await keychain.deleteTokens()
+            try? await persistence.deleteCachedUser()
+            var prefs = try await persistence.fetchPreferences()
+            prefs.appleUserID = nil
+            prefs.displayName = nil
+            prefs.userEmail = nil
+            prefs.appleAuthorizationCode = nil
+            try await persistence.savePreferences(prefs)
+            if wipeLocalUserData {
+                // Full PII wipe for account deletion — orphaned local data must not
+                // survive the user who created it (App Store 5.1.1(v)).
+                try? await persistence.deleteAllTasks()
+                try? await persistence.deleteAllSessions()
+                try? await persistence.deleteAllStats()
+            }
+            AIReportFeature.clearAllCachedReports()
+            await subscriptionClient.logOut()
+        }
     }
 }
 

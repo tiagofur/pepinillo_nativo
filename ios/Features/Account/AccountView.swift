@@ -222,6 +222,8 @@ struct AccountView: View {
 
                     let identityToken = credential.identityToken
                         .flatMap { String(data: $0, encoding: .utf8) }
+                    let authorizationCode = credential.authorizationCode
+                        .flatMap { String(data: $0, encoding: .utf8) }
 
                     store.send(.signInWithAppleSucceeded(
                         AppleUserInfo(
@@ -229,7 +231,8 @@ struct AccountView: View {
                             displayName: credential.fullName?.formatted(),
                             email: credential.email,
                             identityToken: identityToken,
-                            nonce: currentAppleNonce
+                            nonce: currentAppleNonce,
+                            authorizationCode: authorizationCode
                         )
                     ))
                     currentAppleNonce = ""

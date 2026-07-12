@@ -31,6 +31,7 @@ struct EmailVerificationFeature {
         case verifyTapped
         case resendTapped
         case dismissError
+        case signOutTapped
 
         case verifyResponse(Result<VerifyEmailResponse, APIClientError>)
         case resendResponse(Result<Bool, APIClientError>)
@@ -38,6 +39,7 @@ struct EmailVerificationFeature {
         case delegate(Delegate)
         enum Delegate: Equatable {
             case verificationSucceeded(CachedUserDTO)
+            case signOutRequested
         }
     }
 
@@ -136,6 +138,13 @@ struct EmailVerificationFeature {
             case .dismissError:
                 state.errorMessage = nil
                 return .none
+
+            case .signOutTapped:
+                // Escape hatch for a user who entered the wrong email or cannot
+                // access the inbox. Without this the non-dismissible sheet traps
+                // them; on force-quit the unverified persisted session bypassed
+                // the gate entirely (#192).
+                return .send(.delegate(.signOutRequested))
 
             case .delegate:
                 return .none

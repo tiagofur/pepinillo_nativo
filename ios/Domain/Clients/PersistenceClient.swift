@@ -443,6 +443,10 @@ public struct UserPreferencesDTO: Sendable, Equatable {
     public var appleUserID: String?
     public var displayName: String?
     public var userEmail: String?
+    /// Apple authorization code captured at the last Sign in with Apple flow.
+    /// Sent to the backend on account deletion so Apple user tokens can be
+    /// revoked (Sign in with Apple requirement, #196).
+    public var appleAuthorizationCode: String?
 
     public init(soundEnabled: Bool = true, hapticEnabled: Bool = true, defaultMode: String = "pomodoro", themeName: String = "default") {
         self.pomodoroDuration = 25 * 60
@@ -476,6 +480,7 @@ public struct UserPreferencesDTO: Sendable, Equatable {
         self.appleUserID = nil
         self.displayName = nil
         self.userEmail = nil
+        self.appleAuthorizationCode = nil
     }
 
     init(from prefs: UserPreferences) {
@@ -512,6 +517,7 @@ public struct UserPreferencesDTO: Sendable, Equatable {
         self.appleUserID = prefs.appleUserID
         self.displayName = prefs.displayName
         self.userEmail = prefs.userEmail
+        self.appleAuthorizationCode = prefs.appleAuthorizationCode
     }
 }
 
