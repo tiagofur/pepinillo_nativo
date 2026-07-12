@@ -11,6 +11,7 @@ import dev.creapolis.pepinillo.platform.feedback.FeedbackManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -44,6 +45,7 @@ class FocusEngine @Inject constructor(
     val sessionSaveFailed: SharedFlow<FailedSession> = _sessionSaveFailed.asSharedFlow()
 
     private var timerJob: Job? = null
+    private var startJob: Job? = null
     private var prefsObserverJob: Job? = null
 
     // Cached preferences for use in the tick loop (avoids reading DataStore every 250ms)
@@ -248,17 +250,22 @@ class FocusEngine @Inject constructor(
 
         // Seed completedSessions from DB if starting fresh (Idle or WaitingForNext with 0 sessions)
         if (current.mode == FocusMode.Pomodoro && current.status == TimerStatus.Idle) {
-            scope.launch {
+            startJob?.cancel()
+            startJob = scope.launch {
                 val todayCount = sessionRepository.getTodayPomodoroWorkCount()
+                if (!isActive) return@launch
                 pomodoroNumber = todayCount + 1
+                var shouldStartLoop = false
                 _state.update {
+                    if (it.status != TimerStatus.Idle) return@update it
+                    shouldStartLoop = true
                     it.copy(
                         status = TimerStatus.Running,
                         completedSessions = todayCount,
                         sessionStartTime = if (it.sessionStartTime == 0L) System.currentTimeMillis() else it.sessionStartTime,
                     )
                 }
-                startTimerLoop()
+                if (shouldStartLoop && isActive) startTimerLoop()
             }
             return
         }
@@ -382,6 +389,8 @@ class FocusEngine @Inject constructor(
     }
 
     fun pause() {
+        startJob?.cancel()
+        startJob = null
         timerJob?.cancel()
         prefsObserverJob?.cancel()
         pauseCount++
@@ -400,6 +409,8 @@ class FocusEngine @Inject constructor(
     }
 
     fun stop() {
+        startJob?.cancel()
+        startJob = null
         timerJob?.cancel()
         prefsObserverJob?.cancel()
         // If paused at the time of stop, accumulate remaining pause duration
@@ -408,17 +419,17 @@ class FocusEngine @Inject constructor(
             pauseStartTime = 0L
         }
         val snapshot = _state.value
+        // Reset synchronously so a racing startJob cannot leave the timer Running.
+        _state.value = FocusTimerState(
+            mode = snapshot.mode,
+            totalMillis = getTotalMillis(snapshot.mode, FocusPhase.Work, cachedPrefs),
+            linkedTaskId = snapshot.linkedTaskId,
+            completedSessions = snapshot.completedSessions,
+        )
         scope.launch {
             if (snapshot.elapsedMillis > 0 && snapshot.sessionStartTime > 0) {
                 recordSession(snapshot, wasCompleted = false)
             }
-            val prefs = prefsRepo.preferences.first()
-            _state.value = FocusTimerState(
-                mode = snapshot.mode,
-                totalMillis = getTotalMillis(snapshot.mode, FocusPhase.Work, prefs),
-                linkedTaskId = snapshot.linkedTaskId,
-                completedSessions = snapshot.completedSessions, // preserve count for display + next start
-            )
         }
     }
 

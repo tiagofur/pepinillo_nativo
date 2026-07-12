@@ -1,10 +1,12 @@
 package dev.creapolis.pepinillo.platform.feedback
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
@@ -12,6 +14,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.MainActivity
 import dev.creapolis.pepinillo.R
@@ -53,12 +56,21 @@ class FeedbackManager @Inject constructor(
     suspend fun onPhaseComplete(mode: FocusMode, phase: FocusPhase) {
         val prefs = prefsRepo.preferences.first()
 
-        if (prefs.timerNotificationsEnabled) {
+        // Sound and haptics are always applied when enabled — notifications are additive.
+        if (prefs.soundEnabled) playCompletionSound()
+        if (prefs.vibrationEnabled) vibrate()
+
+        if (prefs.timerNotificationsEnabled && canPostNotifications()) {
             showCompletionNotification(mode, phase)
-        } else {
-            if (prefs.soundEnabled) playCompletionSound()
-            if (prefs.vibrationEnabled) vibrate()
         }
+    }
+
+    private fun canPostNotifications(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     suspend fun onFeedbackPulse() {
