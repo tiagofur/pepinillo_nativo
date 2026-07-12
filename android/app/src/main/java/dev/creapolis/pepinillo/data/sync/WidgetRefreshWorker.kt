@@ -13,6 +13,7 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dev.creapolis.pepinillo.core.billing.FeatureGate
+
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
@@ -103,6 +104,8 @@ class WidgetRefreshWorker @AssistedInject constructor(
                 Log.e(TAG, "Wear push failed (tasks=${widgetTasks.size})", e)
             }
 
+            MidnightWidgetRefreshScheduler.schedule(appContext)
+
             Log.d(TAG, "Widget refresh done — ${totalMinutes}m focus, $sessions sessions, $streak streak, $completedToday tasks done")
             Result.success()
         }.getOrElse { e ->
@@ -127,6 +130,7 @@ class WidgetRefreshWorker @AssistedInject constructor(
             WorkManager.getInstance(context).enqueue(
                 OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build(),
             )
+            MidnightWidgetRefreshScheduler.schedule(context)
         }
     }
 

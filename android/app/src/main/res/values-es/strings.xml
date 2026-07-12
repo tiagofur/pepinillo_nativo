@@ -706,6 +706,15 @@
     <string name="widget_no_task_linked">Sin tarea</string>
     <string name="widget_streak_indicator">racha</string>
     <string name="widget_sessions_indicator">sesiones</string>
+    <string name="widget_play">Reproducir</string>
+    <string name="widget_pause">Pausar</string>
+    <string name="widget_stop">Detener</string>
+    <string name="widget_mode_pomodoro">Modo Pomodoro</string>
+    <string name="widget_mode_flow">Modo Flow</string>
+    <string name="widget_mode_blocks">Modo bloques de tiempo</string>
+    <string name="widget_mode_chrono">Modo cronómetro</string>
+    <string name="widget_stats_locked_title">Desbloquea con Pepinillo+</string>
+    <string name="widget_stats_locked_cd">Widget de estadísticas bloqueado. Toca para ver opciones de suscripción.</string>
 
     <!-- Reflection & Quick Add -->
     <string name="dashboard_weekly_review_subtitle">Datos e IA para tu semana</string>

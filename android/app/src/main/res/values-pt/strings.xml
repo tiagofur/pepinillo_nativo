@@ -439,6 +439,15 @@
     <string name="widget_no_task_linked">Sem tarefa</string>
     <string name="widget_streak_indicator">sequência</string>
     <string name="widget_sessions_indicator">sessões</string>
+    <string name="widget_play">Reproduzir</string>
+    <string name="widget_pause">Pausar</string>
+    <string name="widget_stop">Parar</string>
+    <string name="widget_mode_pomodoro">Modo Pomodoro</string>
+    <string name="widget_mode_flow">Modo Flow</string>
+    <string name="widget_mode_blocks">Modo blocos de tempo</string>
+    <string name="widget_mode_chrono">Modo cronómetro</string>
+    <string name="widget_stats_locked_title">Desbloqueie com Pepinillo+</string>
+    <string name="widget_stats_locked_cd">Widget de estatísticas bloqueado. Toque para ver opções de assinatura.</string>
 
     <!-- Reflection & Quick Add -->
     <string name="dashboard_weekly_review_subtitle">Dados e IA para a sua semana</string>

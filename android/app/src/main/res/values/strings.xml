@@ -706,6 +706,15 @@
     <string name="widget_no_task_linked">No Task</string>
     <string name="widget_streak_indicator">streak</string>
     <string name="widget_sessions_indicator">sessions</string>
+    <string name="widget_play">Play</string>
+    <string name="widget_pause">Pause</string>
+    <string name="widget_stop">Stop</string>
+    <string name="widget_mode_pomodoro">Pomodoro mode</string>
+    <string name="widget_mode_flow">Flow mode</string>
+    <string name="widget_mode_blocks">Time blocks mode</string>
+    <string name="widget_mode_chrono">Stopwatch mode</string>
+    <string name="widget_stats_locked_title">Unlock with Pepinillo+</string>
+    <string name="widget_stats_locked_cd">Daily stats widget locked. Tap to view subscription options.</string>
 
     <!-- Reflection & Quick Add -->
     <string name="dashboard_weekly_review_subtitle">Data &amp; AI insights for your week</string>

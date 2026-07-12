@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -92,6 +93,19 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/daily_stats_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".service.DailyReminderAlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".service.BootCompletedReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
         </receiver>
 
         <receiver

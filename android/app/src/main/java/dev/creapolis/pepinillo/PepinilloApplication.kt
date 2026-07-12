@@ -8,9 +8,12 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import dagger.hilt.android.HiltAndroidApp
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
+import dev.creapolis.pepinillo.data.sync.MidnightWidgetRefreshScheduler
 import dev.creapolis.pepinillo.data.sync.SyncLifecycleObserver
 import dev.creapolis.pepinillo.data.sync.SyncWorker
 import dev.creapolis.pepinillo.data.sync.WidgetRefreshWorker
+import dev.creapolis.pepinillo.service.DailyReminderScheduler
+import dev.creapolis.pepinillo.widget.FocusTimerRecovery
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 import kotlinx.coroutines.CoroutineScope
@@ -72,5 +75,14 @@ class PepinilloApplication : Application(), Configuration.Provider {
 
         SyncWorker.schedule(this)
         WidgetRefreshWorker.schedule(this)
+        MidnightWidgetRefreshScheduler.schedule(this)
+
+        appScope.launch {
+            val prefs = runCatching { prefsRepository.preferences.first() }.getOrNull()
+            if (prefs != null) {
+                DailyReminderScheduler.restoreFromPreferences(this@PepinilloApplication, prefs)
+            }
+            FocusTimerRecovery.restoreOnLaunch(this@PepinilloApplication)
+        }
     }
 }

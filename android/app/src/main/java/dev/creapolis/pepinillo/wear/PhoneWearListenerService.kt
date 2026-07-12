@@ -119,7 +119,7 @@ class PhoneWearListenerService : WearableListenerService() {
                     Log.d(TAG, "Completing task $taskId from watch")
                     scope.launch {
                         runCatching {
-                            taskRepository.toggleCompletion(taskId)
+                            taskRepository.completeTaskFromWear(taskId)
                             Log.d(TAG, "Task $taskId completed — pushing updated tasks")
                             pushTasksAndStatsDirectly()
                         }.onFailure { e ->

@@ -40,6 +40,7 @@ import dev.creapolis.pepinillo.widget.FocusTimerWidget
 import dev.creapolis.pepinillo.widget.TimerWidgetState
 import dev.creapolis.pepinillo.widget.WidgetStateManager
 import dev.creapolis.pepinillo.widget.WidgetTaskStateManager
+import dev.creapolis.pepinillo.widget.FocusTimerWidgetLogic
 import dev.creapolis.pepinillo.widget.updateWidgetState
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
@@ -83,6 +84,7 @@ class FocusTimerService : Service() {
         const val ACTION_STOP = "dev.creapolis.pepinillo.STOP"
         const val ACTION_START_MODE = "dev.creapolis.pepinillo.START_MODE"
         const val ACTION_SELECT_MODE = "dev.creapolis.pepinillo.SELECT_MODE"
+        const val ACTION_RECOVER = "dev.creapolis.pepinillo.RECOVER"
         const val EXTRA_MODE = "mode"
 
         // Recovery SharedPrefs keys
@@ -193,7 +195,7 @@ class FocusTimerService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // null intent = START_STICKY restart after process death — attempt recovery
-        if (intent == null) {
+        if (intent == null || intent.action == ACTION_RECOVER) {
             startForegroundCompat(buildNotification(focusEngine.state.value))
             val recovery = readRecoveryState(this)
             if (recovery != null) {
@@ -213,6 +215,11 @@ class FocusTimerService : Service() {
                     )
                 }
             } else {
+                if (intent?.action == ACTION_RECOVER) {
+                    // Cold start with stale widget — recovery already cleared by bootstrap.
+                    stopSelf()
+                    return START_NOT_STICKY
+                }
                 // Nothing to restore — stop the service
                 stopSelf()
                 return START_NOT_STICKY
@@ -359,7 +366,9 @@ class FocusTimerService : Service() {
                         )
                     }
                     
-                    val shouldUpdateWidget = statusChanged || modeChanged || themeChanged || (now - lastWidgetUpdate >= 30000)
+                    val throttleMs = FocusTimerWidgetLogic.widgetUpdateThrottleMs(state.status)
+                    val shouldUpdateWidget = statusChanged || modeChanged || themeChanged ||
+                        (now - lastWidgetUpdate >= throttleMs)
                     
                     previousStatus = state.status
                     previousPhase = state.phase

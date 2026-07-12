@@ -8,10 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 import android.os.SystemClock
 import android.os.Build
 import android.widget.RemoteViews
@@ -56,6 +52,8 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import androidx.glance.semantics.contentDescription
+import androidx.glance.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import dev.creapolis.pepinillo.ui.theme.AppTheme
@@ -90,7 +88,7 @@ class FocusTimerWidget : GlanceAppWidget() {
             val isPro = entryPoint.subscriptionManager().subscriptionState.value.hasLocalPremium
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, id) { prefs ->
                 prefs.toMutablePreferences().apply {
-                    this[PREF_FOCUS_IS_PRO] = isPro
+                    this[FocusTimerWidgetKeys.FOCUS_IS_PRO] = isPro
                 }
             }
         } catch (e: Exception) {
@@ -138,56 +136,39 @@ suspend fun updateWidgetState(context: Context, state: TimerWidgetState) {
     glanceIds.forEach { glanceId ->
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
             prefs.toMutablePreferences().apply {
-                this[PREF_MODE] = state.mode.name
+                this[FocusTimerWidgetKeys.MODE] = state.mode.name
                 if (state.selectedMode != null) {
-                    this[PREF_SELECTED_MODE] = state.selectedMode.name
+                    this[FocusTimerWidgetKeys.SELECTED_MODE] = state.selectedMode.name
                 }
-                this[PREF_DISPLAY] = state.displayTime
-                this[PREF_PHASE] = state.phaseLabel
-                this[PREF_STATUS] = state.status.name
-                this[PREF_PROGRESS] = state.progress
+                this[FocusTimerWidgetKeys.DISPLAY] = state.displayTime
+                this[FocusTimerWidgetKeys.PHASE] = state.phaseLabel
+                this[FocusTimerWidgetKeys.STATUS] = state.status.name
+                this[FocusTimerWidgetKeys.PROGRESS] = state.progress
                 if (state.finishTimestamp != null) {
-                    this[PREF_FINISH_TIMESTAMP] = state.finishTimestamp.toString()
+                    this[FocusTimerWidgetKeys.FINISH_TIMESTAMP] = state.finishTimestamp.toString()
                 } else {
-                    remove(PREF_FINISH_TIMESTAMP)
+                    remove(FocusTimerWidgetKeys.FINISH_TIMESTAMP)
                 }
                 if (state.linkedTaskName != null) {
-                    this[PREF_LINKED_TASK] = state.linkedTaskName
+                    this[FocusTimerWidgetKeys.LINKED_TASK] = state.linkedTaskName
                 } else {
-                    remove(PREF_LINKED_TASK)
+                    remove(FocusTimerWidgetKeys.LINKED_TASK)
                 }
-                this[PREF_ELAPSED] = state.elapsedMillis.toString()
-                this[PREF_STREAK] = state.streak
-                this[PREF_SESSIONS] = state.sessionsToday
+                this[FocusTimerWidgetKeys.ELAPSED] = state.elapsedMillis.toString()
+                this[FocusTimerWidgetKeys.STREAK] = state.streak
+                this[FocusTimerWidgetKeys.SESSIONS] = state.sessionsToday
                 if (state.linkedTaskTitle != null) {
-                    this[PREF_LINKED_TASK_TITLE] = state.linkedTaskTitle
+                    this[FocusTimerWidgetKeys.LINKED_TASK_TITLE] = state.linkedTaskTitle
                 } else {
-                    remove(PREF_LINKED_TASK_TITLE)
+                    remove(FocusTimerWidgetKeys.LINKED_TASK_TITLE)
                 }
-                this[PREF_THEME_ID] = state.themeId
-                this[PREF_PHASE_ENUM] = state.phase.name
-                this[PREF_THEME_MODE] = state.themeMode
+                this[FocusTimerWidgetKeys.THEME_ID] = state.themeId
+                this[FocusTimerWidgetKeys.PHASE_ENUM] = state.phase.name
+                this[FocusTimerWidgetKeys.THEME_MODE] = state.themeMode
             }
         }
     }
 }
-
-private val PREF_MODE = stringPreferencesKey("mode")
-private val PREF_SELECTED_MODE = stringPreferencesKey("selected_mode")
-private val PREF_DISPLAY = stringPreferencesKey("display")
-private val PREF_PHASE = stringPreferencesKey("phase")
-private val PREF_STATUS = stringPreferencesKey("status")
-private val PREF_PROGRESS = floatPreferencesKey("progress")
-private val PREF_FINISH_TIMESTAMP = stringPreferencesKey("finish_timestamp")
-private val PREF_LINKED_TASK = stringPreferencesKey("linked_task")
-private val PREF_FOCUS_IS_PRO = booleanPreferencesKey("is_pro")
-private val PREF_ELAPSED = stringPreferencesKey("elapsed_millis")
-private val PREF_STREAK = intPreferencesKey("streak")
-private val PREF_SESSIONS = intPreferencesKey("sessions")
-private val PREF_LINKED_TASK_TITLE = stringPreferencesKey("linked_task_title")
-private val PREF_THEME_ID = stringPreferencesKey("selected_theme")
-private val PREF_PHASE_ENUM = stringPreferencesKey("phase_enum")
-private val PREF_THEME_MODE = stringPreferencesKey("theme_mode")
 
 private inline fun <reified T : Enum<T>> safeEnumValueOf(name: String?, default: T): T {
     if (name == null) return default
@@ -200,23 +181,23 @@ private inline fun <reified T : Enum<T>> safeEnumValueOfOrNull(name: String?): T
 }
 
 private fun prefsToTimerState(context: Context, prefs: Preferences): TimerWidgetState {
-    val mode = safeEnumValueOf(prefs[PREF_MODE], FocusMode.Pomodoro)
+    val mode = safeEnumValueOf(prefs[FocusTimerWidgetKeys.MODE], FocusMode.Pomodoro)
     return TimerWidgetState(
         mode = mode,
-        selectedMode = prefs[PREF_SELECTED_MODE]?.let { safeEnumValueOfOrNull<FocusMode>(it) },
-        displayTime = prefs[PREF_DISPLAY] ?: mode.defaultDisplayTime,
-        finishTimestamp = prefs[PREF_FINISH_TIMESTAMP]?.toLongOrNull(),
-        phaseLabel = prefs[PREF_PHASE] ?: context.getString(mode.labelRes),
-        status = safeEnumValueOf(prefs[PREF_STATUS], TimerStatus.Idle),
-        progress = prefs[PREF_PROGRESS] ?: 1f,
-        isPro = prefs[PREF_FOCUS_IS_PRO] ?: false,
-        elapsedMillis = prefs[PREF_ELAPSED]?.toLongOrNull() ?: 0L,
-        streak = prefs[PREF_STREAK] ?: 0,
-        sessionsToday = prefs[PREF_SESSIONS] ?: 0,
-        linkedTaskTitle = prefs[PREF_LINKED_TASK_TITLE],
-        themeId = prefs[PREF_THEME_ID] ?: "materialYou",
-        phase = safeEnumValueOf(prefs[PREF_PHASE_ENUM], FocusPhase.Work),
-        themeMode = prefs[PREF_THEME_MODE] ?: "System"
+        selectedMode = prefs[FocusTimerWidgetKeys.SELECTED_MODE]?.let { safeEnumValueOfOrNull<FocusMode>(it) },
+        displayTime = prefs[FocusTimerWidgetKeys.DISPLAY] ?: mode.defaultDisplayTime,
+        finishTimestamp = prefs[FocusTimerWidgetKeys.FINISH_TIMESTAMP]?.toLongOrNull(),
+        phaseLabel = prefs[FocusTimerWidgetKeys.PHASE] ?: context.getString(mode.labelRes),
+        status = safeEnumValueOf(prefs[FocusTimerWidgetKeys.STATUS], TimerStatus.Idle),
+        progress = prefs[FocusTimerWidgetKeys.PROGRESS] ?: 1f,
+        isPro = prefs[FocusTimerWidgetKeys.FOCUS_IS_PRO] ?: false,
+        elapsedMillis = prefs[FocusTimerWidgetKeys.ELAPSED]?.toLongOrNull() ?: 0L,
+        streak = prefs[FocusTimerWidgetKeys.STREAK] ?: 0,
+        sessionsToday = prefs[FocusTimerWidgetKeys.SESSIONS] ?: 0,
+        linkedTaskTitle = prefs[FocusTimerWidgetKeys.LINKED_TASK_TITLE],
+        themeId = prefs[FocusTimerWidgetKeys.THEME_ID] ?: "materialYou",
+        phase = safeEnumValueOf(prefs[FocusTimerWidgetKeys.PHASE_ENUM], FocusPhase.Work),
+        themeMode = prefs[FocusTimerWidgetKeys.THEME_MODE] ?: "System"
     )
 }
 
@@ -229,7 +210,7 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
     val mode = state.mode
     val isRunning = state.status == TimerStatus.Running
     val isPaused = state.status == TimerStatus.Paused
-    val isActive = isRunning || isPaused
+    val isActive = FocusTimerWidgetLogic.isActiveSession(state.status)
     
     val isDark = when (state.themeMode) {
         "Dark" -> true
@@ -323,14 +304,23 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 val primaryIcon = if (isRunning) R.drawable.ic_pause else R.drawable.ic_play
+                val primaryControlCd = if (isRunning) {
+                    context.getString(R.string.widget_pause)
+                } else {
+                    context.getString(R.string.widget_play)
+                }
 
                 val startIntent = Intent(context, FocusTimerService::class.java).apply {
                     action = FocusTimerService.ACTION_START_MODE
                     putExtra(FocusTimerService.EXTRA_MODE, (state.selectedMode ?: mode).name)
                 }
 
-                val pauseResumeIntent = Intent(context, FocusTimerService::class.java).apply {
-                    action = if (isRunning) FocusTimerService.ACTION_PAUSE else FocusTimerService.ACTION_RESUME
+                val controlAction = FocusTimerWidgetLogic.primaryControlAction(state.status)
+                val controlIntent = Intent(context, FocusTimerService::class.java).apply {
+                    action = controlAction
+                    if (controlAction == FocusTimerService.ACTION_START_MODE) {
+                        putExtra(FocusTimerService.EXTRA_MODE, (state.selectedMode ?: mode).name)
+                    }
                 }
 
                 Box(
@@ -339,14 +329,17 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
                         .cornerRadius(36.dp)
                         .size(72.dp)
                         .clickable(
-                            if (isActive) actionStartService(pauseResumeIntent, isForegroundService = true)
-                            else actionStartService(startIntent, isForegroundService = true)
+                            if (isActive) {
+                                actionStartService(controlIntent, isForegroundService = true)
+                            } else {
+                                actionStartService(startIntent, isForegroundService = true)
+                            }
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
                     androidx.glance.Image(
                         provider = androidx.glance.ImageProvider(primaryIcon),
-                        contentDescription = "Play/Pause",
+                        contentDescription = primaryControlCd,
                         colorFilter = androidx.glance.ColorFilter.tint(onAccentColorProvider),
                         modifier = GlanceModifier.size(36.dp)
                     )
@@ -364,7 +357,7 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
                 ) {
                     androidx.glance.Image(
                         provider = androidx.glance.ImageProvider(R.drawable.ic_stop),
-                        contentDescription = "Stop",
+                        contentDescription = context.getString(R.string.widget_stop),
                         colorFilter = androidx.glance.ColorFilter.tint(onSurfaceVariantProvider),
                         modifier = GlanceModifier.size(20.dp)
                     )
@@ -444,13 +437,20 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
                                 FocusMode.Blocks -> "\uD83E\uDDF1"  // 🧱
                                 FocusMode.Chrono -> "\u26A1"      // ⚡
                             }
-                        
+                            val modeCd = when (m) {
+                                FocusMode.Pomodoro -> context.getString(R.string.widget_mode_pomodoro)
+                                FocusMode.Flow -> context.getString(R.string.widget_mode_flow)
+                                FocusMode.Blocks -> context.getString(R.string.widget_mode_blocks)
+                                FocusMode.Chrono -> context.getString(R.string.widget_mode_chrono)
+                            }
+
                         Box(
                             modifier = GlanceModifier
                                 .padding(horizontal = 4.dp)
                                 .size(40.dp)
                                 .cornerRadius(20.dp)
                                 .background(if (isSelected) onSurfaceProvider else surfaceVariantProvider)
+                                .semantics { contentDescription = modeCd }
                                 .clickable(actionRunCallback<SelectModeAction>(actionParametersOf(ActionParameters.Key<String>("mode") to m.name))),
                             contentAlignment = Alignment.Center
                         ) {
@@ -459,7 +459,7 @@ private fun DashboardWidget(context: Context, state: TimerWidgetState, size: DpS
                                 style = TextStyle(
                                     fontSize = 18.sp,
                                     color = if (isSelected) surfaceProvider else onSurfaceProvider
-                                )
+                                ),
                             )
                         }
                     }
@@ -542,8 +542,8 @@ private fun TimerRing(
         rv.setTextColor(R.id.timer_static_text, textColor)
     }
 
-    // Phase label
-    rv.setTextViewText(R.id.phase_label, context.getString(mode.labelRes))
+    // Phase label — use persisted phaseLabel (breaks, focus #, etc.), not always mode name
+    rv.setTextViewText(R.id.phase_label, state.phaseLabel)
     rv.setTextColor(R.id.phase_label, subtextColor)
 
     // Dynamic text sizing based on the ring size
@@ -567,7 +567,7 @@ class SelectModeAction : ActionCallback {
         val mode = safeEnumValueOfOrNull<FocusMode>(modeName) ?: return
         
         val currentPrefs = getAppWidgetState<Preferences>(context, PreferencesGlanceStateDefinition, glanceId)
-        val isPro = currentPrefs[PREF_FOCUS_IS_PRO] ?: false
+        val isPro = currentPrefs[FocusTimerWidgetKeys.FOCUS_IS_PRO] ?: false
         
         if (!isPro && !mode.isFreeTier) {
             // Not a pro user, can't select this mode. Redirect to app.
@@ -579,11 +579,11 @@ class SelectModeAction : ActionCallback {
         
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
             prefs.toMutablePreferences().apply {
-                this[PREF_MODE] = mode.name
-                this[PREF_SELECTED_MODE] = mode.name
-                this[PREF_DISPLAY] = mode.defaultDisplayTime
-                this[PREF_PHASE] = context.getString(mode.labelRes)
-                this[PREF_PROGRESS] = 1f
+                this[FocusTimerWidgetKeys.MODE] = mode.name
+                this[FocusTimerWidgetKeys.SELECTED_MODE] = mode.name
+                this[FocusTimerWidgetKeys.DISPLAY] = mode.defaultDisplayTime
+                this[FocusTimerWidgetKeys.PHASE] = context.getString(mode.labelRes)
+                this[FocusTimerWidgetKeys.PROGRESS] = 1f
             }
         }
         FocusTimerWidget().update(context, glanceId)
@@ -594,7 +594,7 @@ class StartAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         // Find selected mode from prefs
         val state = getAppWidgetState<Preferences>(context, PreferencesGlanceStateDefinition, glanceId)
-        val modeName = state[PREF_SELECTED_MODE] ?: FocusMode.Pomodoro.name
+        val modeName = state[FocusTimerWidgetKeys.SELECTED_MODE] ?: FocusMode.Pomodoro.name
 
         context.startService(
             Intent(context, FocusTimerService::class.java).apply {
@@ -608,7 +608,7 @@ class StartAction : ActionCallback {
 class PauseResumeAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val state = getAppWidgetState<Preferences>(context, PreferencesGlanceStateDefinition, glanceId)
-        val isRunning = state[PREF_STATUS] == TimerStatus.Running.name
+        val isRunning = state[FocusTimerWidgetKeys.STATUS] == TimerStatus.Running.name
         val action = if (isRunning) FocusTimerService.ACTION_PAUSE else FocusTimerService.ACTION_RESUME
 
         context.startService(
@@ -619,19 +619,32 @@ class PauseResumeAction : ActionCallback {
 
 class StopAction : ActionCallback {
     override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
-        context.startService(
-            Intent(context, FocusTimerService::class.java).apply { action = FocusTimerService.ACTION_STOP },
-        )
-        // Reset widget to idle state
+        val stopIntent = Intent(context, FocusTimerService::class.java).apply {
+            action = FocusTimerService.ACTION_STOP
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(stopIntent)
+        } else {
+            context.startService(stopIntent)
+        }
+
+        val currentPrefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)
+        val mode = safeEnumValueOf(currentPrefs[FocusTimerWidgetKeys.MODE], FocusMode.Pomodoro)
+        val selectedMode = currentPrefs[FocusTimerWidgetKeys.SELECTED_MODE]
+            ?.let { safeEnumValueOfOrNull<FocusMode>(it) } ?: mode
+
+        // Reset timer status only — keep the user's selected mode
         updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
             prefs.toMutablePreferences().apply {
-                this[PREF_MODE] = FocusMode.Pomodoro.name
-                remove(PREF_SELECTED_MODE)
-                this[PREF_DISPLAY] = FocusMode.Pomodoro.defaultDisplayTime
-                this[PREF_PHASE] = context.getString(FocusMode.Pomodoro.labelRes)
-                this[PREF_STATUS] = TimerStatus.Idle.name
-                this[PREF_PROGRESS] = 1f
-                remove(PREF_LINKED_TASK)
+                this[FocusTimerWidgetKeys.MODE] = mode.name
+                this[FocusTimerWidgetKeys.SELECTED_MODE] = selectedMode.name
+                this[FocusTimerWidgetKeys.DISPLAY] = selectedMode.defaultDisplayTime
+                this[FocusTimerWidgetKeys.PHASE] = context.getString(selectedMode.labelRes)
+                this[FocusTimerWidgetKeys.STATUS] = TimerStatus.Idle.name
+                this[FocusTimerWidgetKeys.PROGRESS] = 1f
+                remove(FocusTimerWidgetKeys.FINISH_TIMESTAMP)
+                remove(FocusTimerWidgetKeys.LINKED_TASK)
+                remove(FocusTimerWidgetKeys.LINKED_TASK_TITLE)
             }
         }
         FocusTimerWidget().update(context, glanceId)
@@ -646,11 +659,11 @@ class FocusTimerWidgetReceiver : GlanceAppWidgetReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             updateAppWidgetState(context, PreferencesGlanceStateDefinition, GlanceAppWidgetManager(context).getGlanceIds(FocusTimerWidget::class.java).firstOrNull() ?: return@launch) { prefs ->
                 prefs.toMutablePreferences().apply {
-                    this[PREF_MODE] = FocusMode.Pomodoro.name
-                    this[PREF_DISPLAY] = FocusMode.Pomodoro.defaultDisplayTime
-                    this[PREF_PHASE] = context.getString(FocusMode.Pomodoro.labelRes)
-                    this[PREF_STATUS] = TimerStatus.Idle.name
-                    this[PREF_PROGRESS] = 1f
+                    this[FocusTimerWidgetKeys.MODE] = FocusMode.Pomodoro.name
+                    this[FocusTimerWidgetKeys.DISPLAY] = FocusMode.Pomodoro.defaultDisplayTime
+                    this[FocusTimerWidgetKeys.PHASE] = context.getString(FocusMode.Pomodoro.labelRes)
+                    this[FocusTimerWidgetKeys.STATUS] = TimerStatus.Idle.name
+                    this[FocusTimerWidgetKeys.PROGRESS] = 1f
                 }
             }
             FocusTimerWidget().updateAll(context)

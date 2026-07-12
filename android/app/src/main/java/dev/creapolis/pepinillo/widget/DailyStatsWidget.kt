@@ -1,15 +1,21 @@
 package dev.creapolis.pepinillo.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.glance.GlanceId
+import androidx.glance.action.ActionParameters
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.action.actionStartActivity
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.semantics.contentDescription
+import androidx.glance.semantics.semantics
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -169,7 +175,9 @@ private fun StatsContent() {
                 modifier = GlanceModifier
                     .fillMaxSize()
                     .background(GlanceTheme.colors.widgetBackground.getColor(LocalContext.current).copy(alpha = 0.9f))
-                    .cornerRadius(24.dp),
+                    .cornerRadius(24.dp)
+                    .semantics { contentDescription = context.getString(R.string.widget_stats_locked_cd) }
+                    .clickable(actionRunCallback<OpenPaywallWidgetAction>()),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -179,7 +187,7 @@ private fun StatsContent() {
                     )
                     Spacer(modifier = GlanceModifier.height(4.dp))
                     Text(
-                        text = "Pepinillo+",
+                        text = context.getString(R.string.widget_stats_locked_title),
                         style = TextStyle(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
@@ -238,6 +246,17 @@ suspend fun updateStatsWidgetState(
                 this[PREF_STATS_COMPLETED] = completedTasksToday
             }
         }
+    }
+}
+
+class OpenPaywallWidgetAction : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        context.startActivity(
+            Intent(context, MainActivity::class.java).apply {
+                putExtra(MainActivity.EXTRA_NAV_ROUTE, MainActivity.ROUTE_PAYWALL)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            },
+        )
     }
 }
 

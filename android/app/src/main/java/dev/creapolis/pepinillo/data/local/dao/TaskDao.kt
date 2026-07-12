@@ -84,6 +84,19 @@ interface TaskDao {
     )
     suspend fun toggleCompletionAtomic(taskId: String, now: Long = System.currentTimeMillis())
 
+    /** Complete-only: no-op if the task is already completed (idempotent for widget/wear). */
+    @Query(
+        """
+        UPDATE tasks
+        SET is_completed = 1,
+            completed_at = :now,
+            is_dirty = 1,
+            updated_at = :now
+        WHERE id = :taskId AND is_completed = 0
+        """,
+    )
+    suspend fun completeTaskAtomic(taskId: String, now: Long = System.currentTimeMillis())
+
     @Query("SELECT COUNT(*) FROM tasks WHERE is_completed = 0 AND is_deleted = 0")
     fun getActiveCount(): Flow<Int>
 
