@@ -34,7 +34,7 @@ public struct APIClient: Sendable {
     public var syncSessions: @Sendable (SessionSyncRequest) async throws -> SessionSyncResponse
     public var initialUpload: @Sendable (InitialUploadRequest) async throws -> InitialUploadResponse
     public var getFullSync: @Sendable (_ taskCursor: String?, _ sessionCursor: String?, _ limit: Int) async throws -> FullSyncResponse
-    public var deleteAccount: @Sendable () async throws -> Void
+    public var deleteAccount: @Sendable (DeleteAccountRequest) async throws -> Void
 }
 
 // MARK: - Live implementation
@@ -92,7 +92,7 @@ extension APIClient: DependencyKey {
                 )
                 return try await helper.authenticatedGet(path)
             },
-            deleteAccount: { try await helper.authenticatedDeleteVoid("auth/account") }
+            deleteAccount: { req in try await helper.authenticatedDeleteVoidWithBody("auth/account", body: req) }
         )
     }
 
@@ -221,6 +221,38 @@ private struct APIHelper: Sendable {
         var request = URLRequest(url: try makeURL(path))
         request.httpMethod = "DELETE"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // First attempt with current access token
+        guard let accessToken = await keychain.loadAccessToken() else {
+            throw APIClientError.sessionExpired
+        }
+
+        var authedRequest = request
+        authedRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await performRequest(authedRequest)
+
+        // If 401, try refreshing tokens and retry once
+        if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 401 {
+            let (retryData, retryResponse) = try await refreshAndRetryRaw(originalRequest: request)
+            try validateResponse(data: retryData, response: retryResponse)
+            return
+        }
+
+        try validateResponse(data: data, response: response)
+    }
+
+    /// Authenticated DELETE with a JSON body. Used by account deletion, which
+    /// needs to carry the refresh token and (for Sign in with Apple users) the
+    /// Apple authorization code so the backend can revoke tokens (#193, #196).
+    func authenticatedDeleteVoidWithBody<Req: Encodable & Sendable>(
+        _ path: String,
+        body: Req
+    ) async throws {
+        var request = URLRequest(url: try makeURL(path))
+        request.httpMethod = "DELETE"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try encoder.encode(body)
 
         // First attempt with current access token
         guard let accessToken = await keychain.loadAccessToken() else {

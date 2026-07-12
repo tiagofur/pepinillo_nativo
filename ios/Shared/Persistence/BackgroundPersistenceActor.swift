@@ -236,6 +236,7 @@ public actor BackgroundPersistenceActor {
         prefs.appleUserID = prefsDTO.appleUserID
         prefs.displayName = prefsDTO.displayName
         prefs.userEmail = prefsDTO.userEmail
+        prefs.appleAuthorizationCode = prefsDTO.appleAuthorizationCode
         try svc.savePreferences(prefs)
     }
 

@@ -79,6 +79,11 @@ type Config struct {
 	AlertMuteEndHourUTC                    int64
 	GoogleClientIDs                        string
 	AppleBundleID                          string
+	// Sign in with Apple server-to-server token revocation (#196). All optional:
+	// when unset, RevokeAppleToken logs and skips, so account deletion still works.
+	AppleTeamID                            string
+	AppleKeyID                             string
+	ApplePrivateKey                        string
 	RevenueCatAPIKey                       string
 	RevenueCatSecretKey                    string // Secret API Key (V2) for server-to-server validation
 	RevenueCatWebhookAuthToken             string
@@ -163,6 +168,9 @@ func Load() (*Config, error) {
 		AlertMuteEndHourUTC:                    getEnvInt64("ALERT_MUTE_END_HOUR_UTC", 0),
 		GoogleClientIDs:                        getEnv("GOOGLE_CLIENT_IDS", ""),
 		AppleBundleID:                          getEnv("APPLE_BUNDLE_ID", ""),
+		AppleTeamID:                            getEnv("APPLE_TEAM_ID", ""),
+		AppleKeyID:                             getEnv("APPLE_KEY_ID", ""),
+		ApplePrivateKey:                        getEnv("APPLE_PRIVATE_KEY", ""),
 		RevenueCatAPIKey:                       getEnv("REVENUECAT_API_KEY", ""),
 		RevenueCatSecretKey:                    getEnv("REVENUECAT_SECRET_KEY", ""),
 		RevenueCatWebhookAuthToken:             getEnv("REVENUECAT_WEBHOOK_AUTH_TOKEN", ""),

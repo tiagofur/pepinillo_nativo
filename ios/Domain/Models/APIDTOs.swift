@@ -27,6 +27,20 @@ public struct LogoutRequest: Codable, Sendable, Equatable {
     public let refreshToken: String
 }
 
+/// Request body for `DELETE /auth/account` (#193, #196).
+/// `refreshToken` lets the backend revoke the app's own session even though the
+/// access token is carried via the Authorization header; `appleAuthorizationCode`
+/// lets the backend revoke Sign in with Apple user tokens (Apple requirement).
+public struct DeleteAccountRequest: Codable, Sendable, Equatable {
+    public let refreshToken: String?
+    public let appleAuthorizationCode: String?
+
+    public init(refreshToken: String?, appleAuthorizationCode: String?) {
+        self.refreshToken = refreshToken
+        self.appleAuthorizationCode = appleAuthorizationCode
+    }
+}
+
 public struct AppleLoginRequest: Codable, Sendable, Equatable {
     public let idToken: String
     public let nonce: String

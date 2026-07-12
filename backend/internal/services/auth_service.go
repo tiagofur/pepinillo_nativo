@@ -26,6 +26,9 @@ type AuthService struct {
 	jwtIssuer         string
 	accessTTLSeconds  int64
 	refreshTTLSeconds int64
+	// oauthService is used for best-effort Apple token revocation during account
+	// deletion (#196). May be nil in tests.
+	oauthService *OAuthService
 }
 
 type AuthTokens struct {
@@ -46,6 +49,12 @@ func NewAuthService(users ports.UserRepository, authStore ports.AuthStore, notif
 		accessTTLSeconds:  accessTTLSeconds,
 		refreshTTLSeconds: refreshTTLSeconds,
 	}
+}
+
+// SetOAuthService wires the OAuthService so DeleteAccount can perform best-effort
+// Apple token revocation (#196). Called after both services are constructed.
+func (s *AuthService) SetOAuthService(oauth *OAuthService) {
+	s.oauthService = oauth
 }
 
 func (s *AuthService) Register(ctx context.Context, email, name, password string) (*domain.User, *AuthTokens, error) {
@@ -297,8 +306,24 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID, currentPasswor
 	return s.authStore.RevokeAllRefreshTokens(ctx, userID)
 }
 
-func (s *AuthService) DeleteAccount(ctx context.Context, userID string) error {
+// DeleteAccount permanently removes the user, revokes all refresh tokens, and
+// (for Sign in with Apple users) asks Apple to revoke its tokens best-effort.
+//
+// The appleAuthorizationCode is captured client-side at SIWA time and carries a
+// short lifetime, so revocation may legitimately fail — that is logged and does
+// NOT abort the deletion (#196).
+func (s *AuthService) DeleteAccount(ctx context.Context, userID string, appleAuthorizationCode *string) error {
 	_ = s.behaviorLogger.LogEvent(ctx, userID, "account_deleted", map[string]any{})
+
+	// Best-effort Apple token revocation for SIWA users (#196). Never blocks
+	// the deletion — see RevokeAppleToken for the rationale.
+	if s.oauthService != nil && appleAuthorizationCode != nil && *appleAuthorizationCode != "" {
+		// Only attempt revocation if the user actually has an Apple ID linked.
+		if user, err := s.users.GetByID(ctx, userID); err == nil && user != nil && user.AppleID != nil && *user.AppleID != "" {
+			_ = s.oauthService.RevokeAppleToken(ctx, *appleAuthorizationCode)
+		}
+	}
+
 	if err := s.authStore.RevokeAllRefreshTokens(ctx, userID); err != nil {
 		return err
 	}

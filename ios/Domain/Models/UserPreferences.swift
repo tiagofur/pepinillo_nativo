@@ -69,6 +69,9 @@ public final class UserPreferences {
     public var appleUserID: String? = nil
     public var displayName: String? = nil
     public var userEmail: String? = nil
+    /// Apple authorization code for backend-side token revocation on account
+    /// deletion (#196). Not synced via CloudKit (device-local only).
+    public var appleAuthorizationCode: String? = nil
 
     public init() {
         self.id = UUID()

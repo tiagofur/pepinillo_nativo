@@ -41,7 +41,6 @@ struct ProfileFeature {
         case editProfileTapped
         case editProfile(PresentationAction<EditProfileFeature.Action>)
         case signOutTapped
-        case signOutCompleted
 
         case delegate(Delegate)
         enum Delegate: Equatable {
@@ -168,17 +167,10 @@ struct ProfileFeature {
                 return .none
 
             case .signOutTapped:
-                state.isLoading = true
-                return .run { send in
-                    if let refreshToken = await keychain.loadRefreshToken() {
-                        try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))
-                    }
-                    try? await keychain.deleteTokens()
-                    try? await persistence.deleteCachedUser()
-                    await send(.signOutCompleted)
-                }
-
-            case .signOutCompleted:
+                // Defer all token/keychain/RevenueCat cleanup to AppFeature via the
+                // `.signedOut` delegate. This reducer previously duplicated the keychain
+                // and cachedUser deletion, which drifted out of sync with the other
+                // sign-out paths — now there is a single shared cleanup path.
                 state.isLoading = false
                 state.user = nil
                 return .send(.delegate(.signedOut))

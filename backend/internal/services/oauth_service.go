@@ -2,14 +2,18 @@ package services
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +38,13 @@ type OAuthService struct {
 	googleClient    *http.Client
 	googleClientIDs []string
 	appleBundleID   string
+	// Apple Sign in with Apple server-to-server token revocation (#196).
+	// All optional — when any is empty, RevokeAppleToken is a logged no-op so
+	// account deletion still succeeds without Apple revocation configured.
+	appleTeamID    string
+	appleKeyID     string
+	applePrivateKey string
+	appleClient    *http.Client
 }
 
 const appleTokenMaxAge = 10 * time.Minute
@@ -68,6 +79,7 @@ func NewOAuthService(
 	accessTTL, refreshTTL int64,
 	googleClientIDs []string,
 	appleBundleID string,
+	appleTeamID, appleKeyID, applePrivateKey string,
 ) *OAuthService {
 	return &OAuthService{
 		users:           users,
@@ -79,6 +91,10 @@ func NewOAuthService(
 		googleClient:    &http.Client{Timeout: 10 * time.Second},
 		googleClientIDs: googleClientIDs,
 		appleBundleID:   appleBundleID,
+		appleTeamID:     appleTeamID,
+		appleKeyID:      appleKeyID,
+		applePrivateKey: applePrivateKey,
+		appleClient:     &http.Client{Timeout: 10 * time.Second},
 	}
 }
 
@@ -685,4 +701,153 @@ func (s *OAuthService) generateTokens(user *domain.User) (*AuthTokens, error) {
 		RefreshToken: refreshTokenString,
 		ExpiresIn:    s.accessTTL,
 	}, nil
+}
+
+// MARK: - Sign in with Apple token revocation (#196)
+//
+// Apple requires apps that offer Sign in with Apple to revoke Apple user tokens
+// when the user deletes their account. This method:
+//  1. Builds a client-secret JWT signed with the Apple Music/Sign-in private key (ES256).
+//  2. Exchanges the authorization_code (captured client-side at SIWA time) for a
+//     refresh_token via the Apple auth/token endpoint.
+//  3. POSTs the refresh_token to the Apple auth/revoke endpoint.
+//
+// Best-effort: when the Apple key material is not configured, or any step fails,
+// the error is logged but NOT returned — account deletion must still succeed.
+// Apple may have already invalidated the token, the code may be expired, etc.
+
+const (
+	appleTokenURL  = "https://appleid.apple.com/auth/token"
+	appleRevokeURL = "https://appleid.apple.com/auth/revoke"
+	appleAudience  = "https://appleid.apple.com"
+)
+
+// RevokeAppleToken revokes the Apple user token bound to the given authorization
+// code. It never returns a terminal error — callers should proceed with account
+// deletion regardless. Returns nil on success or when not configured.
+func (s *OAuthService) RevokeAppleToken(ctx context.Context, authorizationCode string) error {
+	if s.appleTeamID == "" || s.appleKeyID == "" || s.applePrivateKey == "" {
+		slog.Info("RevokeAppleToken: skipping — Apple revocation not configured (APPLE_TEAM_ID/KEY_ID/PRIVATE_KEY unset)")
+		return nil
+	}
+	if strings.TrimSpace(authorizationCode) == "" {
+		slog.Info("RevokeAppleToken: skipping — no authorization_code provided")
+		return nil
+	}
+
+	clientSecret, err := s.generateAppleClientSecret()
+	if err != nil {
+		slog.Warn("RevokeAppleToken: failed to generate client secret", "error", err)
+		return nil
+	}
+
+	// Step 1: exchange the authorization_code for a refresh_token.
+	refreshToken, err := s.exchangeAppleAuthCode(ctx, authorizationCode, clientSecret)
+	if err != nil {
+		slog.Warn("RevokeAppleToken: auth/token exchange failed", "error", err)
+		return nil
+	}
+
+	// Step 2: revoke the refresh_token.
+	if err := s.postAppleRevoke(ctx, refreshToken, clientSecret); err != nil {
+		slog.Warn("RevokeAppleToken: auth/revoke failed", "error", err)
+		return nil
+	}
+
+	slog.Info("RevokeAppleToken: Apple user token revoked successfully")
+	return nil
+}
+
+// generateAppleClientSecret builds the ES256-signed client-secret JWT per Apple's
+// documentation. Valid for up to 6 months; we mint a fresh one each call for
+// simplicity (account deletion is rare).
+func (s *OAuthService) generateAppleClientSecret() (string, error) {
+	block, _ := pem.Decode([]byte(s.applePrivateKey))
+	if block == nil {
+		return "", fmt.Errorf("apple private key is not valid PEM")
+	}
+	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return "", fmt.Errorf("parse apple private key: %w", err)
+	}
+	ecdsaKey, ok := key.(*ecdsa.PrivateKey)
+	if !ok {
+		return "", fmt.Errorf("apple private key is not ECDSA P-256")
+	}
+
+	now := time.Now()
+	claims := jwt.RegisteredClaims{
+		Issuer:    s.appleTeamID,
+		IssuedAt:  jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(30 * time.Minute)),
+		Audience:  []string{appleAudience},
+		Subject:   s.appleBundleID,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	token.Header["kid"] = s.appleKeyID
+	return token.SignedString(ecdsaKey)
+}
+
+// exchangeAppleAuthCode exchanges the SIWA authorization_code for a refresh_token.
+func (s *OAuthService) exchangeAppleAuthCode(ctx context.Context, code, clientSecret string) (string, error) {
+	form := url.Values{
+		"grant_type":    {"authorization_code"},
+		"code":          {code},
+		"client_id":     {s.appleBundleID},
+		"client_secret": {clientSecret},
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, appleTokenURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := s.appleClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<14))
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("apple auth/token returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var parsed struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return "", fmt.Errorf("decode apple token response: %w", err)
+	}
+	if parsed.RefreshToken == "" {
+		return "", fmt.Errorf("apple auth/token response missing refresh_token")
+	}
+	return parsed.RefreshToken, nil
+}
+
+// postAppleRevoke revokes a refresh_token via Apple's auth/revoke endpoint.
+func (s *OAuthService) postAppleRevoke(ctx context.Context, refreshToken, clientSecret string) error {
+	form := url.Values{
+		"token":           {refreshToken},
+		"token_type_hint": {"refresh_token"},
+		"client_id":       {s.appleBundleID},
+		"client_secret":   {clientSecret},
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, appleRevokeURL, strings.NewReader(form.Encode()))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := s.appleClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<14))
+		return fmt.Errorf("apple auth/revoke returned %d: %s", resp.StatusCode, string(body))
+	}
+	return nil
 }

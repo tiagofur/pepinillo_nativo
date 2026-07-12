@@ -419,6 +419,7 @@ public final class SwiftDataPersistenceService {
         prefs.appleUserID = prefsDTO.appleUserID
         prefs.displayName = prefsDTO.displayName
         prefs.userEmail = prefsDTO.userEmail
+        prefs.appleAuthorizationCode = prefsDTO.appleAuthorizationCode
         try savePreferences(prefs)
     }
 

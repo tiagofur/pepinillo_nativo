@@ -101,5 +101,16 @@ struct EmailVerificationView: View {
             Spacer()
         }
         .padding()
+        .toolbar {
+            // Escape hatch: lets the user sign out if they entered the wrong email
+            // or can't access the inbox. Without this the non-dismissible sheet
+            // traps them, and force-quitting bypassed the gate via cached tokens (#192).
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(String(localized: "emailverification.signout.button", defaultValue: "Sign out")) {
+                    store.send(.signOutTapped)
+                }
+                .accessibilityHint(String(localized: "a11y.emailverification.signout.hint", defaultValue: "Signs out and returns to the sign-in screen"))
+            }
+        }
     }
 }
