@@ -115,6 +115,10 @@ interface TaskDao {
     @Query("UPDATE tasks SET is_deleted = 1, is_dirty = 1, updated_at = :now WHERE id = :taskId")
     suspend fun softDelete(taskId: String, now: Long = System.currentTimeMillis())
 
+    /** Restore a soft-deleted row in place — preserves serverId and sync metadata. */
+    @Query("UPDATE tasks SET is_deleted = 0, is_dirty = 1, updated_at = :now WHERE id = :taskId")
+    suspend fun restoreSoftDelete(taskId: String, now: Long = System.currentTimeMillis())
+
     @Query("DELETE FROM tasks WHERE is_deleted = 1 AND is_dirty = 0")
     suspend fun purgeDeletedSynced()
 

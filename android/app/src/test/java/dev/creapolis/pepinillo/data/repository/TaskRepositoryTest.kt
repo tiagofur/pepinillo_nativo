@@ -9,6 +9,7 @@ import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
+import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -62,6 +63,7 @@ class TaskRepositoryTest {
         every { taskDao.getActiveTasks() } returns flowOf(emptyList())
         every { sessionRepository.getTodayStats() } returns flowOf<DailyStatsEntity?>(null)
         every { sessionRepository.getAllDaysWithSessions() } returns flowOf(emptyList())
+        every { featureGate.canUseRecurrence() } returns true
 
         repo = TaskRepository(
             taskDao = taskDao,
@@ -76,6 +78,27 @@ class TaskRepositoryTest {
     }
 
     // ── updateTask: sync metadata must survive domain-field edits ───────────
+
+    @Test
+    fun `updateTask preserves completion state from existing row`() = runTest {
+        val existing = TaskEntity(
+            id = "task-done",
+            title = "Done",
+            isCompleted = true,
+            completedAt = 1_700_000_000_000L,
+        )
+        val staleEdit = Task(id = "task-done", title = "New title", isCompleted = false)
+        val entitySlot = slot<TaskEntity>()
+
+        coEvery { taskDao.getTaskById("task-done") } returns existing
+        coEvery { taskDao.updateTask(capture(entitySlot)) } returns Unit
+
+        repo.updateTask(staleEdit)
+
+        assertTrue(entitySlot.captured.isCompleted)
+        assertEquals(1_700_000_000_000L, entitySlot.captured.completedAt)
+        assertEquals("New title", entitySlot.captured.title)
+    }
 
     @Test
     fun `updateTask preserves serverId syncedAt and isDeleted from existing row`() = runTest {
@@ -106,15 +129,48 @@ class TaskRepositoryTest {
     // ── toggleCompletion: atomic single-statement UPDATE ──────────────────
 
     @Test
-    fun `toggleCompletion delegates to atomic update and skips read-modify-write`() = runTest {
+    fun `toggleCompletion delegates to atomic update for non-recurring tasks`() = runTest {
+        coEvery { taskDao.getTaskById("task-1") } returns TaskEntity(id = "task-1", title = "Plain")
+
         repo.toggleCompletion("task-1")
 
-        // Must hit the atomic path exactly once. `now` uses a per-call default
-        // (System.currentTimeMillis()), so match it with any() to avoid time drift.
         coVerify(exactly = 1) { taskDao.toggleCompletionAtomic("task-1", any()) }
-        // Must NOT perform a read-modify-write (the old race-prone pattern).
-        coVerify(exactly = 0) { taskDao.getTaskById("task-1") }
         coVerify(exactly = 0) { taskDao.updateTask(any()) }
+    }
+
+    @Test
+    fun `toggleCompletion advances recurring task instead of leaving it completed`() = runTest {
+        val today = dev.creapolis.pepinillo.domain.tasks.RecurrenceCalculator.startOfLocalDay()
+        val existing = TaskEntity(
+            id = "task-recur",
+            title = "Daily",
+            recurrenceRule = RecurrenceOption.Daily.rrule,
+            dueDate = today.timeInMillis,
+            isCompleted = false,
+        )
+        val entitySlot = slot<TaskEntity>()
+
+        coEvery { taskDao.getTaskById("task-recur") } returns existing
+        coEvery { taskDao.updateTask(capture(entitySlot)) } returns Unit
+
+        repo.toggleCompletion("task-recur")
+
+        coVerify(exactly = 0) { taskDao.toggleCompletionAtomic(any(), any()) }
+        assertEquals(false, entitySlot.captured.isCompleted)
+        assertEquals(null, entitySlot.captured.completedAt)
+        assertTrue(entitySlot.captured.nextOccurrence != null)
+        assertTrue(entitySlot.captured.dueDate!! > today.timeInMillis)
+        assertTrue(entitySlot.captured.isRecurringTemplate)
+    }
+
+    @Test
+    fun `restoreTask uses soft-delete restore without insert replace`() = runTest {
+        val task = Task(id = "task-undo", title = "Restored")
+
+        repo.restoreTask(task)
+
+        coVerify(exactly = 1) { taskDao.restoreSoftDelete("task-undo", any()) }
+        coVerify(exactly = 0) { taskDao.insertTask(any()) }
     }
 
     @Test
