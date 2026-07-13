@@ -28,7 +28,8 @@ struct WatchTimerFeatureTests {
         pomodoroNumber: Int? = 1,
         linkedTaskTitle: String? = nil,
         linkedTaskID: String? = nil,
-        isPhaseTransition: Bool = false
+        isPhaseTransition: Bool = false,
+        sentAt: TimeInterval = Date().timeIntervalSince1970
     ) -> WatchSessionState {
         WatchSessionState(
             isActive: true,
@@ -40,7 +41,8 @@ struct WatchTimerFeatureTests {
             pomodoroNumber: pomodoroNumber,
             linkedTaskTitle: linkedTaskTitle,
             linkedTaskID: linkedTaskID,
-            isPhaseTransition: isPhaseTransition
+            isPhaseTransition: isPhaseTransition,
+            sentAt: sentAt
         )
     }
 
@@ -64,7 +66,7 @@ struct WatchTimerFeatureTests {
         let store = TestStore(initialState: WatchTimerFeature.State()) {
             WatchTimerFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -85,6 +87,7 @@ struct WatchTimerFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -120,7 +123,7 @@ struct WatchTimerFeatureTests {
             let store = TestStore(initialState: state) {
                 WatchTimerFeature()
             } withDependencies: {
-                $0.watchConnectivityClient.sendCommand = { _ in }
+                $0.watchConnectivityClient.sendCommand = { _ in true }
             }
 
             store.exhaustivity = .off
@@ -141,7 +144,7 @@ struct WatchTimerFeatureTests {
         let store = TestStore(initialState: state) {
             WatchTimerFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -159,7 +162,7 @@ struct WatchTimerFeatureTests {
         let store = TestStore(initialState: state) {
             WatchTimerFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -190,7 +193,7 @@ struct WatchTimerFeatureTests {
         let store = TestStore(initialState: state) {
             WatchTimerFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -218,7 +221,7 @@ struct WatchTimerFeatureTests {
         let store = TestStore(initialState: state) {
             WatchTimerFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -628,7 +631,7 @@ struct WatchTimerFeatureTests {
         let store = TestStore(initialState: WatchTimerFeature.State()) {
             WatchTimerFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -638,8 +641,10 @@ struct WatchTimerFeatureTests {
         await store.receive(.commandSent(.startSession(mode: "pomodoro")))
 
         // 2. Receive active state from phone
-        let activeState = Self.activeSession(displayTime: "24:50", progress: 0.007)
+        let activeState = Self.activeSession(displayTime: "24:50", progress: 0.007, sentAt: 100)
         await store.send(.sessionStateReceived(activeState)) {
+            $0.lastAppliedSentAt = 100
+            $0.hadActiveSession = true
             $0.isSessionActive = true
             $0.isPaused = false
             $0.displayTime = "24:50"
@@ -654,8 +659,9 @@ struct WatchTimerFeatureTests {
         await store.receive(.commandSent(.pauseSession))
 
         // 4. Receive paused state
-        let pausedState = Self.activeSession(isPaused: true, displayTime: "24:50", phaseLabel: "Paused", progress: 0.007)
+        let pausedState = Self.activeSession(isPaused: true, displayTime: "24:50", phaseLabel: "Paused", progress: 0.007, sentAt: 200)
         await store.send(.sessionStateReceived(pausedState)) {
+            $0.lastAppliedSentAt = 200
             $0.isPaused = true
             $0.phaseLabel = "Paused"
         }
@@ -669,13 +675,80 @@ struct WatchTimerFeatureTests {
         await store.receive(.commandSent(.stopSession))
 
         // 7. Receive idle state
-        await store.send(.sessionStateReceived(Self.idleSession)) {
+        var idle = Self.idleSession
+        idle.sentAt = 300
+        await store.send(.sessionStateReceived(idle)) {
             $0.isSessionActive = false
             $0.isPaused = false
             $0.displayTime = "25:00"
             $0.phaseLabel = "Ready"
             $0.progress = nil
             $0.pomodoroNumber = nil
+            $0.lastAppliedSentAt = 300
+            $0.hadActiveSession = false
         }
+    }
+
+    @Test("startTapped blocks Pro mode for free users (#235)")
+    func startTappedBlocksProModeForFreeUser() async {
+        var state = WatchTimerFeature.State()
+        state.selectedMode = .flowtime
+        state.isProUser = false
+
+        let store = TestStore(initialState: state) {
+            WatchTimerFeature()
+        } withDependencies: {
+            $0.watchConnectivityClient.sendCommand = { _ in
+                Issue.record("sendCommand should not be called for locked Pro mode")
+                return true
+            }
+        }
+
+        await store.send(.startTapped)
+    }
+
+    @Test("modeSelected ignores Pro mode for free users (#235)")
+    func modeSelectedIgnoresProModeForFreeUser() async {
+        var state = WatchTimerFeature.State()
+        state.selectedMode = .pomodoro
+        state.isProUser = false
+
+        let store = TestStore(initialState: state) {
+            WatchTimerFeature()
+        }
+
+        await store.send(.modeSelected(.flowtime))
+        #expect(store.state.selectedMode == .pomodoro)
+    }
+
+    @Test("onAppear loads isProUser from app group (#235)")
+    func onAppearLoadsIsProUser() async {
+        let saved = AppGroupDefaults.isProUser
+        defer { AppGroupDefaults.isProUser = saved }
+        AppGroupDefaults.isProUser = true
+
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        }
+
+        await store.send(.onAppear) {
+            $0.isProUser = true
+        }
+    }
+
+    @Test("sessionStateReceived ignores stale sentAt updates (#240)")
+    func sessionStateReceivedIgnoresStaleSentAt() async {
+        var state = WatchTimerFeature.State()
+        state.lastAppliedSentAt = 500
+        state.displayTime = "10:00"
+
+        let store = TestStore(initialState: state) {
+            WatchTimerFeature()
+        }
+
+        var stale = Self.activeSession(displayTime: "99:99", sentAt: 400)
+        await store.send(.sessionStateReceived(stale))
+        #expect(store.state.displayTime == "10:00")
+        #expect(store.state.lastAppliedSentAt == 500)
     }
 }

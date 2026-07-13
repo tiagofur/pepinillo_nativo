@@ -54,7 +54,36 @@ struct FocusComplicationProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<FocusComplicationEntry>) -> Void) {
         let entry = buildEntry()
-        let refreshMinutes = entry.isActive ? 5 : 15
+        if entry.isActive,
+           let start = entry.phaseStartDate,
+           let end = entry.phaseEndDate,
+           end > start {
+            // Step timeline while active so countdown families stay live (#248).
+            let now = Date()
+            var entries: [FocusComplicationEntry] = []
+            var cursor = now
+            while cursor <= end && entries.count < 60 {
+                entries.append(FocusComplicationEntry(
+                    date: cursor,
+                    isActive: true,
+                    displayTime: entry.displayTime,
+                    todayMinutes: entry.todayMinutes,
+                    streakDays: entry.streakDays,
+                    modeEmoji: entry.modeEmoji,
+                    linkedTaskTitle: entry.linkedTaskTitle,
+                    phaseName: entry.phaseName,
+                    progress: entry.progress,
+                    pomodoroNumber: entry.pomodoroNumber,
+                    phaseStartDate: start,
+                    phaseEndDate: end
+                ))
+                cursor = cursor.addingTimeInterval(1)
+            }
+            completion(Timeline(entries: entries, policy: .atEnd))
+            return
+        }
+
+        let refreshMinutes = entry.isActive ? 1 : 15
         let next = Calendar.current.date(byAdding: .minute, value: refreshMinutes, to: Date()) ?? Date()
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
@@ -109,10 +138,19 @@ struct CircularComplicationView: View {
     var body: some View {
         ZStack {
             if entry.isActive {
-                ProgressView(value: entry.progress)
+                if let start = entry.phaseStartDate, let end = entry.phaseEndDate, end > start {
+                    ProgressView(timerInterval: start...end, countsDown: true) {
+                        Text(entry.modeEmoji).font(.system(size: 12))
+                    } currentValueLabel: {
+                        EmptyView()
+                    }
                     .progressViewStyle(.circular)
-                Text(entry.modeEmoji)
-                    .font(.system(size: 12))
+                } else {
+                    ProgressView(value: entry.progress)
+                        .progressViewStyle(.circular)
+                    Text(entry.modeEmoji)
+                        .font(.system(size: 12))
+                }
             } else {
                 VStack(spacing: 0) {
                     Text(entry.modeEmoji)

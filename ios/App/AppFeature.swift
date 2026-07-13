@@ -464,6 +464,7 @@ struct AppFeature {
                     .send(.tasks(.onAppear)),
                     // Reconcile widget/intent commands even if they arrived before bootstrap finished.
                     .send(.consumeExternalCommands),
+                    pushWatchSessionSnapshot(from: state, publishContext: true),
                     // Observe network connectivity for the offline banner (issue #89)
                     .run { [networkClient] send in
                         for await isConnected in networkClient.observeConnectivity() {
@@ -491,7 +492,8 @@ struct AppFeature {
             case .appBecameActive:
                 return .merge(
                     .send(.consumeExternalCommands),
-                    syncWatchStats(isPro: state.subscriptionState.isPro)
+                    syncWatchStats(isPro: state.subscriptionState.isPro),
+                    pushWatchSessionSnapshot(from: state, publishContext: true)
                 )
 
             case .appURLReceived(let url):
@@ -964,9 +966,9 @@ struct AppFeature {
                     return .send(.focus(.linkTask(id, task?.title, task?.energyLevel.emoji)))
                 case .unlinkTask:
                     return .send(.focus(.linkTask(nil, nil, nil)))
-                case .toggleTaskCompleted(let idStr):
+                case .setTaskCompleted(let idStr, let isCompleted):
                     guard let id = UUID(uuidString: idStr) else { return .none }
-                    return .send(.tasks(.taskCompleted(id)))
+                    return .send(.tasks(.setTaskCompleted(id, isCompleted)))
                 case .requestTasks:
                     let tasks = state.tasks.tasks.filter { $0.scheduledForToday }
                     let watchTasks = tasks.map { task in
@@ -987,6 +989,9 @@ struct AppFeature {
 
                 case .requestDashboard:
                     return syncWatchStats(isPro: state.subscriptionState.isPro)
+
+                case .requestSession:
+                    return pushWatchSessionSnapshot(from: state, publishContext: true)
                 }
 
             // MARK: - Watch State Bridge (iOS → Watch)
@@ -1001,21 +1006,21 @@ struct AppFeature {
                 state.lastWatchSentElapsed = currentElapsed
                 let watchState = WatchSessionState(from: state.focus)
                 return .run { [watchClient, watchState] _ in
-                    await watchClient.sendSessionState(watchState)
+                    await watchClient.sendSessionState(watchState, false)
                 }
 
             case .focus(.phaseCompleted):
                 var watchState = WatchSessionState(from: state.focus)
                 watchState.isPhaseTransition = true
                 return .run { [watchClient, watchState] _ in
-                    await watchClient.sendSessionState(watchState)
+                    await watchClient.sendSessionState(watchState, true)
                 }
 
             case .focus(.pauseTapped), .focus(.resumeTapped),
                  .focus(.externalPauseApplied), .focus(.externalResumeApplied):
                 let watchState = WatchSessionState(from: state.focus)
                 return .run { [watchClient, watchState] _ in
-                    await watchClient.sendSessionState(watchState)
+                    await watchClient.sendSessionState(watchState, true)
                 }
 
             case .focus(.waitingForNextPhase):
@@ -1024,7 +1029,7 @@ struct AppFeature {
                 // the watch never learns the engine entered the waiting state.
                 let watchState = WatchSessionState(from: state.focus)
                 return .run { [watchClient, watchState] _ in
-                    await watchClient.sendSessionState(watchState)
+                    await watchClient.sendSessionState(watchState, true)
                 }
 
             case .focus(.startNextPhaseTapped):
@@ -1032,14 +1037,14 @@ struct AppFeature {
                 // transitions away from the waiting view immediately.
                 let watchState = WatchSessionState(from: state.focus)
                 return .run { [watchClient, watchState] _ in
-                    await watchClient.sendSessionState(watchState)
+                    await watchClient.sendSessionState(watchState, true)
                 }
 
             case .focus(.stopTapped), .focus(.sessionCompleted):
                 let watchState = WatchSessionState(from: state.focus)
                 return .merge(
                     .run { [watchClient, watchState] _ in
-                        await watchClient.sendSessionState(watchState)
+                        await watchClient.sendSessionState(watchState, true)
                     },
                     {
                         if case .focus(.sessionCompleted) = action {
@@ -1202,6 +1207,7 @@ struct AppFeature {
 
             case .tasks(.addTaskTapped),
                  .tasks(.taskCompleted),
+                 .tasks(.setTaskCompleted),
                  .tasks(.taskDeleted),
                  .tasks(.undoDeleteTask),
                  .tasks(.remindersImported),
@@ -1456,8 +1462,28 @@ extension WatchSessionState {
             isPhaseTransition: isPhaseTransition,
             isBreakPhase:     isBreak,
             isLongBreakPhase: isLongBreak,
-            isWaiting:        focusState.isWaitingForNextPhase
+            isWaiting:        focusState.isWaitingForNextPhase,
+            phaseStartDate:   AppGroupDefaults.activeSessionTimerStart,
+            phaseEndDate:     AppGroupDefaults.activeSessionTimerEnd,
+            countsDown:       activeMode.direction == .countDown
         )
+    }
+}
+
+// MARK: - Watch session snapshot push
+
+extension AppFeature {
+    /// Push the current focus snapshot to the watch. Use `publishContext: true` on
+    /// transitions, launch, and connect so cold-start hydration stays accurate (#239).
+    fileprivate func pushWatchSessionSnapshot(
+        from state: State,
+        publishContext: Bool
+    ) -> Effect<Action> {
+        .run { [watchClient] _ in
+            guard watchClient.isSupported() else { return }
+            let watchState = WatchSessionState(from: state.focus)
+            await watchClient.sendSessionState(watchState, publishContext)
+        }
     }
 }
 

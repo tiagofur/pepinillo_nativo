@@ -41,6 +41,19 @@ struct WatchTimerFeature {
         var todayFocusMinutes: Int = 0
         var todaySessionsCompleted: Int = 0
         var currentStreakDays: Int = 0
+
+        /// Dedupe out-of-order applicationContext vs sendMessage updates (#240).
+        var lastAppliedSentAt: TimeInterval = 0
+        /// Avoid false completion haptics on cold-start idle hydration (#241).
+        var hadActiveSession: Bool = false
+
+        // Local countdown anchors when the phone is unreachable (#245).
+        var phaseStartDate: Date? = nil
+        var phaseEndDate: Date? = nil
+        var countsDown: Bool = true
+
+        /// Mirrors AppGroupDefaults.isProUser — phone writes on subscription change (#235).
+        var isProUser: Bool = false
     }
 
     // MARK: - Action
@@ -77,16 +90,30 @@ struct WatchTimerFeature {
             switch action {
 
             case .onAppear:
+                state.isProUser = Self.readIsProUser()
                 return .none
 
             case .startTapped:
                 guard !state.isSessionActive else { return .none }
                 let mode = state.selectedMode
+                guard mode.isFreeTier || state.isProUser else {
+                    #if os(watchOS)
+                    return .run { _ in
+                        WKInterfaceDevice.current().play(.failure)
+                    }
+                    #else
+                    return .none
+                    #endif
+                }
                 return .run { [watchClient] send in
-                    await watchClient.sendCommand(.startSession(mode: mode.rawValue))
+                    let delivered = await watchClient.sendCommand(.startSession(mode: mode.rawValue))
                     await send(.commandSent(.startSession(mode: mode.rawValue)))
                     #if os(watchOS)
-                    WKInterfaceDevice.current().play(.start)
+                    if delivered {
+                        WKInterfaceDevice.current().play(.start)
+                    } else {
+                        WKInterfaceDevice.current().play(.failure)
+                    }
                     #endif
                 }
 
@@ -96,49 +123,72 @@ struct WatchTimerFeature {
                 guard state.isSessionActive, !state.isWaiting else { return .none }
                 let command: WatchCommand = state.isPaused ? .resumeSession : .pauseSession
                 return .run { [watchClient] send in
-                    await watchClient.sendCommand(command)
+                    let delivered = await watchClient.sendCommand(command)
                     await send(.commandSent(command))
                     #if os(watchOS)
-                    WKInterfaceDevice.current().play(.click)
+                    if delivered {
+                        WKInterfaceDevice.current().play(.click)
+                    } else {
+                        WKInterfaceDevice.current().play(.failure)
+                    }
                     #endif
                 }
 
             case .startNextPhaseTapped:
                 guard state.isSessionActive, state.isWaiting else { return .none }
                 return .run { [watchClient] send in
-                    await watchClient.sendCommand(.startNextPhase)
+                    let delivered = await watchClient.sendCommand(.startNextPhase)
                     await send(.commandSent(.startNextPhase))
                     #if os(watchOS)
-                    WKInterfaceDevice.current().play(.start)
+                    if delivered {
+                        WKInterfaceDevice.current().play(.start)
+                    } else {
+                        WKInterfaceDevice.current().play(.failure)
+                    }
                     #endif
                 }
 
             case .stopTapped:
                 guard state.isSessionActive else { return .none }
                 return .run { [watchClient] send in
-                    await watchClient.sendCommand(.stopSession)
+                    let delivered = await watchClient.sendCommand(.stopSession)
                     await send(.commandSent(.stopSession))
                     #if os(watchOS)
-                    WKInterfaceDevice.current().play(.stop)
+                    if delivered {
+                        WKInterfaceDevice.current().play(.stop)
+                    } else {
+                        WKInterfaceDevice.current().play(.failure)
+                    }
                     #endif
                 }
 
             case .skipTapped:
                 guard state.isSessionActive else { return .none }
                 return .run { [watchClient] send in
-                    await watchClient.sendCommand(.skipPhase)
+                    let delivered = await watchClient.sendCommand(.skipPhase)
                     await send(.commandSent(.skipPhase))
                     #if os(watchOS)
-                    WKInterfaceDevice.current().play(.click)
+                    if delivered {
+                        WKInterfaceDevice.current().play(.click)
+                    } else {
+                        WKInterfaceDevice.current().play(.failure)
+                    }
                     #endif
                 }
 
             case .modeSelected(let mode):
                 guard !state.isSessionActive else { return .none }
+                guard mode.isFreeTier || state.isProUser else { return .none }
                 state.selectedMode = mode
                 return .none
 
             case .sessionStateReceived(let s):
+                guard s.sentAt > state.lastAppliedSentAt else { return .none }
+                state.lastAppliedSentAt = s.sentAt
+
+                let wasActive = state.hadActiveSession
+                state.hadActiveSession = s.isActive
+
                 state.isSessionActive = s.isActive
                 state.isPaused = s.isPaused
                 state.displayTime = s.displayTime
@@ -150,6 +200,9 @@ struct WatchTimerFeature {
                 state.pomodoroNumber = s.pomodoroNumber
                 state.linkedTaskTitle = s.linkedTaskTitle
                 state.linkedTaskID = s.linkedTaskID
+                state.phaseStartDate = s.phaseStartDate
+                state.phaseEndDate = s.phaseEndDate
+                state.countsDown = s.countsDown
 
                 if let mode = FocusMode(rawValue: s.modeID) {
                     state.selectedMode = mode
@@ -164,6 +217,10 @@ struct WatchTimerFeature {
                 let phaseName = s.phaseLabel
                 let progress = s.progress
                 let pomodoroNumber = s.pomodoroNumber
+                let phaseStartDate = s.phaseStartDate
+                let phaseEndDate = s.phaseEndDate
+                let countsDown = s.countsDown
+                let sessionCompleted = wasActive && !s.isActive
 
                 return .run { _ in
                     Self.persistSessionState(
@@ -173,17 +230,18 @@ struct WatchTimerFeature {
                         linkedTaskTitle: linkedTaskTitle,
                         phaseName: phaseName,
                         progress: progress,
-                        pomodoroNumber: pomodoroNumber
+                        pomodoroNumber: pomodoroNumber,
+                        phaseStartDate: phaseStartDate,
+                        phaseEndDate: phaseEndDate,
+                        countsDown: countsDown
                     )
-                    if didTransition || !isActive {
+                    if didTransition || sessionCompleted {
                         WidgetCenter.shared.reloadAllTimelines()
                     }
                     #if os(watchOS)
-                    if !isActive {
-                        // Session completed — celebrate
+                    if sessionCompleted {
                         WKInterfaceDevice.current().play(.success)
                     } else if didTransition {
-                        // Phase changed (focus → break or break → focus)
                         WKInterfaceDevice.current().play(.notification)
                     }
                     #endif
@@ -200,6 +258,9 @@ struct WatchTimerFeature {
 
             case .connectivityChanged(let connected):
                 state.isConnected = connected
+                if connected {
+                    state.isProUser = Self.readIsProUser()
+                }
                 return .none
 
             case .commandSent:
@@ -219,6 +280,11 @@ struct WatchTimerFeature {
         UserDefaults(suiteName: "group.com.pepinillo.app")
     }
 
+    /// Mirrors `AppGroupDefaults.isProUser` without pulling SwiftData into the watch target.
+    private static func readIsProUser() -> Bool {
+        appGroupDefaults?.bool(forKey: "isProUser") ?? false
+    }
+
     private static func persistStats(minutes: Int, sessions: Int, streak: Int) {
         guard let defaults = appGroupDefaults else { return }
         defaults.set(minutes, forKey: WatchStatsKeys.todayFocusMinutes)
@@ -233,7 +299,10 @@ struct WatchTimerFeature {
         linkedTaskTitle: String?,
         phaseName: String?,
         progress: Double?,
-        pomodoroNumber: Int?
+        pomodoroNumber: Int?,
+        phaseStartDate: Date?,
+        phaseEndDate: Date?,
+        countsDown: Bool
     ) {
         guard let defaults = appGroupDefaults else { return }
         defaults.set(isActive, forKey: WatchStatsKeys.isSessionActive)
@@ -260,25 +329,13 @@ struct WatchTimerFeature {
             defaults.removeObject(forKey: WatchStatsKeys.pomodoroNumber)
         }
 
-        // Derive phase start/end dates from displayTime and progress for live countdown
-        if isActive, let progress, progress >= 0 {
-            let remainingSeconds = Self.parseDisplayTime(displayTime)
-            if remainingSeconds > 0 {
-                let elapsed = progress > 0 ? (remainingSeconds / (1.0 - progress)) * progress : 0
-                let phaseStart = Date().addingTimeInterval(-elapsed)
-                let phaseEnd = Date().addingTimeInterval(remainingSeconds)
-                defaults.set(phaseStart.timeIntervalSince1970, forKey: WatchStatsKeys.phaseStartDate)
-                defaults.set(phaseEnd.timeIntervalSince1970, forKey: WatchStatsKeys.phaseEndDate)
-            }
+        // Prefer absolute anchors from the phone (#244); avoid reverse-engineering display strings.
+        if isActive, countsDown, let start = phaseStartDate, let end = phaseEndDate, end > start {
+            defaults.set(start.timeIntervalSince1970, forKey: WatchStatsKeys.phaseStartDate)
+            defaults.set(end.timeIntervalSince1970, forKey: WatchStatsKeys.phaseEndDate)
         } else {
             defaults.removeObject(forKey: WatchStatsKeys.phaseStartDate)
             defaults.removeObject(forKey: WatchStatsKeys.phaseEndDate)
         }
-    }
-
-    private static func parseDisplayTime(_ displayTime: String) -> TimeInterval {
-        let parts = displayTime.split(separator: ":").compactMap { Double($0) }
-        guard parts.count == 2 else { return 0 }
-        return parts[0] * 60 + parts[1]
     }
 }

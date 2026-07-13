@@ -105,12 +105,22 @@ struct WatchTimerView: View {
                     Text(store.selectedMode.icon)
                         .font(.system(size: 16))
 
-                    // Timer display — LARGE and prominent
-                    Text(store.displayTime)
-                        .font(.system(.title, design: .rounded, weight: .semibold))
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                        .minimumScaleFactor(0.7)
+                    // Local countdown when the phone is unreachable (#245).
+                    if store.countsDown,
+                       let end = store.phaseEndDate,
+                       !store.isConnected,
+                       !store.isPaused {
+                        Text(end, style: .timer)
+                            .font(.system(.title, design: .rounded, weight: .semibold))
+                            .monospacedDigit()
+                            .minimumScaleFactor(0.7)
+                    } else {
+                        Text(store.displayTime)
+                            .font(.system(.title, design: .rounded, weight: .semibold))
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                            .minimumScaleFactor(0.7)
+                    }
 
                     // Pomodoro number
                     if let num = store.pomodoroNumber {
@@ -217,6 +227,7 @@ struct WatchTimerView: View {
                         WatchModeChip(
                             mode: mode,
                             isSelected: store.selectedMode == mode,
+                            isLocked: !mode.isFreeTier && !store.isProUser,
                             modeColor: colorFor(mode)
                         ) {
                             store.send(.modeSelected(mode))
@@ -302,7 +313,8 @@ struct WatchTimerView: View {
         .onChange(of: crownModeIndex) { _, newValue in
             let index = Int(newValue.rounded()) % FocusMode.allCases.count
             let mode = FocusMode.allCases[index]
-            if mode != store.selectedMode {
+            let isLocked = !mode.isFreeTier && !store.isProUser
+            if mode != store.selectedMode, !isLocked {
                 store.send(.modeSelected(mode))
             }
         }
@@ -354,34 +366,46 @@ struct WatchTimerView: View {
 private struct WatchModeChip: View {
     let mode: FocusMode
     let isSelected: Bool
+    var isLocked: Bool = false
     let modeColor: Color
     let onTap: () -> Void
 
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 2) {
-                Text(mode.icon)
-                    .font(.body)
+                ZStack(alignment: .topTrailing) {
+                    Text(mode.icon)
+                        .font(.body)
+                        .opacity(isLocked ? 0.45 : 1)
+                    if isLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 7))
+                            .foregroundStyle(.secondary)
+                            .offset(x: 4, y: -2)
+                    }
+                }
                 Text(mode.shortName)
                     .font(.system(size: 9))
                     .fontWeight(isSelected ? .semibold : .regular)
+                    .opacity(isLocked ? 0.45 : 1)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(
                 isSelected
-                    ? AnyShapeStyle(modeColor.opacity(0.25))
+                    ? AnyShapeStyle(modeColor.opacity(isLocked ? 0.12 : 0.25))
                     : AnyShapeStyle(.ultraThinMaterial)
             )
             .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
                 isSelected
                     ? RoundedRectangle(cornerRadius: 8)
-                        .stroke(modeColor.opacity(0.5), lineWidth: 1)
+                        .stroke(modeColor.opacity(isLocked ? 0.2 : 0.5), lineWidth: 1)
                     : nil
             )
         }
         .buttonStyle(.plain)
+        .disabled(isLocked)
     }
 }
 

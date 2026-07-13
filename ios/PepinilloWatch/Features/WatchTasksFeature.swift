@@ -19,6 +19,8 @@ struct WatchTasksFeature {
     struct State: Equatable {
         var tasks: [WatchTaskItem] = []
         var linkedTaskID: UUID? = nil
+        /// Ignore out-of-order task list payloads (#243).
+        var lastTasksReceivedAt: TimeInterval = 0
     }
 
     // MARK: - Action
@@ -27,14 +29,14 @@ struct WatchTasksFeature {
         // User interactions
         case taskTapped(UUID)
         case taskLongPressed(UUID)
-        case toggleCompleted(UUID)
+        case setCompleted(UUID, Bool)
 
         // Cross-feature (handled by parent WatchAppFeature)
         case taskLinked(UUID, String)
         case taskUnlinked
 
         // Received from parent
-        case tasksReceived([WatchTaskItem])
+        case tasksReceived([WatchTaskItem], sentAt: TimeInterval)
     }
 
     // MARK: - Reducer
@@ -44,8 +46,8 @@ struct WatchTasksFeature {
             switch action {
 
             case .taskTapped(let id):
-                // Tap toggles completion
-                return .send(.toggleCompleted(id))
+                guard let task = state.tasks.first(where: { $0.id == id }) else { return .none }
+                return .send(.setCompleted(id, !task.isCompleted))
 
             case .taskLongPressed(let id):
                 // Long press links/unlinks task to timer
@@ -58,26 +60,27 @@ struct WatchTasksFeature {
                 state.linkedTaskID = id
                 return .send(.taskLinked(id, task.title))
 
-            case .toggleCompleted(let id):
-                // Optimistic update
-                if let index = state.tasks.firstIndex(where: { $0.id == id }) {
-                    let task = state.tasks[index]
-                    state.tasks[index] = WatchTaskItem(
-                        id: task.id,
-                        title: task.title,
-                        isCompleted: !task.isCompleted,
-                        priority: task.priority,
-                        estimatedPomodoros: task.estimatedPomodoros,
-                        completedPomodoros: task.completedPomodoros
-                    )
-                }
+            case .setCompleted(let id, let isCompleted):
+                guard let index = state.tasks.firstIndex(where: { $0.id == id }) else { return .none }
+                let task = state.tasks[index]
+                guard task.isCompleted != isCompleted else { return .none }
+                state.tasks[index] = WatchTaskItem(
+                    id: task.id,
+                    title: task.title,
+                    isCompleted: isCompleted,
+                    priority: task.priority,
+                    estimatedPomodoros: task.estimatedPomodoros,
+                    completedPomodoros: task.completedPomodoros
+                )
                 // The actual command is sent by WatchAppFeature
                 return .none
 
             case .taskLinked, .taskUnlinked:
                 return .none
 
-            case .tasksReceived(let items):
+            case .tasksReceived(let items, let sentAt):
+                guard sentAt >= state.lastTasksReceivedAt else { return .none }
+                state.lastTasksReceivedAt = sentAt
                 state.tasks = items
                 return .none
             }

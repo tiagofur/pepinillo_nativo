@@ -178,6 +178,8 @@ struct TaskListFeature {
         case addTaskTapped
         case taskTapped(UUID)
         case taskCompleted(UUID)
+        /// Idempotent completion setter (watch bridge #243).
+        case setTaskCompleted(UUID, Bool)
         case taskDeleted(UUID)
         case undoDeleteTask
         case undoTimerExpired(UUID)
@@ -363,16 +365,20 @@ struct TaskListFeature {
                 return .none
 
             case .taskCompleted(let id):
-                state.tasks[id: id]?.isCompleted.toggle()
-                let isNowCompleted = state.tasks[id: id]?.isCompleted ?? false
+                let isNowCompleted = !(state.tasks[id: id]?.isCompleted ?? false)
+                return .send(.setTaskCompleted(id, isNowCompleted))
+
+            case .setTaskCompleted(let id, let isCompleted):
+                guard state.tasks[id: id]?.isCompleted != isCompleted else { return .none }
+                state.tasks[id: id]?.isCompleted = isCompleted
                 // Sync the detail column if it's currently showing this task
                 if state.detail?.taskID == id {
-                    state.detail?.isCompleted = isNowCompleted
+                    state.detail?.isCompleted = isCompleted
                 }
                 return .run { _ in
                     // Single-row fetch instead of a full-table scan (issue #74).
                     if let item = try await persistence.fetchTask(id) {
-                        let updated = item.updating(isCompleted: isNowCompleted)
+                        let updated = item.updating(isCompleted: isCompleted)
                         try await persistence.saveTask(updated)
                         WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                     }

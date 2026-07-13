@@ -234,9 +234,13 @@ struct WatchCommandDictionaryTests {
         case .skipPhase:                    dict["action"] = "skip"
         case .linkTask(let id):             dict["action"] = "linkTask"; dict["taskID"] = id
         case .unlinkTask:                   dict["action"] = "unlinkTask"
-        case .toggleTaskCompleted(let id):  dict["action"] = "toggleTask"; dict["taskID"] = id
+        case .setTaskCompleted(let id, let isCompleted):
+            dict["action"] = "setTaskCompleted"
+            dict["taskID"] = id
+            dict["isCompleted"] = isCompleted
         case .requestTasks:                 dict["action"] = "requestTasks"
         case .requestDashboard:             dict["action"] = "requestDashboard"
+        case .requestSession:               dict["action"] = "requestSession"
         case .startNextPhase:               dict["action"] = "startNextPhase"
         }
         return dict
@@ -253,9 +257,14 @@ struct WatchCommandDictionaryTests {
         case "skip":             return .skipPhase
         case "linkTask":         return .linkTask(id: message["taskID"] as? String ?? "")
         case "unlinkTask":       return .unlinkTask
-        case "toggleTask":       return .toggleTaskCompleted(id: message["taskID"] as? String ?? "")
+        case "setTaskCompleted":
+            return .setTaskCompleted(
+                id: message["taskID"] as? String ?? "",
+                isCompleted: message["isCompleted"] as? Bool ?? false
+            )
         case "requestTasks":     return .requestTasks
         case "requestDashboard": return .requestDashboard
+        case "requestSession":   return .requestSession
         default:                 return nil
         }
     }
@@ -306,11 +315,12 @@ struct WatchCommandDictionaryTests {
         #expect(decoded == cmd)
     }
 
-    @Test func roundTripToggleTaskCompleted() {
-        let cmd = WatchCommand.toggleTaskCompleted(id: "task-456")
+    @Test func roundTripSetTaskCompleted() {
+        let cmd = WatchCommand.setTaskCompleted(id: "task-456", isCompleted: true)
         let dict = encodeCommand(cmd)
-        #expect(dict["action"] as? String == "toggleTask")
+        #expect(dict["action"] as? String == "setTaskCompleted")
         #expect(dict["taskID"] as? String == "task-456")
+        #expect(dict["isCompleted"] as? Bool == true)
         #expect(decodeCommand(dict) == cmd)
     }
 
@@ -338,9 +348,10 @@ struct WatchCommandDictionaryTests {
             .skipPhase,
             .linkTask(id: "id-1"),
             .unlinkTask,
-            .toggleTaskCompleted(id: "id-2"),
+            .setTaskCompleted(id: "id-2", isCompleted: true),
             .requestTasks,
             .requestDashboard,
+            .requestSession,
         ]
         for cmd in commands {
             let roundTripped = decodeCommand(encodeCommand(cmd))
@@ -399,8 +410,9 @@ struct WatchCommandEquatableTests {
         #expect(WatchCommand.linkTask(id: "a") != WatchCommand.linkTask(id: "b"))
     }
 
-    @Test func toggleTaskDiffersOnID() {
-        #expect(WatchCommand.toggleTaskCompleted(id: "a") != WatchCommand.toggleTaskCompleted(id: "b"))
+    @Test func setTaskCompletedDiffersOnIDOrState() {
+        #expect(WatchCommand.setTaskCompleted(id: "a", isCompleted: true) != WatchCommand.setTaskCompleted(id: "b", isCompleted: true))
+        #expect(WatchCommand.setTaskCompleted(id: "a", isCompleted: true) != WatchCommand.setTaskCompleted(id: "a", isCompleted: false))
     }
 }
 
@@ -732,13 +744,17 @@ struct WatchMessageEquatableTests {
             id: UUID(), title: "Test", isCompleted: false,
             priority: 0, estimatedPomodoros: 1, completedPomodoros: 0
         )]
-        let a = WatchMessage.tasks(tasks)
-        let b = WatchMessage.tasks(tasks)
+        let a = WatchMessage.tasks(tasks, sentAt: 100)
+        let b = WatchMessage.tasks(tasks, sentAt: 100)
         #expect(a == b)
     }
 
     @Test func emptyTasksMessageEquals() {
-        #expect(WatchMessage.tasks([]) == WatchMessage.tasks([]))
+        #expect(WatchMessage.tasks([], sentAt: 0) == WatchMessage.tasks([], sentAt: 0))
+    }
+
+    @Test func tasksMessageDiffersOnSentAt() {
+        #expect(WatchMessage.tasks([], sentAt: 1) != WatchMessage.tasks([], sentAt: 2))
     }
 }
 
