@@ -122,11 +122,7 @@ struct MacAppView: View {
 
     private var paywallSheet: some View {
         PaywallView(
-            store: Store(initialState: PaywallFeature.State()) {
-                PaywallFeature()
-            } withDependencies: { deps in
-                deps.dismiss = DismissEffect { store.send(.focus(.paywallDismissed)) }
-            }
+            store: store.scope(state: \.paywall, action: \.paywall)
         )
         .frame(minWidth: 520, minHeight: 640)
     }
@@ -260,11 +256,7 @@ private struct MacAppSheetPresenter: ViewModifier {
 
     private var paywallSheet: some View {
         PaywallView(
-            store: Store(initialState: PaywallFeature.State()) {
-                PaywallFeature()
-            } withDependencies: { deps in
-                deps.dismiss = DismissEffect { store.send(.focus(.paywallDismissed)) }
-            }
+            store: store.scope(state: \.paywall, action: \.paywall)
         )
         .frame(minWidth: 520, minHeight: 640)
     }

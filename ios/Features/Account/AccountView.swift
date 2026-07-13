@@ -303,9 +303,7 @@ struct AccountView: View {
         VStack(alignment: .leading, spacing: 0) {
             NavigationLink {
                 PaywallContent(
-                    store: Store(initialState: PaywallFeature.State()) {
-                        PaywallFeature()
-                    }
+                    store: store.scope(state: \.paywall, action: \.paywall)
                 )
             } label: {
                 HStack {

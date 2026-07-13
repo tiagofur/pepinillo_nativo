@@ -225,7 +225,8 @@ struct SettingsFeature {
                 state.healthAuthorized = healthClient.isAuthorized()
                 state.adhdFriendlyEnabled = snap.adhdFriendlyEnabled
                 state.calendarIntegrationEnabled = snap.calendarIntegrationEnabled
-                state.isProUser = snap.isProUser
+                // isProUser is owned by AppFeature.applySubscriptionUpdate — never reload
+                // from stale SwiftData prefs (#207).
                 state.currentStreakDays = snap.currentStreakDays
                 return .none
 

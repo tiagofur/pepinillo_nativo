@@ -157,14 +157,14 @@ struct AnalyticsFeature {
                 guard !state.isLoading, !state.hasLoadedData else { return .none }
                 state.isLoading = true
                 return .merge(
-                    loadData(for: state.period),
+                    loadData(for: state.period, isPro: state.isProUser),
                     .run { _ in _ = try? await CheckStatsIntent().donate() }
                 )
 
             case .refresh:
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
-                return loadData(for: state.period)
+                return loadData(for: state.period, isPro: state.isProUser)
 
             case .periodChanged(let period):
                 if !state.isProUser && period != .week {
@@ -172,7 +172,7 @@ struct AnalyticsFeature {
                 }
                 state.period = period
                 state.isLoading = true
-                return loadData(for: period)
+                return loadData(for: period, isPro: state.isProUser)
 
             case let .allDataLoaded(snapshots, insights, streakDays, longestStreak, streakProtectionApplied, achievements, weeklyInsights):
                 state.isLoading = false
@@ -250,7 +250,7 @@ struct AnalyticsFeature {
             case .retryTapped:
                 state.loadError = nil
                 state.isLoading = true
-                return loadData(for: state.period)
+                return loadData(for: state.period, isPro: state.isProUser)
 
             case .weeklyReviewTapped:
                 guard state.isProUser else { return .send(.paywallRequested) }
@@ -305,8 +305,8 @@ struct AnalyticsFeature {
 
     // MARK: - Data Loading
 
-    private func loadData(for period: State.Period) -> Effect<Action> {
-        .run { [persistence] send in
+    private func loadData(for period: State.Period, isPro: Bool) -> Effect<Action> {
+        .run { [persistence, isPro] send in
             let calendar = Calendar.current
             let end = Date.now
             guard let start = calendar.date(byAdding: .day, value: -(period.days - 1), to: end) else {
@@ -346,7 +346,7 @@ struct AnalyticsFeature {
                 // Compute protected streak on-the-fly from full DailyStats history.
                 let streakResult = StreakProtectionService.computeProtectedStreak(
                     history: allDailyStats,
-                    isPro: prefs.isProUser,
+                    isPro: isPro,
                     today: end,
                     calendar: calendar
                 )

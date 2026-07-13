@@ -26,6 +26,6 @@
 		<string>com.apple.widgetkit-extension</string>
 	</dict>
 	<key>NSSupportsLiveActivities</key>
-	<true/>
+	<false/>
 </dict>
 </plist>

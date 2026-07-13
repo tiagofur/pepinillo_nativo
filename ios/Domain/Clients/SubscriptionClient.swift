@@ -113,6 +113,9 @@ struct SubscriptionClient: Sendable {
 
     /// Reset to anonymous (logged out).
     var logOut: @Sendable () async -> Void = { }
+
+    /// Whether RevenueCat finished configuration (false when API key missing).
+    var isPurchasesAvailable: @Sendable () async -> Bool = { true }
 }
 
 // MARK: - Dependency Keys
@@ -127,7 +130,8 @@ extension SubscriptionClient: DependencyKey {
         checkEntitlement: { .free },
         listenForTransactionUpdates: { .finished },
         logIn: { _ in },
-        logOut: { }
+        logOut: { },
+        isPurchasesAvailable: { true }
     )
 }
 
@@ -152,7 +156,8 @@ extension SubscriptionClient {
             checkEntitlement: { await manager.checkEntitlement() },
             listenForTransactionUpdates: { manager.customerInfoStream() },
             logIn: { userID in await manager.logIn(userID: userID) },
-            logOut: { await manager.logOut() }
+            logOut: { await manager.logOut() },
+            isPurchasesAvailable: { await manager.isPurchasesAvailable() }
         )
 #else
         // RevenueCat is not available on every platform target (e.g. watch simulator).
@@ -165,7 +170,8 @@ extension SubscriptionClient {
             checkEntitlement: { .free },
             listenForTransactionUpdates: { .finished },
             logIn: { _ in },
-            logOut: { }
+            logOut: { },
+            isPurchasesAvailable: { false }
         )
 #endif
     }()
@@ -176,10 +182,17 @@ extension SubscriptionClient {
 #if canImport(RevenueCat)
 private actor SubscriptionManager {
     private var isConfigured = false
+    private var isUnavailable = false
     private var configurationWaiters: [CheckedContinuation<Void, Never>] = []
 
     func configure(apiKey: String, userID: String?) async {
-        guard !isConfigured else { return }
+        guard !isConfigured && !isUnavailable else { return }
+
+        guard !apiKey.isEmpty, !apiKey.contains("$(REVENUECAT_API_KEY)") else {
+            subscriptionLogger.warning("RevenueCat API key not configured — purchases unavailable")
+            markUnavailable()
+            return
+        }
 
         #if DEBUG
         Purchases.logLevel = .debug
@@ -189,14 +202,17 @@ private actor SubscriptionManager {
         Purchases.configure(withAPIKey: apiKey, appUserID: userID)
         isConfigured = true
 
-        for waiter in configurationWaiters {
-            waiter.resume()
-        }
-        configurationWaiters.removeAll()
+        resumeConfigurationWaiters()
+    }
+
+    func isPurchasesAvailable() async -> Bool {
+        await ensureConfigured()
+        return !isUnavailable
     }
 
     func fetchProducts() async -> [ProductInfo] {
         await ensureConfigured()
+        guard !isUnavailable else { return [] }
         do {
             let offerings = try await Purchases.shared.offerings()
             guard let offering = offerings.current else {
@@ -229,6 +245,9 @@ private actor SubscriptionManager {
 
     func purchase(productID: String) async -> PurchaseResult {
         await ensureConfigured()
+        guard !isUnavailable else {
+            return .failed(message: String(localized: "Purchases are unavailable. Please try again later."))
+        }
         do {
             let offerings = try await Purchases.shared.offerings()
             guard let offering = offerings.current else {
@@ -267,6 +286,7 @@ private actor SubscriptionManager {
 
     func restorePurchases() async -> SubscriptionState {
         await ensureConfigured()
+        guard !isUnavailable else { return .free }
         do {
             let customerInfo = try await Purchases.shared.restorePurchases()
             return subscriptionStateFromCustomerInfo(customerInfo)
@@ -277,6 +297,7 @@ private actor SubscriptionManager {
 
     func checkEntitlement() async -> SubscriptionState {
         await ensureConfigured()
+        guard !isUnavailable else { return .free }
         do {
             let customerInfo = try await Purchases.shared.customerInfo()
             return subscriptionStateFromCustomerInfo(customerInfo)
@@ -288,7 +309,11 @@ private actor SubscriptionManager {
     nonisolated func customerInfoStream() -> AsyncStream<SubscriptionState> {
         AsyncStream { continuation in
             let task = Task {
-                await self.ensureConfigured()
+                let unavailable = await self.isUnavailableAfterConfigure()
+                guard !unavailable else {
+                    continuation.finish()
+                    return
+                }
                 for await customerInfo in Purchases.shared.customerInfoStream {
                     let state = self.subscriptionStateFromCustomerInfo(customerInfo)
                     continuation.yield(state)
@@ -299,8 +324,14 @@ private actor SubscriptionManager {
         }
     }
 
+    private func isUnavailableAfterConfigure() async -> Bool {
+        await ensureConfigured()
+        return isUnavailable
+    }
+
     func logIn(userID: String) async {
         await ensureConfigured()
+        guard !isUnavailable else { return }
         do {
             _ = try await Purchases.shared.logIn(userID)
         } catch {
@@ -313,6 +344,7 @@ private actor SubscriptionManager {
 
     func logOut() async {
         await ensureConfigured()
+        guard !isUnavailable else { return }
         do {
             _ = try await Purchases.shared.logOut()
         } catch {
@@ -322,68 +354,38 @@ private actor SubscriptionManager {
     }
 
     private func ensureConfigured() async {
-        if isConfigured { return }
+        if isConfigured || isUnavailable { return }
         await withCheckedContinuation { continuation in
             configurationWaiters.append(continuation)
         }
     }
 
+    private func markUnavailable() {
+        isUnavailable = true
+        resumeConfigurationWaiters()
+    }
+
+    private func resumeConfigurationWaiters() {
+        for waiter in configurationWaiters {
+            waiter.resume()
+        }
+        configurationWaiters.removeAll()
+    }
+
     private nonisolated func subscriptionStateFromCustomerInfo(_ customerInfo: CustomerInfo) -> SubscriptionState {
-        // Check for Everywhere+ entitlement first (superset of Pepinillo+)
-        if let everywhereEntitlement = customerInfo.entitlements["everywhere_plus"], everywhereEntitlement.isActive {
-            let expiryDate = everywhereEntitlement.expirationDate
-            if let expiry = expiryDate {
-                // Subscription with expiration — check grace period (3 days)
-                if expiry.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
-                    return SubscriptionState(
-                        capabilities: .everywherePlus,
-                        activeProductID: customerInfo.activeSubscriptions.first,
-                        expirationDate: expiry
-                    )
-                }
-            } else {
-                // No expiration (shouldn't happen for Everywhere+, but be safe)
-                return SubscriptionState(
-                    capabilities: .everywherePlus,
-                    activeProductID: customerInfo.activeSubscriptions.first,
-                    expirationDate: nil
-                )
-            }
+        func info(_ key: String) -> ResolvedEntitlement? {
+            guard let entitlement = customerInfo.entitlements[key] else { return nil }
+            return ResolvedEntitlement(isActive: entitlement.isActive, expirationDate: entitlement.expirationDate)
         }
 
-        // Check for Pepinillo+ entitlement (one-time purchase)
-        if let unlockEntitlement = customerInfo.entitlements["pepinillo_plus"], unlockEntitlement.isActive {
-            return SubscriptionState(
-                capabilities: .pepinilloPlus,
-                activeProductID: customerInfo.allPurchasedProductIdentifiers.first,
-                expirationDate: nil  // One-time purchase, no expiration
-            )
-        }
-
-        // Legacy: check for old "premium" / "pro" entitlements — grandfather to appropriate tier
-        if let proEntitlement = customerInfo.entitlements["premium"] ?? customerInfo.entitlements["pro"], proEntitlement.isActive {
-            let expiryDate = proEntitlement.expirationDate
-
-            // Legacy lifetime → grandfather to Pepinillo+
-            if expiryDate == nil {
-                return SubscriptionState(
-                    capabilities: .pepinilloPlus,
-                    activeProductID: customerInfo.allPurchasedProductIdentifiers.first,
-                    expirationDate: nil
-                )
-            }
-
-            // Legacy subscription → grandfather to Everywhere+
-            if let expiryDate, expiryDate.addingTimeInterval(3 * 24 * 60 * 60) > Date.now {
-                return SubscriptionState(
-                    capabilities: .everywherePlus,
-                    activeProductID: customerInfo.activeSubscriptions.first,
-                    expirationDate: expiryDate
-                )
-            }
-        }
-
-        return .free
+        return SubscriptionCapabilityResolver.resolve(
+            everywhere: info("everywhere_plus"),
+            pepinilloPlus: info("pepinillo_plus"),
+            legacyPremium: info("premium"),
+            legacyPro: info("pro"),
+            activeSubscriptionID: customerInfo.activeSubscriptions.first,
+            purchasedProductID: customerInfo.allPurchasedProductIdentifiers.first
+        )
     }
 
     private nonisolated func billingPeriodString(for package: RevenueCat.Package) -> String {
@@ -400,6 +402,58 @@ private actor SubscriptionManager {
     }
 }
 #endif
+
+// MARK: - Entitlement resolution (issue #211)
+
+struct ResolvedEntitlement: Equatable, Sendable {
+    var isActive: Bool
+    var expirationDate: Date?
+}
+
+enum SubscriptionCapabilityResolver {
+    static func resolve(
+        everywhere: ResolvedEntitlement?,
+        pepinilloPlus: ResolvedEntitlement?,
+        legacyPremium: ResolvedEntitlement?,
+        legacyPro: ResolvedEntitlement?,
+        activeSubscriptionID: String?,
+        purchasedProductID: String?
+    ) -> SubscriptionState {
+        if let everywhere, everywhere.isActive {
+            return SubscriptionState(
+                capabilities: .everywherePlus,
+                activeProductID: activeSubscriptionID,
+                expirationDate: everywhere.expirationDate
+            )
+        }
+
+        if let pepinilloPlus, pepinilloPlus.isActive {
+            return SubscriptionState(
+                capabilities: .pepinilloPlus,
+                activeProductID: purchasedProductID,
+                expirationDate: nil
+            )
+        }
+
+        let legacy = legacyPremium ?? legacyPro
+        if let legacy, legacy.isActive {
+            if legacy.expirationDate == nil {
+                return SubscriptionState(
+                    capabilities: .pepinilloPlus,
+                    activeProductID: purchasedProductID,
+                    expirationDate: nil
+                )
+            }
+            return SubscriptionState(
+                capabilities: .everywherePlus,
+                activeProductID: activeSubscriptionID,
+                expirationDate: legacy.expirationDate
+            )
+        }
+
+        return .free
+    }
+}
 
 // MARK: - Mock helpers for previews / tests
 
