@@ -140,8 +140,7 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.taskCompleted(taskID))
-        await store.receive(.setTaskCompleted(taskID, true)) {
+        await store.send(.taskCompleted(taskID)) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
     }
@@ -500,8 +499,7 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.taskCompleted(taskID))
-        await store.receive(.setTaskCompleted(taskID, true)) {
+        await store.send(.taskCompleted(taskID)) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
@@ -529,8 +527,7 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.taskCompleted(taskID))
-        await store.receive(.setTaskCompleted(taskID, true)) {
+        await store.send(.taskCompleted(taskID)) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
@@ -934,6 +931,22 @@ struct TaskListFeatureTests {
             }
             #expect(activeFilters.count == 1, "Task '\(task.title)' should appear in exactly one active list, got \(activeFilters)")
         }
+    }
+
+    @Test func planFilteredTasksExcludesRecurringTemplates() {
+        let templateID = UUID(0)
+        let instanceID = UUID(1)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+
+        var template = makeTask(id: templateID, title: "Template", scheduledForToday: true, isCompleted: false, sortOrder: 0)
+        template.isRecurringTemplate = true
+        template.recurrenceRule = RecurrencePreset.weekly.rawValue
+        let instance = makeTask(id: instanceID, title: "Instance", scheduledForToday: true, isCompleted: false, sortOrder: 1)
+
+        let tasks = IdentifiedArrayOf(uniqueElements: [template, instance])
+        let today = TaskListFeature.planFilteredTasks(tasks, filter: .today, now: now)
+        #expect(today.ids == [instanceID])
+        #expect(!today.ids.contains(templateID))
     }
 
     @Test func planFilteredTasksInboxExcludesTodayAndCompleted() {

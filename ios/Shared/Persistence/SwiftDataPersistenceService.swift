@@ -426,8 +426,42 @@ public final class SwiftDataPersistenceService {
     // MARK: - Recurring Tasks
 
     /// Generates task instances from recurring templates whose nextOccurrence <= today.
+    /// Clears stale `scheduledForToday` flags after midnight (#190).
+    /// Manual Today pins (no due date) expire when `updatedAt` is before today.
+    /// Tasks with a future due date drop the sticky flag; overdue tasks rely on `dueDate`.
+    public func normalizeScheduledForToday(now: Date = .now) throws {
+        let cal = Calendar.current
+        let startOfToday = cal.startOfDay(for: now)
+        let descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate {
+                $0.scheduledForToday == true
+                    && $0.isCompleted == false
+                    && $0.isLocallyDeleted == false
+            }
+        )
+        let tasks = try context.fetch(descriptor)
+        guard !tasks.isEmpty else { return }
+
+        var changed = false
+        for task in tasks {
+            if let due = task.dueDate {
+                if cal.isDate(due, inSameDayAs: now) { continue }
+                task.scheduledForToday = false
+                changed = true
+            } else if task.updatedAt < startOfToday {
+                task.scheduledForToday = false
+                changed = true
+            }
+        }
+        if changed {
+            try context.save()
+        }
+    }
+
     public func generateRecurringTasksIfNeeded(for date: Date = .now) throws {
-        let today = Calendar.current.startOfDay(for: date)
+        try normalizeScheduledForToday(now: date)
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: date)
         let descriptor = FetchDescriptor<TaskItem>(
             predicate: #Predicate { $0.isRecurringTemplate == true }
         )
@@ -453,7 +487,7 @@ public final class SwiftDataPersistenceService {
             // Check if we already generated an instance for today (in-memory)
             guard !alreadyGeneratedTemplateIDs.contains(template.id) else { continue }
 
-            // Create a new instance from the template
+            // Create a new instance from the template (#188 — carry scheduling fields).
             let instance = TaskItem(
                 title: template.title,
                 notes: template.notes,
@@ -464,6 +498,8 @@ public final class SwiftDataPersistenceService {
             )
             instance.recurringTemplateID = template.id
             instance.isRecurringTemplate = false
+            instance.dueDate = nextOccurrence
+            instance.scheduledForToday = cal.isDate(nextOccurrence, inSameDayAs: today)
             context.insert(instance)
 
             // Advance the template's nextOccurrence
