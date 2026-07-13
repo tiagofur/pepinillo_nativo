@@ -202,6 +202,13 @@ struct EnergyGroupedTaskList: View {
                             }
                             .tint(task.scheduledForToday ? Color.pepinilloTertiaryLabel : .green)
                         }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                store.send(.taskDeleted(task.id))
+                            } label: {
+                                Label(String(localized: "Delete"), systemImage: "trash")
+                            }
+                        }
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))

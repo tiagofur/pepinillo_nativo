@@ -177,6 +177,48 @@ struct TaskListFeatureTests {
         }
     }
 
+    @Test func detailDeleteRoutesThroughSharedDeletePipeline() async {
+        let taskID = UUID(0)
+        var initialState = TaskListFeature.State()
+        let task = makeTask(id: taskID, title: "Detail task", scheduledForToday: false, isCompleted: false, sortOrder: 0)
+        initialState.tasks = [task]
+        initialState.detail = TaskDetailFeature.State(from: task)
+        initialState.selectedTaskID = taskID
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.deleteTask = { _ in }
+            $0.spotlightClient.deindexTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.detail(.presented(.delegate(.taskDeleted(taskID)))))
+        await store.receive(.taskDeleted(taskID)) {
+            $0.recentlyDeletedTask = task
+            $0.tasks = []
+            $0.detail = nil
+            $0.selectedTaskID = nil
+        }
+    }
+
+    @Test func importedReminderUsesStableSyncID() {
+        let reminder = ImportedReminder(
+            externalID: "abc-123",
+            title: "Buy milk",
+            notes: nil,
+            priority: .medium,
+            calendarName: "Personal",
+            dueDate: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+        #expect(reminder.reminderSyncID == "reminder:abc-123")
+        let dto = reminder.toTaskItemDTO(sortOrder: 5, syncId: reminder.reminderSyncID)
+        #expect(dto.syncId == "reminder:abc-123")
+        #expect(dto.sortOrder == 5)
+        #expect(dto.dueDate != nil)
+    }
+
     @Test func rapidMultiDeleteSoftDeletesAllTasksImmediately() async {
         let taskA = UUID(0)
         let taskB = UUID(1)

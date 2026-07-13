@@ -51,6 +51,26 @@ struct TaskDetailFeatureTests {
         }
     }
 
+    @Test("deleteConfirmed delegates to parent without persisting (#186)")
+    func deleteConfirmedDelegatesToParent() async {
+        let taskID = UUID(0)
+        var state = detailState(taskID: taskID)
+        state.showDeleteConfirmation = true
+
+        let store = TestStore(initialState: state) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.persistenceClient.deleteTask = { _ in
+                Issue.record("deleteTask should be handled by TaskListFeature")
+            }
+        }
+
+        await store.send(.deleteConfirmed) {
+            $0.showDeleteConfirmation = false
+        }
+        await store.receive(.delegate(.taskDeleted(taskID)))
+    }
+
     @Test("retryLoadTapped clears error and triggers reload (#184)")
     func retryLoadTappedClearsError() async {
         var state = detailState()

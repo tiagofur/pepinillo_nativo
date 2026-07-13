@@ -301,11 +301,10 @@ struct TaskDetailFeature {
                 return .none
 
             case .deleteConfirmed:
+                state.showDeleteConfirmation = false
                 let id = state.taskID
-                return .run { send in
-                    try await persistence.deleteTask(id)
-                    await send(.delegate(.taskDeleted(id)))
-                }
+                // Persistence, undo, Spotlight, and widgets are handled by TaskListFeature.taskDeleted (#186).
+                return .send(.delegate(.taskDeleted(id)))
 
             case .dismissTapped:
                 return .merge(

@@ -55,10 +55,12 @@ actor RemindersImportService {
                 }
                 let imported = reminders.map { reminder in
                     ImportedReminder(
+                        externalID: reminder.calendarItemIdentifier,
                         title: reminder.title ?? "Untitled",
                         notes: reminder.notes,
                         priority: Self.mapPriority(reminder.priority),
-                        calendarName: reminder.calendar?.title
+                        calendarName: reminder.calendar?.title,
+                        dueDate: Self.date(from: reminder.dueDateComponents)
                     )
                 }
                 continuation.resume(returning: imported)
@@ -76,22 +78,43 @@ actor RemindersImportService {
         default:      return .none
         }
     }
+
+    private static func date(from components: DateComponents?) -> Date? {
+        guard let components else { return nil }
+        return Calendar.current.date(from: components)
+    }
 }
 
 /// Value type representing a reminder ready to be imported as a TaskItem.
 struct ImportedReminder: Sendable, Identifiable {
-    let id = UUID()
+    let externalID: String
     let title: String
     let notes: String?
     let priority: TaskPriority
     let calendarName: String?
+    let dueDate: Date?
 
-    func toTaskItemDTO(sortOrder: Int = 0) -> TaskItemDTO {
-        TaskItemDTO(
+    var id: String { externalID }
+
+    /// Stable sync key for dedupe across re-imports (#187).
+    var reminderSyncID: String { "reminder:\(externalID)" }
+
+    func toTaskItemDTO(sortOrder: Int, syncId: String) -> TaskItemDTO {
+        let cal = Calendar.current
+        let scheduledForToday: Bool
+        if let dueDate {
+            scheduledForToday = cal.isDateInToday(dueDate)
+        } else {
+            scheduledForToday = false
+        }
+        return TaskItemDTO(
             title: title,
             notes: notes,
             priority: priority,
-            sortOrder: sortOrder
+            sortOrder: sortOrder,
+            dueDate: dueDate,
+            scheduledForToday: scheduledForToday,
+            syncId: syncId
         )
     }
 }

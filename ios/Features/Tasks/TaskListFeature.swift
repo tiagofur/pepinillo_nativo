@@ -24,6 +24,8 @@ struct TaskListFeature {
         var sortOrder: SortOrder = .custom
         var newTaskTitle: String = ""
         var importError: String?
+        /// Success summary after Reminders import (#187).
+        var importSummary: String?
         /// Separate error for DB load failures (issue #88) — previously conflated
         /// with `importError`, which surfaced as a misleading "Import Failed" alert
         /// for generic fetch errors.
@@ -206,7 +208,8 @@ struct TaskListFeature {
 
         // Reminders import
         case importFromRemindersTapped
-        case remindersImported([TaskItemState])
+        case remindersImported(imported: [TaskItemState], skipped: Int)
+        case importSummaryDismissed
         case remindersImportFailed(String)
         case importErrorDismissed
         case loadErrorDismissed
@@ -388,6 +391,10 @@ struct TaskListFeature {
                 guard let task = state.tasks[id: id] else { return .none }
                 state.recentlyDeletedTask = task
                 state.tasks.remove(id: id)
+                if state.detail?.taskID == id {
+                    state.detail = nil
+                    state.selectedTaskID = nil
+                }
                 // Soft-delete immediately (issue #183). The undo timer only dismisses the
                 // banner; it must not be the sole persistence path — cancelInFlight on a
                 // single timer dropped earlier deletes when another task was removed.
@@ -521,9 +528,7 @@ struct TaskListFeature {
                 return .send(.startFocusOnTask(id))
 
             case .detail(.presented(.delegate(.taskDeleted(let id)))):
-                state.tasks.remove(id: id)
-                state.detail = nil
-                return .none
+                return .send(.taskDeleted(id))
 
             case .detail(.presented(.delegate(.taskCompletionChanged(let id, let isCompleted)))):
                 // Detail is the source of truth — sync the list row
@@ -552,7 +557,7 @@ struct TaskListFeature {
             // MARK: - Reminders Import
 
             case .importFromRemindersTapped:
-                return .run { send in
+                return .run { [spotlight] send in
                     let service = RemindersImportService()
                     do {
                         let granted = try await service.requestAccess()
@@ -561,24 +566,54 @@ struct TaskListFeature {
                             return
                         }
                         let reminders = try await service.fetchIncompleteReminders()
+                        let existing = try await persistence.fetchTasks()
+                        let maxSort = existing.map(\.sortOrder).max() ?? -1
                         var imported: [TaskItemState] = []
-                        for (index, reminder) in reminders.enumerated() {
-                            let dto = reminder.toTaskItemDTO(sortOrder: index)
+                        var skipped = 0
+                        var nextSort = maxSort + 1
+                        for reminder in reminders {
+                            let syncId = reminder.reminderSyncID
+                            if try await persistence.fetchTaskBySyncId(syncId) != nil {
+                                skipped += 1
+                                continue
+                            }
+                            let dto = reminder.toTaskItemDTO(
+                                sortOrder: nextSort,
+                                syncId: syncId
+                            )
+                            nextSort += 1
                             try await persistence.saveTask(dto)
                             imported.append(TaskItemState.from(dto))
                         }
-                        await send(.remindersImported(imported))
+                        if !imported.isEmpty {
+                            try? await spotlight.indexTasks(imported.map { $0.toDTO() })
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        }
+                        await send(.remindersImported(imported: imported, skipped: skipped))
                     } catch {
                         await send(.remindersImportFailed(error.localizedDescription))
                     }
                 }
 
-            case .remindersImported(let newTasks):
+            case .remindersImported(let newTasks, let skipped):
                 for task in newTasks {
                     if state.tasks[id: task.id] == nil {
                         state.tasks.append(task)
                     }
                 }
+                if newTasks.isEmpty && skipped == 0 {
+                    state.importSummary = String(localized: "No new reminders to import.")
+                } else if skipped == 0 {
+                    state.importSummary = String(localized: "Imported \(newTasks.count) reminders.")
+                } else {
+                    state.importSummary = String(
+                        localized: "Imported \(newTasks.count) reminders. Skipped \(skipped) duplicates."
+                    )
+                }
+                return .none
+
+            case .importSummaryDismissed:
+                state.importSummary = nil
                 return .none
 
             case .remindersImportFailed(let message):

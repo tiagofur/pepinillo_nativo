@@ -108,6 +108,17 @@ struct PlanTaskList: View {
         } message: {
             Text(store.loadError ?? "")
         }
+        .alert(
+            String(localized: "Import Complete"),
+            isPresented: Binding(
+                get: { store.importSummary != nil },
+                set: { if !$0 { store.send(.importSummaryDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.importSummaryDismissed) }
+        } message: {
+            Text(store.importSummary ?? "")
+        }
     }
 
     // MARK: - Task List Content
