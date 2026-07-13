@@ -622,6 +622,47 @@ struct TaskListFeature {
 
     /// Tasks visible for a Plan sidebar filter. Shared by PlanTaskList and
     /// `taskMoved` so drag indices map to the same subset (issue #179).
+    /// Applies the Plan sort menu to a filtered task list (#185).
+    static func sortedPlanTasks(
+        _ tasks: IdentifiedArrayOf<TaskItemState>,
+        sortOrder: SortOrder
+    ) -> IdentifiedArrayOf<TaskItemState> {
+        let sorted = tasks.sorted { lhs, rhs in
+            if lhs.isCompleted != rhs.isCompleted { return !lhs.isCompleted }
+            switch sortOrder {
+            case .custom:
+                if lhs.sortOrder != rhs.sortOrder { return lhs.sortOrder < rhs.sortOrder }
+            case .priority:
+                if lhs.priority != rhs.priority { return lhs.priority > rhs.priority }
+            case .dueDate:
+                switch (lhs.dueDate, rhs.dueDate) {
+                case (nil, nil): break
+                case (nil, _): return false
+                case (_, nil): return true
+                case let (l?, r?) where l != r: return l < r
+                default: break
+                }
+            case .energy:
+                let lIdx = energySortIndex(lhs.energyLevel)
+                let rIdx = energySortIndex(rhs.energyLevel)
+                if lIdx != rIdx { return lIdx < rIdx }
+            case .created:
+                if lhs.createdAt != rhs.createdAt { return lhs.createdAt > rhs.createdAt }
+            }
+            if lhs.createdAt != rhs.createdAt { return lhs.createdAt > rhs.createdAt }
+            return lhs.sortOrder < rhs.sortOrder
+        }
+        return IdentifiedArrayOf(uniqueElements: sorted)
+    }
+
+    private static func energySortIndex(_ level: EnergyLevel) -> Int {
+        switch level {
+        case .deep: return 0
+        case .shallow: return 1
+        case .admin: return 2
+        }
+    }
+
     static func planFilteredTasks(
         _ tasks: IdentifiedArrayOf<TaskItemState>,
         filter: PlanFilter,

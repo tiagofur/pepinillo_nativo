@@ -29,6 +29,7 @@ struct TaskDetailFeature {
         var newSubtaskTitle: String = ""
         var totalFocusSeconds: TimeInterval = 0
         var isLoading: Bool = false
+        var loadError: String? = nil
         var isProUser: Bool = false
         var showDeleteConfirmation: Bool = false
         var showAllSubtasksCompletedPrompt: Bool = false
@@ -80,6 +81,8 @@ struct TaskDetailFeature {
     enum Action: Equatable {
         case onAppear
         case dataLoaded([SubTaskDTO], TimeInterval)
+        case loadFailed(String)
+        case retryLoadTapped
 
         // Field edits — each triggers an immediate save
         case titleChanged(String)
@@ -138,12 +141,17 @@ struct TaskDetailFeature {
             case .onAppear:
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
+                state.loadError = nil
                 let id = state.taskID
                 return .run { send in
-                    async let subtaskDTOs = persistence.fetchSubtasks(id)
-                    async let focusSeconds = persistence.fetchTaskTotalFocusSeconds(id)
-                    let (subtasks, seconds) = try await (subtaskDTOs, focusSeconds)
-                    await send(.dataLoaded(subtasks, seconds))
+                    do {
+                        async let subtaskDTOs = persistence.fetchSubtasks(id)
+                        async let focusSeconds = persistence.fetchTaskTotalFocusSeconds(id)
+                        let (subtasks, seconds) = try await (subtaskDTOs, focusSeconds)
+                        await send(.dataLoaded(subtasks, seconds))
+                    } catch {
+                        await send(.loadFailed(error.localizedDescription))
+                    }
                 }
                 .cancellable(id: CancelID.load)
 
@@ -153,7 +161,17 @@ struct TaskDetailFeature {
                 })
                 state.totalFocusSeconds = focusSeconds
                 state.isLoading = false
+                state.loadError = nil
                 return .none
+
+            case .loadFailed(let message):
+                state.isLoading = false
+                state.loadError = message
+                return .none
+
+            case .retryLoadTapped:
+                state.loadError = nil
+                return .send(.onAppear)
 
             case .titleChanged(let title):
                 state.title = title

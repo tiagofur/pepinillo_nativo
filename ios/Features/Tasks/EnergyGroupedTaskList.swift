@@ -160,7 +160,10 @@ struct EnergyGroupedTaskList: View {
             }
 
             ForEach(visibleLevels, id: \.self) { level in
-                let sectionTasks = filteredTasks.filter { $0.energyLevel == level }
+                let sectionTasks = TaskListFeature.sortedPlanTasks(
+                    IdentifiedArrayOf(uniqueElements: filteredTasks.filter { $0.energyLevel == level }),
+                    sortOrder: store.sortOrder
+                )
                 if !sectionTasks.isEmpty {
                     // Section header
                     EnergySectionHeader(level: level, count: sectionTasks.count)

@@ -1030,19 +1030,54 @@ struct TaskListFeatureTests {
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .today).ids == [todayC, todayA])
     }
 
+    @Test("sortedPlanTasks orders by priority high to none (#185)")
+    func sortedPlanTasksByPriority() {
+        let tasks = IdentifiedArrayOf(uniqueElements: [
+            makeTask(id: UUID(0), title: "Low", scheduledForToday: false, isCompleted: false, sortOrder: 0, priority: .low),
+            makeTask(id: UUID(1), title: "High", scheduledForToday: false, isCompleted: false, sortOrder: 1, priority: .high),
+            makeTask(id: UUID(2), title: "None", scheduledForToday: false, isCompleted: false, sortOrder: 2, priority: .none),
+        ])
+        let sorted = TaskListFeature.sortedPlanTasks(tasks, sortOrder: .priority)
+        #expect(sorted.map(\.title) == ["High", "Low", "None"])
+    }
+
+    @Test("sortedPlanTasks keeps custom sortOrder (#185)")
+    func sortedPlanTasksCustomOrder() {
+        let tasks = IdentifiedArrayOf(uniqueElements: [
+            makeTask(id: UUID(0), title: "B", scheduledForToday: false, isCompleted: false, sortOrder: 1),
+            makeTask(id: UUID(1), title: "A", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+        ])
+        let sorted = TaskListFeature.sortedPlanTasks(tasks, sortOrder: .custom)
+        #expect(sorted.map(\.title) == ["A", "B"])
+    }
+
+    @Test("sortedPlanTasks puts nil due dates last (#185)")
+    func sortedPlanTasksByDueDate() {
+        let early = Date(timeIntervalSince1970: 1_000)
+        let late = Date(timeIntervalSince1970: 2_000)
+        let tasks = IdentifiedArrayOf(uniqueElements: [
+            makeTask(id: UUID(0), title: "No due", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+            makeTask(id: UUID(1), title: "Late", scheduledForToday: false, isCompleted: false, sortOrder: 1, dueDate: late),
+            makeTask(id: UUID(2), title: "Early", scheduledForToday: false, isCompleted: false, sortOrder: 2, dueDate: early),
+        ])
+        let sorted = TaskListFeature.sortedPlanTasks(tasks, sortOrder: .dueDate)
+        #expect(sorted.map(\.title) == ["Early", "Late", "No due"])
+    }
+
     private func makeTask(
         id: UUID,
         title: String,
         scheduledForToday: Bool,
         isCompleted: Bool,
         sortOrder: Int,
-        dueDate: Date? = nil
+        dueDate: Date? = nil,
+        priority: TaskPriority = .none
     ) -> TaskListFeature.TaskItemState {
         TaskListFeature.TaskItemState(
             id: id,
             title: title,
             isCompleted: isCompleted,
-            priority: .none,
+            priority: priority,
             energyLevel: .deep,
             estimatedPomodoros: 1,
             completedPomodoros: 0,

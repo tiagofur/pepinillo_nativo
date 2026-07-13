@@ -145,7 +145,20 @@ struct TaskDetailView: View {
                 .padding(.bottom, 4)
 
             VStack(spacing: 12) {
-                if store.subtasks.isEmpty && store.isLoading {
+                if let loadError = store.loadError {
+                    VStack(spacing: 8) {
+                        Text(loadError)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                        Button(String(localized: "Retry")) {
+                            store.send(.retryLoadTapped)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                } else if store.subtasks.isEmpty && store.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 }

@@ -23,7 +23,8 @@ struct PlanTaskList: View {
     // MARK: - Filtered tasks
 
     private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
-        TaskListFeature.planFilteredTasks(store.tasks, filter: filter)
+        let filtered = TaskListFeature.planFilteredTasks(store.tasks, filter: filter)
+        return TaskListFeature.sortedPlanTasks(filtered, sortOrder: store.sortOrder)
     }
 
     // MARK: - Body
