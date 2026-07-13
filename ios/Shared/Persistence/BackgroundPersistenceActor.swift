@@ -111,6 +111,22 @@ public actor BackgroundPersistenceActor {
         try service.softDeleteTask(id: id)
     }
 
+    func restoreTask(_ taskDTO: TaskItemDTO) throws {
+        let taskID = taskDTO.id
+        var descriptor = FetchDescriptor<TaskItem>(
+            predicate: #Predicate { $0.id == taskID }
+        )
+        descriptor.fetchLimit = 1
+        if let existing = try modelContext.fetch(descriptor).first {
+            existing.isLocallyDeleted = false
+            existing.isDirty = true
+            existing.updatedAt = Date.now
+            try modelContext.save()
+        } else {
+            try saveTask(taskDTO)
+        }
+    }
+
     // MARK: - Subtasks
 
     func fetchSubtasks(for taskID: UUID) throws -> [SubTaskDTO] {

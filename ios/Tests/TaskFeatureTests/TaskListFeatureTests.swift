@@ -177,6 +177,98 @@ struct TaskListFeatureTests {
         }
     }
 
+    @Test func rapidMultiDeleteSoftDeletesAllTasksImmediately() async {
+        let taskA = UUID(0)
+        let taskB = UUID(1)
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            makeTask(id: taskA, title: "Task A", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+            makeTask(id: taskB, title: "Task B", scheduledForToday: false, isCompleted: false, sortOrder: 1),
+        ]
+
+        let deletedIDs = LockIsolated<[UUID]>([])
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.deleteTask = { id in
+                deletedIDs.withValue { $0.append(id) }
+            }
+            $0.spotlightClient.deindexTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.taskDeleted(taskA)) {
+            $0.tasks = [initialState.tasks[id: taskB]!]
+            $0.recentlyDeletedTask = initialState.tasks[id: taskA]
+        }
+        await store.send(.taskDeleted(taskB)) {
+            $0.tasks = []
+            $0.recentlyDeletedTask = initialState.tasks[id: taskB]
+        }
+
+        #expect(deletedIDs.value == [taskA, taskB])
+    }
+
+    @Test func undoRestoresOnlyMostRecentlyDeletedTask() async {
+        let taskA = UUID(0)
+        let taskB = UUID(1)
+        var initialState = TaskListFeature.State()
+        let itemA = makeTask(id: taskA, title: "Task A", scheduledForToday: false, isCompleted: false, sortOrder: 0)
+        let itemB = makeTask(id: taskB, title: "Task B", scheduledForToday: false, isCompleted: false, sortOrder: 1)
+        initialState.tasks = [itemA, itemB]
+
+        let restoredDTO = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.deleteTask = { _ in }
+            $0.persistenceClient.restoreTask = { dto in restoredDTO.setValue(dto) }
+            $0.spotlightClient.deindexTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.taskDeleted(taskA))
+        await store.send(.taskDeleted(taskB))
+        await store.send(.undoDeleteTask) {
+            $0.tasks = [itemB]
+            $0.recentlyDeletedTask = nil
+        }
+
+        #expect(restoredDTO.value?.id == taskB)
+        #expect(restoredDTO.value?.title == "Task B")
+    }
+
+    @Test func undoTimerExpiredDismissesOnlyMatchingBanner() async {
+        let taskA = UUID(0)
+        let taskB = UUID(1)
+        var initialState = TaskListFeature.State()
+        let itemA = makeTask(id: taskA, title: "Task A", scheduledForToday: false, isCompleted: false, sortOrder: 0)
+        let itemB = makeTask(id: taskB, title: "Task B", scheduledForToday: false, isCompleted: false, sortOrder: 1)
+        initialState.tasks = [itemA, itemB]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.deleteTask = { _ in }
+            $0.spotlightClient.deindexTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.taskDeleted(taskA))
+        await store.send(.taskDeleted(taskB))
+
+        await store.send(.undoTimerExpired(taskA))
+
+        #expect(store.state.recentlyDeletedTask?.id == taskB)
+
+        await store.send(.undoTimerExpired(taskB)) {
+            $0.recentlyDeletedTask = nil
+        }
+    }
+
     @Test func filterChangeUpdatesState() async {
         let store = TestStore(initialState: TaskListFeature.State()) {
             TaskListFeature()
