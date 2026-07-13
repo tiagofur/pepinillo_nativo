@@ -109,6 +109,17 @@ struct PlanTaskList: View {
             Text(store.loadError ?? "")
         }
         .alert(
+            String(localized: "Couldn't Save Changes"),
+            isPresented: Binding(
+                get: { store.mutationError != nil },
+                set: { if !$0 { store.send(.mutationErrorDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.mutationErrorDismissed) }
+        } message: {
+            Text(store.mutationError ?? "")
+        }
+        .alert(
             String(localized: "Import Complete"),
             isPresented: Binding(
                 get: { store.importSummary != nil },

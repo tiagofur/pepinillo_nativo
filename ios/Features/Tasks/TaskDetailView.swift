@@ -89,6 +89,17 @@ struct TaskDetailView: View {
         } message: {
             Text(String(localized: "This action cannot be undone."))
         }
+        .alert(
+            String(localized: "Couldn't Save Changes"),
+            isPresented: Binding(
+                get: { store.mutationError != nil },
+                set: { if !$0 { store.send(.mutationErrorDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.mutationErrorDismissed) }
+        } message: {
+            Text(store.mutationError ?? "")
+        }
         .sheet(item: $store.scope(state: \.taskAnalytics, action: \.taskAnalytics)) { analyticsStore in
             TaskAnalyticsView(store: analyticsStore)
                 .presentationDetents([.large])

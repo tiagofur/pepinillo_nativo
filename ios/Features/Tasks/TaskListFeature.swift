@@ -30,6 +30,9 @@ struct TaskListFeature {
         /// with `importError`, which surfaced as a misleading "Import Failed" alert
         /// for generic fetch errors.
         var loadError: String?
+        /// Optimistic mutation persistence failures (#189). Separate from load/import
+        /// errors so a failed toggle doesn't masquerade as a load failure.
+        var mutationError: String?
         var selectedTaskID: UUID?
         var selectedPlanFilter: PlanFilter = .today
         var recentlyDeletedTask: TaskItemState?
@@ -213,6 +216,18 @@ struct TaskListFeature {
         case remindersImportFailed(String)
         case importErrorDismissed
         case loadErrorDismissed
+        case mutationFailed(MutationFailure)
+        case mutationErrorDismissed
+    }
+
+    /// Rollback payload for optimistic mutations that failed to persist (#189).
+    enum MutationFailure: Equatable {
+        case addTask(id: UUID, title: String, message: String)
+        case complete(id: UUID, wasCompleted: Bool, message: String)
+        case delete(task: TaskItemState, message: String)
+        case undoDelete(task: TaskItemState, message: String)
+        case reorder(tasks: IdentifiedArrayOf<TaskItemState>, message: String)
+        case update(task: TaskItemState, message: String)
     }
 
     private enum _UndoTimerID: Hashable { case undoTimer(UUID) }
@@ -350,8 +365,16 @@ struct TaskListFeature {
                         scheduledForToday: quickAddDefaults.scheduledForToday,
                         createdAt: now
                     )
-                    try await persistence.saveTask(dto)
-                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    do {
+                        try await persistence.saveTask(dto)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    } catch {
+                        await send(.mutationFailed(.addTask(
+                            id: newID,
+                            title: title,
+                            message: error.localizedDescription
+                        )))
+                    }
                 }
 
             case .taskTapped(let id):
@@ -373,17 +396,26 @@ struct TaskListFeature {
 
             case .setTaskCompleted(let id, let isCompleted):
                 guard state.tasks[id: id]?.isCompleted != isCompleted else { return .none }
+                let wasCompleted = state.tasks[id: id]?.isCompleted ?? false
                 state.tasks[id: id]?.isCompleted = isCompleted
                 // Sync the detail column if it's currently showing this task
                 if state.detail?.taskID == id {
                     state.detail?.isCompleted = isCompleted
                 }
-                return .run { _ in
-                    // Single-row fetch instead of a full-table scan (issue #74).
-                    if let item = try await persistence.fetchTask(id) {
-                        let updated = item.updating(isCompleted: isCompleted)
-                        try await persistence.saveTask(updated)
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                return .run { send in
+                    do {
+                        // Single-row fetch instead of a full-table scan (issue #74).
+                        if let item = try await persistence.fetchTask(id) {
+                            let updated = item.updating(isCompleted: isCompleted)
+                            try await persistence.saveTask(updated)
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        }
+                    } catch {
+                        await send(.mutationFailed(.complete(
+                            id: id,
+                            wasCompleted: wasCompleted,
+                            message: error.localizedDescription
+                        )))
                     }
                 }
 
@@ -399,10 +431,17 @@ struct TaskListFeature {
                 // banner; it must not be the sole persistence path — cancelInFlight on a
                 // single timer dropped earlier deletes when another task was removed.
                 return .merge(
-                    .run { [spotlight] _ in
-                        try await persistence.deleteTask(id)
-                        try? await spotlight.deindexTask(id)
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    .run { [spotlight] send in
+                        do {
+                            try await persistence.deleteTask(id)
+                            try? await spotlight.deindexTask(id)
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        } catch {
+                            await send(.mutationFailed(.delete(
+                                task: task,
+                                message: error.localizedDescription
+                            )))
+                        }
                     },
                     .run { send in
                         try await Task.sleep(for: .seconds(5))
@@ -418,9 +457,16 @@ struct TaskListFeature {
                 state.recentlyDeletedTask = nil
                 return .merge(
                     .cancel(id: _UndoTimerID.undoTimer(taskID)),
-                    .run { _ in
-                        try await persistence.restoreTask(task.toDTO())
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    .run { send in
+                        do {
+                            try await persistence.restoreTask(task.toDTO())
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        } catch {
+                            await send(.mutationFailed(.undoDelete(
+                                task: task,
+                                message: error.localizedDescription
+                            )))
+                        }
                     }
                 )
 
@@ -433,6 +479,7 @@ struct TaskListFeature {
             case .taskMoved(let source, let destination):
                 // PlanTaskList drag indices refer to the active Plan filter subset,
                 // not the full task array (issue #179).
+                let tasksSnapshot = state.tasks
                 let now = date.now
                 var filtered = Self.planFilteredTasks(
                     state.tasks,
@@ -450,20 +497,35 @@ struct TaskListFeature {
                 state.tasks.sort { $0.sortOrder < $1.sortOrder }
 
                 let order = state.tasks.map { (id: $0.id, sortOrder: $0.sortOrder) }
-                return .run { _ in
-                    // Batch the reorder in a single transaction instead of N
-                    // sequential saveTask round-trips (issue #74).
-                    try await persistence.saveTaskOrder(order)
-                    WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                return .run { send in
+                    do {
+                        // Batch the reorder in a single transaction instead of N
+                        // sequential saveTask round-trips (issue #74).
+                        try await persistence.saveTaskOrder(order)
+                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                    } catch {
+                        await send(.mutationFailed(.reorder(
+                            tasks: tasksSnapshot,
+                            message: error.localizedDescription
+                        )))
+                    }
                 }
 
             case .energyLevelChanged(let id, let level):
+                guard let snapshot = state.tasks[id: id] else { return .none }
                 state.tasks[id: id]?.energyLevel = level
-                return .run { _ in
-                    if let item = try await persistence.fetchTask(id) {
-                        let updated = item.updating(energyLevel: level)
-                        try await persistence.saveTask(updated)
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                return .run { send in
+                    do {
+                        if let item = try await persistence.fetchTask(id) {
+                            let updated = item.updating(energyLevel: level)
+                            try await persistence.saveTask(updated)
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        }
+                    } catch {
+                        await send(.mutationFailed(.update(
+                            task: snapshot,
+                            message: error.localizedDescription
+                        )))
                     }
                 }
 
@@ -472,37 +534,53 @@ struct TaskListFeature {
                 if rule != nil && !state.isProUser {
                     return .send(.delegate(.showPaywall))
                 }
+                guard let snapshot = state.tasks[id: id] else { return .none }
                 state.tasks[id: id]?.recurrenceRule = rule
                 state.tasks[id: id]?.isRecurringTemplate = rule != nil
-                return .run { _ in
-                    if let item = try await persistence.fetchTask(id) {
-                        let updated = TaskItemDTO(
-                            id: item.id, title: item.title, notes: item.notes,
-                            isCompleted: item.isCompleted, priority: item.priority,
-                            energyLevel: item.energyLevel, estimatedPomodoros: item.estimatedPomodoros,
-                            completedPomodoros: item.completedPomodoros, sortOrder: item.sortOrder,
-                            recurrenceRule: rule, isRecurringTemplate: rule != nil,
-                            dueDate: item.dueDate, scheduledForToday: item.scheduledForToday
-                        )
-                        try await persistence.saveTask(updated)
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                return .run { send in
+                    do {
+                        if let item = try await persistence.fetchTask(id) {
+                            let updated = TaskItemDTO(
+                                id: item.id, title: item.title, notes: item.notes,
+                                isCompleted: item.isCompleted, priority: item.priority,
+                                energyLevel: item.energyLevel, estimatedPomodoros: item.estimatedPomodoros,
+                                completedPomodoros: item.completedPomodoros, sortOrder: item.sortOrder,
+                                recurrenceRule: rule, isRecurringTemplate: rule != nil,
+                                dueDate: item.dueDate, scheduledForToday: item.scheduledForToday
+                            )
+                            try await persistence.saveTask(updated)
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        }
+                    } catch {
+                        await send(.mutationFailed(.update(
+                            task: snapshot,
+                            message: error.localizedDescription
+                        )))
                     }
                 }
 
             case .taskScheduledForToday(let id, let scheduled):
+                guard let snapshot = state.tasks[id: id] else { return .none }
                 state.tasks[id: id]?.scheduledForToday = scheduled
-                return .run { _ in
-                    if let item = try await persistence.fetchTask(id) {
-                        let updated = TaskItemDTO(
-                            id: item.id, title: item.title, notes: item.notes,
-                            isCompleted: item.isCompleted, priority: item.priority,
-                            energyLevel: item.energyLevel, estimatedPomodoros: item.estimatedPomodoros,
-                            completedPomodoros: item.completedPomodoros, sortOrder: item.sortOrder,
-                            recurrenceRule: item.recurrenceRule, isRecurringTemplate: item.isRecurringTemplate,
-                            dueDate: item.dueDate, scheduledForToday: scheduled
-                        )
-                        try await persistence.saveTask(updated)
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                return .run { send in
+                    do {
+                        if let item = try await persistence.fetchTask(id) {
+                            let updated = TaskItemDTO(
+                                id: item.id, title: item.title, notes: item.notes,
+                                isCompleted: item.isCompleted, priority: item.priority,
+                                energyLevel: item.energyLevel, estimatedPomodoros: item.estimatedPomodoros,
+                                completedPomodoros: item.completedPomodoros, sortOrder: item.sortOrder,
+                                recurrenceRule: item.recurrenceRule, isRecurringTemplate: item.isRecurringTemplate,
+                                dueDate: item.dueDate, scheduledForToday: scheduled
+                            )
+                            try await persistence.saveTask(updated)
+                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        }
+                    } catch {
+                        await send(.mutationFailed(.update(
+                            task: snapshot,
+                            message: error.localizedDescription
+                        )))
                     }
                 }
 
@@ -626,6 +704,51 @@ struct TaskListFeature {
 
             case .loadErrorDismissed:
                 state.loadError = nil
+                return .none
+
+            case .mutationFailed(let failure):
+                switch failure {
+                case .addTask(let id, let title, let message):
+                    state.tasks.remove(id: id)
+                    state.newTaskTitle = title
+                    state.mutationError = message
+
+                case .complete(let id, let wasCompleted, let message):
+                    state.tasks[id: id]?.isCompleted = wasCompleted
+                    if state.detail?.taskID == id {
+                        state.detail?.isCompleted = wasCompleted
+                    }
+                    state.mutationError = message
+
+                case .delete(let task, let message):
+                    if state.tasks[id: task.id] == nil {
+                        state.tasks.append(task)
+                    }
+                    state.recentlyDeletedTask = task
+                    state.mutationError = message
+
+                case .undoDelete(let task, let message):
+                    state.tasks.remove(id: task.id)
+                    state.recentlyDeletedTask = task
+                    state.mutationError = message
+
+                case .reorder(let tasks, let message):
+                    state.tasks = tasks
+                    state.mutationError = message
+
+                case .update(let task, let message):
+                    state.tasks[id: task.id] = task
+                    if state.detail?.taskID == task.id {
+                        state.detail?.energyLevel = task.energyLevel
+                        state.detail?.recurrenceRule = task.recurrenceRule
+                        state.detail?.scheduledForToday = task.scheduledForToday
+                    }
+                    state.mutationError = message
+                }
+                return .none
+
+            case .mutationErrorDismissed:
+                state.mutationError = nil
                 return .none
 
             case .delegate:

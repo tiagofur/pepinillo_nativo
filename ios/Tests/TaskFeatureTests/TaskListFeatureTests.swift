@@ -1119,6 +1119,132 @@ struct TaskListFeatureTests {
         #expect(sorted.map(\.title) == ["Early", "Late", "No due"])
     }
 
+    @Test("addTask save failure rolls back optimistic row (#189)")
+    func addTaskSaveFailureRollsBack() async {
+        struct TestError: Error {}
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in throw TestError() }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        await store.send(.newTaskTitleChanged("Buy groceries")) {
+            $0.newTaskTitle = "Buy groceries"
+        }
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(TaskListFeature.TaskItemState(
+                id: testID,
+                title: "Buy groceries",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 0,
+                createdAt: testDate
+            ))
+        }
+
+        await store.receive(\.mutationFailed) {
+            $0.tasks = []
+            $0.newTaskTitle = "Buy groceries"
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
+    @Test("completeTask save failure restores completion state (#189)")
+    func completeTaskSaveFailureRollsBack() async {
+        struct TestError: Error {}
+        let taskID = UUID(1)
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            TaskListFeature.TaskItemState(
+                id: taskID,
+                title: "Task",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 0,
+                createdAt: Date()
+            )
+        ]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID) }
+            $0.persistenceClient.saveTask = { _ in throw TestError() }
+        }
+
+        await store.send(.taskCompleted(taskID)) {
+            $0.tasks[id: taskID]?.isCompleted = true
+        }
+
+        await store.receive(\.mutationFailed) {
+            $0.tasks[id: taskID]?.isCompleted = false
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
+    @Test("deleteTask save failure restores task and undo banner (#189)")
+    func deleteTaskSaveFailureRollsBack() async {
+        struct TestError: Error {}
+        let taskID = UUID(2)
+        let task = TaskListFeature.TaskItemState(
+            id: taskID,
+            title: "Gone?",
+            isCompleted: false,
+            priority: .none,
+            energyLevel: .deep,
+            estimatedPomodoros: 1,
+            completedPomodoros: 0,
+            subtaskProgress: .init(completed: 0, total: 0),
+            recurrenceRule: nil,
+            isRecurringTemplate: false,
+            scheduledForToday: true,
+            sortOrder: 0,
+            createdAt: Date()
+        )
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [task]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.deleteTask = { _ in throw TestError() }
+            $0.spotlightClient.deindexTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+        await store.send(.taskDeleted(taskID)) {
+            $0.recentlyDeletedTask = task
+            $0.tasks = []
+        }
+
+        await store.receive(\.mutationFailed) {
+            $0.tasks = [task]
+            $0.recentlyDeletedTask = task
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
     private func makeTask(
         id: UUID,
         title: String,

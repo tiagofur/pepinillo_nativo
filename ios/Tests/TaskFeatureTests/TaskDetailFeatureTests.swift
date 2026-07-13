@@ -71,6 +71,57 @@ struct TaskDetailFeatureTests {
         await store.receive(.delegate(.taskDeleted(taskID)))
     }
 
+    @Test("title save failure rolls back and syncs parent (#189)")
+    func titleSaveFailureRollsBack() async {
+        struct TestError: Error {}
+        let taskID = UUID(0)
+        let state = detailState(taskID: taskID)
+
+        let store = TestStore(initialState: state) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in throw TestError() }
+        }
+
+        store.exhaustivity = .off
+        await store.send(.titleChanged("Updated title")) {
+            $0.title = "Updated title"
+        }
+
+        await store.receive(\.saveFailed) {
+            $0.title = "Write docs"
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
+    @Test("subtask toggle failure restores subtask state (#189)")
+    func subtaskToggleFailureRollsBack() async {
+        struct TestError: Error {}
+        let taskID = UUID(0)
+        let subtaskID = UUID(1)
+        var state = detailState(taskID: taskID)
+        state.subtasks = [
+            .init(id: subtaskID, title: "Step 1", isCompleted: false, sortOrder: 0)
+        ]
+
+        let store = TestStore(initialState: state) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.persistenceClient.toggleSubtask = { _ in throw TestError() }
+        }
+
+        await store.send(.subtaskToggled(subtaskID)) {
+            $0.subtasks[id: subtaskID]?.isCompleted = true
+            $0.showAllSubtasksCompletedPrompt = true
+        }
+
+        await store.receive(\.subtaskMutationFailed) {
+            $0.subtasks[id: subtaskID]?.isCompleted = false
+            $0.showAllSubtasksCompletedPrompt = false
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
     @Test("retryLoadTapped clears error and triggers reload (#184)")
     func retryLoadTappedClearsError() async {
         var state = detailState()
