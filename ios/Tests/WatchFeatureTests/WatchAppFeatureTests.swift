@@ -55,7 +55,8 @@ struct WatchAppFeatureTests {
         pomodoroNumber: Int? = 1,
         linkedTaskTitle: String? = nil,
         linkedTaskID: String? = nil,
-        isPhaseTransition: Bool = false
+        isPhaseTransition: Bool = false,
+        sentAt: TimeInterval = Date().timeIntervalSince1970
     ) -> WatchSessionState {
         WatchSessionState(
             isActive: true,
@@ -67,7 +68,8 @@ struct WatchAppFeatureTests {
             pomodoroNumber: pomodoroNumber,
             linkedTaskTitle: linkedTaskTitle,
             linkedTaskID: linkedTaskID,
-            isPhaseTransition: isPhaseTransition
+            isPhaseTransition: isPhaseTransition,
+            sentAt: sentAt
         )
     }
 
@@ -282,10 +284,11 @@ struct WatchAppFeatureTests {
 
         let items = [Self.taskA, Self.taskB]
 
-        await store.send(.tasksReceived(items))
+        await store.send(.tasksReceived(items, sentAt: 100))
 
-        await store.receive(.tasks(.tasksReceived(items))) {
+        await store.receive(.tasks(.tasksReceived(items, sentAt: 100))) {
             $0.tasks.tasks = items
+            $0.tasks.lastTasksReceivedAt = 100
         }
     }
 
@@ -300,10 +303,11 @@ struct WatchAppFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.tasksReceived([]))
+        await store.send(.tasksReceived([], sentAt: 100))
 
-        await store.receive(.tasks(.tasksReceived([]))) {
+        await store.receive(.tasks(.tasksReceived([], sentAt: 100))) {
             $0.tasks.tasks = []
+            $0.tasks.lastTasksReceivedAt = 100
         }
     }
 
@@ -340,7 +344,7 @@ struct WatchAppFeatureTests {
         let store = TestStore(initialState: WatchAppFeature.State()) {
             WatchAppFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -363,6 +367,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -376,6 +381,7 @@ struct WatchAppFeatureTests {
         await store.receive(.timer(.connectivityChanged(true)))
 
         commandsSent.withValue {
+            #expect($0.contains(.requestSession))
             #expect($0.contains(.requestTasks))
             #expect($0.contains(.requestDashboard))
         }
@@ -393,6 +399,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -418,7 +425,7 @@ struct WatchAppFeatureTests {
         let store = TestStore(initialState: WatchAppFeature.State()) {
             WatchAppFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -447,6 +454,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -482,6 +490,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -513,6 +522,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -546,6 +556,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -561,8 +572,8 @@ struct WatchAppFeatureTests {
 
     // MARK: - Task Completion from Watch
 
-    @Test("toggleCompleted from tasks tab sends command to phone")
-    func toggleCompletedSendsCommand() async {
+    @Test("setCompleted from tasks tab sends command to phone")
+    func setCompletedSendsCommand() async {
         var state = WatchAppFeature.State()
         state.tasks.tasks = [Self.taskA]
 
@@ -573,12 +584,13 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
         store.exhaustivity = .off
 
-        await store.send(.tasks(.toggleCompleted(Self.taskA.id))) {
+        await store.send(.tasks(.setCompleted(Self.taskA.id, true))) {
             // Optimistic update happens in child
             let idx = $0.tasks.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
             $0.tasks.tasks[idx] = WatchTaskItem(
@@ -591,9 +603,9 @@ struct WatchAppFeatureTests {
             )
         }
 
-        let taskAIDStringToggle = Self.taskA.id.uuidString
+        let taskAIDString = Self.taskA.id.uuidString
         commandsSent.withValue {
-            #expect($0.contains(.toggleTaskCompleted(id: taskAIDStringToggle)))
+            #expect($0.contains(.setTaskCompleted(id: taskAIDString, isCompleted: true)))
         }
     }
 
@@ -604,7 +616,7 @@ struct WatchAppFeatureTests {
         let store = TestStore(initialState: WatchAppFeature.State()) {
             WatchAppFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -623,7 +635,7 @@ struct WatchAppFeatureTests {
         let store = TestStore(initialState: state) {
             WatchAppFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -654,6 +666,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -696,6 +709,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -711,9 +725,10 @@ struct WatchAppFeatureTests {
 
         // 2. Receive tasks
         let tasks = [Self.taskA, Self.taskB]
-        await store.send(.tasksReceived(tasks))
-        await store.receive(.tasks(.tasksReceived(tasks))) {
+        await store.send(.tasksReceived(tasks, sentAt: 100))
+        await store.receive(.tasks(.tasksReceived(tasks, sentAt: 100))) {
             $0.tasks.tasks = tasks
+            $0.tasks.lastTasksReceivedAt = 100
         }
 
         // 3. Navigate to tasks tab
@@ -793,7 +808,7 @@ struct WatchAppFeatureTests {
         let store = TestStore(initialState: state) {
             WatchAppFeature()
         } withDependencies: {
-            $0.watchConnectivityClient.sendCommand = { _ in }
+            $0.watchConnectivityClient.sendCommand = { _ in true }
         }
 
         store.exhaustivity = .off
@@ -814,7 +829,7 @@ struct WatchAppFeatureTests {
         }
 
         // Complete task A via watch
-        await store.send(.tasks(.toggleCompleted(Self.taskA.id))) {
+        await store.send(.tasks(.setCompleted(Self.taskA.id, true))) {
             let idx = $0.tasks.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
             $0.tasks.tasks[idx] = WatchTaskItem(
                 id: Self.taskA.id,
@@ -840,6 +855,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -866,6 +882,7 @@ struct WatchAppFeatureTests {
 
         // Should have re-requested tasks and dashboard
         commandsSent.withValue {
+            #expect($0.contains(.requestSession))
             #expect($0.contains(.requestTasks))
             #expect($0.contains(.requestDashboard))
         }
@@ -909,6 +926,7 @@ struct WatchAppFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
@@ -928,6 +946,25 @@ struct WatchAppFeatureTests {
         let taskBIDString = Self.taskB.id.uuidString
         commandsSent.withValue {
             #expect($0.contains(.linkTask(id: taskBIDString)))
+        }
+    }
+
+    @Test("sessionStateReceived syncs tasks.linkedTaskID from phone (#242)")
+    func sessionStateReceivedSyncsTasksLinkedTaskID() async {
+        let taskID = UUID()
+        let store = TestStore(initialState: WatchAppFeature.State()) {
+            WatchAppFeature()
+        }
+        store.exhaustivity = .off
+
+        let session = Self.activeSession(
+            linkedTaskTitle: "Write tests",
+            linkedTaskID: taskID.uuidString,
+            sentAt: 1000
+        )
+
+        await store.send(.sessionStateReceived(session)) {
+            $0.tasks.linkedTaskID = taskID
         }
     }
 }

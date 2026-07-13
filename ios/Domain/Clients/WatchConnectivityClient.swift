@@ -42,6 +42,11 @@ struct WatchSessionState: Equatable, Sendable {
     var isWaiting: Bool = false
     /// Timestamp of when this state was generated (for stale-update dedupe on watch).
     var sentAt: TimeInterval = Date().timeIntervalSince1970
+    /// Absolute phase anchors from the phone engine (countdown families / local watch tick).
+    var phaseStartDate: Date? = nil
+    var phaseEndDate: Date? = nil
+    /// When false, complications should not treat phaseEnd as a countdown target.
+    var countsDown: Bool = true
 
     static let idle = WatchSessionState(
         isActive: false, isPaused: false, modeID: "pomodoro",
@@ -82,9 +87,12 @@ enum WatchCommand: Equatable, Sendable {
     case skipPhase
     case linkTask(id: String)
     case unlinkTask
-    case toggleTaskCompleted(id: String)
+    /// Absolute completion state — avoids double-toggle races with stale task payloads (#243).
+    case setTaskCompleted(id: String, isCompleted: Bool)
     case requestTasks
     case requestDashboard
+    /// Watch → iOS: request a fresh session snapshot (connect / cold-start hydration).
+    case requestSession
     /// Watch → iOS: user tapped the "Start Break / Start Focus" CTA during a waiting hold.
     case startNextPhase
 }
@@ -96,7 +104,7 @@ enum WatchMessage: Equatable, Sendable {
     /// iOS → Watch: daily stats (on session complete or app launch).
     case stats(todayMinutes: Int, sessions: Int, streak: Int)
     /// iOS → Watch: today's task list.
-    case tasks([WatchTaskItem])
+    case tasks([WatchTaskItem], sentAt: TimeInterval)
     /// iOS → Watch: dashboard stats.
     case dashboardStats(WatchDashboardStats)
     /// Both sides: reachability changes.
@@ -111,11 +119,12 @@ struct WatchConnectivityClient: Sendable {
     /// Infinite stream of messages from the counterpart device.
     var receiveMessages: @Sendable () async -> AsyncStream<WatchMessage> = { .finished }
 
-    /// Watch → iOS: send a session control command.
-    var sendCommand: @Sendable (WatchCommand) async -> Void = { _ in }
+    /// Watch → iOS: send a session control command. Returns whether an immediate delivery was attempted.
+    var sendCommand: @Sendable (WatchCommand) async -> Bool = { _ in false }
 
     /// iOS → Watch: push the latest session state.
-    var sendSessionState: @Sendable (WatchSessionState) async -> Void = { _ in }
+    /// - Parameter publishContext: when true, also writes `applicationContext` (transitions/connect).
+    var sendSessionState: @Sendable (WatchSessionState, Bool) async -> Void = { _, _ in }
 
     /// iOS → Watch: push today's focus stats.
     var sendStats: @Sendable (_ todayMinutes: Int, _ sessions: Int, _ streak: Int) async -> Void = { _, _, _ in }
@@ -153,7 +162,7 @@ extension WatchConnectivityClient {
         return WatchConnectivityClient(
             receiveMessages:  { manager.messageStream() },
             sendCommand:      { cmd   in await manager.sendCommand(cmd) },
-            sendSessionState: { state in await manager.sendSessionState(state) },
+            sendSessionState: { state, publishContext in await manager.sendSessionState(state, publishContext: publishContext) },
             sendStats:        { m, c, s in await manager.sendStats(todayMinutes: m, sessions: c, streak: s) },
             sendTasks:        { tasks in await manager.sendTasks(tasks) },
             sendDashboardStats: { stats in await manager.sendDashboardStats(stats) },
@@ -225,11 +234,22 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
 
     private static let log = Logger(subsystem: "com.pepinillo.app", category: "WatchConnectivity")
 
-    func sendCommand(_ command: WatchCommand) async {
-        guard let session, session.isReachable else { return }
-        session.sendMessage(encodeCommand(command), replyHandler: nil) { error in
-            Self.log.error("Watch sendCommand failed: \(error.localizedDescription)")
+    @discardableResult
+    func sendCommand(_ command: WatchCommand) async -> Bool {
+        guard let session else { return false }
+        let payload = encodeCommand(command)
+        if session.isReachable {
+            session.sendMessage(payload, replyHandler: nil) { error in
+                Self.log.error("Watch sendCommand failed: \(error.localizedDescription)")
+            }
+            return true
         }
+
+        // Queue critical commands for delivery when the phone wakes (#238).
+        var queued = payload
+        queued["type"] = "command"
+        session.transferUserInfo(queued)
+        return false
     }
 
     // MARK: - Send (iOS → Watch direction)
@@ -254,7 +274,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     // always write the FULL context dict (applicationContext does not merge — it
     // replaces, so we must send all sections together every time).
 
-    func sendSessionState(_ state: WatchSessionState) async {
+    func sendSessionState(_ state: WatchSessionState, publishContext: Bool) async {
         guard let session else { return }
 
         var sessionDict: [String: Any] = [
@@ -268,23 +288,30 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             "isLongBreakPhase":  state.isLongBreakPhase,
             "isWaiting":         state.isWaiting,
             "sentAt":            state.sentAt,
+            "countsDown":        state.countsDown,
         ]
         if let p = state.progress        { sessionDict["progress"]        = p }
         if let n = state.pomodoroNumber  { sessionDict["pomodoroNumber"]  = n }
         if let t = state.linkedTaskTitle { sessionDict["linkedTaskTitle"] = t }
         if let t = state.linkedTaskID    { sessionDict["linkedTaskID"]    = t }
-
-        // Update phone-side context cache
-        let fullContext = updateContextCache { self.cachedSessionStateDict = sessionDict }
-
-        // Guaranteed delivery: applicationContext is delivered when watch app wakes
-        do {
-            try session.updateApplicationContext(fullContext)
-        } catch {
-            Self.log.error("updateApplicationContext(sessionState) failed: \(error.localizedDescription)")
+        if let start = state.phaseStartDate {
+            sessionDict["phaseStartDate"] = start.timeIntervalSince1970
+        }
+        if let end = state.phaseEndDate {
+            sessionDict["phaseEndDate"] = end.timeIntervalSince1970
         }
 
-        // Low-latency live update: sendMessage when reachable (belt and suspenders)
+        if publishContext {
+            // Transitions / connect / launch: persist full snapshot for cold-start hydration (#239).
+            let fullContext = updateContextCache { self.cachedSessionStateDict = sessionDict }
+            do {
+                try session.updateApplicationContext(fullContext)
+            } catch {
+                Self.log.error("updateApplicationContext(sessionState) failed: \(error.localizedDescription)")
+            }
+        }
+
+        // Live ticks use sendMessage only — avoids ~1Hz applicationContext thrash (#246).
         if session.isReachable {
             var messageDict = sessionDict
             messageDict["type"] = "sessionState"
@@ -335,8 +362,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             ]
         }
         let dict: [String: Any] = [
-            "type":  "tasks",
-            "items": encoded,
+            "type":   "tasks",
+            "items":  encoded,
+            "sentAt": Date().timeIntervalSince1970,
         ]
 
         // Guaranteed delivery: transferUserInfo queues the payload and delivers
@@ -416,7 +444,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     func session(_ session: WCSession,
                  activationDidCompleteWith state: WCSessionActivationState,
                  error: Error?) {
-        yield(.connectivityStatus(state == .activated))
+        // Drive watch UI from reachability, not activation alone (#238).
+        yield(.connectivityStatus(state == .activated && session.isReachable))
 
         // Cold-start hydration: when activation completes on the WATCH side,
         // read any previously delivered applicationContext and surface it as messages.
@@ -452,7 +481,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             ))
         case "tasks":
             if let items = decodeTasks(message) {
-                yield(.tasks(items))
+                let sentAt = message["sentAt"] as? TimeInterval ?? Date().timeIntervalSince1970
+                yield(.tasks(items, sentAt: sentAt))
             }
         case "dashboardStats":
             if let stats = decodeDashboardStats(message) {
@@ -473,8 +503,18 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     func session(_ session: WCSession,
                  didReceiveUserInfo userInfo: [String: Any]) {
         guard let type = userInfo["type"] as? String else { return }
-        if type == "tasks", let items = decodeTasks(userInfo) {
-            yield(.tasks(items))
+        switch type {
+        case "tasks":
+            if let items = decodeTasks(userInfo) {
+                let sentAt = userInfo["sentAt"] as? TimeInterval ?? Date().timeIntervalSince1970
+                yield(.tasks(items, sentAt: sentAt))
+            }
+        case "command":
+            if let cmd = decodeCommand(userInfo) {
+                yield(.command(cmd))
+            }
+        default:
+            break
         }
     }
 
@@ -530,9 +570,13 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         case .skipPhase:                    dict["action"] = "skip"
         case .linkTask(let id):             dict["action"] = "linkTask"; dict["taskID"] = id
         case .unlinkTask:                   dict["action"] = "unlinkTask"
-        case .toggleTaskCompleted(let id):  dict["action"] = "toggleTask"; dict["taskID"] = id
+        case .setTaskCompleted(let id, let isCompleted):
+            dict["action"] = "setTaskCompleted"
+            dict["taskID"] = id
+            dict["isCompleted"] = isCompleted
         case .requestTasks:                 dict["action"] = "requestTasks"
         case .requestDashboard:             dict["action"] = "requestDashboard"
+        case .requestSession:               dict["action"] = "requestSession"
         case .startNextPhase:               dict["action"] = "startNextPhase"
         }
         return dict
@@ -548,9 +592,14 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         case "skip":          return .skipPhase
         case "linkTask":      return .linkTask(id: message["taskID"] as? String ?? "")
         case "unlinkTask":    return .unlinkTask
-        case "toggleTask":    return .toggleTaskCompleted(id: message["taskID"] as? String ?? "")
+        case "setTaskCompleted":
+            return .setTaskCompleted(
+                id: message["taskID"] as? String ?? "",
+                isCompleted: message["isCompleted"] as? Bool ?? false
+            )
         case "requestTasks":    return .requestTasks
         case "requestDashboard": return .requestDashboard
+        case "requestSession":  return .requestSession
         case "startNextPhase": return .startNextPhase
         default:               return nil
         }
@@ -584,7 +633,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             isBreakPhase:      isBreak,
             isLongBreakPhase:  isLongBreak,
             isWaiting:         message["isWaiting"]        as? Bool ?? false,
-            sentAt:            message["sentAt"]           as? TimeInterval ?? Date().timeIntervalSince1970
+            sentAt:            message["sentAt"]           as? TimeInterval ?? Date().timeIntervalSince1970,
+            phaseStartDate:    (message["phaseStartDate"] as? TimeInterval).map { Date(timeIntervalSince1970: $0) },
+            phaseEndDate:      (message["phaseEndDate"] as? TimeInterval).map { Date(timeIntervalSince1970: $0) },
+            countsDown:        message["countsDown"] as? Bool ?? true
         )
     }
 

@@ -92,7 +92,7 @@ struct AppFeatureIntegrationTests {
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.soundscapeClient.play = { _, _ in }
-            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
             $0.notificationClient.requestAuthorization = { false }
         }
 
@@ -407,7 +407,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
-            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
         }
 
         store.exhaustivity = .off
@@ -421,7 +421,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
-            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
         }
 
         store.exhaustivity = .off
@@ -436,7 +436,7 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchDailyStats = { _ in nil }
-            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
             $0.watchConnectivityClient.sendStats = { _, _, _ in }
             $0.focusClient.stop = { _ in }
             $0.liveActivityClient.end = { _ in }
@@ -455,7 +455,7 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
-            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
@@ -479,7 +479,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
-            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
@@ -491,7 +491,7 @@ struct AppFeatureIntegrationTests {
         store.exhaustivity = .off
 
         await store.send(.watchCommandReceived(.startSession(mode: "unknown_mode")))
-        await store.receive(.focus(.modeSelected(.flowtime)))
+        // Unknown mode keeps the phone's current selection — no modeSelected side effect.
         await store.receive(.focus(.startTapped()))
     }
 
@@ -552,7 +552,7 @@ struct AppFeatureIntegrationTests {
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.persistenceClient.fetchSessions = { _, _ in [] }
-            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.events = { AsyncStream { $0.finish() } }
             $0.focusClient.currentState = { nil }
@@ -624,7 +624,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchTasks = { [taskDTO] }
             $0.persistenceClient.generateRecurringTasks = { }
-            $0.watchConnectivityClient.sendSessionState = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
             $0.watchConnectivityClient.sendTasks = { _ in }
             $0.spotlightClient.indexTasks = { _ in }
             $0.focusClient.start = { _, _, _, _, _, _, _ in }

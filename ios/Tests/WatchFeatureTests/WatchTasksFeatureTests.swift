@@ -63,7 +63,7 @@ struct WatchTasksFeatureTests {
 
         await store.send(.taskTapped(Self.taskA.id))
 
-        await store.receive(.toggleCompleted(Self.taskA.id)) {
+        await store.receive(.setCompleted(Self.taskA.id, true)) {
             let idx = $0.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
             $0.tasks[idx] = WatchTaskItem(
                 id: Self.taskA.id,
@@ -170,17 +170,17 @@ struct WatchTasksFeatureTests {
         await store.receive(.taskUnlinked)
     }
 
-    // MARK: - toggleCompleted
+    // MARK: - setCompleted
 
-    @Test("toggleCompleted flips isCompleted from false to true")
-    func toggleCompletedToTrue() async {
+    @Test("setCompleted sets isCompleted from false to true")
+    func setCompletedToTrue() async {
         let state = Self.stateWithTasks()
 
         let store = TestStore(initialState: state) {
             WatchTasksFeature()
         }
 
-        await store.send(.toggleCompleted(Self.taskA.id)) {
+        await store.send(.setCompleted(Self.taskA.id, true)) {
             let idx = $0.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
             $0.tasks[idx] = WatchTaskItem(
                 id: Self.taskA.id,
@@ -193,15 +193,15 @@ struct WatchTasksFeatureTests {
         }
     }
 
-    @Test("toggleCompleted flips isCompleted from true to false")
-    func toggleCompletedToFalse() async {
+    @Test("setCompleted sets isCompleted from true to false")
+    func setCompletedToFalse() async {
         let state = Self.stateWithTasks()
 
         let store = TestStore(initialState: state) {
             WatchTasksFeature()
         }
 
-        await store.send(.toggleCompleted(Self.completedTask.id)) {
+        await store.send(.setCompleted(Self.completedTask.id, false)) {
             let idx = $0.tasks.firstIndex(where: { $0.id == Self.completedTask.id })!
             $0.tasks[idx] = WatchTaskItem(
                 id: Self.completedTask.id,
@@ -214,8 +214,8 @@ struct WatchTasksFeatureTests {
         }
     }
 
-    @Test("toggleCompleted with nonexistent ID does nothing")
-    func toggleCompletedNonexistent() async {
+    @Test("setCompleted with nonexistent ID does nothing")
+    func setCompletedNonexistent() async {
         let state = Self.stateWithTasks()
         let fakeID = UUID()
 
@@ -223,18 +223,29 @@ struct WatchTasksFeatureTests {
             WatchTasksFeature()
         }
 
-        await store.send(.toggleCompleted(fakeID))
+        await store.send(.setCompleted(fakeID, true))
     }
 
-    @Test("toggleCompleted preserves all other task fields")
-    func toggleCompletedPreservesFields() async {
+    @Test("setCompleted is idempotent when state already matches")
+    func setCompletedIdempotent() async {
         let state = Self.stateWithTasks()
 
         let store = TestStore(initialState: state) {
             WatchTasksFeature()
         }
 
-        await store.send(.toggleCompleted(Self.taskA.id)) {
+        await store.send(.setCompleted(Self.taskA.id, false))
+    }
+
+    @Test("setCompleted preserves all other task fields")
+    func setCompletedPreservesFields() async {
+        let state = Self.stateWithTasks()
+
+        let store = TestStore(initialState: state) {
+            WatchTasksFeature()
+        }
+
+        await store.send(.setCompleted(Self.taskA.id, true)) {
             let idx = $0.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
             let toggled = $0.tasks[idx]
             // After mutation, verify all non-completion fields are preserved
@@ -254,16 +265,16 @@ struct WatchTasksFeatureTests {
         }
     }
 
-    @Test("double toggle restores original state")
-    func doubleToggleRestoresState() async {
+    @Test("set then unset restores original state")
+    func setThenUnsetRestoresState() async {
         let state = Self.stateWithTasks()
 
         let store = TestStore(initialState: state) {
             WatchTasksFeature()
         }
 
-        // Toggle to completed
-        await store.send(.toggleCompleted(Self.taskA.id)) {
+        // Mark completed
+        await store.send(.setCompleted(Self.taskA.id, true)) {
             let idx = $0.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
             $0.tasks[idx] = WatchTaskItem(
                 id: Self.taskA.id,
@@ -275,8 +286,8 @@ struct WatchTasksFeatureTests {
             )
         }
 
-        // Toggle back to incomplete
-        await store.send(.toggleCompleted(Self.taskA.id)) {
+        // Mark incomplete again
+        await store.send(.setCompleted(Self.taskA.id, false)) {
             let idx = $0.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
             $0.tasks[idx] = WatchTaskItem(
                 id: Self.taskA.id,
@@ -322,8 +333,9 @@ struct WatchTasksFeatureTests {
 
         let newTasks = [Self.taskB, Self.completedTask]
 
-        await store.send(.tasksReceived(newTasks)) {
+        await store.send(.tasksReceived(newTasks, sentAt: 100)) {
             $0.tasks = newTasks
+            $0.lastTasksReceivedAt = 100
         }
     }
 
@@ -335,9 +347,22 @@ struct WatchTasksFeatureTests {
             WatchTasksFeature()
         }
 
-        await store.send(.tasksReceived([])) {
+        await store.send(.tasksReceived([], sentAt: 100)) {
             $0.tasks = []
+            $0.lastTasksReceivedAt = 100
         }
+    }
+
+    @Test("tasksReceived ignores stale sentAt")
+    func tasksReceivedIgnoresStaleSentAt() async {
+        var state = Self.stateWithTasks()
+        state.lastTasksReceivedAt = 200
+
+        let store = TestStore(initialState: state) {
+            WatchTasksFeature()
+        }
+
+        await store.send(.tasksReceived([Self.taskB], sentAt: 100))
     }
 
     @Test("tasksReceived preserves linked task ID")
@@ -351,8 +376,9 @@ struct WatchTasksFeatureTests {
 
         // New tasks received — linkedTaskID should remain unchanged
         let newTasks = [Self.taskA, Self.taskB]
-        await store.send(.tasksReceived(newTasks)) {
+        await store.send(.tasksReceived(newTasks, sentAt: 100)) {
             $0.tasks = newTasks
+            $0.lastTasksReceivedAt = 100
             // linkedTaskID not touched by tasksReceived
         }
 
@@ -378,8 +404,9 @@ struct WatchTasksFeatureTests {
             )
         }
 
-        await store.send(.tasksReceived(manyTasks)) {
+        await store.send(.tasksReceived(manyTasks, sentAt: 100)) {
             $0.tasks = manyTasks
+            $0.lastTasksReceivedAt = 100
         }
     }
 
@@ -419,8 +446,9 @@ struct WatchTasksFeatureTests {
             completedPomodoros: 2  // pomodoros progressed
         )
 
-        await store.send(.tasksReceived([updatedA, Self.taskB])) {
+        await store.send(.tasksReceived([updatedA, Self.taskB], sentAt: 100)) {
             $0.tasks = [updatedA, Self.taskB]
+            $0.lastTasksReceivedAt = 100
         }
 
         // linkedTaskID should persist
@@ -436,7 +464,7 @@ struct WatchTasksFeatureTests {
         }
 
         // Complete task A
-        await store.send(.toggleCompleted(Self.taskA.id)) {
+        await store.send(.setCompleted(Self.taskA.id, true)) {
             let idx = $0.tasks.firstIndex(where: { $0.id == Self.taskA.id })!
             $0.tasks[idx] = WatchTaskItem(
                 id: Self.taskA.id,

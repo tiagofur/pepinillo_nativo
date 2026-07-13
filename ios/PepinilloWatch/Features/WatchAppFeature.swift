@@ -16,6 +16,8 @@ import WatchKit
 @Reducer
 struct WatchAppFeature {
 
+    private enum CancelID { case watchMessageListener }
+
     // MARK: - State
 
     @ObservableState
@@ -46,7 +48,7 @@ struct WatchAppFeature {
         // WatchConnectivity messages
         case sessionStateReceived(WatchSessionState)
         case statsReceived(todayMinutes: Int, sessions: Int, streak: Int)
-        case tasksReceived([WatchTaskItem])
+        case tasksReceived([WatchTaskItem], sentAt: TimeInterval)
         case dashboardStatsReceived(WatchDashboardStats)
         case connectivityChanged(Bool)
     }
@@ -79,8 +81,8 @@ struct WatchAppFeature {
                             await send(.sessionStateReceived(s))
                         case .stats(let m, let c, let sk):
                             await send(.statsReceived(todayMinutes: m, sessions: c, streak: sk))
-                        case .tasks(let items):
-                            await send(.tasksReceived(items))
+                        case .tasks(let items, let sentAt):
+                            await send(.tasksReceived(items, sentAt: sentAt))
                         case .dashboardStats(let stats):
                             await send(.dashboardStatsReceived(stats))
                         case .connectivityStatus(let connected):
@@ -90,6 +92,7 @@ struct WatchAppFeature {
                         }
                     }
                 }
+                .cancellable(id: CancelID.watchMessageListener, cancelInFlight: true)
 
             case .tabSelected(let tab):
                 state.selectedTab = tab
@@ -102,6 +105,12 @@ struct WatchAppFeature {
                 if s.isActive && !state.timer.isSessionActive {
                     state.selectedTab = .timer
                 }
+                // Keep tasks tab link state in sync with phone-originated session links (#242).
+                if let linked = s.linkedTaskID, let uuid = UUID(uuidString: linked) {
+                    state.tasks.linkedTaskID = uuid
+                } else if s.linkedTaskID == nil {
+                    state.tasks.linkedTaskID = nil
+                }
                 return .send(.timer(.sessionStateReceived(s)))
 
             case .statsReceived(let minutes, let sessions, let streak):
@@ -110,9 +119,9 @@ struct WatchAppFeature {
                     .send(.dashboard(.statsReceived(todayMinutes: minutes, sessions: sessions, streak: streak)))
                 )
 
-            case .tasksReceived(let items):
+            case .tasksReceived(let items, let sentAt):
                 return .merge(
-                    .send(.tasks(.tasksReceived(items))),
+                    .send(.tasks(.tasksReceived(items, sentAt: sentAt))),
                     .run { _ in
                         Self.persistTasksForComplication(items)
                         WidgetCenter.shared.reloadTimelines(ofKind: "PepinilloTasksComplication")
@@ -128,6 +137,7 @@ struct WatchAppFeature {
                     .send(.timer(.connectivityChanged(connected))),
                     // Request tasks and dashboard on connect
                     connected ? .run { [watchClient] _ in
+                        await watchClient.sendCommand(.requestSession)
                         await watchClient.sendCommand(.requestTasks)
                         await watchClient.sendCommand(.requestDashboard)
                     } : .none
@@ -150,9 +160,9 @@ struct WatchAppFeature {
                     await watchClient.sendCommand(.unlinkTask)
                 }
 
-            case .tasks(.toggleCompleted(let id)):
+            case .tasks(.setCompleted(let id, let isCompleted)):
                 return .run { [watchClient] _ in
-                    await watchClient.sendCommand(.toggleTaskCompleted(id: id.uuidString))
+                    _ = await watchClient.sendCommand(.setTaskCompleted(id: id.uuidString, isCompleted: isCompleted))
                 }
 
             case .timer, .tasks, .dashboard:

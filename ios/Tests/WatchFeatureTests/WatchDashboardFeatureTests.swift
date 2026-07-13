@@ -42,6 +42,7 @@ struct WatchDashboardFeatureTests {
         } withDependencies: {
             $0.watchConnectivityClient.sendCommand = { command in
                 commandsSent.withValue { $0.append(command) }
+                return true
             }
         }
 
