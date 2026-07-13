@@ -1193,7 +1193,9 @@ struct TaskListFeatureTests {
             $0.persistenceClient.saveTask = { _ in throw TestError() }
         }
 
-        await store.send(.taskCompleted(taskID)) {
+        await store.send(.taskCompleted(taskID))
+
+        await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
