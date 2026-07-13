@@ -615,6 +615,63 @@ enum AppGroupDefaults {
         externalStartRequested = true
     }
 
+    /// Maximum age for an unprocessed external command before it is discarded (#221).
+    static let externalCommandTTL: TimeInterval = 5 * 60
+
+    /// True when a pending external command is older than `externalCommandTTL`.
+    static var isExternalCommandStale: Bool {
+        let hasCommand = externalStartRequested
+            || externalStopRequested
+            || externalPauseRequested
+            || externalResumeRequested
+        guard hasCommand else { return false }
+        guard let issued = externalCommandIssuedAt else { return true }
+        return Date.now.timeIntervalSince(issued) > externalCommandTTL
+    }
+
+    /// Drop expired Siri/widget/Focus Filter commands and any ghost session snapshot.
+    static func discardStaleExternalCommandsIfNeeded() {
+        guard isExternalCommandStale else { return }
+        clearExternalCommands()
+        clearActiveSession()
+    }
+
+    /// Queue an external start from Siri or Focus Filter.
+    /// Premium modes for free users do not write optimistic `isSessionActive` (#220).
+    /// - Returns: `true` when the start was queued; `false` when Pro is required.
+    @discardableResult
+    static func queueExternalStart(
+        modeID: String,
+        taskID: String? = nil,
+        taskTitle: String? = nil
+    ) -> Bool {
+        let isProMode = modeID == "flowtime" || modeID == "timeBlock"
+        if isProUser || !isProMode {
+            startWidgetSession(modeID: modeID, taskID: taskID, taskTitle: taskTitle)
+            return true
+        }
+
+        externalCommandID = UUID().uuidString
+        externalCommandIssuedAt = .now
+        externalStopRequested = false
+        externalPauseRequested = false
+        externalResumeRequested = false
+        requestedMode = modeID
+        requestedTaskID = taskID
+        externalStartRequested = true
+        return false
+    }
+
+    /// Mirror widget stop semantics for Siri (#222).
+    static func queueExternalStop() {
+        externalCommandID = UUID().uuidString
+        externalCommandIssuedAt = .now
+        externalPauseRequested = false
+        externalResumeRequested = false
+        externalStopRequested = true
+        clearActiveSession()
+    }
+
     /// Clear all external command flags after processing.
     static func clearExternalCommands() {
         defaults?.set(false, forKey: "externalStartRequested")

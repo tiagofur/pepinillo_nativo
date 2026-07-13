@@ -10,7 +10,7 @@ import AppIntents
 import Foundation
 @testable import Pepinillo
 
-@Suite("Siri Intents")
+@Suite("Siri Intents", .serialized, .appGroupDefaultsSerialized)
 struct SiriIntentsTests {
 
     // MARK: - FocusModeEntity Properties
@@ -143,12 +143,52 @@ struct SiriIntentsTests {
 
     @Test("StartFocusIntent.perform() completes without throwing")
     func startFocusIntentPerforms() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.isProUser = false
+
         var intent = StartFocusIntent()
         intent.mode = FocusModeEntity.pomodoro
         intent.task = nil
         intent.duration = nil
-        // Smoke test: intent must not throw
         _ = try await intent.perform()
+        #expect(AppGroupDefaults.externalStartRequested == true)
+        #expect(AppGroupDefaults.isSessionActive == true)
+    }
+
+    @Test("StartFocusIntent premium mode for free user does not create ghost session (#220)")
+    func startFocusIntentProModeBlockedForFreeUser() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.userCapabilities = .free
+        AppGroupDefaults.isProUser = false
+
+        var intent = StartFocusIntent()
+        intent.mode = FocusModeEntity.flowtime
+        _ = try await intent.perform()
+
+        #expect(AppGroupDefaults.externalStartRequested == true)
+        #expect(AppGroupDefaults.isSessionActive == false)
+        #expect(AppGroupDefaults.requestedMode == "flowtime")
+    }
+
+    @Test("StopFocusIntent mirrors widget stop protocol (#222)")
+    func stopFocusIntentClearsSessionSnapshot() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro")
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.externalStartRequested = false
+
+        _ = try await StopFocusIntent().perform()
+
+        #expect(AppGroupDefaults.externalStopRequested == true)
+        #expect(AppGroupDefaults.isSessionActive == false)
+        #expect(AppGroupDefaults.externalCommandID != nil)
     }
 
     @Test("StartFocusIntent.perform() with task completes without throwing")
@@ -177,9 +217,9 @@ struct SiriIntentsTests {
         _ = try await intent.perform()
     }
 
-    @Test("StopFocusIntent does not open app when run")
-    func stopFocusIntentDoesNotOpenApp() {
-        #expect(StopFocusIntent.openAppWhenRun == false)
+    @Test("StopFocusIntent opens app so the engine can stop (#222)")
+    func stopFocusIntentOpensApp() {
+        #expect(StopFocusIntent.openAppWhenRun == true)
     }
 
     @Test("StartFocusIntent opens app when run")

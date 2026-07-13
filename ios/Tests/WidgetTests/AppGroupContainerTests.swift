@@ -317,6 +317,37 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.activeSessionTimerStart != nil)
         #expect(AppGroupDefaults.activeSessionTimerEnd != nil)
     }
+
+    @Test("queueExternalStart blocks premium modes without ghost session (#220)")
+    func queueExternalStartProGate() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.isProUser = false
+
+        let allowed = AppGroupDefaults.queueExternalStart(modeID: "flowtime")
+        #expect(allowed == false)
+        #expect(AppGroupDefaults.externalStartRequested == true)
+        #expect(AppGroupDefaults.isSessionActive == false)
+    }
+
+    @Test("discardStaleExternalCommandsIfNeeded clears expired commands (#221)")
+    func discardStaleExternalCommands() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.externalStartRequested = true
+        AppGroupDefaults.externalCommandIssuedAt = Date.now.addingTimeInterval(-600)
+        AppGroupDefaults.isSessionActive = true
+
+        AppGroupDefaults.discardStaleExternalCommandsIfNeeded()
+
+        #expect(AppGroupDefaults.externalStartRequested == false)
+        #expect(AppGroupDefaults.isSessionActive == false)
+    }
 }
 
 struct AppGroupDefaultsSnapshot {
