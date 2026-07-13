@@ -209,6 +209,26 @@ struct SiriIntentsTests {
         _ = try await intent.perform()
     }
 
+    @Test("StartFocusIntent duration parameter sets timer anchors (#224)")
+    func startFocusIntentDurationSetsTimerAnchors() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.isProUser = true
+        AppGroupDefaults.blockDuration = 60 * 60
+
+        var intent = StartFocusIntent()
+        intent.mode = FocusModeEntity.timeBlock
+        intent.duration = 45
+        _ = try await intent.perform()
+
+        let start = try #require(AppGroupDefaults.activeSessionTimerStart)
+        let end = try #require(AppGroupDefaults.activeSessionTimerEnd)
+        #expect(end.timeIntervalSince(start) == 45 * 60)
+        #expect(AppGroupDefaults.externalStartDurationMinutes == 45)
+    }
+
     // MARK: - StopFocusIntent
 
     @Test("StopFocusIntent.perform() completes without throwing")
@@ -301,6 +321,25 @@ struct SiriPauseResumeIntentTests {
         #expect(issued >= before && issued <= after)
         #expect(AppGroupDefaults.activeSessionTimerStart != nil)
         #expect(AppGroupDefaults.activeSessionTimerEnd != nil)
+    }
+
+    @Test("GetCurrentSessionIntent uses live elapsed from timer anchors (#232)")
+    func getCurrentSessionIntentUsesLiveElapsed() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
+        let issuedAt = Date(timeIntervalSince1970: 1_800_500_000)
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.externalStartRequested = false
+
+        _ = try await GetCurrentSessionIntent().perform()
+
+        let liveElapsed = Int(AppGroupDefaults.activeSessionLiveElapsed())
+        #expect(liveElapsed >= 60)
     }
 
     @Test("PauseFocusIntent rejects pause when session is already paused")

@@ -898,4 +898,37 @@ struct AppFeatureIntegrationTests {
         #expect(store.state.focus.showPaywall == true)
         #expect(store.state.settings.themeName == "default")
     }
+
+    @Test("Disabling daily reminder cancels only daily-reminder (#225)")
+    func disablingDailyReminderCancelsOnlyDailyReminder() async {
+        var initialState = AppFeature.State()
+        initialState.settings.dailyReminderEnabled = true
+
+        final class NotificationSpy: @unchecked Sendable {
+            var cancelDailyReminderCalled = false
+            var cancelAllCalled = false
+        }
+        let spy = NotificationSpy()
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
+            $0.notificationClient.cancelDailyReminder = {
+                spy.cancelDailyReminderCalled = true
+            }
+            $0.notificationClient.cancelAll = {
+                spy.cancelAllCalled = true
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.settings(.dailyReminderToggled)) {
+            $0.settings.dailyReminderEnabled = false
+        }
+
+        #expect(spy.cancelDailyReminderCalled == true)
+        #expect(spy.cancelAllCalled == false)
+    }
 }

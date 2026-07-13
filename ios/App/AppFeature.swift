@@ -514,9 +514,7 @@ struct AppFeature {
                 let ghostSessionClearedEffects: () -> Effect<Action> = { [liveActivityClient, notificationClient] in
                     .merge(
                         .run { _ in
-                            WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                            WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
-                            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                            WidgetSurfaceReload.reloadFocusTasksAndControlCenter()
                         },
                         .run { _ in
                             await liveActivityClient.end(false)
@@ -1167,7 +1165,7 @@ struct AppFeature {
                     if enabled {
                         await notificationClient.scheduleDailyReminder(hour, minute)
                     } else {
-                        await notificationClient.cancelAll()
+                        await notificationClient.cancelDailyReminder()
                     }
                 }
 
