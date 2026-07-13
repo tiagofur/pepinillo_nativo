@@ -138,9 +138,9 @@ struct TaskListFeatureTests {
             $0.persistenceClient.saveTask = { _ in }
         }
 
-        store.exhaustivity = .off
+        await store.send(.taskCompleted(taskID))
 
-        await store.send(.taskCompleted(taskID)) {
+        await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
     }
@@ -541,7 +541,8 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.taskCompleted(taskID)) {
+        await store.send(.taskCompleted(taskID))
+        await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
@@ -569,7 +570,8 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.taskCompleted(taskID)) {
+        await store.send(.taskCompleted(taskID))
+        await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
