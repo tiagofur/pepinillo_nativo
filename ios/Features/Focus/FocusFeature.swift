@@ -200,6 +200,10 @@ struct FocusFeature {
 
             case .startTapped(let timerStart, let timerEnd):
                 guard !state.isRunning else { return .none }
+                if !state.selectedMode.isFreeTier && !state.isProUser {
+                    state.showPaywall = true
+                    return .none
+                }
                 state.isRunning = true
                 state.isPaused = false
                 state.activeMode = state.selectedMode

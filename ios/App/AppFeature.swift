@@ -28,6 +28,7 @@ struct AppFeature {
         var tasks = TaskListFeature.State()
         var analytics = AnalyticsFeature.State()
         var settings = SettingsFeature.State()
+        var paywall = PaywallFeature.State()
         var hasCompletedOnboarding: Bool = false
 
         // Subscription
@@ -148,6 +149,7 @@ struct AppFeature {
         case tasks(TaskListFeature.Action)
         case analytics(AnalyticsFeature.Action)
         case settings(SettingsFeature.Action)
+        case paywall(PaywallFeature.Action)
         case onboardingCompleted
         case onboardingCompletedWithMode(FocusMode)
         case appLaunched
@@ -254,6 +256,9 @@ struct AppFeature {
         Scope(state: \.settings, action: \.settings) {
             SettingsFeature()
         }
+        Scope(state: \.paywall, action: \.paywall) {
+            PaywallFeature()
+        }
         Reduce { state, action in
             let pushTasksToWatch: (State) -> Effect<Action> = { [watchClient] state in
                 let watchTasks = state.tasks.tasks
@@ -353,10 +358,6 @@ struct AppFeature {
                         let prefs = try await persistence.fetchPreferences()
                         let userID = prefs.appleUserID
                         let revenueCatKey = Bundle.main.object(forInfoDictionaryKey: "REVENUECAT_API_KEY") as? String ?? ""
-                        guard !revenueCatKey.isEmpty, !revenueCatKey.contains("$(REVENUECAT_API_KEY)") else {
-                            appLaunchLogger.warning("RevenueCat API key not configured — skipping configure()")
-                            return
-                        }
                         await subscriptionClient.configure(revenueCatKey, userID)
                         appLaunchLogger.info("RevenueCat configure finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                     },
@@ -636,7 +637,10 @@ struct AppFeature {
 
             case .upgradeTapped:
                 state.focus.showPaywall = true
-                return .none
+                return .send(.paywall(.appeared))
+
+            case .paywall(.delegate(.proUnlocked(let sub))):
+                return applySubscriptionUpdate(sub, state: &state)
 
             // MARK: - Calendar & Weekly Review
 
@@ -649,6 +653,7 @@ struct AppFeature {
                     state.analytics.weeklyReview = WeeklyReviewFeature.State()
                 } else {
                     state.focus.showPaywall = true
+                    return .send(.paywall(.appeared))
                 }
                 return .none
 
@@ -976,9 +981,9 @@ struct AppFeature {
                     return .send(.focus(.startNextPhaseTapped))
 
                 case .requestDashboard:
-                    return .run { [watchClient, persistence] _ in
+                    let isPro = state.subscriptionState.isPro
+                    return .run { [watchClient, persistence, isPro] _ in
                         let stats = try? await persistence.fetchDailyStats(Date.now)
-                        let prefs = try? await persistence.fetchPreferences()
                         let tasks = try? await persistence.fetchTasks()
                         let todayTasks = tasks?.filter { $0.scheduledForToday } ?? []
 
@@ -992,7 +997,7 @@ struct AppFeature {
                         let allDailyStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
                         let streakResult = StreakProtectionService.computeProtectedStreak(
                             history: allDailyStats,
-                            isPro: prefs?.isProUser ?? false
+                            isPro: isPro
                         )
                         let dashStats = WatchDashboardStats(
                             todayMinutes: stats?.totalFocusMinutes ?? 0,
@@ -1072,16 +1077,15 @@ struct AppFeature {
                             //
                             // Analytics refresh and Watch stats are sent from
                             // .focus(.delegate(.sessionPersisted)) so they read committed data.
-                            return Effect<Action>.run { send in
-                                if let prefs = try? await persistence.fetchPreferences() {
-                                    let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                                    let streakResult = StreakProtectionService.computeProtectedStreak(
-                                        history: allStats,
-                                        isPro: prefs.isProUser
-                                    )
-                                    if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
-                                        await send(.celebrationTriggered(milestone))
-                                    }
+                            let isPro = state.subscriptionState.isPro
+                            return Effect<Action>.run { [isPro] send in
+                                let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                                let streakResult = StreakProtectionService.computeProtectedStreak(
+                                    history: allStats,
+                                    isPro: isPro
+                                )
+                                if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
+                                    await send(.celebrationTriggered(milestone))
                                 }
                             }
                         }
@@ -1133,7 +1137,7 @@ struct AppFeature {
 
             case .settings(.upgradeTapped):
                 state.focus.showPaywall = true
-                return .none
+                return .send(.paywall(.appeared))
 
             case .settings(.paywallDismissed):
                 state.focus.showPaywall = false
@@ -1141,7 +1145,7 @@ struct AppFeature {
 
             case .analytics(.paywallRequested):
                 state.focus.showPaywall = true
-                return .none
+                return .send(.paywall(.appeared))
 
             // MARK: - Settings: propagate config changes to active focus session
 
@@ -1233,9 +1237,8 @@ struct AppFeature {
                     }
                     .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true),
                     .send(.analytics(.refresh)),
-                    .run { [watchClient, persistence] _ in
-                        guard let stats = try? await persistence.fetchDailyStats(Date.now),
-                              let prefs = try? await persistence.fetchPreferences() else { return }
+                    .run { [watchClient, persistence, isPro = state.subscriptionState.isPro] _ in
+                        guard let stats = try? await persistence.fetchDailyStats(Date.now) else { return }
                         let tasks = (try? await persistence.fetchTasks()) ?? []
                         let todayTasks = tasks.filter { $0.scheduledForToday }
                         let startOfDay = Calendar.current.startOfDay(for: Date.now)
@@ -1244,7 +1247,7 @@ struct AppFeature {
                         let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
                         let streakResult = StreakProtectionService.computeProtectedStreak(
                             history: allStats,
-                            isPro: prefs.isProUser
+                            isPro: isPro
                         )
                         let dashStats = WatchDashboardStats(
                             todayMinutes: stats.totalFocusMinutes,
@@ -1264,9 +1267,13 @@ struct AppFeature {
 
             case .tasks(.delegate(.showPaywall)):
                 state.focus.showPaywall = true
-                return .none
+                return .send(.paywall(.appeared))
 
-            case .focus, .tasks, .analytics, .settings:
+            case .focus(.paywallTapped):
+                state.focus.showPaywall = true
+                return .send(.paywall(.appeared))
+
+            case .focus, .tasks, .analytics, .settings, .paywall:
                 return .none
             }
         }
@@ -1300,6 +1307,7 @@ struct AppFeature {
         #else
         let effectiveSub = sub
         #endif
+        let wasPro = state.subscriptionState.isPro
         state.subscriptionState = effectiveSub
         let isPro = effectiveSub.isPro
         let canSync = effectiveSub.isEverywhere
@@ -1313,35 +1321,50 @@ struct AppFeature {
         AppGroupDefaults.canAppleCloudSync = effectiveSub.capabilities.appleCloudSync && !effectiveSub.capabilities.backendSync
         if isPro { state.focus.showPaywall = false }
 
+        if wasPro && !isPro && !state.focus.selectedMode.isFreeTier {
+            state.focus.selectedMode = .pomodoro
+            state.focus.modeIcon = FocusMode.pomodoro.icon
+            AppGroupDefaults.widgetSelectedMode = FocusMode.pomodoro.rawValue
+        }
+
+        let persistProFlag = Effect<Action>.run { [persistence] _ in
+            var prefs = try await persistence.fetchPreferences()
+            prefs.isProUser = isPro
+            try await persistence.savePreferences(prefs)
+        }
+
         // Dedupe: skip the expensive soft sync when capabilities are unchanged
         // since the last run. Both subscription actions commonly arrive together
         // at launch with the same capabilities.
         let capabilities = effectiveSub.capabilities
         guard state.lastSyncedCapabilities != capabilities else {
             appLaunchLogger.info("Soft sync skipped — capabilities unchanged (issue #78 dedupe)")
-            return .none
+            return persistProFlag
         }
         state.lastSyncedCapabilities = capabilities
 
-        return .run { send in
-            try? await Task.sleep(for: .seconds(3))
-            let start = Date.now
-            await syncModeClient.reconcile(capabilities)
-            if capabilities.backendSync, await keychain.hasTokens() {
-                try? await syncClient.syncAll()
-                await webSocketClient.connect()
-            } else {
-                webSocketClient.disconnect()
+        return .merge(
+            persistProFlag,
+            .run { send in
+                try? await Task.sleep(for: .seconds(3))
+                let start = Date.now
+                await syncModeClient.reconcile(capabilities)
+                if capabilities.backendSync, await keychain.hasTokens() {
+                    try? await syncClient.syncAll()
+                    await webSocketClient.connect()
+                } else {
+                    webSocketClient.disconnect()
+                }
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                appLaunchLogger.info("Soft sync finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
+                // Reconcile may swap the active store (local → CloudKit); refresh the task
+                // list so in-memory state reflects the now-active container.
+                await send(.tasks(.refresh))
             }
-            WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-            WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
-            WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
-            appLaunchLogger.info("Soft sync finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
-            // Reconcile may swap the active store (local → CloudKit); refresh the task
-            // list so in-memory state reflects the now-active container.
-            await send(.tasks(.refresh))
-        }
-        .cancellable(id: CancelID.softSync, cancelInFlight: true)
+            .cancellable(id: CancelID.softSync, cancelInFlight: true)
+        )
     }
 
     // MARK: - Session cleanup (shared sign-out path)

@@ -48,6 +48,34 @@ struct FocusFeatureReducerTests {
         }
     }
 
+    @Test func startPremiumModeWithoutSubscriptionShowsPaywall() async {
+        var state = FocusFeature.State()
+        state.isProUser = false
+        state.selectedMode = .flowtime
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        }
+
+        await store.send(.startTapped()) {
+            $0.showPaywall = true
+        }
+    }
+
+    @Test func startPremiumModeAfterProExpiryShowsPaywall() async {
+        var state = FocusFeature.State()
+        state.isProUser = false
+        state.selectedMode = .timeBlock
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        }
+
+        await store.send(.startTapped()) {
+            $0.showPaywall = true
+        }
+    }
+
     @Test func selectingProModeWithSubscriptionWorks() async {
         var state = FocusFeature.State()
         state.isProUser = true

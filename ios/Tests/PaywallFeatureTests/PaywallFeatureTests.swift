@@ -83,7 +83,10 @@ struct PaywallFeatureTests {
             PaywallFeature()
         } withDependencies: {
             $0.subscriptionClient.purchase = { _ in .success(productID: "annual") }
+            $0.subscriptionClient.checkEntitlement = { .pepinilloPlus }
         }
+
+        store.exhaustivity = .off
 
         await store.send(.purchaseTapped) {
             $0.isLoading = true
@@ -92,12 +95,14 @@ struct PaywallFeatureTests {
         await store.receive(.purchaseFinished(.success(productID: "annual"))) {
             $0.isLoading = false
             $0.subscriptionState = .pro
-            // Use the localized string to match whatever locale the simulator uses
             $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
                 message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
                 isSuccess: true
             )
         }
+
+        await store.receive(.subscriptionStateLoaded(.pepinilloPlus))
+        await store.receive(.delegate(.proUnlocked(.pepinilloPlus)))
     }
 
     // MARK: - Cancelled Purchase

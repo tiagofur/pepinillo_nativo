@@ -66,11 +66,7 @@ struct AppView: View {
             )
         ) {
             PaywallView(
-                store: Store(initialState: PaywallFeature.State()) {
-                    PaywallFeature()
-                } withDependencies: { deps in
-                    deps.dismiss = DismissEffect { store.send(.focus(.paywallDismissed)) }
-                }
+                store: store.scope(state: \.paywall, action: \.paywall)
             )
             .pepinilloSheetStyle()
         }

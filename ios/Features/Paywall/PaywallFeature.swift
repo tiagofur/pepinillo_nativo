@@ -42,6 +42,11 @@ struct PaywallFeature {
         case closeTapped
         case privacyPolicyTapped
         case termsOfServiceTapped
+        case delegate(Delegate)
+
+        enum Delegate: Equatable {
+            case proUnlocked(SubscriptionState)
+        }
     }
 
     // MARK: - Dependencies
@@ -60,6 +65,13 @@ struct PaywallFeature {
                 state.isLoading = true
                 return .merge(
                     .run { send in
+                        guard await subscriptionClient.isPurchasesAvailable() else {
+                            await send(.productsLoaded([]))
+                            await send(.purchaseFinished(.failed(
+                                message: String(localized: "Purchases are unavailable. Please try again later.")
+                            )))
+                            return
+                        }
                         let products = await subscriptionClient.fetchProducts()
                         await send(.productsLoaded(products))
                     },
@@ -112,9 +124,13 @@ struct PaywallFeature {
                         message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
                         isSuccess: true
                     )
-                    // Haptic is triggered in the view layer (PaywallView) reacting to
-                    // purchaseResult.isSuccess — matching the CelebrationView.onAppear pattern.
-                    return .none
+                    return .run { send in
+                        let sub = await subscriptionClient.checkEntitlement()
+                        await send(.subscriptionStateLoaded(sub))
+                        if sub.isPro {
+                            await send(.delegate(.proUnlocked(sub)))
+                        }
+                    }
                 case .pending:
                     state.purchaseResult = State.PurchaseResultAlert(
                         message: String(localized: "Purchase is pending approval."),
@@ -147,6 +163,9 @@ struct PaywallFeature {
 
             case .termsOfServiceTapped:
                 return .run { _ in await openURL(URL(string: "https://creapolis.dev/terms-of-use/")!) }
+
+            case .delegate:
+                return .none
             }
         }
     }
