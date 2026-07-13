@@ -305,7 +305,11 @@ struct AppFeature {
                 if let modeID = requestedModeID,
                    let mode = FocusMode(rawValue: modeID) {
                     guard mode.isFreeTier || state.focus.isProUser else {
-                        return .send(.focus(.modeSelected(mode)))
+                        state.focus.showPaywall = true
+                        return .concatenate(
+                            .send(.focus(.modeSelected(mode))),
+                            .send(.paywall(.appeared))
+                        )
                     }
                     effects.append(.send(.focus(.modeSelected(mode))))
                 }
@@ -485,7 +489,10 @@ struct AppFeature {
                 }
 
             case .appBecameActive:
-                return .send(.consumeExternalCommands)
+                return .merge(
+                    .send(.consumeExternalCommands),
+                    syncWatchStats(isPro: state.subscriptionState.isPro)
+                )
 
             case .appURLReceived(let url):
                 guard url.scheme == "pepinillo" else { return .none }
@@ -502,6 +509,8 @@ struct AppFeature {
                 return .none
 
             case .consumeExternalCommands:
+                AppGroupDefaults.discardStaleExternalCommandsIfNeeded()
+
                 let ghostSessionClearedEffects: () -> Effect<Action> = { [liveActivityClient, notificationClient] in
                     .merge(
                         .run { _ in
@@ -940,11 +949,7 @@ struct AppFeature {
             case .watchCommandReceived(let command):
                 switch command {
                 case .startSession(let modeID):
-                    let mode = FocusMode(rawValue: modeID) ?? state.focus.selectedMode
-                    return .concatenate(
-                        .send(.focus(.modeSelected(mode))),
-                        .send(.focus(.startTapped()))
-                    )
+                    return startFromExternalRequest(&state, modeID, nil, nil, nil, false)
                 case .pauseSession:
                     return .send(.focus(.pauseTapped))
                 case .resumeSession:
@@ -981,38 +986,7 @@ struct AppFeature {
                     return .send(.focus(.startNextPhaseTapped))
 
                 case .requestDashboard:
-                    let isPro = state.subscriptionState.isPro
-                    return .run { [watchClient, persistence, isPro] _ in
-                        let stats = try? await persistence.fetchDailyStats(Date.now)
-                        let tasks = try? await persistence.fetchTasks()
-                        let todayTasks = tasks?.filter { $0.scheduledForToday } ?? []
-
-                        // Longest session today
-                        let startOfDay = Calendar.current.startOfDay(for: Date.now)
-                        let sessions = try? await persistence.fetchSessions(startOfDay, Date.now)
-                        let longestMinutes = (sessions ?? [])
-                            .map { Int($0.actualDuration) / 60 }
-                            .max() ?? 0
-
-                        let allDailyStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                        let streakResult = StreakProtectionService.computeProtectedStreak(
-                            history: allDailyStats,
-                            isPro: isPro
-                        )
-                        let dashStats = WatchDashboardStats(
-                            todayMinutes: stats?.totalFocusMinutes ?? 0,
-                            sessionsCompleted: stats?.sessionsCompleted ?? 0,
-                            tasksCompleted: todayTasks.filter(\.isCompleted).count,
-                            tasksTotal: todayTasks.count,
-                            streakDays: streakResult.days,
-                            pomodoroMinutes: stats?.pomodoroMinutes ?? 0,
-                            flowtimeMinutes: stats?.flowtimeMinutes ?? 0,
-                            timeBlockMinutes: stats?.timeBlockMinutes ?? 0,
-                            stopwatchMinutes: stats?.stopwatchMinutes ?? 0,
-                            longestSessionMinutes: longestMinutes
-                        )
-                        await watchClient.sendDashboardStats(dashStats)
-                    }
+                    return syncWatchStats(isPro: state.subscriptionState.isPro)
                 }
 
             // MARK: - Watch State Bridge (iOS → Watch)
@@ -1078,16 +1052,29 @@ struct AppFeature {
                             // Analytics refresh and Watch stats are sent from
                             // .focus(.delegate(.sessionPersisted)) so they read committed data.
                             let isPro = state.subscriptionState.isPro
-                            return Effect<Action>.run { [isPro] send in
-                                let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                                let streakResult = StreakProtectionService.computeProtectedStreak(
-                                    history: allStats,
-                                    isPro: isPro
-                                )
-                                if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
-                                    await send(.celebrationTriggered(milestone))
+                            let dailyReminderEnabled = state.settings.dailyReminderEnabled
+                            let reminderHour = state.settings.dailyReminderHour
+                            let reminderMinute = state.settings.dailyReminderMinute
+                            return Effect<Action>.merge(
+                                .run { [isPro] send in
+                                    let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+                                    let streakResult = StreakProtectionService.computeProtectedStreak(
+                                        history: allStats,
+                                        isPro: isPro
+                                    )
+                                    if let milestone = CelebrationMilestone.checkStreak(streakResult.days) {
+                                        await send(.celebrationTriggered(milestone))
+                                    }
+                                },
+                                .run { [notificationClient] _ in
+                                    if dailyReminderEnabled {
+                                        await notificationClient.rescheduleDailyReminderAfterFocus(
+                                            reminderHour,
+                                            reminderMinute
+                                        )
+                                    }
                                 }
-                            }
+                            )
                         }
                         // stopTapped: refresh analytics so the dashboard reflects the abandoned session
                         return .send(.analytics(.refresh))
@@ -1191,7 +1178,8 @@ struct AppFeature {
                 // task list so recurring tasks are regenerated for the new day.
                 return .merge(
                     .send(.focus(.dayChanged)),
-                    .send(.tasks(.refresh))
+                    .send(.tasks(.refresh)),
+                    syncWatchStats(isPro: state.subscriptionState.isPro)
                 )
 
             // MARK: - Handoff
@@ -1237,32 +1225,7 @@ struct AppFeature {
                     }
                     .cancellable(id: CancelID.sessionTaskRefresh, cancelInFlight: true),
                     .send(.analytics(.refresh)),
-                    .run { [watchClient, persistence, isPro = state.subscriptionState.isPro] _ in
-                        guard let stats = try? await persistence.fetchDailyStats(Date.now) else { return }
-                        let tasks = (try? await persistence.fetchTasks()) ?? []
-                        let todayTasks = tasks.filter { $0.scheduledForToday }
-                        let startOfDay = Calendar.current.startOfDay(for: Date.now)
-                        let sessions = (try? await persistence.fetchSessions(startOfDay, Date.now)) ?? []
-                        let longestMinutes = sessions.map { Int($0.actualDuration) / 60 }.max() ?? 0
-                        let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
-                        let streakResult = StreakProtectionService.computeProtectedStreak(
-                            history: allStats,
-                            isPro: isPro
-                        )
-                        let dashStats = WatchDashboardStats(
-                            todayMinutes: stats.totalFocusMinutes,
-                            sessionsCompleted: stats.sessionsCompleted,
-                            tasksCompleted: todayTasks.filter(\.isCompleted).count,
-                            tasksTotal: todayTasks.count,
-                            streakDays: streakResult.days,
-                            pomodoroMinutes: stats.pomodoroMinutes,
-                            flowtimeMinutes: stats.flowtimeMinutes,
-                            timeBlockMinutes: stats.timeBlockMinutes,
-                            stopwatchMinutes: stats.stopwatchMinutes,
-                            longestSessionMinutes: longestMinutes
-                        )
-                        await watchClient.sendDashboardStats(dashStats)
-                    }
+                    syncWatchStats(isPro: state.subscriptionState.isPro)
                 )
 
             case .tasks(.delegate(.showPaywall)):
@@ -1288,6 +1251,43 @@ struct AppFeature {
         }
         .ifLet(\.$emailVerification, action: \.emailVerification) {
             EmailVerificationFeature()
+        }
+    }
+
+    // MARK: - Watch stats
+
+    /// Push timer/complication stats (`sendStats`) and dashboard payload (#236).
+    private func syncWatchStats(isPro: Bool) -> Effect<Action> {
+        .run { [watchClient, persistence] _ in
+            guard let stats = try? await persistence.fetchDailyStats(Date.now) else { return }
+            let tasks = (try? await persistence.fetchTasks()) ?? []
+            let todayTasks = tasks.filter { $0.scheduledForToday }
+            let startOfDay = Calendar.current.startOfDay(for: Date.now)
+            let sessions = (try? await persistence.fetchSessions(startOfDay, Date.now)) ?? []
+            let longestMinutes = sessions.map { Int($0.actualDuration) / 60 }.max() ?? 0
+            let allStats = (try? await persistence.fetchDailyStatsRange(Date.distantPast, Date.now)) ?? []
+            let streakResult = StreakProtectionService.computeProtectedStreak(
+                history: allStats,
+                isPro: isPro
+            )
+            await watchClient.sendStats(
+                stats.totalFocusMinutes,
+                stats.sessionsCompleted,
+                streakResult.days
+            )
+            let dashStats = WatchDashboardStats(
+                todayMinutes: stats.totalFocusMinutes,
+                sessionsCompleted: stats.sessionsCompleted,
+                tasksCompleted: todayTasks.filter(\.isCompleted).count,
+                tasksTotal: todayTasks.count,
+                streakDays: streakResult.days,
+                pomodoroMinutes: stats.pomodoroMinutes,
+                flowtimeMinutes: stats.flowtimeMinutes,
+                timeBlockMinutes: stats.timeBlockMinutes,
+                stopwatchMinutes: stats.stopwatchMinutes,
+                longestSessionMinutes: longestMinutes
+            )
+            await watchClient.sendDashboardStats(dashStats)
         }
     }
 

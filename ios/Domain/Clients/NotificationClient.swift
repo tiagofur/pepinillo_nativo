@@ -41,6 +41,9 @@ struct NotificationClient: Sendable {
 
     /// Cancel all pending Pepinillo notifications.
     var cancelAll: @Sendable () async -> Void = {}
+
+    /// After the user completes a focus session today, skip today's daily nag (#223).
+    var rescheduleDailyReminderAfterFocus: @Sendable (_ hour: Int, _ minute: Int) async -> Void = { _, _ in }
 }
 
 // MARK: - Dependency Keys
@@ -220,6 +223,47 @@ extension NotificationClient {
             cancelAll: {
                 center().removeAllPendingNotificationRequests()
                 center().removeAllDeliveredNotifications()
+            },
+
+            rescheduleDailyReminderAfterFocus: { hour, minute in
+                let notificationCenter = center()
+                notificationCenter.removeDeliveredNotifications(withIdentifiers: ["daily-reminder"])
+                notificationCenter.removePendingNotificationRequests(withIdentifiers: ["daily-reminder"])
+
+                let calendar = Calendar.current
+                let now = Date.now
+                var nextComponents = DateComponents(hour: hour, minute: minute)
+                guard var nextDate = calendar.nextDate(
+                    after: now,
+                    matching: nextComponents,
+                    matchingPolicy: .nextTime
+                ) else { return }
+
+                if calendar.isDateInToday(nextDate) {
+                    guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: nextDate) else { return }
+                    nextDate = tomorrow
+                }
+
+                let fireComponents = calendar.dateComponents(
+                    [.year, .month, .day, .hour, .minute],
+                    from: nextDate
+                )
+                let content = UNMutableNotificationContent()
+                content.title = "🔥 \(String(localized: "Keep your streak alive!"))"
+                content.body = String(localized: "Haven't focused today yet. Open Pepinillo and get a session in.")
+                content.sound = .default
+                content.categoryIdentifier = "DAILY_REMINDER"
+
+                let trigger = UNCalendarNotificationTrigger(
+                    dateMatching: fireComponents,
+                    repeats: false
+                )
+                let request = UNNotificationRequest(
+                    identifier: "daily-reminder",
+                    content: content,
+                    trigger: trigger
+                )
+                try? await notificationCenter.add(request)
             }
         )
     }()

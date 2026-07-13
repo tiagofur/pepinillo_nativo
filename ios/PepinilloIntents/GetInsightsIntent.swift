@@ -26,13 +26,14 @@ struct GetInsightsIntent: AppIntent {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: .now)
 
-        guard let weekStart = calendar.date(byAdding: .day, value: -6, to: today) else {
+        guard let weekStart = calendar.date(byAdding: .day, value: -6, to: today),
+              let endOfToday = calendar.date(byAdding: .day, value: 1, to: today) else {
             return .result(dialog: "I couldn't compute the date range.")
         }
 
-        // Fetch last 7 days of sessions
+        // Fetch last 7 days of sessions (include all of today — #219)
         let predicate = #Predicate<FocusSessionRecord> {
-            $0.startedAt >= weekStart && $0.startedAt <= today
+            $0.startedAt >= weekStart && $0.startedAt < endOfToday
         }
         let records = (try? context.fetch(FetchDescriptor(predicate: predicate))) ?? []
         let sessions = records.map { $0.toDTO() }

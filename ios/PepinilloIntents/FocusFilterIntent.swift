@@ -44,12 +44,14 @@ struct PepinilloFocusFilter: SetFocusFilterIntent {
 
     /// Called by the system when the Focus Mode activates or deactivates.
     func perform() async throws -> some IntentResult {
-        if let modeID = focusMode?.id {
-            AppGroupDefaults.requestedMode = modeID
+        guard let modeID = focusMode?.id else {
+            return .result()
         }
 
+        AppGroupDefaults.widgetSelectedMode = modeID
+
         if autoStart {
-            AppGroupDefaults.externalStartRequested = true
+            _ = AppGroupDefaults.queueExternalStart(modeID: modeID)
         }
 
         return .result()

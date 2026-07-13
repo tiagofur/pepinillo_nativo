@@ -34,18 +34,22 @@ struct StartFocusIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        // Signal the main app to start a session via App Group UserDefaults
-        let defaults = UserDefaults(suiteName: AppGroup.id)
-        defaults?.set(true, forKey: "isSessionActive")
-        defaults?.set(true, forKey: "externalStartRequested")
-        if let modeID = mode?.id {
-            defaults?.set(modeID, forKey: "requestedMode")
-        }
-        if let taskID = task?.id {
-            defaults?.set(taskID, forKey: "requestedTaskID")
+        let modeID = mode?.id ?? AppGroupDefaults.widgetSelectedMode ?? FocusModeEntity.pomodoro.id
+        let started = AppGroupDefaults.queueExternalStart(
+            modeID: modeID,
+            taskID: task?.id
+        )
+
+        let modeName = mode?.displayName
+            ?? FocusModeEntity(rawValue: modeID)?.displayName
+            ?? String(localized: "Focus")
+
+        guard started else {
+            return .result(
+                dialog: "\(modeName) requires Pepinillo Pro. Open the app to upgrade."
+            )
         }
 
-        let modeName = mode?.displayName ?? String(localized: "Focus")
         let taskPart = task.map { " " + String(localized: "working on \($0.title)") } ?? ""
         return .result(dialog: "Started \(modeName) session\(taskPart). Let's focus! 🎯")
     }
@@ -59,14 +63,10 @@ struct StopFocusIntent: AppIntent {
         "Stop the current focus session in Pepinillo.",
         categoryName: "Focus"
     )
-    static let openAppWhenRun: Bool = false
+    static let openAppWhenRun: Bool = true
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        // Signal the main app to stop the session via App Group UserDefaults
-        let defaults = UserDefaults(suiteName: AppGroup.id)
-        defaults?.set(false, forKey: "isSessionActive")
-        defaults?.set(true, forKey: "externalStopRequested")
-
+        AppGroupDefaults.queueExternalStop()
         return .result(dialog: "Focus session stopped.")
     }
 }
