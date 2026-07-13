@@ -29,7 +29,7 @@ struct StartFocusFromWidgetIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         let selectedMode = modeID ?? AppGroupDefaults.widgetSelectedMode ?? "pomodoro"
         let isPro = AppGroupDefaults.isProUser
-        try? WidgetPreferencesCache.refreshDurationsFromSharedStore()
+        try? refreshDurationsFromSharedStore()
         
         // Pro modes: flowtime, timeBlock
         let isProMode = (selectedMode == "flowtime" || selectedMode == "timeBlock")
@@ -141,9 +141,9 @@ struct StartFocusWithTaskIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         let selectedMode = AppGroupDefaults.widgetSelectedMode ?? "pomodoro"
-        try? WidgetPreferencesCache.refreshDurationsFromSharedStore()
+        try? refreshDurationsFromSharedStore()
         let taskTitle = try? Self.taskTitle(for: taskID)
-        AppGroupDefaults.startWidgetSession(
+        _ = AppGroupDefaults.queueExternalStart(
             modeID: selectedMode,
             taskID: taskID,
             taskTitle: taskTitle
@@ -160,22 +160,6 @@ struct StartFocusWithTaskIntent: AppIntent {
         descriptor.fetchLimit = 1
         let tasks = try context.fetch(descriptor)
         return tasks.first?.title
-    }
-}
-
-private enum WidgetPreferencesCache {
-    static func refreshDurationsFromSharedStore() throws {
-        let container = try makeWidgetModelContainer()
-        let context = ModelContext(container)
-        let descriptor = FetchDescriptor<UserPreferences>()
-        guard let preferences = try context.fetch(descriptor).first else { return }
-
-        if preferences.pomodoroDuration > 0 {
-            AppGroupDefaults.pomodoroDuration = preferences.pomodoroDuration
-        }
-        if preferences.defaultBlockDuration > 0 {
-            AppGroupDefaults.blockDuration = preferences.defaultBlockDuration
-        }
     }
 }
 

@@ -9,6 +9,7 @@
 import AppIntents
 import Foundation
 import SwiftData
+import WidgetKit
 
 // MARK: - Start Focus Intent
 
@@ -34,10 +35,12 @@ struct StartFocusIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
+        try? refreshDurationsFromSharedStore()
         let modeID = mode?.id ?? AppGroupDefaults.widgetSelectedMode ?? FocusModeEntity.pomodoro.id
         let started = AppGroupDefaults.queueExternalStart(
             modeID: modeID,
-            taskID: task?.id
+            taskID: task?.id,
+            durationMinutes: duration
         )
 
         let modeName = mode?.displayName
@@ -45,11 +48,13 @@ struct StartFocusIntent: AppIntent {
             ?? String(localized: "Focus")
 
         guard started else {
+            WidgetCenter.shared.reloadAllTimelines()
             return .result(
                 dialog: "\(modeName) requires Pepinillo Pro. Open the app to upgrade."
             )
         }
 
+        WidgetCenter.shared.reloadAllTimelines()
         let taskPart = task.map { " " + String(localized: "working on \($0.title)") } ?? ""
         return .result(dialog: "Started \(modeName) session\(taskPart). Let's focus! 🎯")
     }
@@ -67,6 +72,7 @@ struct StopFocusIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         AppGroupDefaults.queueExternalStop()
+        WidgetCenter.shared.reloadAllTimelines()
         return .result(dialog: "Focus session stopped.")
     }
 }

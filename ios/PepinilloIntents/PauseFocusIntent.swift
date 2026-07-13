@@ -5,6 +5,7 @@
 
 import AppIntents
 import Foundation
+import WidgetKit
 
 // MARK: - Pause Focus Intent
 
@@ -28,6 +29,7 @@ struct PauseFocusIntent: AppIntent {
         }
 
         AppGroupDefaults.requestExternalPause()
+        WidgetCenter.shared.reloadAllTimelines()
         return .result(dialog: "Focus session paused. Take a moment.")
     }
 }
@@ -54,6 +56,7 @@ struct ResumeFocusIntent: AppIntent {
         }
 
         AppGroupDefaults.requestExternalResume()
+        WidgetCenter.shared.reloadAllTimelines()
         return .result(dialog: "Focus session resumed. Let's go!")
     }
 }
@@ -69,14 +72,11 @@ struct GetCurrentSessionIntent: AppIntent {
     static let openAppWhenRun: Bool = false
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let defaults = UserDefaults(suiteName: AppGroup.id)
-        let isActive = defaults?.bool(forKey: "isSessionActive") ?? false
-
-        guard isActive else {
+        guard AppGroupDefaults.isSessionActive else {
             return .result(dialog: "No focus session is running. Ready to start one?")
         }
 
-        let modeRaw = defaults?.string(forKey: "activeModeName") ?? "focus"
+        let modeRaw = AppGroupDefaults.activeModeName ?? "focus"
         let mode: String
         switch modeRaw {
         case "pomodoro":  mode = String(localized: "Pomodoro")
@@ -85,7 +85,7 @@ struct GetCurrentSessionIntent: AppIntent {
         case "stopwatch": mode = String(localized: "Stopwatch")
         default:          mode = String(localized: "Focus")
         }
-        let elapsed = defaults?.integer(forKey: "activeSessionElapsed") ?? 0
+        let elapsed = Int(AppGroupDefaults.activeSessionLiveElapsed())
         let minutes = elapsed / 60
 
         if minutes > 0 {

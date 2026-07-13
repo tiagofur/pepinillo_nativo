@@ -293,6 +293,25 @@ struct AppGroupContainerTests {
         #expect(timerEnd == resumeAt.addingTimeInterval((25 * 60) - 120))
     }
 
+    @Test("StartFocusWithTaskIntent blocks Pro modes for free users (#229)")
+    func startFocusWithTaskIntentProGateForFreeUser() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.isProUser = false
+        AppGroupDefaults.widgetSelectedMode = "flowtime"
+
+        let taskID = UUID().uuidString
+        _ = try await StartFocusWithTaskIntent(taskID: taskID).perform()
+
+        #expect(AppGroupDefaults.externalStartRequested == true)
+        #expect(AppGroupDefaults.isSessionActive == false)
+        #expect(AppGroupDefaults.requestedMode == "flowtime")
+        #expect(AppGroupDefaults.requestedTaskID == taskID)
+    }
+
     @Test("StartFocusWithTaskIntent preserves the task and creates a widget-started session")
     func startFocusWithTaskIntentWritesTaskSession() async throws {
         let saved = AppGroupDefaultsSnapshot.capture()

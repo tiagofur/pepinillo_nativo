@@ -247,6 +247,19 @@ struct FocusFeature {
                     engineTimerEnd = nil
                 }
                 AppGroupDefaults.activeSessionStartedFromWidget = false
+
+                if let durationMinutes = AppGroupDefaults.externalStartDurationMinutes {
+                    switch state.selectedMode {
+                    case .timeBlock:
+                        state.customDurationMinutes = durationMinutes
+                        state.config.defaultBlockDuration = TimeInterval(durationMinutes * 60)
+                    case .pomodoro:
+                        state.config.pomodoroDuration = TimeInterval(durationMinutes * 60)
+                    default:
+                        break
+                    }
+                    AppGroupDefaults.externalStartDurationMinutes = nil
+                }
                 
                 let initialPhase = state.selectedMode.strategy.initialPhase(config: state.config)
                 state.phase = initialPhase
@@ -286,10 +299,8 @@ struct FocusFeature {
 
                 updateDisplayFromPhase(&state)
 
-                // Notify only focus widgets that a session has started.
-                // Dashboard/Tasks widgets don't change at session start.
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                // Notify focus widgets and Control Center that a session has started (#231).
+                WidgetSurfaceReload.reloadFocusAndControlCenter()
 
                 let linkedTitle = state.linkedTaskTitle
 
@@ -389,8 +400,7 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionElapsed = frozenElapsed
                 AppGroupDefaults.activeSessionIsPaused = true
                 AppGroupDefaults.activeSessionRemaining = frozenRemaining
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                WidgetSurfaceReload.reloadFocusAndControlCenter()
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
                     .run { _ in await focusClient.pause() },
@@ -422,8 +432,7 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionRemaining = remaining
                 AppGroupDefaults.activeSessionPausedAt = pausedAt
                 AppGroupDefaults.activeSessionIsPaused = true
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                WidgetSurfaceReload.reloadFocusAndControlCenter()
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
                     .run { [focusClient] _ in
@@ -452,8 +461,7 @@ struct FocusFeature {
                 AppGroupDefaults.activeSessionTimerStart = Date.now.addingTimeInterval(-state.elapsedSeconds)
                 AppGroupDefaults.activeSessionElapsed = state.elapsedSeconds
                 
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                WidgetSurfaceReload.reloadFocusAndControlCenter()
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
                     .run { _ in await focusClient.resume() },
@@ -485,8 +493,7 @@ struct FocusFeature {
                     AppGroupDefaults.activeSessionProgress = nil
                 }
                 AppGroupDefaults.activeSessionTimerStart = Date.now.addingTimeInterval(-elapsed)
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
+                WidgetSurfaceReload.reloadFocusAndControlCenter()
                 let taskTitle = state.linkedTaskTitle
                 return .merge(
                     .run { [focusClient] _ in
@@ -510,11 +517,8 @@ struct FocusFeature {
                     .run { [liveActivity] _ in await liveActivity.end(false) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
-                    // Scoped reloads instead of reloadAllTimelines() (issue #77).
                     .run { _ in
-                        WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                        WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        WidgetSurfaceReload.reloadFocusTasksAndControlCenter()
                     }
                 )
 
@@ -797,11 +801,8 @@ struct FocusFeature {
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
                     persistEffect,
-                    // Refresh widgets with updated stats — scoped reloads (issue #77).
                     .run { _ in
-                        WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
-                        WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
-                        WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
+                        WidgetSurfaceReload.reloadFocusTasksAndControlCenter()
                     }
                 ]
 

@@ -42,6 +42,9 @@ struct NotificationClient: Sendable {
     /// Cancel all pending Pepinillo notifications.
     var cancelAll: @Sendable () async -> Void = {}
 
+    /// Cancel only the daily streak reminder (#225).
+    var cancelDailyReminder: @Sendable () async -> Void = {}
+
     /// After the user completes a focus session today, skip today's daily nag (#223).
     var rescheduleDailyReminderAfterFocus: @Sendable (_ hour: Int, _ minute: Int) async -> Void = { _, _ in }
 }
@@ -223,6 +226,12 @@ extension NotificationClient {
             cancelAll: {
                 center().removeAllPendingNotificationRequests()
                 center().removeAllDeliveredNotifications()
+            },
+
+            cancelDailyReminder: {
+                let notificationCenter = center()
+                notificationCenter.removeDeliveredNotifications(withIdentifiers: ["daily-reminder"])
+                notificationCenter.removePendingNotificationRequests(withIdentifiers: ["daily-reminder"])
             },
 
             rescheduleDailyReminderAfterFocus: { hour, minute in

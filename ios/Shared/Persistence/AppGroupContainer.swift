@@ -350,6 +350,22 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "blockDuration") }
     }
 
+    /// Optional Siri/Shortcuts duration override for the next external start (#224).
+    static var externalStartDurationMinutes: Int? {
+        get {
+            guard let value = defaults?.object(forKey: "externalStartDurationMinutes") as? Int,
+                  value > 0 else { return nil }
+            return value
+        }
+        set {
+            if let value = newValue, value > 0 {
+                defaults?.set(value, forKey: "externalStartDurationMinutes")
+            } else {
+                defaults?.removeObject(forKey: "externalStartDurationMinutes")
+            }
+        }
+    }
+
     private static func positiveDouble(forKey key: String, defaultValue: Double) -> Double {
         guard let value = defaults?.object(forKey: key) as? Double, value > 0 else {
             return defaultValue
@@ -567,16 +583,21 @@ enum AppGroupDefaults {
         modeID: String,
         taskID: String? = nil,
         taskTitle: String? = nil,
+        durationMinutes: Int? = nil,
         issuedAt: Date = Date.now
     ) {
         let duration: TimeInterval
         switch modeID {
         case "pomodoro":
-            duration = pomodoroDuration
+            duration = durationMinutes.map { TimeInterval($0 * 60) } ?? pomodoroDuration
         case "timeBlock":
-            duration = blockDuration
+            duration = durationMinutes.map { TimeInterval($0 * 60) } ?? blockDuration
         default:
             duration = 0
+        }
+
+        if let durationMinutes, durationMinutes > 0 {
+            externalStartDurationMinutes = durationMinutes
         }
 
         externalCommandID = UUID().uuidString
@@ -643,11 +664,17 @@ enum AppGroupDefaults {
     static func queueExternalStart(
         modeID: String,
         taskID: String? = nil,
-        taskTitle: String? = nil
+        taskTitle: String? = nil,
+        durationMinutes: Int? = nil
     ) -> Bool {
         let isProMode = modeID == "flowtime" || modeID == "timeBlock"
         if isProUser || !isProMode {
-            startWidgetSession(modeID: modeID, taskID: taskID, taskTitle: taskTitle)
+            startWidgetSession(
+                modeID: modeID,
+                taskID: taskID,
+                taskTitle: taskTitle,
+                durationMinutes: durationMinutes
+            )
             return true
         }
 
@@ -683,6 +710,7 @@ enum AppGroupDefaults {
         defaults?.removeObject(forKey: "requestedTaskID")
         defaults?.removeObject(forKey: "externalCommandID")
         defaults?.removeObject(forKey: "externalCommandIssuedAt")
+        defaults?.removeObject(forKey: "externalStartDurationMinutes")
     }
 
     /// Cold-launch reconciliation for App Group session snapshots vs the in-process Focus engine.
@@ -731,6 +759,7 @@ enum AppGroupDefaults {
         defaults?.set(false, forKey: "activeSessionStartedFromWidget")
         defaults?.removeObject(forKey: "activeSessionPausedAt")
         defaults?.removeObject(forKey: "activeTaskID")
+        defaults?.removeObject(forKey: "externalStartDurationMinutes")
     }
 }
 
@@ -869,6 +898,21 @@ func makeWidgetModelContainer() throws -> ModelContainer {
 /// Includes TaskItem + SubTask so Siri can suggest real user tasks.
 func makeIntentsModelContainer() throws -> ModelContainer {
     try SharedModelContainerCache.shared.getOrCreateContainer()
+}
+
+/// Refresh cached pomodoro/block durations from SwiftData before external starts (#224, #232).
+func refreshDurationsFromSharedStore() throws {
+    let container = try makeIntentsModelContainer()
+    let context = ModelContext(container)
+    let descriptor = FetchDescriptor<UserPreferences>()
+    guard let preferences = try context.fetch(descriptor).first else { return }
+
+    if preferences.pomodoroDuration > 0 {
+        AppGroupDefaults.pomodoroDuration = preferences.pomodoroDuration
+    }
+    if preferences.defaultBlockDuration > 0 {
+        AppGroupDefaults.blockDuration = preferences.defaultBlockDuration
+    }
 }
 
 private func makeModelContainer(at url: URL) throws -> ModelContainer {
