@@ -140,7 +140,8 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.taskCompleted(taskID)) {
+        await store.send(.taskCompleted(taskID))
+        await store.receive(.setTaskCompleted(taskID, true)) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
     }
@@ -499,7 +500,8 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.taskCompleted(taskID)) {
+        await store.send(.taskCompleted(taskID))
+        await store.receive(.setTaskCompleted(taskID, true)) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
@@ -527,7 +529,8 @@ struct TaskListFeatureTests {
 
         store.exhaustivity = .off
 
-        await store.send(.taskCompleted(taskID)) {
+        await store.send(.taskCompleted(taskID))
+        await store.receive(.setTaskCompleted(taskID, true)) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
