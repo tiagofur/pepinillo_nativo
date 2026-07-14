@@ -23,7 +23,8 @@ struct PlanTaskList: View {
     // MARK: - Filtered tasks
 
     private var filteredTasks: IdentifiedArrayOf<TaskListFeature.TaskItemState> {
-        TaskListFeature.planFilteredTasks(store.tasks, filter: filter)
+        let filtered = TaskListFeature.planFilteredTasks(store.tasks, filter: filter)
+        return TaskListFeature.sortedPlanTasks(filtered, sortOrder: store.sortOrder)
     }
 
     // MARK: - Body
@@ -106,6 +107,28 @@ struct PlanTaskList: View {
             Button(String(localized: "OK")) { store.send(.loadErrorDismissed) }
         } message: {
             Text(store.loadError ?? "")
+        }
+        .alert(
+            String(localized: "Couldn't Save Changes"),
+            isPresented: Binding(
+                get: { store.mutationError != nil },
+                set: { if !$0 { store.send(.mutationErrorDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.mutationErrorDismissed) }
+        } message: {
+            Text(store.mutationError ?? "")
+        }
+        .alert(
+            String(localized: "Import Complete"),
+            isPresented: Binding(
+                get: { store.importSummary != nil },
+                set: { if !$0 { store.send(.importSummaryDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.importSummaryDismissed) }
+        } message: {
+            Text(store.importSummary ?? "")
         }
     }
 

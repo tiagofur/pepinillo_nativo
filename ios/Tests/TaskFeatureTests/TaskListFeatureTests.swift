@@ -138,10 +138,9 @@ struct TaskListFeatureTests {
             $0.persistenceClient.saveTask = { _ in }
         }
 
-        store.exhaustivity = .off
-
         await store.send(.taskCompleted(taskID))
-        await store.receive(.setTaskCompleted(taskID, true)) {
+
+        await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
     }
@@ -176,6 +175,48 @@ struct TaskListFeatureTests {
         await store.send(.taskDeleted(taskID)) {
             $0.tasks = []
         }
+    }
+
+    @Test func detailDeleteRoutesThroughSharedDeletePipeline() async {
+        let taskID = UUID(0)
+        var initialState = TaskListFeature.State()
+        let task = makeTask(id: taskID, title: "Detail task", scheduledForToday: false, isCompleted: false, sortOrder: 0)
+        initialState.tasks = [task]
+        initialState.detail = TaskDetailFeature.State(from: task)
+        initialState.selectedTaskID = taskID
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.deleteTask = { _ in }
+            $0.spotlightClient.deindexTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.detail(.presented(.delegate(.taskDeleted(taskID)))))
+        await store.receive(.taskDeleted(taskID)) {
+            $0.recentlyDeletedTask = task
+            $0.tasks = []
+            $0.detail = nil
+            $0.selectedTaskID = nil
+        }
+    }
+
+    @Test func importedReminderUsesStableSyncID() {
+        let reminder = ImportedReminder(
+            externalID: "abc-123",
+            title: "Buy milk",
+            notes: nil,
+            priority: .medium,
+            calendarName: "Personal",
+            dueDate: Date(timeIntervalSince1970: 1_700_000_000)
+        )
+        #expect(reminder.reminderSyncID == "reminder:abc-123")
+        let dto = reminder.toTaskItemDTO(sortOrder: 5, syncId: reminder.reminderSyncID)
+        #expect(dto.syncId == "reminder:abc-123")
+        #expect(dto.sortOrder == 5)
+        #expect(dto.dueDate != nil)
     }
 
     @Test func rapidMultiDeleteSoftDeletesAllTasksImmediately() async {
@@ -501,7 +542,7 @@ struct TaskListFeatureTests {
         store.exhaustivity = .off
 
         await store.send(.taskCompleted(taskID))
-        await store.receive(.setTaskCompleted(taskID, true)) {
+        await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
@@ -530,7 +571,7 @@ struct TaskListFeatureTests {
         store.exhaustivity = .off
 
         await store.send(.taskCompleted(taskID))
-        await store.receive(.setTaskCompleted(taskID, true)) {
+        await store.receive(\.setTaskCompleted) {
             $0.tasks[id: taskID]?.isCompleted = true
         }
 
@@ -936,6 +977,22 @@ struct TaskListFeatureTests {
         }
     }
 
+    @Test func planFilteredTasksExcludesRecurringTemplates() {
+        let templateID = UUID(0)
+        let instanceID = UUID(1)
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+
+        var template = makeTask(id: templateID, title: "Template", scheduledForToday: true, isCompleted: false, sortOrder: 0)
+        template.isRecurringTemplate = true
+        template.recurrenceRule = RecurrencePreset.weekly.rawValue
+        let instance = makeTask(id: instanceID, title: "Instance", scheduledForToday: true, isCompleted: false, sortOrder: 1)
+
+        let tasks = IdentifiedArrayOf(uniqueElements: [template, instance])
+        let today = TaskListFeature.planFilteredTasks(tasks, filter: .today, now: now)
+        #expect(today.ids == [instanceID])
+        #expect(!today.ids.contains(templateID))
+    }
+
     @Test func planFilteredTasksInboxExcludesTodayAndCompleted() {
         let inboxID = UUID(0)
         let todayID = UUID(1)
@@ -1030,19 +1087,182 @@ struct TaskListFeatureTests {
         #expect(TaskListFeature.planFilteredTasks(store.state.tasks, filter: .today).ids == [todayC, todayA])
     }
 
+    @Test("sortedPlanTasks orders by priority high to none (#185)")
+    func sortedPlanTasksByPriority() {
+        let tasks = IdentifiedArrayOf(uniqueElements: [
+            makeTask(id: UUID(0), title: "Low", scheduledForToday: false, isCompleted: false, sortOrder: 0, priority: .low),
+            makeTask(id: UUID(1), title: "High", scheduledForToday: false, isCompleted: false, sortOrder: 1, priority: .high),
+            makeTask(id: UUID(2), title: "None", scheduledForToday: false, isCompleted: false, sortOrder: 2, priority: .none),
+        ])
+        let sorted = TaskListFeature.sortedPlanTasks(tasks, sortOrder: .priority)
+        #expect(sorted.map(\.title) == ["High", "Low", "None"])
+    }
+
+    @Test("sortedPlanTasks keeps custom sortOrder (#185)")
+    func sortedPlanTasksCustomOrder() {
+        let tasks = IdentifiedArrayOf(uniqueElements: [
+            makeTask(id: UUID(0), title: "B", scheduledForToday: false, isCompleted: false, sortOrder: 1),
+            makeTask(id: UUID(1), title: "A", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+        ])
+        let sorted = TaskListFeature.sortedPlanTasks(tasks, sortOrder: .custom)
+        #expect(sorted.map(\.title) == ["A", "B"])
+    }
+
+    @Test("sortedPlanTasks puts nil due dates last (#185)")
+    func sortedPlanTasksByDueDate() {
+        let early = Date(timeIntervalSince1970: 1_000)
+        let late = Date(timeIntervalSince1970: 2_000)
+        let tasks = IdentifiedArrayOf(uniqueElements: [
+            makeTask(id: UUID(0), title: "No due", scheduledForToday: false, isCompleted: false, sortOrder: 0),
+            makeTask(id: UUID(1), title: "Late", scheduledForToday: false, isCompleted: false, sortOrder: 1, dueDate: late),
+            makeTask(id: UUID(2), title: "Early", scheduledForToday: false, isCompleted: false, sortOrder: 2, dueDate: early),
+        ])
+        let sorted = TaskListFeature.sortedPlanTasks(tasks, sortOrder: .dueDate)
+        #expect(sorted.map(\.title) == ["Early", "Late", "No due"])
+    }
+
+    @Test("addTask save failure rolls back optimistic row (#189)")
+    func addTaskSaveFailureRollsBack() async {
+        struct TestError: Error {}
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+
+        let store = TestStore(initialState: TaskListFeature.State()) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in throw TestError() }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+
+        await store.send(.newTaskTitleChanged("Buy groceries")) {
+            $0.newTaskTitle = "Buy groceries"
+        }
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(TaskListFeature.TaskItemState(
+                id: testID,
+                title: "Buy groceries",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 0,
+                createdAt: testDate
+            ))
+        }
+
+        await store.receive(\.mutationFailed) {
+            $0.tasks = []
+            $0.newTaskTitle = "Buy groceries"
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
+    @Test("completeTask save failure restores completion state (#189)")
+    func completeTaskSaveFailureRollsBack() async {
+        struct TestError: Error {}
+        let taskID = UUID(1)
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [
+            TaskListFeature.TaskItemState(
+                id: taskID,
+                title: "Task",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 0,
+                createdAt: Date()
+            )
+        ]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in basicTaskDTO(id: taskID) }
+            $0.persistenceClient.saveTask = { _ in throw TestError() }
+        }
+
+        await store.send(.taskCompleted(taskID))
+
+        await store.receive(\.setTaskCompleted) {
+            $0.tasks[id: taskID]?.isCompleted = true
+        }
+
+        await store.receive(\.mutationFailed) {
+            $0.tasks[id: taskID]?.isCompleted = false
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
+    @Test("deleteTask save failure restores task and undo banner (#189)")
+    func deleteTaskSaveFailureRollsBack() async {
+        struct TestError: Error {}
+        let taskID = UUID(2)
+        let task = TaskListFeature.TaskItemState(
+            id: taskID,
+            title: "Gone?",
+            isCompleted: false,
+            priority: .none,
+            energyLevel: .deep,
+            estimatedPomodoros: 1,
+            completedPomodoros: 0,
+            subtaskProgress: .init(completed: 0, total: 0),
+            recurrenceRule: nil,
+            isRecurringTemplate: false,
+            scheduledForToday: true,
+            sortOrder: 0,
+            createdAt: Date()
+        )
+        var initialState = TaskListFeature.State()
+        initialState.tasks = [task]
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.deleteTask = { _ in throw TestError() }
+            $0.spotlightClient.deindexTask = { _ in }
+        }
+
+        store.exhaustivity = .off
+        await store.send(.taskDeleted(taskID)) {
+            $0.recentlyDeletedTask = task
+            $0.tasks = []
+        }
+
+        await store.receive(\.mutationFailed) {
+            $0.tasks = [task]
+            $0.recentlyDeletedTask = task
+            $0.mutationError = TestError().localizedDescription
+        }
+    }
+
     private func makeTask(
         id: UUID,
         title: String,
         scheduledForToday: Bool,
         isCompleted: Bool,
         sortOrder: Int,
-        dueDate: Date? = nil
+        dueDate: Date? = nil,
+        priority: TaskPriority = .none
     ) -> TaskListFeature.TaskItemState {
         TaskListFeature.TaskItemState(
             id: id,
             title: title,
             isCompleted: isCompleted,
-            priority: .none,
+            priority: priority,
             energyLevel: .deep,
             estimatedPomodoros: 1,
             completedPomodoros: 0,

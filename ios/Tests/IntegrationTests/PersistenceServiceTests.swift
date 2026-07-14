@@ -261,4 +261,40 @@ struct PersistenceServiceTests {
         let future = Date.now.addingTimeInterval(86_400 * 365)
         #expect(try service.fetchSessionCount(from: future) == 0)
     }
+
+    @Test("normalizeScheduledForToday clears stale manual Today pins (#190)")
+    func normalizeScheduledForTodayClearsStalePins() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-normalize-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV4.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let cal = Calendar.current
+        let now = Date(timeIntervalSince1970: 1_700_000_000)
+        let startOfToday = cal.startOfDay(for: now)
+        let yesterday = cal.date(byAdding: .day, value: -1, to: startOfToday)!
+
+        let stale = TaskItem(title: "Pinned yesterday")
+        stale.scheduledForToday = true
+        stale.updatedAt = yesterday
+        context.insert(stale)
+
+        let dueToday = TaskItem(title: "Due today")
+        dueToday.scheduledForToday = true
+        dueToday.dueDate = startOfToday
+        dueToday.updatedAt = yesterday
+        context.insert(dueToday)
+        try context.save()
+
+        try service.normalizeScheduledForToday(now: now)
+
+        #expect(stale.scheduledForToday == false)
+        #expect(dueToday.scheduledForToday == true)
+    }
 }

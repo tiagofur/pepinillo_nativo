@@ -89,6 +89,17 @@ struct TaskDetailView: View {
         } message: {
             Text(String(localized: "This action cannot be undone."))
         }
+        .alert(
+            String(localized: "Couldn't Save Changes"),
+            isPresented: Binding(
+                get: { store.mutationError != nil },
+                set: { if !$0 { store.send(.mutationErrorDismissed) } }
+            )
+        ) {
+            Button(String(localized: "OK")) { store.send(.mutationErrorDismissed) }
+        } message: {
+            Text(store.mutationError ?? "")
+        }
         .sheet(item: $store.scope(state: \.taskAnalytics, action: \.taskAnalytics)) { analyticsStore in
             TaskAnalyticsView(store: analyticsStore)
                 .presentationDetents([.large])
@@ -145,7 +156,20 @@ struct TaskDetailView: View {
                 .padding(.bottom, 4)
 
             VStack(spacing: 12) {
-                if store.subtasks.isEmpty && store.isLoading {
+                if let loadError = store.loadError {
+                    VStack(spacing: 8) {
+                        Text(loadError)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                        Button(String(localized: "Retry")) {
+                            store.send(.retryLoadTapped)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                } else if store.subtasks.isEmpty && store.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 }
