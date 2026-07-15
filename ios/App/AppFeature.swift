@@ -1154,6 +1154,22 @@ struct AppFeature {
                 state.focus.showPaywall = false
                 return .none
 
+            case .settings(.retryAppleCloudSyncTapped):
+                guard state.settings.canAppleCloudSync else { return .none }
+                state.settings.isRetryingAppleCloudSync = true
+                AppGroupDefaults.lastAppleCloudActivationError = nil
+                state.lastSyncedCapabilities = nil
+                return .merge(
+                    applySubscriptionUpdate(state.subscriptionState, state: &state),
+                    .run { send in
+                        try? await Task.sleep(for: .seconds(4))
+                        await send(.settings(.appleCloudSyncRetryFinished(
+                            status: AppGroupDefaults.syncStatus,
+                            error: AppGroupDefaults.lastAppleCloudActivationError
+                        )))
+                    }
+                )
+
             case .analytics(.paywallRequested):
                 state.focus.showPaywall = true
                 return .send(.paywall(.appeared))

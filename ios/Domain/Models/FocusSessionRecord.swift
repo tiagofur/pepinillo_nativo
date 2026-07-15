@@ -10,7 +10,7 @@ import SwiftData
 
 @Model
 public final class FocusSessionRecord {
-    public var id: UUID
+    @Attribute(.unique) public var id: UUID
     public var startedAt: Date
     public var endedAt: Date?
 

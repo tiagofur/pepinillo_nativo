@@ -18,7 +18,7 @@ This guide ensures you have everything ready for a successful submission to Appl
    - **Push Notifications**
    - **Siri**
    - **App Groups** (Create `group.com.pepinillo.app` and link it).
-  - Do **not** enable iCloud / CloudKit for the 1.0 release build. CloudKit sync is deferred until the non-blocking 1.1 sync architecture is validated.
+  - **iCloud / CloudKit**: Enable for Pepinillo+ (Apple-to-Apple sync). The app uses a dual-store router: local-only at launch, then activates a separate CloudKit container for Pro users. Verify `iCloud.com.pepinillo.app` container exists and App Group `group.com.pepinillo.app` is linked on all targets (app, widget, intents, watch).
 
 ---
 
@@ -69,4 +69,4 @@ When Apple asks about data collection, use these answers:
 > 
 > To test Pro features: The app uses StoreKit 2. In the sandbox/TestFlight environment, you can subscribe to any plan to test Pro features (Flowtime mode, Time Block mode, premium soundscapes, and advanced analytics).
 > 
-> Integration: Writes Mindful Minutes to Apple Health and imports tasks from Reminders. Data is local-first in this 1.0 build.
+> Integration: Writes Mindful Minutes to Apple Health and imports tasks from Reminders. Pepinillo+ users get iCloud sync across Apple devices; Everywhere/AI+ uses Pepinillo cloud (VPS) sync. Settings → iCloud Sync shows activation status and retry for Pro users.

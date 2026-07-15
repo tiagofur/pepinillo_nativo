@@ -75,6 +75,7 @@ enum LocalToCloudStoreMigrator {
 
     private static func upsertTask(_ source: TaskItem, in target: ModelContext) throws -> TaskItem {
         if let existing = try fetchTask(by: source.id, in: target) {
+            guard source.updatedAt >= existing.updatedAt else { return existing }
             applyTaskFields(from: source, to: existing)
             return existing
         }
@@ -166,6 +167,9 @@ enum LocalToCloudStoreMigrator {
         in target: ModelContext
     ) throws -> FocusSessionRecord {
         if let existing = try fetchSession(by: source.id, in: target) {
+            guard sessionRevisionTimestamp(source) >= sessionRevisionTimestamp(existing) else {
+                return existing
+            }
             applySessionFields(from: source, to: existing)
             return existing
         }
@@ -217,6 +221,9 @@ enum LocalToCloudStoreMigrator {
             let startOfDay = Calendar.current.startOfDay(for: sourceStat.date)
             let copy: DailyStats
             if let existing = try fetchDailyStats(for: startOfDay, in: target) {
+                guard dailyStatsRevisionScore(sourceStat) >= dailyStatsRevisionScore(existing) else {
+                    continue
+                }
                 copy = existing
             } else {
                 copy = DailyStats(date: startOfDay)
@@ -357,6 +364,20 @@ enum LocalToCloudStoreMigrator {
         target.insert(copy)
     }
 
+    // MARK: - LWW Helpers
+
+    /// Sessions lack `updatedAt`; use the latest session boundary as the revision clock.
+    private static func sessionRevisionTimestamp(_ session: FocusSessionRecord) -> Date {
+        session.endedAt ?? session.startedAt
+    }
+
+    /// Prefer the DailyStats row with newer aggregate totals for the same day key.
+    private static func dailyStatsRevisionScore(_ stats: DailyStats) -> Int {
+        stats.totalFocusSeconds * 1_000
+            + stats.sessionsCompleted * 10
+            + stats.tasksCompleted
+    }
+
     // MARK: - Fetch Helpers
 
     private static func fetchTask(by id: UUID, in context: ModelContext) throws -> TaskItem? {
@@ -386,7 +407,7 @@ enum LocalToCloudStoreMigrator {
     // MARK: - Legacy Container
 
     private static func openLegacyModelContainer(at url: URL) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV4.self)
+        let schema = Schema(versionedSchema: SchemaV5.self)
         let config = ModelConfiguration(
             schema: schema,
             url: url,
