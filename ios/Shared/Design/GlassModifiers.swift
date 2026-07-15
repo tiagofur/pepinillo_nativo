@@ -183,7 +183,7 @@ struct AdaptiveGlassCircleModifier: ViewModifier {
                 .foregroundStyle(foreground ?? .white)
                 .background(tint.gradient, in: Circle())
                 .contentShape(Circle())
-                .shadow(color: tint.opacity(0.22), radius: 10, y: 5)
+                .pepinilloShadow(.glow, tint: tint, respectsLiquidGlass: false)
         } else {
             content
                 .foregroundStyle(foreground ?? .primary)

@@ -363,7 +363,7 @@ private struct WidgetControls: View {
                 .foregroundStyle(.white)
         }
         .frame(width: buttonSize, height: buttonSize)
-        .shadow(color: color.opacity(0.18), radius: 6, y: 3)
+        .pepinilloShadow(.raised, respectsLiquidGlass: false)
     }
 }
 
@@ -475,7 +475,7 @@ struct FocusWidgetMedium: View {
                     VStack(spacing: 5) {
                         Text(style.emoji)
                             .font(.system(size: 22))
-                            .shadow(color: modeColor.opacity(0.22), radius: 3)
+                            .pepinilloShadow(.ink, respectsLiquidGlass: false)
                         LiveTimerText(
                             entry: entry,
                             font: .system(size: 25, weight: .bold, design: .rounded)
@@ -539,7 +539,7 @@ struct FocusWidgetMedium: View {
                 WidgetProgressRing(progress: 0, modeColor: modeColor, lineWidth: 10, countsDown: isCountdownMode(mode)) {
                     Text(style.emoji)
                         .font(.system(size: 36))
-                        .shadow(color: modeColor.opacity(renderingMode == .accented ? 0.10 : 0.25), radius: 4)
+                        .pepinilloShadow(.ink, enabled: renderingMode != .accented, respectsLiquidGlass: false)
                 }
             }
             .frame(width: 140)

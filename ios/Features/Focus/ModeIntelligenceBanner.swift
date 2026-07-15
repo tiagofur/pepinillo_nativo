@@ -62,7 +62,7 @@ struct ModeIntelligenceBanner: View {
         }
         .padding(SpacingTokens.base)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
-        .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+        .pepinilloShadow(.resting)
         .transition(.move(edge: .top).combined(with: .opacity))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(

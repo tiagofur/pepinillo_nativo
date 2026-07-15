@@ -96,8 +96,14 @@ private extension View {
                             lineWidth: 1
                         )
                 }
-                .shadow(color: isSelected ? filter.color.opacity(0.28) : .clear, radius: 8, y: 2)
+                .pepinilloShadow(
+                    .glow,
+                    tint: filter.color,
+                    enabled: isSelected,
+                    respectsLiquidGlass: false
+                )
         } else if #available(iOS 26.0, macOS 26.0, *) {
+            // Native glass provides depth — no drop shadow.
             self
                 .glassEffect(
                     .regular
@@ -106,7 +112,6 @@ private extension View {
                     in: .capsule
                 )
                 .glassEffectID("plan-filter-\(filter.rawValue)", in: namespace)
-                .shadow(color: isSelected ? filter.color.opacity(0.35) : .clear, radius: 10, y: 3)
         } else {
             self
                 .background {
@@ -127,7 +132,11 @@ private extension View {
                             lineWidth: 1
                         )
                 }
-                .shadow(color: isSelected ? filter.color.opacity(0.28) : .black.opacity(0.06), radius: isSelected ? 8 : 6, y: 2)
+                .pepinilloShadow(
+                    isSelected ? .glow : .resting,
+                    tint: filter.color,
+                    respectsLiquidGlass: false
+                )
         }
     }
 }

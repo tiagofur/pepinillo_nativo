@@ -141,7 +141,7 @@ struct AuthView: View {
                         endPoint: .bottomTrailing
                     )
                 )
-                .shadow(color: theme.pomodoroColor.opacity(0.3), radius: 8, x: 0, y: 4)
+                .pepinilloShadow(.glow, tint: theme.pomodoroColor, respectsLiquidGlass: false)
                 .adaptiveGlassCircle(id: "auth-icon", namespace: glassNS)
                 .frame(width: 72, height: 72)
                 .overlay {
@@ -289,7 +289,7 @@ struct AuthView: View {
                 theme.pomodoroColor.gradient,
                 in: Capsule()
             )
-            .shadow(color: theme.pomodoroColor.opacity(0.35), radius: 12, y: 6)
+            .pepinilloShadow(.glow, tint: theme.pomodoroColor, respectsLiquidGlass: false)
         }
         .buttonStyle(PepinilloButtonStyle())
         .disabled(store.isLoading)

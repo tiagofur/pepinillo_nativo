@@ -143,9 +143,10 @@ struct OnboardingView: View {
                              : ModeColors.stopwatch).gradient
                         )
                 )
-                .shadow(
-                    color: (currentPage < pages.count ? pages[currentPage].accentColor : Color.accentColor).opacity(0.35),
-                    radius: 12, y: 6
+                .pepinilloShadow(
+                    .glow,
+                    tint: currentPage < pages.count ? pages[currentPage].accentColor : Color.accentColor,
+                    respectsLiquidGlass: false
                 )
         }
         .accessibilityLabel(currentPage < pages.count
@@ -271,8 +272,8 @@ struct OnboardingPageView: View {
                     Text(page.emoji)
                         .font(.system(size: 88))
                         .offset(y: floatingOffset)
-                        .shadow(color: page.accentColor.opacity(0.4), radius: 16, y: 8)
-                        .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+                        .pepinilloShadow(.hero, tint: page.accentColor, respectsLiquidGlass: false)
+                        .pepinilloShadow(.resting, respectsLiquidGlass: false)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: geo.size.height)

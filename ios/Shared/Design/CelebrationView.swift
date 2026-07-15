@@ -123,7 +123,7 @@ struct CelebrationView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
-                    .shadow(radius: 2)
+                    .pepinilloShadow(.ink, respectsLiquidGlass: false)
                     .opacity(showContent ? 1 : 0)
                     .offset(y: showContent ? 0 : 20)
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.4).delay(0.15), value: showContent)

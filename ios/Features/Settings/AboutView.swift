@@ -25,7 +25,7 @@ struct AboutView: View {
                             .resizable()
                             .frame(width: 80, height: 80)
                             .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
-                            .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                            .pepinilloShadow(.raised, respectsLiquidGlass: false)
                     } else {
                         Image(systemName: "leaf.fill")
                             .font(.system(size: 40))

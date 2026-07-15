@@ -527,7 +527,7 @@ struct TaskDetailView: View {
                 .frame(minHeight: 56)
                 .background(store.isCompleted ? Color.pepinilloSystemFill : Color.accentColor)
                 .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous))
-                .shadow(color: (store.isCompleted ? Color.clear : Color.accentColor.opacity(0.3)), radius: 8, y: 4)
+                .pepinilloShadow(.glow, enabled: !store.isCompleted, respectsLiquidGlass: false)
         }
         .disabled(store.isCompleted)
     }

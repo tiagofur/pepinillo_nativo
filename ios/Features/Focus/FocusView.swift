@@ -875,7 +875,7 @@ private extension View {
                 .foregroundStyle(.white)
                 .background(tint.gradient)
                 .clipShape(Capsule())
-                .shadow(color: tint.opacity(0.35), radius: 14, y: 7)
+                .pepinilloShadow(.glow, tint: tint, respectsLiquidGlass: false)
         }
     }
 }

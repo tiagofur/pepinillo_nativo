@@ -277,6 +277,7 @@ targets:
       - path: Shared/Design/SystemColors.swift
       - path: Shared/Design/GlassTokens.swift
       - path: Shared/Design/SpacingTokens.swift
+      - path: Shared/Design/ShadowTokens.swift
       - path: Shared/Design/MotionTokens.swift
       - path: Shared/Design/GlassModifiers.swift
       - path: Shared/Design/WidgetGlassBackground.swift
@@ -332,6 +333,7 @@ targets:
       - path: Shared/Design/SystemColors.swift
       - path: Shared/Design/GlassTokens.swift
       - path: Shared/Design/SpacingTokens.swift
+      - path: Shared/Design/ShadowTokens.swift
       - path: Shared/Design/MotionTokens.swift
       - path: Shared/Design/GlassModifiers.swift
       - path: Shared/Design/WidgetGlassBackground.swift

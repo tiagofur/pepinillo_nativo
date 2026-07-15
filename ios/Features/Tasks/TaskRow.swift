@@ -50,12 +50,8 @@ struct TaskRow: View, Equatable {
                 RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                     .stroke(cardBorderColor, lineWidth: 1)
             )
-            .shadow(
-                color: cardShadowColor,
-                radius: cardShadowRadius,
-                x: 0,
-                y: cardShadowOffsetY
-            )
+            // Non-glass solid cards need a touch of elevation on every OS.
+            .pepinilloShadow(.resting, enabled: !task.isCompleted, respectsLiquidGlass: false)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -288,22 +284,6 @@ struct TaskRow: View, Equatable {
         } else {
             return Color(uiColor: .separator).opacity(0.2)
         }
-    }
-
-    private var cardShadowColor: Color {
-        if task.isCompleted {
-            return .primary.opacity(0.01)
-        } else {
-            return .primary.opacity(0.05)
-        }
-    }
-
-    private var cardShadowRadius: CGFloat {
-        task.isCompleted ? 1 : 5
-    }
-
-    private var cardShadowOffsetY: CGFloat {
-        task.isCompleted ? 0.5 : 2
     }
 
     private var checkboxColor: Color {

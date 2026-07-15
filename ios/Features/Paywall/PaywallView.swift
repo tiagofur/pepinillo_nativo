@@ -421,7 +421,10 @@ struct PaywallPurchaseButton: View {
         .buttonStyle(PepinilloButtonStyle())
         .disabled(store.isLoading || store.subscriptionState.isPro)
         .padding(.top, SpacingTokens.xs)
-        .shadow(color: (store.isLoading || store.subscriptionState.isPro) ? .clear : Color.accentColor.opacity(0.20), radius: 20, y: 10)
+        .pepinilloShadow(
+            .hero,
+            enabled: !(store.isLoading || store.subscriptionState.isPro)
+        )
     }
 }
 

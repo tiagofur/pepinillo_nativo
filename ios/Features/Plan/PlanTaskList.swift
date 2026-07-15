@@ -348,7 +348,7 @@ struct PlanTaskList: View {
         .padding(.horizontal, SpacingTokens.md)
         .padding(.vertical, SpacingTokens.base)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
-        .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
+        .pepinilloShadow(.raised)
         .padding(.horizontal, SpacingTokens.md)
     }
 
