@@ -71,9 +71,9 @@ struct ReflectionCard: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: GlassCornerRadius.card))
+            .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous)
                     .stroke(.secondary.opacity(0.12), lineWidth: 1)
             }
         }

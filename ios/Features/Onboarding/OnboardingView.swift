@@ -408,10 +408,10 @@ struct DefaultModeCard: View {
             .padding(.vertical, 16)
             .pepinilloGlass()
             .overlay(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous)
                     .stroke(isSelected ? modeColor : Color.clear, lineWidth: 2)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
             .accessibilityAddTraits(.isButton)
             .accessibilityAddTraits(isSelected ? [.isSelected] : [])
             .accessibilityLabel("\(mode.displayName), \(modeTagline)")

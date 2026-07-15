@@ -15,26 +15,33 @@
 import SwiftUI
 
 struct PepinilloGlassModifier: ViewModifier {
-    var cornerRadius: CGFloat = 24
+    var cornerRadius: CGFloat = GlassCornerRadius.card
     var tint: Color? = nil
     var tintOpacity: Double = 0.08
-    
+
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.colorScheme) private var colorScheme
+
+    private var continuousShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    }
 
     func body(content: Content) -> some View {
         if reduceTransparency {
             #if os(watchOS)
             if let tint {
                 content
-                    .background(tint, in: RoundedRectangle(cornerRadius: cornerRadius))
+                    .background(tint, in: continuousShape)
             } else {
                 content
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
+                    .background(.regularMaterial, in: continuousShape)
             }
             #else
             content
-                .background(tint?.opacity(tintOpacity) ?? Color.pepinilloSecondarySystemGroupedBackground, in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(
+                    tint?.opacity(tintOpacity) ?? Color.pepinilloSecondarySystemGroupedBackground,
+                    in: continuousShape
+                )
             #endif
         } else if #available(iOS 26.0, macOS 26.0, watchOS 26.0, *) {
             content
@@ -44,27 +51,27 @@ struct PepinilloGlassModifier: ViewModifier {
                     in: .rect(cornerRadius: cornerRadius)
                 )
                 .overlay {
-                    specularHighlight(cornerRadius: cornerRadius)
+                    specularHighlight()
                 }
                 .overlay {
-                    glareSheen(cornerRadius: cornerRadius)
+                    glareSheen()
                 }
         } else {
             content
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: cornerRadius))
-                .background(tint?.opacity(tintOpacity) ?? .clear, in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(.ultraThinMaterial, in: continuousShape)
+                .background(tint?.opacity(tintOpacity) ?? .clear, in: continuousShape)
                 .overlay {
-                    specularHighlight(cornerRadius: cornerRadius)
+                    specularHighlight()
                 }
                 .overlay {
-                    glareSheen(cornerRadius: cornerRadius)
+                    glareSheen()
                 }
         }
     }
 
     @ViewBuilder
-    private func specularHighlight(cornerRadius: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
+    private func specularHighlight() -> some View {
+        continuousShape
             .stroke(
                 LinearGradient(
                     colors: [
@@ -84,8 +91,8 @@ struct PepinilloGlassModifier: ViewModifier {
     }
 
     @ViewBuilder
-    private func glareSheen(cornerRadius: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
+    private func glareSheen() -> some View {
+        continuousShape
             .fill(
                 LinearGradient(
                     colors: [
@@ -104,7 +111,7 @@ struct PepinilloGlassModifier: ViewModifier {
 
 extension View {
     func pepinilloGlass(
-        cornerRadius: CGFloat = 24,
+        cornerRadius: CGFloat = GlassCornerRadius.card,
         tint: Color? = nil,
         tintOpacity: Double = 0.08
     ) -> some View {
@@ -226,18 +233,29 @@ extension View {
     func pepinilloSheetStyle() -> some View {
         self
             .presentationBackground(.regularMaterial)
-            .presentationCornerRadius(28)
+            .presentationCornerRadius(GlassCornerRadius.hero)
             .presentationDragIndicator(.visible)
     }
 }
 
 // MARK: - Button Style
+// Canonical press feedback. Prefer `.buttonStyle(.pressable)` or
+// `.buttonStyle(PepinilloButtonStyle())` — both resolve to the same feel.
 
 struct PepinilloButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .opacity(configuration.isPressed ? 0.9 : 1.0)
-            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: configuration.isPressed)
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .opacity(configuration.isPressed ? 0.85 : 1.0)
+            .animation(
+                reduceMotion ? nil : MotionTokens.pressScale,
+                value: configuration.isPressed
+            )
     }
+}
+
+extension ButtonStyle where Self == PepinilloButtonStyle {
+    static var pepinillo: PepinilloButtonStyle { PepinilloButtonStyle() }
 }

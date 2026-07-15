@@ -204,7 +204,7 @@ struct AIReportView: View {
                     .padding(12)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(color.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
             }
         }
         .padding(16)

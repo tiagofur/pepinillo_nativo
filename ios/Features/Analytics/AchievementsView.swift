@@ -77,7 +77,7 @@ private struct AchievementCard: View {
                 ? Color.accentColor.opacity(0.12)
                 : Color.pepinilloTertiarySystemBackground
         )
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             userAchievement.isUnlocked

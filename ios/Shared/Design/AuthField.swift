@@ -49,14 +49,14 @@ struct AuthField: View {
         .frame(minHeight: 56)
         .background(
             ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous)
                     .fill(.ultraThinMaterial)
 
                 if isFocused {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous)
                         .stroke(.primary.opacity(0.12), lineWidth: 1)
                 } else {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous)
                         .stroke(.secondary.opacity(0.1), lineWidth: 1)
                 }
             }

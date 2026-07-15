@@ -474,13 +474,13 @@ struct ThemePreviewCell: View {
             .padding(.vertical, 10)
             .background(isSelected ? AnyShapeStyle(.tint.opacity(0.12)) : AnyShapeStyle(Color.clear))
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                     .stroke(
                         isSelected ? Color.accentColor : Color.secondary.opacity(0.25),
                         lineWidth: isSelected ? 1.5 : 1
                     )
             )
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(theme.displayName) theme\(isSelected ? ", selected" : "")")

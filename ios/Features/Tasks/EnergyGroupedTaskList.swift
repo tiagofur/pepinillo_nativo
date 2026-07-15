@@ -68,10 +68,10 @@ struct EnergySuggestionBanner: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                 .fill(suggestedLevel.color.opacity(0.08))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                         .stroke(suggestedLevel.color.opacity(0.22), lineWidth: 1)
                 )
         )
@@ -108,7 +108,7 @@ struct EnergySectionHeader: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 6)
-        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
         .padding(.horizontal, 12)
         .padding(.top, 4)
         // Remove default list section header insets

@@ -654,7 +654,7 @@ struct FocusWidgetLarge: View {
                     }
                 }
                 .padding(12)
-                .pepinilloGlass(cornerRadius: 14)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
             }
         }
         .padding(0)
@@ -706,7 +706,7 @@ struct FocusWidgetLarge: View {
                     }
                 }
                 .padding(14)
-                .pepinilloGlass(cornerRadius: 20)
+                .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
 
             Spacer(minLength: 0)

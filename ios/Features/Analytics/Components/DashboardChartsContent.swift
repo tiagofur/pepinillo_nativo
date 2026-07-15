@@ -81,7 +81,7 @@ struct DashboardChartsContent: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6))
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
                         }
                 }
             }

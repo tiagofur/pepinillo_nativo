@@ -258,7 +258,7 @@ struct AIReportContentView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous))
         .padding(.horizontal, 16)
     }
 
@@ -306,7 +306,7 @@ struct AIReportContentView: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(color.opacity(0.06))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
             }
         }
         .padding(16)

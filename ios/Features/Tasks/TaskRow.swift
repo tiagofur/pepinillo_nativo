@@ -45,9 +45,9 @@ struct TaskRow: View, Equatable {
                 .padding(.vertical, 12)
             }
             .background(cardBackgroundTint)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                     .stroke(cardBorderColor, lineWidth: 1)
             )
             .shadow(

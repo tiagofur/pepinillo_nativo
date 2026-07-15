@@ -69,11 +69,11 @@ struct SessionJournalView: View {
             }
             .padding(8)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                     .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                     .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
             )
         }

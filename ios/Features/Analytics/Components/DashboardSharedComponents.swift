@@ -169,7 +169,7 @@ struct AnalyticsPlaceholder: View {
             }
 
             // Chart placeholder
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous)
                 .fill(.regularMaterial)
                 .frame(height: 200)
 

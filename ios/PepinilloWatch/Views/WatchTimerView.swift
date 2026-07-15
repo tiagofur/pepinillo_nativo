@@ -396,10 +396,10 @@ private struct WatchModeChip: View {
                     ? AnyShapeStyle(modeColor.opacity(isLocked ? 0.12 : 0.25))
                     : AnyShapeStyle(.ultraThinMaterial)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
             .overlay(
                 isSelected
-                    ? RoundedRectangle(cornerRadius: 8)
+                    ? RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous)
                         .stroke(modeColor.opacity(isLocked ? 0.2 : 0.5), lineWidth: 1)
                     : nil
             )

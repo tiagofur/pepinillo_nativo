@@ -526,7 +526,7 @@ struct TaskDetailView: View {
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: 56)
                 .background(store.isCompleted ? Color.pepinilloSystemFill : Color.accentColor)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous))
                 .shadow(color: (store.isCompleted ? Color.clear : Color.accentColor.opacity(0.3)), radius: 8, y: 4)
         }
         .disabled(store.isCompleted)

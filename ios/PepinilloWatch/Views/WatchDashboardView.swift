@@ -166,7 +166,7 @@ struct WatchDashboardView: View {
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 4)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
     }
 
     // MARK: - Best Session
@@ -186,7 +186,7 @@ struct WatchDashboardView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
     }
 
     // MARK: - Helpers
@@ -223,7 +223,7 @@ private struct DashboardStatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
     }
 }
 

@@ -1,22 +1,13 @@
 // PressableButtonStyle.swift
 // Pepinillo — Deep Work Companion for Apple
+//
+// Alias of PepinilloButtonStyle for call sites that use `.buttonStyle(.pressable)`.
+// Keep both names so Focus and other screens stay readable without dual press feels.
 
 import SwiftUI
 
-struct PressableButtonStyle: ButtonStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+typealias PressableButtonStyle = PepinilloButtonStyle
 
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
-            .opacity(configuration.isPressed ? 0.85 : 1.0)
-            .animation(
-                reduceMotion ? nil : .easeInOut(duration: 0.15),
-                value: configuration.isPressed
-            )
-    }
-}
-
-extension ButtonStyle where Self == PressableButtonStyle {
-    static var pressable: PressableButtonStyle { PressableButtonStyle() }
+extension ButtonStyle where Self == PepinilloButtonStyle {
+    static var pressable: PepinilloButtonStyle { PepinilloButtonStyle() }
 }

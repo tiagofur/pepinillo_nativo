@@ -201,7 +201,7 @@ struct PaywallTierCard: View {
                     .font(.title3.weight(.semibold))
                     .frame(width: 38, height: 38)
                     .foregroundStyle(tint)
-                    .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile))
+                    .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -228,7 +228,7 @@ struct PaywallTierCard: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
         .overlay {
-            RoundedRectangle(cornerRadius: GlassCornerRadius.hero)
+            RoundedRectangle(cornerRadius: GlassCornerRadius.hero, style: .continuous)
                 .stroke(.primary.opacity(0.06), lineWidth: 1)
         }
     }
@@ -303,7 +303,7 @@ struct PaywallProductCard: View {
                         .font(.title3.weight(.semibold))
                         .frame(width: 34, height: 34)
                         .foregroundStyle(product.planTint)
-                        .background(product.planTint.opacity(0.14), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile))
+                        .background(product.planTint.opacity(0.14), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
                         .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -357,7 +357,7 @@ struct PaywallProductCard: View {
             .background(
                 ZStack {
                     if isSelected {
-                        RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                        RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous)
                             .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.12 : 0.06))
                             .matchedGeometryEffect(id: "selection-glow", in: glassNamespace)
                     }
@@ -365,10 +365,10 @@ struct PaywallProductCard: View {
             )
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             .overlay {
-                RoundedRectangle(cornerRadius: GlassCornerRadius.card)
+                RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous)
                     .stroke(isSelected ? Color.accentColor.opacity(0.72) : .primary.opacity(0.06), lineWidth: isSelected ? 1.5 : 1)
             }
-            .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card))
+            .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
             .scaleEffect(isSelected ? 1.01 : 1.0)
             .animation(.smooth(duration: 0.22), value: isSelected)
         }

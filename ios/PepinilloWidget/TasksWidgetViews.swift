@@ -321,7 +321,7 @@ private struct LinkedTaskChip: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
-        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 8))
+        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
     }
 }
 

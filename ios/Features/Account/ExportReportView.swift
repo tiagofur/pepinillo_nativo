@@ -178,7 +178,7 @@ struct ExportReportView: View {
                 }
                 .padding(12)
                 .background(Color(.systemGray6))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
             }
         }
     }
@@ -311,9 +311,9 @@ struct ExportReportView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(12)
         .background(color.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                 .stroke(color.opacity(0.2), lineWidth: 1)
         )
     }
@@ -343,7 +343,7 @@ struct ExportReportView: View {
                 ? Color(.systemGray5)
                 : (isEven ? Color(.systemGray6) : Color.white)
         )
-        .clipShape(RoundedRectangle(cornerRadius: isHeader ? 6 : 0))
+        .clipShape(RoundedRectangle(cornerRadius: isHeader ? GlassCornerRadius.micro : 0, style: .continuous))
     }
 
     private func formatDuration(_ seconds: TimeInterval) -> String {

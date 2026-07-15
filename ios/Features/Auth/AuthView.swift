@@ -113,7 +113,7 @@ struct AuthView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(32)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous))
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(String(localized: "a11y.auth.syncing.label", defaultValue: "Syncing your account"))
                     .accessibilityAddTraits(.updatesFrequently)

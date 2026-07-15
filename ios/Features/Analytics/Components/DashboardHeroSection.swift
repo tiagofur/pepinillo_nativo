@@ -166,7 +166,7 @@ struct DashboardHeroSection: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(label), \(value)")
     }

@@ -92,12 +92,12 @@ private struct BreakActivityButton: View {
     }
 
     private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 16)
+        RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous)
             .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.pepinilloSecondarySystemBackground)
     }
 
     private var cardBorder: some View {
-        RoundedRectangle(cornerRadius: 16)
+        RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous)
             .strokeBorder(isSelected ? Color.accentColor : .clear, lineWidth: 2)
     }
 }

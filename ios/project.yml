@@ -275,6 +275,8 @@ targets:
       - path: Shared/Design/ModeColors.swift
       - path: Shared/Design/PhaseColors.swift
       - path: Shared/Design/SystemColors.swift
+      - path: Shared/Design/GlassTokens.swift
+      - path: Shared/Design/MotionTokens.swift
       - path: Shared/Design/GlassModifiers.swift
       - path: Shared/Design/WidgetGlassBackground.swift
     resources:
@@ -327,6 +329,8 @@ targets:
       - path: Shared/Design/ModeColors.swift
       - path: Shared/Design/PhaseColors.swift
       - path: Shared/Design/SystemColors.swift
+      - path: Shared/Design/GlassTokens.swift
+      - path: Shared/Design/MotionTokens.swift
       - path: Shared/Design/GlassModifiers.swift
       - path: Shared/Design/WidgetGlassBackground.swift
     resources:

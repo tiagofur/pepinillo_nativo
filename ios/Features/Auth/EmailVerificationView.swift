@@ -38,7 +38,7 @@ struct EmailVerificationView: View {
                     .font(.title.monospacedDigit())
                     .multilineTextAlignment(.center)
                     .padding()
-                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 12))
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
                     .accessibilityLabel(String(localized: "a11y.emailverification.code.label", defaultValue: "Verification code"))
                     .accessibilityHint(String(localized: "a11y.emailverification.code.hint", defaultValue: "Enter the 6-digit code from your email"))
 
@@ -75,7 +75,7 @@ struct EmailVerificationView: View {
                 .padding()
                 .background(Color.accentColor)
                 .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
             }
             .disabled(store.isLoading || store.code.count != 6)
             .padding(.horizontal)

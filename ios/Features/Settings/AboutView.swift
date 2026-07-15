@@ -24,7 +24,7 @@ struct AboutView: View {
                         platformImage(icon)
                             .resizable()
                             .frame(width: 80, height: 80)
-                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                            .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
                             .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                     } else {
                         Image(systemName: "leaf.fill")

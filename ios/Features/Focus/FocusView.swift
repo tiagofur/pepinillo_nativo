@@ -814,14 +814,14 @@ private extension View {
         glassNamespace: Namespace.ID?,
         matchNamespace: Namespace.ID
     ) -> some View {
-        let cornerRadius = GlassCornerRadius.card
+        let shape = RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous)
         if #available(iOS 26.0, macOS 26.0, *), let ns = glassNamespace {
             self
                 .glassEffect(
                     .regular
                         .interactive(true)
                         .tint(isSelected ? accent.opacity(0.35) : .clear),
-                    in: .rect(cornerRadius: cornerRadius)
+                    in: .rect(cornerRadius: GlassCornerRadius.card)
                 )
                 .glassEffectID("mode-pill-\(mode.id)", in: ns)
         } else {
@@ -830,21 +830,21 @@ private extension View {
                 self
                     .background(
                         ZStack {
-                            RoundedRectangle(cornerRadius: cornerRadius)
+                            shape
                                 .fill(accent.opacity(0.15))
                                 .matchedGeometryEffect(id: "mode_pill_bg", in: matchNamespace)
-                            RoundedRectangle(cornerRadius: cornerRadius)
+                            shape
                                 .fill(.ultraThinMaterial)
                         }
                     )
                     .overlay {
-                        RoundedRectangle(cornerRadius: cornerRadius)
+                        shape
                             .stroke(accent.opacity(0.35), lineWidth: 1)
                     }
             } else {
                 self.background(
                     .ultraThinMaterial,
-                    in: RoundedRectangle(cornerRadius: cornerRadius)
+                    in: shape
                 )
             }
         }

@@ -154,7 +154,7 @@ private struct WatchTaskRow: View {
                     ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))
                     : AnyShapeStyle(Color.clear)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
         }
         .buttonStyle(.plain)
         .onLongPressGesture {
