@@ -54,8 +54,10 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
                 return
             }
             // Decode off the main actor, then hop back to set @State.
+            // Use a free decoder (not Self) so Task.detached does not capture
+            // the generic Placeholder.Type (non-Sendable).
             let decoded: PlatformImage? = await Task.detached(priority: .userInitiated) {
-                Self.decodeInlineImage(reference: ref)
+                ProfileAvatarImageDecoder.decodeInlineImage(reference: ref)
             }.value
             loadedImage = decoded
         }
@@ -92,14 +94,24 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
         }
         return url
     }
+}
 
-    // MARK: - Off-main decoding
+// MARK: - Off-main decoding (non-generic, Sendable-safe)
 
+#if canImport(UIKit)
+private typealias PlatformImage = UIImage
+#elseif canImport(AppKit)
+private typealias PlatformImage = NSImage
+#else
+private struct PlatformImage {}
+#endif
+
+/// Free helper so decoding never captures `ProfileAvatarImageView<Placeholder>.Type`.
+private enum ProfileAvatarImageDecoder {
     /// Decodes a local-file or data-URL avatar off the main thread.
     /// Uses ImageIO for file-based images so large avatars are downsampled
     /// instead of decoded at full resolution.
-    /// `nonisolated` so it can run from a detached Task (off the main actor).
-    private nonisolated static func decodeInlineImage(reference: String) -> PlatformImage? {
+    nonisolated static func decodeInlineImage(reference: String) -> PlatformImage? {
 #if canImport(UIKit) || canImport(AppKit)
         if reference.hasPrefix("data:image"),
            let commaIndex = reference.firstIndex(of: ",") {
@@ -109,12 +121,9 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
         }
 
         guard let url = URL(string: reference), url.isFileURL else { return nil }
-        // Downsample to a reasonable avatar size to avoid decoding a huge source
-        // image at full resolution (ImageIO path).
         if let downsampled = downsampledImage(at: url, maxPixel: 256) {
             return downsampled
         }
-        // Fallback: direct file read (still off the main thread here).
         return PlatformImage(contentsOfFile: url.path)
 #else
         return nil
@@ -122,9 +131,7 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
     }
 
 #if canImport(UIKit) || canImport(AppKit)
-    /// ImageIO-based downsample for file-based avatars. Returns nil on failure
-    /// so callers can fall back to the synchronous read.
-    private nonisolated static func downsampledImage(at url: URL, maxPixel: CGFloat) -> PlatformImage? {
+    nonisolated static func downsampledImage(at url: URL, maxPixel: CGFloat) -> PlatformImage? {
 #if canImport(UIKit)
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let options: [CFString: Any] = [
@@ -155,11 +162,3 @@ struct ProfileAvatarImageView<Placeholder: View>: View {
     }
 #endif
 }
-
-#if canImport(UIKit)
-private typealias PlatformImage = UIImage
-#elseif canImport(AppKit)
-private typealias PlatformImage = NSImage
-#else
-private struct PlatformImage {}
-#endif
