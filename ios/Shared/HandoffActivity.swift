@@ -59,4 +59,16 @@ enum HandoffActivity {
         activity.isEligibleForSearch = false
         return activity
     }
+
+    /// Create an NSUserActivity for opening a task from Spotlight or Handoff.
+    static func makeTaskActivity(taskID: UUID, title: String) -> NSUserActivity {
+        let activity = NSUserActivity(activityType: viewTask)
+        activity.title = title
+        activity.isEligibleForHandoff = true
+        activity.isEligibleForSearch = true
+        activity.needsSave = true
+        activity.userInfo = [Key.taskID: taskID.uuidString]
+        activity.webpageURL = URL(string: "pepinillo://task/\(taskID.uuidString)")
+        return activity
+    }
 }

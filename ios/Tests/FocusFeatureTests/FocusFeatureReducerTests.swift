@@ -865,4 +865,97 @@ struct FocusFeatureReducerTests {
             $0.remainingSeconds = 28800
         }
     }
+
+    // MARK: - Health logging (#227)
+
+    @Test func pomodoroPhaseCompletedLogsMindfulMinutesNotFullSession() async {
+        let loggedIntervals = LockIsolated<[(Date, Date)]>([])
+        let sessionLogged = LockIsolated(false)
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.phase = .work(number: 1, total: 4)
+        state.elapsedSeconds = 25 * 60
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { _ in }
+            $0.persistenceClient.fetchPreferences = {
+                var prefs = UserPreferencesDTO()
+                prefs.healthLoggingEnabled = true
+                return prefs
+            }
+            $0.healthClient.isAuthorized = { true }
+            $0.healthClient.logMindfulMinutes = { start, end in
+                loggedIntervals.withValue { $0.append((start, end)) }
+            }
+            $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.phaseCompleted(.work(number: 1, total: 4)))
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(loggedIntervals.value.count == 1)
+
+        await store.send(.sessionCompleted(
+            makeSessionResult(mode: .pomodoro, phase: .longBreak, wasCompleted: true, actualDuration: 2 * 60 * 60)
+        ))
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(loggedIntervals.value.count == 1)
+        sessionLogged.setValue(true)
+        #expect(sessionLogged.value == true)
+    }
+
+    @Test func completedFlowtimeLogsActualFocusedDuration() async throws {
+        let loggedIntervals = LockIsolated<[(Date, Date)]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { _ in }
+            $0.persistenceClient.fetchPreferences = {
+                var prefs = UserPreferencesDTO()
+                prefs.healthLoggingEnabled = true
+                return prefs
+            }
+            $0.healthClient.isAuthorized = { true }
+            $0.healthClient.logMindfulMinutes = { start, end in
+                loggedIntervals.withValue { $0.append((start, end)) }
+            }
+            $0.notificationClient.scheduleSessionComplete = { _, _ in }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+        }
+        store.exhaustivity = .off
+
+        let endedAt = Date.now
+        let actualDuration: TimeInterval = 45 * 60
+        let result = FocusSessionResult(
+            id: UUID(),
+            mode: .flowtime,
+            phase: .flow,
+            startedAt: endedAt.addingTimeInterval(-actualDuration),
+            endedAt: endedAt,
+            targetDuration: nil,
+            actualDuration: actualDuration,
+            wasCompleted: true,
+            interruptions: 0,
+            pomodoroNumber: nil,
+            linkedTaskID: nil,
+            pauseCount: 0,
+            totalPauseDuration: 0
+        )
+
+        await store.send(.sessionCompleted(result))
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(loggedIntervals.value.count == 1)
+        let interval = try #require(loggedIntervals.value.first)
+        #expect(abs(interval.1.timeIntervalSince(interval.0) - actualDuration) < 1)
+    }
 }

@@ -101,7 +101,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pepinillo reads your Mindful Minutes from Apple Health to show your focus history and keep your analytics accurate across devices."
+            "value": "Pepinillo may access Apple Health only to save your completed focus time as Mindful Minutes. Pepinillo does not read your health data."
           }
         },
         "es": {
