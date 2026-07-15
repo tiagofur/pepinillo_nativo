@@ -5,6 +5,7 @@ import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.catch
@@ -38,6 +39,7 @@ data class TaskAnalytics(
 private const val TAG = "SessionRepository"
 
 @Singleton
+@OptIn(ExperimentalCoroutinesApi::class)
 class SessionRepository @Inject constructor(
     private val sessionDao: FocusSessionDao,
     private val dailyStatsDao: DailyStatsDao,

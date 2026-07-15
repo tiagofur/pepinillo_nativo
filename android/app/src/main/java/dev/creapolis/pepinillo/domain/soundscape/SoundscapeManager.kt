@@ -23,8 +23,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class SoundscapeManager @Inject constructor(
-    @ApplicationContext private val context: Context,
-    @ApplicationScope private val scope: CoroutineScope,
+    @param:ApplicationContext private val context: Context,
+    @param:ApplicationScope private val scope: CoroutineScope,
 ) {
     private var mediaPlayer: MediaPlayer? = null
     private var fadeJob: Job? = null

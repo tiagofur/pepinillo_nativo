@@ -27,14 +27,14 @@ import dev.creapolis.pepinillo.domain.timer.progress
 import dev.creapolis.pepinillo.feature.tasks.model.Task
 import dev.creapolis.pepinillo.service.FocusTimerService
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.sample
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -42,6 +42,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.time.Duration.Companion.seconds
 
 data class FocusUiState(
     val selectedMode: FocusMode = FocusMode.Pomodoro,
@@ -74,8 +75,9 @@ data class FocusUiState(
 )
 
 @HiltViewModel
+@OptIn(FlowPreview::class)
 class FocusViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val focusEngine: FocusEngine,
     private val sessionRepository: SessionRepository,
     private val taskRepository: TaskRepository,

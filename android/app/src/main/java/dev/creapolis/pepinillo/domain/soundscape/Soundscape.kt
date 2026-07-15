@@ -5,9 +5,9 @@ import androidx.annotation.StringRes
 import dev.creapolis.pepinillo.R
 
 enum class Soundscape(
-    @StringRes val displayNameRes: Int,
+    @param:StringRes val displayNameRes: Int,
     val emoji: String,
-    @RawRes val rawResId: Int,
+    @param:RawRes val rawResId: Int,
     val requiresPro: Boolean,
 ) {
     RAIN(R.string.soundscape_rain, "\uD83C\uDF27\uFE0F", R.raw.rain, false),

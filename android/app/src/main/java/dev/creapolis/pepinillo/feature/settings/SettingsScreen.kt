@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AvTimer
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -43,7 +44,6 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Vibration
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.SyncDisabled
 import androidx.compose.material.icons.rounded.CloudOff
@@ -392,7 +392,7 @@ fun SettingsScreen(
             SwitchRow(
                 label = stringResource(R.string.sound),
                 subtitle = stringResource(R.string.settings_sound_sub),
-                icon = Icons.Rounded.VolumeUp,
+                icon = Icons.AutoMirrored.Rounded.VolumeUp,
                 isChecked = uiState.soundEnabled,
                 onToggle = viewModel::toggleSound,
             )

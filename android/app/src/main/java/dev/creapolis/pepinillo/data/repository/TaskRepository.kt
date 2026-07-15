@@ -52,8 +52,8 @@ class TaskRepository @Inject constructor(
     private val workManager: WorkManager,
     private val sessionRepository: SessionRepository,
     private val featureGate: FeatureGate,
-    @ApplicationContext private val appContext: Context,
-    @ApplicationScope private val appScope: CoroutineScope,
+    @param:ApplicationContext private val appContext: Context,
+    @param:ApplicationScope private val appScope: CoroutineScope,
 ) {
     /** Coalesces rapid refreshWearData calls (e.g. one per keystroke) into a single execution. */
     private val refreshTrigger = kotlinx.coroutines.channels.Channel<Unit>(
@@ -355,11 +355,11 @@ private fun Task.toEntity() = TaskEntity(
  * [toEntity] would otherwise wipe server linkage after a local edit.
  */
 private fun Task.mergeInto(existing: TaskEntity, updatedAt: Long = System.currentTimeMillis()): TaskEntity {
-    val recurrenceAdded = recurrenceRule != null && existing.recurrenceRule == null
     val recurrenceCleared = recurrenceRule == null && existing.recurrenceRule != null
     val nextOccurrence = when {
         recurrenceCleared -> null
-        recurrenceAdded && recurrenceRule != null ->
+        // New recurrence rule on an entity that had none — schedule first occurrence.
+        recurrenceRule != null && existing.recurrenceRule == null ->
             RecurrenceCalculator.nextOccurrenceMillis(
                 recurrenceRule,
                 dueDate ?: RecurrenceCalculator.startOfLocalDay().timeInMillis,

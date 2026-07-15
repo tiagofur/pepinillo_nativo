@@ -67,7 +67,7 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val prefsRepo: UserPreferencesRepository,
     private val sessionRepository: SessionRepository,
     private val featureGate: FeatureGate,

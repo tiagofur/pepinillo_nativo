@@ -75,7 +75,7 @@ fun classifyAndThrowHttpError(code: Int, message: String): Nothing {
 
 @Singleton
 class SyncEngine @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val taskDao: TaskDao,
     private val subtaskDao: SubtaskDao,
     private val sessionDao: FocusSessionDao,

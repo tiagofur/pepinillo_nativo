@@ -25,8 +25,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
-import androidx.compose.material.icons.rounded.ArrowForwardIos
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material.icons.rounded.Nightlight
@@ -113,7 +113,7 @@ fun CalendarScreen(
                 fontWeight = FontWeight.Bold,
             )
             IconButton(onClick = { viewModel.nextMonth() }) {
-                Icon(Icons.Rounded.ArrowForwardIos, contentDescription = stringResource(R.string.calendar_next_month), modifier = Modifier.size(18.dp))
+                Icon(Icons.AutoMirrored.Rounded.ArrowForwardIos, contentDescription = stringResource(R.string.calendar_next_month), modifier = Modifier.size(18.dp))
             }
         }
 

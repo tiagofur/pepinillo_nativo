@@ -30,7 +30,7 @@ class SyncWebSocketClient @Inject constructor(
     private val authStore: AuthStore,
     private val syncEngine: SyncEngine,
     private val settingsSyncEngine: SettingsSyncEngine,
-    @ApplicationScope private val scope: CoroutineScope,
+    @param:ApplicationScope private val scope: CoroutineScope,
 ) {
     private var webSocket: WebSocket? = null
 
@@ -157,7 +157,7 @@ class SyncWebSocketClient @Inject constructor(
 
     private fun handleMessage(text: String) {
         // Run JSON parsing + sync engine work off the main thread. The shared
-        // @ApplicationScope is confined to Dispatchers.Main (FocusEngine and
+        // @param:ApplicationScope is confined to Dispatchers.Main (FocusEngine and
         // SoundscapeManager rely on that single-thread guarantee), so we override
         // the dispatcher only for this push-driven path. SyncEngine/SettingsSyncEngine
         // serialize work through the shared SyncLock.

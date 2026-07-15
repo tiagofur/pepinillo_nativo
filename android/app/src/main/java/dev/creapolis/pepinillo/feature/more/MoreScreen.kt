@@ -17,13 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Login
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CloudSync
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material.icons.rounded.Security
@@ -103,7 +103,7 @@ fun MoreScreen(
                     ActionCard(
                         title = stringResource(R.string.auth_btn_signin),
                         subtitle = stringResource(R.string.more_signin_desc),
-                        icon = Icons.Rounded.Login,
+                        icon = Icons.AutoMirrored.Rounded.Login,
                         onClick = onSignInClick,
                     )
                     Spacer(modifier = Modifier.height(4.dp))

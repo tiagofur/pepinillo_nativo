@@ -32,7 +32,7 @@ private const val IMMEDIATE_SYNC_WORK = "pepinillo_immediate_sync"
 
 @Singleton
 class SyncStatusManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val taskDao: TaskDao,
     private val sessionDao: FocusSessionDao,
     private val preferenceSyncDao: PreferenceSyncDao,

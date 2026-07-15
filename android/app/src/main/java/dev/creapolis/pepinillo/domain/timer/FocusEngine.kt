@@ -31,7 +31,7 @@ class FocusEngine @Inject constructor(
     private val taskRepository: TaskRepository,
     private val prefsRepo: UserPreferencesRepository,
     private val feedbackManager: FeedbackManager,
-    @ApplicationScope private val scope: CoroutineScope,
+    @param:ApplicationScope private val scope: CoroutineScope,
 ) {
     private val _state = MutableStateFlow(FocusTimerState())
     val state: StateFlow<FocusTimerState> = _state.asStateFlow()

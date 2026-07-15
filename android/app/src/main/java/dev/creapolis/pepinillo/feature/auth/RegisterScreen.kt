@@ -15,7 +15,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Login
+import androidx.compose.material.icons.automirrored.rounded.Login
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -64,7 +64,9 @@ fun RegisterScreen(
     val context = LocalContext.current
     var name by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    // Password uses remember (not rememberSaveable) — never persist secrets to the
+    // Bundle / saved instance state (#339).
+    var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isAuthenticated, uiState.isGuestMode) {
@@ -135,7 +137,7 @@ fun RegisterScreen(
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { viewModel.register(name, email, password) }),
+            keyboardActions = KeyboardActions(onDone = { if (!uiState.isLoading) viewModel.register(name, email, password) }),
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(
@@ -219,7 +221,7 @@ fun RegisterScreen(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Rounded.Login,
+                    imageVector = Icons.AutoMirrored.Rounded.Login,
                     contentDescription = stringResource(R.string.auth_google_logo),
                     modifier = Modifier.size(20.dp),
                 )

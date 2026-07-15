@@ -64,7 +64,7 @@ sealed class RestoreFlowResult {
 
 @Singleton
 class SubscriptionManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
 
     private val _subscriptionState = MutableStateFlow(SubscriptionState())

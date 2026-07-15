@@ -157,7 +157,7 @@ class TasksViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val featureGate: FeatureGate,
     private val focusEngine: FocusEngine,
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val _selectedFilter = MutableStateFlow(TaskFilter.Today)

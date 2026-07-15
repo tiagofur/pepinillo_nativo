@@ -14,7 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Login
+import androidx.compose.material.icons.automirrored.rounded.Login
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -64,7 +64,9 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    // Password uses remember (not rememberSaveable) so it is NOT persisted to the
+    // Bundle / saved instance state where it can be read via dumpsys/instrumentation (#339).
+    var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.isAuthenticated, uiState.isGuestMode) {
@@ -150,7 +152,7 @@ fun LoginScreen(
                     singleLine = true,
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { viewModel.login(email, password) }),
+                    keyboardActions = KeyboardActions(onDone = { if (!uiState.isLoading) viewModel.login(email, password) }),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
@@ -177,7 +179,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.login(email, password) },
+            onClick = { if (!uiState.isLoading) viewModel.login(email, password) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
@@ -237,7 +239,7 @@ fun LoginScreen(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Rounded.Login,
+                    imageVector = Icons.AutoMirrored.Rounded.Login,
                     contentDescription = stringResource(R.string.auth_google_logo),
                     modifier = Modifier.size(20.dp),
                 )

@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class TemplateReportGenerator @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
 ) {
 
     fun generate(payload: ReportPayload): AIReportResponse {
