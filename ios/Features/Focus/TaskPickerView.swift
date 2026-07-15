@@ -2,7 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Bottom sheet for linking/unlinking tasks to the active focus session.
-// Shows incomplete tasks with energy emoji; tapping links the task.
+// Shows incomplete tasks with energy icons; tapping links the task.
 
 import SwiftUI
 import ComposableArchitecture
@@ -46,12 +46,14 @@ struct TaskPickerView: View {
                         ForEach(activeTasks) { task in
                             Button {
                                 HapticManager.selection()
-                                onSelectTask(task.id, task.title, task.energyLevel.emoji)
+                                onSelectTask(task.id, task.title, task.energyLevel.icon)
                                 dismiss()
                             } label: {
                                 HStack(spacing: 10) {
-                                    Text(task.energyLevel.emoji)
+                                    Image(systemName: task.energyLevel.icon)
                                         .font(.body)
+                                        .symbolRenderingMode(.hierarchical)
+                                        .foregroundStyle(task.energyLevel.color)
                                         .frame(width: 24)
                                     Text(task.title)
                                         .foregroundStyle(.primary)

@@ -112,9 +112,11 @@ struct FocusCompanionView: View {
 
     @ViewBuilder
     private var activeTaskIcon: some View {
-        if let emoji = store.linkedTaskEmoji {
-            Text(emoji)
+        if let icon = store.linkedTaskIcon {
+            Image(systemName: icon)
                 .font(.title2)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.tint)
         } else {
             Image(systemName: "plus.circle.fill")
                 .font(.title3)
@@ -129,8 +131,10 @@ struct FocusCompanionView: View {
             store.send(.soundscapePickerTapped)
         } label: {
             HStack(spacing: 12) {
-                Text(store.selectedSoundscape.emoji)
+                Image(systemName: store.selectedSoundscape.systemImage)
                     .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.tint)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Label(String(localized: "Sounds"), systemImage: "speaker.wave.2")
@@ -250,7 +254,7 @@ struct FocusCompanionView: View {
 
     private func nextTaskCard(_ task: TaskListFeature.TaskItemState) -> some View {
         Button {
-            store.send(.linkTask(task.id, task.title, task.energyLevel.emoji))
+            store.send(.linkTask(task.id, task.title, task.energyLevel.icon))
         } label: {
             VStack(alignment: .leading, spacing: 12) {
                 Label(String(localized: "Up Next"), systemImage: "arrow.right.circle")
@@ -258,8 +262,10 @@ struct FocusCompanionView: View {
                     .foregroundStyle(.secondary)
 
                 HStack(spacing: 10) {
-                    Text(task.energyLevel.emoji)
+                    Image(systemName: task.energyLevel.icon)
                         .font(.title2)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(task.energyLevel.color)
                     Text(task.title)
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.primary)

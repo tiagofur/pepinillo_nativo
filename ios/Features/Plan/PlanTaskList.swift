@@ -30,17 +30,7 @@ struct PlanTaskList: View {
     // MARK: - Body
 
     var body: some View {
-        ZStack {
-            taskListContent
-                .overlay(alignment: .bottom) {
-                    if let deletedTask = store.recentlyDeletedTask {
-                        undoBanner(taskTitle: deletedTask.title)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                            .padding(.bottom, 60)
-                    }
-                }
-                .animation(MotionTokens.snappy, value: store.recentlyDeletedTask != nil)
-        }
+        taskListContent
         .navigationTitle(showsTitle ? filter.title : "")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -75,13 +65,19 @@ struct PlanTaskList: View {
                         Label(String(localized: "Import from Reminders"), systemImage: "square.and.arrow.down")
                     }
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    Label(String(localized: "More options"), systemImage: "ellipsis")
                 }
-                .accessibilityLabel(String(localized: "More options"))
             }
         }
-        .safeAreaInset(edge: .bottom) {
-            addTaskBar
+        .safeAreaInset(edge: .bottom, spacing: 8) {
+            VStack(spacing: 8) {
+                if let deletedTask = store.recentlyDeletedTask {
+                    undoBanner(taskTitle: deletedTask.title)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                addTaskBar
+            }
+            .animation(MotionTokens.snappy, value: store.recentlyDeletedTask != nil)
         }
         .onAppear { store.send(.onAppear) }
         .alert(
@@ -144,17 +140,13 @@ struct PlanTaskList: View {
             ProgressView()
                 .frame(maxHeight: .infinity)
         } else if tasks.isEmpty {
-            ContentUnavailableView {
-                Label {
-                    Text(emptyTitle)
-                } icon: {
-                    Image(systemName: filter.systemImage)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(filter.color)
-                }
-            } description: {
-                Text(emptyDescription)
-            }
+            PepinilloEmptyState(
+                title: emptyTitle,
+                description: emptyDescription,
+                systemImage: filter.systemImage,
+                tint: filter.color
+            )
+            .padding(.horizontal, 16)
             .frame(maxHeight: .infinity)
         } else if store.isGroupedByEnergy {
             // Energy-grouped mode: sections by level, reorder disabled across sections
@@ -232,19 +224,27 @@ struct PlanTaskList: View {
 
     private var emptyTitle: String {
         switch filter {
-        case .today:     return String(localized: "Nothing for Today")
-        case .inbox:     return String(localized: "Inbox Clear")
-        case .upcoming:  return String(localized: "Nothing Upcoming")
-        case .completed: return String(localized: "No Completed Tasks")
+        case .today:     return String(localized: "plan.empty.today.title", defaultValue: "Nothing for Today")
+        case .inbox:     return String(localized: "plan.empty.inbox.title", defaultValue: "Inbox Clear")
+        case .upcoming:  return String(localized: "plan.empty.upcoming.title", defaultValue: "Nothing Upcoming")
+        case .completed: return String(localized: "plan.empty.completed.title", defaultValue: "No Completed Tasks")
         }
     }
 
     private var emptyDescription: String {
         switch filter {
-        case .today:     return String(localized: "Add tasks below to plan your day.")
-        case .inbox:     return String(localized: "All tasks are organized.")
-        case .upcoming:  return String(localized: "No tasks with future due dates.")
-        case .completed: return String(localized: "Complete a task to see it here.")
+        case .today:
+            return String(localized: "plan.empty.today.description",
+                          defaultValue: "Capture what matters — add a task below to plan your day.")
+        case .inbox:
+            return String(localized: "plan.empty.inbox.description",
+                          defaultValue: "All captured tasks are organized. Enjoy the calm.")
+        case .upcoming:
+            return String(localized: "plan.empty.upcoming.description",
+                          defaultValue: "No deadlines on the horizon. Focus on what matters today.")
+        case .completed:
+            return String(localized: "plan.empty.completed.description",
+                          defaultValue: "Complete a task and your wins will show up here.")
         }
     }
 
@@ -289,7 +289,6 @@ struct PlanTaskList: View {
                 .padding(.vertical, 12)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 .padding(.horizontal, 16)
-                .padding(.bottom, 8)
             } else {
                 // Collapsed: minimal plus + label row
                 Button {
@@ -311,7 +310,6 @@ struct PlanTaskList: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(String(localized: "Add a new task"))
-                .padding(.bottom, 4)
             }
         }
         .conditionalAnimation(MotionTokens.snappy, value: quickAddExpanded)
@@ -334,7 +332,7 @@ struct PlanTaskList: View {
             Image(systemName: "trash")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-            Text("\"\(taskTitle)\" deleted")
+            Text(String(format: String(localized: "\"%@\" deleted"), taskTitle))
                 .font(.subheadline)
                 .lineLimit(1)
             Spacer()

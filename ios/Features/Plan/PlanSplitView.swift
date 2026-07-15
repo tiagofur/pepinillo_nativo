@@ -164,11 +164,14 @@ struct PlanSplitView: View {
                         removal: .opacity
                     ))
             } else {
-                ContentUnavailableView(
-                    String(localized: "No Task Selected"),
+                PepinilloEmptyState(
+                    title: String(localized: "No Task Selected"),
+                    description: String(localized: "Pick a task from the list to view its details."),
                     systemImage: "checklist",
-                    description: Text(String(localized: "Pick a task from the list to view its details."))
+                    tint: .accentColor,
+                    cornerRadius: GlassCornerRadius.card
                 )
+                .padding(24)
                 .transition(.opacity)
             }
         }

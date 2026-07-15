@@ -179,20 +179,13 @@ struct ExportView: View {
     // MARK: - PRO Overlay
 
     private var proOverlay: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "crown.fill")
-                .font(.system(size: 40))
-                .foregroundStyle(.yellow)
-
-            Text(String(localized: "PDF Export is a Pro Feature"))
-                .font(.title3.bold())
-
-            Text(String(localized: "Upgrade to Pepinillo Pro for PDF reports. CSV export is always free."))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-        }
+        PepinilloEmptyState(
+            title: String(localized: "PDF Export is a Pro Feature"),
+            description: String(localized: "Upgrade to Pepinillo Pro for PDF reports. CSV export is always free."),
+            systemImage: "crown.fill",
+            tint: .yellow
+        )
+        .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.regularMaterial)
     }

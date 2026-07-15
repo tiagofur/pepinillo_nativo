@@ -97,8 +97,8 @@ struct FocusView: View {
             TaskPickerView(
                 linkedTaskID: store.linkedTaskID,
                 tasks: store.availableTasks,
-                onSelectTask: { id, title, emoji in
-                    store.send(.linkTask(id, title, emoji))
+                onSelectTask: { id, title, icon in
+                    store.send(.linkTask(id, title, icon))
                 },
                 onUnlink: {
                     store.send(.unlinkTaskTapped)
@@ -298,9 +298,11 @@ struct FocusView: View {
                         store.send(.taskPickerTapped)
                     } label: {
                         HStack(spacing: 8) {
-                            if let emoji = store.linkedTaskEmoji {
-                                Text(emoji)
-                                    .font(.title3)
+                            if let icon = store.linkedTaskIcon {
+                                Image(systemName: icon)
+                                    .font(.subheadline)
+                                    .symbolRenderingMode(.hierarchical)
+                                    .foregroundStyle(.tint)
                             } else {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.subheadline)
@@ -353,8 +355,10 @@ struct FocusView: View {
                         store.send(.soundscapePickerTapped)
                     } label: {
                         HStack(spacing: 8) {
-                            Text(store.selectedSoundscape.emoji)
+                            Image(systemName: store.selectedSoundscape.systemImage)
                                 .font(.title3)
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(.tint)
                             if store.selectedSoundscape != .none && store.isRunning {
                                 AudioBarsView()
                                     .frame(width: 16, height: 12)
@@ -691,7 +695,7 @@ struct AudioBarsView: View {
 // MARK: - Mode Picker (P2 item 3)
 // Compact glass pills sitting directly on the background — no outer card container.
 // Selected pill gets the mode accent tint; unselected pills are plain glass.
-// Icons: all emoji for a warm, coherent personality (🍅🌊📦⏱️).
+// Icons: SF Symbols (hierarchical) for a crisp, accessible focus chrome.
 
 struct ModePickerView: View {
     let selectedMode: FocusMode
@@ -700,22 +704,26 @@ struct ModePickerView: View {
     var glassNamespace: Namespace.ID? = nil
     @Environment(\.appTheme) private var theme
     @Namespace private var namespace
+    @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 18
+    @ScaledMetric(relativeTo: .caption2) private var labelSize: CGFloat = 10
 
     var body: some View {
         HStack(spacing: 6) {
             ForEach(FocusMode.allCases) { mode in
                 let isSelected = selectedMode == mode
                 let modeAccent = theme.color(for: mode)
+                let isLocked = !mode.isFreeTier && !isProUser
 
                 Button {
                     onSelect(mode)
                     HapticManager.selection()
                 } label: {
                     VStack(spacing: 3) {
-                        Text(mode.icon)
-                            .font(.system(size: 18))
+                        Image(systemName: mode.systemImage)
+                            .font(.system(size: iconSize))
+                            .symbolRenderingMode(.hierarchical)
                         Text(mode.displayName)
-                            .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                            .font(.system(size: labelSize, weight: isSelected ? .semibold : .regular))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
@@ -731,20 +739,38 @@ struct ModePickerView: View {
                         matchNamespace: namespace
                     )
                     .overlay(alignment: .topTrailing) {
-                        if !mode.isFreeTier && !isProUser {
+                        if isLocked {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 8, weight: .bold))
                                 .foregroundStyle(.secondary)
                                 .offset(x: 2, y: -2)
+                                .accessibilityHidden(true)
                         }
                     }
                 }
                 .buttonStyle(.pressable)
-                .accessibilityLabel(mode.displayName)
+                .accessibilityLabel(modePickerLabel(for: mode, isLocked: isLocked))
+                .accessibilityHint(modePickerHint(for: mode, isLocked: isLocked))
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
         .padding(.horizontal, 16)
+    }
+
+    private func modePickerLabel(for mode: FocusMode, isLocked: Bool) -> String {
+        var parts = [mode.displayName]
+        if isLocked { parts.append(String(localized: "requires Pro")) }
+        return parts.joined(separator: ", ")
+    }
+
+    private func modePickerHint(for mode: FocusMode, isLocked: Bool) -> String {
+        if isLocked {
+            return String(localized: "Requires Pepinillo Pro subscription. Double tap to view upgrade options.")
+        }
+        return String(
+            format: String(localized: "Double tap to select %@ focus mode"),
+            mode.displayName
+        )
     }
 }
 
@@ -1004,9 +1030,11 @@ private struct TimerCenterContent: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            // Mode icon — smaller above digits, no overlap
-            Text(store.modeIcon)
-                .font(.system(size: 28, design: .default))
+            // Mode icon — hierarchical SF Symbol above digits
+            Image(systemName: store.modeIcon)
+                .font(.system(size: 28))
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
                 .scaleEffect(breatheScale)
                 .conditionalAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: breatheScale)
                 .onChange(of: store.isRunning) { _, running in
@@ -1017,6 +1045,7 @@ private struct TimerCenterContent: View {
                     insertion: .scale(scale: 0.7).combined(with: .opacity),
                     removal: .scale(scale: 1.3).combined(with: .opacity)
                 ))
+                .accessibilityHidden(true)
 
             // Time display — dominant focal point
             Text(store.displayTime)

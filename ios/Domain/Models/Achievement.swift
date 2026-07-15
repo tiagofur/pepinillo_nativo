@@ -47,6 +47,17 @@ enum Achievement: String, CaseIterable, Equatable, Sendable {
         }
     }
 
+    var systemImage: String {
+        switch self {
+        case .firstSession:   return "target"
+        case .weekStreak:     return "flame.fill"
+        case .pomodoroMaster: return "timer"
+        case .deepDiver:      return "figure.water.fitness"
+        case .centuryClub:    return "100.circle.fill"
+        case .earlyBird:      return "bird.fill"
+        }
+    }
+
     var requiredCount: Int {
         switch self {
         case .firstSession:   return 1

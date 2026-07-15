@@ -33,10 +33,21 @@ struct ModeIntelligenceBanner: View {
             Button {
                 onAccept()
             } label: {
-                Text(suggestion.suggestedMode.icon)
+                Image(systemName: suggestion.suggestedMode.systemImage)
                     .font(.title2)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.tint)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(
+                String(
+                    format: String(localized: "Accept %@ suggestion"),
+                    suggestion.suggestedMode.displayName
+                )
+            )
+            .accessibilityHint(
+                String(localized: "Double tap to switch to the suggested focus mode")
+            )
 
             Button {
                 onDismiss()
@@ -46,10 +57,23 @@ struct ModeIntelligenceBanner: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(String(localized: "Dismiss suggestion"))
+            .accessibilityHint(String(localized: "Double tap to dismiss the mode suggestion"))
         }
         .padding(12)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
         .transition(.move(edge: .top).combined(with: .opacity))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(
+            String(
+                format: String(localized: "Mode suggestion: Try %@. %@"),
+                suggestion.suggestedMode.displayName,
+                suggestion.reason
+            )
+        )
+        .accessibilityHint(
+            String(localized: "Accept to switch modes, or dismiss to keep your current selection")
+        )
     }
 }

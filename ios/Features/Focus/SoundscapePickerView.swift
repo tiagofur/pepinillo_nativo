@@ -146,8 +146,10 @@ private struct SoundscapeRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 12) {
-                Text(soundscape.emoji)
+                Image(systemName: soundscape.systemImage)
                     .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isLocked ? .secondary : .primary)
                     .frame(width: 32)
 
                 Text(soundscape.displayName)

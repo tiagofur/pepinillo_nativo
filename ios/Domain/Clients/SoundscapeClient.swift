@@ -51,6 +51,20 @@ enum Soundscape: String, CaseIterable, Equatable, Sendable, Identifiable {
         }
     }
 
+    var systemImage: String {
+        switch self {
+        case .none:       return "speaker.slash"
+        case .rain:       return "cloud.rain"
+        case .forest:     return "tree"
+        case .cafe:       return "cup.and.saucer.fill"
+        case .whiteNoise: return "waveform"
+        case .ocean:      return "water.waves"
+        case .fireplace:  return "flame"
+        case .binaural:   return "headphones"
+        case .lofi:       return "music.note"
+        }
+    }
+
     var requiresPro: Bool {
         switch self {
         case .binaural, .lofi, .ocean, .fireplace: return true
