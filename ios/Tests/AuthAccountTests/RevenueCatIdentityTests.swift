@@ -78,4 +78,27 @@ struct RevenueCatIdentityTests {
 
         #expect(loggedInID.value == "backend-user-42")
     }
+
+    @Test("cachedUserLoaded on cold start links RevenueCat to backend user id")
+    func cachedUserLoadedLinksRevenueCat() async {
+        let loggedInID = LockIsolated<String?>(nil)
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.subscriptionClient.logIn = { userID in
+                loggedInID.setValue(userID)
+            }
+        }
+        store.exhaustivity = .off
+
+        let user = verifiedUser()
+        await store.send(.cachedUserLoaded(user)) {
+            $0.cachedUser = user
+            $0.displayName = user.name
+            $0.userEmail = user.email
+        }
+
+        #expect(loggedInID.value == "backend-user-42")
+    }
 }

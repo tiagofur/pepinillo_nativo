@@ -636,9 +636,7 @@ struct AppFeature {
 
             case .appWentToBackground:
                 webSocketClient.disconnect()
-                return .run { _ in
-                    ExportService.cleanLegacyExportDirectories()
-                }
+                return .none
 
             case .subscriptionStateLoaded(let sub):
                 return applySubscriptionUpdate(sub, state: &state)
@@ -715,6 +713,8 @@ struct AppFeature {
                     if !user.emailVerified && state.appleUserID == nil && state.emailVerification == nil {
                         state.emailVerification = EmailVerificationFeature.State(email: user.email)
                     }
+                    // Re-link RevenueCat on cold-start session restore (#197).
+                    return linkSubscriptionIdentity(user.id)
                 }
                 return .none
 
