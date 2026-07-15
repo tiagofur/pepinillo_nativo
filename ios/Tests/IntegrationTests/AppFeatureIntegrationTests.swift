@@ -931,4 +931,31 @@ struct AppFeatureIntegrationTests {
         #expect(spy.cancelDailyReminderCalled == true)
         #expect(spy.cancelAllCalled == false)
     }
+
+    @Test("startBreak notification advances pending break phase (#175)")
+    func startBreakNotificationAdvancesPendingBreak() async {
+        let startNextPhaseCalled = LockIsolated(false)
+
+        var initialState = AppFeature.State()
+        initialState.focus.isRunning = true
+        initialState.focus.isWaitingForNextPhase = true
+        initialState.focus.pendingNextPhase = .shortBreak
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.focusClient.startNextPhase = {
+                startNextPhaseCalled.setValue(true)
+            }
+            $0.liveActivityClient.update = { _, _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.notificationActionReceived(.startBreak))
+
+        await store.receive(.focus(.startNextPhaseTapped))
+        await store.finish()
+
+        #expect(startNextPhaseCalled.value == true)
+    }
 }

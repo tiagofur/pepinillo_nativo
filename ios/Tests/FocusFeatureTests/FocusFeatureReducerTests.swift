@@ -604,11 +604,12 @@ struct FocusFeatureReducerTests {
         store.exhaustivity = .off
 
         await store.send(.phaseCompleted(.work(number: 2, total: 4)))
+        await store.finish()
 
         #expect(savedSessions.value.count == 1)
         let persisted = savedSessions.value[0]
         #expect(store.state.lastPersistedPomodoroSessionID == persisted.id)
-        #expect(store.state.lastPersistedPomodoroDuration == 25 * 60)
+        #expect(store.state.lastPersistedPomodoroDuration == 25 * 60.0)
         #expect(persisted.actualDuration == 25 * 60)
         #expect(persisted.phase == .work(number: 2, total: 4))
     }
@@ -716,6 +717,118 @@ struct FocusFeatureReducerTests {
         await store.send(.sessionCompleted(result))
 
         #expect(savedSessions.value.isEmpty)
+    }
+
+    // MARK: - S2 Focus Production Readiness (#175-177)
+
+    @Test func enteringBreakPhaseSchedulesBreakEndNotification() async {
+        let scheduledMinutes = LockIsolated<Int?>(nil)
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.phase = .work(number: 1, total: 4)
+        state.config.shortBreakDuration = 5 * 60
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.notificationClient.scheduleBreakEnd = { minutes in
+                scheduledMinutes.setValue(minutes)
+            }
+            $0.liveActivityClient.update = { _, _ in }
+        }
+
+        store.exhaustivity = .off
+
+        let breakState = FocusSessionState(
+            id: UUID(),
+            mode: .pomodoro,
+            phase: .shortBreak,
+            startedAt: .now,
+            elapsedSeconds: 0,
+            targetDuration: 5 * 60,
+            remainingSeconds: 5 * 60,
+            progress: 0
+        )
+
+        await store.send(.timerTicked(breakState)) {
+            $0.phase = .shortBreak
+            $0.displayTime = "5:00"
+        }
+
+        #expect(scheduledMinutes.value == 5)
+    }
+
+    @Test func waitingForNextPhaseSeedsDisplayFromPendingTarget() async {
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.phase = .work(number: 1, total: 4)
+        state.config.shortBreakDuration = 5 * 60
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.liveActivityClient.update = { _, _ in }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.waitingForNextPhase(.shortBreak)) {
+            $0.isWaitingForNextPhase = true
+            $0.pendingNextPhase = .shortBreak
+            $0.phaseLabel = FocusPhase.shortBreak.displayName
+            $0.displayTime = "5:00"
+            $0.remainingSeconds = 5 * 60
+            $0.progress = 0.0
+        }
+    }
+
+    @Test func configUpdatedWhileRunningPropagatesToEngine() async {
+        let updateConfigCalled = LockIsolated(false)
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.updateConfig = { _ in
+                updateConfigCalled.setValue(true)
+            }
+        }
+
+        store.exhaustivity = .off
+
+        var updated = FocusConfig.default
+        updated.pomodoroDuration = 30 * 60
+        await store.send(.configUpdated(updated)) {
+            $0.config = updated
+        }
+
+        #expect(updateConfigCalled.value == true)
+    }
+
+    @Test func phaseCompletedUsesSoundAndHapticPreferences() async {
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .pomodoro
+        state.config.soundEnabled = false
+        state.config.hapticEnabled = false
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
+            $0.persistenceClient.saveSession = { _ in }
+        }
+
+        store.exhaustivity = .off
+
+        // Should not crash when both sound and haptic are disabled.
+        await store.send(.phaseCompleted(.work(number: 1, total: 4)))
     }
 
     @Test func customDurationIsClamped() async {

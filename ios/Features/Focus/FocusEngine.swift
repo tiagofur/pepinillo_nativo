@@ -48,6 +48,9 @@ public actor FocusEngine {
     // Flowtime: emit breakSuggested once per flow phase when threshold is reached
     private var breakSuggestionEmitted = false
 
+    // Time Block: emit midpointReached once per block phase
+    private var midpointEmitted = false
+
     // Event broadcasting
     private var eventContinuation: AsyncStream<FocusEngineEvent>.Continuation?
     private(set) var events: AsyncStream<FocusEngineEvent>?
@@ -120,10 +123,21 @@ public actor FocusEngine {
         let effectiveStart = timerStart ?? now
         let effectiveElapsed = now.timeIntervalSince(effectiveStart)
         let effectiveRemaining: TimeInterval?
-        if let target = targetDuration {
+        if let end = timerEnd {
+            effectiveRemaining = max(0, end.timeIntervalSince(now))
+        } else if let target = targetDuration {
             effectiveRemaining = max(0, target - effectiveElapsed)
         } else {
             effectiveRemaining = nil
+        }
+
+        let progress: Double?
+        if let target = targetDuration, target > 0, let remaining = effectiveRemaining {
+            progress = min(max(1.0 - (remaining / target), 0), 1)
+        } else if let target = targetDuration, target > 0 {
+            progress = min(max(effectiveElapsed / target, 0), 1)
+        } else {
+            progress = nil
         }
 
         let sessionState = FocusSessionState(
@@ -134,7 +148,7 @@ public actor FocusEngine {
             elapsedSeconds: max(0, effectiveElapsed),
             targetDuration: targetDuration,
             remainingSeconds: effectiveRemaining,
-            progress: targetDuration != nil ? min(max(effectiveElapsed / targetDuration!, 0), 1) : nil,
+            progress: progress,
             linkedTaskID: linkedTaskID,
             pomodoroNumber: mode == .pomodoro ? seededPomodoroNumber : nil,
             totalPomodoros: mode == .pomodoro ? effectiveConfig.pomodorosPerCycle : nil
@@ -144,6 +158,7 @@ public actor FocusEngine {
         self.phaseStartDate = effectiveStart
         self.totalPausedDuration = 0
         self.breakSuggestionEmitted = false
+        self.midpointEmitted = false
 
         startTicking()
     }
@@ -298,6 +313,7 @@ public actor FocusEngine {
         current.progress = elapsed / updatedTarget
 
         state = current
+        emit(.tick(current))
     }
 
     /// Resets the Pomodoro cycle counter when the calendar day changes.
@@ -463,11 +479,12 @@ public actor FocusEngine {
             current.remainingSeconds = remaining
             current.progress = 1.0 - (remaining / target)
 
-            // Check for midpoint notification (Time Block)
+            // Check for midpoint notification (Time Block) — fire once when crossed.
             if current.mode == .timeBlock,
                config.blockMidpointCheckIn,
-               effectiveElapsed >= target / 2,
-               (effectiveElapsed - 0.1) < target / 2 {
+               !midpointEmitted,
+               effectiveElapsed >= target / 2 {
+                midpointEmitted = true
                 emit(.midpointReached)
             }
 
@@ -604,6 +621,10 @@ public actor FocusEngine {
             breakSuggestionEmitted = false
         }
 
+        if current.mode == .timeBlock, resolvedPhase == .block {
+            midpointEmitted = false
+        }
+
         startTicking()
         emit(.tick(current))
     }
@@ -645,5 +666,6 @@ public actor FocusEngine {
         phaseBeforePause = nil
         pendingNextPhase = nil
         breakSuggestionEmitted = false
+        midpointEmitted = false
     }
 }
