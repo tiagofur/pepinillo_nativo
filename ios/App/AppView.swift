@@ -116,12 +116,15 @@ struct AppView: View {
                     onAppleSignIn: { info in
                         store.send(.signInWithAppleSucceeded(info))
                     },
-                    onAppleSignInFailed: {
-                        store.send(.signInWithAppleFailed)
+                    onAppleSignInFailed: { cancelled in
+                        store.send(.signInWithAppleFailed(wasUserCancelled: cancelled))
                     }
                 )
             }
             .presentationDetents([.large])
+            .interactiveDismissDisabled(
+                authStore.isLoading || authStore.isSyncing || authStore.showMergeDialog
+            )
             .pepinilloSheetStyle()
         }
         // Profile sheet

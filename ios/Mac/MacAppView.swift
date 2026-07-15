@@ -157,12 +157,15 @@ struct MacAppView: View {
                 onAppleSignIn: { info in
                     store.send(.signInWithAppleSucceeded(info))
                 },
-                onAppleSignInFailed: {
-                    store.send(.signInWithAppleFailed)
+                onAppleSignInFailed: { cancelled in
+                    store.send(.signInWithAppleFailed(wasUserCancelled: cancelled))
                 }
             )
         }
         .frame(minWidth: 520, minHeight: 640)
+        .interactiveDismissDisabled(
+            authStore.isLoading || authStore.isSyncing || authStore.showMergeDialog
+        )
     }
 
     private func profileSheet(_ profileStore: StoreOf<ProfileFeature>) -> some View {
@@ -308,12 +311,15 @@ private struct MacAppSheetPresenter: ViewModifier {
                 onAppleSignIn: { info in
                     store.send(.signInWithAppleSucceeded(info))
                 },
-                onAppleSignInFailed: {
-                    store.send(.signInWithAppleFailed)
+                onAppleSignInFailed: { cancelled in
+                    store.send(.signInWithAppleFailed(wasUserCancelled: cancelled))
                 }
             )
         }
         .frame(minWidth: 520, minHeight: 640)
+        .interactiveDismissDisabled(
+            authStore.isLoading || authStore.isSyncing || authStore.showMergeDialog
+        )
     }
 
     private func profileSheet(_ profileStore: StoreOf<ProfileFeature>) -> some View {

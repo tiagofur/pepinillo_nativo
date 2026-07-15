@@ -47,6 +47,28 @@ struct AccountView: View {
             } message: {
                 Text(String(localized: "This action is permanent and will delete all your tasks, sessions, and settings from our servers. This cannot be undone."))
             }
+            .alert(
+                String(localized: "Could Not Delete Account"),
+                isPresented: Binding(
+                    get: { store.deleteAccountError != nil },
+                    set: { if !$0 { store.send(.dismissDeleteAccountError) } }
+                )
+            ) {
+                Button(String(localized: "OK")) { store.send(.dismissDeleteAccountError) }
+            } message: {
+                Text(store.deleteAccountError ?? "")
+            }
+            .alert(
+                String(localized: "Sign In Failed"),
+                isPresented: Binding(
+                    get: { store.signInWithAppleError != nil },
+                    set: { if !$0 { store.send(.dismissSignInWithAppleError) } }
+                )
+            ) {
+                Button(String(localized: "OK")) { store.send(.dismissSignInWithAppleError) }
+            } message: {
+                Text(store.signInWithAppleError ?? "")
+            }
         }
     }
 
@@ -212,11 +234,11 @@ struct AccountView: View {
                 switch result {
                 case .success(let auth):
                     guard let credential = auth.credential as? ASAuthorizationAppleIDCredential else {
-                        store.send(.signInWithAppleFailed)
+                        store.send(.signInWithAppleFailed(wasUserCancelled: false))
                         return
                     }
                     guard !currentAppleNonce.isEmpty else {
-                        store.send(.signInWithAppleFailed)
+                        store.send(.signInWithAppleFailed(wasUserCancelled: false))
                         return
                     }
 
@@ -237,9 +259,10 @@ struct AccountView: View {
                     ))
                     currentAppleNonce = ""
 
-                case .failure:
+                case .failure(let error):
                     currentAppleNonce = ""
-                    store.send(.signInWithAppleFailed)
+                    let cancelled = (error as? ASAuthorizationError)?.code == .canceled
+                    store.send(.signInWithAppleFailed(wasUserCancelled: cancelled))
                 }
             }
             .signInWithAppleButtonStyle(currentColorScheme == .dark ? .black : .white)

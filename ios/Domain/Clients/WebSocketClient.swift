@@ -78,9 +78,6 @@ private final class WebSocketManager: @unchecked Sendable {
     private var isConnecting = false
     private var retryCount = 0
     private var shouldReconnect = false
-    // Prevents concurrent token-refresh races during reconnect backoff.
-    private var isRefreshingToken = false
-
     init(
         loadAccessToken: @escaping @Sendable () async -> String?,
         loadRefreshToken: @escaping @Sendable () async -> String?,
@@ -261,25 +258,24 @@ private final class WebSocketManager: @unchecked Sendable {
         // token has expired: without a refresh, every reconnect attempt gets a
         // 401 close frame and schedules another backoff indefinitely.
         // Single-flight guard prevents concurrent refresh races.
-        if count >= 1 {
-            let shouldRefresh = lock.withLock { () -> Bool in
-                guard !isRefreshingToken else { return false }
-                isRefreshingToken = true
-                return true
-            }
-            if shouldRefresh {
-                do {
-                    if let refreshToken = await loadRefreshToken() {
-                        let response = try await refreshTokens(RefreshRequest(refreshToken: refreshToken))
-                        try await saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
-                        wsLogger.info("WebSocket token refreshed before reconnect")
-                    } else {
-                        wsLogger.debug("No refresh token available, reconnecting with existing token")
+        if count >= 1, let refreshToken = await loadRefreshToken() {
+            do {
+                _ = try await TokenRefreshCoordinator.shared.refresh(
+                    refreshToken: refreshToken,
+                    performRefresh: { [refreshTokens] token in
+                        let response = try await refreshTokens(RefreshRequest(refreshToken: token))
+                        return (
+                            accessToken: response.tokens.accessToken,
+                            refreshToken: response.tokens.refreshToken
+                        )
+                    },
+                    saveTokens: { [saveTokens] access, refresh in
+                        try await saveTokens(access, refresh)
                     }
-                } catch {
-                    wsLogger.warning("WebSocket token refresh failed before reconnect: \(error, privacy: .public)")
-                }
-                lock.withLock { isRefreshingToken = false }
+                )
+                wsLogger.info("WebSocket token refreshed before reconnect")
+            } catch {
+                wsLogger.warning("WebSocket token refresh failed before reconnect: \(error, privacy: .public)")
             }
         }
 

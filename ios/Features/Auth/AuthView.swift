@@ -14,13 +14,14 @@ struct AuthView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Namespace private var glassNS
     let onAppleSignIn: ((AppleUserInfo) -> Void)?
-    let onAppleSignInFailed: (() -> Void)?
+    /// `wasUserCancelled` is true when the user dismissed the Apple sheet (#200).
+    let onAppleSignInFailed: ((Bool) -> Void)?
     @State private var currentNonce: String = ""
 
     init(
         store: StoreOf<AuthFeature>,
         onAppleSignIn: ((AppleUserInfo) -> Void)? = nil,
-        onAppleSignInFailed: (() -> Void)? = nil
+        onAppleSignInFailed: ((Bool) -> Void)? = nil
     ) {
         self.store = store
         self.onAppleSignIn = onAppleSignIn
@@ -87,13 +88,14 @@ struct AuthView: View {
         }
         .sheet(isPresented: Binding(
             get: { store.showMergeDialog },
-            set: { _ in store.send(.dismissMergeDialog) }
+            set: { _ in }
         )) {
             DataMergeView(
                 onMerge: { store.send(.mergeTapped) },
                 onUseAccountOnly: { store.send(.useAccountOnlyTapped) }
             )
             .presentationDetents([.medium])
+            .interactiveDismissDisabled(true)
             .pepinilloSheetStyle()
         }
         .overlay {
@@ -351,11 +353,11 @@ struct AuthView: View {
                 switch result {
                 case .success(let auth):
                     guard let cred = auth.credential as? ASAuthorizationAppleIDCredential else {
-                        onAppleSignInFailed?()
+                        onAppleSignInFailed?(false)
                         return
                     }
                     guard !currentNonce.isEmpty else {
-                        onAppleSignInFailed?()
+                        onAppleSignInFailed?(false)
                         return
                     }
                     let identityToken: String? = cred.identityToken.flatMap { String(data: $0, encoding: .utf8) }
@@ -368,8 +370,9 @@ struct AuthView: View {
                         nonce: currentNonce,
                         authorizationCode: authorizationCode
                     ))
-                case .failure:
-                    onAppleSignInFailed?()
+                case .failure(let error):
+                    let cancelled = (error as? ASAuthorizationError)?.code == .canceled
+                    onAppleSignInFailed?(cancelled)
                 }
             }
             .signInWithAppleButtonStyle(colorScheme == .dark ? .black : .white)
