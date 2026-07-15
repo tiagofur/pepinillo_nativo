@@ -126,7 +126,8 @@ final class PersistenceStoreRouter: ObservableObject {
 
         do {
             try await exportAppleCloudDataToLocalIfNeeded()
-            appleCloudContainer = nil
+            // Keep the cached CloudKit container for re-buy (#164). Release only when
+            // switching to backend VPS sync, where Apple Cloud is permanently demoted.
             if wasOnAppleCloud {
                 clearAppleCloudMigrationState()
             }
