@@ -378,8 +378,8 @@ struct FocusFeature {
                     .run { [notificationClient] _ in
                         let key = "pepinillo.hasRequestedNotificationPermission"
                         guard !UserDefaults.standard.bool(forKey: key) else { return }
-                        UserDefaults.standard.set(true, forKey: key)
                         _ = await notificationClient.requestAuthorization()
+                        UserDefaults.standard.set(true, forKey: key)
                     }
                 )
 
@@ -681,6 +681,7 @@ struct FocusFeature {
                 // call incrementTaskPomodoros separately to avoid double-counting.
                 var phaseNotificationEffect: Effect<Action> = .none
                 var intervalPersistEffect: Effect<Action> = .none
+                var healthLogEffect: Effect<Action> = .none
                 if case .work(let number, let total) = completedPhase, mode == .pomodoro {
                     let isLongBreak = number >= total
                     phaseNotificationEffect = .run { [notificationClient] _ in
@@ -715,6 +716,11 @@ struct FocusFeature {
                             await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
                         }
                     }
+                    healthLogEffect = .run { [healthClient, persistence] _ in
+                        let prefs = try await persistence.fetchPreferences()
+                        guard prefs.healthLoggingEnabled, healthClient.isAuthorized() else { return }
+                        try await healthClient.logMindfulMinutes(intervalStartedAt, Date.now)
+                    }
                 }
 
                 return .merge(
@@ -728,7 +734,8 @@ struct FocusFeature {
                         #endif
                     },
                     phaseNotificationEffect,
-                    intervalPersistEffect
+                    intervalPersistEffect,
+                    healthLogEffect
                 )
 
             case .sessionCompleted(let result):
@@ -811,15 +818,6 @@ struct FocusFeature {
                         .run { [notificationClient] _ in
                             await notificationClient.scheduleSessionComplete(modeName, taskTitle)
                         },
-                        // Log to Apple Health if enabled
-                        .run { [healthClient, persistence] _ in
-                            let prefs = try await persistence.fetchPreferences()
-                            guard prefs.healthLoggingEnabled, healthClient.isAuthorized() else { return }
-                            try await healthClient.logMindfulMinutes(
-                                result.startedAt,
-                                result.endedAt
-                            )
-                        },
                         // Donate intent for Siri Suggestions
                         .run { _ in
                             let intent = StartFocusIntent()
@@ -829,6 +827,19 @@ struct FocusFeature {
                             _ = try? await intent.donate()
                         }
                     ])
+                }
+
+                // Pomodoro work intervals log in phaseCompleted; other modes log focused time only.
+                if wasCompleted, result.mode != .pomodoro, result.actualDuration > 0 {
+                    let end = result.endedAt
+                    let start = end.addingTimeInterval(-result.actualDuration)
+                    completionEffects.append(
+                        .run { [healthClient, persistence] _ in
+                            let prefs = try await persistence.fetchPreferences()
+                            guard prefs.healthLoggingEnabled, healthClient.isAuthorized() else { return }
+                            try await healthClient.logMindfulMinutes(start, end)
+                        }
+                    )
                 }
 
                 return .merge(completionEffects)

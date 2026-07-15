@@ -6,10 +6,14 @@
 
 import SwiftUI
 import ComposableArchitecture
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct SettingsView: View {
     @Bindable var store: StoreOf<SettingsFeature>
     @Environment(\.appTheme) private var theme
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
@@ -45,6 +49,27 @@ struct SettingsView: View {
                 Button(String(localized: "OK")) { store.send(.healthDeniedAlertDismissed) }
             } message: {
                 Text(String(localized: "To log Mindful Minutes, enable Health access for Pepinillo in Settings > Health > Data Access & Devices."))
+            }
+            .alert(
+                String(localized: "Notifications Disabled"),
+                isPresented: Binding(
+                    get: { store.showNotificationDeniedAlert },
+                    set: { if !$0 { store.send(.notificationDeniedAlertDismissed) } }
+                )
+            ) {
+                Button(String(localized: "Open Settings")) {
+                    #if canImport(UIKit)
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(url)
+                    }
+                    #endif
+                    store.send(.notificationDeniedAlertDismissed)
+                }
+                Button(String(localized: "OK"), role: .cancel) {
+                    store.send(.notificationDeniedAlertDismissed)
+                }
+            } message: {
+                Text(String(localized: "Enable notifications for Pepinillo in Settings to receive daily reminders and session alerts."))
             }
         }
     }
@@ -286,7 +311,7 @@ struct SettingsView: View {
         } header: {
             Label(String(localized: "Apple Health"), systemImage: "heart.fill")
         } footer: {
-            Text(String(localized: "Focus sessions are logged as Mindful Minutes in the Health app."))
+            Text(String(localized: "Completed focus time is saved as Mindful Minutes in the Health app. Pepinillo does not read your health data."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

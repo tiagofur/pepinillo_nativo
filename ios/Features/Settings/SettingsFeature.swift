@@ -43,6 +43,7 @@ struct SettingsFeature {
         var dailyReminderEnabled: Bool = false
         var dailyReminderHour: Int = 9
         var dailyReminderMinute: Int = 0
+        var showNotificationDeniedAlert: Bool = false
 
         // Apple Health
         var healthLoggingEnabled: Bool = false
@@ -100,6 +101,8 @@ struct SettingsFeature {
         // Notifications
         case dailyReminderToggled
         case dailyReminderTimeChanged(hour: Int, minute: Int)
+        case notificationAuthorizationDenied
+        case notificationDeniedAlertDismissed
 
         // Apple Health
         case healthLoggingToggled
@@ -318,6 +321,15 @@ struct SettingsFeature {
             case .dailyReminderToggled:
                 state.dailyReminderEnabled.toggle()
                 return .send(.saveSettings)
+
+            case .notificationAuthorizationDenied:
+                state.dailyReminderEnabled = false
+                state.showNotificationDeniedAlert = true
+                return .send(.saveSettings)
+
+            case .notificationDeniedAlertDismissed:
+                state.showNotificationDeniedAlert = false
+                return .none
 
             case .dailyReminderTimeChanged(let hour, let minute):
                 state.dailyReminderHour = hour
