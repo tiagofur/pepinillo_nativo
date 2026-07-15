@@ -11,7 +11,7 @@ import SwiftUI
 @Model
 public final class TaskItem {
     // MARK: - Identification
-    public var id: UUID
+    @Attribute(.unique) public var id: UUID
     public var createdAt: Date
     public var updatedAt: Date
 

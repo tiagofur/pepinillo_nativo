@@ -71,7 +71,7 @@ private struct FAQItem: Identifiable {
         ),
         FAQItem(
             question: String(localized: "How do I sync across devices?"),
-            answer: String(localized: "Sign in with your Apple ID or create an account. Pro subscribers get iCloud sync across all Apple devices automatically.")
+            answer: String(localized: "Pepinillo+ (one-time purchase) syncs tasks, sessions, and analytics across your Apple devices using your iCloud account — no Pepinillo sign-in required. Everywhere/AI+ (subscription) uses Pepinillo cloud sync through our servers so your data can travel beyond Apple devices and power cloud AI features. Check Settings → iCloud Sync for your current status.")
         ),
         FAQItem(
             question: String(localized: "Can I use Pepinillo without a subscription?"),

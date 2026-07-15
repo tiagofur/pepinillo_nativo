@@ -15,6 +15,7 @@ private let syncRouterLogger = Logger(subsystem: "com.pepinillo.app", category: 
 /// Test hooks for integration tests that exercise reconcile without CloudKit.
 enum PersistenceStoreRouterTesting {
     nonisolated(unsafe) static var migrationOverride: ((ModelContainer, ModelContainer) throws -> Void)?
+    nonisolated(unsafe) static var openAppleCloudContainerOverride: (() throws -> ModelContainer)?
 }
 #endif
 
@@ -47,6 +48,8 @@ final class PersistenceStoreRouter: ObservableObject {
     @Published private(set) var activeContainer: ModelContainer
 
     private var appleCloudContainer: ModelContainer?
+    /// Serialises overlapping `reconcile` calls so only one store swap runs at a time (#164).
+    private var reconcileInFlight: Task<Void, Never>?
 
     /// Background ModelActor that owns its own ModelContext for the active
     /// container. Recreated whenever the active container swaps so persistence
@@ -76,9 +79,24 @@ final class PersistenceStoreRouter: ObservableObject {
     }
 
     func reconcile(capabilities: UserCapabilities) async {
+        if let inFlight = reconcileInFlight {
+            await inFlight.value
+            return
+        }
+
+        let task = Task { @MainActor in
+            defer { reconcileInFlight = nil }
+            await performReconcile(capabilities: capabilities)
+        }
+        reconcileInFlight = task
+        await task.value
+    }
+
+    private func performReconcile(capabilities: UserCapabilities) async {
         if capabilities.backendSync {
             do {
                 try await exportAppleCloudDataToLocalIfNeeded(markDirtyForBackend: true)
+                appleCloudContainer = nil
                 switchToLocal(mode: .backend, status: .backendActive)
             } catch {
                 handleAppleCloudExportFailure(error, context: "backend export")
@@ -108,6 +126,8 @@ final class PersistenceStoreRouter: ObservableObject {
 
         do {
             try await exportAppleCloudDataToLocalIfNeeded()
+            // Keep the cached CloudKit container for re-buy (#164). Release only when
+            // switching to backend VPS sync, where Apple Cloud is permanently demoted.
             if wasOnAppleCloud {
                 clearAppleCloudMigrationState()
             }
@@ -193,7 +213,12 @@ final class PersistenceStoreRouter: ObservableObject {
     }
 
     private func openAppleCloudContainerWithTimeout() async throws -> ModelContainer {
-        try await openModelContainerOffMainThread(
+        #if DEBUG
+        if let override = PersistenceStoreRouterTesting.openAppleCloudContainerOverride {
+            return try override()
+        }
+        #endif
+        return try await openModelContainerOffMainThread(
             label: "apple-cloud",
             timeout: 8,
             qos: .utility
@@ -212,16 +237,19 @@ final class PersistenceStoreRouter: ObservableObject {
         to targetContainer: ModelContainer,
         markDirtyForBackend: Bool = false
     ) async throws {
-        try await Task.detached(priority: .utility) {
+        try await Task(priority: .utility) {
+            try Task.checkCancellation()
             try Self._migrateDataSync(from: sourceContainer, to: targetContainer)
             if markDirtyForBackend {
+                try Task.checkCancellation()
                 try SwiftDataPersistenceService(container: targetContainer).markAllSyncableDataDirty()
             }
         }.value
     }
 
     private nonisolated static func importLegacyStoreIfNeeded(into localContainer: ModelContainer) async throws {
-        try await Task.detached(priority: .utility) {
+        try await Task(priority: .utility) {
+            try Task.checkCancellation()
             try LocalToCloudStoreMigrator.importLegacyStoreIfNeeded(into: localContainer)
         }.value
     }

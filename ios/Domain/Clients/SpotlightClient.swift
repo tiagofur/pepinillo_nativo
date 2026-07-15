@@ -41,6 +41,8 @@ extension SpotlightClient: DependencyKey {
                         attributes.dueDate = task.dueDate
                     }
 
+                    attributes.contentURL = URL(string: "pepinillo://task/\(task.id.uuidString)")
+
                     return CSSearchableItem(
                         uniqueIdentifier: "task-\(task.id.uuidString)",
                         domainIdentifier: "com.pepinillo.tasks",

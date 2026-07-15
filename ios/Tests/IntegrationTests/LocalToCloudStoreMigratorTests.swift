@@ -15,7 +15,7 @@ struct LocalToCloudStoreMigratorTests {
         directory: URL,
         fileName: String
     ) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV4.self)
+        let schema = Schema(versionedSchema: SchemaV5.self)
         let config = ModelConfiguration(
             schema: schema,
             url: directory.appendingPathComponent(fileName),
@@ -278,6 +278,41 @@ struct LocalToCloudStoreMigratorTests {
         #expect(migratedSessions.first?.task == nil)
     }
 
+    @Test("Cloud→local merge keeps newer task revision by updatedAt")
+    @MainActor
+    func cloudToLocalMergeUsesLastWriteWins() throws {
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let sourceContainer = try makeOnDiskContainer(directory: dir, fileName: "source.sqlite")
+        let targetContainer = try makeOnDiskContainer(directory: dir, fileName: "target.sqlite")
+
+        let sharedID = UUID()
+        let olderDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let newerDate = Date(timeIntervalSince1970: 1_800_000_000)
+
+        let targetContext = targetContainer.mainContext
+        let existingTask = TaskItem(title: "Stale cloud title")
+        existingTask.id = sharedID
+        existingTask.updatedAt = olderDate
+        targetContext.insert(existingTask)
+        try targetContext.save()
+
+        let sourceContext = sourceContainer.mainContext
+        let newerTask = TaskItem(title: "Fresh local title")
+        newerTask.id = sharedID
+        newerTask.updatedAt = newerDate
+        sourceContext.insert(newerTask)
+        try sourceContext.save()
+
+        try LocalToCloudStoreMigrator.migrate(from: sourceContainer, to: targetContainer)
+
+        let mergedTasks = try targetContext.fetch(FetchDescriptor<TaskItem>())
+        #expect(mergedTasks.count == 1)
+        #expect(mergedTasks.first?.title == "Fresh local title")
+        #expect(mergedTasks.first?.updatedAt == newerDate)
+    }
+
     @Test("Legacy Pepinillo.sqlite import is one-shot and preserves IDs")
     @MainActor
     func legacyImportIsOneShot() throws {
@@ -334,7 +369,7 @@ private func migrateLegacyStoreForTesting(
     }
     guard FileManager.default.fileExists(atPath: legacyURL.path) else { return }
 
-    let schema = Schema(versionedSchema: SchemaV4.self)
+    let schema = Schema(versionedSchema: SchemaV5.self)
     let config = ModelConfiguration(schema: schema, url: legacyURL, cloudKitDatabase: .none)
     let legacyContainer = try ModelContainer(
         for: schema,

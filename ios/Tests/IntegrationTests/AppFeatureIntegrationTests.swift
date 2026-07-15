@@ -49,6 +49,40 @@ struct AppFeatureIntegrationTests {
         }
     }
 
+    @Test func spotlightTaskDeepLinkOpensTaskDetail() async throws {
+        let taskID = UUID()
+        let taskState = TaskListFeature.TaskItemState.from(
+            TaskItemDTO(
+                id: taskID,
+                title: "Spotlight task",
+                isCompleted: false,
+                energyLevel: .shallow,
+                estimatedPomodoros: 1,
+                scheduledForToday: true
+            )
+        )
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+        }
+        store.exhaustivity = .off
+
+        let url = try #require(URL(string: "pepinillo://task/\(taskID.uuidString)"))
+        await store.send(.appURLReceived(url)) {
+            $0.selectedTab = .plan
+            $0.pendingDeepLinkTaskID = taskID
+        }
+
+        await store.send(.tasks(.tasksLoaded([taskState])))
+        await store.receive(.tasks(.taskTapped(taskID)))
+
+        #expect(store.state.pendingDeepLinkTaskID == nil)
+        #expect(store.state.tasks.detail?.taskID == taskID)
+        #expect(store.state.tasks.detail?.title == "Spotlight task")
+    }
+
     @Test func onboardingCompletedSetsFlag() async {
         let store = TestStore(initialState: AppFeature.State()) {
             AppFeature()
@@ -930,5 +964,32 @@ struct AppFeatureIntegrationTests {
 
         #expect(spy.cancelDailyReminderCalled == true)
         #expect(spy.cancelAllCalled == false)
+    }
+
+    @Test("startBreak notification advances pending break phase (#175)")
+    func startBreakNotificationAdvancesPendingBreak() async {
+        let startNextPhaseCalled = LockIsolated(false)
+
+        var initialState = AppFeature.State()
+        initialState.focus.isRunning = true
+        initialState.focus.isWaitingForNextPhase = true
+        initialState.focus.pendingNextPhase = .shortBreak
+
+        let store = TestStore(initialState: initialState) {
+            AppFeature()
+        } withDependencies: {
+            $0.focusClient.startNextPhase = {
+                startNextPhaseCalled.setValue(true)
+            }
+            $0.liveActivityClient.update = { _, _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.notificationActionReceived(.startBreak))
+
+        await store.receive(.focus(.startNextPhaseTapped))
+        await store.finish()
+
+        #expect(startNextPhaseCalled.value == true)
     }
 }

@@ -8,16 +8,42 @@ import Foundation
 import SwiftData
 @testable import Pepinillo
 
-@Suite("PersistenceStoreRouter Integration Tests")
+@Suite("PersistenceStoreRouter Integration Tests", .serialized)
 struct PersistenceStoreRouterTests {
 
     private let migrationKey = LocalToCloudStoreMigrator.appleCloudInitialMigrationCompleteKey
+
+    @MainActor
+    private func saveSyncDefaults() -> (
+        mode: AppGroupDefaults.SyncMode,
+        status: AppGroupDefaults.SyncStatus,
+        error: String?
+    ) {
+        (
+            AppGroupDefaults.activeSyncMode,
+            AppGroupDefaults.syncStatus,
+            AppGroupDefaults.lastAppleCloudActivationError
+        )
+    }
+
+    @MainActor
+    private func restoreSyncDefaults(
+        _ snapshot: (
+            mode: AppGroupDefaults.SyncMode,
+            status: AppGroupDefaults.SyncStatus,
+            error: String?
+        )
+    ) {
+        AppGroupDefaults.activeSyncMode = snapshot.mode
+        AppGroupDefaults.syncStatus = snapshot.status
+        AppGroupDefaults.lastAppleCloudActivationError = snapshot.error
+    }
 
     private func makeOnDiskContainer(
         directory: URL,
         fileName: String
     ) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV4.self)
+        let schema = Schema(versionedSchema: SchemaV5.self)
         let config = ModelConfiguration(
             schema: schema,
             url: directory.appendingPathComponent(fileName),
@@ -47,6 +73,9 @@ struct PersistenceStoreRouterTests {
     @Test("Demotion awaits cloud→local export before swapping to local store")
     @MainActor
     func demotionExportsCloudDataBeforeLocalSwap() async throws {
+        let syncSnapshot = saveSyncDefaults()
+        defer { restoreSyncDefaults(syncSnapshot) }
+
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -80,6 +109,9 @@ struct PersistenceStoreRouterTests {
     @Test("Re-buy re-merges local deltas after demotion clears migration flag")
     @MainActor
     func rebuyMergesLocalDeltasAfterDemotion() async throws {
+        let syncSnapshot = saveSyncDefaults()
+        defer { restoreSyncDefaults(syncSnapshot) }
+
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -126,6 +158,9 @@ struct PersistenceStoreRouterTests {
     @Test("Demotion export failure keeps Apple Cloud active and surfaces error")
     @MainActor
     func demotionExportFailureKeepsCloudActive() async throws {
+        let syncSnapshot = saveSyncDefaults()
+        defer { restoreSyncDefaults(syncSnapshot) }
+
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -169,6 +204,9 @@ struct PersistenceStoreRouterTests {
     @Test("Backend export failure keeps Apple Cloud active instead of fire-and-forget swap")
     @MainActor
     func backendExportFailureKeepsCloudActive() async throws {
+        let syncSnapshot = saveSyncDefaults()
+        defer { restoreSyncDefaults(syncSnapshot) }
+
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -203,5 +241,76 @@ struct PersistenceStoreRouterTests {
         #expect(router.activeContainer === cloudContainer)
         #expect(AppGroupDefaults.lastAppleCloudActivationError == "simulated backend export failure")
         #expect(try fetchTaskTitles(in: localContainer).isEmpty)
+    }
+
+    @Test("Backend switch exports cloud data to local before swapping stores")
+    @MainActor
+    func backendSwitchExportsCloudDataToLocal() async throws {
+        let syncSnapshot = saveSyncDefaults()
+        defer { restoreSyncDefaults(syncSnapshot) }
+
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let localContainer = try makeOnDiskContainer(directory: dir, fileName: "local.sqlite")
+        let cloudContainer = try makeOnDiskContainer(directory: dir, fileName: "cloud.sqlite")
+
+        let cloudContext = cloudContainer.mainContext
+        cloudContext.insert(TaskItem(title: "Export to backend local"))
+        try cloudContext.save()
+
+        let savedMigrationFlag = UserDefaults.standard.bool(forKey: migrationKey)
+        defer {
+            UserDefaults.standard.set(savedMigrationFlag, forKey: migrationKey)
+            PersistenceStoreRouterTesting.migrationOverride = nil
+        }
+        UserDefaults.standard.set(true, forKey: migrationKey)
+
+        let router = PersistenceStoreRouter(localContainer: localContainer)
+        router.activateAppleCloudContainerForTesting(cloudContainer)
+
+        await router.reconcile(capabilities: .everywherePlus)
+
+        #expect(AppGroupDefaults.activeSyncMode == .backend)
+        #expect(AppGroupDefaults.syncStatus == .backendActive)
+        #expect(router.activeContainer === localContainer)
+        #expect(try fetchTaskTitles(in: localContainer) == ["Export to backend local"])
+    }
+
+    @Test("Apple Cloud activation failure surfaces error and keeps local store active")
+    @MainActor
+    func appleCloudActivationFailureSurfacesError() async throws {
+        let syncSnapshot = saveSyncDefaults()
+        defer { restoreSyncDefaults(syncSnapshot) }
+
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let localContainer = try makeOnDiskContainer(directory: dir, fileName: "local.sqlite")
+
+        let savedMigrationFlag = UserDefaults.standard.bool(forKey: migrationKey)
+        let savedError = AppGroupDefaults.lastAppleCloudActivationError
+        defer {
+            UserDefaults.standard.set(savedMigrationFlag, forKey: migrationKey)
+            AppGroupDefaults.lastAppleCloudActivationError = savedError
+            PersistenceStoreRouterTesting.openAppleCloudContainerOverride = nil
+        }
+        UserDefaults.standard.set(false, forKey: migrationKey)
+        AppGroupDefaults.lastAppleCloudActivationError = nil
+
+        struct ActivationFailure: Error, CustomStringConvertible {
+            var description: String { "simulated iCloud activation failure" }
+        }
+        PersistenceStoreRouterTesting.openAppleCloudContainerOverride = {
+            throw ActivationFailure()
+        }
+
+        let router = PersistenceStoreRouter(localContainer: localContainer)
+        await router.reconcile(capabilities: .pepinilloPlus)
+
+        #expect(AppGroupDefaults.activeSyncMode == .local)
+        #expect(AppGroupDefaults.syncStatus == .appleCloudUnavailable)
+        #expect(router.activeContainer === localContainer)
+        #expect(AppGroupDefaults.lastAppleCloudActivationError == "simulated iCloud activation failure")
     }
 }

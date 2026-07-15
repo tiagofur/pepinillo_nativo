@@ -46,7 +46,7 @@
 	<string>Pepinillo reads your Calendar events so you can plan focus sessions around your existing schedule.
 </string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>Pepinillo reads your Mindful Minutes from Apple Health to show your focus history and keep your analytics accurate across devices.
+	<string>Pepinillo may access Apple Health only to save your completed focus time as Mindful Minutes. Pepinillo does not read your health data.
 </string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Pepinillo logs your focus sessions as Mindful Minutes in Apple Health to help you track your wellbeing alongside your productivity.
@@ -77,7 +77,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
-		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

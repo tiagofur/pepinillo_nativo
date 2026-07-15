@@ -3,6 +3,7 @@
 
 #if os(iOS)
 import UIKit
+import AudioToolbox
 #endif
 
 @MainActor
@@ -44,6 +45,30 @@ enum HapticManager {
     static func selection() {
         #if os(iOS)
         selectionGenerator.selectionChanged()
+        #endif
+    }
+
+    /// Phase-complete feedback: optional notification sound and haptic (respects user prefs).
+    static func phaseComplete(soundEnabled: Bool, hapticEnabled: Bool) {
+        #if os(iOS)
+        if soundEnabled {
+            AudioServicesPlaySystemSound(1007)
+        }
+        if hapticEnabled {
+            notificationGenerator.notificationOccurred(.success)
+        }
+        #endif
+    }
+
+    /// Lightweight pulse for midpoint / break-suggestion cues.
+    static func feedbackPulse(soundEnabled: Bool, hapticEnabled: Bool) {
+        #if os(iOS)
+        if soundEnabled {
+            AudioServicesPlaySystemSound(1007)
+        }
+        if hapticEnabled {
+            mediumGenerator.impactOccurred()
+        }
         #endif
     }
 

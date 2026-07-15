@@ -78,7 +78,6 @@ targets:
           - UIInterfaceOrientationLandscapeRight
         UIBackgroundModes:
           - audio
-          - remote-notification
         API_BASE_URL: "$(API_BASE_URL)"
         WS_BASE_URL: "$(WS_BASE_URL)"
         APP_ENVIRONMENT: "$(APP_ENVIRONMENT)"
@@ -88,8 +87,8 @@ targets:
           Pepinillo logs your focus sessions as Mindful Minutes in Apple Health
           to help you track your wellbeing alongside your productivity.
         NSHealthShareUsageDescription: >
-          Pepinillo reads your Mindful Minutes from Apple Health to show your
-          focus history and keep your analytics accurate across devices.
+          Pepinillo may access Apple Health only to save your completed focus
+          time as Mindful Minutes. Pepinillo does not read your health data.
         NSCalendarsUsageDescription: >
           Pepinillo reads your Calendar events so you can plan focus sessions
           around your existing schedule.

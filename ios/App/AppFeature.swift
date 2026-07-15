@@ -11,6 +11,7 @@
 import Foundation
 import ComposableArchitecture
 import OSLog
+import UserNotifications
 import WidgetKit
 
 private enum AppLaunchDefaults {
@@ -69,6 +70,8 @@ struct AppFeature {
         var pendingExternalStartTaskID: String?
         var pendingExternalStartTimerStart: Date?
         var pendingExternalStartTimerEnd: Date?
+        /// Task ID from Spotlight / universal link, opened after tasks load.
+        var pendingDeepLinkTaskID: UUID?
 
         // Watch bridge throttle — last elapsed value sent to Watch (1Hz gate)
         var lastWatchSentElapsed: TimeInterval = -1
@@ -511,10 +514,18 @@ struct AppFeature {
                 switch url.host?.lowercased() {
                 case "plan", "tasks":
                     state.selectedTab = .plan
+                    return .none
+                case "task":
+                    guard let taskID = Self.taskID(from: url) else { return .none }
+                    state.selectedTab = .plan
+                    state.pendingDeepLinkTaskID = taskID
+                    return .send(.tasks(.onAppear))
                 case "focus":
                     state.selectedTab = .focus
+                    return .none
                 case "dashboard", "analytics":
                     state.selectedTab = .dashboard
+                    return .none
                 default:
                     break
                 }
@@ -947,10 +958,14 @@ struct AppFeature {
             case .notificationActionReceived(let notifAction):
                 switch notifAction {
                 case .startBreak:
-                    let breakMinutes = max(1, Int(state.focus.config.shortBreakDuration / 60))
-                    return .run { [notificationClient] _ in
-                        await notificationClient.scheduleBreakEnd(breakMinutes)
+                    // START_BREAK from work-phase-end notification: advance into the pending
+                    // break when auto-start is OFF. Do not re-schedule break-end here —
+                    // FocusFeature schedules it when the engine actually enters the break.
+                    if state.focus.isWaitingForNextPhase,
+                       state.focus.pendingNextPhase?.isBreak == true {
+                        return .send(.focus(.startNextPhaseTapped))
                     }
+                    return .none
                 case .startSession:
                     return .send(.focus(.startTapped()))
                 case .pauseSession:
@@ -1116,6 +1131,15 @@ struct AppFeature {
 
             case .tasks(.tasksLoaded):
                 state.focus.availableTasks = state.tasks.tasks
+                if let pendingTaskID = state.pendingDeepLinkTaskID {
+                    state.pendingDeepLinkTaskID = nil
+                    if state.tasks.tasks[id: pendingTaskID] != nil {
+                        return .merge(
+                            pushTasksToWatch(state),
+                            .send(.tasks(.taskTapped(pendingTaskID)))
+                        )
+                    }
+                }
                 if state.pendingExternalStartModeID != nil || state.pendingExternalStartTaskID != nil {
                     let requestedModeID = state.pendingExternalStartModeID
                     let requestedTaskID = state.pendingExternalStartTaskID
@@ -1154,6 +1178,22 @@ struct AppFeature {
                 state.focus.showPaywall = false
                 return .none
 
+            case .settings(.retryAppleCloudSyncTapped):
+                guard state.settings.canAppleCloudSync else { return .none }
+                state.settings.isRetryingAppleCloudSync = true
+                AppGroupDefaults.lastAppleCloudActivationError = nil
+                state.lastSyncedCapabilities = nil
+                return .merge(
+                    applySubscriptionUpdate(state.subscriptionState, state: &state),
+                    .run { send in
+                        try? await Task.sleep(for: .seconds(4))
+                        await send(.settings(.appleCloudSyncRetryFinished(
+                            status: AppGroupDefaults.syncStatus,
+                            error: AppGroupDefaults.lastAppleCloudActivationError
+                        )))
+                    }
+                )
+
             case .analytics(.paywallRequested):
                 state.focus.showPaywall = true
                 return .send(.paywall(.appeared))
@@ -1187,8 +1227,24 @@ struct AppFeature {
                 let enabled = state.settings.dailyReminderEnabled
                 let hour    = state.settings.dailyReminderHour
                 let minute  = state.settings.dailyReminderMinute
-                return .run { [notificationClient] _ in
+                return .run { [notificationClient] send in
                     if enabled {
+                        let status = await notificationClient.authorizationStatus()
+                        switch status {
+                        case .notDetermined:
+                            _ = await notificationClient.requestAuthorization()
+                            UserDefaults.standard.set(true, forKey: "pepinillo.hasRequestedNotificationPermission")
+                            let updated = await notificationClient.authorizationStatus()
+                            guard updated == .authorized || updated == .provisional || updated == .ephemeral else {
+                                await send(.settings(.notificationAuthorizationDenied))
+                                return
+                            }
+                        case .authorized, .provisional, .ephemeral:
+                            break
+                        default:
+                            await send(.settings(.notificationAuthorizationDenied))
+                            return
+                        }
                         await notificationClient.scheduleDailyReminder(hour, minute)
                     } else {
                         await notificationClient.cancelDailyReminder()
@@ -1495,6 +1551,16 @@ extension WatchSessionState {
             phaseEndDate:     AppGroupDefaults.activeSessionTimerEnd,
             countsDown:       activeMode.direction == .countDown
         )
+    }
+}
+
+// MARK: - Deep links
+
+extension AppFeature {
+    fileprivate static func taskID(from url: URL) -> UUID? {
+        let candidate = url.lastPathComponent
+        guard !candidate.isEmpty, candidate != "/" else { return nil }
+        return UUID(uuidString: candidate)
     }
 }
 

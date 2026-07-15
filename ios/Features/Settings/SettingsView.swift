@@ -6,10 +6,14 @@
 
 import SwiftUI
 import ComposableArchitecture
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct SettingsView: View {
     @Bindable var store: StoreOf<SettingsFeature>
     @Environment(\.appTheme) private var theme
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         NavigationStack {
@@ -22,6 +26,9 @@ struct SettingsView: View {
                 notificationsSection
                 healthSection
                 streakSection
+                if store.isProUser && store.canAppleCloudSync {
+                    iCloudSyncSection
+                }
                 aboutSection
             }
             .formStyle(.grouped)
@@ -45,6 +52,27 @@ struct SettingsView: View {
                 Button(String(localized: "OK")) { store.send(.healthDeniedAlertDismissed) }
             } message: {
                 Text(String(localized: "To log Mindful Minutes, enable Health access for Pepinillo in Settings > Health > Data Access & Devices."))
+            }
+            .alert(
+                String(localized: "Notifications Disabled"),
+                isPresented: Binding(
+                    get: { store.showNotificationDeniedAlert },
+                    set: { if !$0 { store.send(.notificationDeniedAlertDismissed) } }
+                )
+            ) {
+                Button(String(localized: "Open Settings")) {
+                    #if canImport(UIKit)
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        openURL(url)
+                    }
+                    #endif
+                    store.send(.notificationDeniedAlertDismissed)
+                }
+                Button(String(localized: "OK"), role: .cancel) {
+                    store.send(.notificationDeniedAlertDismissed)
+                }
+            } message: {
+                Text(String(localized: "Enable notifications for Pepinillo in Settings to receive daily reminders and session alerts."))
             }
         }
     }
@@ -286,7 +314,7 @@ struct SettingsView: View {
         } header: {
             Label(String(localized: "Apple Health"), systemImage: "heart.fill")
         } footer: {
-            Text(String(localized: "Focus sessions are logged as Mindful Minutes in the Health app."))
+            Text(String(localized: "Completed focus time is saved as Mindful Minutes in the Health app. Pepinillo does not read your health data."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -310,6 +338,85 @@ struct SettingsView: View {
             .accessibilityLabel(String(localized: "Current streak, \(store.currentStreakDays) days"))
         } header: {
             Label(String(localized: "Streak"), systemImage: "flame")
+        }
+    }
+
+    // MARK: - iCloud Sync Section
+
+    private var iCloudSyncSection: some View {
+        Section {
+            HStack {
+                Label(syncStatusTitle, systemImage: syncStatusIcon)
+                Spacer()
+                if store.isRetryingAppleCloudSync {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
+
+            if let error = store.lastAppleCloudActivationError, !error.isEmpty {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if store.syncStatus == .appleCloudUnavailable || store.lastAppleCloudActivationError != nil {
+                Button {
+                    store.send(.retryAppleCloudSyncTapped)
+                } label: {
+                    Label(String(localized: "Retry iCloud Sync"), systemImage: "arrow.clockwise")
+                }
+                .disabled(store.isRetryingAppleCloudSync)
+            }
+        } header: {
+            Label(String(localized: "iCloud Sync"), systemImage: "icloud")
+        } footer: {
+            Text(syncStatusFooter)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var syncStatusTitle: String {
+        switch store.syncStatus {
+        case .idle, .localOnly:
+            return String(localized: "Local only")
+        case .activatingAppleCloud:
+            return String(localized: "Activating iCloud…")
+        case .appleCloudActive:
+            return String(localized: "iCloud active")
+        case .appleCloudUnavailable:
+            return String(localized: "iCloud unavailable")
+        case .backendActive:
+            return String(localized: "Pepinillo cloud active")
+        }
+    }
+
+    private var syncStatusIcon: String {
+        switch store.syncStatus {
+        case .appleCloudActive, .backendActive:
+            return "checkmark.icloud.fill"
+        case .activatingAppleCloud:
+            return "icloud.and.arrow.up"
+        case .appleCloudUnavailable:
+            return "icloud.slash"
+        case .idle, .localOnly:
+            return "internaldrive"
+        }
+    }
+
+    private var syncStatusFooter: String {
+        switch store.syncStatus {
+        case .appleCloudActive:
+            return String(localized: "Tasks, sessions, and analytics sync across your Apple devices via iCloud.")
+        case .activatingAppleCloud:
+            return String(localized: "Setting up your iCloud store. This usually takes a few seconds.")
+        case .appleCloudUnavailable:
+            return String(localized: "Check that you are signed into iCloud and have storage available, then tap Retry.")
+        case .backendActive:
+            return String(localized: "Everywhere/AI+ uses Pepinillo cloud sync instead of iCloud.")
+        case .idle, .localOnly:
+            return String(localized: "Your data stays on this device until iCloud sync activates.")
         }
     }
 

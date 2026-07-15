@@ -180,6 +180,12 @@ struct AppView: View {
         .onContinueUserActivity(HandoffActivity.viewAnalytics) { _ in
             store.send(.handoffAnalyticsReceived)
         }
+        .onContinueUserActivity(HandoffActivity.viewTask) { activity in
+            guard let info = activity.userInfo,
+                  let idString = info[HandoffActivity.Key.taskID] as? String,
+                  let url = URL(string: "pepinillo://task/\(idString)") else { return }
+            store.send(.appURLReceived(url))
+        }
     }
 
     // MARK: - iOS 18+ Adaptable TabView

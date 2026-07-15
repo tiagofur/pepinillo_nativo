@@ -43,6 +43,7 @@ struct SettingsFeature {
         var dailyReminderEnabled: Bool = false
         var dailyReminderHour: Int = 9
         var dailyReminderMinute: Int = 0
+        var showNotificationDeniedAlert: Bool = false
 
         // Apple Health
         var healthLoggingEnabled: Bool = false
@@ -58,6 +59,12 @@ struct SettingsFeature {
         // Subscription (read-only)
         var isProUser: Bool = false
         var currentStreakDays: Int = 0
+
+        // iCloud sync status (read from AppGroupDefaults — issue #161)
+        var syncStatus: AppGroupDefaults.SyncStatus = .idle
+        var lastAppleCloudActivationError: String?
+        var canAppleCloudSync: Bool = false
+        var isRetryingAppleCloudSync: Bool = false
 
         var isLoading: Bool = false
 
@@ -100,6 +107,8 @@ struct SettingsFeature {
         // Notifications
         case dailyReminderToggled
         case dailyReminderTimeChanged(hour: Int, minute: Int)
+        case notificationAuthorizationDenied
+        case notificationDeniedAlertDismissed
 
         // Apple Health
         case healthLoggingToggled
@@ -120,6 +129,18 @@ struct SettingsFeature {
         // Subscription / Paywall
         case upgradeTapped
         case paywallDismissed
+
+        // iCloud sync (#161)
+        case syncStatusRefreshed(
+            status: AppGroupDefaults.SyncStatus,
+            error: String?,
+            canAppleCloudSync: Bool
+        )
+        case retryAppleCloudSyncTapped
+        case appleCloudSyncRetryFinished(
+            status: AppGroupDefaults.SyncStatus,
+            error: String?
+        )
 
         // Internal
         case saveSettings
@@ -192,12 +213,20 @@ struct SettingsFeature {
             switch action {
 
             case .onAppear:
+                state.syncStatus = AppGroupDefaults.syncStatus
+                state.lastAppleCloudActivationError = AppGroupDefaults.lastAppleCloudActivationError
+                state.canAppleCloudSync = AppGroupDefaults.canAppleCloudSync
                 guard !state.isLoading else { return .none }
                 state.isLoading = true
                 return .run { send in
                     let prefs = try await persistence.fetchPreferences()
                     let snapshot = SettingsSnapshot(from: prefs)
                     await send(.preferencesLoaded(snapshot))
+                    await send(.syncStatusRefreshed(
+                        status: AppGroupDefaults.syncStatus,
+                        error: AppGroupDefaults.lastAppleCloudActivationError,
+                        canAppleCloudSync: AppGroupDefaults.canAppleCloudSync
+                    ))
                 }
 
             case .preferencesLoaded(let snap):
@@ -318,6 +347,15 @@ struct SettingsFeature {
             case .dailyReminderToggled:
                 state.dailyReminderEnabled.toggle()
                 return .send(.saveSettings)
+
+            case .notificationAuthorizationDenied:
+                state.dailyReminderEnabled = false
+                state.showNotificationDeniedAlert = true
+                return .send(.saveSettings)
+
+            case .notificationDeniedAlertDismissed:
+                state.showNotificationDeniedAlert = false
+                return .none
 
             case .dailyReminderTimeChanged(let hour, let minute):
                 state.dailyReminderHour = hour
@@ -443,6 +481,22 @@ struct SettingsFeature {
 
             case .paywallDismissed:
                 // Handled by AppFeature.
+                return .none
+
+            case .syncStatusRefreshed(let status, let error, let canAppleCloudSync):
+                state.syncStatus = status
+                state.lastAppleCloudActivationError = error
+                state.canAppleCloudSync = canAppleCloudSync
+                return .none
+
+            case .retryAppleCloudSyncTapped:
+                // Handled by AppFeature — triggers a forced reconcile.
+                return .none
+
+            case .appleCloudSyncRetryFinished(let status, let error):
+                state.isRetryingAppleCloudSync = false
+                state.syncStatus = status
+                state.lastAppleCloudActivationError = error
                 return .none
             }
         }

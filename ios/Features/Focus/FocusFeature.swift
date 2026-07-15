@@ -378,8 +378,8 @@ struct FocusFeature {
                     .run { [notificationClient] _ in
                         let key = "pepinillo.hasRequestedNotificationPermission"
                         guard !UserDefaults.standard.bool(forKey: key) else { return }
-                        UserDefaults.standard.set(true, forKey: key)
                         _ = await notificationClient.requestAuthorization()
+                        UserDefaults.standard.set(true, forKey: key)
                     }
                 )
 
@@ -592,6 +592,7 @@ struct FocusFeature {
             // MARK: Engine Event Handlers
 
             case .timerTicked(let sessionState):
+                let previousPhase = state.phase
                 state.elapsedSeconds = sessionState.elapsedSeconds
                 state.remainingSeconds = sessionState.remainingSeconds
                 state.progress = sessionState.progress
@@ -621,9 +622,19 @@ struct FocusFeature {
                 let lastElapsed = AppGroupDefaults.activeSessionElapsed
                 let significantChange = abs(elapsed - lastElapsed) >= 1.0 || state.isPaused
 
+                var effects: [Effect<Action>] = []
+                if sessionState.phase.isBreak, !previousPhase.isBreak,
+                   let breakMinutes = breakDurationMinutes(for: sessionState.phase, config: state.config) {
+                    effects.append(.run { [notificationClient] _ in
+                        await notificationClient.scheduleBreakEnd(breakMinutes)
+                    })
+                }
+
                 // Throttle Live Activity to 1Hz (ActivityKit rate limits; display shows whole seconds).
                 // Notification update already runs every 30s.
-                guard significantChange else { return .none }
+                guard significantChange else {
+                    return effects.isEmpty ? .none : .merge(effects)
+                }
 
                 // Capture all values up-front so the effect runs off the main actor.
                 // Previously these 8 cross-process App-Group writes ran synchronously
@@ -636,7 +647,8 @@ struct FocusFeature {
                 let displayTime = state.displayTime
                 let modeName = mode.rawValue
                 let shouldUpdateNotification = Int(elapsed) > 0 && Int(elapsed) % 30 == 0 && Int(elapsed) != Int(lastElapsed)
-                return .run { [liveActivity, notificationClient] _ in
+
+                effects.append(.run { [liveActivity, notificationClient] _ in
                     // App-Group writes (off the main actor now)
                     AppGroupDefaults.activeSessionElapsed = elapsed
                     AppGroupDefaults.activeSessionRemaining = remaining
@@ -650,12 +662,14 @@ struct FocusFeature {
                     if shouldUpdateNotification {
                         await notificationClient.updateActiveSession(displayTime, modeName, phaseLabel)
                     }
-                }
+                })
 
+                return effects.isEmpty ? .none : .merge(effects)
 
             case .phaseCompleted(let completedPhase):
                 // Engine handles phase transition automatically;
                 // we'll get updated state via the next .timerTicked.
+                let soundEnabled = state.config.soundEnabled
                 let hapticEnabled = state.config.hapticEnabled
                 let taskTitle = state.linkedTaskTitle
 
@@ -681,6 +695,7 @@ struct FocusFeature {
                 // call incrementTaskPomodoros separately to avoid double-counting.
                 var phaseNotificationEffect: Effect<Action> = .none
                 var intervalPersistEffect: Effect<Action> = .none
+                var healthLogEffect: Effect<Action> = .none
                 if case .work(let number, let total) = completedPhase, mode == .pomodoro {
                     let isLongBreak = number >= total
                     phaseNotificationEffect = .run { [notificationClient] _ in
@@ -715,20 +730,22 @@ struct FocusFeature {
                             await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
                         }
                     }
+                    healthLogEffect = .run { [healthClient, persistence] _ in
+                        let prefs = try await persistence.fetchPreferences()
+                        guard prefs.healthLoggingEnabled, healthClient.isAuthorized() else { return }
+                        try await healthClient.logMindfulMinutes(intervalStartedAt, Date.now)
+                    }
                 }
 
                 return .merge(
                     .run { _ in
-                        guard hapticEnabled else { return }
-                        #if os(iOS)
                         await MainActor.run {
-                            let generator = UINotificationFeedbackGenerator()
-                            generator.notificationOccurred(.success)
+                            HapticManager.phaseComplete(soundEnabled: soundEnabled, hapticEnabled: hapticEnabled)
                         }
-                        #endif
                     },
                     phaseNotificationEffect,
-                    intervalPersistEffect
+                    intervalPersistEffect,
+                    healthLogEffect
                 )
 
             case .sessionCompleted(let result):
@@ -811,15 +828,6 @@ struct FocusFeature {
                         .run { [notificationClient] _ in
                             await notificationClient.scheduleSessionComplete(modeName, taskTitle)
                         },
-                        // Log to Apple Health if enabled
-                        .run { [healthClient, persistence] _ in
-                            let prefs = try await persistence.fetchPreferences()
-                            guard prefs.healthLoggingEnabled, healthClient.isAuthorized() else { return }
-                            try await healthClient.logMindfulMinutes(
-                                result.startedAt,
-                                result.endedAt
-                            )
-                        },
                         // Donate intent for Siri Suggestions
                         .run { _ in
                             let intent = StartFocusIntent()
@@ -831,6 +839,19 @@ struct FocusFeature {
                     ])
                 }
 
+                // Pomodoro work intervals log in phaseCompleted; other modes log focused time only.
+                if wasCompleted, result.mode != .pomodoro, result.actualDuration > 0 {
+                    let end = result.endedAt
+                    let start = end.addingTimeInterval(-result.actualDuration)
+                    completionEffects.append(
+                        .run { [healthClient, persistence] _ in
+                            let prefs = try await persistence.fetchPreferences()
+                            guard prefs.healthLoggingEnabled, healthClient.isAuthorized() else { return }
+                            try await healthClient.logMindfulMinutes(start, end)
+                        }
+                    )
+                }
+
                 return .merge(completionEffects)
 
             case .breakSuggested(let duration):
@@ -840,7 +861,13 @@ struct FocusFeature {
 
             case .midpointReached:
                 state.phaseLabel = String(localized: "Halfway there!")
-                return .none
+                let soundEnabled = state.config.soundEnabled
+                let hapticEnabled = state.config.hapticEnabled
+                return .run { _ in
+                    await MainActor.run {
+                        HapticManager.feedbackPulse(soundEnabled: soundEnabled, hapticEnabled: hapticEnabled)
+                    }
+                }
 
             case .interrupted:
                 state.interruptions += 1
@@ -853,6 +880,14 @@ struct FocusFeature {
                 state.pendingNextPhase = nextPhase
                 // Show the pending phase label so the user knows what's coming next.
                 state.phaseLabel = nextPhase.displayName
+
+                // Seed the hold UI from the pending phase target so the timer does not show 0:00.
+                let mode = state.activeMode ?? state.selectedMode
+                if let target = mode.strategy.targetDuration(config: state.config, phase: nextPhase) {
+                    state.displayTime = formatTime(target)
+                    state.remainingSeconds = target
+                    state.progress = 0.0
+                }
 
                 // FIX 1: Clear the countdown anchors written by .phaseCompleted so
                 // widgets do not display a phantom live countdown for the pending phase
@@ -1135,5 +1170,21 @@ struct FocusFeature {
         let m = totalSeconds / 60
         let s = totalSeconds % 60
         return String(format: "%d:%02d", m, s)
+    }
+
+    private func breakDurationMinutes(for phase: FocusPhase, config: FocusConfig) -> Int? {
+        let seconds: TimeInterval?
+        switch phase {
+        case .shortBreak:
+            seconds = config.shortBreakDuration
+        case .longBreak:
+            seconds = config.longBreakDuration
+        case .flowBreak(let duration):
+            seconds = duration
+        default:
+            seconds = nil
+        }
+        guard let seconds else { return nil }
+        return max(1, Int(seconds / 60))
     }
 }

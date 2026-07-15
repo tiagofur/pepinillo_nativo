@@ -923,7 +923,7 @@ private func makeModelContainer(
     at url: URL,
     cloudKitDatabase: ModelConfiguration.CloudKitDatabase
 ) throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV4.self)
+    let schema = Schema(versionedSchema: SchemaV5.self)
 
     let config = ModelConfiguration(
         schema: schema,
@@ -953,7 +953,7 @@ func makeFreshFallbackModelContainer() throws -> ModelContainer {
 }
 
 func makeInMemoryModelContainer() throws -> ModelContainer {
-    let schema = Schema(versionedSchema: SchemaV4.self)
+    let schema = Schema(versionedSchema: SchemaV5.self)
     let config = ModelConfiguration(
         schema: schema,
         isStoredInMemoryOnly: true,
