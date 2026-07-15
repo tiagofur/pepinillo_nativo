@@ -153,7 +153,7 @@ private struct MacBootstrapView: View {
     let retry: () -> Void
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: SpacingTokens.md) {
             Image("LaunchLogo")
                 .resizable()
                 .scaledToFit()

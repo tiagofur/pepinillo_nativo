@@ -27,7 +27,7 @@ struct TaskPickerView: View {
                             onUnlink()
                             dismiss()
                         } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: SpacingTokens.sm) {
                                 Image(systemName: "xmark.circle")
                                     .foregroundStyle(.red)
                                 Text(String(localized: "Unlink Task"))

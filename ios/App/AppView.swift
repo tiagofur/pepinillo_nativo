@@ -45,7 +45,7 @@ struct AppView: View {
         .overlay(alignment: .top) {
             if store.isOffline {
                 OfflineBanner()
-                    .padding(.top, 4)
+                    .padding(.top, SpacingTokens.xs)
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
@@ -337,7 +337,7 @@ private extension View {
 
 private struct OfflineBanner: View {
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SpacingTokens.sm) {
             Image(systemName: "wifi.slash")
                 .font(.subheadline.weight(.semibold))
             Text(String(localized: "You're offline. Changes will sync when you reconnect."))
@@ -345,8 +345,8 @@ private struct OfflineBanner: View {
                 .lineLimit(2)
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, SpacingTokens.md)
+        .padding(.vertical, SpacingTokens.sm)
         .background(
             Capsule(style: .continuous)
                 .fill(Color.orange.opacity(0.9))

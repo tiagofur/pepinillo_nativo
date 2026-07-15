@@ -17,7 +17,7 @@ struct DashboardStatCards: View {
     @Environment(\.appTheme) private var theme
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             SummaryCard(
                 title: String(localized: "Focus Time"),
                 value: formattedTotalTime,

@@ -15,14 +15,14 @@ struct PepinilloEmptyState: View {
     @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 44
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: SpacingTokens.md) {
             Image(systemName: systemImage)
                 .font(.system(size: iconSize))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(tint)
                 .accessibilityHidden(true)
 
-            VStack(spacing: 8) {
+            VStack(spacing: SpacingTokens.sm) {
                 Text(title)
                     .font(.title3.weight(.semibold))
                     .multilineTextAlignment(.center)
@@ -33,7 +33,7 @@ struct PepinilloEmptyState: View {
                     .multilineTextAlignment(.center)
             }
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, SpacingTokens.xl)
         .padding(.vertical, 48)
         .frame(maxWidth: .infinity)
         .pepinilloGlass(cornerRadius: cornerRadius, tint: tint, tintOpacity: 0.06)

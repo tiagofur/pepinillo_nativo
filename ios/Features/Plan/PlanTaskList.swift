@@ -69,8 +69,8 @@ struct PlanTaskList: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 8) {
-            VStack(spacing: 8) {
+        .safeAreaInset(edge: .bottom, spacing: SpacingTokens.sm) {
+            VStack(spacing: SpacingTokens.sm) {
                 if let deletedTask = store.recentlyDeletedTask {
                     undoBanner(taskTitle: deletedTask.title)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -146,7 +146,7 @@ struct PlanTaskList: View {
                 systemImage: filter.systemImage,
                 tint: filter.color
             )
-            .padding(.horizontal, 16)
+            .padding(.horizontal, SpacingTokens.md)
             .frame(maxHeight: .infinity)
         } else if store.isGroupedByEnergy {
             // Energy-grouped mode: sections by level, reorder disabled across sections
@@ -285,10 +285,10 @@ struct PlanTaskList: View {
                         .transition(.scale.combined(with: .opacity))
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, SpacingTokens.md)
+                .padding(.vertical, SpacingTokens.base)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, SpacingTokens.md)
             } else {
                 // Collapsed: minimal plus + label row
                 Button {
@@ -304,8 +304,8 @@ struct PlanTaskList: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, SpacingTokens.lg)
+                    .padding(.vertical, SpacingTokens.base)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -328,7 +328,7 @@ struct PlanTaskList: View {
     // MARK: - Undo Banner
 
     private func undoBanner(taskTitle: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: "trash")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -345,11 +345,11 @@ struct PlanTaskList: View {
                     .foregroundStyle(.tint)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, SpacingTokens.md)
+        .padding(.vertical, SpacingTokens.base)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         .shadow(color: .black.opacity(0.1), radius: 8, y: 4)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, SpacingTokens.md)
     }
 
 }

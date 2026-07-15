@@ -27,20 +27,20 @@ struct DashboardHeroSection: View {
                 regularBody
             }
         }
-        .padding(20)
+        .padding(SpacingTokens.lg)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(String(localized: "dashboard.hero.group.label", defaultValue: "Today's Stats"))
     }
 
     private var compactBody: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: SpacingTokens.lg) {
             streakRow
             
             Divider()
                 .opacity(0.1)
 
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 heroMetric(
                     icon: "checkmark.circle",
                     value: "\(sessionsCompleted)",
@@ -105,7 +105,7 @@ struct DashboardHeroSection: View {
             .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: SpacingTokens.sm) {
                     Text("\(streakDays)")
                         .font(NumericFont.heroStat())
                         .foregroundStyle(.primary)
@@ -147,7 +147,7 @@ struct DashboardHeroSection: View {
     }
 
     private func heroMetric(icon: String, value: String, label: String, color: Color) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: icon)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(color)
@@ -164,7 +164,7 @@ struct DashboardHeroSection: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, SpacingTokens.md)
         .padding(.vertical, 14)
         .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
         .accessibilityElement(children: .combine)
@@ -195,7 +195,7 @@ struct HeroStatCard: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
     }
 }

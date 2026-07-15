@@ -22,8 +22,8 @@ struct MonthlyReviewView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 reviewTabPicker
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.horizontal, SpacingTokens.md)
+                    .padding(.top, SpacingTokens.sm)
 
                 ScrollView {
                     switch selectedTab {
@@ -55,13 +55,13 @@ struct MonthlyReviewView: View {
             }
         }
         .pickerStyle(.segmented)
-        .padding(.bottom, 8)
+        .padding(.bottom, SpacingTokens.sm)
     }
 
     // MARK: - Data Tab
 
     private var dataTab: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: SpacingTokens.lg) {
             if store.isLoading {
                 ProgressView()
                     .padding(.top, 60)
@@ -74,8 +74,8 @@ struct MonthlyReviewView: View {
                 modeBreakdown
             }
         }
-        .padding(16)
-        .padding(.bottom, 32)
+        .padding(SpacingTokens.md)
+        .padding(.bottom, SpacingTokens.xxl)
     }
 
     // MARK: - AI Insights Tab
@@ -94,7 +94,7 @@ struct MonthlyReviewView: View {
     }
 
     private var proRequiredOverlay: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: SpacingTokens.lg) {
             Spacer()
                 .frame(height: 40)
 
@@ -109,7 +109,7 @@ struct MonthlyReviewView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .padding(.horizontal, SpacingTokens.xxl)
 
             Spacer()
         }
@@ -118,7 +118,7 @@ struct MonthlyReviewView: View {
     // MARK: - Comparison Cards
 
     private var comparisonCards: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             MonthlyTrendCard(
                 title: String(localized: "Focus Time"),
                 value: formatMinutes(store.currentMonthMinutes),
@@ -141,7 +141,7 @@ struct MonthlyReviewView: View {
     // MARK: - Completion Rate
 
     private var completionRateCard: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.largeTitle)
                 .foregroundStyle(.green)
@@ -155,7 +155,7 @@ struct MonthlyReviewView: View {
             }
             Spacer()
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
@@ -165,7 +165,7 @@ struct MonthlyReviewView: View {
     private var bestWeekCard: some View {
         Group {
             if let weekLabel = store.bestWeekLabel, store.bestWeekMinutes > 0 {
-                HStack(spacing: 12) {
+                HStack(spacing: SpacingTokens.base) {
                     Image(systemName: "star.fill")
                         .font(.largeTitle)
                         .foregroundStyle(.yellow)
@@ -179,7 +179,7 @@ struct MonthlyReviewView: View {
                     }
                     Spacer()
                 }
-                .padding(16)
+                .padding(SpacingTokens.md)
                 .frame(maxWidth: .infinity)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
@@ -191,7 +191,7 @@ struct MonthlyReviewView: View {
     private var topTasksSection: some View {
         Group {
             if !store.topTasks.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: SpacingTokens.base) {
                     Text(String(localized: "Top Tasks"))
                         .font(.headline)
 
@@ -207,7 +207,7 @@ struct MonthlyReviewView: View {
                         }
                     }
                 }
-                .padding(16)
+                .padding(SpacingTokens.md)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
@@ -218,7 +218,7 @@ struct MonthlyReviewView: View {
     private var dominantModeCard: some View {
         Group {
             if let mode = store.currentMonthDominantMode {
-                HStack(spacing: 12) {
+                HStack(spacing: SpacingTokens.base) {
                     Text(mode.icon)
                         .font(.largeTitle)
                     VStack(alignment: .leading, spacing: 2) {
@@ -231,7 +231,7 @@ struct MonthlyReviewView: View {
                     }
                     Spacer()
                 }
-                .padding(16)
+                .padding(SpacingTokens.md)
                 .frame(maxWidth: .infinity)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
@@ -243,7 +243,7 @@ struct MonthlyReviewView: View {
     private var modeBreakdown: some View {
         Group {
             if !store.modeDistribution.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: SpacingTokens.base) {
                     Text(String(localized: "Mode Distribution"))
                         .font(.headline)
 
@@ -259,7 +259,7 @@ struct MonthlyReviewView: View {
                         }
                     }
                 }
-                .padding(16)
+                .padding(SpacingTokens.md)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
@@ -286,7 +286,7 @@ struct MonthlyTrendCard: View {
     let color: Color
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             Text(value)
                 .font(.title2)
                 .fontWeight(.bold)
@@ -294,7 +294,7 @@ struct MonthlyTrendCard: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 4) {
+            HStack(spacing: SpacingTokens.xs) {
                 Image(systemName: trendIcon)
                     .font(.caption2)
                 Text(delta == 0 ? "—" : (delta > 0 ? "+\(deltaLabel)" : "-\(deltaLabel)"))
@@ -303,7 +303,7 @@ struct MonthlyTrendCard: View {
             .foregroundStyle(trendColor)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 

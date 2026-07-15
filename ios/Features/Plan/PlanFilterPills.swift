@@ -14,14 +14,14 @@ struct PlanFilterPills: View {
     var body: some View {
         Group {
             if #available(iOS 26.0, macOS 26.0, *) {
-                GlassEffectContainer(spacing: 8) {
+                GlassEffectContainer(spacing: SpacingTokens.sm) {
                     scrollContent
                 }
             } else {
                 scrollContent
             }
         }
-        .padding(.vertical, 8)
+        .padding(.vertical, SpacingTokens.sm)
     }
 
     private var scrollContent: some View {
@@ -31,7 +31,7 @@ struct PlanFilterPills: View {
                     pillButton(for: filter)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, SpacingTokens.md)
         }
     }
 
@@ -54,7 +54,7 @@ struct PlanFilterPills: View {
             }
             .foregroundStyle(isSelected ? filter.color : .primary)
             .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.vertical, SpacingTokens.sm)
             .planFilterGlass(
                 filter: filter,
                 isSelected: isSelected,

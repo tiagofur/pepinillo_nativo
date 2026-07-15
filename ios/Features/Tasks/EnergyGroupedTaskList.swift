@@ -27,7 +27,7 @@ struct EnergySuggestionBanner: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: suggestedLevel.icon)
                 .font(.title3)
                 .foregroundStyle(suggestedLevel.color)
@@ -75,8 +75,8 @@ struct EnergySuggestionBanner: View {
                         .stroke(suggestedLevel.color.opacity(0.22), lineWidth: 1)
                 )
         )
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
+        .padding(.horizontal, SpacingTokens.base)
+        .padding(.top, SpacingTokens.sm)
         .transition(.asymmetric(
             insertion: .move(edge: .top).combined(with: .opacity),
             removal: .opacity
@@ -91,7 +91,7 @@ struct EnergySectionHeader: View {
     let count: Int
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SpacingTokens.sm) {
             Image(systemName: level.icon)
                 .font(.subheadline)
                 .foregroundStyle(level.color)
@@ -106,11 +106,11 @@ struct EnergySectionHeader: View {
 
             Spacer()
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, SpacingTokens.md)
         .padding(.vertical, 6)
         .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
-        .padding(.horizontal, 12)
-        .padding(.top, 4)
+        .padding(.horizontal, SpacingTokens.base)
+        .padding(.top, SpacingTokens.xs)
         // Remove default list section header insets
         .listRowInsets(EdgeInsets())
         .listRowBackground(Color.clear)

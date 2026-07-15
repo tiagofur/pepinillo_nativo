@@ -162,14 +162,14 @@ struct FocusView: View {
             focusCoreContainer
                 .frame(maxWidth: 600)
                 .frame(height: size.height * 0.55)
-                .padding(.top, 4)
+                .padding(.top, SpacingTokens.xs)
 
             // Separator
             Rectangle()
                 .fill(.quaternary)
                 .frame(height: 1)
-                .padding(.horizontal, 32)
-                .padding(.vertical, 12)
+                .padding(.horizontal, SpacingTokens.xxl)
+                .padding(.vertical, SpacingTokens.base)
 
             // Bottom: Metrics cards in a 2-col adaptive grid — 40% remaining
             ScrollView {
@@ -185,7 +185,7 @@ struct FocusView: View {
             .scrollBounceBehavior(.basedOnSize)
             .frame(maxHeight: .infinity)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, SpacingTokens.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -193,12 +193,12 @@ struct FocusView: View {
 
     @ViewBuilder
     private func ipadLandscapeLayout(in size: CGSize) -> some View {
-        VStack(spacing: 12) {
+        VStack(spacing: SpacingTokens.base) {
             modePickerHeader
                 .frame(maxWidth: 720)
                 .frame(maxWidth: .infinity)
 
-            HStack(alignment: .top, spacing: 32) {
+            HStack(alignment: .top, spacing: SpacingTokens.xxl) {
                 landscapeFocusColumn
                     .frame(maxWidth: 540)
                     .frame(maxWidth: .infinity)
@@ -213,15 +213,15 @@ struct FocusView: View {
             }
             .frame(maxWidth: .infinity)
         }
-        .padding(.horizontal, 24)
-        .padding(.top, 8)
+        .padding(.horizontal, SpacingTokens.xl)
+        .padding(.top, SpacingTokens.sm)
         .contentMaxWidth()
     }
 
     @ViewBuilder
     private var landscapeFocusColumn: some View {
         if #available(iOS 26.0, macOS 26.0, *) {
-            GlassEffectContainer(spacing: 12) {
+            GlassEffectContainer(spacing: SpacingTokens.base) {
                 focusCoreBody(timerMaxSize: 500)
             }
         } else {
@@ -234,7 +234,7 @@ struct FocusView: View {
     @ViewBuilder
     private var focusCoreContainer: some View {
         if #available(iOS 26.0, macOS 26.0, *) {
-            GlassEffectContainer(spacing: 12) {
+            GlassEffectContainer(spacing: SpacingTokens.base) {
                 focusCoreColumn
             }
         } else {
@@ -266,8 +266,8 @@ struct FocusView: View {
                     onSelect: { store.send(.modeSelected($0)) },
                     glassNamespace: glassNS
                 )
-                .padding(.top, 4)
-                .padding(.bottom, 32)
+                .padding(.top, SpacingTokens.xs)
+                .padding(.bottom, SpacingTokens.xxl)
                 .transition(reduceMotion ? .identity : .move(edge: .top).combined(with: .opacity))
             }
 
@@ -277,8 +277,8 @@ struct FocusView: View {
                     onAccept: { store.send(.modeSuggestionAccepted) },
                     onDismiss: { store.send(.modeSuggestionDismissed) }
                 )
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
+                .padding(.horizontal, SpacingTokens.md)
+                .padding(.top, SpacingTokens.base)
             }
         }
     }
@@ -297,7 +297,7 @@ struct FocusView: View {
                 FocusAmbientGlow(color: modeColor)
 
                 TimerCircleView(store: store)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, SpacingTokens.xl)
             }
             .frame(maxWidth: timerMaxSize, maxHeight: timerMaxSize)
             .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
@@ -307,7 +307,7 @@ struct FocusView: View {
                 .fontWeight(.bold)
                 .tracking(2)
                 .foregroundStyle(.secondary)
-                .padding(.top, 16)
+                .padding(.top, SpacingTokens.md)
                 .id(store.phaseLabel)
                 .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .bottom)))
 
@@ -317,7 +317,7 @@ struct FocusView: View {
                     Button {
                         store.send(.taskPickerTapped)
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: SpacingTokens.sm) {
                             if let icon = store.linkedTaskIcon {
                                 Image(systemName: icon)
                                     .font(.subheadline)
@@ -336,13 +336,13 @@ struct FocusView: View {
                                 .font(.caption)
                         }
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, SpacingTokens.md)
+                        .padding(.vertical, SpacingTokens.sm)
                         .adaptiveGlassCapsule(id: "linked-task-button", namespace: glassNS)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(localized: "Linked task: \(taskTitle). Tap to change or unlink."))
-                    .padding(.top, 8)
+                    .padding(.top, SpacingTokens.sm)
                 } else {
                     Button {
                         store.send(.taskPickerTapped)
@@ -357,7 +357,7 @@ struct FocusView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(String(localized: "Link a task to this session"))
-                    .padding(.top, 8)
+                    .padding(.top, SpacingTokens.sm)
                 }
             }
 
@@ -365,16 +365,16 @@ struct FocusView: View {
 
             // Controls (bottom) — start/pause/stop (with ± duration flanking start in TimeBlock idle)
             controlButtons
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+                .padding(.horizontal, SpacingTokens.md)
+                .padding(.bottom, SpacingTokens.xl)
 
             // Soundscape shortcut stays compact-only; regular layouts use the companion card.
             if sizeClass != .regular {
-                HStack(spacing: 24) {
+                HStack(spacing: SpacingTokens.xl) {
                     Button {
                         store.send(.soundscapePickerTapped)
                     } label: {
-                        HStack(spacing: 8) {
+                        HStack(spacing: SpacingTokens.sm) {
                             Image(systemName: store.selectedSoundscape.systemImage)
                                 .font(.title3)
                                 .symbolRenderingMode(.hierarchical)
@@ -389,15 +389,15 @@ struct FocusView: View {
                                 .font(.subheadline.weight(.medium))
                         }
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, SpacingTokens.md)
+                        .padding(.vertical, SpacingTokens.sm)
                         .adaptiveGlassCapsule(id: "soundscape-button", namespace: glassNS)
                     }
                     .buttonStyle(.plain)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 40)
-                .padding(.bottom, 16)
+                .padding(.bottom, SpacingTokens.md)
             }
         }
     }
@@ -408,7 +408,7 @@ struct FocusView: View {
 
     @ViewBuilder
     private var controlButtons: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             if store.isRunning && store.isWaitingForNextPhase {
                 // Waiting-for-next-phase state: auto-start is OFF.
                 // Show a stop button and a prominent CTA to start the next phase.
@@ -434,7 +434,7 @@ struct FocusView: View {
                     store.send(.startNextPhaseTapped)
                     HapticManager.impact(.medium)
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: SpacingTokens.sm) {
                         Image(systemName: "play.fill")
                         Text(nextPhaseButtonLabel)
                             .fontWeight(.semibold)
@@ -551,7 +551,7 @@ struct FocusView: View {
                     store.send(.startTapped())
                     HapticManager.impact(.medium)
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: SpacingTokens.sm) {
                         Image(systemName: "play.fill")
                         Text(String(localized: "Start \(store.selectedMode.displayName)"))
                             .fontWeight(.semibold)
@@ -755,8 +755,8 @@ struct ModePickerView: View {
                             .minimumScaleFactor(0.8)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 4)
+                    .padding(.vertical, SpacingTokens.sm)
+                    .padding(.horizontal, SpacingTokens.xs)
                     .foregroundStyle(isSelected ? modeAccent : .secondary)
                     .modePillBackground(
                         mode: mode,
@@ -781,7 +781,7 @@ struct ModePickerView: View {
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, SpacingTokens.md)
     }
 
     private func modePickerLabel(for mode: FocusMode, isLocked: Bool) -> String {
@@ -1056,7 +1056,7 @@ private struct TimerCenterContent: View {
     let reduceMotion: Bool
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: SpacingTokens.xs) {
             // Mode icon — hierarchical SF Symbol above digits
             Image(systemName: store.modeIcon)
                 .font(.system(size: 28))

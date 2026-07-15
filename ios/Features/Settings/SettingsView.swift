@@ -233,7 +233,7 @@ struct SettingsView: View {
     private var themeSection: some View {
         Section {
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: SpacingTokens.base) {
                     ForEach(AppTheme.all, id: \.name) { t in
                         ThemePreviewCell(
                             theme: t,
@@ -243,8 +243,8 @@ struct SettingsView: View {
                         }
                     }
                 }
-                .padding(.vertical, 8)
-                .padding(.horizontal, 4)
+                .padding(.vertical, SpacingTokens.sm)
+                .padding(.horizontal, SpacingTokens.xs)
             }
             .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
 
@@ -455,7 +455,7 @@ struct ThemePreviewCell: View {
             HapticManager.selection()
             onTap()
         }) {
-            VStack(spacing: 8) {
+            VStack(spacing: SpacingTokens.sm) {
                 // Color dots
                 HStack(spacing: 5) {
                     ForEach([theme.pomodoroColor, theme.flowtimeColor, theme.timeBlockColor, theme.stopwatchColor], id: \.self) { color in

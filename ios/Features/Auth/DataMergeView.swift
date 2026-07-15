@@ -11,7 +11,7 @@ struct DataMergeView: View {
     let onUseAccountOnly: () -> Void
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: SpacingTokens.xl) {
             Image(systemName: "arrow.triangle.2.circlepath")
                 .font(.system(size: 48))
                 .foregroundStyle(Color.accentColor)
@@ -23,7 +23,7 @@ struct DataMergeView: View {
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
 
-            VStack(spacing: 12) {
+            VStack(spacing: SpacingTokens.base) {
                 Button(String(localized: "datamerge.merge.button", defaultValue: "Merge Data")) { onMerge() }
                     .buttonStyle(.borderedProminent)
                     .frame(maxWidth: .infinity)
@@ -35,6 +35,6 @@ struct DataMergeView: View {
                     .frame(minHeight: 52)
             }
         }
-        .padding(24)
+        .padding(SpacingTokens.xl)
     }
 }

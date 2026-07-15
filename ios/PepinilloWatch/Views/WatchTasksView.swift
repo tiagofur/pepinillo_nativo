@@ -42,7 +42,7 @@ struct WatchTasksView: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, SpacingTokens.sm)
                 .padding(.bottom, 6)
 
                 // Tasks
@@ -55,7 +55,7 @@ struct WatchTasksView: View {
                     )
                 }
             }
-            .padding(.top, 4)
+            .padding(.top, SpacingTokens.xs)
         }
     }
 
@@ -73,7 +73,7 @@ struct WatchTasksView: View {
     // MARK: - Empty State
 
     private var emptyState: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             Image(systemName: "checklist")
                 .font(.system(size: 28))
                 .foregroundStyle(.tertiary)
@@ -98,7 +98,7 @@ private struct WatchTaskRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 8) {
+            HStack(spacing: SpacingTokens.sm) {
                 // Completion indicator
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 16))
@@ -113,7 +113,7 @@ private struct WatchTaskRow: View {
                         .strikethrough(task.isCompleted)
                         .lineLimit(2)
 
-                    HStack(spacing: 4) {
+                    HStack(spacing: SpacingTokens.xs) {
                         // Priority indicator
                         if task.priority >= 3 {
                             Image(systemName: "exclamationmark.triangle.fill")
@@ -147,8 +147,8 @@ private struct WatchTaskRow: View {
                         .foregroundStyle(ModeColors.pomodoro)
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
+            .padding(.horizontal, SpacingTokens.sm)
+            .padding(.vertical, SpacingTokens.sm)
             .background(
                 isLinked
                     ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))

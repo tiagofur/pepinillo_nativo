@@ -36,7 +36,7 @@ struct TaskDetailView: View {
 
     private var formContent: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: SpacingTokens.lg) {
                 titleSection
                 subtasksSection
                 schedulingSection
@@ -51,8 +51,8 @@ struct TaskDetailView: View {
         }
             .frame(maxWidth: 760)
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 20)
+            .padding(.horizontal, SpacingTokens.lg)
+            .padding(.vertical, SpacingTokens.lg)
         }
         .navigationTitle(String(localized: "Task Details"))
         .navigationBarTitleDisplayMode(.inline)
@@ -111,7 +111,7 @@ struct TaskDetailView: View {
 
     private var titleSection: some View {
         VStack {
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 Button {
                     store.send(.completionToggled)
                     HapticManager.notification(.success)
@@ -141,23 +141,23 @@ struct TaskDetailView: View {
             }
             .padding(.vertical, 2)
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private var subtasksSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             let completed = store.subtasks.filter(\.isCompleted).count
             let total = store.subtasks.count
             
             Text(total > 0 ? String(localized: "Subtasks (\(completed)/\(total))") : String(localized: "Subtasks"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .padding(.bottom, 4)
+                .padding(.bottom, SpacingTokens.xs)
 
-            VStack(spacing: 12) {
+            VStack(spacing: SpacingTokens.base) {
                 if let loadError = store.loadError {
-                    VStack(spacing: 8) {
+                    VStack(spacing: SpacingTokens.sm) {
                         Text(loadError)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -168,14 +168,14 @@ struct TaskDetailView: View {
                         .buttonStyle(.bordered)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, SpacingTokens.sm)
                 } else if store.subtasks.isEmpty && store.isLoading {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                 }
 
                 ForEach(store.subtasks) { subtask in
-                    HStack(spacing: 12) {
+                    HStack(spacing: SpacingTokens.base) {
                         Button {
                             store.send(.subtaskToggled(subtask.id))
                             HapticManager.impact(.light)
@@ -217,7 +217,7 @@ struct TaskDetailView: View {
                     .submitLabel(.done)
                     .onSubmit { store.send(.addSubtaskTapped) }
                     .foregroundStyle(.secondary)
-                    .padding(.top, 4)
+                    .padding(.top, SpacingTokens.xs)
                 } else {
                     Button {
                         store.send(.paywallTapped)
@@ -230,19 +230,19 @@ struct TaskDetailView: View {
                             Spacer()
                         }
                         .foregroundStyle(.secondary)
-                        .padding(.vertical, 8)
-                        .padding(.top, 4)
+                        .padding(.vertical, SpacingTokens.sm)
+                        .padding(.top, SpacingTokens.xs)
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(16)
+            .padding(SpacingTokens.md)
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
     private var schedulingSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Toggle(isOn: Binding(
                 get: { store.scheduledForToday },
                 set: { store.send(.scheduledForTodayChanged($0)) }
@@ -257,7 +257,7 @@ struct TaskDetailView: View {
                 .opacity(0.1)
 
             if store.dueDate != nil {
-                HStack(alignment: .center, spacing: 12) {
+                HStack(alignment: .center, spacing: SpacingTokens.base) {
                     Label(String(localized: "Due Date"), systemImage: "calendar")
                         .foregroundStyle(.secondary)
                     Spacer(minLength: 12)
@@ -282,7 +282,7 @@ struct TaskDetailView: View {
                 Button {
                     store.send(.dueDateChanged(Calendar.current.date(byAdding: .day, value: 1, to: .now)))
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(spacing: SpacingTokens.base) {
                         Label(String(localized: "Add due date"), systemImage: "calendar.badge.plus")
                             .foregroundStyle(.secondary)
                         Spacer(minLength: 4)
@@ -295,17 +295,17 @@ struct TaskDetailView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private var metadataSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Priority & Focus"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .padding(.bottom, 4)
+                .padding(.bottom, SpacingTokens.xs)
 
             VStack(spacing: 14) {
                 planEditorRow(String(localized: "Priority"), systemImage: "arrow.up") {
@@ -354,7 +354,7 @@ struct TaskDetailView: View {
                 Divider().opacity(0.1)
 
                 planEditorRow(String(localized: "Pomodoros"), systemImage: "timer") {
-                    HStack(spacing: 4) {
+                    HStack(spacing: SpacingTokens.xs) {
                         // Decrement — ≥44pt target
                         Button {
                             let current = store.estimatedPomodoros
@@ -399,14 +399,14 @@ struct TaskDetailView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(SpacingTokens.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
     private var recurrenceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Recurrence"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -454,13 +454,13 @@ struct TaskDetailView: View {
                 }
                 }
             }
-            .padding(16)
+            .padding(SpacingTokens.md)
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
     private var notesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Notes"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -475,13 +475,13 @@ struct TaskDetailView: View {
             .scrollContentBackground(.hidden)
             .background(Color.clear)
             .frame(minHeight: 120)
-            .padding(12)
+            .padding(SpacingTokens.base)
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
 
     private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Focus History"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -507,10 +507,10 @@ struct TaskDetailView: View {
                     Label(String(localized: "Focus Analytics"), systemImage: "chart.bar.xaxis")
                         .font(.headline)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, SpacingTokens.sm)
                 }
             }
-            .padding(16)
+            .padding(SpacingTokens.md)
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }
@@ -540,7 +540,7 @@ struct TaskDetailView: View {
                 .font(.subheadline.bold())
                 .foregroundStyle(.red)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, SpacingTokens.base)
         }
     }
 
@@ -564,7 +564,7 @@ struct TaskDetailView: View {
         systemImage: String,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(alignment: .center, spacing: SpacingTokens.base) {
             Label(title, systemImage: systemImage)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 12)

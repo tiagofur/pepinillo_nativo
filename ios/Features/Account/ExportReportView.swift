@@ -68,14 +68,14 @@ struct ExportReportView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            Divider().padding(.vertical, 16)
+            Divider().padding(.vertical, SpacingTokens.md)
             summarySection
             if !payload.sessions.isEmpty {
-                Divider().padding(.vertical, 16)
+                Divider().padding(.vertical, SpacingTokens.md)
                 sessionsSection
             }
             if !payload.tasks.isEmpty {
-                Divider().padding(.vertical, 16)
+                Divider().padding(.vertical, SpacingTokens.md)
                 tasksSection
             }
             Spacer(minLength: 24)
@@ -91,7 +91,7 @@ struct ExportReportView: View {
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
+                HStack(spacing: SpacingTokens.sm) {
                     Image(systemName: "timer")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(Color(red: 0.2, green: 0.7, blue: 0.4))
@@ -113,7 +113,7 @@ struct ExportReportView: View {
 
             Spacer()
 
-            VStack(alignment: .trailing, spacing: 4) {
+            VStack(alignment: .trailing, spacing: SpacingTokens.xs) {
                 Text(String(localized: "export.report.generated_on",
                             defaultValue: "Generated on"))
                     .font(.system(size: 11))
@@ -128,14 +128,14 @@ struct ExportReportView: View {
     // MARK: - Summary
 
     private var summarySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             sectionTitle(String(localized: "export.section.summary", defaultValue: "Summary"))
 
             LazyVGrid(columns: [
                 GridItem(.flexible()),
                 GridItem(.flexible()),
                 GridItem(.flexible())
-            ], spacing: 12) {
+            ], spacing: SpacingTokens.base) {
                 statCard(
                     value: "\(totalFocusMinutes)",
                     label: String(localized: "export.stat.focus_minutes", defaultValue: "Focus Minutes"),
@@ -176,7 +176,7 @@ struct ExportReportView: View {
                         .padding(.vertical, 2)
                     }
                 }
-                .padding(12)
+                .padding(SpacingTokens.base)
                 .background(Color(.systemGray6))
                 .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
             }
@@ -186,7 +186,7 @@ struct ExportReportView: View {
     // MARK: - Sessions Table
 
     private var sessionsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             sectionTitle(String(localized: "Focus Sessions"))
 
             // Table header
@@ -221,7 +221,7 @@ struct ExportReportView: View {
                             defaultValue: "Showing 30 of \(payload.sessions.count) sessions. Full data available in the CSV export."))
                     .font(.system(size: 10))
                     .foregroundStyle(Color(.gray))
-                    .padding(.top, 4)
+                    .padding(.top, SpacingTokens.xs)
             }
         }
     }
@@ -229,7 +229,7 @@ struct ExportReportView: View {
     // MARK: - Tasks Table
 
     private var tasksSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             sectionTitle(String(localized: "Tasks & Completions"))
 
             tableRow(
@@ -263,7 +263,7 @@ struct ExportReportView: View {
                             defaultValue: "Showing 30 of \(payload.tasks.count) tasks. Full data available in the CSV export."))
                     .font(.system(size: 10))
                     .foregroundStyle(Color(.gray))
-                    .padding(.top, 4)
+                    .padding(.top, SpacingTokens.xs)
             }
         }
     }
@@ -280,7 +280,7 @@ struct ExportReportView: View {
                 .font(.system(size: 9))
                 .foregroundStyle(Color(.lightGray))
         }
-        .padding(.top, 8)
+        .padding(.top, SpacingTokens.sm)
     }
 
     // MARK: - Reusable Components
@@ -294,7 +294,7 @@ struct ExportReportView: View {
 
     private func statCard(value: String, label: String, icon: String, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 4) {
+            HStack(spacing: SpacingTokens.xs) {
                 Image(systemName: icon)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(color)
@@ -309,7 +309,7 @@ struct ExportReportView: View {
                 .foregroundStyle(.black)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(SpacingTokens.base)
         .background(color.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
         .overlay(
@@ -335,7 +335,7 @@ struct ExportReportView: View {
                     .truncationMode(.tail)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 5)
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, SpacingTokens.xs)
             }
         }
         .background(

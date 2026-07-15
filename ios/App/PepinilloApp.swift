@@ -344,7 +344,7 @@ struct PepinilloApp: App {
             } else {
                 Group {
                     if bootstrap.phase == .failed {
-                        VStack(spacing: 16) {
+                        VStack(spacing: SpacingTokens.md) {
                             Image("LaunchLogo")
                                 .resizable()
                                 .scaledToFit()

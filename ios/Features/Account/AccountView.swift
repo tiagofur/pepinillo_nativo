@@ -22,7 +22,7 @@ struct AccountView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: SpacingTokens.lg) {
                     userSection
                     subscriptionSection
                     configurationSection
@@ -30,7 +30,7 @@ struct AccountView: View {
                     accountSection
                 }
                 .contentMaxWidth(900)
-                .padding(.vertical, 20)
+                .padding(.vertical, SpacingTokens.lg)
             }
             .navigationTitle(String(localized: "More"))
             .scrollContentBackground(.hidden)
@@ -90,7 +90,7 @@ struct AccountView: View {
             }
         }
         .pepinilloGlass()
-        .padding(.horizontal, 20)
+        .padding(.horizontal, SpacingTokens.lg)
     }
 
     private var signedInLabel: some View {
@@ -99,8 +99,8 @@ struct AccountView: View {
                 avatarView
                     .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.xs) {
+                    HStack(spacing: SpacingTokens.sm) {
                         Text(signedInDisplayName)
                             .font(.headline)
                             .foregroundStyle(.primary)
@@ -131,7 +131,7 @@ struct AccountView: View {
                     .accessibilityHidden(true)
             }
 
-            HStack(spacing: 8) {
+            HStack(spacing: SpacingTokens.sm) {
                 statusChip(
                     systemImage: store.subscriptionState.isPro ? "crown.fill" : "person.crop.circle.badge.checkmark",
                     title: subscriptionLabel,
@@ -167,7 +167,7 @@ struct AccountView: View {
     }
 
     private var guestHeader: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: SpacingTokens.lg) {
             HStack(spacing: 14) {
                 Circle()
                     .fill(theme.pomodoroColor.opacity(0.14))
@@ -179,7 +179,7 @@ struct AccountView: View {
                     }
                     .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                     Text(greeting)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -197,7 +197,7 @@ struct AccountView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(String(localized: "a11y.account.guest.label", defaultValue: "Not signed in. Set up your profile to save data across devices."))
 
-            AdaptiveLayout(isHStack: horizontalSizeClass == UserInterfaceSizeClass.regular, spacing: 12) {
+            AdaptiveLayout(isHStack: horizontalSizeClass == UserInterfaceSizeClass.regular, spacing: SpacingTokens.base) {
                 appleSignInButton
                 emailSignInButton
             }
@@ -208,7 +208,7 @@ struct AccountView: View {
     private var appleSignInButton: some View {
         ZStack {
             // Liquid Glass Background & Label (Visual Only)
-            HStack(spacing: 8) {
+            HStack(spacing: SpacingTokens.sm) {
                 Image(systemName: "apple.logo")
                     .font(.subheadline.weight(.semibold))
                 Text(String(localized: "Continue with Apple"))
@@ -277,7 +277,7 @@ struct AccountView: View {
         Button {
             store.send(.showAuth)
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: SpacingTokens.sm) {
                 Image(systemName: "envelope.fill")
                 Text(String(localized: "Use Email or Create Account"))
             }
@@ -353,7 +353,7 @@ struct AccountView: View {
             .accessibilityHint(String(localized: "a11y.account.nav.subscription.hint", defaultValue: "Opens subscription plan options"))
         }
         .pepinilloGlass()
-        .padding(.horizontal, 20)
+        .padding(.horizontal, SpacingTokens.lg)
     }
 
     // MARK: - Configuration
@@ -398,7 +398,7 @@ struct AccountView: View {
             .accessibilityHint(String(localized: "a11y.account.nav.export.hint", defaultValue: "Opens data export options"))
         }
         .pepinilloGlass()
-        .padding(.horizontal, 20)
+        .padding(.horizontal, SpacingTokens.lg)
     }
 
     // MARK: - Support
@@ -440,7 +440,7 @@ struct AccountView: View {
             .accessibilityHint(String(localized: "a11y.account.nav.about.hint", defaultValue: "Opens information about this app"))
         }
         .pepinilloGlass()
-        .padding(.horizontal, 20)
+        .padding(.horizontal, SpacingTokens.lg)
     }
 
     // MARK: - Account
@@ -455,7 +455,7 @@ struct AccountView: View {
                     Label(String(localized: "Sign Out"), systemImage: "rectangle.portrait.and.arrow.right")
                         .foregroundStyle(.red)
                         .padding(.vertical, 14)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, SpacingTokens.md)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
@@ -471,13 +471,13 @@ struct AccountView: View {
                     Label(String(localized: "Delete Account"), systemImage: "person.badge.minus")
                         .foregroundStyle(.red)
                         .padding(.vertical, 14)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, SpacingTokens.md)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .buttonStyle(.plain)
             }
             .pepinilloGlass()
-            .padding(.horizontal, 20)
+            .padding(.horizontal, SpacingTokens.lg)
         } else {
             EmptyView()
         }
@@ -574,7 +574,7 @@ private extension View {
     func accountRowPadding() -> some View {
         self
             .padding(.vertical, 14)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, SpacingTokens.md)
             .contentShape(Rectangle())
     }
 }

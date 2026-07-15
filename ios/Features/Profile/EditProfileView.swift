@@ -21,7 +21,7 @@ struct EditProfileView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: SpacingTokens.xl) {
                 // Avatar
                 avatarSection
 
@@ -32,7 +32,7 @@ struct EditProfileView: View {
                     .accessibilityAddTraits(.isStaticText)
 
                 // Name field
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.sm) {
                     Text(String(localized: "editprofile.name.label", defaultValue: "Name"))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -47,7 +47,7 @@ struct EditProfileView: View {
                 }
 
                 // Email field
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.sm) {
                     Text(String(localized: "editprofile.email.label", defaultValue: "Email"))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -65,7 +65,7 @@ struct EditProfileView: View {
                 }
 
                 // Birth date
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.sm) {
                     Text(String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
@@ -108,7 +108,7 @@ struct EditProfileView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(store.isLoading || store.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
-            .padding(24)
+            .padding(SpacingTokens.xl)
         }
         .navigationTitle(String(localized: "editprofile.title", defaultValue: "Edit Profile"))
         .navigationBarTitleDisplayMode(.inline)
@@ -123,7 +123,7 @@ struct EditProfileView: View {
 
     @ViewBuilder
     private var avatarSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: SpacingTokens.base) {
             // Avatar circle
             ZStack {
                 Circle()

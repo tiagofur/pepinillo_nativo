@@ -30,7 +30,7 @@ struct TasksWidgetSmall: View {
     var body: some View {
         Group {
             if showsBackground {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.sm) {
                     HStack(spacing: 6) {
                         Image(systemName: "checklist")
                             .font(.caption2)
@@ -49,7 +49,7 @@ struct TasksWidgetSmall: View {
                     Spacer(minLength: 4)
 
                     if entry.tasks.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                             Image(systemName: "checkmark.circle")
                                 .font(.title2)
                                 .foregroundStyle(.green)
@@ -71,7 +71,7 @@ struct TasksWidgetSmall: View {
                             .foregroundStyle(.secondary)
 
                         if let first = entry.tasks.first {
-                            HStack(spacing: 4) {
+                            HStack(spacing: SpacingTokens.xs) {
                                 Text(energyEmoji(for: first.energyIcon))
                                     .font(.caption2)
                                 Text(first.title)
@@ -84,7 +84,7 @@ struct TasksWidgetSmall: View {
                 .padding(0)
             } else {
                 // StandBy mode
-                VStack(spacing: 8) {
+                VStack(spacing: SpacingTokens.sm) {
                     Text("\(entry.tasks.count)")
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
@@ -176,7 +176,7 @@ struct TasksWidgetMedium: View {
                 .padding(0)
             } else {
                 // StandBy mode
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.sm) {
                     if let first = entry.tasks.first {
                         Text(first.title)
                             .font(.system(size: 32, weight: .bold, design: .rounded))
@@ -215,7 +215,7 @@ struct TasksWidgetLarge: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: SpacingTokens.sm) {
             HStack {
                 HStack(spacing: 6) {
                     Image(systemName: "checklist")
@@ -237,7 +237,7 @@ struct TasksWidgetLarge: View {
                 Spacer()
                 HStack {
                     Spacer()
-                    VStack(spacing: 8) {
+                    VStack(spacing: SpacingTokens.sm) {
                         Image(systemName: "checkmark.circle")
                             .font(.largeTitle)
                             .foregroundStyle(.green)
@@ -289,7 +289,7 @@ private struct LinkedTaskChip: View {
     let task: TasksWidgetEntry.WidgetTask
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SpacingTokens.sm) {
             Image(systemName: "timer")
                 .font(.caption)
                 .foregroundStyle(.white)
@@ -302,7 +302,7 @@ private struct LinkedTaskChip: View {
                     .foregroundStyle(.white)
                     .lineLimit(1)
 
-                HStack(spacing: 4) {
+                HStack(spacing: SpacingTokens.xs) {
                     Text(String(localized: "In progress"))
                         .font(.caption2)
                         .fontWeight(.semibold)
@@ -369,7 +369,7 @@ private struct TaskRowInteractive: View {
     let canStartFocus: Bool
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SpacingTokens.sm) {
             // Completion toggle
             Button(intent: CompleteTaskFromWidgetIntent(taskID: task.id)) {
                 Image(systemName: "circle")

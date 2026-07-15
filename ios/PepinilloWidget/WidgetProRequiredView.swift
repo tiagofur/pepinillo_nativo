@@ -8,7 +8,7 @@ struct WidgetProRequiredView: View {
     let title: String
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             Image(systemName: "lock.fill")
                 .font(.title2)
                 .foregroundStyle(.secondary)

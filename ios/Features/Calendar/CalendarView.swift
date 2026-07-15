@@ -15,7 +15,7 @@ struct CalendarView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(spacing: SpacingTokens.lg) {
                 monthHeader
                 calendarGrid
                 if let detail = store.selectedDayDetail {
@@ -23,8 +23,8 @@ struct CalendarView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 32)
+            .padding(.horizontal, SpacingTokens.md)
+            .padding(.bottom, SpacingTokens.xxl)
         }
         .navigationTitle(String(localized: "Calendar"))
         .navigationBarTitleDisplayMode(.inline)
@@ -63,13 +63,13 @@ struct CalendarView: View {
                     .frame(width: 44, height: 44)
             }
         }
-        .padding(.top, 8)
+        .padding(.top, SpacingTokens.sm)
     }
 
     // MARK: - Calendar Grid
 
     private var calendarGrid: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             // Weekday headers
             LazyVGrid(columns: columns, spacing: 0) {
                 ForEach(orderedWeekdaySymbols, id: \.self) { symbol in
@@ -93,7 +93,7 @@ struct CalendarView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
@@ -109,7 +109,7 @@ struct CalendarView: View {
         return Button {
             store.send(.daySelected(date))
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: SpacingTokens.xs) {
                 Text("\(day)")
                     .font(.system(.body, design: .rounded, weight: isToday ? .bold : .regular))
                     .foregroundStyle(
@@ -138,7 +138,7 @@ struct CalendarView: View {
     // MARK: - Day Detail Card
 
     private func dayDetailCard(_ detail: CalendarFeature.State.DayDetail) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: SpacingTokens.md) {
             // Date header
             Text(fullDateString(from: detail.date))
                 .font(.headline)
@@ -166,7 +166,7 @@ struct CalendarView: View {
 
             // Sessions list
             if !detail.sessions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.sm) {
                     Text(String(localized: "Focus Sessions"))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -179,7 +179,7 @@ struct CalendarView: View {
 
             // Tasks list
             if !detail.tasks.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.sm) {
                     Text(String(localized: "Tasks"))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -194,7 +194,7 @@ struct CalendarView: View {
             if detail.sessions.isEmpty && detail.tasks.isEmpty {
                 HStack {
                     Spacer()
-                    VStack(spacing: 8) {
+                    VStack(spacing: SpacingTokens.sm) {
                         Image(systemName: "moon.zzz")
                             .font(.title2)
                             .foregroundStyle(.tertiary)
@@ -202,17 +202,17 @@ struct CalendarView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.vertical, 12)
+                    .padding(.vertical, SpacingTokens.base)
                     Spacer()
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     private func summaryItem(icon: String, value: String, label: String) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: SpacingTokens.xs) {
             Image(systemName: icon)
                 .font(.title3)
                 .foregroundStyle(Color.accentColor)
@@ -227,7 +227,7 @@ struct CalendarView: View {
 
     private func sessionRow(_ session: CalendarFeature.State.SessionSummary) -> some View {
         let mode = FocusMode(rawValue: session.mode) ?? .pomodoro
-        return HStack(spacing: 12) {
+        return HStack(spacing: SpacingTokens.base) {
             Image(systemName: mode.systemImage)
                 .foregroundStyle(theme.color(for: mode))
                 .frame(width: 22)
@@ -252,11 +252,11 @@ struct CalendarView: View {
                     .font(.caption)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, SpacingTokens.xs)
     }
 
     private func taskRow(_ task: CalendarFeature.State.TaskSummary) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(task.isCompleted ? .green : .secondary)
                 .frame(width: 22)
@@ -279,7 +279,7 @@ struct CalendarView: View {
                     .clipShape(Capsule())
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, SpacingTokens.xs)
     }
 
     // MARK: - Helpers

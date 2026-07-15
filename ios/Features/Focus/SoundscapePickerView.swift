@@ -70,7 +70,7 @@ struct SoundscapePickerView: View {
                         )
                     }
                 } header: {
-                    HStack(spacing: 4) {
+                    HStack(spacing: SpacingTokens.xs) {
                         Text(String(localized: "Pro"))
                         Image(systemName: "lock.fill")
                             .font(.caption2)
@@ -145,7 +145,7 @@ private struct SoundscapeRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 Image(systemName: soundscape.systemImage)
                     .font(.title3)
                     .symbolRenderingMode(.hierarchical)

@@ -15,7 +15,7 @@ struct ADHDBreakView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
+            VStack(spacing: SpacingTokens.xl) {
                 Text(String(localized: "adhdbreak.title", defaultValue: "Break Time"))
                     .font(.title.bold())
 
@@ -24,7 +24,7 @@ struct ADHDBreakView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
-                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 16) {
+                LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: SpacingTokens.md) {
                     ForEach(BreakActivity.allCases) { activity in
                         BreakActivityButton(
                             activity: activity,
@@ -41,7 +41,7 @@ struct ADHDBreakView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
+                        .padding(.horizontal, SpacingTokens.xxl)
                         .transition(.opacity)
                 }
 
@@ -53,13 +53,13 @@ struct ADHDBreakView: View {
                     Text(String(localized: "adhdbreak.backtofocus.button", defaultValue: "Back to Focus"))
                         .font(.headline)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, SpacingTokens.base)
                 }
                 .buttonStyle(.borderedProminent)
                 .padding(.horizontal, 40)
-                .padding(.bottom, 24)
+                .padding(.bottom, SpacingTokens.xl)
             }
-            .padding(.top, 16)
+            .padding(.top, SpacingTokens.md)
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
@@ -73,7 +73,7 @@ private struct BreakActivityButton: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 8) {
+            VStack(spacing: SpacingTokens.sm) {
                 Text(activity.emoji)
                     .font(.system(size: 36))
                 Text(activity.title)
@@ -84,7 +84,7 @@ private struct BreakActivityButton: View {
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .padding(.vertical, SpacingTokens.md)
             .background(cardBackground)
             .overlay(cardBorder)
         }

@@ -72,7 +72,7 @@ struct ProfileView: View {
 
     @ViewBuilder
     private var userCard: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: SpacingTokens.md) {
             if let imageReference = store.user?.imageUrl {
                 ProfileAvatarImageView(imageReference: imageReference) {
                     Image(systemName: "person.fill").font(.title).foregroundStyle(.secondary)
@@ -91,7 +91,7 @@ struct ProfileView: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
+                HStack(spacing: SpacingTokens.sm) {
                     Text(store.user?.name ?? "Guest User")
                         .font(.title3.weight(.semibold))
 
@@ -146,7 +146,7 @@ struct ProfileView: View {
 
     @ViewBuilder
     private var statsMiniRow: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             StatMiniCard(
                 icon: "timer",
                 value: "\(store.totalFocusMinutes / 60)h",
@@ -192,7 +192,7 @@ private struct StatMiniCard: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
+        .padding(.vertical, SpacingTokens.lg)
         .pepinilloGlass()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel.isEmpty ? "\(label): \(value)" : accessibilityLabel)

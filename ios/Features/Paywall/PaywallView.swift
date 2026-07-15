@@ -86,7 +86,7 @@ struct PaywallContentBody: View {
                 }
                 .readableContent(maxWidth: 720)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, SpacingTokens.lg)
             .padding(.top, 18)
             .padding(.bottom, 42)
         }
@@ -101,7 +101,7 @@ struct PaywallHeaderSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 Image(systemName: "timer.circle.fill")
                     .font(.system(size: 34, weight: .semibold))
                     .symbolRenderingMode(.hierarchical)
@@ -147,7 +147,7 @@ struct PaywallHeaderSection: View {
 
 struct PaywallTierComparisonSection: View {
     var body: some View {
-        LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+        LazyVGrid(columns: adaptiveCardColumns, spacing: SpacingTokens.md) {
             PaywallTierCard(
                 title: String(localized: "Pepinillo+"),
                 eyebrow: String(localized: "One-time Apple unlock"),
@@ -196,7 +196,7 @@ struct PaywallTierCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: SpacingTokens.base) {
                 Image(systemName: icon)
                     .font(.title3.weight(.semibold))
                     .frame(width: 38, height: 38)
@@ -204,7 +204,7 @@ struct PaywallTierCard: View {
                     .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
                     .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                     Text(eyebrow)
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -224,7 +224,7 @@ struct PaywallTierCard: View {
                 }
             }
         }
-        .padding(20)
+        .padding(SpacingTokens.lg)
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
         .overlay {
@@ -241,7 +241,7 @@ struct FeatureRow: View {
     var tint: Color = .accentColor
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: SpacingTokens.base) {
             Image(systemName: icon)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(tint)
@@ -306,8 +306,8 @@ struct PaywallProductCard: View {
                         .background(product.planTint.opacity(0.14), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
                         .accessibilityHidden(true)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
+                    VStack(alignment: .leading, spacing: SpacingTokens.xs) {
+                        HStack(spacing: SpacingTokens.sm) {
                             Text(product.planDisplayName)
                                 .font(.headline)
                                 .foregroundStyle(.primary)
@@ -342,7 +342,7 @@ struct PaywallProductCard: View {
                     .fixedSize(horizontal: true, vertical: false)
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: SpacingTokens.sm) {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(isSelected ? Color.accentColor : .secondary.opacity(0.42))
@@ -420,7 +420,7 @@ struct PaywallPurchaseButton: View {
         .frame(maxWidth: .infinity)
         .buttonStyle(PepinilloButtonStyle())
         .disabled(store.isLoading || store.subscriptionState.isPro)
-        .padding(.top, 4)
+        .padding(.top, SpacingTokens.xs)
         .shadow(color: (store.isLoading || store.subscriptionState.isPro) ? .clear : Color.accentColor.opacity(0.20), radius: 20, y: 10)
     }
 }
@@ -463,7 +463,7 @@ struct PaywallLegalFooter: View {
     @Bindable var store: StoreOf<PaywallFeature>
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: SpacingTokens.md) {
             Button(String(localized: "Restore Purchases")) {
                 store.send(.restoreTapped)
             }
@@ -476,7 +476,7 @@ struct PaywallLegalFooter: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 10)
             
-            HStack(spacing: 24) {
+            HStack(spacing: SpacingTokens.xl) {
                 Button(String(localized: "Terms of Use")) {
                     store.send(.termsOfServiceTapped)
                 }

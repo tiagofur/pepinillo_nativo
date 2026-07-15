@@ -29,28 +29,28 @@ struct ForgotPasswordView: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.top, 4)
-                .padding(.horizontal, 24)
+                .padding(.top, SpacingTokens.xs)
+                .padding(.horizontal, SpacingTokens.xl)
 
                 Spacer().frame(height: 48)
 
                 // MARK: Fields
-                VStack(spacing: 12) {
+                VStack(spacing: SpacingTokens.base) {
                     if store.step == .enterEmail {
                         emailFields
                     } else {
                         resetFields
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, SpacingTokens.xl)
 
                 // MARK: Error
                 if let error = store.errorMessage {
                     Text(error)
                         .font(.caption)
                         .foregroundStyle(.red)
-                        .padding(.top, 8)
-                        .padding(.horizontal, 24)
+                        .padding(.top, SpacingTokens.sm)
+                        .padding(.horizontal, SpacingTokens.xl)
                         .multilineTextAlignment(.center)
                         .accessibilityLabel(error)
                         .accessibilityAddTraits(.isStaticText)
@@ -82,7 +82,7 @@ struct ForgotPasswordView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(store.isLoading)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, SpacingTokens.xl)
 
                 // MARK: Resend Code (step 2 only)
                 if store.step == .enterCode {
@@ -93,7 +93,7 @@ struct ForgotPasswordView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.top, 12)
+                    .padding(.top, SpacingTokens.base)
                 }
 
                 Spacer()
@@ -104,7 +104,7 @@ struct ForgotPasswordView: View {
                     Button {
                         store.send(.backTapped)
                     } label: {
-                        HStack(spacing: 4) {
+                        HStack(spacing: SpacingTokens.xs) {
                             Image(systemName: "chevron.left")
                             Text(String(localized: "forgotpassword.back.button", defaultValue: "Back"))
                         }
@@ -233,7 +233,7 @@ struct ForgotPasswordView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 4)
+            .padding(.leading, SpacingTokens.xs)
             .accessibilityHidden(true)
     }
 }

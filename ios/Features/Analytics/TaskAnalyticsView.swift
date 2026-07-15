@@ -14,14 +14,14 @@ struct TaskAnalyticsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: SpacingTokens.lg) {
                     if store.isLoading {
                         TaskAnalyticsPlaceholder()
                             .redacted(reason: .placeholder)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, SpacingTokens.md)
                     } else if let analytics = store.analytics {
                         contentView(analytics)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, SpacingTokens.md)
                     } else {
                         ContentUnavailableView(
                             String(localized: "No Data Yet"),
@@ -31,7 +31,7 @@ struct TaskAnalyticsView: View {
                         .padding(.top, 40)
                     }
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, SpacingTokens.xxl)
             }
             .navigationTitle(String(localized: "Focus Analytics"))
             .navigationBarTitleDisplayMode(.inline)
@@ -85,7 +85,7 @@ struct TaskAnalyticsView: View {
     // MARK: - Summary Cards
 
     private func summaryCards(_ analytics: TaskAnalyticsDTO) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             SummaryCard(
                 title: String(localized: "Focus Time"),
                 value: formatSeconds(analytics.totalFocusSeconds),
@@ -112,7 +112,7 @@ struct TaskAnalyticsView: View {
     // MARK: - Interruptions & Pauses
 
     private func interruptionsSection(_ analytics: TaskAnalyticsDTO) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Focus Quality"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
@@ -146,20 +146,20 @@ struct TaskAnalyticsView: View {
                 )
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Estimation Accuracy
 
     private func estimationSection(_ analytics: TaskAnalyticsDTO) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Estimation Accuracy"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            HStack(spacing: 16) {
-                VStack(spacing: 4) {
+            HStack(spacing: SpacingTokens.md) {
+                VStack(spacing: SpacingTokens.xs) {
                     Text(String(localized: "Estimated"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -168,7 +168,7 @@ struct TaskAnalyticsView: View {
                 }
                 .frame(maxWidth: .infinity)
 
-                VStack(spacing: 4) {
+                VStack(spacing: SpacingTokens.xs) {
                     Text(String(localized: "Completed"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -193,7 +193,7 @@ struct TaskAnalyticsView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
@@ -202,17 +202,17 @@ struct TaskAnalyticsView: View {
     private func modeDistributionSection(_ analytics: TaskAnalyticsDTO) -> some View {
         let totalSeconds = max(1, analytics.modeDistribution.values.reduce(0, +))
 
-        return VStack(alignment: .leading, spacing: 12) {
+        return VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Mode Distribution"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            VStack(spacing: 8) {
+            VStack(spacing: SpacingTokens.sm) {
                 ForEach(analytics.modeDistribution.sorted(by: { $0.value > $1.value }), id: \.key) { mode, seconds in
                     let percentage = Double(seconds) / Double(totalSeconds)
                     let focusMode = FocusMode(rawValue: mode)
 
-                    VStack(spacing: 4) {
+                    VStack(spacing: SpacingTokens.xs) {
                         HStack {
                             if let fm = focusMode {
                                 Text(fm.icon)
@@ -249,7 +249,7 @@ struct TaskAnalyticsView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
@@ -269,7 +269,7 @@ struct TaskAnalyticsView: View {
             peakLabel = "–"
         }
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: SpacingTokens.base) {
             Image(systemName: "clock.fill")
                 .font(.title2)
                 .foregroundStyle(.orange)
@@ -282,7 +282,7 @@ struct TaskAnalyticsView: View {
             }
             Spacer()
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "Peak focus hour, \(peakLabel)"))
@@ -291,7 +291,7 @@ struct TaskAnalyticsView: View {
     // MARK: - Satisfaction
 
     private func satisfactionSection(_ avgRating: Double) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: "star.fill")
                 .font(.title2)
                 .foregroundStyle(.yellow)
@@ -307,12 +307,12 @@ struct TaskAnalyticsView: View {
                     }
                     Text(String(format: "%.1f", avgRating))
                         .font(.subheadline.weight(.semibold))
-                        .padding(.leading, 4)
+                        .padding(.leading, SpacingTokens.xs)
                 }
             }
             Spacer()
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "Average satisfaction, \(String(format: "%.1f", avgRating)) out of 5"))
@@ -338,7 +338,7 @@ struct TaskAnalyticsView: View {
 
 private struct TaskAnalyticsPlaceholder: View {
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: SpacingTokens.lg) {
             // Title placeholder
             HStack {
                 Text(String(localized: "analytics.placeholder.tasktitle", defaultValue: "Task Title Placeholder"))
@@ -347,16 +347,16 @@ private struct TaskAnalyticsPlaceholder: View {
             }
 
             // Summary cards placeholder
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 ForEach(0..<3, id: \.self) { _ in
-                    VStack(spacing: 8) {
+                    VStack(spacing: SpacingTokens.sm) {
                         Text("00h 00m")
                             .font(.title3.weight(.bold))
                         Text(String(localized: "analytics.placeholder.focustime", defaultValue: "Focus Time"))
                             .font(.caption)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(16)
+                    .padding(SpacingTokens.md)
                     .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 }
             }
@@ -364,7 +364,7 @@ private struct TaskAnalyticsPlaceholder: View {
             // Pattern cards placeholder
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 ForEach(0..<4, id: \.self) { _ in
-                    VStack(spacing: 8) {
+                    VStack(spacing: SpacingTokens.sm) {
                         Text("00")
                             .font(.title3.weight(.bold))
                         Text(String(localized: "analytics.placeholder.metric", defaultValue: "Metric"))
@@ -376,7 +376,7 @@ private struct TaskAnalyticsPlaceholder: View {
                     .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
                 }
             }
-            .padding(16)
+            .padding(SpacingTokens.md)
             .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         }
     }

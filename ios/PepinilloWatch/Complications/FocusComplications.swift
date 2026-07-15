@@ -186,7 +186,7 @@ struct RectangularComplicationView: View {
                             .monospacedDigit()
                     }
 
-                    HStack(spacing: 4) {
+                    HStack(spacing: SpacingTokens.xs) {
                         if let phase = entry.phaseName {
                             Text(phase)
                                 .font(.caption2)
@@ -202,7 +202,7 @@ struct RectangularComplicationView: View {
                     Text(formatMinutes(entry.todayMinutes))
                         .font(.system(.headline, design: .rounded, weight: .bold))
 
-                    HStack(spacing: 4) {
+                    HStack(spacing: SpacingTokens.xs) {
                         Text(String(localized: "today"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)

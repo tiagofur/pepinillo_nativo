@@ -23,7 +23,7 @@ struct DashboardView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: SpacingTokens.md) {
 
                 // 1. Streak — emotional hero
                 StreakHeroCard(
@@ -36,7 +36,7 @@ struct DashboardView: View {
                     AnalyticsPlaceholder()
                         .redacted(reason: .placeholder)
                 } else if let loadError = store.loadError {
-                    VStack(spacing: 16) {
+                    VStack(spacing: SpacingTokens.md) {
                         PepinilloEmptyState(
                             title: String(localized: "Couldn't Load Data"),
                             description: loadError,
@@ -85,9 +85,9 @@ struct DashboardView: View {
                     DashboardChartsContent(store: store)
                 }
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, SpacingTokens.lg)
             .padding(.top, 18)
-            .padding(.bottom, 32)
+            .padding(.bottom, SpacingTokens.xxl)
             .contentMaxWidth()
         }
         .primaryScrollEdgeEffect()
@@ -248,7 +248,7 @@ private struct StreakHeroCard: View {
     let theme: AppTheme
 
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: SpacingTokens.lg) {
             // Flame icon + optional shield badge
             ZStack(alignment: .bottomTrailing) {
                 Image(systemName: "flame.fill")
@@ -269,8 +269,8 @@ private struct StreakHeroCard: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
+            VStack(alignment: .leading, spacing: SpacingTokens.xs) {
+                HStack(alignment: .firstTextBaseline, spacing: SpacingTokens.sm) {
                     Text("\(streakDays)")
                         .font(NumericFont.heroStat())
                         .foregroundStyle(.primary)
@@ -300,7 +300,7 @@ private struct StreakHeroCard: View {
 
             Spacer(minLength: 0)
         }
-        .padding(20)
+        .padding(SpacingTokens.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
         .accessibilityElement(children: .combine)
@@ -321,7 +321,7 @@ private struct DashboardCompactStats: View {
     let theme: AppTheme
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             compactStat(
                 icon: "clock.fill",
                 value: formattedTotalTime,
@@ -341,7 +341,7 @@ private struct DashboardCompactStats: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, SpacingTokens.lg)
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
@@ -350,7 +350,7 @@ private struct DashboardCompactStats: View {
     }
 
     private func compactStat(icon: String, value: String, label: String, color: Color) -> some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SpacingTokens.sm) {
             Image(systemName: icon)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(color)
@@ -383,7 +383,7 @@ struct FocusSparkChart: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             HStack {
                 Text(String(localized: "Focus this week"))
                     .font(.headline)
@@ -402,7 +402,7 @@ struct FocusSparkChart: View {
                     RuleMark(y: .value(String(localized: "Average"), averageMinutes))
                         .foregroundStyle(dominantColor.opacity(0.35))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                        .annotation(position: .trailing, spacing: 4) {
+                        .annotation(position: .trailing, spacing: SpacingTokens.xs) {
                             Text(String(localized: "avg"))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -455,7 +455,7 @@ struct FocusSparkChart: View {
                     RuleMark(x: .value(String(localized: "Selected"), point.date, unit: .day))
                         .foregroundStyle(dominantColor.opacity(0.25))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4]))
-                        .annotation(position: .top, spacing: 4) {
+                        .annotation(position: .top, spacing: SpacingTokens.xs) {
                             VStack(spacing: 2) {
                                 Text(point.date.formatted(.dateTime.weekday(.abbreviated)))
                                     .font(.caption2)
@@ -465,8 +465,8 @@ struct FocusSparkChart: View {
                                      : String(localized: "No focus"))
                                     .font(.caption.weight(.semibold))
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .padding(.horizontal, SpacingTokens.sm)
+                            .padding(.vertical, SpacingTokens.xs)
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
                         }
                 }
@@ -490,7 +490,7 @@ struct FocusSparkChart: View {
             .accessibilityLabel(String(localized: "dashboard.chart.weeklyBars.label",
                                        defaultValue: "Bar chart showing focus minutes for each day of the last 7 days"))
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .onAppear {
             appeared = true

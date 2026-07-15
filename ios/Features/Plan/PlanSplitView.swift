@@ -171,7 +171,7 @@ struct PlanSplitView: View {
                     tint: .accentColor,
                     cornerRadius: GlassCornerRadius.card
                 )
-                .padding(24)
+                .padding(SpacingTokens.xl)
                 .transition(.opacity)
             }
         }

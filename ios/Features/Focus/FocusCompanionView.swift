@@ -36,18 +36,18 @@ struct FocusCompanionView: View {
         switch layout {
         case .stack:
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: SpacingTokens.md) {
                     cards
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, SpacingTokens.sm)
             }
             .scrollBounceBehavior(.basedOnSize)
             .primaryScrollEdgeEffect()
         case .grid:
-            LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+            LazyVGrid(columns: adaptiveCardColumns, spacing: SpacingTokens.md) {
                 cards
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, SpacingTokens.sm)
         }
     }
 
@@ -70,7 +70,7 @@ struct FocusCompanionView: View {
         Button {
             store.send(.taskPickerTapped)
         } label: {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: SpacingTokens.base) {
                 Label(String(localized: "Active Task"), systemImage: "checkmark.circle")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -101,7 +101,7 @@ struct FocusCompanionView: View {
             }
         }
         .buttonStyle(.plain)
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
@@ -130,7 +130,7 @@ struct FocusCompanionView: View {
         Button {
             store.send(.soundscapePickerTapped)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 Image(systemName: store.selectedSoundscape.systemImage)
                     .font(.title2)
                     .symbolRenderingMode(.hierarchical)
@@ -156,7 +156,7 @@ struct FocusCompanionView: View {
             }
         }
         .buttonStyle(.plain)
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
@@ -168,7 +168,7 @@ struct FocusCompanionView: View {
     // MARK: - Today Sessions Card
 
     private var todaySessionsCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Label(String(localized: "Today"), systemImage: "calendar")
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
@@ -184,7 +184,7 @@ struct FocusCompanionView: View {
                     Spacer(minLength: 0)
                 }
             } else {
-                HStack(spacing: 20) {
+                HStack(spacing: SpacingTokens.lg) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(sessionsToday)")
                             .font(.system(.title, design: .rounded, weight: .bold))
@@ -214,7 +214,7 @@ struct FocusCompanionView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
@@ -224,7 +224,7 @@ struct FocusCompanionView: View {
     // MARK: - Streak Card
 
     private var streakCard: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: "flame.fill")
                 .font(.largeTitle)
                 .foregroundStyle(theme.streakColor)
@@ -243,7 +243,7 @@ struct FocusCompanionView: View {
 
             Spacer()
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
@@ -256,7 +256,7 @@ struct FocusCompanionView: View {
         Button {
             store.send(.linkTask(task.id, task.title, task.energyLevel.icon))
         } label: {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: SpacingTokens.base) {
                 Label(String(localized: "Up Next"), systemImage: "arrow.right.circle")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -278,7 +278,7 @@ struct FocusCompanionView: View {
             }
         }
         .buttonStyle(.plain)
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)

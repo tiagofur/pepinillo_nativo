@@ -14,7 +14,7 @@ struct ProWidgetOverlay: View {
     let title: String
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             Image(systemName: "lock.fill")
                 .font(.title2)
                 .foregroundStyle(.secondary)
@@ -43,7 +43,7 @@ struct DashboardWidgetSmall: View {
     var body: some View {
         Group {
             if showsBackground {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: SpacingTokens.sm) {
                     HStack(spacing: 6) {
                         Image(systemName: "chart.bar.fill")
                             .font(.caption2)
@@ -61,7 +61,7 @@ struct DashboardWidgetSmall: View {
                         .font(.system(.title, design: .rounded, weight: .bold))
 
                     // Trend indicator vs yesterday
-                    HStack(spacing: 4) {
+                    HStack(spacing: SpacingTokens.xs) {
                         Text(String(localized: "today"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -93,12 +93,12 @@ struct DashboardWidgetSmall: View {
                 .padding(0)
             } else {
                 // StandBy mode
-                VStack(spacing: 8) {
+                VStack(spacing: SpacingTokens.sm) {
                     Text(formattedMinutes(entry.todayMinutes))
                         .font(.system(size: 48, weight: .bold, design: .rounded))
                         .foregroundStyle(.primary)
                     if entry.streakDays > 0 {
-                        HStack(spacing: 4) {
+                        HStack(spacing: SpacingTokens.xs) {
                             Image(systemName: "flame.fill")
                                 .foregroundStyle(ModeColors.streak)
                             Text("\(entry.streakDays)d")
@@ -125,8 +125,8 @@ struct DashboardWidgetMedium: View {
             if showsBackground {
                 HStack(spacing: 14) {
                     // Left: today's stats
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 4) {
+                    VStack(alignment: .leading, spacing: SpacingTokens.sm) {
+                        HStack(spacing: SpacingTokens.xs) {
                             Image(systemName: "chart.bar.fill")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -143,7 +143,7 @@ struct DashboardWidgetMedium: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
-                        HStack(spacing: 12) {
+                        HStack(spacing: SpacingTokens.base) {
                             StatPill(icon: "checkmark.circle", value: "\(entry.todaySessions)")
                             if entry.streakDays > 0 {
                                 StatPill(icon: "flame.fill", value: "\(entry.streakDays)d", color: renderingMode == .accented ? .primary : ModeColors.streak)
@@ -154,7 +154,7 @@ struct DashboardWidgetMedium: View {
                     Divider()
 
                     // Right: weekly chart
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                         Text(String(localized: "This week"))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -176,8 +176,8 @@ struct DashboardWidgetMedium: View {
                 .padding(0)
             } else {
                 // StandBy
-                HStack(spacing: 20) {
-                    VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: SpacingTokens.lg) {
+                    VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                         Text(formattedMinutes(entry.todayMinutes))
                             .font(.system(size: 48, weight: .bold, design: .rounded))
                             .foregroundStyle(.primary)
@@ -186,7 +186,7 @@ struct DashboardWidgetMedium: View {
                             .foregroundStyle(.secondary)
                     }
                     if entry.streakDays > 0 {
-                        VStack(spacing: 4) {
+                        VStack(spacing: SpacingTokens.xs) {
                             Image(systemName: "flame.fill")
                                 .font(.title2)
                                 .foregroundStyle(renderingMode == .accented ? .primary : ModeColors.streak)
@@ -211,7 +211,7 @@ struct DashboardWidgetLarge: View {
     @Environment(\.widgetRenderingMode) var renderingMode
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
                 // Header
                 HStack {
                     Image(systemName: "chart.bar.fill")
@@ -233,7 +233,7 @@ struct DashboardWidgetLarge: View {
                 }
 
                 // Today stats row
-                HStack(spacing: 16) {
+                HStack(spacing: SpacingTokens.md) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(formattedMinutes(entry.todayMinutes))
                             .font(.system(.title, design: .rounded, weight: .bold))
@@ -270,7 +270,7 @@ struct DashboardWidgetLarge: View {
 
                     // Mode legend — hide in tinted mode since colours are opacity-differentiated
                     if renderingMode != .accented {
-                        HStack(spacing: 12) {
+                        HStack(spacing: SpacingTokens.base) {
                             ModeLegendItem(color: ModeColors.pomodoro, label: String(localized: "Pomodoro"))
                             ModeLegendItem(color: ModeColors.flowtime, label: String(localized: "Flow"))
                             ModeLegendItem(color: ModeColors.timeBlock, label: String(localized: "Blocks"))
@@ -293,7 +293,7 @@ struct DashboardWidgetLarge: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        VStack(spacing: 8) {
+                        VStack(spacing: SpacingTokens.sm) {
                             Image(systemName: "chart.bar")
                                 .font(.largeTitle)
                                 .foregroundStyle(.secondary)

@@ -276,6 +276,7 @@ targets:
       - path: Shared/Design/PhaseColors.swift
       - path: Shared/Design/SystemColors.swift
       - path: Shared/Design/GlassTokens.swift
+      - path: Shared/Design/SpacingTokens.swift
       - path: Shared/Design/MotionTokens.swift
       - path: Shared/Design/GlassModifiers.swift
       - path: Shared/Design/WidgetGlassBackground.swift
@@ -330,6 +331,7 @@ targets:
       - path: Shared/Design/PhaseColors.swift
       - path: Shared/Design/SystemColors.swift
       - path: Shared/Design/GlassTokens.swift
+      - path: Shared/Design/SpacingTokens.swift
       - path: Shared/Design/MotionTokens.swift
       - path: Shared/Design/GlassModifiers.swift
       - path: Shared/Design/WidgetGlassBackground.swift
@@ -440,6 +442,7 @@ targets:
       - path: PepinilloWatch/Complications
       - path: PepinilloWatch/WatchStatsKeys.swift
       - path: Features/Focus/FocusModels.swift
+      - path: Shared/Design/SpacingTokens.swift
     resources:
       - path: Shared/Resources/Localizable.xcstrings
         optional: true

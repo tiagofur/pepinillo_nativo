@@ -13,14 +13,14 @@ struct SessionJournalView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: SpacingTokens.xl) {
                     headerSection
                     ratingSection
                     noteSection
                     actionSection
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 32)
+                .padding(.horizontal, SpacingTokens.xl)
+                .padding(.bottom, SpacingTokens.xxl)
             }
         }
         .presentationDetents([.medium])
@@ -31,23 +31,23 @@ struct SessionJournalView: View {
 
     @ViewBuilder
     private var headerSection: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             Text(String(localized: "sessionjournal.title", defaultValue: "Session Complete"))
                 .font(.title2.bold())
             Text("\(store.modeName.capitalized) · \(store.durationFormatted)")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
-        .padding(.top, 8)
+        .padding(.top, SpacingTokens.sm)
     }
 
     @ViewBuilder
     private var ratingSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: SpacingTokens.base) {
             Text(String(localized: "sessionjournal.rating.heading", defaultValue: "How was your focus?"))
                 .font(.headline)
 
-            HStack(spacing: 16) {
+            HStack(spacing: SpacingTokens.md) {
                 ratingButton(id: 1, emoji: "😞", label: String(localized: "Rough"))
                 ratingButton(id: 2, emoji: "😐", label: String(localized: "Meh"))
                 ratingButton(id: 3, emoji: "🙂", label: String(localized: "Okay"))
@@ -63,11 +63,11 @@ struct SessionJournalView: View {
         Button {
             store.send(.ratingSelected(id))
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: SpacingTokens.xs) {
                 Text(emoji).font(.system(size: 32))
                 Text(label).font(.caption2).foregroundStyle(.secondary)
             }
-            .padding(8)
+            .padding(SpacingTokens.sm)
             .background(
                 RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous)
                     .fill(isSelected ? Color.accentColor.opacity(0.2) : Color.clear)
@@ -83,7 +83,7 @@ struct SessionJournalView: View {
 
     @ViewBuilder
     private var noteSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: SpacingTokens.sm) {
             Text(String(localized: "sessionjournal.note.heading", defaultValue: "Quick reflection"))
                 .font(.headline)
 
@@ -108,14 +108,14 @@ struct SessionJournalView: View {
 
     @ViewBuilder
     private var actionSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: SpacingTokens.base) {
             Button {
                 store.send(.saveTapped)
             } label: {
                 Text(String(localized: "sessionjournal.save.button", defaultValue: "Save"))
                     .font(.headline)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, SpacingTokens.base)
             }
             .buttonStyle(.borderedProminent)
             .tint(Color.accentColor)

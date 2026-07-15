@@ -400,7 +400,7 @@ struct FocusWidgetSmall: View {
                         font: .system(.headline, design: .rounded, weight: .bold)
                     )
 
-                    HStack(spacing: 4) {
+                    HStack(spacing: SpacingTokens.xs) {
                         WidgetControls(entry: entry, compact: true)
                     }
                 }
@@ -488,7 +488,7 @@ struct FocusWidgetMedium: View {
             .frame(width: 118, height: 118)
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: 8) {
+                HStack(alignment: .top, spacing: SpacingTokens.sm) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(taskTitle)
                             .font(.system(size: 17, weight: .bold, design: .rounded))
@@ -503,7 +503,7 @@ struct FocusWidgetMedium: View {
                         Text("\(pn)/\(tp)")
                             .font(.system(size: 10, weight: .bold, design: .rounded))
                             .padding(.horizontal, 7)
-                            .padding(.vertical, 4)
+                            .padding(.vertical, SpacingTokens.xs)
                             .background(modeColor.opacity(renderingMode == .accented ? 0.20 : 0.16), in: Capsule())
                             .foregroundStyle(renderingMode == .accented ? .primary : modeColor)
                             .widgetAccentable(renderingMode == .accented)
@@ -609,7 +609,7 @@ struct FocusWidgetLarge: View {
                     Text("\(pn)/\(tp)")
                         .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundStyle(renderingMode == .accented ? .primary : modeColor)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, SpacingTokens.sm)
                         .padding(.vertical, 3)
                         .background(modeColor.opacity(renderingMode == .accented ? 0.20 : 0.14), in: Capsule())
                         .widgetAccentable(renderingMode == .accented)
@@ -648,12 +648,12 @@ struct FocusWidgetLarge: View {
             WidgetControls(entry: entry, compact: false)
 
             if !entry.modeMinutes.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: SpacingTokens.sm) {
                     ForEach(sortedModes.prefix(3), id: \.key) { mode, minutes in
                         ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes, renderingMode: renderingMode)
                     }
                 }
-                .padding(12)
+                .padding(SpacingTokens.base)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
             }
         }
@@ -667,14 +667,14 @@ struct FocusWidgetLarge: View {
         let modeColor = modeAccentColor(preferredMode, renderingMode: renderingMode)
 
         VStack(spacing: 18) {
-            HStack(spacing: 24) {
+            HStack(spacing: SpacingTokens.xl) {
                 WidgetProgressRing(progress: 0, modeColor: modeColor, lineWidth: 12, countsDown: isCountdownMode(preferredMode)) {
                     Text(style.emoji)
                         .font(.system(size: 40))
                 }
                 .frame(width: 130, height: 130)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                     Text(String(localized: "Ready"))
                         .font(.system(size: 12, weight: .black))
                         .foregroundStyle(.secondary)
@@ -700,7 +700,7 @@ struct FocusWidgetLarge: View {
             WidgetModeQuickStartGrid(selectedMode: preferredMode, showsTitles: true, isProUser: entry.isProUser, renderingMode: renderingMode)
 
             if !entry.modeMinutes.isEmpty {
-                VStack(spacing: 8) {
+                VStack(spacing: SpacingTokens.sm) {
                     ForEach(sortedModes, id: \.key) { mode, minutes in
                         ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes, renderingMode: renderingMode)
                     }
@@ -842,7 +842,7 @@ struct ModeBar: View {
     private var modeIndex: Int { Self.modeOrder.firstIndex(of: mode) ?? 0 }
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SpacingTokens.sm) {
             let style = WidgetModeStyle.style(for: mode)
             Text(style.emoji)
                 .font(.caption)

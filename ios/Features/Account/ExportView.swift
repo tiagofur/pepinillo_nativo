@@ -185,7 +185,7 @@ struct ExportView: View {
             systemImage: "crown.fill",
             tint: .yellow
         )
-        .padding(24)
+        .padding(SpacingTokens.xl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.regularMaterial)
     }

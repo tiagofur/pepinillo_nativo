@@ -19,7 +19,7 @@ struct AboutView: View {
         Form {
             // MARK: App Identity (hero header as a section)
             Section {
-                VStack(spacing: 16) {
+                VStack(spacing: SpacingTokens.md) {
                     if let icon = PlatformImage(named: "AppIcon") {
                         platformImage(icon)
                             .resizable()
@@ -34,7 +34,7 @@ struct AboutView: View {
                             .background(Circle().fill(Color.accentColor.opacity(0.1)))
                     }
 
-                    VStack(spacing: 4) {
+                    VStack(spacing: SpacingTokens.xs) {
                         Text("Pepinillo")
                             .font(.title2.bold())
                             .foregroundStyle(.primary)
@@ -46,13 +46,13 @@ struct AboutView: View {
                         Text(String(localized: "Version \(store.appVersion) (\(store.buildNumber))"))
                             .font(.caption2.monospaced())
                             .foregroundStyle(.tertiary)
-                            .padding(.horizontal, 8)
+                            .padding(.horizontal, SpacingTokens.sm)
                             .padding(.vertical, 2)
                             .background(Capsule().stroke(.tertiary, lineWidth: 0.5))
                     }
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
+                .padding(.vertical, SpacingTokens.sm)
                 .listRowBackground(Color.clear)
             }
 

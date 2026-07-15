@@ -18,7 +18,7 @@ struct DashboardChartsContent: View {
     @State private var chartAppeared = false
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: SpacingTokens.md) {
             if !store.chartData.isEmpty {
                 focusBarChart
             }
@@ -41,7 +41,7 @@ struct DashboardChartsContent: View {
     // MARK: - Focus Bar Chart
 
     private var focusBarChart: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Focus Minutes"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
@@ -70,7 +70,7 @@ struct DashboardChartsContent: View {
                     RuleMark(x: .value("Selected", point.date, unit: .day))
                         .foregroundStyle(dominantColor.opacity(0.3))
                         .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                        .annotation(position: .top, spacing: 4) {
+                        .annotation(position: .top, spacing: SpacingTokens.xs) {
                             VStack(spacing: 2) {
                                 Text(point.date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())
                                     .font(.caption2)
@@ -79,8 +79,8 @@ struct DashboardChartsContent: View {
                                     .font(.caption)
                                     .fontWeight(.semibold)
                             }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .padding(.horizontal, SpacingTokens.sm)
+                            .padding(.vertical, SpacingTokens.xs)
                             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: GlassCornerRadius.micro, style: .continuous))
                         }
                 }
@@ -109,12 +109,12 @@ struct DashboardChartsContent: View {
                 }
             }
             .frame(height: chartHeight)
-            .padding(.top, 4)
+            .padding(.top, SpacingTokens.xs)
             .accessibilityLabel(
                 String(localized: "dashboard.charts.barChart.label", defaultValue: "Focus minutes bar chart for the selected period")
             )
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .opacity(chartAppeared ? 1 : 0)
         .conditionalAnimation(.easeIn(duration: 0.5), value: chartAppeared)
@@ -123,7 +123,7 @@ struct DashboardChartsContent: View {
     // MARK: - Productivity Patterns
 
     private var productivityPatternsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Productivity Patterns"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
@@ -155,7 +155,7 @@ struct DashboardChartsContent: View {
                 )
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityLabel(
             String(localized: "dashboard.charts.patterns.label", defaultValue: "Productivity patterns including peak hours, best day, completion rate, and focus score")
@@ -165,25 +165,25 @@ struct DashboardChartsContent: View {
     // MARK: - Mode Breakdown
 
     private var modeBreakdownSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Mode Breakdown"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
 
-            VStack(spacing: 8) {
+            VStack(spacing: SpacingTokens.sm) {
                 ForEach(store.modeBreakdown) { share in
                     ModeShareRow(share: share, theme: theme)
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
     // MARK: - Streak Section
 
     private var streakSection: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: SpacingTokens.md) {
             StreakCard(
                 title: String(localized: "Current"),
                 days: store.currentStreakDays,

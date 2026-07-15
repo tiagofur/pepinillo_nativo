@@ -139,7 +139,7 @@ struct FocusLockScreenView: View {
     let state: FocusActivityAttributes.ContentState
 
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: SpacingTokens.md) {
             FocusLiveProgressRing(state: state, lineWidth: 4, frameSize: 48) {
                 Text(state.modeEmoji)
                     .font(.title2)
@@ -234,8 +234,8 @@ struct FocusDynamicIslandExpanded: View {
     let state: FocusActivityAttributes.ContentState
 
     var body: some View {
-        HStack(spacing: 20) {
-            VStack(spacing: 8) {
+        HStack(spacing: SpacingTokens.lg) {
+            VStack(spacing: SpacingTokens.sm) {
                 FocusLiveProgressRing(state: state, lineWidth: 5, frameSize: 52) {
                     Text(state.modeEmoji)
                         .font(.title2)
@@ -246,7 +246,7 @@ struct FocusDynamicIslandExpanded: View {
                     .foregroundStyle(.secondary)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                 HStack {
                     FocusLiveTimerText(
                         state: state,
@@ -260,7 +260,7 @@ struct FocusDynamicIslandExpanded: View {
                 }
 
                 if let task = state.taskName {
-                    HStack(spacing: 4) {
+                    HStack(spacing: SpacingTokens.xs) {
                         Image(systemName: "checkmark.circle")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -275,7 +275,7 @@ struct FocusDynamicIslandExpanded: View {
             Spacer()
 
             if let num = state.pomodoroNumber, let total = state.totalPomodoros {
-                VStack(spacing: 4) {
+                VStack(spacing: SpacingTokens.xs) {
                     Text("\(num)/\(total)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)

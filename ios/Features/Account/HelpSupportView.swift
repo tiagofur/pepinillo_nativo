@@ -95,7 +95,7 @@ private struct FAQRow: View {
     let isExpanded: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: SpacingTokens.sm) {
             HStack {
                 Text(item.question)
                     .font(.subheadline.weight(.medium))
@@ -117,6 +117,6 @@ private struct FAQRow: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, SpacingTokens.xs)
     }
 }

@@ -11,11 +11,11 @@ struct EmailVerificationView: View {
     @Bindable var store: StoreOf<EmailVerificationFeature>
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: SpacingTokens.xxl) {
             Spacer()
 
             // MARK: - Icon + heading
-            VStack(spacing: 16) {
+            VStack(spacing: SpacingTokens.md) {
                 Image(systemName: "envelope.badge")
                     .font(.system(size: 64))
                     .foregroundStyle(Color.accentColor)
@@ -32,7 +32,7 @@ struct EmailVerificationView: View {
             }
 
             // MARK: - Code field
-            VStack(spacing: 12) {
+            VStack(spacing: SpacingTokens.base) {
                 TextField("123456", text: $store.code.sending(\.codeChanged))
                     .keyboardType(.numberPad)
                     .font(.title.monospacedDigit())

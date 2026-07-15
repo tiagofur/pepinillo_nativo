@@ -18,7 +18,7 @@ struct SummaryCard: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: icon)
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(color)
@@ -36,7 +36,7 @@ struct SummaryCard: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title), \(value)")
@@ -50,7 +50,7 @@ struct ModeShareRow: View {
     let theme: AppTheme
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: SpacingTokens.xs) {
             HStack {
                 Text(share.mode.icon)
                     .accessibilityHidden(true)
@@ -110,7 +110,7 @@ struct PatternCard: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
-        .padding(12)
+        .padding(SpacingTokens.base)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(title): \(value)")
@@ -126,7 +126,7 @@ struct StreakCard: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: icon)
                 .font(.largeTitle)
                 .foregroundStyle(color)
@@ -140,7 +140,7 @@ struct StreakCard: View {
             }
             Spacer()
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
         .accessibilityElement(children: .combine)
@@ -152,18 +152,18 @@ struct StreakCard: View {
 
 struct AnalyticsPlaceholder: View {
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: SpacingTokens.lg) {
             // Summary cards placeholder
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 ForEach(0..<3, id: \.self) { _ in
-                    VStack(spacing: 8) {
+                    VStack(spacing: SpacingTokens.sm) {
                         Text("00h 00m")
                             .font(.title3.weight(.bold))
                         Text(String(localized: "analytics.placeholder.focustime", defaultValue: "Focus Time"))
                             .font(.caption)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(16)
+                    .padding(SpacingTokens.md)
                     .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 }
             }
@@ -174,16 +174,16 @@ struct AnalyticsPlaceholder: View {
                 .frame(height: 200)
 
             // Pattern cards placeholder
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 ForEach(0..<2, id: \.self) { _ in
-                    VStack(spacing: 8) {
+                    VStack(spacing: SpacingTokens.sm) {
                         Text(String(localized: "analytics.placeholder.peakvalue", defaultValue: "9 AM - 12 PM"))
                             .font(.subheadline.weight(.bold))
                         Text(String(localized: "analytics.placeholder.peakhours", defaultValue: "Peak Hours"))
                             .font(.caption)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(16)
+                    .padding(SpacingTokens.md)
                     .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 }
             }

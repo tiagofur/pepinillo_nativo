@@ -41,7 +41,7 @@ struct AIReportView: View {
     // MARK: - Generating State
 
     private var generatingView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: SpacingTokens.md) {
             Spacer()
                 .frame(height: 60)
 
@@ -56,7 +56,7 @@ struct AIReportView: View {
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .padding(.horizontal, SpacingTokens.xxl)
 
             Spacer()
         }
@@ -65,7 +65,7 @@ struct AIReportView: View {
     // MARK: - Error State
 
     private func errorView(_ error: String) -> some View {
-        VStack(spacing: 16) {
+        VStack(spacing: SpacingTokens.md) {
             Spacer()
                 .frame(height: 60)
 
@@ -80,7 +80,7 @@ struct AIReportView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .padding(.horizontal, SpacingTokens.xxl)
 
             Button {
                 store.send(.generateTapped)
@@ -88,10 +88,10 @@ struct AIReportView: View {
                 Label(String(localized: "Try Again"), systemImage: "arrow.clockwise")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
+                    .padding(.vertical, SpacingTokens.base)
             }
             .buttonStyle(.borderedProminent)
-            .padding(.horizontal, 32)
+            .padding(.horizontal, SpacingTokens.xxl)
 
             Spacer()
         }
@@ -100,13 +100,13 @@ struct AIReportView: View {
     // MARK: - Report Content
 
     private func reportContent(_ report: ProductivityReportDTO) -> some View {
-        VStack(spacing: 20) {
+        VStack(spacing: SpacingTokens.lg) {
             // Title
             Text(report.title)
                 .font(.title2)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, SpacingTokens.md)
 
             // Generated date
             Text(String(localized: "Generated \(report.generatedAt, format: .dateTime.month().day().hour().minute())"))
@@ -160,16 +160,16 @@ struct AIReportView: View {
                     .padding(.vertical, 10)
             }
             .buttonStyle(.bordered)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, SpacingTokens.md)
         }
-        .padding(.vertical, 16)
-        .padding(.bottom, 32)
+        .padding(.vertical, SpacingTokens.md)
+        .padding(.bottom, SpacingTokens.xxl)
     }
 
     // MARK: - Highlights
 
     private func highlightsSection(_ highlights: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Label(String(localized: "Highlights"), systemImage: "sparkles")
                 .font(.headline)
 
@@ -184,16 +184,16 @@ struct AIReportView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, SpacingTokens.md)
     }
 
     // MARK: - Insights Section
 
     private func insightsSection(title: String, icon: String, color: Color, insights: [ReportInsight]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Label(title, systemImage: icon)
                 .font(.headline)
                 .foregroundStyle(color)
@@ -201,22 +201,22 @@ struct AIReportView: View {
             ForEach(insights) { insight in
                 Text(insight.text)
                     .font(.subheadline)
-                    .padding(12)
+                    .padding(SpacingTokens.base)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(color.opacity(0.08))
                     .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, SpacingTokens.md)
     }
 
     // MARK: - Recommendations
 
     private func recommendationsSection(_ recommendations: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Label(String(localized: "Recommendations"), systemImage: "lightbulb.fill")
                 .font(.headline)
                 .foregroundStyle(.orange)
@@ -233,10 +233,10 @@ struct AIReportView: View {
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity, alignment: .leading)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, SpacingTokens.md)
     }
 
     // MARK: - Helpers

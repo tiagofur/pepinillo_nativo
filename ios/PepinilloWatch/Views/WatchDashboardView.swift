@@ -14,7 +14,7 @@ struct WatchDashboardView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 8) {
+            VStack(spacing: SpacingTokens.sm) {
                 // Header with date
                 headerView
 
@@ -34,8 +34,8 @@ struct WatchDashboardView: View {
                     bestSessionView
                 }
             }
-            .padding(.horizontal, 4)
-            .padding(.top, 4)
+            .padding(.horizontal, SpacingTokens.xs)
+            .padding(.top, SpacingTokens.xs)
         }
         .onAppear { store.send(.onAppear) }
     }
@@ -54,7 +54,7 @@ struct WatchDashboardView: View {
                 .font(.system(size: 10))
                 .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, SpacingTokens.xs)
     }
 
     private static let dateFormatter: DateFormatter = {
@@ -92,7 +92,7 @@ struct WatchDashboardView: View {
     // MARK: - Task Progress
 
     private var taskProgressView: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: SpacingTokens.sm) {
             // Tasks completion
             DashboardStatCard(
                 icon: "checkmark.circle",
@@ -118,11 +118,11 @@ struct WatchDashboardView: View {
     }
 
     private var modeDistributionView: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: SpacingTokens.xs) {
             Text(String(localized: "Modes"))
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)
-                .padding(.leading, 4)
+                .padding(.leading, SpacingTokens.xs)
 
             // Stacked bar
             GeometryReader { geo in
@@ -145,7 +145,7 @@ struct WatchDashboardView: View {
             }
             .frame(height: 8)
             .clipShape(Capsule())
-            .padding(.horizontal, 4)
+            .padding(.horizontal, SpacingTokens.xs)
 
             // Legend
             HStack(spacing: 6) {
@@ -162,10 +162,10 @@ struct WatchDashboardView: View {
                     ModeLegendItem(emoji: "⏱️", minutes: store.stopwatchMinutes, color: ModeColors.stopwatch)
                 }
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, SpacingTokens.xs)
         }
         .padding(.vertical, 6)
-        .padding(.horizontal, 4)
+        .padding(.horizontal, SpacingTokens.xs)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
     }
 
@@ -184,8 +184,8 @@ struct WatchDashboardView: View {
                 .font(.system(size: 12, weight: .semibold, design: .rounded))
                 .monospacedDigit()
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
+        .padding(.horizontal, SpacingTokens.sm)
+        .padding(.vertical, SpacingTokens.sm)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
     }
 
@@ -222,7 +222,7 @@ private struct DashboardStatCard: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
+        .padding(.vertical, SpacingTokens.sm)
         .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))
     }
 }

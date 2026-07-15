@@ -16,7 +16,7 @@ struct DashboardReflectionActions: View {
     var monthlyPreview: String? = nil
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: 12)], spacing: 12) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: SpacingTokens.base)], spacing: SpacingTokens.base) {
             ReflectionCard(
                 icon: "calendar.badge.clock",
                 title: String(localized: "Weekly Review"),
@@ -69,7 +69,7 @@ struct ReflectionCard: View {
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
-            .padding(16)
+            .padding(SpacingTokens.md)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous))
             .overlay {

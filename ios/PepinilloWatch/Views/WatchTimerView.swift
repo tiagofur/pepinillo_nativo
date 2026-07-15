@@ -28,7 +28,7 @@ struct WatchTimerView: View {
     // MARK: - Waiting for Next Phase
 
     private var waitingView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             Spacer(minLength: 0)
 
             // Indicate the pending phase with the mode icon
@@ -76,8 +76,8 @@ struct WatchTimerView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 4)
-        .padding(.bottom, 4)
+        .padding(.horizontal, SpacingTokens.xs)
+        .padding(.bottom, SpacingTokens.xs)
     }
 
     // MARK: - Active Session
@@ -85,7 +85,7 @@ struct WatchTimerView: View {
     @State private var showStopConfirmation = false
 
     private var activeSessionView: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: SpacingTokens.xs) {
             // Progress ring + time (main focus area)
             ZStack {
                 // Background ring track
@@ -162,7 +162,7 @@ struct WatchTimerView: View {
             Spacer(minLength: 0)
 
             // Controls
-            HStack(spacing: 12) {
+            HStack(spacing: SpacingTokens.base) {
                 // Stop (with confirmation)
                 Button {
                     showStopConfirmation = true
@@ -219,10 +219,10 @@ struct WatchTimerView: View {
     @State private var crownModeIndex: Double = 0
 
     private var idleView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             // Mode selector (horizontal scroll)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: SpacingTokens.sm) {
                     ForEach(FocusMode.allCases) { mode in
                         WatchModeChip(
                             mode: mode,
@@ -234,12 +234,12 @@ struct WatchTimerView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, SpacingTokens.xs)
             }
 
             // Linked task indicator
             if let task = store.linkedTaskTitle {
-                HStack(spacing: 4) {
+                HStack(spacing: SpacingTokens.xs) {
                     Image(systemName: "link")
                         .font(.system(size: 9))
                         .foregroundStyle(modeColor)
@@ -248,7 +248,7 @@ struct WatchTimerView: View {
                         .foregroundStyle(.secondary)
                 }
                 .lineLimit(1)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, SpacingTokens.sm)
             }
 
             // Stats row
@@ -292,7 +292,7 @@ struct WatchTimerView: View {
 
             // Connectivity indicator
             if !store.isConnected {
-                HStack(spacing: 4) {
+                HStack(spacing: SpacingTokens.xs) {
                     Image(systemName: "iphone.slash")
                         .font(.system(size: 9))
                     Text(String(localized: "iPhone disconnected"))
@@ -422,8 +422,8 @@ struct WatchStatPill: View {
             Text(value)
                 .font(.system(size: 11, weight: .medium))
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, SpacingTokens.sm)
+        .padding(.vertical, SpacingTokens.xs)
         .background(.ultraThinMaterial, in: Capsule())
     }
 }

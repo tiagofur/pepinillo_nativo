@@ -12,7 +12,7 @@ struct ModeIntelligenceBanner: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: "lightbulb.fill")
                 .font(.title3)
                 .foregroundStyle(.yellow)
@@ -60,7 +60,7 @@ struct ModeIntelligenceBanner: View {
             .accessibilityLabel(String(localized: "Dismiss suggestion"))
             .accessibilityHint(String(localized: "Double tap to dismiss the mode suggestion"))
         }
-        .padding(12)
+        .padding(SpacingTokens.base)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.tile)
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
         .transition(.move(edge: .top).combined(with: .opacity))

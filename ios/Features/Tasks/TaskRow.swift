@@ -33,7 +33,7 @@ struct TaskRow: View, Equatable {
                 // Priority color bar — calm leading indicator replacing text prefixes
                 priorityBar
 
-                HStack(spacing: 12) {
+                HStack(spacing: SpacingTokens.base) {
                     completionButton
                     taskInfo
                     Spacer()
@@ -41,8 +41,8 @@ struct TaskRow: View, Equatable {
                         focusButton
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, SpacingTokens.md)
+                .padding(.vertical, SpacingTokens.base)
             }
             .background(cardBackgroundTint)
             .clipShape(RoundedRectangle(cornerRadius: GlassCornerRadius.tile, style: .continuous))

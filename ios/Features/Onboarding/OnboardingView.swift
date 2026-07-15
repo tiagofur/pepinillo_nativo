@@ -56,7 +56,7 @@ struct OnboardingView: View {
                         .padding(.vertical, 7)
                         .background(.black.opacity(0.22), in: Capsule())
                         .contentShape(Capsule())
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, SpacingTokens.md)
                         .padding(.top, 56)
                         .accessibilityLabel(String(localized: "Skip onboarding"))
                         .accessibilityHint(String(localized: "Jump to mode selection"))
@@ -71,7 +71,7 @@ struct OnboardingView: View {
                 continueButton
                     .frame(maxWidth: 480)
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, SpacingTokens.xxl)
                     .padding(.bottom, 60) // Extra padding for the page index indicators
             }
         }
@@ -157,9 +157,9 @@ struct OnboardingView: View {
 
     private var getStartedPage: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: SpacingTokens.xl) {
                 // Header: cucumber badge inline with title
-                VStack(spacing: 8) {
+                VStack(spacing: SpacingTokens.sm) {
                     HStack(spacing: 10) {
                         Text("🥒")
                             .font(.system(size: 36))
@@ -172,13 +172,13 @@ struct OnboardingView: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
+                        .padding(.horizontal, SpacingTokens.xxl)
                 }
-                .padding(.top, 24)
+                .padding(.top, SpacingTokens.xl)
                 .readableContent(maxWidth: 672)
 
                 // Mode selector cards — adaptive grid: 1 col iPhone, 2+ cols iPad
-                LazyVGrid(columns: adaptiveCardColumns, spacing: 16) {
+                LazyVGrid(columns: adaptiveCardColumns, spacing: SpacingTokens.md) {
                     ForEach(FocusMode.allCases) { mode in
                         DefaultModeCard(
                             mode: mode,
@@ -191,7 +191,7 @@ struct OnboardingView: View {
                     }
                 }
                 .contentMaxWidth(900)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, SpacingTokens.xl)
 
                 Spacer(minLength: 120)
             }
@@ -283,11 +283,11 @@ struct OnboardingPageView: View {
             .rotationEffect(.degrees(emojiAppeared ? 0 : -20))
             .accessibilityHidden(true)
             .padding(.top, 80)
-            .padding(.bottom, 32)
+            .padding(.bottom, SpacingTokens.xxl)
 
             // Content card — glass bottom card
-            VStack(spacing: 24) {
-                VStack(spacing: 8) {
+            VStack(spacing: SpacingTokens.xl) {
+                VStack(spacing: SpacingTokens.sm) {
                     Text(page.title)
                         .font(.largeTitle.bold())
                         .foregroundStyle(.primary)
@@ -314,10 +314,10 @@ struct OnboardingPageView: View {
                     .scaleEffect(descAppeared ? 1 : 0.9)
                     .opacity(descAppeared ? 1 : 0)
             }
-            .padding(32)
+            .padding(SpacingTokens.xxl)
             .pepinilloGlass(cornerRadius: GlassCornerRadius.hero)
             .readableContent(maxWidth: 672)
-            .padding(.horizontal, 24)
+            .padding(.horizontal, SpacingTokens.xl)
             .offset(y: descAppeared ? 0 : 30)
 
             Spacer()
@@ -365,7 +365,7 @@ struct DefaultModeCard: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 16) {
+            HStack(spacing: SpacingTokens.md) {
                 ZStack {
                     Circle()
                         .fill(isSelected ? modeColor : modeColor.opacity(0.15))
@@ -374,7 +374,7 @@ struct DefaultModeCard: View {
                         .font(.title)
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: SpacingTokens.xs) {
                     Text(mode.displayName)
                         .font(.subheadline.bold())
                         .foregroundStyle(.primary)
@@ -404,8 +404,8 @@ struct DefaultModeCard: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(.horizontal, SpacingTokens.md)
+            .padding(.vertical, SpacingTokens.md)
             .pepinilloGlass()
             .overlay(
                 RoundedRectangle(cornerRadius: GlassCornerRadius.card, style: .continuous)

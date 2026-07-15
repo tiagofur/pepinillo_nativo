@@ -24,8 +24,8 @@ struct WeeklyReviewView: View {
             VStack(spacing: 0) {
                 // Tab picker
                 reviewTabPicker
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.horizontal, SpacingTokens.md)
+                    .padding(.top, SpacingTokens.sm)
 
                 // Tab content
                 ScrollView {
@@ -58,13 +58,13 @@ struct WeeklyReviewView: View {
             }
         }
         .pickerStyle(.segmented)
-        .padding(.bottom, 8)
+        .padding(.bottom, SpacingTokens.sm)
     }
 
     // MARK: - Data Tab
 
     private var dataTab: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: SpacingTokens.lg) {
             if store.isLoading {
                 ProgressView()
                     .padding(.top, 60)
@@ -77,8 +77,8 @@ struct WeeklyReviewView: View {
                 streakCard
             }
         }
-        .padding(16)
-        .padding(.bottom, 32)
+        .padding(SpacingTokens.md)
+        .padding(.bottom, SpacingTokens.xxl)
     }
 
     // MARK: - AI Insights Tab
@@ -97,7 +97,7 @@ struct WeeklyReviewView: View {
     }
 
     private var proRequiredOverlay: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: SpacingTokens.lg) {
             Spacer()
                 .frame(height: 40)
 
@@ -112,7 +112,7 @@ struct WeeklyReviewView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
+                .padding(.horizontal, SpacingTokens.xxl)
 
             Spacer()
         }
@@ -121,7 +121,7 @@ struct WeeklyReviewView: View {
     // MARK: - Comparison Cards
 
     private var comparisonCards: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             TrendCard(
                 title: String(localized: "Focus Time"),
                 value: formatMinutes(store.currentWeekMinutes),
@@ -144,7 +144,7 @@ struct WeeklyReviewView: View {
     // MARK: - Week Bar Chart
 
     private var weekChart: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "This Week"))
                 .font(.headline)
 
@@ -166,7 +166,7 @@ struct WeeklyReviewView: View {
             }
             .frame(height: 160)
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 
@@ -175,7 +175,7 @@ struct WeeklyReviewView: View {
     private var dominantModeCard: some View {
         Group {
             if let mode = store.currentWeekDominantMode {
-                HStack(spacing: 12) {
+                HStack(spacing: SpacingTokens.base) {
                     Text(mode.icon)
                         .font(.largeTitle)
                     VStack(alignment: .leading, spacing: 2) {
@@ -188,7 +188,7 @@ struct WeeklyReviewView: View {
                     }
                     Spacer()
                 }
-                .padding(16)
+                .padding(SpacingTokens.md)
                 .frame(maxWidth: .infinity)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
@@ -200,7 +200,7 @@ struct WeeklyReviewView: View {
     private var bestDayCard: some View {
         Group {
             if let dayName = store.bestDayName, store.bestDayMinutes > 0 {
-                HStack(spacing: 12) {
+                HStack(spacing: SpacingTokens.base) {
                     Image(systemName: "star.fill")
                         .font(.largeTitle)
                         .foregroundStyle(.yellow)
@@ -214,7 +214,7 @@ struct WeeklyReviewView: View {
                     }
                     Spacer()
                 }
-                .padding(16)
+                .padding(SpacingTokens.md)
                 .frame(maxWidth: .infinity)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
@@ -226,7 +226,7 @@ struct WeeklyReviewView: View {
     private var modeBreakdown: some View {
         Group {
             if !store.modeDistribution.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: SpacingTokens.base) {
                     Text(String(localized: "Mode Distribution"))
                         .font(.headline)
 
@@ -242,7 +242,7 @@ struct WeeklyReviewView: View {
                         }
                     }
                 }
-                .padding(16)
+                .padding(SpacingTokens.md)
                 .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
             }
         }
@@ -251,7 +251,7 @@ struct WeeklyReviewView: View {
     // MARK: - Streak
 
     private var streakCard: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: SpacingTokens.base) {
             Image(systemName: "flame.fill")
                 .font(.largeTitle)
                 .foregroundStyle(theme.streakColor)
@@ -265,7 +265,7 @@ struct WeeklyReviewView: View {
             }
             Spacer()
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .frame(maxWidth: .infinity)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
@@ -291,7 +291,7 @@ struct TrendCard: View {
     let color: Color
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: SpacingTokens.sm) {
             Text(value)
                 .font(.title2)
                 .fontWeight(.bold)
@@ -299,7 +299,7 @@ struct TrendCard: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            HStack(spacing: 4) {
+            HStack(spacing: SpacingTokens.xs) {
                 Image(systemName: trendIcon)
                     .font(.caption2)
                 Text(delta == 0 ? "—" : (delta > 0 ? "+\(deltaLabel)" : "-\(deltaLabel)"))
@@ -308,7 +308,7 @@ struct TrendCard: View {
             .foregroundStyle(trendColor)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 

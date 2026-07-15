@@ -45,7 +45,7 @@ struct AuthField: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, SpacingTokens.md)
         .frame(minHeight: 56)
         .background(
             ZStack {

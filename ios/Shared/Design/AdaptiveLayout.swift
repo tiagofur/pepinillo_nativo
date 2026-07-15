@@ -23,5 +23,5 @@ extension View {
 
 /// Adaptive grid columns: 1 col iPhone, 2 cols iPad portrait, 3 cols iPad landscape / 13".
 let adaptiveCardColumns: [GridItem] = [
-    GridItem(.adaptive(minimum: 320, maximum: 480), spacing: 16)
+    GridItem(.adaptive(minimum: 320, maximum: 480), spacing: SpacingTokens.md)
 ]

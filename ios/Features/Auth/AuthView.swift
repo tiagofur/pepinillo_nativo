@@ -104,7 +104,7 @@ struct AuthView: View {
                     Color.pepinilloSystemBackground.opacity(0.6)
                         .ignoresSafeArea()
                         .accessibilityHidden(true)
-                    VStack(spacing: 16) {
+                    VStack(spacing: SpacingTokens.md) {
                         ProgressView()
                             .scaleEffect(1.5)
                             .accessibilityHidden(true)
@@ -112,7 +112,7 @@ struct AuthView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(32)
+                    .padding(SpacingTokens.xxl)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: GlassCornerRadius.control, style: .continuous))
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(String(localized: "a11y.auth.syncing.label", defaultValue: "Syncing your account"))
@@ -163,7 +163,7 @@ struct AuthView: View {
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 40)
-        .padding(.top, 16)
+        .padding(.top, SpacingTokens.md)
 
         Spacer().frame(height: 24)
     }
@@ -174,7 +174,7 @@ struct AuthView: View {
             modeButton(title: String(localized: "auth.mode.signin", defaultValue: "Sign In"), mode: .login)
             modeButton(title: String(localized: "auth.mode.register", defaultValue: "Create Account"), mode: .register)
         }
-        .padding(4)
+        .padding(SpacingTokens.xs)
         .background(
             Capsule()
                 .fill(.ultraThinMaterial)
@@ -182,7 +182,7 @@ struct AuthView: View {
                     Capsule().stroke(.primary.opacity(0.08), lineWidth: 1)
                 }
         )
-        .padding(.horizontal, 24)
+        .padding(.horizontal, SpacingTokens.xl)
         .padding(.vertical, 10)
     }
 
@@ -250,17 +250,17 @@ struct AuthView: View {
                 Text(String(localized: "auth.password.hint", defaultValue: "Use at least 8 characters, with uppercase, lowercase, and a number."))
                     .font(.caption2)
                     .foregroundStyle(.secondary.opacity(0.8))
-                    .padding(.horizontal, 4)
+                    .padding(.horizontal, SpacingTokens.xs)
                     .transition(.opacity)
             }
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, SpacingTokens.xl)
 
         if let error = store.errorMessage {
             Label(error, systemImage: "exclamationmark.triangle.fill")
                 .font(.footnote)
                 .foregroundStyle(.red)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, SpacingTokens.xl)
                 .padding(.top, 10)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityLabel(error)
@@ -293,7 +293,7 @@ struct AuthView: View {
         }
         .buttonStyle(PepinilloButtonStyle())
         .disabled(store.isLoading)
-        .padding(.horizontal, 24)
+        .padding(.horizontal, SpacingTokens.xl)
         .contentShape(Capsule())
         .accessibilityLabel(store.mode == .login
             ? String(localized: "auth.mode.signin", defaultValue: "Sign In")
@@ -301,7 +301,7 @@ struct AuthView: View {
         )
 
         if store.mode == .login, onAppleSignIn != nil {
-            VStack(spacing: 8) {
+            VStack(spacing: SpacingTokens.sm) {
                 HStack(spacing: 10) {
                     Rectangle()
                         .fill(Color.secondary.opacity(0.25))
@@ -313,8 +313,8 @@ struct AuthView: View {
                         .fill(Color.secondary.opacity(0.25))
                         .frame(height: 1)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
+                .padding(.horizontal, SpacingTokens.xl)
+                .padding(.top, SpacingTokens.base)
                 .accessibilityHidden(true)
 
                 appleSignInButton
@@ -328,7 +328,7 @@ struct AuthView: View {
 
     private var appleSignInButton: some View {
         ZStack {
-            HStack(spacing: 8) {
+            HStack(spacing: SpacingTokens.sm) {
                 Image(systemName: "apple.logo")
                     .font(.subheadline.weight(.semibold))
                 Text(String(localized: "Continue with Apple"))
@@ -381,7 +381,7 @@ struct AuthView: View {
             .frame(height: 50)
         }
         .contentShape(Capsule())
-        .padding(.horizontal, 24)
+        .padding(.horizontal, SpacingTokens.xl)
     }
 
     @ViewBuilder
@@ -403,7 +403,7 @@ struct AuthView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
-        .padding(.top, 12)
+        .padding(.top, SpacingTokens.base)
         .accessibilityHint(String(localized: "a11y.auth.guest.hint", defaultValue: "Continue without signing in — data stays on this device"))
     }
 }

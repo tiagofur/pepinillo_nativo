@@ -10,7 +10,7 @@ struct AchievementsSection: View {
     let achievements: [UserAchievement]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: SpacingTokens.base) {
             Text(String(localized: "Achievements"))
                 .font(.headline)
                 .accessibilityAddTraits(.isHeader)
@@ -34,7 +34,7 @@ struct AchievementsSection: View {
                 }
             }
         }
-        .padding(16)
+        .padding(SpacingTokens.md)
         .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 }
@@ -70,8 +70,8 @@ private struct AchievementCard: View {
             }
         }
         .frame(width: 100)
-        .padding(.vertical, 12)
-        .padding(.horizontal, 8)
+        .padding(.vertical, SpacingTokens.base)
+        .padding(.horizontal, SpacingTokens.sm)
         .background(
             userAchievement.isUnlocked
                 ? Color.accentColor.opacity(0.12)

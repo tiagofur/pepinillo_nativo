@@ -113,7 +113,7 @@ struct CelebrationView: View {
                 }
 
             // Milestone card
-            VStack(spacing: 16) {
+            VStack(spacing: SpacingTokens.md) {
                 Text(milestone.emoji)
                     .font(.system(size: 64))
                     .scaleEffect(showContent ? 1 : 0.3)
@@ -132,7 +132,7 @@ struct CelebrationView: View {
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.85))
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, SpacingTokens.xxl)
                     .opacity(showContent ? 1 : 0)
                     .offset(y: showContent ? 0 : 20)
                     .animation(reduceMotion ? nil : .easeOut(duration: 0.4).delay(0.25), value: showContent)
@@ -142,8 +142,8 @@ struct CelebrationView: View {
                 } label: {
                     Text(String(localized: "Keep Going!"))
                         .font(.headline)
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 12)
+                        .padding(.horizontal, SpacingTokens.xxl)
+                        .padding(.vertical, SpacingTokens.base)
                         .background(.white, in: Capsule())
                         .foregroundStyle(.black)
                 }
