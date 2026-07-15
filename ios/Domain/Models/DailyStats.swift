@@ -10,7 +10,7 @@ import SwiftData
 
 @Model
 public final class DailyStats {
-    public var id: UUID
+    @Attribute(.unique) public var id: UUID
     public var date: Date                   // Normalized to start of day (midnight)
 
     // Totals

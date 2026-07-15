@@ -22,6 +22,9 @@ struct SettingsView: View {
                 notificationsSection
                 healthSection
                 streakSection
+                if store.isProUser && store.canAppleCloudSync {
+                    iCloudSyncSection
+                }
                 aboutSection
             }
             .formStyle(.grouped)
@@ -310,6 +313,85 @@ struct SettingsView: View {
             .accessibilityLabel(String(localized: "Current streak, \(store.currentStreakDays) days"))
         } header: {
             Label(String(localized: "Streak"), systemImage: "flame")
+        }
+    }
+
+    // MARK: - iCloud Sync Section
+
+    private var iCloudSyncSection: some View {
+        Section {
+            HStack {
+                Label(syncStatusTitle, systemImage: syncStatusIcon)
+                Spacer()
+                if store.isRetryingAppleCloudSync {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+            }
+
+            if let error = store.lastAppleCloudActivationError, !error.isEmpty {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if store.syncStatus == .appleCloudUnavailable || store.lastAppleCloudActivationError != nil {
+                Button {
+                    store.send(.retryAppleCloudSyncTapped)
+                } label: {
+                    Label(String(localized: "Retry iCloud Sync"), systemImage: "arrow.clockwise")
+                }
+                .disabled(store.isRetryingAppleCloudSync)
+            }
+        } header: {
+            Label(String(localized: "iCloud Sync"), systemImage: "icloud")
+        } footer: {
+            Text(syncStatusFooter)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var syncStatusTitle: String {
+        switch store.syncStatus {
+        case .idle, .localOnly:
+            return String(localized: "Local only")
+        case .activatingAppleCloud:
+            return String(localized: "Activating iCloud…")
+        case .appleCloudActive:
+            return String(localized: "iCloud active")
+        case .appleCloudUnavailable:
+            return String(localized: "iCloud unavailable")
+        case .backendActive:
+            return String(localized: "Pepinillo cloud active")
+        }
+    }
+
+    private var syncStatusIcon: String {
+        switch store.syncStatus {
+        case .appleCloudActive, .backendActive:
+            return "checkmark.icloud.fill"
+        case .activatingAppleCloud:
+            return "icloud.and.arrow.up"
+        case .appleCloudUnavailable:
+            return "icloud.slash"
+        case .idle, .localOnly:
+            return "internaldrive"
+        }
+    }
+
+    private var syncStatusFooter: String {
+        switch store.syncStatus {
+        case .appleCloudActive:
+            return String(localized: "Tasks, sessions, and analytics sync across your Apple devices via iCloud.")
+        case .activatingAppleCloud:
+            return String(localized: "Setting up your iCloud store. This usually takes a few seconds.")
+        case .appleCloudUnavailable:
+            return String(localized: "Check that you are signed into iCloud and have storage available, then tap Retry.")
+        case .backendActive:
+            return String(localized: "Everywhere/AI+ uses Pepinillo cloud sync instead of iCloud.")
+        case .idle, .localOnly:
+            return String(localized: "Your data stays on this device until iCloud sync activates.")
         }
     }
 
