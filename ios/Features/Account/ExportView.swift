@@ -2,8 +2,7 @@
 // Pepinillo — Deep Work Companion for Apple
 //
 // Full-screen export destination pushed from Account tab.
-// Allows exporting session history and task data as CSV or PDF.
-// Gated behind PRO subscription for non-Pro users.
+// CSV export is available to all users; PDF is PRO-only (#202).
 
 import SwiftUI
 import ComposableArchitecture
@@ -22,6 +21,10 @@ struct ExportView: View {
     @State private var shareItems: [URL] = []
     @State private var isShareSheetPresented = false
     @State private var tempDirectory: URL?
+
+    private var requiresProUpgrade: Bool {
+        selectedFormat == .pdf && !isPro
+    }
 
     var body: some View {
         List {
@@ -48,20 +51,17 @@ struct ExportView: View {
         #endif
         .navigationTitle(String(localized: "Export Data"))
         .navigationBarTitleDisplayMode(.inline)
-        .disabled(!isPro)
-        .accessibilityHidden(!isPro)
         .overlay {
-            if isPro == false {
+            if requiresProUpgrade {
                 proOverlay
                     .accessibilityElement(children: .contain)
             }
         }
+        .onDisappear {
+            cleanupTempDirectory()
+        }
         .sheet(isPresented: $isShareSheetPresented, onDismiss: {
-            // Clean up temp files after sharing
-            if let dir = tempDirectory {
-                try? FileManager.default.removeItem(at: dir)
-                tempDirectory = nil
-            }
+            cleanupTempDirectory()
             shareItems = []
         }) {
             if !shareItems.isEmpty {
@@ -80,13 +80,28 @@ struct ExportView: View {
                     HStack {
                         Image(systemName: format.icon)
                         Text(format.label)
+                        if format == .pdf && !isPro {
+                            Image(systemName: "crown.fill")
+                                .foregroundStyle(.yellow)
+                                .font(.caption2)
+                        }
                     }
                     .tag(format)
                 }
             }
             .pickerStyle(.segmented)
+            .onChange(of: selectedFormat) { _, newValue in
+                if newValue == .pdf && !isPro {
+                    selectedFormat = .csv
+                }
+            }
         } header: {
             Text(String(localized: "Export Format"))
+        } footer: {
+            if !isPro {
+                Text(String(localized: "export.footer.csv_free",
+                            defaultValue: "CSV export is free. Upgrade to Pro for PDF reports."))
+            }
         }
     }
 
@@ -148,9 +163,16 @@ struct ExportView: View {
                     Spacer()
                 }
             }
-            .disabled(isExporting || (!includeSessions && !includeTasks))
-            .foregroundStyle(isExporting || (!includeSessions && !includeTasks) ? Color.secondary : Color.white)
-            .listRowBackground(Color.accentColor.opacity(isExporting || (!includeSessions && !includeTasks) ? 0.5 : 1))
+            .disabled(isExporting || (!includeSessions && !includeTasks) || requiresProUpgrade)
+            .foregroundStyle(
+                isExporting || (!includeSessions && !includeTasks) || requiresProUpgrade
+                    ? Color.secondary : Color.white
+            )
+            .listRowBackground(
+                Color.accentColor.opacity(
+                    isExporting || (!includeSessions && !includeTasks) || requiresProUpgrade ? 0.5 : 1
+                )
+            )
         }
     }
 
@@ -162,10 +184,10 @@ struct ExportView: View {
                 .font(.system(size: 40))
                 .foregroundStyle(.yellow)
 
-            Text(String(localized: "Export is a Pro Feature"))
+            Text(String(localized: "PDF Export is a Pro Feature"))
                 .font(.title3.bold())
 
-            Text(String(localized: "Upgrade to Pepinillo Pro to export your focus sessions and tasks."))
+            Text(String(localized: "Upgrade to Pepinillo Pro for PDF reports. CSV export is always free."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -179,23 +201,27 @@ struct ExportView: View {
 
     @MainActor
     private func performExport() async {
-        guard isPro else { return }
+        guard !requiresProUpgrade else { return }
         guard !isExporting else { return }
+        guard includeSessions || includeTasks else {
+            exportError = ExportError.noDataSelected.errorDescription
+            return
+        }
+
+        ExportService.cleanLegacyExportDirectories()
+        cleanupTempDirectory()
         isExporting = true
         exportError = nil
 
         do {
-            // 1. Determine date window
             let (startDate, endDate) = dateRange.dateInterval()
 
-            // 2. Fetch data off the main thread via the background actor
             let tasks: [TaskItemDTO]
             let sessions: [SessionRecordDTO]
 
             if includeTasks {
                 let all = try await persistence.fetchTasks()
                 tasks = all.filter { task in
-                    // Filter by date range using createdAt (or completedAt if completed)
                     let refDate = task.completedAt ?? task.createdAt
                     return refDate >= startDate && refDate <= endDate
                 }
@@ -210,10 +236,9 @@ struct ExportView: View {
             }
 
             if tasks.isEmpty && sessions.isEmpty {
-                throw ExportError.noDataSelected
+                throw ExportError.noDataInRange
             }
 
-            // 3. Build payload
             let payload = ExportPayload(
                 tasks: tasks,
                 sessions: sessions,
@@ -221,11 +246,9 @@ struct ExportView: View {
                 dateRange: dateRange
             )
 
-            // 4. Create temp directory
             let dir = try ExportService.makeTempDirectory()
             tempDirectory = dir
 
-            // 5. Generate files
             var urls: [URL] = []
             switch selectedFormat {
             case .csv:
@@ -236,28 +259,28 @@ struct ExportView: View {
             }
 
             guard !urls.isEmpty else {
-                throw ExportError.noDataSelected
+                throw ExportError.noDataInRange
             }
 
-            // 6. Present share sheet
             shareItems = urls
             isShareSheetPresented = true
 
         } catch let exportErr as ExportError {
-            if let dir = tempDirectory {
-                try? FileManager.default.removeItem(at: dir)
-                tempDirectory = nil
-            }
+            cleanupTempDirectory()
             exportError = exportErr.errorDescription
         } catch {
-            if let dir = tempDirectory {
-                try? FileManager.default.removeItem(at: dir)
-                tempDirectory = nil
-            }
+            cleanupTempDirectory()
             exportError = ExportError.writeFailed(error).errorDescription
         }
 
         isExporting = false
+    }
+
+    private func cleanupTempDirectory() {
+        if let dir = tempDirectory {
+            try? FileManager.default.removeItem(at: dir)
+            tempDirectory = nil
+        }
     }
 }
 

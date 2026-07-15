@@ -34,6 +34,19 @@ enum ExportService {
         return dir
     }
 
+    /// Cleans up legacy export directories from the temporary directory.
+    static func cleanLegacyExportDirectories() {
+        let tempDir = FileManager.default.temporaryDirectory
+        guard let urls = try? FileManager.default.contentsOfDirectory(at: tempDir, includingPropertiesForKeys: nil) else {
+            return
+        }
+        for url in urls {
+            if url.lastPathComponent.hasPrefix("pepinillo-export-") {
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+    }
+
     // MARK: - CSV Generation
 
     /// Generates CSV file(s) for the given payload and returns their URLs.
@@ -219,6 +232,7 @@ enum ExportService {
 
 enum ExportError: LocalizedError {
     case noDataSelected
+    case noDataInRange
     case pdfRenderFailed
     case writeFailed(Error)
 
@@ -227,6 +241,9 @@ enum ExportError: LocalizedError {
         case .noDataSelected:
             return String(localized: "export.error.no_data_selected",
                           defaultValue: "Please select at least one data type to export.")
+        case .noDataInRange:
+            return String(localized: "export.error.no_data_in_range",
+                          defaultValue: "No tasks or sessions found in the selected date range.")
         case .pdfRenderFailed:
             return String(localized: "export.error.pdf_render_failed",
                           defaultValue: "Could not render the PDF. Please try again.")

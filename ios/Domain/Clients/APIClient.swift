@@ -338,36 +338,44 @@ private struct APIHelper: Sendable {
             throw APIClientError.sessionExpired
         }
 
-        // Attempt token refresh
-        let refreshBody = RefreshRequest(refreshToken: refreshToken)
-        let refreshResponse: RefreshResponse
+        let accessToken: String
         do {
-            refreshResponse = try await post("auth/refresh", body: refreshBody)
+            let tokens = try await TokenRefreshCoordinator.shared.refresh(
+                refreshToken: refreshToken,
+                performRefresh: { token in
+                    let refreshBody = RefreshRequest(refreshToken: token)
+                    do {
+                        let refreshResponse: RefreshResponse = try await post("auth/refresh", body: refreshBody)
+                        return (
+                            accessToken: refreshResponse.tokens.accessToken,
+                            refreshToken: refreshResponse.tokens.refreshToken
+                        )
+                    } catch let apiError as APIClientError {
+                        switch apiError {
+                        case .sessionExpired, .serverError(401), .serverError(403):
+                            try? await keychain.deleteTokens()
+                            throw APIClientError.sessionExpired
+                        default:
+                            throw apiError
+                        }
+                    } catch {
+                        throw APIClientError.networkError
+                    }
+                },
+                saveTokens: { access, refresh in
+                    try await keychain.saveTokens(access, refresh)
+                }
+            )
+            accessToken = tokens.accessToken
         } catch let apiError as APIClientError {
-            // Only clear tokens on definitive rejection (401/403), not transient errors
-            switch apiError {
-            case .sessionExpired, .serverError(401), .serverError(403):
-                try? await keychain.deleteTokens()
-                throw APIClientError.sessionExpired
-            default:
-                // Transient error (network, 5xx, etc.) — don't clear tokens
-                throw apiError
-            }
+            throw apiError
         } catch {
-            // Network-level error — don't clear tokens, just propagate
             throw APIClientError.networkError
         }
 
-        // Save new tokens
-        try await keychain.saveTokens(
-            refreshResponse.tokens.accessToken,
-            refreshResponse.tokens.refreshToken
-        )
-
-        // Retry original request with new access token
         var retryRequest = originalRequest
         retryRequest.setValue(
-            "Bearer \(refreshResponse.tokens.accessToken)",
+            "Bearer \(accessToken)",
             forHTTPHeaderField: "Authorization"
         )
 

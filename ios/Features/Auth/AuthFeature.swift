@@ -15,6 +15,8 @@ private let authLogger = Logger(subsystem: "com.pepinillo.app", category: "auth"
 @Reducer
 struct AuthFeature {
 
+    private enum CancelID { case authRequest }
+
     // MARK: - State
 
     @ObservableState
@@ -116,6 +118,7 @@ struct AuthFeature {
                 return .none
 
             case .loginTapped:
+                guard !state.isLoading else { return .none }
                 guard !state.email.isEmpty, !state.password.isEmpty else {
                     state.errorMessage = String(localized: "Please fill in all fields")
                     return .none
@@ -133,8 +136,10 @@ struct AuthFeature {
                         await send(.authResponse(.failure(.networkError)))
                     }
                 }
+                .cancellable(id: CancelID.authRequest, cancelInFlight: true)
 
             case .registerTapped:
+                guard !state.isLoading else { return .none }
                 guard !state.name.isEmpty, !state.email.isEmpty, !state.password.isEmpty else {
                     state.errorMessage = String(localized: "Please fill in all fields")
                     return .none
@@ -156,6 +161,7 @@ struct AuthFeature {
                         await send(.authResponse(.failure(.networkError)))
                     }
                 }
+                .cancellable(id: CancelID.authRequest, cancelInFlight: true)
 
             case .authResponse(.success(let response)):
                 state.isLoading = false
@@ -300,7 +306,7 @@ struct AuthFeature {
                 }
 
             case .dismissMergeDialog:
-                state.showMergeDialog = false
+                // Merge choice is mandatory — ignore interactive sheet dismiss (#204).
                 return .none
 
             case .forgotPasswordTapped:

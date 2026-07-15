@@ -63,6 +63,8 @@ struct AppFeature {
         var deleteAccountError: String? = nil
         /// True while the backend account-deletion request is in flight (#193).
         var isDeletingAccount: Bool = false
+        /// Non-nil when Sign in with Apple fails for a real error (not user cancel) (#200).
+        var signInWithAppleError: String? = nil
         var pendingExternalStartModeID: String?
         var pendingExternalStartTaskID: String?
         var pendingExternalStartTimerStart: Date?
@@ -110,7 +112,8 @@ struct AppFeature {
                 birthDate: cachedUser?.birthDate,
                 subscriptionTier: normalized(cachedUser?.subscriptionTier) ?? subscriptionState.capabilities.tierIdentifier,
                 subscriptionExpiresAt: cachedUser?.subscriptionExpiresAt,
-                emailVerified: cachedUser?.emailVerified ?? (restoredEmail != nil),
+                // Never infer verification from a restored email string (#199).
+                emailVerified: cachedUser?.emailVerified ?? false,
                 appleId: resolvedAppleID,
                 createdAt: cachedUser?.createdAt ?? "",
                 updatedAt: cachedUser?.updatedAt ?? ""
@@ -200,11 +203,15 @@ struct AppFeature {
 
         // Sign in with Apple
         case signInWithAppleSucceeded(AppleUserInfo)
-        case signInWithAppleFailed
+        /// Cold-start restore of a still-authorized Apple credential — no fresh SIWA (#199).
+        case appleIdentityRestored(AppleUserInfo)
+        case signInWithAppleFailed(wasUserCancelled: Bool = false)
         case signOutTapped
         case deleteAccountTapped
         case deleteAccountSucceeded
         case deleteAccountFailed(String)
+        case dismissDeleteAccountError
+        case dismissSignInWithAppleError
         case appleCredentialStateChecked(String, Bool)
         case appleCredentialRevoked
 
@@ -481,7 +488,10 @@ struct AppFeature {
                             await send(.appleCredentialRevoked)
                         }
                     }
-                    .cancellable(id: CancelID.appleCredentialRevocation)
+                    .cancellable(id: CancelID.appleCredentialRevocation),
+                    .run { _ in
+                        ExportService.cleanLegacyExportDirectories()
+                    }
                 )
 
             case .requestNotificationPermission:
@@ -703,6 +713,8 @@ struct AppFeature {
                     if !user.emailVerified && state.appleUserID == nil && state.emailVerification == nil {
                         state.emailVerification = EmailVerificationFeature.State(email: user.email)
                     }
+                    // Re-link RevenueCat on cold-start session restore (#197).
+                    return linkSubscriptionIdentity(user.id)
                 }
                 return .none
 
@@ -717,6 +729,7 @@ struct AppFeature {
                 // hasLoadedData guard and refetches from the now-current store.
                 return .merge(
                     .send(.tasks(.refresh)),
+                    linkSubscriptionIdentity(user.id),
                     .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
                         if canBackendSync {
                             try? await syncClient.syncAll()
@@ -735,12 +748,15 @@ struct AppFeature {
                 state.displayName = user.name
                 state.userEmail = user.email
                 state.emailVerification = nil  // dismiss verification sheet
-                return .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
-                    if canBackendSync {
-                        try? await syncClient.syncAll()
-                        await webSocketClient.connect()
+                return .merge(
+                    linkSubscriptionIdentity(user.id),
+                    .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
+                        if canBackendSync {
+                            try? await syncClient.syncAll()
+                            await webSocketClient.connect()
+                        }
                     }
-                }
+                )
 
             case .emailVerification(.presented(.delegate(.signOutRequested))):
                 // User tapped the escape hatch on the verification sheet. Clear the
@@ -788,11 +804,11 @@ struct AppFeature {
 
             case .appleCredentialStateChecked(let userID, let authorized):
                 if authorized {
-                    // Restore state from preferences (already loaded on launch)
+                    // Restore local Apple identity only — do not replay fresh SIWA (#199).
                     return .run { send in
                         let prefs = try await persistence.fetchPreferences()
                         if prefs.appleUserID == userID {
-                            await send(.signInWithAppleSucceeded(AppleUserInfo(
+                            await send(.appleIdentityRestored(AppleUserInfo(
                                 userID: userID,
                                 displayName: prefs.displayName,
                                 email: prefs.userEmail
@@ -807,75 +823,72 @@ struct AppFeature {
                     return performSignOutCleanup(&state)
                 }
 
+            case .appleIdentityRestored(let info):
+                state.appleUserID = info.userID
+                if let name = info.displayName { state.displayName = name }
+                if let email = info.email { state.userEmail = email }
+                // Dismiss a premature email-verification gate for Apple users (#192).
+                state.emailVerification = nil
+                return .none
+
             case .signInWithAppleSucceeded(let info):
                 state.auth = nil  // dismiss auth sheet if open
                 state.appleUserID = info.userID
-                // If the email-verification gate was prematurely shown on cold-start
-                // (cachedUserLoaded arrived before appleCredentialStateChecked), dismiss
-                // it now: an authorized Apple credential implies a verified account (#192).
                 state.emailVerification = nil
+                state.signInWithAppleError = nil
                 // Apple only provides displayName on the very first sign-in ever.
-                // Fall back to cached user name, then existing displayName, then email prefix.
                 let resolvedName = info.displayName
                     ?? state.cachedUser?.name
                     ?? state.displayName
                     ?? info.email?.components(separatedBy: "@").first
                 state.displayName = resolvedName
                 state.userEmail = info.email ?? state.userEmail
-                let fallbackUser = state.profileSummaryUser
                 return .merge(
-                    .run { [info, fallbackUser] send in
+                    .run { [info] _ in
                         var prefs = try await persistence.fetchPreferences()
                         prefs.appleUserID = info.userID
                         if let name = info.displayName { prefs.displayName = name }
                         if let email = info.email { prefs.userEmail = email }
-                        // Persist the Apple authorization code so it is available for
-                        // backend-side token revocation on account deletion (#196).
-                        // Apple only hands this out on interactive SIWA completions.
                         if let code = info.authorizationCode { prefs.appleAuthorizationCode = code }
                         try await persistence.savePreferences(prefs)
-                        // Identify user in RevenueCat
-                        await subscriptionClient.logIn(info.userID)
-                        if let fallbackUser {
-                            try? await persistence.saveCachedUser(fallbackUser)
-                            await send(.cachedUserLoaded(fallbackUser))
-                        }
                     },
-                    // Try to authenticate with backend if identity token available
                     {
-                        if let idToken = info.identityToken {
-                            return .run { [apiClient, keychain, persistence, syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] send in
-                                do {
-                                    guard let nonce = info.nonce, !nonce.isEmpty else {
-                                        return
-                                    }
-                                    let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken, nonce: nonce))
-                                    try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
-                                    let dto = CachedUserDTO(
-                                        id: response.user.id, email: response.user.email, name: response.user.name,
-                                        imageUrl: response.user.imageUrl, birthDate: response.user.birthDate,
-                                        subscriptionTier: response.user.subscriptionTier,
-                                        subscriptionExpiresAt: response.user.subscriptionExpiresAt,
-                                        emailVerified: response.user.emailVerified, appleId: response.user.appleId,
-                                        createdAt: response.user.createdAt, updatedAt: response.user.updatedAt
-                                    )
-                                    try? await persistence.saveCachedUser(dto)
-                                    await send(.cachedUserLoaded(dto))
-                                    // VPS sync is Everywhere/AI+ only.
-                                    if canBackendSync {
-                                        try? await syncClient.syncAll()
-                                        await webSocketClient.connect()
-                                    }
-                                } catch {
-                                    // Backend auth failed — synthetic CachedUserDTO already saved above
+                        guard let idToken = info.identityToken,
+                              let nonce = info.nonce,
+                              !nonce.isEmpty else {
+                            return .none
+                        }
+                        return .run { [apiClient, keychain, persistence, syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] send in
+                            do {
+                                let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken, nonce: nonce))
+                                try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
+                                let dto = CachedUserDTO(
+                                    id: response.user.id, email: response.user.email, name: response.user.name,
+                                    imageUrl: response.user.imageUrl, birthDate: response.user.birthDate,
+                                    subscriptionTier: response.user.subscriptionTier,
+                                    subscriptionExpiresAt: response.user.subscriptionExpiresAt,
+                                    emailVerified: response.user.emailVerified, appleId: response.user.appleId,
+                                    createdAt: response.user.createdAt, updatedAt: response.user.updatedAt
+                                )
+                                try? await persistence.saveCachedUser(dto)
+                                await send(.cachedUserLoaded(dto))
+                                await subscriptionClient.logIn(response.user.id)
+                                if canBackendSync {
+                                    try? await syncClient.syncAll()
+                                    await webSocketClient.connect()
                                 }
+                            } catch {
+                                // Backend auth failed — keep local Apple identity; getMe may recover later.
                             }
                         }
-                        return .none
                     }()
                 )
 
-            case .signInWithAppleFailed:
+            case .signInWithAppleFailed(let wasUserCancelled):
+                guard !wasUserCancelled else { return .none }
+                state.signInWithAppleError = String(
+                    localized: "Could not sign in with Apple. Please try again."
+                )
                 return .none
 
             case .signOutTapped:
@@ -919,6 +932,14 @@ struct AppFeature {
                 // Backend rejected the delete — keep the session intact so the user can retry.
                 state.isDeletingAccount = false
                 state.deleteAccountError = message
+                return .none
+
+            case .dismissDeleteAccountError:
+                state.deleteAccountError = nil
+                return .none
+
+            case .dismissSignInWithAppleError:
+                state.signInWithAppleError = nil
                 return .none
 
             // MARK: - Notification Action Bridge
@@ -1369,6 +1390,15 @@ struct AppFeature {
             }
             .cancellable(id: CancelID.softSync, cancelInFlight: true)
         )
+    }
+
+    // MARK: - RevenueCat identity (#197)
+
+    /// Links RevenueCat to the backend user id after any successful auth path.
+    private func linkSubscriptionIdentity(_ userID: String) -> Effect<Action> {
+        .run { [subscriptionClient] _ in
+            await subscriptionClient.logIn(userID)
+        }
     }
 
     // MARK: - Session cleanup (shared sign-out path)
