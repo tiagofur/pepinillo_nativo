@@ -603,13 +603,16 @@ struct FocusFeatureReducerTests {
 
         store.exhaustivity = .off
 
+        let workDuration = TimeInterval(25 * 60)
+
         await store.send(.phaseCompleted(.work(number: 2, total: 4)))
+        await store.finish()
 
         #expect(savedSessions.value.count == 1)
         let persisted = savedSessions.value[0]
         #expect(store.state.lastPersistedPomodoroSessionID == persisted.id)
-        #expect(store.state.lastPersistedPomodoroDuration == 25 * 60)
-        #expect(persisted.actualDuration == 25 * 60)
+        #expect(store.state.lastPersistedPomodoroDuration == workDuration)
+        #expect(persisted.actualDuration == workDuration)
         #expect(persisted.phase == .work(number: 2, total: 4))
     }
 
