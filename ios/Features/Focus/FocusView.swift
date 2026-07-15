@@ -6,6 +6,9 @@
 
 import SwiftUI
 import ComposableArchitecture
+#if os(iOS)
+import UIKit
+#endif
 
 struct FocusView: View {
     @Bindable var store: StoreOf<FocusFeature>
@@ -54,6 +57,23 @@ struct FocusView: View {
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.isRunning)
         .conditionalAnimation(.easeInOut(duration: 0.3), value: store.selectedMode)
         .conditionalAnimation(.easeInOut(duration: 0.2), value: store.selectedSoundscape)
+        #if os(iOS)
+        .onChange(of: store.config.keepScreenOn) { _, _ in
+            updateIdleTimerDisabled()
+        }
+        .onChange(of: store.isRunning) { _, _ in
+            updateIdleTimerDisabled()
+        }
+        .onChange(of: store.isPaused) { _, _ in
+            updateIdleTimerDisabled()
+        }
+        .onAppear {
+            updateIdleTimerDisabled()
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
+        #endif
         // Hidden buttons carry keyboard shortcuts for external keyboards / Mac
         .background {
             Group {
@@ -608,6 +628,13 @@ struct FocusView: View {
     private var modeGradient: AngularGradient {
         theme.ringGradient(for: currentMode, phase: store.phase)
     }
+
+    #if os(iOS)
+    private func updateIdleTimerDisabled() {
+        let keepScreenActive = store.config.keepScreenOn && (store.isRunning || store.isPaused)
+        UIApplication.shared.isIdleTimerDisabled = keepScreenActive
+    }
+    #endif
 }
 
 private extension View {

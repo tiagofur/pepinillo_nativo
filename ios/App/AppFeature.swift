@@ -947,10 +947,14 @@ struct AppFeature {
             case .notificationActionReceived(let notifAction):
                 switch notifAction {
                 case .startBreak:
-                    let breakMinutes = max(1, Int(state.focus.config.shortBreakDuration / 60))
-                    return .run { [notificationClient] _ in
-                        await notificationClient.scheduleBreakEnd(breakMinutes)
+                    // START_BREAK from work-phase-end notification: advance into the pending
+                    // break when auto-start is OFF. Do not re-schedule break-end here —
+                    // FocusFeature schedules it when the engine actually enters the break.
+                    if state.focus.isWaitingForNextPhase,
+                       state.focus.pendingNextPhase?.isBreak == true {
+                        return .send(.focus(.startNextPhaseTapped))
                     }
+                    return .none
                 case .startSession:
                     return .send(.focus(.startTapped()))
                 case .pauseSession:

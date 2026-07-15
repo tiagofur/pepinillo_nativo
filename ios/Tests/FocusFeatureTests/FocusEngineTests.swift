@@ -927,3 +927,177 @@ struct FocusEngineDailyPomodoroSeedTests {
                 "Expected short break after completing seeded pomodoro 3, got \(String(describing: state?.phase))")
     }
 }
+
+// MARK: - External Timer Anchors (#176)
+
+@Suite("FocusEngine — External Timer Anchors")
+struct FocusEngineExternalTimerTests {
+
+    @Test func startUsesTimerEndForRemainingWhenProvided() async throws {
+        let engine = FocusEngine()
+        let now = Date.now
+        let target: TimeInterval = 25 * 60
+        let start = now.addingTimeInterval(-300)
+        let end = now.addingTimeInterval(target - 300)
+
+        await engine.start(mode: .pomodoro, timerStart: start, timerEnd: end)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let state = try #require(await engine.currentState())
+        let expectedRemaining = target - 300
+        #expect(abs((state.remainingSeconds ?? 0) - expectedRemaining) < 1)
+        #expect(abs(state.elapsedSeconds - 300) < 1)
+    }
+}
+
+// MARK: - Midpoint Check-In (#176)
+
+@Suite("FocusEngine — Midpoint Check-In")
+struct FocusEngineMidpointTests {
+
+    @Test func midpointFiresOnceWhenElapsedCrossesHalf() async throws {
+        let engine = FocusEngine()
+        var config = FocusConfig.default
+        config.blockMidpointCheckIn = true
+        config.defaultBlockDuration = 60 * 60
+        let blockConfig = config
+
+        let midpointCount = await withTaskGroup(of: Int.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return 0 }
+                var count = 0
+                for await event in events {
+                    if case .midpointReached = event {
+                        count += 1
+                    }
+                }
+                return count
+            }
+            group.addTask {
+                let start = Date.now.addingTimeInterval(-(30 * 60 + 1))
+                await engine.start(mode: .timeBlock, config: blockConfig, timerStart: start)
+                try? await Task.sleep(for: .seconds(2))
+                return 0
+            }
+
+            let observed = await group.next() ?? 0
+            group.cancelAll()
+            return observed
+        }
+
+        #expect(midpointCount == 1)
+    }
+
+    @Test func midpointDoesNotFireWhenDisabled() async throws {
+        let engine = FocusEngine()
+        var config = FocusConfig.default
+        config.blockMidpointCheckIn = false
+        let blockConfig = config
+
+        let midpointCount = await withTaskGroup(of: Int.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return 0 }
+                var count = 0
+                for await event in events {
+                    if case .midpointReached = event {
+                        count += 1
+                    }
+                }
+                return count
+            }
+            group.addTask {
+                let start = Date.now.addingTimeInterval(-(30 * 60 + 1))
+                await engine.start(mode: .timeBlock, config: blockConfig, timerStart: start)
+                try? await Task.sleep(for: .seconds(2))
+                return 0
+            }
+
+            let observed = await group.next() ?? 0
+            group.cancelAll()
+            return observed
+        }
+
+        #expect(midpointCount == 0)
+    }
+
+    @Test func midpointFiresAfterBackgroundTimeJump() async throws {
+        let engine = FocusEngine()
+        var config = FocusConfig.default
+        config.blockMidpointCheckIn = true
+        config.defaultBlockDuration = 60 * 60
+
+        await engine.start(mode: .timeBlock, config: config)
+        try await Task.sleep(for: .milliseconds(300))
+
+        let midpointCount = await withTaskGroup(of: Int.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return 0 }
+                var count = 0
+                for await event in events {
+                    if case .midpointReached = event {
+                        count += 1
+                    }
+                }
+                return count
+            }
+            group.addTask {
+                await engine.syncExternalState(elapsed: 31 * 60, remaining: 29 * 60)
+                try? await Task.sleep(for: .seconds(2))
+                return 0
+            }
+
+            let observed = await group.next() ?? 0
+            group.cancelAll()
+            return observed
+        }
+
+        #expect(midpointCount == 1)
+    }
+}
+
+// MARK: - Config Updates (#176)
+
+@Suite("FocusEngine — Config Updates")
+struct FocusEngineConfigUpdateTests {
+
+    @Test func updateConfigWhilePausedEmitsTick() async throws {
+        let engine = FocusEngine()
+        var config = FocusConfig.default
+        config.pomodoroDuration = 25 * 60
+
+        await engine.start(mode: .pomodoro, config: config)
+        try await Task.sleep(for: .milliseconds(300))
+        await engine.pause()
+
+        var updatedConfig = FocusConfig.default
+        updatedConfig.pomodoroDuration = 30 * 60
+
+        guard let events = await engine.events else {
+            Issue.record("Engine event stream missing")
+            return
+        }
+
+        let expectedDuration = TimeInterval(30 * 60)
+
+        async let configUpdateTick: FocusSessionState? = {
+            for await event in events {
+                if case .tick(let state) = event,
+                   state.targetDuration == expectedDuration,
+                   state.isPaused {
+                    return state
+                }
+            }
+            return nil
+        }()
+
+        await engine.updateConfig(updatedConfig)
+
+        let tick = await configUpdateTick
+        let state = await engine.currentState()
+
+        #expect(tick?.targetDuration == expectedDuration)
+        #expect(tick?.isPaused == true)
+        #expect(state?.targetDuration == expectedDuration)
+        #expect(state?.isPaused == true)
+    }
+}
