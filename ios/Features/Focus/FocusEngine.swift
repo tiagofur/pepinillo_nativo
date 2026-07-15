@@ -51,6 +51,9 @@ public actor FocusEngine {
     // Time Block: emit midpointReached once per block phase
     private var midpointEmitted = false
 
+    /// Widget/intent anchor end — when set, remaining derives from this instead of target − elapsed.
+    private var phaseTimerEnd: Date?
+
     // Event broadcasting
     private var eventContinuation: AsyncStream<FocusEngineEvent>.Continuation?
     private(set) var events: AsyncStream<FocusEngineEvent>?
@@ -156,6 +159,7 @@ public actor FocusEngine {
 
         self.state = sessionState
         self.phaseStartDate = effectiveStart
+        self.phaseTimerEnd = timerEnd
         self.totalPausedDuration = 0
         self.breakSuggestionEmitted = false
         self.midpointEmitted = false
@@ -285,9 +289,12 @@ public actor FocusEngine {
 
         guard var current = state, strategy != nil else { return }
 
+        // When paused the public phase is `.paused`; resolve the underlying timed phase.
+        let timedPhase: FocusPhase = current.phase == .paused ? (phaseBeforePause ?? current.phase) : current.phase
+
         // Determine if the current phase is duration-sensitive (work phase uses pomodoroDuration).
         let phaseTargetChanged: Bool
-        switch current.phase {
+        switch timedPhase {
         case .work:
             phaseTargetChanged = oldConfig.pomodoroDuration != newConfig.pomodoroDuration
         case .shortBreak:
@@ -303,7 +310,7 @@ public actor FocusEngine {
         guard phaseTargetChanged, let strategy = strategy else { return }
 
         // Recalculate target for current phase using new config.
-        guard let updatedTarget = strategy.targetDuration(config: newConfig, phase: current.phase) else { return }
+        guard let updatedTarget = strategy.targetDuration(config: newConfig, phase: timedPhase) else { return }
 
         let elapsed = current.elapsedSeconds
         let newRemaining = max(0, updatedTarget - elapsed)
@@ -475,7 +482,15 @@ public actor FocusEngine {
 
         // Update remaining/progress for phases with a target (Pomodoro, TimeBlock, Flowtime break).
         if let target = current.targetDuration {
-            let remaining = max(0, target - effectiveElapsed)
+            let remaining: TimeInterval
+            if let end = phaseTimerEnd {
+                remaining = max(0, end.timeIntervalSince(Date.now))
+                // Widget anchors: keep elapsed aligned with timerEnd so elapsed + remaining == target.
+                current.elapsedSeconds = max(0, target - remaining)
+            } else {
+                remaining = max(0, target - effectiveElapsed)
+                current.elapsedSeconds = max(0, effectiveElapsed)
+            }
             current.remainingSeconds = remaining
             current.progress = 1.0 - (remaining / target)
 
@@ -615,6 +630,7 @@ public actor FocusEngine {
 
         state = current
         phaseStartDate = Date.now
+        phaseTimerEnd = nil
         totalPausedDuration = 0
 
         if current.mode == .flowtime, resolvedPhase == .flow {
@@ -667,5 +683,6 @@ public actor FocusEngine {
         pendingNextPhase = nil
         breakSuggestionEmitted = false
         midpointEmitted = false
+        phaseTimerEnd = nil
     }
 }

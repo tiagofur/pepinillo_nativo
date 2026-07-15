@@ -944,8 +944,9 @@ struct FocusEngineExternalTimerTests {
         try await Task.sleep(for: .milliseconds(300))
 
         let state = try #require(await engine.currentState())
-        #expect(state.remainingSeconds == target - 300)
-        #expect(state.elapsedSeconds == 300)
+        let expectedRemaining = target - 300
+        #expect(abs((state.remainingSeconds ?? 0) - expectedRemaining) < 1)
+        #expect(abs(state.elapsedSeconds - 300) < 1)
     }
 }
 
@@ -1070,29 +1071,33 @@ struct FocusEngineConfigUpdateTests {
 
         var updatedConfig = FocusConfig.default
         updatedConfig.pomodoroDuration = 30 * 60
-        let configForUpdate = updatedConfig
 
-        let tick = await withTaskGroup(of: FocusSessionState?.self) { group in
-            group.addTask {
-                guard let events = await engine.events else { return nil }
-                for await event in events {
-                    if case .tick(let state) = event {
-                        return state
-                    }
-                }
-                return nil
-            }
-            group.addTask {
-                await engine.updateConfig(configForUpdate)
-                return nil
-            }
-
-            let first = await group.next() ?? nil
-            group.cancelAll()
-            return first
+        guard let events = await engine.events else {
+            Issue.record("Engine event stream missing")
+            return
         }
 
-        #expect(tick?.targetDuration == 30 * 60)
+        let expectedDuration = TimeInterval(30 * 60)
+
+        async let configUpdateTick: FocusSessionState? = {
+            for await event in events {
+                if case .tick(let state) = event,
+                   state.targetDuration == expectedDuration,
+                   state.isPaused {
+                    return state
+                }
+            }
+            return nil
+        }()
+
+        await engine.updateConfig(updatedConfig)
+
+        let tick = await configUpdateTick
+        let state = await engine.currentState()
+
+        #expect(tick?.targetDuration == expectedDuration)
         #expect(tick?.isPaused == true)
+        #expect(state?.targetDuration == expectedDuration)
+        #expect(state?.isPaused == true)
     }
 }
