@@ -16,9 +16,14 @@ struct AchievementsSection: View {
                 .accessibilityAddTraits(.isHeader)
 
             if achievements.isEmpty {
-                Text(String(localized: "Complete sessions to unlock achievements"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                PepinilloEmptyState(
+                    title: String(localized: "achievements.empty.title", defaultValue: "No Achievements Yet"),
+                    description: String(localized: "achievements.empty.description",
+                                         defaultValue: "Complete focus sessions to unlock your first badge."),
+                    systemImage: "trophy",
+                    tint: .accentColor,
+                    cornerRadius: GlassCornerRadius.card
+                )
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
@@ -41,8 +46,12 @@ private struct AchievementCard: View {
 
     var body: some View {
         VStack(spacing: 6) {
-            Text(userAchievement.isUnlocked ? userAchievement.achievement.emoji : "🔒")
+            Image(systemName: userAchievement.isUnlocked
+                  ? userAchievement.achievement.systemImage
+                  : "lock.fill")
                 .font(.largeTitle)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(userAchievement.isUnlocked ? Color.accentColor : .secondary)
                 .accessibilityHidden(true)
 
             Text(userAchievement.achievement.title)

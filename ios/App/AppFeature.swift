@@ -298,7 +298,7 @@ struct AppFeature {
                    let taskID = UUID(uuidString: taskIDString) {
                     if let task = state.tasks.tasks[id: taskID] {
                         shouldClearLinkedTask = false
-                        effects.append(.send(.focus(.linkTask(task.id, task.title, task.energyLevel.emoji))))
+                        effects.append(.send(.focus(.linkTask(task.id, task.title, task.energyLevel.icon))))
                     } else if canDeferForTaskLoad && state.tasks.tasks.isEmpty {
                         state.pendingExternalStartModeID = requestedModeID
                         state.pendingExternalStartTaskID = requestedTaskID
@@ -997,7 +997,7 @@ struct AppFeature {
                 case .linkTask(let idStr):
                     guard let id = UUID(uuidString: idStr) else { return .none }
                     let task = state.tasks.tasks.first(where: { $0.id == id })
-                    return .send(.focus(.linkTask(id, task?.title, task?.energyLevel.emoji)))
+                    return .send(.focus(.linkTask(id, task?.title, task?.energyLevel.icon)))
                 case .unlinkTask:
                     return .send(.focus(.linkTask(nil, nil, nil)))
                 case .setTaskCompleted(let idStr, let isCompleted):
@@ -1162,7 +1162,7 @@ struct AppFeature {
                 if let task = state.tasks.tasks[id: taskID] {
                     state.selectedTab = .focus
                     return .merge(
-                        .send(.focus(.linkTask(taskID, task.title, task.energyLevel.emoji))),
+                        .send(.focus(.linkTask(taskID, task.title, task.energyLevel.icon))),
                         .send(.focus(.startTapped()))
                     )
                 }
@@ -1404,7 +1404,7 @@ struct AppFeature {
 
         if wasPro && !isPro && !state.focus.selectedMode.isFreeTier {
             state.focus.selectedMode = .pomodoro
-            state.focus.modeIcon = FocusMode.pomodoro.icon
+            state.focus.modeIcon = FocusMode.pomodoro.systemImage
             AppGroupDefaults.widgetSelectedMode = FocusMode.pomodoro.rawValue
         }
 

@@ -38,12 +38,12 @@ struct FocusFeature {
         // Display
         var displayTime: String = "25:00"
         var phaseLabel: String = String(localized: "Ready")
-        var modeIcon: String = "🍅"
+        var modeIcon: String = "timer"
 
         // Task linking
         var linkedTaskID: UUID?
         var linkedTaskTitle: String?
-        var linkedTaskEmoji: String?
+        var linkedTaskIcon: String?
 
         // Configuration
         var config: FocusConfig = .default
@@ -188,7 +188,7 @@ struct FocusFeature {
                     return .none
                 }
                 state.selectedMode = mode
-                state.modeIcon = mode.icon
+                state.modeIcon = mode.systemImage
                 updateIdleDisplay(&state)
                 AppGroupDefaults.widgetSelectedMode = mode.rawValue
                 return .run { _ in
@@ -527,10 +527,10 @@ struct FocusFeature {
 
             // MARK: Task Linking
 
-            case .linkTask(let id, let title, let emoji):
+            case .linkTask(let id, let title, let icon):
                 state.linkedTaskID = id
                 state.linkedTaskTitle = title
-                state.linkedTaskEmoji = emoji
+                state.linkedTaskIcon = icon
                 state.modeSuggestion = nil
                 AppGroupDefaults.activeTaskID = id?.uuidString
                 AppGroupDefaults.activeSessionTaskTitle = title
@@ -1065,7 +1065,7 @@ struct FocusFeature {
             case .modeSuggestionAccepted:
                 if let mode = state.modeSuggestion?.suggestedMode {
                     state.selectedMode = mode
-                    state.modeIcon = mode.icon
+                    state.modeIcon = mode.systemImage
                     updateIdleDisplay(&state)
                 }
                 state.modeSuggestion = nil
@@ -1106,7 +1106,7 @@ struct FocusFeature {
         let strategy = state.selectedMode.strategy
         let phase = strategy.initialPhase(config: state.config)
         state.phase = phase
-        state.modeIcon = state.selectedMode.icon
+        state.modeIcon = state.selectedMode.systemImage
         state.phaseLabel = FocusPhase.idle.displayName
 
         if let target = strategy.targetDuration(config: state.config, phase: phase) {

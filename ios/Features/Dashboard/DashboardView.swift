@@ -36,26 +36,26 @@ struct DashboardView: View {
                     AnalyticsPlaceholder()
                         .redacted(reason: .placeholder)
                 } else if let loadError = store.loadError {
-                    ContentUnavailableView {
-                        Label(String(localized: "Couldn't Load Data"), systemImage: "exclamationmark.triangle")
-                    } description: {
-                        Text(loadError)
-                    } actions: {
+                    VStack(spacing: 16) {
+                        PepinilloEmptyState(
+                            title: String(localized: "Couldn't Load Data"),
+                            description: loadError,
+                            systemImage: "exclamationmark.triangle",
+                            tint: .orange
+                        )
                         Button(String(localized: "Retry")) { store.send(.retryTapped) }
                             .buttonStyle(.borderedProminent)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 48)
-                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 } else if store.chartData.isEmpty && store.sessionsCompleted == 0 {
-                    ContentUnavailableView(
-                        String(localized: "No Data Yet"),
+                    PepinilloEmptyState(
+                        title: String(localized: "dashboard.empty.title", defaultValue: "No Data Yet"),
+                        description: String(localized: "dashboard.empty.description",
+                                             defaultValue: "Complete your first focus session to see your analytics here."),
                         systemImage: "chart.bar",
-                        description: Text(String(localized: "Complete your first focus session to see your analytics here."))
+                        tint: .accentColor
                     )
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 48)
-                    .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
                 } else {
                     // 2. 7-day focus chart as the hero visual
                     FocusSparkChart(

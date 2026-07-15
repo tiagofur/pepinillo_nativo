@@ -136,10 +136,10 @@ struct AppFeatureIntegrationTests {
             $0.selectedTab = .focus
         }
 
-        await store.receive(.focus(.linkTask(taskID, "Code the feature", "🧠"))) {
+        await store.receive(.focus(.linkTask(taskID, "Code the feature", "brain.head.profile"))) {
             $0.focus.linkedTaskID = taskID
             $0.focus.linkedTaskTitle = "Code the feature"
-            $0.focus.linkedTaskEmoji = "🧠"
+            $0.focus.linkedTaskIcon = "brain.head.profile"
         }
     }
 
@@ -690,7 +690,7 @@ struct AppFeatureIntegrationTests {
             $0.pendingExternalStartTimerStart = nil
             $0.pendingExternalStartTimerEnd = nil
         }
-        await store.receive(.focus(.linkTask(taskID, "Review widget polish", "🧠")))
+        await store.receive(.focus(.linkTask(taskID, "Review widget polish", "brain.head.profile")))
         await store.receive(.focus(.modeSelected(.pomodoro)))
         await store.receive(.focus(.startTapped(timerStart: timerStart, timerEnd: timerEnd)))
     }

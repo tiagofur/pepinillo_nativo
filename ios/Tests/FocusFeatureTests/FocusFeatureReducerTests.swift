@@ -25,7 +25,7 @@ struct FocusFeatureReducerTests {
 
         await store.send(.modeSelected(.flowtime)) {
             $0.selectedMode = .flowtime
-            $0.modeIcon = "🌊"
+            $0.modeIcon = "wind"
             $0.displayTime = "0:00"
             $0.remainingSeconds = nil
             $0.phase = .flow
@@ -86,7 +86,7 @@ struct FocusFeatureReducerTests {
 
         await store.send(.modeSelected(.flowtime)) {
             $0.selectedMode = .flowtime
-            $0.modeIcon = "🌊"
+            $0.modeIcon = "wind"
             $0.displayTime = "0:00"
             $0.remainingSeconds = nil
             $0.phase = .flow
@@ -301,7 +301,7 @@ struct FocusFeatureReducerTests {
             $0.displayTime = "25:00"
             $0.remainingSeconds = 25 * 60
             $0.phaseLabel = FocusPhase.idle.displayName
-            $0.modeIcon = "🍅"
+            $0.modeIcon = "timer"
         }
     }
 
@@ -319,10 +319,10 @@ struct FocusFeatureReducerTests {
         store.exhaustivity = .off
 
         let taskID = UUID()
-        await store.send(.linkTask(taskID, "Write blog post", "🧠")) {
+        await store.send(.linkTask(taskID, "Write blog post", "brain.head.profile")) {
             $0.linkedTaskID = taskID
             $0.linkedTaskTitle = "Write blog post"
-            $0.linkedTaskEmoji = "🧠"
+            $0.linkedTaskIcon = "brain.head.profile"
             $0.modeSuggestion = nil
         }
     }
@@ -442,7 +442,7 @@ struct FocusFeatureReducerTests {
             $0.displayTime = "25:00"
             $0.remainingSeconds = 25 * 60
             $0.phaseLabel = FocusPhase.idle.displayName
-            $0.modeIcon = "🍅"
+            $0.modeIcon = "timer"
         }
 
         await store.receive(.delegate(.sessionPersisted))
@@ -537,7 +537,7 @@ struct FocusFeatureReducerTests {
             $0.displayTime = "0:00"
             $0.remainingSeconds = nil
             $0.phaseLabel = FocusPhase.idle.displayName
-            $0.modeIcon = "🌊"
+            $0.modeIcon = "wind"
         }
 
         await store.receive(.sessionCompleted(abandonedResult))
@@ -603,14 +603,16 @@ struct FocusFeatureReducerTests {
 
         store.exhaustivity = .off
 
+        let workDuration = TimeInterval(25 * 60)
+
         await store.send(.phaseCompleted(.work(number: 2, total: 4)))
         await store.finish()
 
         #expect(savedSessions.value.count == 1)
         let persisted = savedSessions.value[0]
         #expect(store.state.lastPersistedPomodoroSessionID == persisted.id)
-        #expect(store.state.lastPersistedPomodoroDuration == 25 * 60.0)
-        #expect(persisted.actualDuration == 25 * 60)
+        #expect(store.state.lastPersistedPomodoroDuration == workDuration)
+        #expect(persisted.actualDuration == workDuration)
         #expect(persisted.phase == .work(number: 2, total: 4))
     }
 
@@ -845,7 +847,7 @@ struct FocusFeatureReducerTests {
             $0.displayTime = "120:00"
             $0.remainingSeconds = 7200
             $0.phase = .block
-            $0.modeIcon = "📦"
+            $0.modeIcon = "rectangle.split.3x1"
             $0.phaseLabel = FocusPhase.idle.displayName
         }
 
