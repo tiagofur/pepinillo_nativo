@@ -352,7 +352,7 @@ struct AppFeatureIntegrationTests {
             $0.persistenceClient.savePreferences = { _ in }
             $0.persistenceClient.fetchCachedUser = { nil }
             $0.persistenceClient.saveCachedUser = { _ in }
-            $0.subscriptionClient.logIn = { _ in }
+            $0.subscriptionClient.logIn = { _ in .free }
             $0.keychainClient.hasTokens = { false }
         }
 

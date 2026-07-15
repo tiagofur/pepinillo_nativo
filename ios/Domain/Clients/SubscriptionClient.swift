@@ -100,16 +100,16 @@ struct SubscriptionClient: Sendable {
     var purchase: @Sendable (_ productID: String) async -> PurchaseResult = { _ in .cancelled }
 
     /// Restore previous purchases via RevenueCat.
-    var restorePurchases: @Sendable () async -> SubscriptionState = { .free }
+    var restorePurchases: @Sendable () async throws -> SubscriptionState = { .free }
 
     /// Check current entitlement (call on launch + after purchase).
-    var checkEntitlement: @Sendable () async -> SubscriptionState = { .free }
+    var checkEntitlement: @Sendable () async throws -> SubscriptionState = { .free }
 
     /// Listen to customer info changes via RevenueCat.
     var listenForTransactionUpdates: @Sendable () -> AsyncStream<SubscriptionState> = { .finished }
 
     /// Identify user with backend user ID.
-    var logIn: @Sendable (_ userID: String) async -> Void = { _ in }
+    var logIn: @Sendable (_ userID: String) async throws -> SubscriptionState = { _ in .free }
 
     /// Reset to anonymous (logged out).
     var logOut: @Sendable () async -> Void = { }
@@ -129,7 +129,7 @@ extension SubscriptionClient: DependencyKey {
         restorePurchases: { .pepinilloPlus },
         checkEntitlement: { .free },
         listenForTransactionUpdates: { .finished },
-        logIn: { _ in },
+        logIn: { _ in .free },
         logOut: { },
         isPurchasesAvailable: { true }
     )
@@ -152,10 +152,10 @@ extension SubscriptionClient {
             configure: { apiKey, userID in await manager.configure(apiKey: apiKey, userID: userID) },
             fetchProducts: { await manager.fetchProducts() },
             purchase: { id in await manager.purchase(productID: id) },
-            restorePurchases: { await manager.restorePurchases() },
-            checkEntitlement: { await manager.checkEntitlement() },
+            restorePurchases: { try await manager.restorePurchases() },
+            checkEntitlement: { try await manager.checkEntitlement() },
             listenForTransactionUpdates: { manager.customerInfoStream() },
-            logIn: { userID in await manager.logIn(userID: userID) },
+            logIn: { userID in try await manager.logIn(userID: userID) },
             logOut: { await manager.logOut() },
             isPurchasesAvailable: { await manager.isPurchasesAvailable() }
         )
@@ -169,7 +169,7 @@ extension SubscriptionClient {
             restorePurchases: { .free },
             checkEntitlement: { .free },
             listenForTransactionUpdates: { .finished },
-            logIn: { _ in },
+            logIn: { _ in .free },
             logOut: { },
             isPurchasesAvailable: { false }
         )
@@ -284,25 +284,37 @@ private actor SubscriptionManager {
         }
     }
 
-    func restorePurchases() async -> SubscriptionState {
+    func restorePurchases() async throws -> SubscriptionState {
         await ensureConfigured()
         guard !isUnavailable else { return .free }
         do {
             let customerInfo = try await Purchases.shared.restorePurchases()
-            return subscriptionStateFromCustomerInfo(customerInfo)
+            let state = subscriptionStateFromCustomerInfo(customerInfo)
+            AppGroupDefaults.lastVerifiedDate = Date()
+            return state
         } catch {
-            return .free
+            return try SubscriptionOfflineGraceChecker.check(
+                error: error,
+                cachedCapabilities: AppGroupDefaults.userCapabilities,
+                lastVerifiedDate: AppGroupDefaults.lastVerifiedDate
+            )
         }
     }
 
-    func checkEntitlement() async -> SubscriptionState {
+    func checkEntitlement() async throws -> SubscriptionState {
         await ensureConfigured()
         guard !isUnavailable else { return .free }
         do {
             let customerInfo = try await Purchases.shared.customerInfo()
-            return subscriptionStateFromCustomerInfo(customerInfo)
+            let state = subscriptionStateFromCustomerInfo(customerInfo)
+            AppGroupDefaults.lastVerifiedDate = Date()
+            return state
         } catch {
-            return .free
+            return try SubscriptionOfflineGraceChecker.check(
+                error: error,
+                cachedCapabilities: AppGroupDefaults.userCapabilities,
+                lastVerifiedDate: AppGroupDefaults.lastVerifiedDate
+            )
         }
     }
 
@@ -329,16 +341,20 @@ private actor SubscriptionManager {
         return isUnavailable
     }
 
-    func logIn(userID: String) async {
+    func logIn(userID: String) async throws -> SubscriptionState {
         await ensureConfigured()
-        guard !isUnavailable else { return }
+        guard !isUnavailable else { return .free }
         do {
-            _ = try await Purchases.shared.logIn(userID)
+            let result = try await Purchases.shared.logIn(userID)
+            let state = subscriptionStateFromCustomerInfo(result.customerInfo)
+            AppGroupDefaults.lastVerifiedDate = Date()
+            return state
         } catch {
-            // Log error but don't fail — RevenueCat logIn failure is non-fatal;
-            // the app continues with anonymous entitlement state.
-            // User ID is intentionally redacted from the log (privacy: .private default).
-            subscriptionLogger.error("RevenueCat logIn failed: \(error, privacy: .private)")
+            return try SubscriptionOfflineGraceChecker.check(
+                error: error,
+                cachedCapabilities: AppGroupDefaults.userCapabilities,
+                lastVerifiedDate: AppGroupDefaults.lastVerifiedDate
+            )
         }
     }
 
@@ -402,6 +418,58 @@ private actor SubscriptionManager {
     }
 }
 #endif
+
+// MARK: - Offline Grace Period Checker (Task 1.3, 1.4)
+
+struct SubscriptionOfflineGraceChecker {
+    static func isNetworkError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain {
+            return true
+        }
+        if (error as? URLError) != nil {
+            return true
+        }
+        #if canImport(RevenueCat)
+        if let rcError = error as? RevenueCat.ErrorCode {
+            return rcError == .networkError || rcError == .offlineConnectionError
+        }
+        #endif
+        return false
+    }
+
+    static func check(
+        error: Error,
+        cachedCapabilities: UserCapabilities?,
+        lastVerifiedDate: Date?,
+        now: Date = Date()
+    ) throws -> SubscriptionState {
+        guard isNetworkError(error) else {
+            throw error
+        }
+        
+        guard let cachedCapabilities = cachedCapabilities else {
+            throw error
+        }
+        
+        // Pepinillo+ (lifetime) remains active indefinitely offline.
+        if cachedCapabilities.localPremium && !cachedCapabilities.backendSync {
+            return SubscriptionState(capabilities: cachedCapabilities)
+        }
+        
+        // Everywhere/AI+ (subscription) remains active offline for a grace period of exactly 7 days
+        if cachedCapabilities.backendSync {
+            if let lastVerified = lastVerifiedDate {
+                let elapsed = now.timeIntervalSince(lastVerified)
+                if elapsed < 7 * 24 * 3600 {
+                    return SubscriptionState(capabilities: cachedCapabilities)
+                }
+            }
+        }
+        
+        throw error
+    }
+}
 
 // MARK: - Entitlement resolution (issue #211)
 
