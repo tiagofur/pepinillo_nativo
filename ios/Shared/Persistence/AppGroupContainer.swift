@@ -242,6 +242,19 @@ enum AppGroupDefaults {
         }
     }
 
+    /// Date the subscription entitlement was last successfully verified online.
+    static var lastVerifiedDate: Date? {
+        get { defaults?.object(forKey: "lastVerifiedDate") as? Date }
+        set {
+            if let newValue {
+                defaults?.set(newValue, forKey: "lastVerifiedDate")
+            } else {
+                defaults?.removeObject(forKey: "lastVerifiedDate")
+            }
+        }
+    }
+
+
     /// Full capability payload shared with widgets and extensions.
     static var userCapabilities: UserCapabilities? {
         get {

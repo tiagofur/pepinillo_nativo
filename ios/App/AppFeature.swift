@@ -391,7 +391,7 @@ struct AppFeature {
                     // Subscription entitlement (waits for configure internally)
                     .run { send in
                         let start = Date.now
-                        let sub = await subscriptionClient.checkEntitlement()
+                        let sub = (try? await subscriptionClient.checkEntitlement()) ?? .free
                         appLaunchLogger.info("RevenueCat entitlement finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                         await send(.subscriptionStateLoaded(sub))
                     },
@@ -883,7 +883,7 @@ struct AppFeature {
                                 )
                                 try? await persistence.saveCachedUser(dto)
                                 await send(.cachedUserLoaded(dto))
-                                await subscriptionClient.logIn(response.user.id)
+                                _ = try? await subscriptionClient.logIn(response.user.id)
                                 if canBackendSync {
                                     try? await syncClient.syncAll()
                                     await webSocketClient.connect()
@@ -1453,7 +1453,7 @@ struct AppFeature {
     /// Links RevenueCat to the backend user id after any successful auth path.
     private func linkSubscriptionIdentity(_ userID: String) -> Effect<Action> {
         .run { [subscriptionClient] _ in
-            await subscriptionClient.logIn(userID)
+            _ = try? await subscriptionClient.logIn(userID)
         }
     }
 

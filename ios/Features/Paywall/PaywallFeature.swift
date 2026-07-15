@@ -76,7 +76,7 @@ struct PaywallFeature {
                         await send(.productsLoaded(products))
                     },
                     .run { send in
-                        let sub = await subscriptionClient.checkEntitlement()
+                        let sub = (try? await subscriptionClient.checkEntitlement()) ?? .free
                         await send(.subscriptionStateLoaded(sub))
                     }
                 )
@@ -106,7 +106,7 @@ struct PaywallFeature {
             case .restoreTapped:
                 state.isLoading = true
                 return .run { send in
-                    let sub = await subscriptionClient.restorePurchases()
+                    let sub = (try? await subscriptionClient.restorePurchases()) ?? .free
                     await send(.subscriptionStateLoaded(sub))
                     if sub.isPro {
                         await send(.purchaseFinished(.success(productID: sub.activeProductID ?? "")))
@@ -125,7 +125,7 @@ struct PaywallFeature {
                         isSuccess: true
                     )
                     return .run { send in
-                        let sub = await subscriptionClient.checkEntitlement()
+                        let sub = (try? await subscriptionClient.checkEntitlement()) ?? .free
                         await send(.subscriptionStateLoaded(sub))
                         if sub.isPro {
                             await send(.delegate(.proUnlocked(sub)))

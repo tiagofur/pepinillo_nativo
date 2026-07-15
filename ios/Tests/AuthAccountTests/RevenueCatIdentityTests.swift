@@ -31,6 +31,7 @@ struct RevenueCatIdentityTests {
         } withDependencies: {
             $0.subscriptionClient.logIn = { userID in
                 loggedInID.setValue(userID)
+                return .free
             }
             $0.syncClient.syncAll = {}
             $0.webSocketClient.connect = {}
@@ -62,6 +63,7 @@ struct RevenueCatIdentityTests {
         } withDependencies: {
             $0.subscriptionClient.logIn = { userID in
                 loggedInID.setValue(userID)
+                return .free
             }
             $0.syncClient.syncAll = {}
             $0.webSocketClient.connect = {}
@@ -88,6 +90,7 @@ struct RevenueCatIdentityTests {
         } withDependencies: {
             $0.subscriptionClient.logIn = { userID in
                 loggedInID.setValue(userID)
+                return .free
             }
         }
         store.exhaustivity = .off
