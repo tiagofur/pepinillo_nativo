@@ -330,6 +330,17 @@ struct TaskListFeature {
                 let title = state.newTaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !title.isEmpty else { return .none }
 
+                // Free tier: max 3 active (non-completed, non-template) tasks (#216).
+                // Premium (Pepinillo+ / Everywhere) is unlimited via isProUser.
+                if !state.isProUser {
+                    let activeCount = state.tasks.filter {
+                        !$0.isCompleted && !$0.isRecurringTemplate
+                    }.count
+                    if activeCount >= Self.freeActiveTaskLimit {
+                        return .send(.delegate(.showPaywall))
+                    }
+                }
+
                 let newID = uuid()
                 let sortOrder = state.tasks.count
                 let now = date.now
@@ -759,6 +770,10 @@ struct TaskListFeature {
             TaskDetailFeature()
         }
     }
+
+    /// Free-tier cap for concurrent active tasks (issue #216). Premium is unlimited.
+    /// Active = not completed and not a recurring template anchor.
+    static let freeActiveTaskLimit = 3
 
     /// Default scheduling fields for Plan quick-add based on the active filter (issue #180).
     static func planQuickAddDefaults(
