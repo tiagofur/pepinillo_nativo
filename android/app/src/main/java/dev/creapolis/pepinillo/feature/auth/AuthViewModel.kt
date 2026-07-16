@@ -15,17 +15,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.BuildConfig
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.auth.AuthStore
-import dev.creapolis.pepinillo.core.billing.SubscriptionManager
+import dev.creapolis.pepinillo.core.auth.PostAuthFlowResult
+import dev.creapolis.pepinillo.core.auth.SessionManager
 import dev.creapolis.pepinillo.core.identity.IdentityManager
-import dev.creapolis.pepinillo.core.network.AuthResponse
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
-import dev.creapolis.pepinillo.data.repository.UserRepository
-import dev.creapolis.pepinillo.data.sync.InitialSyncManager
-import dev.creapolis.pepinillo.data.sync.InitialUploadResult
-import dev.creapolis.pepinillo.data.sync.SyncEngine
-import dev.creapolis.pepinillo.data.sync.SyncWebSocketClient
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,19 +34,18 @@ data class AuthUiState(
     val isGuestMode: Boolean = false,
     val showMergeDialog: Boolean = false,
     val emailVerificationRequired: String? = null, // email address awaiting verification
+    val resendLoading: Boolean = false,
+    val resendCooldownUntil: Long = 0L, // epoch millis; 0 = no cooldown
+    val resendSuccess: Boolean = false,
 )
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val apiClient: PepinilloApiClient,
     private val authStore: AuthStore,
-    private val userRepository: UserRepository,
-    private val syncEngine: SyncEngine,
-    private val initialSyncManager: InitialSyncManager,
     private val identityManager: IdentityManager,
-    private val syncWebSocketClient: SyncWebSocketClient,
-    private val subscriptionManager: SubscriptionManager,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState(
@@ -60,15 +53,19 @@ class AuthViewModel @Inject constructor(
     ))
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
+    // ── Login ──
+
     fun login(email: String, password: String) {
         if (email.isBlank() || password.isBlank()) {
             _uiState.value = _uiState.value.copy(error = context.getString(R.string.auth_error_fill_all_fields))
             return
         }
+        // Synchronous guard: prevent double-submit before the coroutine even launches (#341).
+        if (_uiState.value.isLoading) return
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = apiClient.login(email, password)) {
-                is NetworkResult.Success -> handleAuthSuccess(result.data, isLoading = true)
+                is NetworkResult.Success -> handleAuthSuccess(result.data)
                 is NetworkResult.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -76,7 +73,7 @@ class AuthViewModel @Inject constructor(
                     )
                 }
                 is NetworkResult.NetworkError -> {
-                    Log.e(TAG, "Login network error", result.exception)
+                    Log.e(TAG, "Login network error: ${result.exception::class.simpleName}")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = mapNetworkError(result.exception),
@@ -85,6 +82,8 @@ class AuthViewModel @Inject constructor(
             }
         }
     }
+
+    // ── Register ──
 
     fun register(name: String, email: String, password: String) {
         if (name.isBlank() || email.isBlank() || password.isBlank()) {
@@ -96,10 +95,11 @@ class AuthViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(error = passwordError)
             return
         }
+        if (_uiState.value.isLoading) return
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = apiClient.register(email, name, password)) {
-                is NetworkResult.Success -> handleAuthSuccess(result.data, isLoading = true)
+                is NetworkResult.Success -> handleAuthSuccess(result.data)
                 is NetworkResult.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -107,7 +107,7 @@ class AuthViewModel @Inject constructor(
                     )
                 }
                 is NetworkResult.NetworkError -> {
-                    Log.e(TAG, "Register network error", result.exception)
+                    Log.e(TAG, "Register network error: ${result.exception::class.simpleName}")
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         error = mapNetworkError(result.exception),
@@ -117,14 +117,19 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    // ── Google Sign-In ──
+
     fun signInWithGoogle(context: Context) {
+        if (_uiState.value.googleSignInLoading) return
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(googleSignInLoading = true, error = null)
             try {
                 val googleIdOption = GetGoogleIdOption.Builder()
                     .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
                     .setFilterByAuthorizedAccounts(false)
-                    .setAutoSelectEnabled(true)
+                    // Explicit account choice on return visits — auto-select can silently
+                    // re-pick the wrong account for multi-account users (#350).
+                    .setAutoSelectEnabled(false)
                     .build()
 
                 val request = GetCredentialRequest.Builder()
@@ -139,7 +144,7 @@ class AuthViewModel @Inject constructor(
                 val idToken = googleIdTokenCredential.idToken
 
                 when (val apiResult = apiClient.loginWithGoogle(idToken)) {
-                    is NetworkResult.Success -> handleAuthSuccess(apiResult.data, isGoogle = true)
+                    is NetworkResult.Success -> handleAuthSuccess(apiResult.data)
                     is NetworkResult.Error -> {
                         _uiState.value = _uiState.value.copy(
                             googleSignInLoading = false,
@@ -147,7 +152,7 @@ class AuthViewModel @Inject constructor(
                         )
                     }
                     is NetworkResult.NetworkError -> {
-                        Log.e(TAG, "Google sign-in network error", apiResult.exception)
+                        Log.e(TAG, "Google sign-in network error: ${apiResult.exception::class.simpleName}")
                         _uiState.value = _uiState.value.copy(
                             googleSignInLoading = false,
                             error = mapNetworkError(apiResult.exception),
@@ -162,7 +167,7 @@ class AuthViewModel @Inject constructor(
                     error = context.getString(R.string.auth_error_no_google_accounts),
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Google Sign-In failed", e)
+                Log.e(TAG, "Google Sign-In failed: ${e::class.simpleName}")
                 _uiState.value = _uiState.value.copy(
                     googleSignInLoading = false,
                     error = context.getString(R.string.auth_error_google_signin),
@@ -171,15 +176,11 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    // ── Logout ──
+
     fun logout() {
         viewModelScope.launch {
-            syncWebSocketClient.disconnect()
-            val refreshToken = authStore.getRefreshToken()
-            apiClient.logout(refreshToken)
-            subscriptionManager.logOut()
-            userRepository.clearCache()
-            authStore.clearAll()
-            identityManager.refreshState()
+            sessionManager.signOut()
             _uiState.value = AuthUiState(isAuthenticated = false)
         }
     }
@@ -195,36 +196,17 @@ class AuthViewModel @Inject constructor(
     // ── Data Merge Dialog Actions ──
 
     fun onMergeData() {
-        // Data was already uploaded during initialUpload — just dismiss and proceed
-        _uiState.value = _uiState.value.copy(showMergeDialog = false, isAuthenticated = true)
-        viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(showMergeDialog = false, isAuthenticated = true)
+            sessionManager.onMergeResolved()
+        }
     }
 
     fun onUseAccountOnly() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _uiState.value = _uiState.value.copy(showMergeDialog = false, isLoading = true)
-            when (val result = initialSyncManager.wipeAndSync()) {
-                is InitialSyncManager.InitialSyncResult.Success -> {
-                    Log.d(TAG, "wipeAndSync succeeded, navigating to main")
-                    _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
-                }
-                is InitialSyncManager.InitialSyncResult.NotAuthenticated -> {
-                    Log.w(TAG, "wipeAndSync returned NotAuthenticated")
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = context.getString(R.string.auth_error_session_expired),
-                    )
-                }
-                is InitialSyncManager.InitialSyncResult.Error -> {
-                    Log.e(TAG, "wipeAndSync failed", result.exception)
-                    // Non-fatal: proceed authenticated — next sync will retry
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        isAuthenticated = true,
-                        error = context.getString(R.string.auth_error_sync_download),
-                    )
-                }
-            }
+            sessionManager.onUseAccountOnly()
+            _uiState.value = _uiState.value.copy(isLoading = false, isAuthenticated = true)
         }
     }
 
@@ -237,109 +219,68 @@ class AuthViewModel @Inject constructor(
 
     /**
      * Central handler for successful authentication (login, register, Google).
-     * Saves tokens/user, then runs the initial upload flow if local data exists.
+     * Delegates token persistence + data-migration pipeline to [SessionManager].
      */
-    private suspend fun handleAuthSuccess(
-        response: AuthResponse,
-        isLoading: Boolean = false,
-        isGoogle: Boolean = false,
-    ) {
-        authStore.saveTokens(
-            response.tokens.accessToken,
-            response.tokens.refreshToken,
-        )
-        authStore.saveUser(
-            response.user.id,
-            response.user.name,
-            response.user.email,
-        )
-        userRepository.cacheUserFromDto(response.user)
-        subscriptionManager.logIn(response.user.id)
-        identityManager.refreshState()
-
-        // Email/password users must verify before accessing data endpoints
-        if (!response.user.emailVerified) {
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                googleSignInLoading = false,
-                emailVerificationRequired = response.user.email,
-            )
-            return
-        }
-        val hasLocal = syncEngine.hasLocalData()
-        if (hasLocal) {
-            Log.d(TAG, "Local data exists, running initial upload")
-            val uploadResult = syncEngine.initialUpload()
-            when (uploadResult) {
-                is InitialUploadResult.Success -> {
-                    if (uploadResult.hasExistingData) {
-                        // Server already had data — ask user what to do
-                        _uiState.value = _uiState.value.copy(
-                            isLoading = false,
-                            googleSignInLoading = false,
-                            showMergeDialog = true,
-                        )
-                        return
-                    }
-                    // No conflict — proceed normally
-                }
-                is InitialUploadResult.NotAuthenticated -> {
-                    Log.w(TAG, "Initial upload returned NotAuthenticated")
-                    // Fall through — regular sync will handle it
-                }
-                is InitialUploadResult.Error -> {
-                    Log.e(TAG, "Initial upload failed", uploadResult.exception)
-                    // Non-fatal — fall through to normal sync
+    private suspend fun handleAuthSuccess(response: dev.creapolis.pepinillo.core.network.AuthResponse) {
+        when (val flow = sessionManager.completeAuthSuccess(response)) {
+            is PostAuthFlowResult.Completed -> {
+                // Either fully authenticated, or email verification required (check below).
+                if (!response.user.emailVerified) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        googleSignInLoading = false,
+                        emailVerificationRequired = response.user.email,
+                    )
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        googleSignInLoading = false,
+                        isAuthenticated = true,
+                    )
                 }
             }
-        }
-
-        if (!hasLocal) {
-            // Empty Room — pull everything from server first, then normal sync
-            Log.d(TAG, "No local data, running initial sync from server")
-            when (val syncResult = initialSyncManager.performInitialSync()) {
-                is InitialSyncManager.InitialSyncResult.Success -> {
-                    Log.d(TAG, "Initial sync from server succeeded")
-                }
-                is InitialSyncManager.InitialSyncResult.NotAuthenticated -> {
-                    Log.w(TAG, "Initial sync returned NotAuthenticated")
-                }
-                is InitialSyncManager.InitialSyncResult.Error -> {
-                    Log.e(TAG, "Initial sync failed, will retry on next sync", syncResult.exception)
-                }
+            is PostAuthFlowResult.MergeConflict -> {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    googleSignInLoading = false,
+                    showMergeDialog = true,
+                )
             }
         }
-
-        // Start normal incremental sync and connect WebSocket
-        viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
-        syncWebSocketClient.connect()
-        _uiState.value = _uiState.value.copy(
-            isLoading = false,
-            googleSignInLoading = false,
-            isAuthenticated = true,
-        )
     }
 
-    // ── Helpers ──
+    // ── Email Verification ──
 
     fun verifyEmail(code: String) {
         val email = _uiState.value.emailVerificationRequired ?: return
+        if (_uiState.value.isLoading) return
+        _uiState.value = _uiState.value.copy(isLoading = true, error = null)
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = apiClient.verifyEmail(email, code)) {
                 is NetworkResult.Success -> {
                     val response = result.data
-                    authStore.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
-                    authStore.saveUser(response.user.id, response.user.name, response.user.email)
-                    userRepository.cacheUserFromDto(response.user)
-                    identityManager.refreshState()
-                    viewModelScope.launch(Dispatchers.IO) { syncEngine.syncAll() }
-                    syncWebSocketClient.connect()
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        emailVerificationRequired = null,
-                        isAuthenticated = true,
-                    )
+                    // Delegate to SessionManager so verify runs the SAME data-migration
+                    // pipeline as login (initialUpload/merge/initialSync). Previously
+                    // verify skipped this entirely (#335).
+                    when (val flow = sessionManager.completeAuthSuccessFromVerify(
+                        user = response.user,
+                        tokens = response.tokens,
+                    )) {
+                        is PostAuthFlowResult.Completed -> {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                emailVerificationRequired = null,
+                                isAuthenticated = true,
+                            )
+                        }
+                        is PostAuthFlowResult.MergeConflict -> {
+                            _uiState.value = _uiState.value.copy(
+                                isLoading = false,
+                                emailVerificationRequired = null,
+                                showMergeDialog = true,
+                            )
+                        }
+                    }
                 }
                 is NetworkResult.Error -> {
                     val msg = when {
@@ -362,16 +303,40 @@ class AuthViewModel @Inject constructor(
 
     fun resendVerificationEmail() {
         val email = _uiState.value.emailVerificationRequired ?: return
+        // Cooldown: prevent spamming resend (#344).
+        val now = System.currentTimeMillis()
+        if (_uiState.value.resendLoading || now < _uiState.value.resendCooldownUntil) return
+
+        _uiState.value = _uiState.value.copy(resendLoading = true, resendSuccess = false, error = null)
         viewModelScope.launch {
-            apiClient.resendVerificationEmail(email)
+            when (val result = apiClient.resendVerificationEmail(email)) {
+                is NetworkResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        resendLoading = false,
+                        resendCooldownUntil = now + RESEND_COOLDOWN_MS,
+                        resendSuccess = true,
+                    )
+                }
+                is NetworkResult.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        resendLoading = false,
+                        error = context.getString(R.string.auth_error_resend_failed),
+                    )
+                }
+                is NetworkResult.NetworkError -> {
+                    _uiState.value = _uiState.value.copy(
+                        resendLoading = false,
+                        error = mapNetworkError(result.exception),
+                    )
+                }
+            }
         }
     }
 
     fun dismissEmailVerification() {
         // User explicitly cancels — log them out so they aren't in a broken half-authed state
         viewModelScope.launch {
-            authStore.clearAll()
-            identityManager.refreshState()
+            sessionManager.signOut()
             _uiState.value = AuthUiState(isAuthenticated = false)
         }
     }
@@ -393,7 +358,8 @@ class AuthViewModel @Inject constructor(
         message == "invalid_google_token" -> context.getString(R.string.auth_error_invalid_google_token)
         code == 401 -> context.getString(R.string.auth_error_invalid_credentials)
         code in 500..599 -> context.getString(R.string.auth_error_server)
-        else -> context.getString(R.string.auth_error_unknown, message)
+        // Never interpolate raw server message into UI — use a generic localized string (#342).
+        else -> context.getString(R.string.auth_error_generic)
     }
 
     private fun mapNetworkError(exception: Throwable): String = when (exception) {
@@ -415,5 +381,6 @@ class AuthViewModel @Inject constructor(
 
     private companion object {
         const val TAG = "AuthViewModel"
+        const val RESEND_COOLDOWN_MS = 60_000L
     }
 }

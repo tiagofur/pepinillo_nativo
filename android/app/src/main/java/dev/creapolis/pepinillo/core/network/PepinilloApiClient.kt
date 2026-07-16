@@ -212,21 +212,22 @@ class PepinilloApiClient @Inject constructor(
         return try {
             val response = block()
             val rawBody = response.bodyAsText()
-            Log.d(TAG, "AUTH RAW RESPONSE [${response.status}]: $rawBody")
+            // Log status ONLY — the body contains accessToken/refreshToken and must never
+            // appear in logcat where adb/OEM loggers can capture live session secrets (#337).
+            Log.d(TAG, "AUTH response [${response.status}]")
             val parsed = json.decodeFromString<AuthResponse>(rawBody)
             NetworkResult.Success(parsed)
         } catch (e: io.ktor.client.plugins.ClientRequestException) {
-            val rawBody = try { e.response.bodyAsText() } catch (_: Exception) { "n/a" }
-            Log.e(TAG, "AUTH API error ${e.response.status}: $rawBody", e)
-            val errorBody = try { json.decodeFromString<ErrorResponse>(rawBody) } catch (_: Exception) { null }
+            // Do NOT log the error body — it may contain partial tokens or PII.
+            Log.e(TAG, "AUTH API error [${e.response.status}]")
+            val errorBody = try { json.decodeFromString<ErrorResponse>(e.response.bodyAsText()) } catch (_: Exception) { null }
             NetworkResult.Error(e.response.status.value, errorBody?.error ?: e.message)
         } catch (e: io.ktor.client.plugins.ServerResponseException) {
-            val rawBody = try { e.response.bodyAsText() } catch (_: Exception) { "n/a" }
-            Log.e(TAG, "AUTH Server error ${e.response.status}: $rawBody", e)
-            val errorBody = try { json.decodeFromString<ErrorResponse>(rawBody) } catch (_: Exception) { null }
+            Log.e(TAG, "AUTH Server error [${e.response.status}]")
+            val errorBody = try { json.decodeFromString<ErrorResponse>(e.response.bodyAsText()) } catch (_: Exception) { null }
             NetworkResult.Error(e.response.status.value, errorBody?.error ?: e.message)
         } catch (e: Exception) {
-            Log.e(TAG, "AUTH error: ${e::class.simpleName}: ${e.message}", e)
+            Log.e(TAG, "AUTH error: ${e::class.simpleName}")
             NetworkResult.NetworkError(e)
         }
     }

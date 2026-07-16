@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import java.util.TimeZone
 import javax.inject.Inject
 
 enum class TaskFilter {
@@ -56,7 +55,7 @@ data class TasksUiState(
     val filteredTasks: List<Task> = emptyList(),
 )
 
-private fun TasksUiState.computeFilteredTasks(): List<Task> {
+internal fun TasksUiState.computeFilteredTasks(): List<Task> {
         // Compute "today" once per evaluation instead of allocating 3 Calendars per task.
         val todayNorm = getNormalizedLocalDate()
         // 1. Plan category filter
@@ -108,8 +107,12 @@ private fun TasksUiState.computeFilteredTasks(): List<Task> {
     }
 
 private fun getNormalizedLocalDate(): Calendar {
+    // Use the local timezone consistently so this is idempotent and matches
+    // getNormalizedDueDate below. Previously this read local Y/M/D but wrote into a UTC
+    // calendar — in timezones behind UTC the resulting instant shifted to the previous
+    // day, causing tasks to vanish from Plan filters.
     val local = Calendar.getInstance()
-    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+    return Calendar.getInstance().apply {
         clear()
         set(Calendar.YEAR, local.get(Calendar.YEAR))
         set(Calendar.MONTH, local.get(Calendar.MONTH))
@@ -118,8 +121,9 @@ private fun getNormalizedLocalDate(): Calendar {
 }
 
 private fun getNormalizedDueDate(millis: Long): Calendar {
-    val due = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = millis }
-    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+    // Must use the SAME timezone as getNormalizedLocalDate for comparisons to be valid.
+    val due = Calendar.getInstance().apply { timeInMillis = millis }
+    return Calendar.getInstance().apply {
         clear()
         set(Calendar.YEAR, due.get(Calendar.YEAR))
         set(Calendar.MONTH, due.get(Calendar.MONTH))

@@ -89,10 +89,22 @@ class ForgotPasswordViewModel @Inject constructor(
                     )
                 }
                 is NetworkResult.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        errorMessageRes = mapError(result.code, result.message),
-                    )
+                    // Anti-enumeration (#347): if the email doesn't exist on the server,
+                    // show the SAME success UX as if it did. This prevents an attacker
+                    // from distinguishing existing vs non-existing accounts by the
+                    // client's response. A genuine "account not found" is indistinguishable
+                    // from "code sent" — the user simply won't receive a code.
+                    if (result.message == "user_not_found" || result.message == "email_not_found") {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            step = ForgotPasswordStep.EnterCode,
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            errorMessageRes = mapError(result.code, result.message),
+                        )
+                    }
                 }
                 is NetworkResult.NetworkError -> {
                     Log.e("ForgotPasswordViewModel", "Network error", result.exception)
@@ -171,7 +183,10 @@ class ForgotPasswordViewModel @Inject constructor(
     @StringRes
     private fun mapError(code: Int, message: String): Int = when {
         message == "invalid_code" || message == "code_expired" -> R.string.forgot_code_invalid
-        message == "user_not_found" || message == "email_not_found" -> R.string.forgot_no_account
+        // user_not_found/email_not_found intentionally NOT mapped here — sendCode()
+        // handles them as success to prevent account enumeration (#347). If they reach
+        // this point (e.g. resetPassword), use the generic "invalid code" path.
+        message == "user_not_found" || message == "email_not_found" -> R.string.forgot_code_invalid
         message == "missing_required_fields" -> R.string.forgot_missing_fields
         code in 500..599 -> R.string.error_server
         else -> R.string.error_unknown

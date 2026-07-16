@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.auth.AuthStore
+import dev.creapolis.pepinillo.core.auth.SessionManager
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.UpdateProfileRequest
@@ -54,6 +55,7 @@ class ProfileViewModel @Inject constructor(
     private val apiClient: PepinilloApiClient,
     private val syncWebSocketClient: SyncWebSocketClient,
     private val subscriptionManager: SubscriptionManager,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -160,35 +162,33 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun logout() {
+    /**
+     * Sign out via [SessionManager] — the single source of truth that guarantees
+     * WS disconnect, server logout, RC logOut, Room wipe, auth clear, and identity
+     * refresh all happen in order. Returns when complete so the caller can navigate
+     * only after tokens are actually cleared (#351).
+     */
+    fun logout(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
-            syncWebSocketClient.disconnect()
-            val refreshToken = authStore.getRefreshToken()
-            apiClient.logout(refreshToken)
-            subscriptionManager.logOut()
-            userRepository.clearCache()
-            authStore.clearAll()
+            sessionManager.signOut()
+            _uiState.update { it.copy(isLoading = false, isLoggedIn = false, user = null) }
+            onComplete()
         }
     }
 
+    /**
+     * Permanently delete the account via [SessionManager], then run full local cleanup.
+     * [onSuccess] fires only after the wipe is complete.
+     */
     fun deleteAccount(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            when (val result = apiClient.deleteAccount()) {
-                is NetworkResult.Success -> {
-                    syncWebSocketClient.disconnect()
-                    subscriptionManager.logOut()
-                    userRepository.clearCache()
-                    authStore.clearAll()
-                    _uiState.update { it.copy(isLoading = false, isLoggedIn = false, user = null) }
-                    onSuccess()
-                }
-                is NetworkResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, errorRes = R.string.error_delete_account_failed) }
-                }
-                is NetworkResult.NetworkError -> {
-                    _uiState.update { it.copy(isLoading = false, errorRes = R.string.error_no_connection) }
-                }
+            val success = sessionManager.deleteAccount()
+            if (success) {
+                _uiState.update { it.copy(isLoading = false, isLoggedIn = false, user = null) }
+                onSuccess()
+            } else {
+                _uiState.update { it.copy(isLoading = false, errorRes = R.string.error_delete_account_failed) }
             }
         }
     }

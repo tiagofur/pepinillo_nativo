@@ -17,4 +17,7 @@ interface ProductivityReportDao {
 
     @Query("DELETE FROM productivity_reports WHERE generated_at < :before")
     suspend fun deleteOldReports(before: Long)
+
+    @Query("DELETE FROM productivity_reports")
+    suspend fun deleteAll()
 }

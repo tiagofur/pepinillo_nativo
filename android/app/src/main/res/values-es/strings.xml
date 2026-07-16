@@ -670,6 +670,10 @@
     <string name="auth_error_invalid_google_token">Error en Google Sign-In. Por favor intentá de nuevo.</string>
     <string name="auth_error_server">Error del servidor. Por favor intentá más tarde.</string>
     <string name="auth_error_unknown">Error: %1$s</string>
+    <string name="auth_error_generic">Algo salió mal. Por favor intentá de nuevo.</string>
+    <string name="auth_error_resend_failed">No se pudo reenviar el correo. Intentá de nuevo.</string>
+    <string name="auth_resend_success">Correo de verificación enviado. Revisá tu bandeja.</string>
+    <string name="auth_resend_cooldown">Reenviar en %1$ds</string>
     <string name="auth_error_session_expired">Sesión expirada. Por favor iniciá sesión nuevamente.</string>
     <string name="auth_error_sync_download">No se pudieron descargar los datos. Se sincronizarán automáticamente.</string>
     <string name="auth_error_no_google_accounts">No hay cuentas de Google disponibles en este dispositivo</string>

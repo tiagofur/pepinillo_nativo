@@ -7,6 +7,7 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -199,15 +200,50 @@ class AuthStoreTest {
     // ------------------------------------------------------------------------
 
     @Test
-    fun `falls back to plain SharedPreferences when encrypted creation always throws`() = runBlocking {
+    fun `fails closed when encrypted storage is unrecoverable — no plaintext fallback`() = runBlocking {
+        // #349: When EncryptedSharedPreferences cannot be opened even after retry, the
+        // store must NOT fall back to plaintext SharedPreferences. Instead it throws
+        // AuthStorageUnavailableException so the caller forces re-login.
         val store = createFallbackStore()
 
-        // AuthStore must still be fully functional via the plain-prefs fallback.
-        store.saveTokens("fb-access", "fb-refresh")
+        val exception = org.junit.Assert.assertThrows(AuthStore.AuthStorageUnavailableException::class.java) {
+            // Triggering prefs lazy init via any operation that reads/writes prefs
+            store.saveTokens("should", "fail")
+        }
+        org.junit.Assert.assertTrue(
+            "Exception message should mention fail-closed behavior",
+            exception.message!!.contains("Failing closed"),
+        )
+    }
 
-        assertEquals("fb-access", store.getAccessToken())
-        assertEquals("fb-refresh", store.getRefreshToken())
-        assertTrue(store.isLoggedIn.first())
+    @Test
+    fun `saveUser with emailVerified persists and isEmailVerified reads it back`() = runBlocking {
+        val store = createStore()
+
+        store.saveUser("u1", "name", "e@x.com", emailVerified = true)
+        assertTrue(store.isEmailVerified())
+
+        store.saveUser("u1", "name", "e@x.com", emailVerified = false)
+        assertFalse(store.isEmailVerified())
+    }
+
+    @Test
+    fun `saveUser defaults emailVerified to false when not specified`() = runBlocking {
+        val store = createStore()
+
+        store.saveUser("u1", "name", "e@x.com")
+        assertFalse(store.isEmailVerified())
+    }
+
+    @Test
+    fun `clearAll resets emailVerified`() = runBlocking {
+        val store = createStore()
+        store.saveTokens("a", "r")
+        store.saveUser("u1", "name", "e@x.com", emailVerified = true)
+        assertTrue(store.isEmailVerified())
+
+        store.clearAll()
+        assertFalse(store.isEmailVerified())
     }
 
     @Test
