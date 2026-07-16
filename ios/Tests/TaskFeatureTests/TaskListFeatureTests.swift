@@ -896,6 +896,221 @@ struct TaskListFeatureTests {
         await store.receive(.delegate(.showPaywall))
     }
 
+    // MARK: - Issue #216 / #218: Free-tier active task limit
+
+    @Test("Free user with 3 active tasks is redirected to paywall on 4th add")
+    func freeUserFourthActiveTaskShowsPaywall() async {
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = false
+        initialState.tasks = [
+            makeTask(id: UUID(0), title: "A", scheduledForToday: true, isCompleted: false, sortOrder: 0),
+            makeTask(id: UUID(1), title: "B", scheduledForToday: true, isCompleted: false, sortOrder: 1),
+            makeTask(id: UUID(2), title: "C", scheduledForToday: true, isCompleted: false, sortOrder: 2),
+        ]
+        initialState.newTaskTitle = "Fourth task"
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in
+                Issue.record("Free user at limit must not persist a 4th active task")
+            }
+        }
+
+        await store.send(.addTaskTapped)
+        await store.receive(.delegate(.showPaywall))
+        #expect(store.state.tasks.count == 3)
+        #expect(store.state.newTaskTitle == "Fourth task")
+    }
+
+    @Test("Free user under the active limit can still add a task")
+    func freeUserUnderLimitCanAddTask() async {
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = false
+        initialState.tasks = [
+            makeTask(id: UUID(1), title: "A", scheduledForToday: true, isCompleted: false, sortOrder: 0),
+            makeTask(id: UUID(2), title: "B", scheduledForToday: true, isCompleted: false, sortOrder: 1),
+        ]
+        initialState.newTaskTitle = "Third task"
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(TaskListFeature.TaskItemState(
+                id: testID,
+                title: "Third task",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 2,
+                createdAt: testDate
+            ))
+        }
+        #expect(store.state.tasks.count == 3)
+    }
+
+    @Test("Completed tasks do not count toward free active limit")
+    func freeUserCompletedTasksDoNotCountTowardLimit() async {
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = false
+        initialState.tasks = [
+            makeTask(id: UUID(1), title: "Done 1", scheduledForToday: true, isCompleted: true, sortOrder: 0),
+            makeTask(id: UUID(2), title: "Done 2", scheduledForToday: true, isCompleted: true, sortOrder: 1),
+            makeTask(id: UUID(3), title: "Done 3", scheduledForToday: true, isCompleted: true, sortOrder: 2),
+            makeTask(id: UUID(4), title: "Active", scheduledForToday: true, isCompleted: false, sortOrder: 3),
+        ]
+        initialState.newTaskTitle = "Still allowed"
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(TaskListFeature.TaskItemState(
+                id: testID,
+                title: "Still allowed",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 4,
+                createdAt: testDate
+            ))
+        }
+        #expect(store.state.tasks.filter { !$0.isCompleted && !$0.isRecurringTemplate }.count == 2)
+    }
+
+    @Test("Pro user can create more than 3 active tasks")
+    func proUserExceedsFreeActiveLimit() async {
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = true
+        initialState.tasks = [
+            makeTask(id: UUID(1), title: "A", scheduledForToday: true, isCompleted: false, sortOrder: 0),
+            makeTask(id: UUID(2), title: "B", scheduledForToday: true, isCompleted: false, sortOrder: 1),
+            makeTask(id: UUID(3), title: "C", scheduledForToday: true, isCompleted: false, sortOrder: 2),
+        ]
+        initialState.newTaskTitle = "Fourth pro task"
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(TaskListFeature.TaskItemState(
+                id: testID,
+                title: "Fourth pro task",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 3,
+                createdAt: testDate
+            ))
+        }
+        #expect(store.state.tasks.count == 4)
+    }
+
+    @Test("Recurring templates do not count toward free active limit")
+    func freeUserRecurringTemplatesDoNotCountTowardLimit() async {
+        let testID = UUID(0)
+        let testDate = Date(timeIntervalSince1970: 1_000_000)
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = false
+        var template = makeTask(id: UUID(1), title: "Template", scheduledForToday: false, isCompleted: false, sortOrder: 0)
+        template = TaskListFeature.TaskItemState(
+            id: template.id,
+            title: template.title,
+            isCompleted: false,
+            priority: .none,
+            energyLevel: .deep,
+            estimatedPomodoros: 1,
+            completedPomodoros: 0,
+            subtaskProgress: .init(completed: 0, total: 0),
+            recurrenceRule: RecurrencePreset.weekly.rawValue,
+            isRecurringTemplate: true,
+            scheduledForToday: false,
+            sortOrder: 0,
+            createdAt: Date(timeIntervalSince1970: 1_000_000)
+        )
+        initialState.tasks = [
+            template,
+            makeTask(id: UUID(2), title: "A", scheduledForToday: true, isCompleted: false, sortOrder: 1),
+            makeTask(id: UUID(3), title: "B", scheduledForToday: true, isCompleted: false, sortOrder: 2),
+        ]
+        initialState.newTaskTitle = "Third real task"
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveTask = { _ in }
+            $0.uuid = .constant(testID)
+            $0.date = .constant(testDate)
+        }
+        store.exhaustivity = .off
+
+        await store.send(.addTaskTapped) {
+            $0.newTaskTitle = ""
+            $0.tasks.append(TaskListFeature.TaskItemState(
+                id: testID,
+                title: "Third real task",
+                isCompleted: false,
+                priority: .none,
+                energyLevel: .deep,
+                estimatedPomodoros: 1,
+                completedPomodoros: 0,
+                subtaskProgress: .init(completed: 0, total: 0),
+                recurrenceRule: nil,
+                isRecurringTemplate: false,
+                scheduledForToday: true,
+                sortOrder: 3,
+                createdAt: testDate
+            ))
+        }
+        #expect(store.state.tasks.filter { !$0.isCompleted && !$0.isRecurringTemplate }.count == 3)
+    }
+
     // MARK: - Issue #179: Filtered plan reorder
 
     // MARK: - Issue #182: Upcoming includes all future dues
