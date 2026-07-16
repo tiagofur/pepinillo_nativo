@@ -4,8 +4,142 @@
 // TCA TestStore tests for the Paywall feature.
 
 import Testing
+import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
+
+// MARK: - Pure mapping helpers (Tasks 2.1, 2.3, 2.4)
+
+@Suite("PaywallEntitlementMapper")
+struct PaywallEntitlementMapperTests {
+
+    @Test("Annual Everywhere product maps to everywherePlus entitlement")
+    func annualMapsToEverywherePlus() {
+        #expect(
+            PaywallEntitlementMapper.subscriptionState(forProductID: PepinilloProduct.annual.rawValue)
+            == .everywherePlus
+        )
+        #expect(PaywallEntitlementMapper.subscriptionState(forProductID: "annual") == .everywherePlus)
+    }
+
+    @Test("Monthly Everywhere product maps to everywherePlus entitlement")
+    func monthlyMapsToEverywherePlus() {
+        #expect(
+            PaywallEntitlementMapper.subscriptionState(forProductID: PepinilloProduct.monthly.rawValue)
+            == .everywherePlus
+        )
+        #expect(PaywallEntitlementMapper.subscriptionState(forProductID: "monthly") == .everywherePlus)
+    }
+
+    @Test("Lifetime Pepinillo+ product maps to pepinilloPlus entitlement")
+    func lifetimeMapsToPepinilloPlus() {
+        #expect(
+            PaywallEntitlementMapper.subscriptionState(forProductID: PepinilloProduct.lifetime.rawValue)
+            == .pepinilloPlus
+        )
+        #expect(PaywallEntitlementMapper.subscriptionState(forProductID: "lifetime") == .pepinilloPlus)
+    }
+
+    @Test("Pepinillo+ lifetime user can purchase Everywhere upgrade")
+    func pepinilloPlusCanUpgradeToEverywhere() {
+        #expect(
+            PaywallEntitlementMapper.canPurchase(
+                selectedProductID: PepinilloProduct.annual.rawValue,
+                current: .pepinilloPlus
+            )
+        )
+        #expect(
+            PaywallEntitlementMapper.canPurchase(
+                selectedProductID: "monthly",
+                current: .pepinilloPlus
+            )
+        )
+    }
+
+    @Test("Pepinillo+ lifetime user cannot re-purchase lifetime")
+    func pepinilloPlusCannotRepurchaseLifetime() {
+        #expect(
+            !PaywallEntitlementMapper.canPurchase(
+                selectedProductID: PepinilloProduct.lifetime.rawValue,
+                current: .pepinilloPlus
+            )
+        )
+        #expect(
+            !PaywallEntitlementMapper.canPurchase(
+                selectedProductID: "lifetime",
+                current: .pepinilloPlus
+            )
+        )
+    }
+
+    @Test("Everywhere user cannot purchase any product")
+    func everywhereCannotPurchase() {
+        #expect(
+            !PaywallEntitlementMapper.canPurchase(
+                selectedProductID: PepinilloProduct.annual.rawValue,
+                current: .everywherePlus
+            )
+        )
+        #expect(
+            !PaywallEntitlementMapper.canPurchase(
+                selectedProductID: PepinilloProduct.lifetime.rawValue,
+                current: .everywherePlus
+            )
+        )
+    }
+
+    @Test("Free user can purchase any product")
+    func freeCanPurchaseAll() {
+        #expect(
+            PaywallEntitlementMapper.canPurchase(
+                selectedProductID: PepinilloProduct.lifetime.rawValue,
+                current: .free
+            )
+        )
+        #expect(
+            PaywallEntitlementMapper.canPurchase(
+                selectedProductID: PepinilloProduct.monthly.rawValue,
+                current: .free
+            )
+        )
+    }
+}
+
+@Suite("PaywallLegalCopy")
+struct PaywallLegalCopyTests {
+
+    @Test("Auto-renewal disclosure includes App Store management instructions")
+    func disclosureMentionsAutoRenewalAndSettings() {
+        let product = ProductInfo(
+            id: PepinilloProduct.annual.rawValue,
+            displayName: "Everywhere/AI+ Annual",
+            description: "Best value",
+            displayPrice: "$34.99",
+            billingPeriod: "year",
+            isFeatured: true
+        )
+        let text = PaywallLegalCopy.autoRenewalDisclosure(product: product)
+        #expect(text.contains("$34.99"))
+        #expect(text.localizedCaseInsensitiveContains("auto-renew"))
+        #expect(text.localizedCaseInsensitiveContains("24 hours"))
+        #expect(text.localizedCaseInsensitiveContains("App Store") || text.localizedCaseInsensitiveContains("Account Settings"))
+        #expect(text.localizedCaseInsensitiveContains("cancel"))
+    }
+
+    @Test("Lifetime product disclosure notes one-time purchase")
+    func lifetimeDisclosureIsOneTime() {
+        let product = ProductInfo(
+            id: PepinilloProduct.lifetime.rawValue,
+            displayName: "Pepinillo+",
+            description: "One-time",
+            displayPrice: "$19.99",
+            billingPeriod: "once"
+        )
+        let text = PaywallLegalCopy.autoRenewalDisclosure(product: product)
+        #expect(text.contains("$19.99"))
+        #expect(text.localizedCaseInsensitiveContains("one-time") || text.localizedCaseInsensitiveContains("not a subscription"))
+    }
+}
 
 @Suite("PaywallFeature")
 @MainActor
@@ -54,6 +188,37 @@ struct PaywallFeatureTests {
         await store.receive(.subscriptionStateLoaded(.free))
     }
 
+    @Test("Appearing preserves existing premium when entitlement check throws")
+    func testAppearedEntitlementThrowPreservesState() async {
+        var state = PaywallFeature.State()
+        state.subscriptionState = .pepinilloPlus
+
+        struct NetworkBoom: Error {}
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        } withDependencies: {
+            let products = self.mockProducts
+            $0.subscriptionClient.fetchProducts = { products }
+            $0.subscriptionClient.checkEntitlement = { throw NetworkBoom() }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.appeared) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.productsLoaded(mockProducts)) {
+            $0.isLoading = false
+            $0.products = self.mockProducts
+            $0.selectedProductID = "annual"
+        }
+
+        // Must NOT coerce to .free on throw — premium state stays.
+        #expect(store.state.subscriptionState == .pepinilloPlus)
+    }
+
     // MARK: - Product Selection
 
     @Test("Selecting a product updates selectedProductID")
@@ -73,8 +238,8 @@ struct PaywallFeatureTests {
 
     // MARK: - Successful Purchase
 
-    @Test("Successful purchase sets isPro state and shows success alert")
-    func testSuccessfulPurchase() async {
+    @Test("Successful Everywhere purchase maps to everywherePlus and unlocks")
+    func testSuccessfulEverywherePurchase() async {
         var state = PaywallFeature.State()
         state.products = mockProducts
         state.selectedProductID = "annual"
@@ -83,7 +248,7 @@ struct PaywallFeatureTests {
             PaywallFeature()
         } withDependencies: {
             $0.subscriptionClient.purchase = { _ in .success(productID: "annual") }
-            $0.subscriptionClient.checkEntitlement = { .pepinilloPlus }
+            $0.subscriptionClient.checkEntitlement = { .everywherePlus }
         }
 
         store.exhaustivity = .off
@@ -94,7 +259,39 @@ struct PaywallFeatureTests {
 
         await store.receive(.purchaseFinished(.success(productID: "annual"))) {
             $0.isLoading = false
-            $0.subscriptionState = .pro
+            $0.subscriptionState = .everywherePlus
+            $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
+                message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
+                isSuccess: true
+            )
+        }
+
+        await store.receive(.subscriptionStateLoaded(.everywherePlus))
+        await store.receive(.delegate(.proUnlocked(.everywherePlus)))
+    }
+
+    @Test("Successful lifetime purchase maps to pepinilloPlus")
+    func testSuccessfulLifetimePurchase() async {
+        var state = PaywallFeature.State()
+        state.products = mockProducts
+        state.selectedProductID = "lifetime"
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.subscriptionClient.purchase = { _ in .success(productID: "lifetime") }
+            $0.subscriptionClient.checkEntitlement = { .pepinilloPlus }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.purchaseTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.purchaseFinished(.success(productID: "lifetime"))) {
+            $0.isLoading = false
+            $0.subscriptionState = .pepinilloPlus
             $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
                 message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
                 isSuccess: true
@@ -103,6 +300,42 @@ struct PaywallFeatureTests {
 
         await store.receive(.subscriptionStateLoaded(.pepinilloPlus))
         await store.receive(.delegate(.proUnlocked(.pepinilloPlus)))
+    }
+
+    @Test("Purchase success keeps product mapping when entitlement re-check throws")
+    func testPurchaseSuccessKeepsMappingWhenRecheckThrows() async {
+        var state = PaywallFeature.State()
+        state.products = mockProducts
+        state.selectedProductID = "annual"
+
+        struct RecheckBoom: Error {}
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.subscriptionClient.purchase = { _ in .success(productID: "annual") }
+            $0.subscriptionClient.checkEntitlement = { throw RecheckBoom() }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.purchaseTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.purchaseFinished(.success(productID: "annual"))) {
+            $0.isLoading = false
+            $0.subscriptionState = .everywherePlus
+            $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
+                message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
+                isSuccess: true
+            )
+        }
+
+        // Optimistic everywherePlus mapping must survive the re-check failure,
+        // and still unlock the parent with that mapped entitlement.
+        await store.receive(.delegate(.proUnlocked(.everywherePlus)))
+        #expect(store.state.subscriptionState == .everywherePlus)
     }
 
     // MARK: - Cancelled Purchase
@@ -154,6 +387,40 @@ struct PaywallFeatureTests {
                 isSuccess: true
             )
         }
+
+        await store.receive(.delegate(.proUnlocked(.pro)))
+    }
+
+    @Test("Restore network failure surfaces error and does not demote to free")
+    func testRestoreThrowSurfacesErrorWithoutDemotion() async {
+        var state = PaywallFeature.State()
+        state.subscriptionState = .everywherePlus
+
+        struct RestoreBoom: Error, LocalizedError {
+            var errorDescription: String? { "Restore network failed" }
+        }
+
+        let store = TestStore(initialState: state) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.subscriptionClient.restorePurchases = { throw RestoreBoom() }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.restoreTapped) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.purchaseFinished(.failed(message: "Restore network failed"))) {
+            $0.isLoading = false
+            $0.purchaseResult = PaywallFeature.State.PurchaseResultAlert(
+                message: "Restore network failed",
+                isSuccess: false
+            )
+        }
+
+        #expect(store.state.subscriptionState == .everywherePlus)
     }
 
     // MARK: - Dismiss Alert
