@@ -18,7 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 open class AuthStore @Inject constructor(
-    @ApplicationContext protected val context: Context,
+    @param:ApplicationContext protected val context: Context,
 ) {
     private companion object {
         const val TAG = "AuthStore"
@@ -28,27 +28,29 @@ open class AuthStore @Inject constructor(
         const val KEY_USER_ID = "user_id"
         const val KEY_USER_NAME = "user_name"
         const val KEY_USER_EMAIL = "user_email"
+        const val KEY_EMAIL_VERIFIED = "email_verified"
         const val KEY_DEVICE_ID = "device_id"
     }
 
     /**
-     * When true, the encrypted store could not be opened even after a clear+retry
-     * (typically Keystore master-key corruption or boot-before-unlock FBE state).
-     * We fall back to a plain SharedPreferences so the app stays usable; tokens get
-     * re-encrypted on the next clean launch.
+     * Thrown when EncryptedSharedPreferences cannot be opened even after a clear+retry.
+     *
+     * Rather than falling back to plaintext SharedPreferences (which would store access
+     * and refresh tokens unencrypted on disk), we fail closed: the caller treats this as
+     * "no stored session" and forces the user to re-authenticate. This is the safer
+     * trade-off — a transient Keystore/FBE issue is recoverable by re-login, whereas
+     * leaked plaintext tokens are not.
      */
-    @Volatile
-    private var useUnencryptedFallback = false
+    class AuthStorageUnavailableException(message: String, cause: Throwable) :
+        Exception(message, cause)
 
     /**
-     * Fail-soft lazy initializer.
+     * Fail-closed lazy initializer.
      *
      * 1. Try EncryptedSharedPreferences.
      * 2. On failure, clear the corrupted file and retry once.
-     * 3. If the retry also throws, fall back to plain SharedPreferences (unencrypted)
-     *    and log loudly. Better a usable app with unencrypted tokens than a crash loop
-     *    that bricks the install (the previous `by lazy` would capture a half-constructed
-     *    state and re-throw on every access).
+     * 3. If the retry also throws, throw [AuthStorageUnavailableException] — the app must
+     *    NOT silently fall back to plaintext storage. The caller forces re-login instead.
      */
     private val prefs: SharedPreferences by lazy {
         try {
@@ -63,12 +65,15 @@ open class AuthStore @Inject constructor(
             } catch (e2: Exception) {
                 Log.e(
                     TAG,
-                    "EncryptedSharedPreferences unrecoverable after retry; falling back to plain " +
-                        "SharedPreferences. Tokens will NOT be encrypted until next launch/re-login.",
+                    "EncryptedSharedPreferences unrecoverable after retry; failing closed " +
+                        "(no plaintext fallback). User must re-authenticate.",
                     e2,
                 )
-                useUnencryptedFallback = true
-                context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                throw AuthStorageUnavailableException(
+                    "Secure token storage is unavailable (Keystore/FBE failure). " +
+                        "Failing closed — no plaintext fallback.",
+                    e2,
+                )
             }
         }
     }
@@ -141,12 +146,13 @@ open class AuthStore @Inject constructor(
         }
     }
 
-    fun saveUser(id: String, name: String, email: String) {
+    fun saveUser(id: String, name: String, email: String, emailVerified: Boolean = false) {
         synchronized(this) {
             prefs.edit()
                 .putString(KEY_USER_ID, id)
                 .putString(KEY_USER_NAME, name)
                 .putString(KEY_USER_EMAIL, email)
+                .putBoolean(KEY_EMAIL_VERIFIED, emailVerified)
                 .apply()
         }
     }
@@ -154,6 +160,16 @@ open class AuthStore @Inject constructor(
     fun getUserId(): String? = safeRead { prefs.getString(KEY_USER_ID, null) }
     fun getUserName(): String? = safeRead { prefs.getString(KEY_USER_NAME, null) }
     fun getUserEmail(): String? = safeRead { prefs.getString(KEY_USER_EMAIL, null) }
+
+    /**
+     * Whether the current session's email has been verified. Persisted alongside tokens
+     * so that cold-start can gate unverified sessions to the verification screen instead
+     * of treating them as fully authenticated.
+     *
+     * Returns false if the key is absent (legacy sessions pre-dating this field will be
+     * re-verified on next handleAuthSuccess which always writes the flag).
+     */
+    fun isEmailVerified(): Boolean = safeRead { prefs.getBoolean(KEY_EMAIL_VERIFIED, false) } ?: false
 
     /**
      * Atomic device-id creation: double-checked locking + @Volatile cache. Two concurrent

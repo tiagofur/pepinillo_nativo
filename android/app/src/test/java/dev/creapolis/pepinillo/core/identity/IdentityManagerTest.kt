@@ -33,8 +33,25 @@ class IdentityManagerTest {
     @Test
     fun `returns REGISTERED when tokens exist`() {
         every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.isEmailVerified() } returns true
+        identityManager = IdentityManager(authStore)
+        assertEquals(IdentityState.VERIFIED, identityManager.identityState.value)
+    }
+
+    @Test
+    fun `returns REGISTERED when tokens exist but email unverified`() {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.isEmailVerified() } returns false
         identityManager = IdentityManager(authStore)
         assertEquals(IdentityState.REGISTERED, identityManager.identityState.value)
+    }
+
+    @Test
+    fun `returns VERIFIED when tokens exist and email verified`() {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.isEmailVerified() } returns true
+        identityManager = IdentityManager(authStore)
+        assertEquals(IdentityState.VERIFIED, identityManager.identityState.value)
     }
 
     // -----------------------------------------------------------------------
@@ -51,6 +68,7 @@ class IdentityManagerTest {
     @Test
     fun `isAnonymous returns false when tokens exist`() {
         every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.isEmailVerified() } returns true
         identityManager = IdentityManager(authStore)
         assertFalse(identityManager.isAnonymous())
     }
@@ -62,6 +80,7 @@ class IdentityManagerTest {
     @Test
     fun `isAuthenticated returns true when tokens exist`() {
         every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.isEmailVerified() } returns true
         identityManager = IdentityManager(authStore)
         assertTrue(identityManager.isAuthenticated())
     }
@@ -83,21 +102,48 @@ class IdentityManagerTest {
         identityManager = IdentityManager(authStore)
         assertEquals(IdentityState.ANONYMOUS, identityManager.identityState.value)
 
-        // Simulate token arrival
+        // Simulate token arrival + verification
         every { authStore.getAccessToken() } returns "new-token"
+        every { authStore.isEmailVerified() } returns true
         identityManager.refreshState()
-        assertEquals(IdentityState.REGISTERED, identityManager.identityState.value)
+        assertEquals(IdentityState.VERIFIED, identityManager.identityState.value)
     }
 
     @Test
-    fun `state updates from REGISTERED to ANONYMOUS on token removal`() {
+    fun `state updates from VERIFIED to ANONYMOUS on token removal`() {
         every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.isEmailVerified() } returns true
         identityManager = IdentityManager(authStore)
-        assertEquals(IdentityState.REGISTERED, identityManager.identityState.value)
+        assertEquals(IdentityState.VERIFIED, identityManager.identityState.value)
 
         // Simulate logout
         every { authStore.getAccessToken() } returns null
         identityManager.refreshState()
         assertEquals(IdentityState.ANONYMOUS, identityManager.identityState.value)
+    }
+
+    @Test
+    fun `state transitions REGISTERED to VERIFIED on email verification`() {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.isEmailVerified() } returns false
+        identityManager = IdentityManager(authStore)
+        assertEquals(IdentityState.REGISTERED, identityManager.identityState.value)
+
+        // Simulate email verification completing
+        every { authStore.isEmailVerified() } returns true
+        identityManager.refreshState()
+        assertEquals(IdentityState.VERIFIED, identityManager.identityState.value)
+    }
+
+    @Test
+    fun `isEmailVerified returns true only in VERIFIED state`() {
+        every { authStore.getAccessToken() } returns "valid-token"
+        every { authStore.isEmailVerified() } returns true
+        identityManager = IdentityManager(authStore)
+        assertTrue(identityManager.isEmailVerified())
+
+        every { authStore.isEmailVerified() } returns false
+        identityManager.refreshState()
+        assertFalse(identityManager.isEmailVerified())
     }
 }

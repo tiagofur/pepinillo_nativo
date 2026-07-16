@@ -143,6 +143,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var prefsRepository: UserPreferencesRepository
     @Inject lateinit var subscriptionManager: SubscriptionManager
     @Inject lateinit var syncStatusManager: dev.creapolis.pepinillo.data.sync.SyncStatusManager
+    @Inject lateinit var authExpiredEvent: dev.creapolis.pepinillo.core.network.AuthExpiredEvent
 
     private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -226,6 +227,8 @@ class MainActivity : ComponentActivity() {
                         syncStatusManager = syncStatusManager,
                         initialNavRoute = pendingNavRoute,
                         onNavRouteConsumed = { pendingNavRoute = null },
+                        authStore = authStore,
+                        authExpiredEvent = authExpiredEvent,
                     )
                 }
         }
@@ -271,6 +274,8 @@ fun PepinilloApp(
     syncStatusManager: dev.creapolis.pepinillo.data.sync.SyncStatusManager,
     initialNavRoute: String? = null,
     onNavRouteConsumed: () -> Unit = {},
+    authStore: AuthStore? = null,
+    authExpiredEvent: dev.creapolis.pepinillo.core.network.AuthExpiredEvent? = null,
 ) {
     val navController = rememberNavController()
 
@@ -280,6 +285,26 @@ fun PepinilloApp(
             onNavRouteConsumed()
         }
     }
+
+    // Global auth-expired handler: when the session is cleared mid-flight (refresh-401),
+    // force-navigate to login instead of leaving the user on a stale screen (#345).
+    LaunchedEffect(authExpiredEvent) {
+        authExpiredEvent?.events?.collect {
+            navController.navigate("login") {
+                popUpTo(TopLevelDestination.Focus.route) { inclusive = true }
+            }
+        }
+    }
+
+    // Conditional start destination: if tokens exist but email is NOT verified, cold-start
+    // on the verification screen instead of Focus — unverified tokens must not be treated
+    // as fully authenticated (#336).
+    val startDestination = remember(authStore) {
+        val token = authStore?.getAccessToken()
+        val verified = authStore?.isEmailVerified() ?: false
+        if (token != null && !verified) "email-verification/cold-start" else TopLevelDestination.Focus.route
+    }
+
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -340,7 +365,7 @@ fun PepinilloApp(
             OfflineBanner(isOnline = isOnline)
             NavHost(
             navController = navController,
-            startDestination = TopLevelDestination.Focus.route,
+            startDestination = startDestination,
             modifier = Modifier.fillMaxSize(),
             // Default transition for push/pop: a gentle Material axis-Z slide + fade.
             // This replaces the previous hard cut between every screen.
@@ -433,7 +458,13 @@ fun PepinilloApp(
                 ProfileScreen(
                     onBackClick = { navController.popBackStack() },
                     onSignInClick = { navController.navigate("login") },
-                    onSignOutClick = { /* handled internally */ },
+                    onSignOutClick = {
+                        // Navigate to login after sessionManager.signOut() completes
+                        // (ProfileViewModel.logout awaits it before calling this) (#351).
+                        navController.navigate("login") {
+                            popUpTo(TopLevelDestination.Focus.route) { inclusive = true }
+                        }
+                    },
                 )
             }
             composable(TopLevelDestination.More.route) {
@@ -501,7 +532,9 @@ fun PepinilloApp(
                         }
                     },
                     onEmailVerificationRequired = { email ->
-                        navController.navigate("email-verification/$email")
+                        // Uri.encode the path segment so '+' and special chars don't
+                        // break navigation (#343).
+                        navController.navigate("email-verification/${android.net.Uri.encode(email)}")
                     },
                 )
             }
@@ -514,7 +547,7 @@ fun PepinilloApp(
                         }
                     },
                     onEmailVerificationRequired = { email ->
-                        navController.navigate("email-verification/$email")
+                        navController.navigate("email-verification/${android.net.Uri.encode(email)}")
                     },
                 )
             }
@@ -553,6 +586,38 @@ fun PepinilloApp(
                     onVerificationSuccess = {
                         navController.navigate(TopLevelDestination.Focus.route) {
                             popUpTo("login") { inclusive = true }
+                        }
+                    },
+                )
+            }
+            // Cold-start route for unverified sessions: tokens exist but email isn't
+            // verified — force the user to verify before proceeding (#336).
+            composable("email-verification/cold-start") {
+                val authStore = (authStore)
+                val userEmail = authStore?.getUserEmail() ?: ""
+                val authViewModel = androidx.hilt.navigation.compose.hiltViewModel<dev.creapolis.pepinillo.feature.auth.AuthViewModel>()
+                val uiState by authViewModel.uiState.collectAsState()
+                LaunchedEffect(Unit) {
+                    authViewModel.restoreEmailVerificationState(userEmail)
+                }
+                LaunchedEffect(uiState.isAuthenticated) {
+                    if (uiState.isAuthenticated) {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo("email-verification/cold-start") { inclusive = true }
+                        }
+                    }
+                }
+                EmailVerificationScreen(
+                    email = userEmail,
+                    onNavigateBack = {
+                        authViewModel.dismissEmailVerification()
+                        navController.navigate("login") {
+                            popUpTo("email-verification/cold-start") { inclusive = true }
+                        }
+                    },
+                    onVerificationSuccess = {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo("email-verification/cold-start") { inclusive = true }
                         }
                     },
                 )

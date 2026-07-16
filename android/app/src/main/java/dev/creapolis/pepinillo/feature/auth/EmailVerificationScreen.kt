@@ -2,6 +2,7 @@ package dev.creapolis.pepinillo.feature.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -124,8 +125,37 @@ fun EmailVerificationScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(onClick = { viewModel.resendVerificationEmail() }) {
-            Text(stringResource(R.string.email_verify_btn_resend))
+        // Resend button: disabled during loading and cooldown. Shows a countdown when
+        // on cooldown so the user knows it's intentional, not broken (#344).
+        val now = System.currentTimeMillis()
+        val onCooldown = now < uiState.resendCooldownUntil
+        val cooldownSeconds = if (onCooldown) {
+            ((uiState.resendCooldownUntil - now) / 1000).coerceAtLeast(0)
+        } else 0
+
+        if (uiState.resendSuccess) {
+            Text(
+                text = stringResource(R.string.auth_resend_success),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+        }
+
+        TextButton(
+            onClick = { viewModel.resendVerificationEmail() },
+            enabled = !uiState.resendLoading && !onCooldown,
+        ) {
+            if (uiState.resendLoading) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(16.dp),
+                )
+            } else if (onCooldown) {
+                Text(stringResource(R.string.auth_resend_cooldown, cooldownSeconds.toInt()))
+            } else {
+                Text(stringResource(R.string.email_verify_btn_resend))
+            }
         }
 
         TextButton(onClick = onNavigateBack) {

@@ -6,7 +6,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Calendar
-import java.util.TimeZone
 
 class TaskPlanFilterTest {
 
@@ -52,7 +51,7 @@ class TaskPlanFilterTest {
         val filtered = TasksUiState(
             tasks = listOf(task),
             selectedFilter = TaskFilter.Upcoming,
-        ).filteredTasks
+        ).computeFilteredTasks()
 
         assertEquals(listOf(task.id), filtered.map { it.id })
     }
@@ -88,7 +87,7 @@ class TaskPlanFilterTest {
         for (task in scenarios) {
             val activeFilters = TaskFilter.entries.filter { filter ->
                 filter != TaskFilter.Completed &&
-                    TasksUiState(tasks = listOf(task), selectedFilter = filter).filteredTasks.isNotEmpty()
+                    TasksUiState(tasks = listOf(task), selectedFilter = filter).computeFilteredTasks().isNotEmpty()
             }
             assertEquals(
                 "Task '${task.title}' should appear in exactly one active list",
@@ -99,8 +98,10 @@ class TaskPlanFilterTest {
     }
 
     private fun normalizedToday(): Calendar {
+        // Must match the production getNormalizedLocalDate(): local timezone, not UTC.
+        // The old UTC-mix caused tasks to vanish from Plan filters behind-UTC timezones.
         val local = Calendar.getInstance()
-        return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        return Calendar.getInstance().apply {
             clear()
             set(Calendar.YEAR, local.get(Calendar.YEAR))
             set(Calendar.MONTH, local.get(Calendar.MONTH))

@@ -28,12 +28,15 @@ class IdentityManager @Inject constructor(
 
     fun isAuthenticated(): Boolean = _identityState.value != IdentityState.ANONYMOUS
 
+    /** True only when there is a token AND the email has been verified. */
+    fun isEmailVerified(): Boolean = _identityState.value == IdentityState.VERIFIED
+
     private fun deriveState(): IdentityState {
         val hasToken = authStore.getAccessToken() != null
         if (!hasToken) return IdentityState.ANONYMOUS
-        // AuthStore does not currently track email verification status separately.
-        // When the backend provides that info we can distinguish REGISTERED vs VERIFIED.
-        // For now, having tokens means at least REGISTERED.
-        return IdentityState.REGISTERED
+        // Token exists — distinguish unverified (REGISTERED) from verified (VERIFIED).
+        // This lets cold-start and SyncLifecycleObserver gate unverified sessions to the
+        // verification screen instead of treating them as fully authenticated.
+        return if (authStore.isEmailVerified()) IdentityState.VERIFIED else IdentityState.REGISTERED
     }
 }

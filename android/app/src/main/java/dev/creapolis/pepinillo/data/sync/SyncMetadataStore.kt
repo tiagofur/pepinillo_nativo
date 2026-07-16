@@ -24,6 +24,15 @@ class SyncMetadataStore @Inject constructor(
         get() = prefs.getBoolean(KEY_INITIAL_PULL_COMPLETE, false)
         set(value) = prefs.edit().putBoolean(KEY_INITIAL_PULL_COMPLETE, value).apply()
 
+    /**
+     * Reset all sync metadata to initial state. Called during logout/account-delete to
+     * ensure a stale [lastSessionSyncAt] doesn't skip sessions for the next account and
+     * [initialPullComplete] is re-evaluated on next login.
+     */
+    fun clearAll() {
+        prefs.edit().clear().apply()
+    }
+
     private companion object {
         const val KEY_LAST_SESSION_SYNC_AT = "last_session_sync_at"
         const val KEY_INITIAL_PULL_COMPLETE = "initial_pull_complete"

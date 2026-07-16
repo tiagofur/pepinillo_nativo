@@ -89,6 +89,25 @@ abstract class PepinilloDatabase : RoomDatabase() {
         }
     }
 
+    /**
+     * Atomically wipe ALL user-owned data from every table.
+     *
+     * Called on logout and account-delete to prevent cross-account data leaks: the next
+     * login would otherwise run [SyncEngine.initialUpload] and push the previous user's
+     * local rows into the new account. All deletes succeed or fail together — a crash
+     * mid-wipe cannot leave a partial database that mixes accounts.
+     */
+    @Transaction
+    suspend fun clearAllUserData() {
+        taskDao().deleteAll()
+        subtaskDao().deleteAll()
+        focusSessionDao().deleteAll()
+        dailyStatsDao().deleteAll()
+        productivityReportDao().deleteAll()
+        preferenceSyncDao().deleteAll()
+        userDao().deleteAll()
+    }
+
     companion object {
         // No-op migration: schema change is metadata-only (added @ColumnInfo(defaultValue=...)
         // on UserEntity columns that already existed via MIGRATION_5_6 and MIGRATION_7_8).

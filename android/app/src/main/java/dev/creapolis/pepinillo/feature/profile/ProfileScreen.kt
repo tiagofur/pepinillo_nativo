@@ -352,8 +352,9 @@ fun ProfileScreen(
                 androidx.compose.material3.TextButton(
                     onClick = {
                         showSignOutConfirmation = false
-                        viewModel.logout()
-                        onSignOutClick()
+                        // Await logout completion before navigating — tokens are cleared
+                        // inside sessionManager.signOut(), so navigation is safe (#351).
+                        viewModel.logout(onComplete = onSignOutClick)
                     },
                 ) {
                     Text(stringResource(R.string.profile_btn_signout))

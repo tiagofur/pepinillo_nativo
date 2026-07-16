@@ -2,7 +2,6 @@ package dev.creapolis.pepinillo.domain.tasks
 
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import java.util.Calendar
-import java.util.TimeZone
 
 /**
  * Computes the next occurrence for Android recurrence presets (parity with iOS RecurrencePreset).
@@ -30,13 +29,26 @@ object RecurrenceCalculator {
         }
     }
 
+    /**
+     * Returns a [Calendar] representing the start (midnight) of the local day containing
+     * [millis], in the device's default timezone.
+     *
+     * This MUST be idempotent: `startOfLocalDay(startOfLocalDay(now).timeInMillis)` must
+     * return the same instant as `startOfLocalDay(now)`. Previously this read Y/M/D from a
+     * local-tz calendar but wrote into a UTC calendar — the resulting "UTC midnight"
+     * instant, when fed back in, re-interpreted to the *previous* local day in timezones
+     * behind UTC (e.g. UTC-3), causing recurring tasks to advance by 0 days instead of 1.
+     *
+     * Using the local timezone for both read and write keeps the operation idempotent and
+     * matches user intent: "due today" means the local calendar day, not a UTC-aligned one.
+     */
     fun startOfLocalDay(millis: Long = System.currentTimeMillis()): Calendar {
-        val local = Calendar.getInstance().apply { timeInMillis = millis }
-        return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-            clear()
-            set(Calendar.YEAR, local.get(Calendar.YEAR))
-            set(Calendar.MONTH, local.get(Calendar.MONTH))
-            set(Calendar.DAY_OF_MONTH, local.get(Calendar.DAY_OF_MONTH))
+        return Calendar.getInstance().apply {
+            timeInMillis = millis
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
     }
 
