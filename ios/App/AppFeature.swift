@@ -20,6 +20,27 @@ private enum AppLaunchDefaults {
 
 private let appLaunchLogger = Logger(subsystem: "com.pepinillo.app", category: "app-launch")
 
+// MARK: - Offline grace bootstrap (#214)
+
+/// Resolves a launch-time subscription state from App Group cache + lastVerifiedDate.
+/// Used so offline launches do not flash free / demote premium before RevenueCat answers.
+enum AppSubscriptionBootstrap {
+    static func cachedStateIfValid(
+        capabilities: UserCapabilities?,
+        lastVerifiedDate: Date?,
+        now: Date = Date()
+    ) -> SubscriptionState? {
+        guard let capabilities, capabilities.hasAnyPremium else { return nil }
+        // Reuse the same grace rules as SubscriptionClient offline path.
+        return try? SubscriptionOfflineGraceChecker.check(
+            error: URLError(.notConnectedToInternet),
+            cachedCapabilities: capabilities,
+            lastVerifiedDate: lastVerifiedDate,
+            now: now
+        )
+    }
+}
+
 @Reducer
 struct AppFeature {
     @ObservableState
@@ -388,12 +409,27 @@ struct AppFeature {
                         }
                         appLaunchLogger.info("Local preferences launch read finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
                     },
-                    // Subscription entitlement (waits for configure internally)
+                    // Subscription entitlement (waits for configure internally).
+                    // Seed offline-grace cache first so premium is not demoted while offline (#214).
                     .run { send in
                         let start = Date.now
-                        let sub = await subscriptionClient.checkEntitlement()
-                        appLaunchLogger.info("RevenueCat entitlement finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
-                        await send(.subscriptionStateLoaded(sub))
+                        let cached = AppSubscriptionBootstrap.cachedStateIfValid(
+                            capabilities: AppGroupDefaults.userCapabilities,
+                            lastVerifiedDate: AppGroupDefaults.lastVerifiedDate
+                        )
+                        if let cached {
+                            await send(.subscriptionStateLoaded(cached))
+                        }
+                        do {
+                            let sub = try await subscriptionClient.checkEntitlement()
+                            appLaunchLogger.info("RevenueCat entitlement finished in \(Date.now.timeIntervalSince(start), privacy: .public)s")
+                            await send(.subscriptionStateLoaded(sub))
+                        } catch {
+                            // Do not force .free on throw — preserve seeded cache when present (#214).
+                            appLaunchLogger.info(
+                                "RevenueCat entitlement failed after \(Date.now.timeIntervalSince(start), privacy: .public)s — preserving cache if available"
+                            )
+                        }
                     },
                     // RevenueCat customer info stream (waits for configure internally)
                     .run { send in
@@ -738,15 +774,11 @@ struct AppFeature {
                 // syncClient.wipeAndSync() (deleteAllTasks) before delegating here,
                 // which leaves the in-memory list stale. `.refresh` bypasses the
                 // hasLoadedData guard and refetches from the now-current store.
+                // Backend sync is driven by linkSubscriptionIdentity → subscriptionStateLoaded
+                // so capabilities after RevenueCat logIn are authoritative (#217).
                 return .merge(
                     .send(.tasks(.refresh)),
-                    linkSubscriptionIdentity(user.id),
-                    .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
-                        if canBackendSync {
-                            try? await syncClient.syncAll()
-                            await webSocketClient.connect()
-                        }
-                    }
+                    linkSubscriptionIdentity(user.id)
                 )
 
             case .auth(.presented(.delegate(.emailVerificationRequired(let email)))):
@@ -759,15 +791,8 @@ struct AppFeature {
                 state.displayName = user.name
                 state.userEmail = user.email
                 state.emailVerification = nil  // dismiss verification sheet
-                return .merge(
-                    linkSubscriptionIdentity(user.id),
-                    .run { [syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] _ in
-                        if canBackendSync {
-                            try? await syncClient.syncAll()
-                            await webSocketClient.connect()
-                        }
-                    }
-                )
+                // Sequential identity: logIn result drives soft-sync via applySubscriptionUpdate (#217).
+                return linkSubscriptionIdentity(user.id)
 
             case .emailVerification(.presented(.delegate(.signOutRequested))):
                 // User tapped the escape hatch on the verification sheet. Clear the
@@ -869,7 +894,7 @@ struct AppFeature {
                               !nonce.isEmpty else {
                             return .none
                         }
-                        return .run { [apiClient, keychain, persistence, syncClient, webSocketClient, canBackendSync = state.subscriptionState.capabilities.backendSync] send in
+                        return .run { [apiClient, keychain, persistence] send in
                             do {
                                 let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken, nonce: nonce))
                                 try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
@@ -882,12 +907,9 @@ struct AppFeature {
                                     createdAt: response.user.createdAt, updatedAt: response.user.updatedAt
                                 )
                                 try? await persistence.saveCachedUser(dto)
+                                // cachedUserLoaded → linkSubscriptionIdentity sequentially applies
+                                // logIn SubscriptionState and soft-sync (no parallel race) (#217).
                                 await send(.cachedUserLoaded(dto))
-                                await subscriptionClient.logIn(response.user.id)
-                                if canBackendSync {
-                                    try? await syncClient.syncAll()
-                                    await webSocketClient.connect()
-                                }
                             } catch {
                                 // Backend auth failed — keep local Apple identity; getMe may recover later.
                             }
@@ -1448,12 +1470,22 @@ struct AppFeature {
         )
     }
 
-    // MARK: - RevenueCat identity (#197)
+    // MARK: - RevenueCat identity (#197, #217)
 
     /// Links RevenueCat to the backend user id after any successful auth path.
+    ///
+    /// Returns the post-login `SubscriptionState` into the reducer via
+    /// `subscriptionStateLoaded` so soft-sync / WebSocket connect run only after
+    /// identity linkage completes (avoids racing purchase identity with sync).
     private func linkSubscriptionIdentity(_ userID: String) -> Effect<Action> {
-        .run { [subscriptionClient] _ in
-            await subscriptionClient.logIn(userID)
+        .run { [subscriptionClient] send in
+            do {
+                let sub = try await subscriptionClient.logIn(userID)
+                await send(.subscriptionStateLoaded(sub))
+            } catch {
+                // Do not demote on identity-link failure — keep cached entitlement.
+                appLaunchLogger.error("RevenueCat logIn failed for identity link")
+            }
         }
     }
 

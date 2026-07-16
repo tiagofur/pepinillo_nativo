@@ -83,6 +83,20 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.lastAppleCloudActivationError == "iCloud unavailable")
     }
 
+    @Test("lastVerifiedDate round-trips")
+    func lastVerifiedDateRoundTrip() {
+        let saved = AppGroupDefaults.lastVerifiedDate
+        defer { AppGroupDefaults.lastVerifiedDate = saved }
+
+        let now = Date()
+        AppGroupDefaults.lastVerifiedDate = now
+        #expect(AppGroupDefaults.lastVerifiedDate == now)
+
+        AppGroupDefaults.lastVerifiedDate = nil
+        #expect(AppGroupDefaults.lastVerifiedDate == nil)
+    }
+
+
     @Test("extensionModelStoreURL maps activeSyncMode to the correct SQLite file")
     func extensionStoreURLSelection() {
         #expect(extensionModelStoreURL(for: .local).lastPathComponent == AppGroup.storeFileName)
@@ -377,6 +391,7 @@ struct AppGroupDefaultsSnapshot {
     var activeSyncMode: AppGroupDefaults.SyncMode
     var syncStatus: AppGroupDefaults.SyncStatus
     var lastAppleCloudActivationError: String?
+    var lastVerifiedDate: Date?
     var widgetSelectedMode: String?
     var pomodoroDuration: Double
     var blockDuration: Double
@@ -413,6 +428,7 @@ struct AppGroupDefaultsSnapshot {
             activeSyncMode: AppGroupDefaults.activeSyncMode,
             syncStatus: AppGroupDefaults.syncStatus,
             lastAppleCloudActivationError: AppGroupDefaults.lastAppleCloudActivationError,
+            lastVerifiedDate: AppGroupDefaults.lastVerifiedDate,
             widgetSelectedMode: AppGroupDefaults.widgetSelectedMode,
             pomodoroDuration: AppGroupDefaults.pomodoroDuration,
             blockDuration: AppGroupDefaults.blockDuration,
@@ -450,6 +466,7 @@ struct AppGroupDefaultsSnapshot {
         AppGroupDefaults.activeSyncMode = activeSyncMode
         AppGroupDefaults.syncStatus = syncStatus
         AppGroupDefaults.lastAppleCloudActivationError = lastAppleCloudActivationError
+        AppGroupDefaults.lastVerifiedDate = lastVerifiedDate
         AppGroupDefaults.widgetSelectedMode = widgetSelectedMode
         AppGroupDefaults.pomodoroDuration = pomodoroDuration
         AppGroupDefaults.blockDuration = blockDuration

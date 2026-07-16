@@ -503,7 +503,9 @@ struct SettingsFeatureTests {
 
     @Test("Health logging toggle on triggers authorization request")
     func testHealthLoggingToggleOnRequestsAuth() async {
-        let store = TestStore(initialState: SettingsFeature.State()) {
+        var state = SettingsFeature.State()
+        state.isProUser = true
+        let store = TestStore(initialState: state) {
             SettingsFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { self.defaultPrefs() }
@@ -521,6 +523,20 @@ struct SettingsFeatureTests {
             $0.healthAuthorized = true
             $0.healthLoggingEnabled = true
         }
+    }
+
+    @Test("Free user enabling Health integration triggers paywall")
+    func testFreeUserHealthToggleTriggersPaywall() async {
+        var state = SettingsFeature.State()
+        state.isProUser = false
+        state.healthLoggingEnabled = false
+
+        let store = makeStore(state: state)
+        store.exhaustivity = .off
+
+        await store.send(.healthLoggingToggled)
+        await store.receive(.upgradeTapped)
+        #expect(store.state.healthLoggingEnabled == false)
     }
 
     @Test("Health authorization denied shows alert")
@@ -563,7 +579,9 @@ struct SettingsFeatureTests {
 
     @Test("Calendar integration toggle on triggers authorization")
     func testCalendarToggleOnRequestsAuth() async {
-        let store = TestStore(initialState: SettingsFeature.State()) {
+        var state = SettingsFeature.State()
+        state.isProUser = true
+        let store = TestStore(initialState: state) {
             SettingsFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { self.defaultPrefs() }
@@ -579,6 +597,20 @@ struct SettingsFeatureTests {
         await store.receive(.calendarAuthorizationResult(true)) {
             $0.calendarIntegrationEnabled = true
         }
+    }
+
+    @Test("Free user enabling Calendar integration triggers paywall")
+    func testFreeUserCalendarToggleTriggersPaywall() async {
+        var state = SettingsFeature.State()
+        state.isProUser = false
+        state.calendarIntegrationEnabled = false
+
+        let store = makeStore(state: state)
+        store.exhaustivity = .off
+
+        await store.send(.calendarIntegrationToggled)
+        await store.receive(.upgradeTapped)
+        #expect(store.state.calendarIntegrationEnabled == false)
     }
 
     @Test("Calendar authorization denied does not enable integration")

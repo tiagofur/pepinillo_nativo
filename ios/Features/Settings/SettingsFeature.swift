@@ -368,6 +368,10 @@ struct SettingsFeature {
                     state.healthLoggingEnabled = false
                     return .send(.saveSettings)
                 } else {
+                    // Health integration is Premium-only (#216)
+                    guard state.isProUser else {
+                        return .send(.upgradeTapped)
+                    }
                     // Turning on — request authorization first
                     return .run { [healthClient] send in
                         let authorized = try await healthClient.requestAuthorization()
@@ -397,6 +401,10 @@ struct SettingsFeature {
                     state.calendarIntegrationEnabled = false
                     return .send(.saveSettings)
                 } else {
+                    // Calendar integration is Premium-only (#216)
+                    guard state.isProUser else {
+                        return .send(.upgradeTapped)
+                    }
                     return .run { [calendarClient] send in
                         let authorized = try await calendarClient.requestAccess()
                         await send(.calendarAuthorizationResult(authorized))
