@@ -7,6 +7,70 @@
 import Foundation
 import ComposableArchitecture
 
+// MARK: - Entitlement mapping (#212)
+
+enum PaywallEntitlementMapper {
+    /// Maps a purchased product identifier to the correct subscription entitlement.
+    /// Everywhere/AI+ (monthly/annual) → everywherePlus; Pepinillo+ lifetime → pepinilloPlus.
+    static func subscriptionState(forProductID productID: String) -> SubscriptionState {
+        isLifetimeProduct(productID) ? .pepinilloPlus : .everywherePlus
+    }
+
+    /// Whether the purchase button should be enabled for the selected product
+    /// given the user's current entitlement (upgrade path for Pepinillo+ → Everywhere).
+    static func canPurchase(selectedProductID: String, current: SubscriptionState) -> Bool {
+        if current.isEverywhere {
+            return false
+        }
+        if current.capabilities.hasPepinilloPlus {
+            // Lifetime owners may upgrade to Everywhere, but not re-buy lifetime.
+            return !isLifetimeProduct(selectedProductID)
+        }
+        return true
+    }
+
+    static func isLifetimeProduct(_ productID: String) -> Bool {
+        if productID == PepinilloProduct.lifetime.rawValue { return true }
+        if productID == "lifetime" { return true }
+        if let product = PepinilloProduct(rawValue: productID) {
+            return product == .lifetime
+        }
+        return productID.lowercased().hasSuffix(".lifetime")
+            || productID.lowercased().contains("lifetime")
+    }
+}
+
+// MARK: - Legal compliance copy (#215)
+
+enum PaywallLegalCopy {
+    /// App Store Guideline 3.1.2 auto-renewal disclosure for the selected product.
+    static func autoRenewalDisclosure(product: ProductInfo?) -> String {
+        guard let product else {
+            return String(localized: "Pepinillo+ is a one-time purchase. Everywhere/AI+ is an auto-renewing subscription. Payment is charged to your Apple ID account at confirmation of purchase. Subscriptions automatically renew unless canceled at least 24 hours before the end of the current period. Manage or cancel in App Store Account Settings.")
+        }
+
+        if product.billingPeriod == "once" || PaywallEntitlementMapper.isLifetimeProduct(product.id) {
+            return String(
+                localized: "Pepinillo+ (\(product.displayPrice)) is a one-time purchase, not a subscription. Payment will be charged to your Apple ID account at confirmation of purchase."
+            )
+        }
+
+        let periodLabel: String
+        switch product.billingPeriod {
+        case "year":
+            periodLabel = String(localized: "one year")
+        case "month":
+            periodLabel = String(localized: "one month")
+        default:
+            periodLabel = product.billingPeriod
+        }
+
+        return String(
+            localized: "Everywhere/AI+ is an auto-renewing subscription for \(periodLabel) at \(product.displayPrice). Payment will be charged to your Apple ID account at confirmation of purchase. The subscription automatically renews unless it is canceled at least 24 hours before the end of the current period. Your account will be charged for renewal within 24 hours prior to the end of the current period. You can manage and cancel your subscriptions by going to your Account Settings in the App Store after purchase."
+        )
+    }
+}
+
 // MARK: - PaywallFeature
 
 @Reducer
@@ -21,6 +85,18 @@ struct PaywallFeature {
         var isLoading: Bool = false
         var purchaseResult: PurchaseResultAlert? = nil
         var subscriptionState: SubscriptionState = .free
+
+        /// Whether the primary purchase action should be enabled for the current selection.
+        var isPurchaseEnabled: Bool {
+            !isLoading && PaywallEntitlementMapper.canPurchase(
+                selectedProductID: selectedProductID,
+                current: subscriptionState
+            )
+        }
+
+        var selectedProduct: ProductInfo? {
+            products.first { $0.id == selectedProductID }
+        }
 
         struct PurchaseResultAlert: Equatable {
             var message: String
@@ -60,7 +136,6 @@ struct PaywallFeature {
     var body: some ReducerOf<Self> {
         Reduce { state, action in
             switch action {
-            // ... (keeping existing cases)
             case .appeared:
                 state.isLoading = true
                 return .merge(
@@ -76,8 +151,13 @@ struct PaywallFeature {
                         await send(.productsLoaded(products))
                     },
                     .run { send in
-                        let sub = (try? await subscriptionClient.checkEntitlement()) ?? .free
-                        await send(.subscriptionStateLoaded(sub))
+                        // Do not silently coerce network failures to .free (#214).
+                        do {
+                            let sub = try await subscriptionClient.checkEntitlement()
+                            await send(.subscriptionStateLoaded(sub))
+                        } catch {
+                            // Preserve whatever entitlement is already in state.
+                        }
                     }
                 )
 
@@ -106,29 +186,63 @@ struct PaywallFeature {
             case .restoreTapped:
                 state.isLoading = true
                 return .run { send in
-                    let sub = (try? await subscriptionClient.restorePurchases()) ?? .free
-                    await send(.subscriptionStateLoaded(sub))
-                    if sub.isPro {
-                        await send(.purchaseFinished(.success(productID: sub.activeProductID ?? "")))
-                    } else {
-                        await send(.purchaseFinished(.failed(message: String(localized: "No active subscription found."))))
+                    do {
+                        let sub = try await subscriptionClient.restorePurchases()
+                        await send(.subscriptionStateLoaded(sub))
+                        if sub.isPro {
+                            await send(.purchaseFinished(.success(productID: sub.activeProductID ?? "")))
+                        } else {
+                            await send(.purchaseFinished(.failed(message: String(localized: "No active subscription found."))))
+                        }
+                    } catch {
+                        // Surface error; do not demote existing entitlement to free (#214).
+                        let message = error.localizedDescription.isEmpty
+                            ? String(localized: "Could not restore purchases. Please try again.")
+                            : error.localizedDescription
+                        await send(.purchaseFinished(.failed(message: message)))
                     }
                 }
 
             case .purchaseFinished(let result):
                 state.isLoading = false
                 switch result {
-                case .success:
-                    state.subscriptionState = .pro
+                case .success(let productID):
+                    // Map product → entitlement immediately (Everywhere ≠ Pepinillo+) (#212).
+                    // Empty productID is the restore path — subscriptionState was already
+                    // applied via subscriptionStateLoaded; do not remap empty → Everywhere.
+                    let mapped: SubscriptionState
+                    if productID.isEmpty {
+                        mapped = state.subscriptionState
+                    } else {
+                        mapped = PaywallEntitlementMapper.subscriptionState(forProductID: productID)
+                        state.subscriptionState = mapped
+                    }
                     state.purchaseResult = State.PurchaseResultAlert(
                         message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
                         isSuccess: true
                     )
-                    return .run { send in
-                        let sub = (try? await subscriptionClient.checkEntitlement()) ?? .free
-                        await send(.subscriptionStateLoaded(sub))
-                        if sub.isPro {
-                            await send(.delegate(.proUnlocked(sub)))
+                    return .run { [mapped, productID] send in
+                        // Restore path already has authoritative state; unlock if pro.
+                        if productID.isEmpty {
+                            if mapped.isPro {
+                                await send(.delegate(.proUnlocked(mapped)))
+                            }
+                            return
+                        }
+                        do {
+                            let sub = try await subscriptionClient.checkEntitlement()
+                            await send(.subscriptionStateLoaded(sub))
+                            if sub.isPro {
+                                await send(.delegate(.proUnlocked(sub)))
+                            } else if mapped.isPro {
+                                // Recheck returned free/unexpected — keep product mapping.
+                                await send(.delegate(.proUnlocked(mapped)))
+                            }
+                        } catch {
+                            // Purchase already succeeded; unlock with product-mapped entitlement.
+                            if mapped.isPro {
+                                await send(.delegate(.proUnlocked(mapped)))
+                            }
                         }
                     }
                 case .pending:

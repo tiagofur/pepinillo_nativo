@@ -384,10 +384,23 @@ struct PaywallPurchaseButton: View {
     let glassNamespace: Namespace.ID
 
     private var buttonLabel: String {
-        if store.subscriptionState.isPro {
+        let selected = store.products.first { $0.id == store.selectedProductID }
+        let selectedIsLifetime = selected.map {
+            $0.billingPeriod == "once" || PaywallEntitlementMapper.isLifetimeProduct($0.id)
+        } ?? PaywallEntitlementMapper.isLifetimeProduct(store.selectedProductID)
+
+        if store.subscriptionState.isEverywhere {
             return String(localized: "Subscription Active")
         }
-        let selected = store.products.first { $0.id == store.selectedProductID }
+
+        // Pepinillo+ lifetime owners may upgrade to Everywhere (#212).
+        if store.subscriptionState.capabilities.hasPepinilloPlus {
+            if selectedIsLifetime {
+                return String(localized: "Pepinillo+ Active")
+            }
+            return String(localized: "Upgrade to Everywhere/AI+")
+        }
+
         if let product = selected {
             if product.billingPeriod == "once" {
                 return String(localized: "Buy Pepinillo+")
@@ -395,6 +408,10 @@ struct PaywallPurchaseButton: View {
             return String(localized: "Continue with Everywhere/AI+")
         }
         return String(localized: "Continue")
+    }
+
+    private var isEnabled: Bool {
+        store.isPurchaseEnabled
     }
 
     var body: some View {
@@ -419,11 +436,11 @@ struct PaywallPurchaseButton: View {
         .frame(maxWidth: 480)
         .frame(maxWidth: .infinity)
         .buttonStyle(PepinilloButtonStyle())
-        .disabled(store.isLoading || store.subscriptionState.isPro)
+        .disabled(!isEnabled)
         .padding(.top, SpacingTokens.xs)
         .pepinilloShadow(
             .hero,
-            enabled: !(store.isLoading || store.subscriptionState.isPro)
+            enabled: isEnabled
         )
     }
 }
@@ -472,21 +489,22 @@ struct PaywallLegalFooter: View {
             }
             .font(.subheadline.bold())
             .foregroundStyle(Color.accentColor)
-            
-            Text(String(localized: "Pepinillo+ is a one-time purchase. Everywhere/AI+ is an auto-renewing subscription. Payment is charged to your Apple ID. Subscriptions renew unless cancelled at least 24 hours before the end of the current period."))
+
+            // App Store Guideline 3.1.2 — price, period, auto-renewal, manage/cancel (#215).
+            Text(PaywallLegalCopy.autoRenewalDisclosure(product: store.selectedProduct))
                 .font(.system(size: 10))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 10)
-            
+
             HStack(spacing: SpacingTokens.xl) {
                 Button(String(localized: "Terms of Use")) {
                     store.send(.termsOfServiceTapped)
                 }
-                
+
                 Text("•")
                     .foregroundStyle(.secondary.opacity(0.5))
-                
+
                 Button(String(localized: "Privacy Policy")) {
                     store.send(.privacyPolicyTapped)
                 }

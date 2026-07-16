@@ -992,4 +992,231 @@ struct AppFeatureIntegrationTests {
 
         #expect(startNextPhaseCalled.value == true)
     }
+
+    // MARK: - Phase 2 billing: offline grace + sequential identity (#214, #217)
+
+    @Test("App launch seeds Everywhere+ from cache within offline grace when live check throws")
+    func appLaunchSeedsCachedEverywhereWithinGraceOnEntitlementThrow() async {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.userCapabilities = .everywherePlus
+        AppGroupDefaults.lastVerifiedDate = Date().addingTimeInterval(-2 * 24 * 3600) // 2 days ago
+
+        let proModeKey = "pepinillo.debug.simulatePro"
+        let savedProMode = UserDefaults.standard.object(forKey: proModeKey)
+        defer {
+            if let v = savedProMode { UserDefaults.standard.set(v, forKey: proModeKey) }
+            else { UserDefaults.standard.removeObject(forKey: proModeKey) }
+        }
+        UserDefaults.standard.set(false, forKey: proModeKey)
+
+        struct OfflineBoom: Error {}
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.continuousClock = ImmediateClock()
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
+            $0.persistenceClient.fetchCachedUser = { nil }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.generateRecurringTasks = { }
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.fetchDailyStats = { _ in nil }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.subscriptionClient.checkEntitlement = { throw OfflineBoom() }
+            $0.subscriptionClient.listenForTransactionUpdates = { AsyncStream { $0.finish() } }
+            $0.notificationClient.requestAuthorization = { false }
+            $0.notificationClient.observeActions = { .finished }
+            $0.watchConnectivityClient.isSupported = { false }
+            $0.watchConnectivityClient.sendTasks = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
+            $0.signInWithAppleClient.checkCredentialState = { _ in false }
+            $0.signInWithAppleClient.observeCredentialRevocation = { AsyncStream { $0.finish() } }
+            $0.keychainClient.hasTokens = { false }
+            $0.spotlightClient.indexTasks = { _ in }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
+            $0.networkClient.observeConnectivity = { AsyncStream { $0.finish() } }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.appLaunched)
+
+        await store.receive(.subscriptionStateLoaded(.everywherePlus)) {
+            $0.subscriptionState = .everywherePlus
+            $0.focus.isProUser = true
+            $0.settings.isProUser = true
+            $0.analytics.isProUser = true
+            $0.tasks.isProUser = true
+        }
+
+        #expect(store.state.subscriptionState == .everywherePlus)
+    }
+
+    @Test("App launch seeds Pepinillo+ from cache indefinitely offline when live check throws")
+    func appLaunchSeedsCachedPepinilloPlusOfflineOnEntitlementThrow() async {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.userCapabilities = .pepinilloPlus
+        AppGroupDefaults.lastVerifiedDate = nil
+
+        let proModeKey = "pepinillo.debug.simulatePro"
+        let savedProMode = UserDefaults.standard.object(forKey: proModeKey)
+        defer {
+            if let v = savedProMode { UserDefaults.standard.set(v, forKey: proModeKey) }
+            else { UserDefaults.standard.removeObject(forKey: proModeKey) }
+        }
+        UserDefaults.standard.set(false, forKey: proModeKey)
+
+        struct OfflineBoom: Error {}
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.continuousClock = ImmediateClock()
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
+            $0.persistenceClient.fetchCachedUser = { nil }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.generateRecurringTasks = { }
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.fetchDailyStats = { _ in nil }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.subscriptionClient.checkEntitlement = { throw OfflineBoom() }
+            $0.subscriptionClient.listenForTransactionUpdates = { AsyncStream { $0.finish() } }
+            $0.notificationClient.requestAuthorization = { false }
+            $0.notificationClient.observeActions = { .finished }
+            $0.watchConnectivityClient.isSupported = { false }
+            $0.watchConnectivityClient.sendTasks = { _ in }
+            $0.watchConnectivityClient.sendSessionState = { _, _ in }
+            $0.signInWithAppleClient.checkCredentialState = { _ in false }
+            $0.signInWithAppleClient.observeCredentialRevocation = { AsyncStream { $0.finish() } }
+            $0.keychainClient.hasTokens = { false }
+            $0.spotlightClient.indexTasks = { _ in }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
+            $0.focusClient.start = { _, _, _, _, _, _, _ in }
+            $0.focusClient.events = { AsyncStream { $0.finish() } }
+            $0.focusClient.currentState = { nil }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
+            $0.networkClient.observeConnectivity = { AsyncStream { $0.finish() } }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.appLaunched)
+
+        await store.receive(.subscriptionStateLoaded(.pepinilloPlus)) {
+            $0.subscriptionState = .pepinilloPlus
+            $0.focus.isProUser = true
+            $0.settings.isProUser = true
+            $0.analytics.isProUser = true
+            $0.tasks.isProUser = true
+        }
+
+        #expect(store.state.subscriptionState == .pepinilloPlus)
+    }
+
+    @Test("Cached user restore links RevenueCat identity and applies returned subscription state sequentially")
+    func cachedUserRestoreAppliesLogInSubscriptionState() async {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+
+        let proModeKey = "pepinillo.debug.simulatePro"
+        let savedProMode = UserDefaults.standard.object(forKey: proModeKey)
+        defer {
+            if let v = savedProMode { UserDefaults.standard.set(v, forKey: proModeKey) }
+            else { UserDefaults.standard.removeObject(forKey: proModeKey) }
+        }
+        UserDefaults.standard.set(false, forKey: proModeKey)
+
+        let loggedInUserIDs = LockIsolated<[String]>([])
+
+        let user = CachedUserDTO(
+            id: "user-seq-1",
+            email: "seq@example.com",
+            name: "Seq User",
+            subscriptionTier: "everywhere_plus",
+            emailVerified: true
+        )
+
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
+            $0.subscriptionClient.logIn = { userID in
+                loggedInUserIDs.withValue { $0.append(userID) }
+                return .everywherePlus
+            }
+            $0.syncModeClient.reconcile = { _ in }
+            $0.keychainClient.hasTokens = { false }
+            $0.syncClient.syncAll = { }
+            $0.webSocketClient.connect = { }
+            $0.webSocketClient.disconnect = { }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.cachedUserLoaded(user)) {
+            $0.cachedUser = user
+            $0.displayName = "Seq User"
+            $0.userEmail = "seq@example.com"
+        }
+
+        await store.receive(.subscriptionStateLoaded(.everywherePlus)) {
+            $0.subscriptionState = .everywherePlus
+            $0.focus.isProUser = true
+            $0.settings.isProUser = true
+            $0.analytics.isProUser = true
+            $0.tasks.isProUser = true
+        }
+
+        #expect(loggedInUserIDs.value == ["user-seq-1"])
+        #expect(store.state.subscriptionState.isEverywhere)
+    }
+
+    @Test("Bootstrap cached state rejects Everywhere past grace")
+    func bootstrapRejectsEverywherePastGrace() {
+        let past = Date().addingTimeInterval(-8 * 24 * 3600)
+        let seeded = AppSubscriptionBootstrap.cachedStateIfValid(
+            capabilities: .everywherePlus,
+            lastVerifiedDate: past
+        )
+        #expect(seeded == nil)
+    }
+
+    @Test("Bootstrap cached state keeps Everywhere within grace")
+    func bootstrapKeepsEverywhereWithinGrace() {
+        let recent = Date().addingTimeInterval(-1 * 24 * 3600)
+        let seeded = AppSubscriptionBootstrap.cachedStateIfValid(
+            capabilities: .everywherePlus,
+            lastVerifiedDate: recent
+        )
+        #expect(seeded == .everywherePlus)
+    }
+
+    @Test("Bootstrap cached state keeps Pepinillo+ without lastVerifiedDate")
+    func bootstrapKeepsPepinilloWithoutLastVerified() {
+        let seeded = AppSubscriptionBootstrap.cachedStateIfValid(
+            capabilities: .pepinilloPlus,
+            lastVerifiedDate: nil
+        )
+        #expect(seeded == .pepinilloPlus)
+    }
 }
