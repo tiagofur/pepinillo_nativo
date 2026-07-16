@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -69,6 +71,7 @@ fun ModeChip(
             .clip(RoundedCornerShape(16.dp))
             .background(containerColor)
             .clickable(role = Role.Tab, onClick = onClick)
+            .heightIn(min = 48.dp)
             .padding(vertical = 8.dp, horizontal = 12.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -105,7 +108,7 @@ fun ModeChip(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Lock,
-                    contentDescription = "Pro",
+                    contentDescription = stringResource(R.string.cd_pro_badge),
                     modifier = Modifier.size(8.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -139,7 +139,7 @@ fun PaywallScreen(
 
         // ── TIER CARDS ──
         TierCard(
-            tierName = "Pepinillo+",
+            tierName = stringResource(R.string.tier_name_pepinillo_plus),
             badge = stringResource(R.string.paywall_one_time),
             badgeGreen = true,
             features = listOf(
@@ -177,7 +177,7 @@ fun PaywallScreen(
                     name = when {
                         product.productId == PepinilloProducts.EVERYWHERE_MONTHLY -> stringResource(R.string.paywall_monthly)
                         product.productId == PepinilloProducts.EVERYWHERE_ANNUAL -> stringResource(R.string.paywall_annual)
-                        product.productId == PepinilloProducts.PEPINILLO_PLUS -> "Pepinillo+"
+                        product.productId == PepinilloProducts.PEPINILLO_PLUS -> stringResource(R.string.tier_name_pepinillo_plus)
                         else -> product.title
                     },
                     price = product.formattedPrice,

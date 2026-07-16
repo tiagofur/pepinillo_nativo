@@ -135,6 +135,7 @@ class MainActivity : ComponentActivity() {
 
     private var isPipMode by mutableStateOf(false)
     private var pendingNavRoute by mutableStateOf<String?>(null)
+    private var onboardingCompleted by mutableStateOf(true)
 
     private val focusViewModel: FocusViewModel by viewModels()
 
@@ -185,6 +186,11 @@ class MainActivity : ComponentActivity() {
         // Keep the splash screen on-screen until the app is ready
         splashScreen.setKeepOnScreenCondition { !isAppReady }
 
+        // Read onboarding flag before first frame so startDestination can gate on it (#395).
+        syncScope.launch {
+            onboardingCompleted = prefsRepository.preferences.first().onboardingCompleted
+        }
+
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
 
         // ... existing syncScope logic ...
@@ -229,6 +235,7 @@ class MainActivity : ComponentActivity() {
                         onNavRouteConsumed = { pendingNavRoute = null },
                         authStore = authStore,
                         authExpiredEvent = authExpiredEvent,
+                        onboardingCompleted = onboardingCompleted,
                     )
                 }
         }
@@ -276,6 +283,7 @@ fun PepinilloApp(
     onNavRouteConsumed: () -> Unit = {},
     authStore: AuthStore? = null,
     authExpiredEvent: dev.creapolis.pepinillo.core.network.AuthExpiredEvent? = null,
+    onboardingCompleted: Boolean = true,
 ) {
     val navController = rememberNavController()
 
@@ -299,10 +307,15 @@ fun PepinilloApp(
     // Conditional start destination: if tokens exist but email is NOT verified, cold-start
     // on the verification screen instead of Focus — unverified tokens must not be treated
     // as fully authenticated (#336).
-    val startDestination = remember(authStore) {
-        val token = authStore?.getAccessToken()
-        val verified = authStore?.isEmailVerified() ?: false
-        if (token != null && !verified) "email-verification/cold-start" else TopLevelDestination.Focus.route
+    val startDestination = remember(authStore, onboardingCompleted) {
+        // Gate priority: onboarding (first launch) → verification (unverified tokens) → Focus.
+        if (!onboardingCompleted) {
+            "onboarding"
+        } else {
+            val token = authStore?.getAccessToken()
+            val verified = authStore?.isEmailVerified() ?: false
+            if (token != null && !verified) "email-verification/cold-start" else TopLevelDestination.Focus.route
+        }
     }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -350,7 +363,10 @@ fun PepinilloApp(
                                     } else {
                                         destination.unselectedIcon
                                     },
-                                    contentDescription = stringResource(destination.labelRes),
+                                    // No contentDescription — the NavigationBarItem label already
+                                    // announces the tab name to TalkBack. A duplicate description
+                                    // caused double announcements (#402).
+                                    contentDescription = null,
                                 )
                             },
                             label = { Text(stringResource(destination.labelRes)) },

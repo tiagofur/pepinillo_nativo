@@ -229,7 +229,7 @@ fun TaskItem(
                     if (checkmarkScale > 0.01f) {
                         Icon(
                             imageVector = Icons.Rounded.Check,
-                            contentDescription = "Completed",
+                            contentDescription = stringResource(R.string.cd_completed),
                             modifier = Modifier
                                 .size(16.dp)
                                 .scale(checkmarkScale),
@@ -319,7 +319,7 @@ private fun MetadataRow(
         }
         metadataItems.add {
             MetadataBadge(color = color) {
-                Icon(Icons.Rounded.CalendarMonth, contentDescription = "Due date", modifier = Modifier.size(14.dp), tint = color)
+                Icon(Icons.Rounded.CalendarMonth, contentDescription = stringResource(R.string.cd_due_date), modifier = Modifier.size(14.dp), tint = color)
                 Text(dateFormatter.format(Date(dueDate)), style = MaterialTheme.typography.bodySmall, color = color)
             }
         }
@@ -330,7 +330,7 @@ private fun MetadataRow(
         metadataItems.add {
             val color = brandGreen()
             MetadataBadge(color = color) {
-                Icon(Icons.Rounded.Today, contentDescription = "Scheduled for today", modifier = Modifier.size(14.dp), tint = color)
+                Icon(Icons.Rounded.Today, contentDescription = stringResource(R.string.cd_scheduled_today), modifier = Modifier.size(14.dp), tint = color)
                 Text(stringResource(R.string.filter_today), style = MaterialTheme.typography.bodySmall, color = color)
             }
         }
@@ -352,7 +352,7 @@ private fun MetadataRow(
         metadataItems.add {
             val color = MaterialTheme.colorScheme.secondary
             MetadataBadge(color = color) {
-                Icon(Icons.Rounded.AccessTime, contentDescription = "Pomodoros", modifier = Modifier.size(14.dp), tint = color)
+                Icon(Icons.Rounded.AccessTime, contentDescription = stringResource(R.string.cd_pomodoros), modifier = Modifier.size(14.dp), tint = color)
                 Text(
                     "${task.completedPomodoros}/${task.estimatedPomodoros}",
                     style = MaterialTheme.typography.bodySmall,
@@ -368,7 +368,7 @@ private fun MetadataRow(
             metadataItems.add {
                 val color = MaterialTheme.colorScheme.tertiary
                 MetadataBadge(color = color) {
-                    Icon(Icons.Rounded.Checklist, contentDescription = "Subtasks", modifier = Modifier.size(14.dp), tint = color)
+                    Icon(Icons.Rounded.Checklist, contentDescription = stringResource(R.string.cd_subtasks), modifier = Modifier.size(14.dp), tint = color)
                     Text("$completed/$total", style = MaterialTheme.typography.bodySmall, color = color)
                 }
             }
@@ -382,7 +382,7 @@ private fun MetadataRow(
             metadataItems.add {
                 val color = MaterialTheme.colorScheme.primary
                 MetadataBadge(color = color) {
-                    Icon(Icons.Rounded.Repeat, contentDescription = "Recurring", modifier = Modifier.size(14.dp), tint = color)
+                    Icon(Icons.Rounded.Repeat, contentDescription = stringResource(R.string.cd_recurring), modifier = Modifier.size(14.dp), tint = color)
                     Text(option.label, style = MaterialTheme.typography.bodySmall, color = color)
                 }
             }

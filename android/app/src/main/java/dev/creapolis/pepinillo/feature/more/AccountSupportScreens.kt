@@ -60,6 +60,7 @@ fun HelpSupportScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val emailSubject = stringResource(R.string.support_email_subject)
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -76,7 +77,7 @@ fun HelpSupportScreen(
         ) {
             val intent = Intent(Intent.ACTION_SENDTO).apply {
                 data = Uri.parse("mailto:$SUPPORT_EMAIL")
-                putExtra(Intent.EXTRA_SUBJECT, "Pepinillo Support")
+                putExtra(Intent.EXTRA_SUBJECT, emailSubject)
             }
             runCatching { context.startActivity(intent) }
         }
@@ -138,7 +139,7 @@ fun AboutScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Pepinillo",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
             )

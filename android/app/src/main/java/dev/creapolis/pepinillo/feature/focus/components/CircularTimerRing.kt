@@ -9,6 +9,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -19,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 
 @Composable
 fun CircularTimerRing(
@@ -33,17 +36,22 @@ fun CircularTimerRing(
     val strokeWidthPx = with(LocalDensity.current) { strokeWidth.toPx() }
     val dashPx = with(LocalDensity.current) { 4.dp.toPx() }
     val gapPx = with(LocalDensity.current) { 10.dp.toPx() }
-    
-    val infiniteTransition = rememberInfiniteTransition(label = "ringPulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
+
+    // Ring pulse — disabled when reduce-motion is on (#401).
+    val pulseAlpha by if (isReduceMotionEnabled()) {
+        remember { mutableStateOf(0.5f) }
+    } else {
+        val infiniteTransition = rememberInfiniteTransition(label = "ringPulse")
+        infiniteTransition.animateFloat(
+            initialValue = 0.3f,
+            targetValue = 0.7f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1800, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulseAlpha"
+        )
+    }
 
     Canvas(modifier = modifier) {
         val diameter = size.minDimension
