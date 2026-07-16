@@ -25,7 +25,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
+import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
+import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -138,9 +139,10 @@ fun FocusScreen(
         }
     }
 
-    // Breathing scale for emoji when running
-    val infiniteTransition = rememberInfiniteTransition(label = "breathe")
-    val breatheScale by if (uiState.isRunning) {
+    // Breathing scale for emoji when running — disabled when reduce-motion is on (#401).
+    val reduceMotion = isReduceMotionEnabled()
+    val breatheScale by if (uiState.isRunning && !reduceMotion) {
+        val infiniteTransition = rememberInfiniteTransition(label = "breathe")
         infiniteTransition.animateFloat(
             initialValue = 1f,
             targetValue = 1.06f,
@@ -309,7 +311,7 @@ fun FocusScreen(
                         .background(
                             Brush.radialGradient(
                                 colors = listOf(
-                                    animatedAccentColor.copy(alpha = if (isSystemInDarkTheme()) 0.04f else 0.07f),
+                                    animatedAccentColor.copy(alpha = if (isAppInDarkTheme()) 0.04f else 0.07f),
                                     Color.Transparent
                                 )
                             )
@@ -465,7 +467,7 @@ fun FocusScreen(
                     shape = RoundedCornerShape(buttonCornerRadius),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = animatedAccentColor,
-                        contentColor = Color.White,
+                        contentColor = modeColors.onAccentColor,
                     ),
                     contentPadding = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) {
                         ButtonDefaults.ContentPadding
@@ -529,7 +531,7 @@ fun FocusScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.SkipNext,
-                            contentDescription = "Skip to next phase",
+                            contentDescription = stringResource(R.string.cd_skip_phase),
                             modifier = Modifier.size(28.dp),
                         )
                     }
@@ -568,12 +570,18 @@ fun FocusScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .semantics {
+                            contentDescription = context.getString(R.string.cd_volume_control)
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
                         text = "\uD83D\uDD08",
                         style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.semantics {
+                            contentDescription = context.getString(R.string.cd_volume_low)
+                        },
                     )
                     Slider(
                         value = uiState.soundscapeVolume,
@@ -589,6 +597,9 @@ fun FocusScreen(
                     Text(
                         text = "\uD83D\uDD0A",
                         style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.semantics {
+                            contentDescription = context.getString(R.string.cd_volume_high)
+                        },
                     )
                 }
             }
@@ -701,7 +712,7 @@ private fun CompactFocusChip(
     modifier: Modifier = Modifier,
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = null,
-    minHeight: Dp = 40.dp,
+    minHeight: Dp = 48.dp,
 ) {
     Row(
         modifier = modifier
@@ -754,8 +765,11 @@ private fun CycleProgressPips(
     val activeColor = MaterialTheme.colorScheme.primary
     val dimColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
     val activeIndex = completed.coerceIn(0, total - 1)
+    val context = LocalContext.current
     Row(
-        modifier = modifier,
+        modifier = modifier.semantics {
+            contentDescription = context.getString(R.string.cd_cycle_progress, completed, total)
+        },
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

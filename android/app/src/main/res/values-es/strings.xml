@@ -331,6 +331,27 @@
     <string name="cd_toggle_password">Alternar visibilidad de contrase\u00f1a</string>
     <string name="cd_go_back">Volver</string>
     <string name="cd_close">Cerrar</string>
+    <string name="cd_back">Volver</string>
+    <string name="cd_skip_phase">Saltar a la siguiente fase</string>
+    <string name="cd_volume_control">Volumen del paisaje sonoro</string>
+    <string name="cd_volume_low">Volumen bajo</string>
+    <string name="cd_volume_high">Volumen alto</string>
+    <string name="cd_cycle_progress">Sesi\u00f3n %1$d de %2$d</string>
+    <string name="cd_pro_badge">Funci\u00f3n Pro</string>
+    <string name="cd_due_date">Fecha de vencimiento</string>
+    <string name="cd_scheduled_today">Programada para hoy</string>
+    <string name="cd_pomodoros">Pomodoros</string>
+    <string name="cd_subtasks">Subtareas</string>
+    <string name="cd_recurring">Recurrente</string>
+    <string name="cd_permission_status">Estado del permiso</string>
+    <string name="cd_permission_icon">Icono de permiso</string>
+    <string name="cd_granted">Concedido</string>
+    <string name="cd_action_required">Acci\u00f3n requerida</string>
+    <string name="cd_pro_feature">Funci\u00f3n Pro</string>
+    <string name="tier_name_pepinillo_plus">Pepinillo+</string>
+    <string name="support_email_subject">Soporte de Pepinillo</string>
+    <string name="settings_dynamic_color">Color din\u00e1mico</string>
+    <string name="settings_dynamic_color_sub">Usar colores de tu fondo de pantalla</string>
 
     <!-- Review Sheets -->
     <string name="review_weekly_title">Resumen Semanal</string>

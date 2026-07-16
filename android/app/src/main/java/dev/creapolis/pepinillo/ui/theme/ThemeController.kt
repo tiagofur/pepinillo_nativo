@@ -1,5 +1,10 @@
 package dev.creapolis.pepinillo.ui.theme
 
+import android.content.Context
+import android.provider.Settings
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,5 +62,41 @@ object ThemeController {
         _selectedTheme.value = themeId
         _dynamicColor.value = if (themeId == "materialYou") true else dynamic
         _isSeeded.value = true
+    }
+}
+
+/**
+ * Whether the app should use dark colors, respecting the user's explicit [ThemeMode] choice.
+ *
+ * Use this instead of `isSystemInDarkTheme()` everywhere except the single sanctioned call site
+ * in MainActivity that resolves `ThemeMode.System`. Leaf components that call `isSystemInDarkTheme()`
+ * directly ignore a user who explicitly picked Light or Dark (#397).
+ */
+@Composable
+fun isAppInDarkTheme(): Boolean {
+    return when (ThemeController.themeMode.value) {
+        ThemeMode.System -> isSystemInDarkTheme()
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+    }
+}
+
+/**
+ * Whether the user has enabled "Remove animations" / "Reduce motion" in system accessibility
+ * settings. When true, infinite animations (breathe, shimmer, ring pulse) should fall back to
+ * static visuals, and bouncy springs should use non-bouncy specs (#401).
+ */
+@Composable
+fun isReduceMotionEnabled(): Boolean {
+    val context = LocalContext.current
+    return try {
+        val scale = Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f,
+        )
+        scale == 0f
+    } catch (_: Exception) {
+        false
     }
 }

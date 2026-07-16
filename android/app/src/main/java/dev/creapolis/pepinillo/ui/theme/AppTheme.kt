@@ -13,13 +13,17 @@ data class AppTheme(
     val isFree: Boolean,
 ) {
     companion object {
+        // Classic: fixed brand palette — the original Pepinillo colors. Distinct from
+        // MaterialYou which delegates accent colors to the system wallpaper on Android 12+.
+        // Previously Classic and MaterialYou had byte-identical colors, making the two
+        // themes visually indistinguishable (#405).
         val Classic = AppTheme(
             id = "classic",
-            pomodoroColor = Color(0xFFE84D3D),
-            flowtimeColor = Color(0xFF3385EB),
-            timeBlockColor = Color(0xFF8F45DD),
-            stopwatchColor = Color(0xFF2DB870),
-            streakColor = Color(0xFFFF991A),
+            pomodoroColor = Color(0xFFD94236),
+            flowtimeColor = Color(0xFF2575D6),
+            timeBlockColor = Color(0xFF7B3DCC),
+            stopwatchColor = Color(0xFF239E5E),
+            streakColor = Color(0xFFE68A12),
             isFree = true,
         )
 

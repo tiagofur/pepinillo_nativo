@@ -115,7 +115,7 @@ fun AppSetupScreen(
                     } else {
                         Icons.Rounded.Security
                     },
-                    contentDescription = "Permission status",
+                    contentDescription = stringResource(R.string.cd_permission_status),
                     modifier = Modifier.size(40.dp),
                     tint = if (uiState.allConfigured) {
                         MaterialTheme.colorScheme.primary
@@ -290,7 +290,7 @@ private fun PermissionItemRow(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = "Permission icon",
+            contentDescription = stringResource(R.string.cd_permission_icon),
             modifier = Modifier
                 .padding(top = 2.dp)
                 .size(24.dp),
@@ -365,7 +365,7 @@ private fun StatusBadge(
             if (isGranted) {
                 Icon(
                     imageVector = Icons.Rounded.CheckCircle,
-                    contentDescription = "Granted",
+                    contentDescription = stringResource(R.string.cd_granted),
                     modifier = Modifier.size(14.dp),
                     tint = textColor,
                 )

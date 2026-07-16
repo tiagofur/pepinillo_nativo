@@ -208,8 +208,8 @@ fun RegisterScreen(
             enabled = !uiState.googleSignInLoading && !uiState.isLoading,
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.White,
-                contentColor = Color(0xFF1F1F1F),
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ),
         ) {
             if (uiState.googleSignInLoading) {

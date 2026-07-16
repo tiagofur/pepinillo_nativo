@@ -26,11 +26,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 
 @Composable
 fun shimmerBrush(): Brush {
+    val colorLow = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+    val colorHigh = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+
+    // When reduce-motion is enabled, return a static gradient instead of animating (#401).
+    if (isReduceMotionEnabled()) {
+        return SolidColor(colorHigh)
+    }
+
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim by transition.animateFloat(
         initialValue = 0f,
@@ -41,9 +51,6 @@ fun shimmerBrush(): Brush {
         ),
         label = "shimmerTranslate",
     )
-
-    val colorLow = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-    val colorHigh = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
 
     return Brush.linearGradient(
         colors = listOf(colorLow, colorHigh, colorLow),

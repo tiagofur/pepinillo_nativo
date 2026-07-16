@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -192,7 +193,7 @@ fun SettingsScreen(
                     if (hasPermissionIssues) {
                         Icon(
                             imageVector = Icons.Rounded.Warning,
-                            contentDescription = "Action required",
+                            contentDescription = stringResource(R.string.cd_action_required),
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.error,
                         )
@@ -508,6 +509,18 @@ fun SettingsScreen(
             }
 
             SettingsDivider()
+
+            // Dynamic color toggle (Material You) — exposes the existing VM capability
+            // that was previously hidden. Only relevant on Android 12+ (#405).
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                SwitchRow(
+                    label = stringResource(R.string.settings_dynamic_color),
+                    subtitle = stringResource(R.string.settings_dynamic_color_sub),
+                    isChecked = uiState.dynamicColor,
+                    onToggle = { viewModel.toggleDynamicColor() },
+                )
+                SettingsDivider()
+            }
 
             // Light/Dark/System selector
             Column(modifier = Modifier.padding(vertical = 12.dp)) {
@@ -941,6 +954,7 @@ private fun OptionPill(
             .clip(RoundedCornerShape(20.dp))
             .background(bgColor)
             .clickable(onClick = onClick)
+            .heightIn(min = 48.dp)
             .padding(horizontal = 20.dp, vertical = 10.dp),
     )
 }
@@ -1004,7 +1018,7 @@ private fun ThemeCard(
             Spacer(modifier = Modifier.height(4.dp))
             Icon(
                 imageVector = Icons.Rounded.Lock,
-                contentDescription = "Pro feature",
+                contentDescription = stringResource(R.string.cd_pro_feature),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 modifier = Modifier.size(14.dp),
             )

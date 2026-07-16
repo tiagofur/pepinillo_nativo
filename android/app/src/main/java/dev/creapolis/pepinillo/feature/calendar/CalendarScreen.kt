@@ -25,8 +25,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBackIosNew
-import androidx.compose.material.icons.rounded.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material.icons.rounded.Nightlight
@@ -87,7 +87,7 @@ fun CalendarScreen(
         // ── BACK + TITLE ──
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = stringResource(R.string.cd_go_back), modifier = Modifier.size(20.dp))
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.cd_go_back), modifier = Modifier.size(20.dp))
             }
             Text(
                 text = stringResource(R.string.calendar_title),
@@ -105,7 +105,7 @@ fun CalendarScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { viewModel.previousMonth() }) {
-                Icon(Icons.Rounded.ArrowBackIosNew, contentDescription = stringResource(R.string.calendar_prev_month), modifier = Modifier.size(18.dp))
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.calendar_prev_month), modifier = Modifier.size(18.dp))
             }
             Text(
                 text = monthFormat.format(displayedMonth.time),
@@ -113,7 +113,7 @@ fun CalendarScreen(
                 fontWeight = FontWeight.Bold,
             )
             IconButton(onClick = { viewModel.nextMonth() }) {
-                Icon(Icons.Rounded.ArrowForwardIos, contentDescription = stringResource(R.string.calendar_next_month), modifier = Modifier.size(18.dp))
+                Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = stringResource(R.string.calendar_next_month), modifier = Modifier.size(18.dp))
             }
         }
 

@@ -331,6 +331,27 @@
     <string name="cd_toggle_password">Toggle password visibility</string>
     <string name="cd_go_back">Go back</string>
     <string name="cd_close">Close</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_skip_phase">Skip to next phase</string>
+    <string name="cd_volume_control">Soundscape volume</string>
+    <string name="cd_volume_low">Low volume</string>
+    <string name="cd_volume_high">High volume</string>
+    <string name="cd_cycle_progress">Session %1$d of %2$d</string>
+    <string name="cd_pro_badge">Pro feature</string>
+    <string name="cd_due_date">Due date</string>
+    <string name="cd_scheduled_today">Scheduled for today</string>
+    <string name="cd_pomodoros">Pomodoros</string>
+    <string name="cd_subtasks">Subtasks</string>
+    <string name="cd_recurring">Recurring</string>
+    <string name="cd_permission_status">Permission status</string>
+    <string name="cd_permission_icon">Permission icon</string>
+    <string name="cd_granted">Granted</string>
+    <string name="cd_action_required">Action required</string>
+    <string name="cd_pro_feature">Pro feature</string>
+    <string name="tier_name_pepinillo_plus">Pepinillo+</string>
+    <string name="support_email_subject">Pepinillo Support</string>
+    <string name="settings_dynamic_color">Dynamic color</string>
+    <string name="settings_dynamic_color_sub">Use colors from your wallpaper</string>
 
     <!-- Paywall -->
     <string name="paywall_title">Elevate Your Focus</string>

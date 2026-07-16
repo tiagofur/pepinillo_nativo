@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -64,11 +65,13 @@ fun TaskAnalyticsScreen(
                 title = { Text(stringResource(R.string.task_analytics_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
             )
         },
+        // Avoid double status-bar insets — the root Scaffold already consumes systemBars (#403).
+        contentWindowInsets = WindowInsets(0),
     ) { innerPadding ->
         if (uiState.isLoading) {
             Box(
