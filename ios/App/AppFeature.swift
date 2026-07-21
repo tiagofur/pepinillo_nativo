@@ -471,16 +471,34 @@ struct AppFeature {
                                 group.cancelAll()
                                 return result
                             }
-                            let dto = CachedUserDTO(
-                                id: apiUser.id, email: apiUser.email, name: apiUser.name,
-                                imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
-                                subscriptionTier: apiUser.subscriptionTier,
-                                subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
-                                emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
-                                createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
-                            )
-                            try? await persistence.saveCachedUser(dto)
-                            await send(.cachedUserLoaded(dto))
+                             let prefs = try? await persistence.fetchPreferences()
+                             let cachedUser = try? await persistence.fetchCachedUser()
+                             let localName = prefs?.displayName ?? cachedUser?.name
+
+                             let resolvedName: String
+                             if !apiUser.name.isEmpty && apiUser.name != "Apple User" {
+                                 resolvedName = apiUser.name
+                             } else if let name = localName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty, name != "Apple User" {
+                                 resolvedName = name
+                             } else if let prefix = apiUser.email.components(separatedBy: "@").first, !prefix.isEmpty {
+                                 resolvedName = String(prefix)
+                             } else {
+                                 resolvedName = "Apple User"
+                             }
+
+                             let dto = CachedUserDTO(
+                                 id: apiUser.id, email: apiUser.email, name: resolvedName,
+                                 imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
+                                 subscriptionTier: apiUser.subscriptionTier,
+                                 subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
+                                 emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
+                                 createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
+                             )
+                             try? await persistence.saveCachedUser(dto)
+                             if apiUser.name == "Apple User" && resolvedName != "Apple User" {
+                                 _ = try? await apiClient.updateMe(UpdateProfileRequest(name: resolvedName, imageUrl: nil, birthDate: nil))
+                             }
+                             await send(.cachedUserLoaded(dto))
                         } catch let error as APIClientError {
                             // Definitive session expiry (refresh rejected 401/403) — the
                             // APIClient already cleared keychain tokens as a silent side
@@ -745,9 +763,18 @@ struct AppFeature {
                 if let user {
                     let normalizedName = user.name.trimmingCharacters(in: .whitespacesAndNewlines)
                     let normalizedEmail = user.email.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !normalizedName.isEmpty {
-                        state.displayName = normalizedName
+                    let currentDisplayName = state.displayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let finalName: String
+                    if !normalizedName.isEmpty && normalizedName != "Apple User" {
+                        finalName = normalizedName
+                    } else if let currentDisplayName, !currentDisplayName.isEmpty, currentDisplayName != "Apple User" {
+                        finalName = currentDisplayName
+                    } else if let prefix = (normalizedEmail.isEmpty ? (state.userEmail ?? "") : normalizedEmail).components(separatedBy: "@").first, !prefix.isEmpty {
+                        finalName = String(prefix)
+                    } else {
+                        finalName = "Apple User"
                     }
+                    state.displayName = finalName
                     if !normalizedEmail.isEmpty {
                         state.userEmail = normalizedEmail
                     }
