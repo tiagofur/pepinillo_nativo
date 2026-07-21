@@ -44,10 +44,20 @@ public struct DeleteAccountRequest: Codable, Sendable, Equatable {
 public struct AppleLoginRequest: Codable, Sendable, Equatable {
     public let idToken: String
     public let nonce: String
+    /// User's full name as provided by Apple on first authorization.
+    /// Only non-nil the very first time the user grants permission; nil on all
+    /// subsequent sign-ins. The backend uses this to persist the real name since
+    /// Apple never includes it inside the JWT identity token.
+    public let name: String?
+    /// User's email as provided by Apple on first authorization.
+    /// Like `name`, this is only populated the first time Apple authorizes the app.
+    public let email: String?
 
-    public init(idToken: String, nonce: String) {
+    public init(idToken: String, nonce: String, name: String? = nil, email: String? = nil) {
         self.idToken = idToken
         self.nonce = nonce
+        self.name = name
+        self.email = email
     }
 }
 
@@ -80,13 +90,11 @@ public struct UpdateProfileRequest: Codable, Sendable, Equatable {
     public let name: String?
     public let email: String?
     public let imageUrl: String?
-    public let birthDate: String?
 
-    public init(name: String? = nil, email: String? = nil, imageUrl: String? = nil, birthDate: String? = nil) {
+    public init(name: String? = nil, email: String? = nil, imageUrl: String? = nil) {
         self.name = name
         self.email = email
         self.imageUrl = imageUrl
-        self.birthDate = birthDate
     }
 }
 
@@ -97,7 +105,6 @@ public struct APIUser: Codable, Sendable, Equatable {
     public let email: String
     public let name: String
     public let imageUrl: String?
-    public let birthDate: String?
     public let subscriptionTier: String
     public let subscriptionExpiresAt: String?
     public let emailVerified: Bool

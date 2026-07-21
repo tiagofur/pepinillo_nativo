@@ -133,7 +133,6 @@ struct AppFeature {
                 email: resolvedEmail,
                 name: resolvedName,
                 imageUrl: cachedUser?.imageUrl,
-                birthDate: cachedUser?.birthDate,
                 subscriptionTier: normalized(cachedUser?.subscriptionTier) ?? subscriptionState.capabilities.tierIdentifier,
                 subscriptionExpiresAt: cachedUser?.subscriptionExpiresAt,
                 // Never infer verification from a restored email string (#199).
@@ -488,15 +487,20 @@ struct AppFeature {
 
                              let dto = CachedUserDTO(
                                  id: apiUser.id, email: apiUser.email, name: resolvedName,
-                                 imageUrl: apiUser.imageUrl, birthDate: apiUser.birthDate,
+                                 imageUrl: apiUser.imageUrl,
                                  subscriptionTier: apiUser.subscriptionTier,
                                  subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
                                  emailVerified: apiUser.emailVerified, appleId: apiUser.appleId,
                                  createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
                              )
                              try? await persistence.saveCachedUser(dto)
-                             if apiUser.name == "Apple User" && resolvedName != "Apple User" {
-                                 _ = try? await apiClient.updateMe(UpdateProfileRequest(name: resolvedName, imageUrl: nil, birthDate: nil))
+                             // Retroactive fix: sync the locally-resolved name when the server
+                             // still holds an empty string or "Apple User" (accounts created
+                             // before the name-forwarding fix was deployed).
+                             let serverNameBlank = apiUser.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                 || apiUser.name == "Apple User"
+                             if serverNameBlank && resolvedName != "Apple User" {
+                                 _ = try? await apiClient.updateMe(UpdateProfileRequest(name: resolvedName, imageUrl: nil))
                              }
                              await send(.cachedUserLoaded(dto))
                         } catch let error as APIClientError {
@@ -946,7 +950,21 @@ struct AppFeature {
                         }
                         return .run { [apiClient, keychain, persistence, resolvedName] send in
                             do {
-                                let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken, nonce: nonce))
+                                // Forward the name and email captured by the Apple credential
+                                // on first authorization. Apple never includes these in the
+                                // JWT identity token, so the backend cannot obtain them otherwise.
+                                let appleProvidedName = info.displayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+                                let nameToSend = (appleProvidedName?.isEmpty == false && appleProvidedName != "Apple User")
+                                    ? appleProvidedName
+                                    : (resolvedName != "Apple User" ? resolvedName : nil)
+                                let response = try await apiClient.loginWithApple(
+                                    AppleLoginRequest(
+                                        idToken: idToken,
+                                        nonce: nonce,
+                                        name: nameToSend,
+                                        email: info.email
+                                    )
+                                )
                                 try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
 
                                 let responseName = response.user.name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -965,7 +983,7 @@ struct AppFeature {
 
                                 let dto = CachedUserDTO(
                                     id: response.user.id, email: finalEmail, name: finalName,
-                                    imageUrl: response.user.imageUrl, birthDate: response.user.birthDate,
+                                    imageUrl: response.user.imageUrl,
                                     subscriptionTier: response.user.subscriptionTier,
                                     subscriptionExpiresAt: response.user.subscriptionExpiresAt,
                                     emailVerified: response.user.emailVerified, appleId: response.user.appleId,
@@ -973,9 +991,12 @@ struct AppFeature {
                                 )
                                 try? await persistence.saveCachedUser(dto)
 
-                                // Sync resolved name to backend if backend defaulted to "Apple User"
-                                if response.user.name == "Apple User" && finalName != "Apple User" {
-                                    _ = try? await apiClient.updateMe(UpdateProfileRequest(name: finalName, imageUrl: nil, birthDate: nil))
+                                // Sync resolved name to backend when the backend name is still
+                                // empty or the "Apple User" fallback (handles existing accounts
+                                // created before this fix shipped).
+                                let serverNameBlank = responseName.isEmpty || responseName == "Apple User"
+                                if serverNameBlank && finalName != "Apple User" {
+                                    _ = try? await apiClient.updateMe(UpdateProfileRequest(name: finalName, imageUrl: nil))
                                 }
 
                                 await send(.cachedUserLoaded(dto))

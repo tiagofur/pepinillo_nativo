@@ -19,6 +19,11 @@ type googleLoginRequest struct {
 type appleLoginRequest struct {
 	IDToken string `json:"idToken"`
 	Nonce   string `json:"nonce"`
+	// Name and Email are captured client-side on the very first Apple authorization
+	// and forwarded here because Apple never includes them in the JWT identity token.
+	// Optional — may be empty on subsequent sign-ins.
+	Name  string `json:"name"`
+	Email string `json:"email"`
 }
 
 type linkAccountRequest struct {
@@ -92,7 +97,7 @@ func (h *OAuthHandler) LoginWithApple(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "missing_required_fields")
 	}
 
-	user, tokens, err := h.oauth.LoginWithApple(c.Context(), req.IDToken, req.Nonce)
+	user, tokens, err := h.oauth.LoginWithApple(c.Context(), req.IDToken, req.Nonce, req.Name, req.Email)
 	if err != nil {
 		return mapOAuthError(err)
 	}
