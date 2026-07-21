@@ -45,6 +45,7 @@ struct ProfileFeature {
         case delegate(Delegate)
         enum Delegate: Equatable {
             case signedOut
+            case profileUpdated(CachedUserDTO)
         }
     }
 
@@ -157,7 +158,7 @@ struct ProfileFeature {
             case .editProfile(.presented(.delegate(.profileUpdated(let user)))):
                 state.user = user
                 state.editProfile = nil
-                return .none
+                return .send(.delegate(.profileUpdated(user)))
 
             case .editProfile(.presented(.delegate(.dismissed))):
                 state.editProfile = nil

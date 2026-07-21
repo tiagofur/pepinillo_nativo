@@ -118,9 +118,9 @@ struct AppFeature {
             let resolvedEmail = cachedEmail ?? restoredEmail ?? ""
 
             let resolvedName: String
-            if let cachedName {
+            if let cachedName, cachedName != "Apple User" && !cachedName.isEmpty {
                 resolvedName = cachedName
-            } else if let restoredName {
+            } else if let restoredName, restoredName != "Apple User" && !restoredName.isEmpty {
                 resolvedName = restoredName
             } else if let emailPrefix = (cachedEmail ?? restoredEmail)?.split(separator: "@").first, !emailPrefix.isEmpty {
                 resolvedName = String(emailPrefix)
@@ -814,6 +814,18 @@ struct AppFeature {
             case .profile(.presented(.delegate(.signedOut))):
                 return performSignOutCleanup(&state, dismissProfile: true)
 
+            case .profile(.presented(.delegate(.profileUpdated(let user)))):
+                state.cachedUser = user
+                state.displayName = user.name
+                state.userEmail = user.email
+                return .run { [user, persistence] _ in
+                    var prefs = try await persistence.fetchPreferences()
+                    prefs.displayName = user.name
+                    prefs.userEmail = user.email
+                    try await persistence.savePreferences(prefs)
+                    try? await persistence.saveCachedUser(user)
+                }
+
             case .profile:
                 return .none
 
@@ -872,18 +884,29 @@ struct AppFeature {
                 state.appleUserID = info.userID
                 state.emailVerification = nil
                 state.signInWithAppleError = nil
-                // Apple only provides displayName on the very first sign-in ever.
-                let resolvedName = info.displayName
-                    ?? state.cachedUser?.name
-                    ?? state.displayName
-                    ?? info.email?.components(separatedBy: "@").first
+
+                let infoName = info.displayName?.trimmingCharacters(in: .whitespacesAndNewlines)
+                let resolvedName: String
+                if let infoName, !infoName.isEmpty, infoName != "Apple User" {
+                    resolvedName = infoName
+                } else if let cachedName = state.cachedUser?.name, !cachedName.isEmpty, cachedName != "Apple User" {
+                    resolvedName = cachedName
+                } else if let email = (info.email ?? state.userEmail), let prefix = email.components(separatedBy: "@").first, !prefix.isEmpty {
+                    resolvedName = String(prefix)
+                } else {
+                    resolvedName = "Apple User"
+                }
+
                 state.displayName = resolvedName
-                state.userEmail = info.email ?? state.userEmail
+                if let infoEmail = info.email, !infoEmail.isEmpty {
+                    state.userEmail = infoEmail
+                }
+
                 return .merge(
-                    .run { [info] _ in
+                    .run { [info, resolvedName] _ in
                         var prefs = try await persistence.fetchPreferences()
                         prefs.appleUserID = info.userID
-                        if let name = info.displayName { prefs.displayName = name }
+                        prefs.displayName = resolvedName
                         if let email = info.email { prefs.userEmail = email }
                         if let code = info.authorizationCode { prefs.appleAuthorizationCode = code }
                         try await persistence.savePreferences(prefs)
@@ -894,12 +917,27 @@ struct AppFeature {
                               !nonce.isEmpty else {
                             return .none
                         }
-                        return .run { [apiClient, keychain, persistence] send in
+                        return .run { [apiClient, keychain, persistence, resolvedName] send in
                             do {
                                 let response = try await apiClient.loginWithApple(AppleLoginRequest(idToken: idToken, nonce: nonce))
                                 try await keychain.saveTokens(response.tokens.accessToken, response.tokens.refreshToken)
+
+                                let responseName = response.user.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                                let finalName: String
+                                if !responseName.isEmpty && responseName != "Apple User" {
+                                    finalName = responseName
+                                } else if resolvedName != "Apple User" {
+                                    finalName = resolvedName
+                                } else if let prefix = response.user.email.components(separatedBy: "@").first, !prefix.isEmpty {
+                                    finalName = String(prefix)
+                                } else {
+                                    finalName = "Apple User"
+                                }
+
+                                let finalEmail = !response.user.email.isEmpty ? response.user.email : (info.email ?? "")
+
                                 let dto = CachedUserDTO(
-                                    id: response.user.id, email: response.user.email, name: response.user.name,
+                                    id: response.user.id, email: finalEmail, name: finalName,
                                     imageUrl: response.user.imageUrl, birthDate: response.user.birthDate,
                                     subscriptionTier: response.user.subscriptionTier,
                                     subscriptionExpiresAt: response.user.subscriptionExpiresAt,
@@ -907,8 +945,12 @@ struct AppFeature {
                                     createdAt: response.user.createdAt, updatedAt: response.user.updatedAt
                                 )
                                 try? await persistence.saveCachedUser(dto)
-                                // cachedUserLoaded → linkSubscriptionIdentity sequentially applies
-                                // logIn SubscriptionState and soft-sync (no parallel race) (#217).
+
+                                // Sync resolved name to backend if backend defaulted to "Apple User"
+                                if response.user.name == "Apple User" && finalName != "Apple User" {
+                                    _ = try? await apiClient.updateMe(UpdateProfileRequest(name: finalName, imageUrl: nil, birthDate: nil))
+                                }
+
                                 await send(.cachedUserLoaded(dto))
                             } catch {
                                 // Backend auth failed — keep local Apple identity; getMe may recover later.
