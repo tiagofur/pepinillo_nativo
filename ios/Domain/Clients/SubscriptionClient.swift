@@ -115,7 +115,7 @@ struct SubscriptionClient: Sendable {
     var logOut: @Sendable () async -> Void = { }
 
     /// Whether RevenueCat finished configuration (false when API key missing).
-    var isPurchasesAvailable: @Sendable () async -> Bool = { true }
+    var isPurchasesAvailable: @Sendable () async -> Bool = { false }
 }
 
 // MARK: - Dependency Keys
@@ -216,7 +216,8 @@ private actor SubscriptionManager {
         do {
             let offerings = try await Purchases.shared.offerings()
             guard let offering = offerings.current else {
-                return PepinilloProduct.currentProducts.map(\.mockProductInfo)
+                subscriptionLogger.warning("No current RevenueCat offering found — returning empty products list")
+                return []
             }
 
             var productInfos: [ProductInfo] = []
@@ -234,12 +235,18 @@ private actor SubscriptionManager {
                 }
             }
 
-            return productInfos.isEmpty ? PepinilloProduct.currentProducts.map(\.mockProductInfo) : productInfos.sorted { a, b in
+            if productInfos.isEmpty {
+                subscriptionLogger.warning("No matching packages found in current offering — returning empty products list")
+                return []
+            }
+
+            return productInfos.sorted { a, b in
                 let order = ["month": 0, "year": 1, "once": 2]
                 return (order[a.billingPeriod] ?? 0) < (order[b.billingPeriod] ?? 0)
             }
         } catch {
-            return PepinilloProduct.currentProducts.map(\.mockProductInfo)
+            subscriptionLogger.error("Failed to fetch offerings from RevenueCat: \(error.localizedDescription)")
+            return []
         }
     }
 

@@ -275,16 +275,55 @@ struct PaywallProductCardsSection: View {
                     .foregroundStyle(.secondary)
             }
 
-            ForEach(store.products) { product in
-                PaywallProductCard(
-                    product: product,
-                    isSelected: store.selectedProductID == product.id,
-                    glassNamespace: glassNamespace
-                ) {
-                    store.send(.productSelected(product.id))
+            if store.products.isEmpty && !store.isLoading {
+                PaywallProductsErrorCard {
+                    store.send(.appeared)
+                }
+            } else {
+                ForEach(store.products) { product in
+                    PaywallProductCard(
+                        product: product,
+                        isSelected: store.selectedProductID == product.id,
+                        glassNamespace: glassNamespace
+                    ) {
+                        store.send(.productSelected(product.id))
+                    }
                 }
             }
         }
+    }
+}
+
+struct PaywallProductsErrorCard: View {
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "wifi.exclamationmark")
+                .font(.largeTitle)
+                .foregroundStyle(.secondary)
+
+            VStack(spacing: 4) {
+                Text(String(localized: "Unable to load subscription plans"))
+                    .font(.headline)
+                Text(String(localized: "Please check your internet connection and try again."))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button(action: onRetry) {
+                Label(String(localized: "Try Again"), systemImage: "arrow.clockwise")
+                    .font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.accentColor)
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity)
+        .pepinilloGlass(cornerRadius: GlassCornerRadius.card)
     }
 }
 
