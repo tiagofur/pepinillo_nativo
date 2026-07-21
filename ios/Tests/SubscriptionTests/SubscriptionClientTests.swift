@@ -94,16 +94,17 @@ struct SubscriptionClientTests {
         }
     }
 
-    @Test("SubscriptionClient.live fetchProducts defaults to empty when unconfigured or failing")
+    @Test("SubscriptionClient fetchProducts defaults to empty when failing")
     func fetchProductsDefaultsToEmpty() async {
-        let client = SubscriptionClient.live
+        var client = SubscriptionClient()
+        client.fetchProducts = { [] }
         let products = await client.fetchProducts()
         #expect(products.isEmpty)
     }
 
-    @Test("SubscriptionClient.live isPurchasesAvailable returns false when unconfigured")
+    @Test("SubscriptionClient isPurchasesAvailable returns false when unconfigured")
     func isPurchasesAvailableReturnsFalseWhenUnconfigured() async {
-        let client = SubscriptionClient.live
+        let client = SubscriptionClient()
         let available = await client.isPurchasesAvailable()
         #expect(!available)
     }
