@@ -100,15 +100,14 @@ func RegisterAPIRoutes(api fiber.Router, deps RouteHandlers) {
 	protected.Delete("/auth/unlink/apple", deps.OAuth.UnlinkAppleAccount)
 	protected.Get("/auth/providers", deps.OAuth.GetLinkedProviders)
 
-	// Profile read: no email gate (needed to check emailVerified status after login)
-	protected.Get("/users/me", deps.Users.Me)
+	// Profile read & update: no email gate (needed to check emailVerified status and update profile after login)
+	usersMe := protected.Group("/users")
+	usersMe.Get("/me", deps.Users.Me)
+	usersMe.Put("/me", deps.Users.UpdateMe)
+	usersMe.Post("/me/image", deps.Users.UploadImage)
 
 	// All data-access routes require email verification.
 	verified := protected.Group("", middleware.RequireEmailVerified())
-
-	verifiedUsers := verified.Group("/users")
-	verifiedUsers.Put("/me", deps.Users.UpdateMe)
-	verifiedUsers.Post("/me/image", deps.Users.UploadImage)
 
 	tasks := verified.Group("/tasks")
 	tasks.Get("/", deps.Tasks.List)

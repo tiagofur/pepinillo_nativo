@@ -203,6 +203,12 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 	}
 
 	if user != nil {
+		if !user.EmailVerified {
+			user.EmailVerified = true
+			now := time.Now().UTC()
+			user.EmailVerifiedAt = &now
+			_ = s.users.Update(ctx, user)
+		}
 		tokens, err := s.generateTokens(user)
 		if err != nil {
 			return nil, nil, err
