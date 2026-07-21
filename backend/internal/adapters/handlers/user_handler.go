@@ -4,7 +4,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"time"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -17,10 +16,9 @@ type UserHandler struct {
 }
 
 type updateProfileRequest struct {
-	Name      string `json:"name"`
-	Email     string `json:"email"`
-	ImageURL  string `json:"imageUrl"`
-	BirthDate string `json:"birthDate"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	ImageURL string `json:"imageUrl"`
 }
 
 func NewUserHandler(users ports.UserRepository, storage ports.FileStorage) *UserHandler {
@@ -68,13 +66,6 @@ func (h *UserHandler) UpdateMe(c *fiber.Ctx) error {
 	}
 	if req.ImageURL != "" {
 		user.ImageURL = &req.ImageURL
-	}
-	if req.BirthDate != "" {
-		parsed, err := time.Parse(time.RFC3339, req.BirthDate)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, "invalid_birth_date")
-		}
-		user.BirthDate = &parsed
 	}
 
 	if err := h.users.Update(c.Context(), user); err != nil {

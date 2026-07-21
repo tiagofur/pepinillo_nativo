@@ -354,7 +354,6 @@ enum LocalToCloudStoreMigrator {
         copy.email = sourceUser.email
         copy.name = sourceUser.name
         copy.imageUrl = sourceUser.imageUrl
-        copy.birthDate = sourceUser.birthDate
         copy.subscriptionTier = sourceUser.subscriptionTier
         copy.subscriptionExpiresAt = sourceUser.subscriptionExpiresAt
         copy.emailVerified = sourceUser.emailVerified

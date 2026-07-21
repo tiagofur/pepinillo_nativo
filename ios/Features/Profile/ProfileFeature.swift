@@ -124,7 +124,6 @@ struct ProfileFeature {
                     email: apiUser.email,
                     name: apiUser.name,
                     imageUrl: apiUser.imageUrl,
-                    birthDate: apiUser.birthDate,
                     subscriptionTier: apiUser.subscriptionTier,
                     subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
                     emailVerified: apiUser.emailVerified,
@@ -149,19 +148,17 @@ struct ProfileFeature {
                 editState.name = user?.name ?? ""
                 editState.email = user?.email ?? ""
                 editState.imageUrl = user?.imageUrl
-                if let bd = user?.birthDate, !bd.isEmpty {
-                    editState.birthDate = ISO8601DateFormatter().date(from: bd)
-                }
                 state.editProfile = editState
                 return .none
 
             case .editProfile(.presented(.delegate(.profileUpdated(let user)))):
                 state.user = user
-                state.editProfile = nil
+                // Do NOT set editProfile = nil here — the ifLet child reducer must run
+                // first. Dismissal is handled by the child via @Dependency(\.dismiss).
                 return .send(.delegate(.profileUpdated(user)))
 
             case .editProfile(.presented(.delegate(.dismissed))):
-                state.editProfile = nil
+                // Do NOT set editProfile = nil here — same reason as above.
                 return .none
 
             case .editProfile:

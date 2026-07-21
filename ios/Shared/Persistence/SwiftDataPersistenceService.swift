@@ -589,7 +589,6 @@ public final class SwiftDataPersistenceService {
         user.email = dto.email
         user.name = dto.name
         user.imageUrl = dto.imageUrl
-        user.birthDate = dto.birthDate
         user.subscriptionTier = dto.subscriptionTier
         user.subscriptionExpiresAt = dto.subscriptionExpiresAt
         user.emailVerified = dto.emailVerified
