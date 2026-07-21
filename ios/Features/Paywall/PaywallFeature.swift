@@ -88,7 +88,7 @@ struct PaywallFeature {
 
         /// Whether the primary purchase action should be enabled for the current selection.
         var isPurchaseEnabled: Bool {
-            !isLoading && PaywallEntitlementMapper.canPurchase(
+            !isLoading && !products.isEmpty && PaywallEntitlementMapper.canPurchase(
                 selectedProductID: selectedProductID,
                 current: subscriptionState
             )

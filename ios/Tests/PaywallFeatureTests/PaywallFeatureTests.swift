@@ -423,6 +423,42 @@ struct PaywallFeatureTests {
         #expect(store.state.subscriptionState == .everywherePlus)
     }
 
+    // MARK: - Offering Failure & Gating (#213)
+
+    @Test("Appeared offering failure returns empty array without mock products")
+    func testAppearedOfferingFailureReturnsEmpty() async {
+        let store = TestStore(initialState: PaywallFeature.State()) {
+            PaywallFeature()
+        } withDependencies: {
+            $0.subscriptionClient.fetchProducts = { [] }
+            $0.subscriptionClient.checkEntitlement = { .free }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.appeared) {
+            $0.isLoading = true
+        }
+
+        await store.receive(.productsLoaded([])) {
+            $0.isLoading = false
+            $0.products = []
+        }
+
+        #expect(store.state.products.isEmpty)
+        #expect(!store.state.isPurchaseEnabled)
+    }
+
+    @Test("Purchase button disabled when products list is empty")
+    func testPurchaseDisabledWhenProductsEmpty() async {
+        var state = PaywallFeature.State()
+        state.products = []
+        state.selectedProductID = "annual"
+        state.isLoading = false
+
+        #expect(!state.isPurchaseEnabled)
+    }
+
     // MARK: - Dismiss Alert
 
     @Test("Dismissing alert clears purchaseResult")
