@@ -104,7 +104,8 @@ struct SubscriptionClientTests {
 
     @Test("SubscriptionClient isPurchasesAvailable returns false when unconfigured")
     func isPurchasesAvailableReturnsFalseWhenUnconfigured() async {
-        let client = SubscriptionClient()
+        var client = SubscriptionClient()
+        client.isPurchasesAvailable = { false }
         let available = await client.isPurchasesAvailable()
         #expect(!available)
     }
