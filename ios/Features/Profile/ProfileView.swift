@@ -110,19 +110,8 @@ struct ProfileView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                if let birthDate = formattedBirthDate {
-                    Label(birthDate, systemImage: "calendar")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .accessibilityLabel("\(String(localized: "a11y.profile.birthdate.prefix", defaultValue: "Birth date")): \(birthDate)")
-                } else if store.user != nil {
-                    Label("Add your birth date manually in Edit Profile", systemImage: "calendar.badge.plus")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
                 if store.user?.appleId != nil {
-                    Text(String(localized: "profile.apple.disclaimer", defaultValue: "Apple only shares name and email during authorization. Birth date and photo are managed manually in Pepinillo."))
+                    Text(String(localized: "profile.apple.disclaimer", defaultValue: "Apple only shares name and email during authorization. Photo is managed manually in Pepinillo."))
                         .font(.caption2)
                         .foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -132,14 +121,6 @@ struct ProfileView: View {
             Spacer()
         }
         .accessibilityElement(children: .contain)
-    }
-
-    private var formattedBirthDate: String? {
-        guard let rawBirthDate = store.user?.birthDate, !rawBirthDate.isEmpty,
-              let date = ISO8601DateFormatter().date(from: rawBirthDate) else {
-            return nil
-        }
-        return date.formatted(date: .abbreviated, time: .omitted)
     }
 
     // MARK: - Stats Mini Row (for Form section)

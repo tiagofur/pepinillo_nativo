@@ -170,7 +170,6 @@ struct AuthFeature {
                     email: response.user.email,
                     name: response.user.name,
                     imageUrl: response.user.imageUrl,
-                    birthDate: response.user.birthDate,
                     subscriptionTier: response.user.subscriptionTier,
                     subscriptionExpiresAt: response.user.subscriptionExpiresAt,
                     emailVerified: response.user.emailVerified,

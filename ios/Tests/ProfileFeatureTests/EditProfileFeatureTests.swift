@@ -20,7 +20,6 @@ struct EditProfileFeatureTests {
         var state = EditProfileFeature.State()
         state.name = "Tiago"
         state.email = "tiago@example.com"
-        state.birthDate = ISO8601DateFormatter().date(from: "1990-05-20T00:00:00Z")
         state.originalUser = CachedUserDTO(
             id: "apple-user-123",
             email: "",
@@ -49,7 +48,6 @@ struct EditProfileFeatureTests {
         #expect(localUser.id == "apple-user-123")
         #expect(localUser.name == "Tiago")
         #expect(localUser.email == "tiago@example.com")
-        #expect(localUser.birthDate == "1990-05-20T00:00:00Z")
         #expect(localUser.appleId == "apple-user-123")
 
         await store.receive(.delegate(.profileUpdated(localUser)))

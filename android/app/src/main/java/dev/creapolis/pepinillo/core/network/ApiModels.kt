@@ -71,7 +71,6 @@ data class UserDto(
     val email: String,
     val name: String,
     val imageUrl: String? = null,
-    val birthDate: String? = null,
     val subscriptionTier: String = "free",
     val subscriptionExpiresAt: String? = null,
     val emailVerified: Boolean = false,
@@ -246,7 +245,6 @@ data class VerifyReceiptResponse(
 data class UpdateProfileRequest(
     val name: String? = null,
     val imageUrl: String? = null,
-    val birthDate: String? = null,
 )
 
 @Serializable

@@ -72,7 +72,6 @@ class UserRepository @Inject constructor(
         email = email,
         name = name,
         imageUrl = imageUrl,
-        birthDate = birthDate,
         subscriptionTier = subscriptionTier,
         subscriptionExpiresAt = subscriptionExpiresAt,
         emailVerified = emailVerified,

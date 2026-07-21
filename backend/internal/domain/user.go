@@ -8,7 +8,6 @@ type User struct {
 	Name                  string     `json:"name" gorm:"not null"`
 	PasswordHash          *string    `json:"-"`
 	ImageURL              *string    `json:"imageUrl"`
-	BirthDate             *time.Time `json:"birthDate"`
 	SubscriptionTier      string     `json:"subscriptionTier" gorm:"default:free;not null"`
 	SubscriptionExpiresAt *time.Time `json:"subscriptionExpiresAt"`
 	EmailVerified         bool       `json:"emailVerified" gorm:"default:false;not null"`

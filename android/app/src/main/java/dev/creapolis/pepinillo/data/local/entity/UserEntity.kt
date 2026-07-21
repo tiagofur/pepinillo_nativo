@@ -10,7 +10,6 @@ data class UserEntity(
     val email: String,
     val name: String,
     val imageUrl: String? = null,
-    val birthDate: String? = null,
     // Column defaults are intentionally NOT declared here. SQLite cannot ALTER column
     // defaults without a full table-rebuild, so `MIGRATION_8_9` is an empty-body
     // migration. Real v8 databases already carry these defaults from MIGRATION_5_6 /

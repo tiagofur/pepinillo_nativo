@@ -25,7 +25,7 @@ struct EditProfileView: View {
                 // Avatar
                 avatarSection
 
-                Text(String(localized: "editprofile.applesignin.explanation", defaultValue: "Apple decides whether to share your name and email during Sign in with Apple. Birth date and profile photo are managed manually in Pepinillo, and you can keep using a private relay email or replace it locally here."))
+                Text(String(localized: "editprofile.applesignin.explanation", defaultValue: "Apple decides whether to share your name and email during Sign in with Apple. Profile photo is managed manually in Pepinillo, and you can keep using a private relay email or replace it locally here."))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -37,10 +37,7 @@ struct EditProfileView: View {
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
-                    TextField(String(localized: "editprofile.name.placeholder", defaultValue: "Your name"), text: Binding(
-                        get: { store.name },
-                        set: { store.send(.nameChanged($0)) }
-                    ))
+                    TextField(String(localized: "editprofile.name.placeholder", defaultValue: "Your name"), text: $store.name)
                     .textFieldStyle(.roundedBorder)
                     .textContentType(.name)
                     .accessibilityLabel(String(localized: "editprofile.name.label", defaultValue: "Name"))
@@ -52,35 +49,13 @@ struct EditProfileView: View {
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                         .accessibilityHidden(true)
-                    TextField(String(localized: "auth.field.email", defaultValue: "Email"), text: Binding(
-                        get: { store.email },
-                        set: { store.send(.emailChanged($0)) }
-                    ))
+                    TextField(String(localized: "auth.field.email", defaultValue: "Email"), text: $store.email)
                     .textFieldStyle(.roundedBorder)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled(true)
                     .keyboardType(.emailAddress)
                     .textContentType(.emailAddress)
                     .accessibilityLabel(String(localized: "a11y.auth.field.email.label", defaultValue: "Email address"))
-                }
-
-                // Birth date
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"))
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .accessibilityHidden(true)
-                    DatePicker(
-                        String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"),
-                        selection: Binding(
-                            get: { store.birthDate ?? Date() },
-                            set: { store.send(.birthDateChanged($0)) }
-                        ),
-                        displayedComponents: .date
-                    )
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
-                    .accessibilityLabel(String(localized: "editprofile.birthdate.label", defaultValue: "Birth date"))
                 }
 
                 // Error

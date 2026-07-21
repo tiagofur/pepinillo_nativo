@@ -191,7 +191,33 @@ func (s *OAuthService) LoginWithGoogle(ctx context.Context, idToken string) (*do
 	return user, tokens, nil
 }
 
-func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string) (*domain.User, *AuthTokens, error) {
+// resolveAppleName picks the best available display name for an Apple Sign-In
+// user. Apple's JWT identity token never includes the user's name; the name is
+// only available in the ASAuthorizationAppleIDCredential on the client side and
+// only on the very first authorization. The client forwards it in the request
+// body as clientName. jwtName is kept for completeness but is always nil in
+// practice.
+func resolveAppleName(jwtInfo *appleTokenInfo, clientName string) string {
+	// 1. JWT name fields (always nil in Apple's implementation, kept for safety).
+	if jwtInfo.Name != nil {
+		n := strings.TrimSpace(fmt.Sprintf("%s %s", jwtInfo.Name.FirstName, jwtInfo.Name.LastName))
+		if n != "" {
+			return n
+		}
+	}
+	// 2. Name forwarded from the iOS credential (first-authorization only).
+	if n := strings.TrimSpace(clientName); n != "" {
+		return n
+	}
+	return ""
+}
+
+// LoginWithApple verifies an Apple ID token and either returns the existing
+// user, links the Apple account to an existing email account, or creates a new
+// user. clientName and clientEmail are the name/email captured client-side on
+// the user's first Apple authorization and forwarded in the request body,
+// because Apple never includes them in the JWT identity token.
+func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce, clientName, clientEmail string) (*domain.User, *AuthTokens, error) {
 	tokenInfo, err := s.verifyAppleToken(ctx, idToken, nonce)
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: %v", ErrInvalidOAuthToken, err)
@@ -203,6 +229,18 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 	}
 
 	if user != nil {
+		// Retroactive name fix: existing accounts created before the name-forwarding
+		// fix was deployed may have an empty Name. If the client provides a real name
+		// now, persist it so the user stops seeing "Apple User" on all their devices.
+		if strings.TrimSpace(user.Name) == "" {
+			if resolved := resolveAppleName(tokenInfo, clientName); resolved != "" {
+				user.Name = resolved
+				if user.AppleName == nil || strings.TrimSpace(*user.AppleName) == "" {
+					user.AppleName = &resolved
+				}
+				_ = s.users.Update(ctx, user)
+			}
+		}
 		if !user.EmailVerified {
 			user.EmailVerified = true
 			now := time.Now().UTC()
@@ -219,11 +257,16 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 		return user, tokens, nil
 	}
 
-	if strings.TrimSpace(tokenInfo.Email) == "" {
+	// Use email from JWT; fall back to the client-provided email (first auth only).
+	email := strings.TrimSpace(tokenInfo.Email)
+	if email == "" {
+		email = strings.TrimSpace(clientEmail)
+	}
+	if email == "" {
 		return nil, nil, ErrOAuthEmailMissing
 	}
 
-	existing, err := s.users.GetByEmail(ctx, tokenInfo.Email)
+	existing, err := s.users.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -232,12 +275,14 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 		if existing.AppleID != nil {
 			return nil, nil, ErrAccountAlreadyLinked
 		}
-		var name string
-		if tokenInfo.Name != nil {
-			name = fmt.Sprintf("%s %s", tokenInfo.Name.FirstName, tokenInfo.Name.LastName)
-		}
-		if err := s.users.LinkAppleAccount(ctx, existing.ID, tokenInfo.Sub, tokenInfo.Email, name); err != nil {
+		name := resolveAppleName(tokenInfo, clientName)
+		if err := s.users.LinkAppleAccount(ctx, existing.ID, tokenInfo.Sub, email, name); err != nil {
 			return nil, nil, err
+		}
+		// Persist the resolved name on the existing account if it was blank.
+		if strings.TrimSpace(existing.Name) == "" && name != "" {
+			existing.Name = name
+			_ = s.users.Update(ctx, existing)
 		}
 		tokens, err := s.generateTokens(existing)
 		if err != nil {
@@ -249,10 +294,7 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 		return existing, tokens, nil
 	}
 
-	var name string
-	if tokenInfo.Name != nil {
-		name = fmt.Sprintf("%s %s", tokenInfo.Name.FirstName, tokenInfo.Name.LastName)
-	}
+	name := resolveAppleName(tokenInfo, clientName)
 	emailVerified := parseAppleEmailVerified(tokenInfo.EmailVerified)
 	var emailVerifiedAt *time.Time
 	if emailVerified {
@@ -262,13 +304,13 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 
 	user = &domain.User{
 		ID:               uuid.NewString(),
-		Email:            tokenInfo.Email,
+		Email:            email,
 		Name:             name,
 		EmailVerified:    emailVerified,
 		EmailVerifiedAt:  emailVerifiedAt,
 		SubscriptionTier: "free",
 		AppleID:          &tokenInfo.Sub,
-		AppleEmail:       &tokenInfo.Email,
+		AppleEmail:       &email,
 		AppleName:        &name,
 	}
 
@@ -286,6 +328,7 @@ func (s *OAuthService) LoginWithApple(ctx context.Context, idToken, nonce string
 
 	return user, tokens, nil
 }
+
 
 func (s *OAuthService) LinkGoogleAccount(ctx context.Context, userID, idToken string) (*domain.User, error) {
 	tokenInfo, err := s.verifyGoogleToken(ctx, idToken)

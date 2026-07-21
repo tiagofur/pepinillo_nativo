@@ -547,7 +547,6 @@ enum SchemaV2: VersionedSchema {
         var email: String
         var name: String
         var imageUrl: String?
-        var birthDate: String?
         var subscriptionTier: String
         var subscriptionExpiresAt: String?
         var emailVerified: Bool
@@ -852,7 +851,6 @@ enum SchemaV3: VersionedSchema {
         var email: String
         var name: String
         var imageUrl: String?
-        var birthDate: String?
         var subscriptionTier: String
         var subscriptionExpiresAt: String?
         var emailVerified: Bool
@@ -1140,7 +1138,6 @@ enum SchemaV4: VersionedSchema {
         var email: String
         var name: String
         var imageUrl: String?
-        var birthDate: String?
         var subscriptionTier: String
         var subscriptionExpiresAt: String?
         var emailVerified: Bool

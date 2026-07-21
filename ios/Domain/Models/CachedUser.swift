@@ -13,7 +13,6 @@ public final class CachedUser {
     public var email: String
     public var name: String
     public var imageUrl: String?
-    public var birthDate: String?
     public var subscriptionTier: String
     public var subscriptionExpiresAt: String?
     public var emailVerified: Bool

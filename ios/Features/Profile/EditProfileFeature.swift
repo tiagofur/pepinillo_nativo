@@ -23,7 +23,6 @@ struct EditProfileFeature {
     struct State: Equatable {
         var name: String = ""
         var email: String = ""
-        var birthDate: Date? = nil
         var imageUrl: String? = nil
         var selectedImageData: Data? = nil
         var isLoading = false
@@ -34,10 +33,8 @@ struct EditProfileFeature {
 
     // MARK: - Action
 
-    enum Action: Equatable {
-        case nameChanged(String)
-        case emailChanged(String)
-        case birthDateChanged(Date?)
+    enum Action: BindableAction, Equatable {
+        case binding(BindingAction<State>)
         case photoSelected(Data)
         case removePhoto
         case saveTapped
@@ -59,25 +56,25 @@ struct EditProfileFeature {
     @Dependency(\.apiClient) var apiClient
     @Dependency(\.keychainClient) var keychain
     @Dependency(\.persistenceClient) var persistence
+    @Dependency(\.dismiss) var dismiss
 
     // MARK: - Reducer
 
     var body: some ReducerOf<Self> {
+        BindingReducer()
         Reduce { state, action in
             switch action {
-            case .nameChanged(let name):
-                state.name = name
+            case .binding(\.name):
                 state.errorMessage = nil
                 return .none
 
-            case .emailChanged(let email):
-                state.email = email
+            case .binding(\.email):
                 state.errorMessage = nil
                 return .none
 
-            case .birthDateChanged(let date):
-                state.birthDate = date
+            case .binding:
                 return .none
+
 
             case .photoSelected(let data):
                 state.selectedImageData = data
@@ -128,13 +125,10 @@ struct EditProfileFeature {
                 }
                 state.isLoading = true
                 state.errorMessage = nil
-                let birthDateStr: String? = state.birthDate.map {
-                    ISO8601DateFormatter().string(from: $0)
-                }
                 let originalUser = state.originalUser
                 let currentImageUrl = state.imageUrl
                 let selectedImageData = state.selectedImageData
-                return .run { [keychain, persistence] send in
+                return .run { [keychain, persistence, dismiss] send in
                     let imageReference = Self.resolvedImageReference(
                         currentImageUrl: currentImageUrl,
                         selectedImageData: selectedImageData
@@ -143,13 +137,13 @@ struct EditProfileFeature {
                         originalUser: originalUser,
                         name: trimmedName,
                         email: trimmedEmail,
-                        imageReference: imageReference,
-                        birthDate: birthDateStr
+                        imageReference: imageReference
                     )
                     try? await persistence.saveCachedUser(localDTO)
 
                     guard await keychain.hasTokens() else {
                         await send(.delegate(.profileUpdated(localDTO)))
+                        await dismiss()
                         return
                     }
 
@@ -157,21 +151,18 @@ struct EditProfileFeature {
                         let request = UpdateProfileRequest(
                             name: trimmedName,
                             email: trimmedEmail.isEmpty ? nil : trimmedEmail,
-                            imageUrl: imageReference?.hasPrefix("data:image") == true ? nil : imageReference,
-                            birthDate: birthDateStr
+                            imageUrl: imageReference?.hasPrefix("data:image") == true ? nil : imageReference
                         )
                         let user = try await apiClient.updateMe(request)
                         await send(.saveResponse(.success(user)))
                     } catch {
                         await send(.delegate(.profileUpdated(localDTO)))
+                        await dismiss()
                     }
                 }
 
             case .saveResponse(.success(let apiUser)):
                 state.isLoading = false
-                let birthDateStr: String? = state.birthDate.map {
-                    ISO8601DateFormatter().string(from: $0)
-                }
                 let trimmedName = state.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 let trimmedEmail = state.email.trimmingCharacters(in: .whitespacesAndNewlines)
                 let resolvedEmail = trimmedEmail.isEmpty ? apiUser.email : trimmedEmail
@@ -184,16 +175,16 @@ struct EditProfileFeature {
                     email: resolvedEmail,
                     name: trimmedName.isEmpty ? apiUser.name : trimmedName,
                     imageUrl: imageReference,
-                    birthDate: birthDateStr ?? apiUser.birthDate,
                     subscriptionTier: apiUser.subscriptionTier,
                     subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
                     emailVerified: resolvedEmail == apiUser.email ? apiUser.emailVerified : false,
                     appleId: apiUser.appleId,
                     createdAt: apiUser.createdAt, updatedAt: apiUser.updatedAt
                 )
-                return .run { send in
+                return .run { [dismiss] send in
                     try? await persistence.saveCachedUser(dto)
                     await send(.delegate(.profileUpdated(dto)))
+                    await dismiss()
                 }
 
             case .saveResponse(.failure(let error)):
@@ -202,7 +193,10 @@ struct EditProfileFeature {
                 return .none
 
             case .cancelTapped:
-                return .send(.delegate(.dismissed))
+                return .run { send in
+                    await send(.delegate(.dismissed))
+                    await dismiss()
+                }
 
             case .delegate:
                 return .none
@@ -233,8 +227,7 @@ struct EditProfileFeature {
         originalUser: CachedUserDTO?,
         name: String,
         email: String,
-        imageReference: String?,
-        birthDate: String?
+        imageReference: String?
     ) -> CachedUserDTO {
         let now = ISO8601DateFormatter().string(from: .now)
         let preservedUser = originalUser ?? CachedUserDTO(
@@ -253,7 +246,6 @@ struct EditProfileFeature {
             email: email,
             name: name,
             imageUrl: imageReference,
-            birthDate: birthDate,
             subscriptionTier: preservedUser.subscriptionTier,
             subscriptionExpiresAt: preservedUser.subscriptionExpiresAt,
             emailVerified: !originalEmail.isEmpty && email == originalEmail && preservedUser.emailVerified,
