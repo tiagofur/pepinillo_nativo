@@ -18,6 +18,7 @@ type UserHandler struct {
 
 type updateProfileRequest struct {
 	Name      string `json:"name"`
+	Email     string `json:"email"`
 	ImageURL  string `json:"imageUrl"`
 	BirthDate string `json:"birthDate"`
 }
@@ -61,6 +62,9 @@ func (h *UserHandler) UpdateMe(c *fiber.Ctx) error {
 
 	if req.Name != "" {
 		user.Name = req.Name
+	}
+	if req.Email != "" {
+		user.Email = req.Email
 	}
 	if req.ImageURL != "" {
 		user.ImageURL = &req.ImageURL

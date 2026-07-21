@@ -156,6 +156,7 @@ struct EditProfileFeature {
                     do {
                         let request = UpdateProfileRequest(
                             name: trimmedName,
+                            email: trimmedEmail.isEmpty ? nil : trimmedEmail,
                             imageUrl: imageReference?.hasPrefix("data:image") == true ? nil : imageReference,
                             birthDate: birthDateStr
                         )

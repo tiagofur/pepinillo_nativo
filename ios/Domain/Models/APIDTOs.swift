@@ -78,11 +78,13 @@ public struct ResetPasswordRequest: Codable, Sendable, Equatable {
 
 public struct UpdateProfileRequest: Codable, Sendable, Equatable {
     public let name: String?
+    public let email: String?
     public let imageUrl: String?
     public let birthDate: String?
 
-    public init(name: String? = nil, imageUrl: String? = nil, birthDate: String? = nil) {
+    public init(name: String? = nil, email: String? = nil, imageUrl: String? = nil, birthDate: String? = nil) {
         self.name = name
+        self.email = email
         self.imageUrl = imageUrl
         self.birthDate = birthDate
     }
