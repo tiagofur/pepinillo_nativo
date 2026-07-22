@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.data.local.dao
 
+import androidx.room.ColumnInfo
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -8,11 +9,20 @@ import androidx.room.Update
 import dev.creapolis.pepinillo.data.local.entity.SubtaskEntity
 import kotlinx.coroutines.flow.Flow
 
+data class SubtaskProgressTuple(
+    @ColumnInfo(name = "task_id") val taskId: String,
+    @ColumnInfo(name = "completed_count") val completedCount: Int,
+    @ColumnInfo(name = "total_count") val totalCount: Int,
+)
+
 @Dao
 interface SubtaskDao {
 
     @Query("SELECT * FROM subtasks WHERE task_id = :taskId AND is_deleted = 0 ORDER BY sort_order ASC")
     fun getSubtasksForTask(taskId: String): Flow<List<SubtaskEntity>>
+
+    @Query("SELECT task_id, SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) AS completed_count, COUNT(*) AS total_count FROM subtasks WHERE is_deleted = 0 GROUP BY task_id")
+    fun getSubtaskProgressTuples(): Flow<List<SubtaskProgressTuple>>
 
     @Query("SELECT COUNT(*) FROM subtasks WHERE task_id = :taskId AND is_deleted = 0")
     fun getSubtaskCount(taskId: String): Flow<Int>
