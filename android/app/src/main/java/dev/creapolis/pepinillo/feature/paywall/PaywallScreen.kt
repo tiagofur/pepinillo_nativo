@@ -279,6 +279,7 @@ fun PaywallScreen(
         // ── RESTORE ──
         TextButton(
             onClick = { viewModel.restorePurchases() },
+            enabled = !uiState.isPurchasing,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         ) {
             Text(
