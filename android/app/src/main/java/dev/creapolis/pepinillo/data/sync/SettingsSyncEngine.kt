@@ -98,11 +98,11 @@ class SettingsSyncEngine @Inject constructor(
             val local = preferenceSyncDao.getByKey(item.key)
             val serverUpdatedAt = parseRfc3339(
                 dateString = item.updatedAt,
-                fallback = if (local != null && !local.isDirty) local.updatedAt else System.currentTimeMillis()
+                fallback = if (local != null && !local.isDirty) local.updatedAt else if (local == null) System.currentTimeMillis() else 0L
             )
 
-            // If server is newer, equal (for clean local), or no local record, apply server value
-            if (local == null || serverUpdatedAt >= local.updatedAt || !local.isDirty) {
+            // If server is newer, equal (for clean local / parse fallback), or no local record, apply server value
+            if (local == null || serverUpdatedAt >= local.updatedAt) {
                 writePreferenceValue(item.key, item.value)
                 preferenceSyncDao.upsert(
                     PreferenceSyncEntity(

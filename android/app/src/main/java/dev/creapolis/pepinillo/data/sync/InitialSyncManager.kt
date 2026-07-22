@@ -289,12 +289,13 @@ class InitialSyncManager @Inject constructor(
         val start = parseRfc3339(startedAt, fallback = System.currentTimeMillis())
         val created = parseRfc3339(createdAt, fallback = start)
         val updated = parseRfc3339(updatedAt, fallback = created)
+        val effectiveDurationSeconds = if (elapsedSeconds > 0) elapsedSeconds else durationSeconds
         return FocusSessionEntity(
             id = id,
             mode = FocusModeSyncMapper.toLocalMode(mode),
             startTime = start,
-            endTime = if (endedAt != null) parseRfc3339(endedAt, fallback = start + (durationSeconds * 1000L)) else start + (durationSeconds * 1000L),
-            durationMillis = durationSeconds * 1000L,
+            endTime = if (endedAt != null) parseRfc3339(endedAt, fallback = start + (effectiveDurationSeconds * 1000L)) else start + (effectiveDurationSeconds * 1000L),
+            durationMillis = effectiveDurationSeconds * 1000L,
             linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
             phase = FocusPhaseSyncMapper.toLocalPhase(phase),
             createdAt = created,
@@ -306,6 +307,7 @@ class InitialSyncManager @Inject constructor(
             pomodoroNumber = pomodoroNumber,
             journalNote = journalNote,
             satisfactionRating = satisfactionRating,
+            targetDurationMillis = if (durationSeconds > 0) durationSeconds * 1000L else null,
             isDirty = false,
             syncedAt = System.currentTimeMillis(),
         )
