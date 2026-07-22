@@ -118,7 +118,10 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 }
 
 func (h *AuthHandler) DeleteAccount(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(string)
+	userID, ok := c.Locals("userID").(string)
+	if !ok || userID == "" {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid_claims")
+	}
 	var req deleteAccountRequest
 	// Body is optional for backwards compat — older clients send no body.
 	_ = c.BodyParser(&req)

@@ -74,6 +74,7 @@ private final class WebSocketManager: @unchecked Sendable {
     private let syncSettings: @Sendable () async throws -> Void
     private let syncAll: @Sendable () async throws -> Void
     private var webSocketTask: URLSessionWebSocketTask?
+    private let webSocketSession: URLSession
     private var isConnected = false
     private var isConnecting = false
     private var retryCount = 0
@@ -98,6 +99,7 @@ private final class WebSocketManager: @unchecked Sendable {
         self.syncSessions = syncSessions
         self.syncSettings = syncSettings
         self.syncAll = syncAll
+        self.webSocketSession = URLSession(configuration: .default)
     }
 
     /// WebSocket base URL resolved from Info.plist (`WS_BASE_URL`, injected
@@ -150,11 +152,10 @@ private final class WebSocketManager: @unchecked Sendable {
         }
         let deviceId = getOrCreateDeviceId()
 
-        // Token is sent both in the query string (backward compat with current
-        // backend) AND in the Authorization header so that once the backend
-        // honours the header, we can remove the query param without a flag day.
-        // TODO: remove `?token=...` query param once backend reads the header.
-        guard let url = URL(string: "\(Self.baseWSURL)?token=\(token)&deviceId=\(deviceId)") else {
+        // deviceId is sent in the query string so the backend can track the
+        // connection per device. Auth is handled exclusively via the
+        // Authorization header (DEPRECATED_WS_QUERY_AUTH defaults to false).
+        guard let url = URL(string: "\(Self.baseWSURL)?deviceId=\(deviceId)") else {
             lock.withLock { isConnecting = false }
             return
         }
@@ -162,8 +163,7 @@ private final class WebSocketManager: @unchecked Sendable {
         var request = URLRequest(url: url)
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
-        let session = URLSession(configuration: .default)
-        let task = session.webSocketTask(with: request)
+        let task = webSocketSession.webSocketTask(with: request)
 
         lock.withLock {
             webSocketTask = task
