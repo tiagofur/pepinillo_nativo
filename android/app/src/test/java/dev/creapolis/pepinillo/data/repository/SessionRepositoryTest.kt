@@ -1,13 +1,19 @@
 package dev.creapolis.pepinillo.data.repository
 
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
+import io.mockk.coVerify
+import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import org.junit.Assert.assertEquals
+import kotlinx.coroutines.test.runTest
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import java.util.Calendar
@@ -437,5 +443,106 @@ class SessionRepositoryTest {
             statsAt(t - oneDay),
         )
         assertEquals(3, repo.calculateBestStreak(days))
+    }
+
+    @Test
+    fun `recordSession delegates to PepinilloDatabase recordSessionAtomic when database is provided`() = runTest {
+        val mockDb = mockk<PepinilloDatabase>(relaxed = true)
+        val repoWithDb = SessionRepository(
+            sessionDao = FakeFocusSessionDao(),
+            dailyStatsDao = FakeDailyStatsDao(),
+            database = mockDb,
+        )
+
+        val start = System.currentTimeMillis() - 25 * 60_000L
+        val end = System.currentTimeMillis()
+        val duration = 25 * 60_000L
+
+        val sessionId = repoWithDb.recordSession(
+            mode = "Pomodoro",
+            startTime = start,
+            endTime = end,
+            durationMillis = duration,
+            phase = "Work",
+            wasCompleted = true,
+        )
+
+        assertNotNull(sessionId)
+        val sessionSlot = slot<FocusSessionEntity>()
+        val statsSlot = slot<DailyStatsEntity>()
+        coVerify(exactly = 1) {
+            mockDb.recordSessionAtomic(capture(sessionSlot), capture(statsSlot))
+        }
+
+        assertEquals("Pomodoro", sessionSlot.captured.mode)
+        assertEquals(start, sessionSlot.captured.startTime)
+        assertEquals(end, sessionSlot.captured.endTime)
+        assertEquals(SessionRepository.startOfDay(start), statsSlot.captured.date)
+    }
+
+    @Test
+    fun `recordSession midnight crossing session buckets stats by start time not end time`() = runTest {
+        val mockDb = mockk<PepinilloDatabase>(relaxed = true)
+        val repoWithDb = SessionRepository(
+            sessionDao = FakeFocusSessionDao(),
+            dailyStatsDao = FakeDailyStatsDao(),
+            database = mockDb,
+        )
+
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 50)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val startTime = cal.timeInMillis
+
+        cal.add(Calendar.MINUTE, 35) // End at 00:25 next day
+        val endTime = cal.timeInMillis
+        val durationMillis = 35 * 60_000L
+
+        val expectedDayBucket = SessionRepository.startOfDay(startTime)
+
+        repoWithDb.recordSession(
+            mode = "Pomodoro",
+            startTime = startTime,
+            endTime = endTime,
+            durationMillis = durationMillis,
+            phase = "Work",
+            wasCompleted = true,
+        )
+
+        val statsSlot = slot<DailyStatsEntity>()
+        coVerify(exactly = 1) {
+            mockDb.recordSessionAtomic(any(), capture(statsSlot))
+        }
+
+        assertEquals(expectedDayBucket, statsSlot.captured.date)
+    }
+
+    @Test
+    fun `recordSession break phase passes null updatedStats to recordSessionAtomic`() = runTest {
+        val mockDb = mockk<PepinilloDatabase>(relaxed = true)
+        val repoWithDb = SessionRepository(
+            sessionDao = FakeFocusSessionDao(),
+            dailyStatsDao = FakeDailyStatsDao(),
+            database = mockDb,
+        )
+
+        val start = System.currentTimeMillis() - 5 * 60_000L
+        val end = System.currentTimeMillis()
+
+        repoWithDb.recordSession(
+            mode = "Pomodoro",
+            startTime = start,
+            endTime = end,
+            durationMillis = 5 * 60_000L,
+            phase = "ShortBreak",
+            wasCompleted = true,
+        )
+
+        coVerify(exactly = 1) {
+            mockDb.recordSessionAtomic(any(), null)
+        }
     }
 }
