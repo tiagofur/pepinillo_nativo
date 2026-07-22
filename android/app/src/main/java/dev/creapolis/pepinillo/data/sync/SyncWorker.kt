@@ -41,7 +41,7 @@ class SyncWorker @AssistedInject constructor(
             }
             is SyncResult.PermanentError -> {
                 Log.e(TAG, "Sync failed (permanent), will NOT retry: ${syncResult.exception.message}")
-                Result.success()
+                Result.failure()
             }
         }
     }
