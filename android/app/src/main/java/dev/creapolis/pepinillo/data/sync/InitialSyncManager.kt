@@ -219,7 +219,9 @@ class InitialSyncManager @Inject constructor(
                     isCompleted = dto.isFinished,
                     sortOrder = index,
                     isDirty = false,
+                    serverId = if (dto.id > 0) dto.id else null,
                 )
+
             }
         }
     }

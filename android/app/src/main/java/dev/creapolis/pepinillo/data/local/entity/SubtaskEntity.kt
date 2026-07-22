@@ -35,4 +35,7 @@ data class SubtaskEntity(
     val isDeleted: Boolean = false,
     @ColumnInfo(name = "updated_at", defaultValue = "0")
     val updatedAt: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "server_id")
+    val serverId: Int? = null,
 )
+

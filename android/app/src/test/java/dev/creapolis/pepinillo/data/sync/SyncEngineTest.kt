@@ -723,4 +723,137 @@ class SyncEngineTest {
         assertEquals(30, saved.longestSessionMinutes) // preserved longestSessionMinutes
         assertTrue(saved.isDirty) // remained dirty because local was strictly higher
     }
+
+    // -----------------------------------------------------------------------
+    // Subtask sync stability and purging
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncTasks marks subtasks synced and purges soft-deleted subtasks on push success`() = runTest {
+        val dirtyTask = TaskEntity(
+            id = "task-1",
+            title = "Task with subtasks",
+            createdAt = 1000L,
+            updatedAt = 2000L,
+            isDirty = true,
+        )
+        coEvery { taskDao.getDirtyTasks() } returns listOf(dirtyTask)
+        coEvery { subtaskDao.getSubtasksForTaskSync("task-1") } returns emptyList()
+        coEvery { apiClient.syncTasks(any()) } returns NetworkResult.Success(
+            TaskSyncResponse(tasks = listOf(TaskDto(id = 10, syncId = "task-1", title = "Task with subtasks"))),
+        )
+
+        syncEngine.syncTasks()
+
+        coVerify { subtaskDao.markSubtasksSynced("task-1") }
+        coVerify { subtaskDao.purgeDeletedSyncedForTask("task-1") }
+        coVerify { subtaskDao.purgeDeletedSynced() }
+    }
+
+    @Test
+    fun `mergeServerSubtasks preserves local subtask UUID across sync rounds`() = runTest {
+        val existingSubtask = dev.creapolis.pepinillo.data.local.entity.SubtaskEntity(
+            id = "stable-subtask-uuid-123",
+            taskId = "task-1",
+            title = "Existing Subtask",
+            isCompleted = false,
+            isDirty = false,
+            serverId = 101,
+        )
+        val localTask = TaskEntity(id = "task-1", title = "Task 1", serverId = 10, updatedAt = 0L, isDirty = false)
+        coEvery { taskDao.getTaskById("task-1") } returns localTask
+        coEvery { taskDao.getTaskByServerId(10) } returns localTask
+        coEvery { subtaskDao.getAllSubtasksForTask("task-1") } returns listOf(existingSubtask)
+
+
+        val serverSubtask = dev.creapolis.pepinillo.core.network.SubTaskDto(
+            id = 101,
+            taskId = 10,
+            title = "Existing Subtask Updated",
+            isFinished = true,
+        )
+        val serverTask = TaskDto(
+            id = 10,
+            syncId = "task-1",
+            title = "Task 1",
+            updatedAt = "2026-07-22T00:00:00Z",
+            subTasks = listOf(serverSubtask),
+        )
+
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(listOf(serverTask))
+
+        val capturedSubtasks = slot<List<dev.creapolis.pepinillo.data.local.entity.SubtaskEntity>>()
+        coEvery { subtaskDao.insertAll(capture(capturedSubtasks)) } returns Unit
+
+        syncEngine.syncTasks()
+
+        assertTrue(capturedSubtasks.isCaptured)
+        val merged = capturedSubtasks.captured.first()
+        assertEquals("stable-subtask-uuid-123", merged.id)
+        assertEquals(101, merged.serverId)
+        assertEquals("Existing Subtask Updated", merged.title)
+        assertTrue(merged.isCompleted)
+    }
+
+    @Test
+    fun `mergeServerSubtasks resolves duplicate title subtasks by serverId without collision`() = runTest {
+        val subtaskA = dev.creapolis.pepinillo.data.local.entity.SubtaskEntity(
+            id = "uuid-a",
+            taskId = "task-1",
+            title = "Duplicate Title",
+            isCompleted = false,
+            isDirty = false,
+            serverId = 201,
+        )
+        val subtaskB = dev.creapolis.pepinillo.data.local.entity.SubtaskEntity(
+            id = "uuid-b",
+            taskId = "task-1",
+            title = "Duplicate Title",
+            isCompleted = false,
+            isDirty = false,
+            serverId = 202,
+        )
+        val localTask = TaskEntity(id = "task-1", title = "Task 1", serverId = 10, updatedAt = 0L, isDirty = false)
+        coEvery { taskDao.getTaskById("task-1") } returns localTask
+        coEvery { taskDao.getTaskByServerId(10) } returns localTask
+        coEvery { subtaskDao.getAllSubtasksForTask("task-1") } returns listOf(subtaskA, subtaskB)
+
+
+        val serverSubtaskA = dev.creapolis.pepinillo.core.network.SubTaskDto(
+            id = 201,
+            taskId = 10,
+            title = "Duplicate Title",
+            isFinished = true,
+        )
+        val serverSubtaskB = dev.creapolis.pepinillo.core.network.SubTaskDto(
+            id = 202,
+            taskId = 10,
+            title = "Duplicate Title",
+            isFinished = false,
+        )
+        val serverTask = TaskDto(
+            id = 10,
+            syncId = "task-1",
+            title = "Task 1",
+            updatedAt = "2026-07-22T00:00:00Z",
+            subTasks = listOf(serverSubtaskA, serverSubtaskB),
+        )
+
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(listOf(serverTask))
+
+        val capturedSubtasks = slot<List<dev.creapolis.pepinillo.data.local.entity.SubtaskEntity>>()
+        coEvery { subtaskDao.insertAll(capture(capturedSubtasks)) } returns Unit
+
+        syncEngine.syncTasks()
+
+        assertTrue(capturedSubtasks.isCaptured)
+        val mergedList = capturedSubtasks.captured
+        val mergedA = mergedList.find { it.id == "uuid-a" }
+        val mergedB = mergedList.find { it.id == "uuid-b" }
+        assertTrue(mergedA != null && mergedA.isCompleted)
+        assertTrue(mergedB != null && !mergedB.isCompleted)
+    }
 }
+
