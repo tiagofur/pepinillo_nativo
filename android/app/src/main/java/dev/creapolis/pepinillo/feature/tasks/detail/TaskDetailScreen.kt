@@ -504,7 +504,7 @@ fun TaskDetailScreen(
 
                 if (showDatePicker) {
                     val datePickerState = rememberDatePickerState(
-                        initialSelectedDateMillis = task.dueDate ?: System.currentTimeMillis()
+                        initialSelectedDateMillis = task.dueDate ?: getUtcMidnightOfLocalToday()
                     )
                     DatePickerDialog(
                         onDismissRequest = { showDatePicker = false },
@@ -1001,4 +1001,15 @@ fun TaskDetailScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+}
+
+internal fun getUtcMidnightOfLocalToday(): Long {
+    val local = java.util.Calendar.getInstance()
+    val year = local.get(java.util.Calendar.YEAR)
+    val month = local.get(java.util.Calendar.MONTH)
+    val day = local.get(java.util.Calendar.DAY_OF_MONTH)
+    return java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(year, month, day, 0, 0, 0)
+    }.timeInMillis
 }
