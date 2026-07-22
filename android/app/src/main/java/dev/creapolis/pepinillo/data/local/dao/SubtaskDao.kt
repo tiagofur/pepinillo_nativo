@@ -77,6 +77,16 @@ interface SubtaskDao {
     @Query("SELECT * FROM subtasks WHERE task_id = :taskId AND is_dirty = 1 ORDER BY sort_order ASC")
     suspend fun getDirtySubtasksForTask(taskId: String): List<SubtaskEntity>
 
+    @Query("SELECT * FROM subtasks WHERE task_id = :taskId ORDER BY sort_order ASC")
+    suspend fun getAllSubtasksForTask(taskId: String): List<SubtaskEntity>
+
+    @Query("DELETE FROM subtasks WHERE task_id = :taskId AND is_deleted = 1 AND is_dirty = 0")
+    suspend fun purgeDeletedSyncedForTask(taskId: String)
+
+    @Query("DELETE FROM subtasks WHERE is_deleted = 1 AND is_dirty = 0")
+    suspend fun purgeDeletedSynced()
+
     @Query("DELETE FROM subtasks")
     suspend fun deleteAll()
 }
+

@@ -30,9 +30,10 @@ import dev.creapolis.pepinillo.data.local.entity.UserEntity
         UserEntity::class,
         PreferenceSyncEntity::class,
     ],
-    version = 12,
+    version = 13,
     exportSchema = true,
 )
+
 abstract class PepinilloDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun focusSessionDao(): FocusSessionDao
@@ -127,6 +128,17 @@ abstract class PepinilloDatabase : RoomDatabase() {
          * completion toggles must be tracked as dirty so the next sync push can
          * propagate them, instead of being silently lost.
          */
+        /**
+         * v12 → v13: add `server_id` column to `subtasks`.
+         */
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE subtasks ADD COLUMN server_id INTEGER DEFAULT NULL",
+                )
+            }
+        }
+
         /**
          * v11 → v12: add `updated_at` to `focus_sessions` for LWW session sync.
          * Existing rows inherit `created_at` so dirty-journal guards have a baseline timestamp.
