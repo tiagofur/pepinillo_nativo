@@ -76,19 +76,20 @@ class ReportDataBuilder @Inject constructor(
         val now = System.currentTimeMillis()
         cal.timeInMillis = now
 
+        val todayStart = SessionRepository.startOfDay(now)
         val (periodStart, periodEnd, prevStart, prevEnd) = when (period) {
             "week" -> {
                 val end = now
-                val start = now - 7L * 24 * 60 * 60 * 1000
+                val start = SessionRepository.addDays(todayStart, -7)
                 val prevE = start
-                val prevS = start - 7L * 24 * 60 * 60 * 1000
+                val prevS = SessionRepository.addDays(start, -7)
                 PeriodBounds(start, end, prevS, prevE)
             }
             else -> {
                 val end = now
-                val start = now - 30L * 24 * 60 * 60 * 1000
+                val start = SessionRepository.addDays(todayStart, -30)
                 val prevE = start
-                val prevS = start - 30L * 24 * 60 * 60 * 1000
+                val prevS = SessionRepository.addDays(start, -30)
                 PeriodBounds(start, end, prevS, prevE)
             }
         }
@@ -227,7 +228,7 @@ class ReportDataBuilder @Inject constructor(
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
             val dayStart = cal.timeInMillis
-            val dayEnd = dayStart + 24 * 60 * 60 * 1000
+            val dayEnd = SessionRepository.addDays(dayStart, 1)
 
             val daySessions = sessions.filter { it.startTime >= dayStart && it.startTime < dayEnd }
             DailyDistributionEntry(

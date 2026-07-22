@@ -92,7 +92,8 @@ class CalendarViewModel @Inject constructor(
     }
 
     private suspend fun loadDayDetail(dateMillis: Long) {
-        val endOfDay = dateMillis + 24 * 60 * 60 * 1000
+        val startOfDay = SessionRepository.startOfDay(dateMillis)
+        val endOfDay = SessionRepository.addDays(startOfDay, 1)
         val dateFormat = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
 
         // Collect sessions for this day
