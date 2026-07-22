@@ -188,9 +188,11 @@ class SyncEngine @Inject constructor(
             val currentPrefs = userPreferencesRepository.preferences.first()
 
             // 2. Convert to DTOs — build task ID map for session resolution
+            val sessionsByTaskId = allSessions.groupBy { it.linkedTaskId }
             val taskDtos = allTasks.map { task ->
                 val subtasks = subtaskDao.getSubtasksForTaskSync(task.id)
-                task.toDto(subtasks)
+                val taskSessions = sessionsByTaskId[task.id] ?: emptyList()
+                task.toDto(subtasks, taskSessions)
             }
             val taskIdMap = allTasks
                 .filter { it.serverId != null }
@@ -325,11 +327,14 @@ class SyncEngine @Inject constructor(
             .filter { it.isDeleted }
             .map { it.id }
 
+        val allSessions = sessionDao.getAllSessionsSync()
+        val sessionsByTaskId = allSessions.groupBy { it.linkedTaskId }
         val tasksToSync = dirtyTasks
             .filter { !it.isDeleted }
             .map { task ->
                 val subtasks = subtaskDao.getSubtasksForTaskSync(task.id)
-                task.toDto(subtasks)
+                val taskSessions = sessionsByTaskId[task.id] ?: emptyList()
+                task.toDto(subtasks, taskSessions)
             }
 
         val request = TaskSyncRequest(
@@ -811,7 +816,7 @@ class SyncEngine @Inject constructor(
         endedAt = endTime.let { if (it > 0L) it.toRfc3339() else null },
         mode = FocusModeSyncMapper.toServerMode(mode),
         phase = FocusPhaseSyncMapper.toServerPhase(phase ?: "Work"),
-        durationSeconds = (durationMillis / 1000).toInt(),
+        durationSeconds = ((targetDurationMillis ?: durationMillis) / 1000).toInt(),
         elapsedSeconds = (durationMillis / 1000).toInt(),
         wasCompleted = wasCompleted,
         interruptions = interruptions,
@@ -828,12 +833,13 @@ class SyncEngine @Inject constructor(
         val start = parseRfc3339(startedAt, fallback = System.currentTimeMillis())
         val created = parseRfc3339(createdAt, fallback = start)
         val updated = serverUpdatedAtMillis(fallback = created)
+        val effectiveDurationSeconds = if (elapsedSeconds > 0) elapsedSeconds else durationSeconds
         return FocusSessionEntity(
             id = id,
             mode = FocusModeSyncMapper.toLocalMode(mode),
             startTime = start,
-            endTime = if (endedAt != null) parseRfc3339(endedAt, fallback = start + (durationSeconds * 1000L)) else start + (durationSeconds * 1000L),
-            durationMillis = durationSeconds * 1000L,
+            endTime = if (endedAt != null) parseRfc3339(endedAt, fallback = start + (effectiveDurationSeconds * 1000L)) else start + (effectiveDurationSeconds * 1000L),
+            durationMillis = effectiveDurationSeconds * 1000L,
             linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
             phase = FocusPhaseSyncMapper.toLocalPhase(phase),
             createdAt = created,
@@ -845,36 +851,78 @@ class SyncEngine @Inject constructor(
             pomodoroNumber = pomodoroNumber,
             journalNote = journalNote,
             satisfactionRating = satisfactionRating,
+            targetDurationMillis = if (durationSeconds > 0) durationSeconds * 1000L else null,
             isDirty = false,
             syncedAt = System.currentTimeMillis(),
         )
     }
 
-    private fun TaskEntity.toDto(subtasks: List<SubtaskEntity> = emptyList()) = TaskDto(
-        id = serverId ?: 0,
-        syncId = id,
-        title = title,
-        description = notes,
-        energyLevel = energyLevel.lowercase(),
-        isFinished = isCompleted,
-        priority = when (priority) {
-            "High" -> 3; "Medium" -> 2; "Low" -> 1; else -> 0
-        },
-        estimatedPomodoros = estimatedPomodoros,
-        completedPomodoros = completedPomodoros,
-        updatedAt = updatedAt.toRfc3339(),
-        createdDate = createdAt.toRfc3339(),
-        finishDate = completedAt?.toRfc3339(),
-        trackingMode = "pomodoro",
-        completedFlowtimeSessions = 0,
-        completedTimeblockSessions = 0,
-        completedStopwatchSeconds = 0,
-        focusedSecondsPomodoro = 0,
-        focusedSecondsFlowtime = 0,
-        focusedSecondsTimeblock = 0,
-        focusedSecondsStopwatch = 0,
-        subTasks = subtasks.map { it.toDto(serverId ?: 0) },
-    )
+    private fun TaskEntity.toDto(
+        subtasks: List<SubtaskEntity> = emptyList(),
+        sessions: List<FocusSessionEntity> = emptyList(),
+    ): TaskDto {
+        val completedSessions = sessions.filter { it.wasCompleted }
+        var focusedSecondsPomodoro = 0
+        var focusedSecondsFlowtime = 0
+        var focusedSecondsTimeblock = 0
+        var focusedSecondsStopwatch = 0
+        var completedFlowtimeSessions = 0
+        var completedTimeblockSessions = 0
+        var completedStopwatchSeconds = 0
+        var latestCompletedSessionMode: String? = null
+
+        val sortedSessions = completedSessions.sortedBy { it.startTime }
+        for (session in sortedSessions) {
+            val focusSeconds = (session.durationMillis / 1000).toInt()
+            val serverMode = FocusModeSyncMapper.toServerMode(session.mode)
+            latestCompletedSessionMode = serverMode
+            when (serverMode) {
+                "pomodoro" -> {
+                    focusedSecondsPomodoro += focusSeconds
+                }
+                "flowtime" -> {
+                    focusedSecondsFlowtime += focusSeconds
+                    completedFlowtimeSessions++
+                }
+                "timeblock" -> {
+                    focusedSecondsTimeblock += focusSeconds
+                    completedTimeblockSessions++
+                }
+                "stopwatch" -> {
+                    focusedSecondsStopwatch += focusSeconds
+                    completedStopwatchSeconds += focusSeconds
+                }
+            }
+        }
+        val totalFocusedSeconds = focusedSecondsPomodoro + focusedSecondsFlowtime + focusedSecondsTimeblock + focusedSecondsStopwatch
+
+        return TaskDto(
+            id = serverId ?: 0,
+            syncId = id,
+            title = title,
+            description = notes,
+            energyLevel = energyLevel.lowercase(),
+            isFinished = isCompleted,
+            priority = when (priority) {
+                "High" -> 3; "Medium" -> 2; "Low" -> 1; else -> 0
+            },
+            estimatedPomodoros = estimatedPomodoros,
+            completedPomodoros = completedPomodoros,
+            updatedAt = updatedAt.toRfc3339(),
+            createdDate = createdAt.toRfc3339(),
+            finishDate = completedAt?.toRfc3339(),
+            trackingMode = latestCompletedSessionMode ?: "pomodoro",
+            completedFlowtimeSessions = completedFlowtimeSessions,
+            completedTimeblockSessions = completedTimeblockSessions,
+            completedStopwatchSeconds = completedStopwatchSeconds,
+            focusedSeconds = totalFocusedSeconds,
+            focusedSecondsPomodoro = focusedSecondsPomodoro,
+            focusedSecondsFlowtime = focusedSecondsFlowtime,
+            focusedSecondsTimeblock = focusedSecondsTimeblock,
+            focusedSecondsStopwatch = focusedSecondsStopwatch,
+            subTasks = subtasks.map { it.toDto(serverId ?: 0) },
+        )
+    }
 
     private fun SubtaskEntity.toDto(serverTaskId: Int) = SubTaskDto(
         id = serverId ?: 0,

@@ -887,5 +887,97 @@ class SyncEngineTest {
         assertEquals("Updated Server Title", capturedTask.captured.title)
         assertTrue("updatedAt should not be 0L", capturedTask.captured.updatedAt > 0L)
     }
+
+    @Test
+    fun `syncTasks pushes computed focus counters and trackingMode when completed sessions are linked to task`() = runTest {
+        val dirtyTask = TaskEntity(
+            id = "task-1",
+            title = "Task with sessions",
+            serverId = 10,
+            isDirty = true,
+        )
+        val sessionPomodoro = FocusSessionEntity(
+            id = "s-1",
+            mode = "Pomodoro",
+            startTime = 1000L,
+            endTime = 1501000L,
+            durationMillis = 1500_000L, // 1500s
+            linkedTaskId = "task-1",
+            wasCompleted = true,
+        )
+        val sessionFlow = FocusSessionEntity(
+            id = "s-2",
+            mode = "Flow",
+            startTime = 2000L,
+            endTime = 5002000L,
+            durationMillis = 3000_000L, // 3000s
+            linkedTaskId = "task-1",
+            wasCompleted = true,
+        )
+
+        coEvery { taskDao.getDirtyTasks() } returns listOf(dirtyTask)
+        coEvery { sessionDao.getAllSessionsSync() } returns listOf(sessionPomodoro, sessionFlow)
+
+        val taskRequestSlot = slot<dev.creapolis.pepinillo.core.network.TaskSyncRequest>()
+        coEvery { apiClient.syncTasks(capture(taskRequestSlot)) } returns NetworkResult.Success(TaskSyncResponse(tasks = emptyList()))
+
+        syncEngine.syncTasks()
+
+        assertTrue(taskRequestSlot.isCaptured)
+        val pushedTask = taskRequestSlot.captured.tasks[0]
+        assertEquals(1500, pushedTask.focusedSecondsPomodoro)
+        assertEquals(3000, pushedTask.focusedSecondsFlowtime)
+        assertEquals(1, pushedTask.completedFlowtimeSessions)
+        assertEquals(4500, pushedTask.focusedSeconds)
+        assertEquals("flowtime", pushedTask.trackingMode)
+    }
+
+    @Test
+    fun `pulling sessions preserves targetDurationMillis and sets effective durationMillis`() = runTest {
+        val serverSession = PomodoroSessionDto(
+            id = "s-100",
+            durationSeconds = 1500,
+            elapsedSeconds = 1200,
+            startedAt = "2026-07-22T00:00:00Z",
+            createdAt = "2026-07-22T00:00:00Z",
+            updatedAt = "2026-07-22T00:00:00Z",
+        )
+        coEvery { sessionDao.getDirtySessions() } returns emptyList()
+        coEvery { apiClient.syncSessions(any()) } returns NetworkResult.Success(SessionSyncResponse(sessions = listOf(serverSession), serverTimestamp = "2026-07-22T00:00:00Z"))
+
+        val capturedSession = slot<FocusSessionEntity>()
+        coEvery { sessionDao.upsertSession(capture(capturedSession)) } returns Unit
+
+        syncEngine.syncSessions()
+
+        assertTrue(capturedSession.isCaptured)
+        val savedSession = capturedSession.captured
+        assertEquals(1500_000L, savedSession.targetDurationMillis)
+        assertEquals(1200_000L, savedSession.durationMillis)
+    }
+
+    @Test
+    fun `pushing session populates durationSeconds from targetDurationMillis and elapsedSeconds from durationMillis`() = runTest {
+        val sessionEntity = FocusSessionEntity(
+            id = "s-200",
+            mode = "Pomodoro",
+            startTime = 1000L,
+            endTime = 1201000L,
+            durationMillis = 1200_000L,
+            targetDurationMillis = 1500_000L,
+            isDirty = true,
+        )
+        coEvery { sessionDao.getDirtySessions() } returns listOf(sessionEntity)
+
+        val sessionRequestSlot = slot<dev.creapolis.pepinillo.core.network.SessionSyncRequest>()
+        coEvery { apiClient.syncSessions(capture(sessionRequestSlot)) } returns NetworkResult.Success(SessionSyncResponse(sessions = emptyList(), serverTimestamp = "2026-07-22T00:00:00Z"))
+
+        syncEngine.syncSessions()
+
+        assertTrue(sessionRequestSlot.isCaptured)
+        val pushedSession = sessionRequestSlot.captured.sessions[0]
+        assertEquals(1500, pushedSession.durationSeconds)
+        assertEquals(1200, pushedSession.elapsedSeconds)
+    }
 }
 
