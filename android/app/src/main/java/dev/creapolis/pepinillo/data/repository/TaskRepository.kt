@@ -198,6 +198,11 @@ class TaskRepository @Inject constructor(
 
     // ── Subtask methods ──
 
+    fun getSubtaskProgressMap(): Flow<Map<String, Pair<Int, Int>>> =
+        subtaskDao.getSubtaskProgressTuples()
+            .map { list -> list.associate { it.taskId to (it.completedCount to it.totalCount) } }
+            .catch { e -> Log.e(TAG, "Error loading subtask progress map", e); emit(emptyMap()) }
+
     fun getSubtasksForTask(taskId: String): Flow<List<Subtask>> =
         subtaskDao.getSubtasksForTask(taskId)
             .map { entities -> entities.map { it.toDomain() } }

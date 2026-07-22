@@ -585,12 +585,14 @@ fun TaskDetailScreen(
                                 expanded = priorityExpanded,
                                 onDismissRequest = { priorityExpanded = false }
                             ) {
-                                TaskPriority.entries.filter { it != TaskPriority.None }.forEach { priority ->
+                                TaskPriority.entries.forEach { priority ->
+                                    val pColor = priority.priorityColor()
+                                    val itemColor = if (pColor != Color.Transparent) pColor else MaterialTheme.colorScheme.onSurfaceVariant
                                     DropdownMenuItem(
                                         text = {
                                             Text(
                                                 text = priority.name,
-                                                color = priority.priorityColor(),
+                                                color = itemColor,
                                                 fontWeight = if (task.priority == priority) FontWeight.Bold else FontWeight.Normal
                                             )
                                         },

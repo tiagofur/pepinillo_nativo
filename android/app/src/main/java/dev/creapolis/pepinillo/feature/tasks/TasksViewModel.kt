@@ -45,6 +45,7 @@ enum class TaskSortOption {
 
 data class TasksUiState(
     val tasks: List<Task> = emptyList(),
+    val subtaskProgressMap: Map<String, Pair<Int, Int>> = emptyMap(),
     val selectedFilter: TaskFilter = TaskFilter.Today,
     val selectedSort: TaskSortOption = TaskSortOption.Custom,
     val energyFilter: EnergyLevel? = null,
@@ -181,15 +182,23 @@ class TasksViewModel @Inject constructor(
     val successMessage: StateFlow<Int?> = _successMessage.asStateFlow()
     fun dismissSuccessMessage() { _successMessage.value = null }
 
-    val uiState: StateFlow<TasksUiState> = combine(
+    private val tasksWithSubtasks = combine(
         taskRepository.getAllTasks(),
+        taskRepository.getSubtaskProgressMap(),
+    ) { tasks, subtaskProgressMap ->
+        tasks to subtaskProgressMap
+    }
+
+    val uiState: StateFlow<TasksUiState> = combine(
+        tasksWithSubtasks,
         _selectedFilter,
         _selectedSort,
         _energyFilter,
         featureGate.subscriptionState,
-    ) { tasks, filter, sort, energy, subState ->
+    ) { (tasks, subtaskProgressMap), filter, sort, energy, subState ->
         val base = TasksUiState(
             tasks = tasks,
+            subtaskProgressMap = subtaskProgressMap,
             selectedFilter = filter,
             selectedSort = sort,
             energyFilter = energy,

@@ -270,6 +270,7 @@ fun TasksScreen(
                         ) {
                         TaskItem(
                             task = task,
+                            subtaskProgress = uiState.subtaskProgressMap[task.id],
                             onToggleCompletion = { viewModel.toggleTaskCompletion(task.id) },
                             onClick = { selectedTaskId = task.id },
                             onStartFocus = {
