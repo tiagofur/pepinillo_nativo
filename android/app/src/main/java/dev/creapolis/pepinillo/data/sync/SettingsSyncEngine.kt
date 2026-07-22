@@ -50,6 +50,8 @@ class SettingsSyncEngine @Inject constructor(
             return@runCatching
         }
 
+        val pushedTimestamps = dirtyPrefs.associate { it.key to it.updatedAt }
+
         // 2. Read current values from UserPreferencesRepository
         val currentPrefs = userPreferencesRepository.preferences.first()
         val items = dirtyPrefs
@@ -64,8 +66,10 @@ class SettingsSyncEngine @Inject constructor(
             }
 
         if (items.isEmpty()) {
-            Log.d(TAG, "No syncable dirty preferences, marking all synced")
-            preferenceSyncDao.markAllSynced()
+            Log.d(TAG, "No syncable dirty preferences, marking dirty entities synced if unchanged")
+            for (entity in dirtyPrefs) {
+                preferenceSyncDao.markSyncedIfUnchanged(entity.key, entity.updatedAt)
+            }
             return@runCatching
         }
 
@@ -79,8 +83,11 @@ class SettingsSyncEngine @Inject constructor(
                 Log.d(TAG, "Server returned ${response.preferences.size} preferences")
                 // 4. Apply server response (for keys where server is newer)
                 applyServerPreferences(response.preferences)
-                // 5. Mark all synced
-                preferenceSyncDao.markAllSynced()
+                // 5. Mark pushed preferences synced if unchanged during network call
+                for (item in items) {
+                    val maxTimestamp = pushedTimestamps[item.key] ?: continue
+                    preferenceSyncDao.markSyncedIfUnchanged(item.key, maxTimestamp)
+                }
             }
             is NetworkResult.Error -> {
                 Log.e(TAG, "Preferences sync error: ${result.code} ${result.message}")
@@ -103,14 +110,7 @@ class SettingsSyncEngine @Inject constructor(
 
             // If server is newer, equal (for clean local / parse fallback), or no local record, apply server value
             if (local == null || serverUpdatedAt >= local.updatedAt) {
-                writePreferenceValue(item.key, item.value)
-                preferenceSyncDao.upsert(
-                    PreferenceSyncEntity(
-                        key = item.key,
-                        updatedAt = serverUpdatedAt,
-                        isDirty = false,
-                    )
-                )
+                userPreferencesRepository.updateFromSync(item.key, item.value, serverUpdatedAt)
                 Log.d(TAG, "Applied server preference: ${item.key} = ${item.value}")
             }
         }
@@ -155,35 +155,6 @@ class SettingsSyncEngine @Inject constructor(
         "flowtime_min_minutes" -> prefs.flowtimeMinMinutes.toString()
         "midpoint_check_in" -> prefs.midpointCheckIn.toString()
         else -> null
-    }
-
-    private suspend fun writePreferenceValue(key: String, value: String) {
-        when (key) {
-            "pomodoro_minutes" -> value.toIntOrNull()?.let { userPreferencesRepository.updatePomodoroMinutes(it) }
-            "short_break_minutes" -> value.toIntOrNull()?.let { userPreferencesRepository.updateShortBreakMinutes(it) }
-            "long_break_minutes" -> value.toIntOrNull()?.let { userPreferencesRepository.updateLongBreakMinutes(it) }
-            "sessions_before_long_break" -> value.toIntOrNull()?.let { userPreferencesRepository.updateSessionsBeforeLongBreak(it) }
-            "time_block_minutes" -> value.toIntOrNull()?.let { userPreferencesRepository.updateTimeBlockMinutes(it) }
-            "auto_start_breaks" -> value.toBooleanStrictOrNull()?.let { userPreferencesRepository.updateAutoStartBreaks(it) }
-            "auto_start_next_pomodoro" -> value.toBooleanStrictOrNull()?.let { userPreferencesRepository.updateAutoStartNextPomodoro(it) }
-            "sound_enabled" -> value.toBooleanStrictOrNull()?.let { userPreferencesRepository.updateSoundEnabled(it) }
-            "vibration_enabled" -> value.toBooleanStrictOrNull()?.let { userPreferencesRepository.updateVibrationEnabled(it) }
-            "theme_mode" -> {
-                try {
-                    val mode = dev.creapolis.pepinillo.ui.theme.ThemeMode.valueOf(value)
-                    userPreferencesRepository.updateThemeMode(mode)
-                } catch (_: IllegalArgumentException) {
-                    Log.w(TAG, "Unknown theme mode from server: $value")
-                }
-            }
-            "dynamic_color" -> value.toBooleanStrictOrNull()?.let { userPreferencesRepository.updateDynamicColor(it) }
-            "selected_theme" -> userPreferencesRepository.updateSelectedTheme(value)
-            "keep_screen_on" -> value.toBooleanStrictOrNull()?.let { userPreferencesRepository.updateKeepScreenOn(it) }
-            "default_mode" -> userPreferencesRepository.updateDefaultMode(value)
-            "show_journal_after_session" -> value.toBooleanStrictOrNull()?.let { userPreferencesRepository.updateShowJournalAfterSession(it) }
-            "flowtime_min_minutes" -> value.toIntOrNull()?.let { userPreferencesRepository.updateFlowtimeMinMinutes(it) }
-            "midpoint_check_in" -> value.toBooleanStrictOrNull()?.let { userPreferencesRepository.updateMidpointCheckIn(it) }
-        }
     }
 
     private fun Long.toRfc3339(): String = SyncDateUtils.run { this@toRfc3339.toRfc3339() }

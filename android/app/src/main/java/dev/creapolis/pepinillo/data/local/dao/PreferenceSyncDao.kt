@@ -21,6 +21,10 @@ interface PreferenceSyncDao {
     @Query("UPDATE preference_sync_metadata SET is_dirty = 0 WHERE key = :key")
     suspend fun markSynced(key: String)
 
+    @Query("UPDATE preference_sync_metadata SET is_dirty = 0 WHERE key = :key AND updated_at <= :maxUpdatedAt")
+    suspend fun markSyncedIfUnchanged(key: String, maxUpdatedAt: Long)
+
+    @Deprecated("Use markSyncedIfUnchanged or markSyncedBatch instead to avoid resetting concurrent edits")
     @Query("UPDATE preference_sync_metadata SET is_dirty = 0")
     suspend fun markAllSynced()
 
