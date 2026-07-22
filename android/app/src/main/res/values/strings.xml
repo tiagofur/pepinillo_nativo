@@ -807,6 +807,7 @@
     <string name="paywall_no_subscription">No active subscription found</string>
     <string name="paywall_restore_failed">Could not restore purchases. Please try again.</string>
     <string name="paywall_purchase_failed">Purchase failed. Please try again.</string>
+    <string name="paywall_purchase_pending">Purchase pending. It will be active once completed.</string>
     <string name="paywall_per_month">~%1$s/mo</string>
     <string name="paywall_save_pct">Save %1$d%%</string>
     <string name="paywall_risk_reversal">Cancel anytime. Keep your data.</string>

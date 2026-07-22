@@ -81,6 +81,7 @@ class PaywallViewModel @Inject constructor(
     }
 
     fun purchase(activity: Activity) {
+        if (_isPurchasing.value) return
         val selectedId = uiState.value.selectedProductId ?: return
         val product = uiState.value.products.find { it.productId == selectedId } ?: return
 
@@ -88,38 +89,49 @@ class PaywallViewModel @Inject constructor(
         _errorRes.value = null
 
         viewModelScope.launch {
-            when (val result = subscriptionManager.launchPurchaseFlow(activity, product)) {
-                is PurchaseFlowResult.Success -> {
-                    verifyWithServerIfNeeded(result.verification)
+            try {
+                when (val result = subscriptionManager.launchPurchaseFlow(activity, product)) {
+                    is PurchaseFlowResult.Success -> {
+                        verifyWithServerIfNeeded(result.verification)
+                    }
+                    is PurchaseFlowResult.Cancelled -> { /* expected */ }
+                    is PurchaseFlowResult.Pending -> {
+                        _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_purchase_pending
+                    }
+                    is PurchaseFlowResult.Failed -> {
+                        _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_purchase_failed
+                        Log.w(TAG, "Purchase failed: ${result.message}")
+                    }
                 }
-                is PurchaseFlowResult.Cancelled -> { /* expected */ }
-                is PurchaseFlowResult.Failed -> {
-                    _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_purchase_failed
-                    Log.w(TAG, "Purchase failed: ${result.message}")
-                }
+            } finally {
+                _isPurchasing.value = false
             }
-            _isPurchasing.value = false
         }
     }
 
     fun restorePurchases() {
+        if (_isPurchasing.value) return
+        _isPurchasing.value = true
+        _errorRes.value = null
+
         viewModelScope.launch {
-            _isPurchasing.value = true
-            _errorRes.value = null
-            when (val result = subscriptionManager.restorePurchases()) {
-                is RestoreFlowResult.Success -> {
-                    if (result.state.hasLocalPremium) {
-                        verifyWithServerIfNeeded(result.verification)
-                    } else {
-                        _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_no_subscription
+            try {
+                when (val result = subscriptionManager.restorePurchases()) {
+                    is RestoreFlowResult.Success -> {
+                        if (result.state.hasLocalPremium) {
+                            verifyWithServerIfNeeded(result.verification)
+                        } else {
+                            _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_no_subscription
+                        }
+                    }
+                    is RestoreFlowResult.Failed -> {
+                        _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_restore_failed
+                        Log.w(TAG, "Restore failed: ${result.message}")
                     }
                 }
-                is RestoreFlowResult.Failed -> {
-                    _errorRes.value = dev.creapolis.pepinillo.R.string.paywall_restore_failed
-                    Log.w(TAG, "Restore failed: ${result.message}")
-                }
+            } finally {
+                _isPurchasing.value = false
             }
-            _isPurchasing.value = false
         }
     }
 

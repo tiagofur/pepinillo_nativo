@@ -8,6 +8,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -24,6 +25,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,7 +36,7 @@ private const val TAG = "SubscriptionManager"
 private const val REVENUECAT_API_KEY = BuildConfig.REVENUECAT_API_KEY
 
 /** Result of a purchase attempt — distinguishes user cancel from real failure. */
-enum class PurchaseResult { Success, Cancelled, Failed }
+enum class PurchaseResult { Success, Cancelled, Failed, Pending }
 
 data class ProductInfo(
     val productId: String,
@@ -47,6 +50,7 @@ data class ProductInfo(
 
 sealed class PurchaseFlowResult {
     data object Cancelled : PurchaseFlowResult()
+    data object Pending : PurchaseFlowResult()
     data class Failed(val message: String?) : PurchaseFlowResult()
     data class Success(
         val state: SubscriptionState,
@@ -74,7 +78,9 @@ class SubscriptionManager @Inject constructor(
     val products: StateFlow<List<ProductInfo>> = _products.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val operationMutex = Mutex()
     private var isInitialized = false
+
 
     init {
         initializeRevenueCat()
@@ -152,7 +158,7 @@ class SubscriptionManager @Inject constructor(
         }
     }
 
-    suspend fun launchPurchaseFlow(activity: Activity, product: ProductInfo): PurchaseFlowResult {
+    suspend fun launchPurchaseFlow(activity: Activity, product: ProductInfo): PurchaseFlowResult = operationMutex.withLock {
         if (!isInitialized) connect()
 
         return suspendCancellableCoroutine { cont ->
@@ -177,13 +183,13 @@ class SubscriptionManager @Inject constructor(
                     }
                 },
                 onError = { error, userCancelled ->
-                    Log.e(TAG, "Purchase failed: ${error.message}")
+                    Log.e(TAG, "Purchase failed: ${error.code} - ${error.message}")
                     if (cont.isActive) {
                         cont.resume(
-                            if (userCancelled) {
-                                PurchaseFlowResult.Cancelled
-                            } else {
-                                PurchaseFlowResult.Failed(error.message)
+                            when {
+                                userCancelled -> PurchaseFlowResult.Cancelled
+                                error.code == PurchasesErrorCode.PaymentPendingError -> PurchaseFlowResult.Pending
+                                else -> PurchaseFlowResult.Failed(error.message)
                             },
                         )
                     }
@@ -192,7 +198,7 @@ class SubscriptionManager @Inject constructor(
         }
     }
 
-    suspend fun restorePurchases(): RestoreFlowResult {
+    suspend fun restorePurchases(): RestoreFlowResult = operationMutex.withLock {
         if (!isInitialized) connect()
 
         return suspendCancellableCoroutine { cont ->
