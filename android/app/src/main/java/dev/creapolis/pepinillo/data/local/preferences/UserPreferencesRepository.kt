@@ -14,6 +14,8 @@ import dev.creapolis.pepinillo.data.local.entity.PreferenceSyncEntity
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -49,7 +51,10 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class UserPreferencesRepository @Inject constructor(
     private val context: Context,
     private val preferenceSyncDao: PreferenceSyncDao,
+    private val dataStore: DataStore<Preferences> = context.dataStore,
 ) {
+    private val mutex = Mutex()
+
     private object Keys {
         val POMODORO_MINUTES = intPreferencesKey("pomodoro_minutes")
         val SHORT_BREAK_MINUTES = intPreferencesKey("short_break_minutes")
@@ -76,7 +81,7 @@ class UserPreferencesRepository @Inject constructor(
         val SHOW_JOURNAL_AFTER_SESSION = booleanPreferencesKey("show_journal_after_session")
     }
 
-    val preferences: Flow<UserPreferences> = context.dataStore.data.map { prefs ->
+    val preferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
         UserPreferences(
             pomodoroMinutes = prefs[Keys.POMODORO_MINUTES] ?: 25,
             shortBreakMinutes = prefs[Keys.SHORT_BREAK_MINUTES] ?: 5,
@@ -136,20 +141,75 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateDailyReminderMinute(value: Int) = update { it[Keys.DAILY_REMINDER_MINUTE] = value }
     suspend fun updateTimerNotificationsEnabled(value: Boolean) = update { it[Keys.TIMER_NOTIFICATIONS_ENABLED] = value }
 
+    // ── Sync applying helper (clean update from server) ──
+
+    /**
+     * Applies a preference value received from remote sync directly to DataStore
+     * and sets [PreferenceSyncEntity.isDirty] = false with the given [updatedAt]
+     * timestamp atomically under [mutex].
+     */
+    suspend fun updateFromSync(syncKey: String, value: String, updatedAt: Long) = mutex.withLock {
+        val wrote = writeDataStoreValueOnly(syncKey, value)
+        if (wrote) {
+            preferenceSyncDao.upsert(
+                PreferenceSyncEntity(
+                    key = syncKey,
+                    updatedAt = updatedAt,
+                    isDirty = false,
+                )
+            )
+        }
+    }
+
+    private suspend fun writeDataStoreValueOnly(key: String, value: String): Boolean {
+        var success = true
+        dataStore.edit { prefs ->
+            when (key) {
+                "pomodoro_minutes" -> value.toIntOrNull()?.let { prefs[Keys.POMODORO_MINUTES] = it } ?: run { success = false }
+                "short_break_minutes" -> value.toIntOrNull()?.let { prefs[Keys.SHORT_BREAK_MINUTES] = it } ?: run { success = false }
+                "long_break_minutes" -> value.toIntOrNull()?.let { prefs[Keys.LONG_BREAK_MINUTES] = it } ?: run { success = false }
+                "sessions_before_long_break" -> value.toIntOrNull()?.let { prefs[Keys.SESSIONS_BEFORE_LONG_BREAK] = it } ?: run { success = false }
+                "time_block_minutes" -> value.toIntOrNull()?.let { prefs[Keys.TIME_BLOCK_MINUTES] = it } ?: run { success = false }
+                "auto_start_breaks" -> value.toBooleanStrictOrNull()?.let { prefs[Keys.AUTO_START_BREAKS] = it } ?: run { success = false }
+                "auto_start_next_pomodoro" -> value.toBooleanStrictOrNull()?.let { prefs[Keys.AUTO_START_NEXT_POMODORO] = it } ?: run { success = false }
+                "sound_enabled" -> value.toBooleanStrictOrNull()?.let { prefs[Keys.SOUND_ENABLED] = it } ?: run { success = false }
+                "vibration_enabled" -> value.toBooleanStrictOrNull()?.let { prefs[Keys.VIBRATION_ENABLED] = it } ?: run { success = false }
+                "theme_mode" -> {
+                    try {
+                        val mode = ThemeMode.valueOf(value)
+                        prefs[Keys.THEME_MODE] = mode.name
+                    } catch (_: IllegalArgumentException) {
+                        success = false
+                    }
+                }
+                "dynamic_color" -> value.toBooleanStrictOrNull()?.let { prefs[Keys.DYNAMIC_COLOR] = it } ?: run { success = false }
+                "selected_theme" -> prefs[Keys.SELECTED_THEME] = value
+                "keep_screen_on" -> value.toBooleanStrictOrNull()?.let { prefs[Keys.KEEP_SCREEN_ON] = it } ?: run { success = false }
+                "default_mode" -> prefs[Keys.DEFAULT_MODE] = value
+                "show_journal_after_session" -> value.toBooleanStrictOrNull()?.let { prefs[Keys.SHOW_JOURNAL_AFTER_SESSION] = it } ?: run { success = false }
+                "flowtime_min_minutes" -> value.toIntOrNull()?.let { prefs[Keys.FLOWTIME_MIN_MINUTES] = it } ?: run { success = false }
+                "midpoint_check_in" -> value.toBooleanStrictOrNull()?.let { prefs[Keys.MIDPOINT_CHECK_IN] = it } ?: run { success = false }
+                else -> success = false
+            }
+        }
+        return success
+    }
+
     // ── Helpers ──
 
-    private suspend fun updateAndMarkDirty(syncKey: String, block: (MutablePreferences) -> Unit) {
-        context.dataStore.edit { prefs -> block(prefs) }
+    private suspend fun updateAndMarkDirty(syncKey: String, block: (MutablePreferences) -> Unit) = mutex.withLock {
+        val now = System.currentTimeMillis()
+        dataStore.edit { prefs -> block(prefs) }
         preferenceSyncDao.upsert(
             PreferenceSyncEntity(
                 key = syncKey,
-                updatedAt = System.currentTimeMillis(),
+                updatedAt = now,
                 isDirty = true,
             )
         )
     }
 
-    private suspend fun update(block: (MutablePreferences) -> Unit) {
-        context.dataStore.edit { prefs -> block(prefs) }
+    private suspend fun update(block: (MutablePreferences) -> Unit) = mutex.withLock {
+        dataStore.edit { prefs -> block(prefs) }
     }
 }

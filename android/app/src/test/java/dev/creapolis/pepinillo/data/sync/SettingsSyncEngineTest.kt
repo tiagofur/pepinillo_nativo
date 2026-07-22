@@ -125,12 +125,7 @@ class SettingsSyncEngineTest {
 
         engine.applyServerPreferences(serverPrefs)
 
-        coVerify { userPreferencesRepository.updatePomodoroMinutes(30) }
-        coVerify {
-            preferenceSyncDao.upsert(match { entity ->
-                entity.key == "pomodoro_minutes" && !entity.isDirty
-            })
-        }
+        coVerify { userPreferencesRepository.updateFromSync("pomodoro_minutes", "30", any()) }
     }
 
     // -----------------------------------------------------------------------
@@ -157,15 +152,15 @@ class SettingsSyncEngineTest {
 
         engine.applyServerPreferences(serverPrefs)
 
-        coVerify(exactly = 0) { userPreferencesRepository.updatePomodoroMinutes(any()) }
+        coVerify(exactly = 0) { userPreferencesRepository.updateFromSync(any(), any(), any()) }
     }
 
     // -----------------------------------------------------------------------
-    // markAllSynced after success
+    // markSyncedIfUnchanged after success
     // -----------------------------------------------------------------------
 
     @Test
-    fun `all preferences marked synced after successful sync`() = runTest {
+    fun `pushed preferences marked synced if unchanged after successful sync`() = runTest {
         val dirtyPrefs = listOf(
             PreferenceSyncEntity(key = "pomodoro_minutes", updatedAt = 1000L, isDirty = true),
         )
@@ -179,7 +174,7 @@ class SettingsSyncEngineTest {
 
         engine.syncSettings()
 
-        coVerify { preferenceSyncDao.markAllSynced() }
+        coVerify { preferenceSyncDao.markSyncedIfUnchanged("pomodoro_minutes", 1000L) }
     }
 
     // -----------------------------------------------------------------------
@@ -224,7 +219,7 @@ class SettingsSyncEngineTest {
         assertTrue(result.isSuccess)
 
         coVerify { apiClient.getPreferences() }
-        coVerify { userPreferencesRepository.updatePomodoroMinutes(30) }
+        coVerify { userPreferencesRepository.updateFromSync("pomodoro_minutes", "30", any()) }
     }
 
     @Test
@@ -244,11 +239,42 @@ class SettingsSyncEngineTest {
 
         engine.applyServerPreferences(listOf(serverItem))
 
-        coVerify { userPreferencesRepository.updatePomodoroMinutes(45) }
-        coVerify {
-            preferenceSyncDao.upsert(match {
-                it.key == "pomodoro_minutes" && it.updatedAt > 0L && !it.isDirty
-            })
-        }
+        coVerify { userPreferencesRepository.updateFromSync("pomodoro_minutes", "45", any()) }
+    }
+
+    @Test
+    fun `non syncable dirty preference only marks that key synced if unchanged without calling markAllSynced`() = runTest {
+        val dirtyPrefs = listOf(
+            PreferenceSyncEntity(key = "onboarding_completed", updatedAt = 1500L, isDirty = true),
+        )
+        coEvery { preferenceSyncDao.getDirtyPreferences() } returns dirtyPrefs
+
+        val result = engine.syncSettings()
+        assertTrue(result.isSuccess)
+
+        coVerify { preferenceSyncDao.markSyncedIfUnchanged("onboarding_completed", 1500L) }
+        coVerify(exactly = 0) { preferenceSyncDao.markAllSynced() }
+        coVerify(exactly = 0) { apiClient.upsertPreferences(any()) }
+    }
+
+    @Test
+    fun `multiple dirty preferences mark only pushed keys with their respective snapshot timestamps`() = runTest {
+        val dirtyPrefs = listOf(
+            PreferenceSyncEntity(key = "pomodoro_minutes", updatedAt = 1000L, isDirty = true),
+            PreferenceSyncEntity(key = "sound_enabled", updatedAt = 2000L, isDirty = true),
+        )
+        coEvery { preferenceSyncDao.getDirtyPreferences() } returns dirtyPrefs
+
+        val serverResponse = PreferenceSyncResponse(
+            preferences = emptyList(),
+            serverTimestamp = "2025-01-01T00:00:00Z",
+        )
+        coEvery { apiClient.upsertPreferences(any()) } returns NetworkResult.Success(serverResponse)
+
+        engine.syncSettings()
+
+        coVerify { preferenceSyncDao.markSyncedIfUnchanged("pomodoro_minutes", 1000L) }
+        coVerify { preferenceSyncDao.markSyncedIfUnchanged("sound_enabled", 2000L) }
+        coVerify(exactly = 0) { preferenceSyncDao.markAllSynced() }
     }
 }

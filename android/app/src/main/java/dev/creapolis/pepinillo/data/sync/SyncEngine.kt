@@ -256,7 +256,9 @@ class SyncEngine @Inject constructor(
 
                     // Apply returned settings
                     settingsSyncEngine.applyServerPreferences(response.settings)
-                    preferenceSyncDao.markAllSynced()
+                    for (entity in dirtyPrefs) {
+                        preferenceSyncDao.markSyncedIfUnchanged(entity.key, entity.updatedAt)
+                    }
 
                     // Store server timestamp for future incremental sync
                     syncMetadataStore.lastSessionSyncAt = response.serverTimestamp
