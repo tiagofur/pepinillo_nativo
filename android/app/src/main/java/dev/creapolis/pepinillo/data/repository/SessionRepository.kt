@@ -1,6 +1,7 @@
 package dev.creapolis.pepinillo.data.repository
 
 import android.util.Log
+import dev.creapolis.pepinillo.data.local.PepinilloDatabase
 import dev.creapolis.pepinillo.data.local.dao.DailyStatsDao
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
@@ -41,6 +42,7 @@ private const val TAG = "SessionRepository"
 class SessionRepository @Inject constructor(
     private val sessionDao: FocusSessionDao,
     private val dailyStatsDao: DailyStatsDao,
+    private val database: PepinilloDatabase? = null,
 ) {
     private val _currentDayStart = MutableStateFlow(startOfDay(System.currentTimeMillis()))
 
@@ -69,48 +71,51 @@ class SessionRepository @Inject constructor(
         val sessionId = java.util.UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         runCatching {
-            sessionDao.insertSession(
-                FocusSessionEntity(
-                    id = sessionId,
-                    mode = mode,
-                    startTime = startTime,
-                    endTime = endTime,
-                    durationMillis = durationMillis,
-                    linkedTaskId = linkedTaskId,
-                    phase = phase,
-                    createdAt = now,
-                    updatedAt = now,
-                    wasCompleted = wasCompleted,
-                    interruptions = interruptions,
-                    pauseCount = pauseCount,
-                    totalPauseMillis = totalPauseMillis,
-                    pomodoroNumber = pomodoroNumber,
-                    journalNote = journalNote,
-                    satisfactionRating = satisfactionRating,
-                    targetDurationMillis = targetDurationMillis,
-                ),
+            val sessionEntity = FocusSessionEntity(
+                id = sessionId,
+                mode = mode,
+                startTime = startTime,
+                endTime = endTime,
+                durationMillis = durationMillis,
+                linkedTaskId = linkedTaskId,
+                phase = phase,
+                createdAt = now,
+                updatedAt = now,
+                wasCompleted = wasCompleted,
+                interruptions = interruptions,
+                pauseCount = pauseCount,
+                totalPauseMillis = totalPauseMillis,
+                pomodoroNumber = pomodoroNumber,
+                journalNote = journalNote,
+                satisfactionRating = satisfactionRating,
+                targetDurationMillis = targetDurationMillis,
             )
 
             // Only update daily summary stats for completed work sessions (not breaks)
             val isBreakPhase = phase == "ShortBreak" || phase == "LongBreak"
-            if (!isBreakPhase) {
-                val today = startOfDay(System.currentTimeMillis())
+            val updatedStats = if (!isBreakPhase) {
+                val sessionDay = startOfDay(startTime)
                 val minutes = ((durationMillis + 30_000) / 60_000).toInt() // round instead of truncate
-                val existing = dailyStatsDao.getStatsForDate(today) ?: DailyStatsEntity(date = today)
+                val existing = dailyStatsDao.getStatsForDate(sessionDay) ?: DailyStatsEntity(date = sessionDay)
 
-                dailyStatsDao.upsert(
-                    existing.copy(
-                        totalMinutes = existing.totalMinutes + minutes,
-                        // Only count completed work sessions toward the "sessions completed" tally
-                        sessionsCompleted = existing.sessionsCompleted + if (wasCompleted) 1 else 0,
-                        longestSessionMinutes = maxOf(existing.longestSessionMinutes, minutes),
-                        pomodoroMinutes = existing.pomodoroMinutes + if (mode == "Pomodoro") minutes else 0,
-                        flowMinutes = existing.flowMinutes + if (mode == "Flow") minutes else 0,
-                        blocksMinutes = existing.blocksMinutes + if (mode == "Blocks") minutes else 0,
-                        stopwatchMinutes = existing.stopwatchMinutes + if (mode == "Chrono") minutes else 0,
-                        isDirty = true,
-                    ),
+                existing.copy(
+                    totalMinutes = existing.totalMinutes + minutes,
+                    // Only count completed work sessions toward the "sessions completed" tally
+                    sessionsCompleted = existing.sessionsCompleted + if (wasCompleted) 1 else 0,
+                    longestSessionMinutes = maxOf(existing.longestSessionMinutes, minutes),
+                    pomodoroMinutes = existing.pomodoroMinutes + if (mode == "Pomodoro") minutes else 0,
+                    flowMinutes = existing.flowMinutes + if (mode == "Flow") minutes else 0,
+                    blocksMinutes = existing.blocksMinutes + if (mode == "Blocks") minutes else 0,
+                    stopwatchMinutes = existing.stopwatchMinutes + if (mode == "Chrono") minutes else 0,
+                    isDirty = true,
                 )
+            } else null
+
+            if (database != null) {
+                database.recordSessionAtomic(sessionEntity, updatedStats)
+            } else {
+                sessionDao.insertSession(sessionEntity)
+                updatedStats?.let { dailyStatsDao.upsert(it) }
             }
         }.onFailure { Log.e(TAG, "Error recording session", it); return null }
         return sessionId
