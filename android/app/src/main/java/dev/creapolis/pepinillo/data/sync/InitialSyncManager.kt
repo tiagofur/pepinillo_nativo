@@ -256,55 +256,58 @@ class InitialSyncManager @Inject constructor(
 
     // ── DTO → Entity converters (mirrors SyncEngine patterns) ──
 
-    private fun parseRfc3339(dateString: String): Long {
-        return try {
-            val instant = Instant.parse(dateString)
-            instant.toEpochMilli()
-        } catch (e: Exception) {
-            0L
-        }
+    private fun parseRfc3339(dateString: String?, fallback: Long = 0L): Long =
+        SyncDateUtils.parseRfc3339(dateString, fallback)
+
+    private fun TaskDto.toEntity(): TaskEntity {
+        val created = if (createdDate != null) parseRfc3339(createdDate, fallback = System.currentTimeMillis()) else System.currentTimeMillis()
+        val updated = parseRfc3339(updatedAt, fallback = created)
+        return TaskEntity(
+            id = syncId.ifEmpty { "server-$id" },
+            title = title ?: "",
+            notes = description,
+            isCompleted = isFinished,
+            priority = when (priority) {
+                3 -> "High"; 2 -> "Medium"; 1 -> "Low"; else -> "None"
+            },
+            energyLevel = when (energyLevel?.lowercase()) {
+                "deep" -> "Deep"; "light" -> "Light"; else -> "Regular"
+            },
+            estimatedPomodoros = estimatedPomodoros,
+            completedPomodoros = completedPomodoros,
+            createdAt = created,
+            updatedAt = updated,
+            completedAt = if (finishDate != null) parseRfc3339(finishDate, fallback = System.currentTimeMillis()) else null,
+            serverId = id,
+            isDirty = false,
+            isDeleted = isDeleted,
+            syncedAt = System.currentTimeMillis(),
+        )
     }
 
-    private fun TaskDto.toEntity() = TaskEntity(
-        id = syncId.ifEmpty { "server-$id" },
-        title = title ?: "",
-        notes = description,
-        isCompleted = isFinished,
-        priority = when (priority) {
-            3 -> "High"; 2 -> "Medium"; 1 -> "Low"; else -> "None"
-        },
-        energyLevel = when (energyLevel?.lowercase()) {
-            "deep" -> "Deep"; "light" -> "Light"; else -> "Regular"
-        },
-        estimatedPomodoros = estimatedPomodoros,
-        completedPomodoros = completedPomodoros,
-        createdAt = if (createdDate != null) parseRfc3339(createdDate) else System.currentTimeMillis(),
-        updatedAt = parseRfc3339(updatedAt),
-        completedAt = if (finishDate != null) parseRfc3339(finishDate) else null,
-        serverId = id,
-        isDirty = false,
-        isDeleted = isDeleted,
-        syncedAt = System.currentTimeMillis(),
-    )
-
-    private fun PomodoroSessionDto.toEntity() = FocusSessionEntity(
-        id = id,
-        mode = FocusModeSyncMapper.toLocalMode(mode),
-        startTime = parseRfc3339(startedAt),
-        endTime = if (endedAt != null) parseRfc3339(endedAt) else parseRfc3339(startedAt) + (durationSeconds * 1000L),
-        durationMillis = durationSeconds * 1000L,
-        linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
-        phase = FocusPhaseSyncMapper.toLocalPhase(phase),
-        createdAt = parseRfc3339(createdAt),
-        updatedAt = parseRfc3339(updatedAt).let { if (it > 0L) it else parseRfc3339(createdAt) },
-        wasCompleted = wasCompleted,
-        interruptions = interruptions,
-        pauseCount = pauseCount,
-        totalPauseMillis = totalPauseSeconds * 1000L,
-        pomodoroNumber = pomodoroNumber,
-        journalNote = journalNote,
-        satisfactionRating = satisfactionRating,
-        isDirty = false,
-        syncedAt = System.currentTimeMillis(),
-    )
+    private fun PomodoroSessionDto.toEntity(): FocusSessionEntity {
+        val start = parseRfc3339(startedAt, fallback = System.currentTimeMillis())
+        val created = parseRfc3339(createdAt, fallback = start)
+        val updated = parseRfc3339(updatedAt, fallback = created)
+        return FocusSessionEntity(
+            id = id,
+            mode = FocusModeSyncMapper.toLocalMode(mode),
+            startTime = start,
+            endTime = if (endedAt != null) parseRfc3339(endedAt, fallback = start + (durationSeconds * 1000L)) else start + (durationSeconds * 1000L),
+            durationMillis = durationSeconds * 1000L,
+            linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
+            phase = FocusPhaseSyncMapper.toLocalPhase(phase),
+            createdAt = created,
+            updatedAt = updated,
+            wasCompleted = wasCompleted,
+            interruptions = interruptions,
+            pauseCount = pauseCount,
+            totalPauseMillis = totalPauseSeconds * 1000L,
+            pomodoroNumber = pomodoroNumber,
+            journalNote = journalNote,
+            satisfactionRating = satisfactionRating,
+            isDirty = false,
+            syncedAt = System.currentTimeMillis(),
+        )
+    }
 }

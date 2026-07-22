@@ -90,19 +90,11 @@ class SyncEngine @Inject constructor(
     private val subscriptionManager: SubscriptionManager,
     private val syncLock: SyncLock,
 ) {
-    private fun Long.toRfc3339(): String {
-        val instant = Instant.ofEpochMilli(this)
-        return instant.atZone(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-    }
+    private fun Long.toRfc3339(): String = SyncDateUtils.run { this@toRfc3339.toRfc3339() }
 
-    private fun parseRfc3339(dateString: String): Long {
-        return try {
-            val instant = Instant.parse(dateString)
-            instant.toEpochMilli()
-        } catch (e: Exception) {
-            0L
-        }
-    }
+    private fun parseRfc3339(dateString: String?, fallback: Long = 0L): Long =
+        SyncDateUtils.parseRfc3339(dateString, fallback)
+
 
     suspend fun syncAll(): SyncResult = syncLock.withLock { syncAllImpl() }
 
@@ -413,12 +405,21 @@ class SyncEngine @Inject constructor(
                 ?.let { taskDao.getTaskById(it) }
             val local = localBySyncId
                 ?: taskDao.getTaskByServerId(serverTask.id)
+
+            val serverUpdatedAt = parseRfc3339(
+                dateString = serverTask.updatedAt,
+                fallback = parseRfc3339(
+                    dateString = serverTask.createdDate,
+                    fallback = if (local != null && !local.isDirty) local.updatedAt else 0L
+                )
+            )
+
             if (local == null) {
                 val entity = serverTask.toEntity()
                 taskDao.insertTask(entity)
                 mergeServerSubtasks(entity.id, serverTask.subTasks)
                 inserted++
-            } else if (!local.isDirty && parseRfc3339(serverTask.updatedAt) >= local.updatedAt) {
+            } else if (!local.isDirty && serverUpdatedAt >= local.updatedAt) {
 
                 taskDao.updateTask(serverTask.toEntity().copy(
                     id = local.id,
@@ -591,13 +592,15 @@ class SyncEngine @Inject constructor(
         for (serverSession in serverSessions) {
             if (serverSession.id.isEmpty()) continue
             val local = sessionDao.getSessionById(serverSession.id)
-            val serverUpdatedAt = serverSession.serverUpdatedAtMillis()
+            val serverUpdatedAt = serverSession.serverUpdatedAtMillis(
+                fallback = if (local != null && !local.isDirty) local.updatedAt else 0L
+            )
             if (local == null) {
                 sessionDao.upsertSession(serverSession.toEntity())
                 inserted++
             } else if (local.isDirty && local.updatedAt > serverUpdatedAt) {
                 skipped++
-            } else if (serverUpdatedAt > local.updatedAt || local.isDirty) {
+            } else if (serverUpdatedAt >= local.updatedAt || local.isDirty) {
                 sessionDao.upsertSession(
                     serverSession.toEntity().copy(
                         id = local.id,
@@ -614,9 +617,12 @@ class SyncEngine @Inject constructor(
         println("[$TAG]mergeServerSessions: inserted=$inserted, updated=$updated, skipped=$skipped")
     }
 
-    private fun PomodoroSessionDto.serverUpdatedAtMillis(): Long {
-        val parsed = parseRfc3339(updatedAt)
-        return if (parsed > 0L) parsed else parseRfc3339(createdAt)
+    private fun PomodoroSessionDto.serverUpdatedAtMillis(fallback: Long = 0L): Long {
+        val parsed = parseRfc3339(updatedAt, fallback = 0L)
+        if (parsed > 0L) return parsed
+        val created = parseRfc3339(createdAt, fallback = 0L)
+        if (created > 0L) return created
+        return fallback
     }
 
     /**
@@ -818,26 +824,31 @@ class SyncEngine @Inject constructor(
         updatedAt = updatedAt.toRfc3339(),
     )
 
-    private fun PomodoroSessionDto.toEntity() = FocusSessionEntity(
-        id = id,
-        mode = FocusModeSyncMapper.toLocalMode(mode),
-        startTime = parseRfc3339(startedAt),
-        endTime = if (endedAt != null) parseRfc3339(endedAt) else parseRfc3339(startedAt) + (durationSeconds * 1000L),
-        durationMillis = durationSeconds * 1000L,
-        linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
-        phase = FocusPhaseSyncMapper.toLocalPhase(phase),
-        createdAt = parseRfc3339(createdAt),
-        updatedAt = serverUpdatedAtMillis(),
-        wasCompleted = wasCompleted,
-        interruptions = interruptions,
-        pauseCount = pauseCount,
-        totalPauseMillis = totalPauseSeconds * 1000L,
-        pomodoroNumber = pomodoroNumber,
-        journalNote = journalNote,
-        satisfactionRating = satisfactionRating,
-        isDirty = false,
-        syncedAt = System.currentTimeMillis(),
-    )
+    private fun PomodoroSessionDto.toEntity(): FocusSessionEntity {
+        val start = parseRfc3339(startedAt, fallback = System.currentTimeMillis())
+        val created = parseRfc3339(createdAt, fallback = start)
+        val updated = serverUpdatedAtMillis(fallback = created)
+        return FocusSessionEntity(
+            id = id,
+            mode = FocusModeSyncMapper.toLocalMode(mode),
+            startTime = start,
+            endTime = if (endedAt != null) parseRfc3339(endedAt, fallback = start + (durationSeconds * 1000L)) else start + (durationSeconds * 1000L),
+            durationMillis = durationSeconds * 1000L,
+            linkedTaskId = null, // Server taskId is Int, local is String — resolved separately
+            phase = FocusPhaseSyncMapper.toLocalPhase(phase),
+            createdAt = created,
+            updatedAt = updated,
+            wasCompleted = wasCompleted,
+            interruptions = interruptions,
+            pauseCount = pauseCount,
+            totalPauseMillis = totalPauseSeconds * 1000L,
+            pomodoroNumber = pomodoroNumber,
+            journalNote = journalNote,
+            satisfactionRating = satisfactionRating,
+            isDirty = false,
+            syncedAt = System.currentTimeMillis(),
+        )
+    }
 
     private fun TaskEntity.toDto(subtasks: List<SubtaskEntity> = emptyList()) = TaskDto(
         id = serverId ?: 0,
@@ -873,25 +884,29 @@ class SyncEngine @Inject constructor(
     )
 
 
-    private fun TaskDto.toEntity() = TaskEntity(
-        id = syncId.ifEmpty { "server-$id" },
-        title = title ?: "",
-        notes = description,
-        isCompleted = isFinished,
-        priority = when (priority) {
-            3 -> "High"; 2 -> "Medium"; 1 -> "Low"; else -> "None"
-        },
-        energyLevel = when (energyLevel?.lowercase()) {
-            "deep" -> "Deep"; "light" -> "Light"; else -> "Regular"
-        },
-        estimatedPomodoros = estimatedPomodoros,
-        completedPomodoros = completedPomodoros,
-        createdAt = if (createdDate != null) parseRfc3339(createdDate) else System.currentTimeMillis(),
-        updatedAt = parseRfc3339(updatedAt),
-        completedAt = if (finishDate != null) parseRfc3339(finishDate) else null,
-        serverId = id,
-        isDirty = false,
-        isDeleted = isDeleted,
-        syncedAt = System.currentTimeMillis(),
-    )
+    private fun TaskDto.toEntity(): TaskEntity {
+        val created = if (createdDate != null) parseRfc3339(createdDate, fallback = System.currentTimeMillis()) else System.currentTimeMillis()
+        val updated = parseRfc3339(updatedAt, fallback = created)
+        return TaskEntity(
+            id = syncId.ifEmpty { "server-$id" },
+            title = title ?: "",
+            notes = description,
+            isCompleted = isFinished,
+            priority = when (priority) {
+                3 -> "High"; 2 -> "Medium"; 1 -> "Low"; else -> "None"
+            },
+            energyLevel = when (energyLevel?.lowercase()) {
+                "deep" -> "Deep"; "light" -> "Light"; else -> "Regular"
+            },
+            estimatedPomodoros = estimatedPomodoros,
+            completedPomodoros = completedPomodoros,
+            createdAt = created,
+            updatedAt = updated,
+            completedAt = if (finishDate != null) parseRfc3339(finishDate, fallback = System.currentTimeMillis()) else null,
+            serverId = id,
+            isDirty = false,
+            isDeleted = isDeleted,
+            syncedAt = System.currentTimeMillis(),
+        )
+    }
 }

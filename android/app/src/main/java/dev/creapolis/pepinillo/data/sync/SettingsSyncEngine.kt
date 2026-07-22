@@ -95,11 +95,14 @@ class SettingsSyncEngine @Inject constructor(
         for (item in prefs) {
             if (item.key !in syncableKeys) continue
 
-            val serverUpdatedAt = parseRfc3339(item.updatedAt)
             val local = preferenceSyncDao.getByKey(item.key)
+            val serverUpdatedAt = parseRfc3339(
+                dateString = item.updatedAt,
+                fallback = if (local != null && !local.isDirty) local.updatedAt else System.currentTimeMillis()
+            )
 
-            // If server is newer (or no local record), apply server value
-            if (local == null || serverUpdatedAt > local.updatedAt) {
+            // If server is newer, equal (for clean local), or no local record, apply server value
+            if (local == null || serverUpdatedAt >= local.updatedAt || !local.isDirty) {
                 writePreferenceValue(item.key, item.value)
                 preferenceSyncDao.upsert(
                     PreferenceSyncEntity(
@@ -183,17 +186,8 @@ class SettingsSyncEngine @Inject constructor(
         }
     }
 
-    private fun Long.toRfc3339(): String {
-        val instant = Instant.ofEpochMilli(this)
-        return instant.atZone(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-    }
+    private fun Long.toRfc3339(): String = SyncDateUtils.run { this@toRfc3339.toRfc3339() }
 
-    private fun parseRfc3339(dateString: String): Long {
-        return try {
-            val instant = Instant.parse(dateString)
-            instant.toEpochMilli()
-        } catch (e: Exception) {
-            0L
-        }
-    }
+    private fun parseRfc3339(dateString: String?, fallback: Long = 0L): Long =
+        SyncDateUtils.parseRfc3339(dateString, fallback)
 }
