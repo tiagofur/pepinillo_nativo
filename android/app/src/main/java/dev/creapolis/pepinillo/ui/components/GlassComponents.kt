@@ -2,7 +2,6 @@ package dev.creapolis.pepinillo.ui.components
 
 import android.os.Build
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
 
 @Composable
 fun GlassBox(
@@ -25,7 +25,7 @@ fun GlassBox(
     tintOpacity: Float = 0.08f,
     content: @Composable () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = isAppInDarkTheme()
     val shape = RoundedCornerShape(cornerRadius)
     
     // Default tint: use primary dynamic color from Material Theme

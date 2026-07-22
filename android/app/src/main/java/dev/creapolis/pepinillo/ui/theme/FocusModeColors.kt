@@ -23,19 +23,20 @@ fun FocusMode.colorScheme(phase: FocusPhase = FocusPhase.Work): FocusModeColorSc
         FocusMode.Chrono -> theme.stopwatchColor
     }
     val accent = baseAccent.breakVariant(phase)
+    val onAccent = accent.onAccentColor()
     return if (isDark) {
         FocusModeColorScheme(
             containerColor = accent.copy(alpha = 0.15f),
             contentColor = accent,
             accentColor = accent,
-            onAccentColor = Color.Black,
+            onAccentColor = onAccent,
         )
     } else {
         FocusModeColorScheme(
             containerColor = accent.copy(alpha = 0.1f),
             contentColor = accent,
             accentColor = accent,
-            onAccentColor = Color.White,
+            onAccentColor = onAccent,
         )
     }
 }
