@@ -467,7 +467,7 @@ fun FocusScreen(
                     shape = RoundedCornerShape(buttonCornerRadius),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = animatedAccentColor,
-                        contentColor = modeColors.onAccentColor,
+                        contentColor = animatedOnAccentColor,
                     ),
                     contentPadding = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) {
                         ButtonDefaults.ContentPadding

@@ -81,3 +81,19 @@ fun Color.breakVariant(phase: FocusPhase): Color {
         else -> this
     }
 }
+
+/**
+ * Calculates WCAG 2.1 relative luminance for a Compose Color (sRGB)
+ * and returns high-contrast content color (Color.Black or Color.White) for on-accent labels.
+ */
+fun Color.onAccentColor(): Color {
+    fun componentLuminance(c: Float): Float {
+        return if (c <= 0.04045f) c / 12.92f else Math.pow(((c + 0.055) / 1.055), 2.4).toFloat()
+    }
+    val r = componentLuminance(red)
+    val g = componentLuminance(green)
+    val b = componentLuminance(blue)
+    val luminance = 0.2126f * r + 0.7152f * g + 0.0722f * b
+    return if (luminance > 0.45f) Color.Black else Color.White
+}
+
