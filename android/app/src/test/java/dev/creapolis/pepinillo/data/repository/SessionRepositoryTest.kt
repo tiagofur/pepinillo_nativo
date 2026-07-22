@@ -56,6 +56,8 @@ private class FakeDailyStatsDao : DailyStatsDao {
     override fun getStatsInRange(startDate: Long, endDate: Long): Flow<List<DailyStatsEntity>> = flowOf(emptyList())
     override fun getAllDaysWithSessions(): Flow<List<DailyStatsEntity>> = flowOf(emptyList())
     override suspend fun deleteAll() = Unit
+    override suspend fun getDirtyStats(): List<DailyStatsEntity> = emptyList()
+    override suspend fun markSynced(date: Long, syncedAt: Long) = Unit
 }
 
 class SessionRepositoryTest {

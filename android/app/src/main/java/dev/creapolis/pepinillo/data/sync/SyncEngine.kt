@@ -615,6 +615,8 @@ class SyncEngine @Inject constructor(
 
     internal suspend fun syncDailyStatsImpl() {
         try {
+            pushDirtyDailyStats()
+
             // Pull all stats from server for the last 365 days
             // Use the device's local timezone so date boundaries align with the user's calendar.
             val to = LocalDate.now(ZoneId.systemDefault())
@@ -648,8 +650,51 @@ class SyncEngine @Inject constructor(
         }
     }
 
+    private suspend fun pushDirtyDailyStats() {
+        val dirtyStatsList = dailyStatsDao.getDirtyStats()
+        if (dirtyStatsList.isEmpty()) return
+
+        var pushed = 0
+        val now = System.currentTimeMillis()
+        for (entity in dirtyStatsList) {
+            val dateStr = Instant.ofEpochMilli(entity.date)
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+            val dto = FocusStatsDto(
+                date = dateStr,
+                count = entity.sessionsCompleted,
+                pomodoros = entity.pomodoroMinutes / 25,
+                pomodoroDuration = entity.pomodoroMinutes * 60,
+                flowtimeSeconds = entity.flowMinutes * 60,
+                timeblockSeconds = entity.blocksMinutes * 60,
+                stopwatchSeconds = entity.stopwatchMinutes * 60,
+            )
+
+            when (val result = apiClient.upsertStats(dto)) {
+                is NetworkResult.Success -> {
+                    dailyStatsDao.markSynced(entity.date, now)
+                    pushed++
+                }
+                is NetworkResult.Error -> {
+                    Log.w(TAG, "Failed to push dirty daily stat for date $dateStr: ${result.code}")
+                    if (result.code == 401) {
+                        throw AuthenticationException("pushDirtyDailyStats HTTP 401")
+                    }
+                }
+                is NetworkResult.NetworkError -> {
+                    Log.w(TAG, "Network error pushing dirty daily stat for date $dateStr")
+                }
+            }
+        }
+        if (pushed > 0) {
+            println("[$TAG]pushDirtyDailyStats: pushed $pushed daily stats")
+        }
+    }
+
     private suspend fun mergeServerStats(serverStats: List<FocusStatsDto>) {
         var upserted = 0
+        val now = System.currentTimeMillis()
         for (dto in serverStats) {
             if (dto.date.isEmpty()) continue
             val date = try {
@@ -663,26 +708,42 @@ class SyncEngine @Inject constructor(
             val startOfDayMillis = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
             val existing = dailyStatsDao.getStatsForDate(startOfDayMillis)
-            if (existing == null || dto.count > existing.sessionsCompleted) {
-                val pomodoroMinutes = dto.pomodoroDuration / 60
-                val flowtimeMinutes = dto.flowtimeSeconds / 60
-                val timeblockMinutes = dto.timeblockSeconds / 60
-                val stopwatchMinutes = dto.stopwatchSeconds / 60
-                val totalMinutes = pomodoroMinutes + flowtimeMinutes + timeblockMinutes + stopwatchMinutes
 
-                dailyStatsDao.upsert(DailyStatsEntity(
-                    date = startOfDayMillis,
-                    totalMinutes = totalMinutes,
-                    sessionsCompleted = dto.count,
-                    tasksCompleted = existing?.tasksCompleted ?: 0,
-                    longestSessionMinutes = existing?.longestSessionMinutes ?: 0,
-                    pomodoroMinutes = pomodoroMinutes,
-                    flowMinutes = flowtimeMinutes,
-                    blocksMinutes = timeblockMinutes,
-                    stopwatchMinutes = stopwatchMinutes,
-                    isDirty = false,
-                    syncedAt = System.currentTimeMillis(),
-                ))
+            val serverPomodoroMin = dto.pomodoroDuration / 60
+            val serverFlowMin = dto.flowtimeSeconds / 60
+            val serverBlocksMin = dto.timeblockSeconds / 60
+            val serverStopwatchMin = dto.stopwatchSeconds / 60
+            val serverTotalMin = serverPomodoroMin + serverFlowMin + serverBlocksMin + serverStopwatchMin
+
+            val pomodoroMinutes = maxOf(serverPomodoroMin, existing?.pomodoroMinutes ?: 0)
+            val flowMinutes = maxOf(serverFlowMin, existing?.flowMinutes ?: 0)
+            val blocksMinutes = maxOf(serverBlocksMin, existing?.blocksMinutes ?: 0)
+            val stopwatchMinutes = maxOf(serverStopwatchMin, existing?.stopwatchMinutes ?: 0)
+            val totalMinutes = maxOf(serverTotalMin, existing?.totalMinutes ?: 0)
+            val sessionsCompleted = maxOf(dto.count, existing?.sessionsCompleted ?: 0)
+            val tasksCompleted = existing?.tasksCompleted ?: 0
+            val longestSessionMinutes = existing?.longestSessionMinutes ?: 0
+
+            val isStillDirty = existing?.isDirty == true && (
+                existing.sessionsCompleted > dto.count || existing.totalMinutes > serverTotalMin
+            )
+
+            val mergedEntity = DailyStatsEntity(
+                date = startOfDayMillis,
+                totalMinutes = totalMinutes,
+                sessionsCompleted = sessionsCompleted,
+                tasksCompleted = tasksCompleted,
+                longestSessionMinutes = longestSessionMinutes,
+                pomodoroMinutes = pomodoroMinutes,
+                flowMinutes = flowMinutes,
+                blocksMinutes = blocksMinutes,
+                stopwatchMinutes = stopwatchMinutes,
+                isDirty = isStillDirty,
+                syncedAt = now,
+            )
+
+            if (existing != mergedEntity) {
+                dailyStatsDao.upsert(mergedEntity)
                 upserted++
             }
         }

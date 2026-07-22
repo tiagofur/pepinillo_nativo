@@ -5,6 +5,7 @@ import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
 import dev.creapolis.pepinillo.core.billing.SubscriptionTier
+import dev.creapolis.pepinillo.core.network.FocusStatsDto
 import dev.creapolis.pepinillo.core.network.NetworkResult
 import dev.creapolis.pepinillo.core.network.PepinilloApiClient
 import dev.creapolis.pepinillo.core.network.PomodoroSessionDto
@@ -16,6 +17,7 @@ import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
 import dev.creapolis.pepinillo.data.local.dao.SubtaskDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
@@ -24,6 +26,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -660,5 +663,64 @@ class SyncEngineTest {
         } catch (e: AuthenticationException) {
             // Expected
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // syncDailyStats
+    // -----------------------------------------------------------------------
+
+    @Test
+    fun `syncDailyStats pushes dirty stats to server and marks them synced`() = runTest {
+        val dirtyEntity = DailyStatsEntity(
+            date = 1700000000000L,
+            totalMinutes = 50,
+            sessionsCompleted = 2,
+            pomodoroMinutes = 50,
+            isDirty = true,
+        )
+        coEvery { dailyStatsDao.getDirtyStats() } returns listOf(dirtyEntity)
+        coEvery { apiClient.upsertStats(any()) } returns NetworkResult.Success(FocusStatsDto())
+        coEvery { dailyStatsDao.markSynced(any(), any()) } returns Unit
+        coEvery { apiClient.getStats(any(), any()) } returns NetworkResult.Success(emptyList())
+
+        syncEngine.syncDailyStats()
+
+        coVerify(exactly = 1) { apiClient.upsertStats(match { it.count == 2 && it.pomodoroDuration == 3000 }) }
+        coVerify(exactly = 1) { dailyStatsDao.markSynced(1700000000000L, any()) }
+    }
+
+    @Test
+    fun `syncDailyStats applies field-level max and preserves higher local totals`() = runTest {
+        coEvery { dailyStatsDao.getDirtyStats() } returns emptyList()
+        val existingLocal = DailyStatsEntity(
+            date = 1700000000000L,
+            totalMinutes = 60,
+            sessionsCompleted = 3,
+            tasksCompleted = 2,
+            longestSessionMinutes = 30,
+            pomodoroMinutes = 60,
+            isDirty = true,
+        )
+        coEvery { dailyStatsDao.getStatsForDate(any()) } returns existingLocal
+        val serverDto = FocusStatsDto(
+            date = "2026-07-22",
+            count = 1,
+            pomodoroDuration = 1500, // 25 min
+        )
+        coEvery { apiClient.getStats(any(), any()) } returns NetworkResult.Success(listOf(serverDto))
+
+        val capturedEntity = slot<DailyStatsEntity>()
+        coEvery { dailyStatsDao.upsert(capture(capturedEntity)) } returns Unit
+
+        syncEngine.syncDailyStats()
+
+        assertTrue(capturedEntity.isCaptured)
+        val saved = capturedEntity.captured
+        assertEquals(3, saved.sessionsCompleted) // preserved max(3, 1)
+        assertEquals(60, saved.totalMinutes) // preserved max(60, 25)
+        assertEquals(60, saved.pomodoroMinutes) // preserved max(60, 25)
+        assertEquals(2, saved.tasksCompleted) // preserved tasksCompleted
+        assertEquals(30, saved.longestSessionMinutes) // preserved longestSessionMinutes
+        assertTrue(saved.isDirty) // remained dirty because local was strictly higher
     }
 }
