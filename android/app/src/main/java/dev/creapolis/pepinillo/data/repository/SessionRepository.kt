@@ -129,19 +129,25 @@ class SessionRepository @Inject constructor(
 
     /** Count today's completed Pomodoro work sessions (for long break calculation). */
     suspend fun getTodayPomodoroWorkCount(): Int =
-        runCatching { sessionDao.getTodayPomodoroWorkCount(startOfDay(System.currentTimeMillis())) }
+        runCatching {
+            val start = startOfDay(System.currentTimeMillis())
+            val end = addDays(start, 1)
+            sessionDao.getTodayPomodoroWorkCount(start, end)
+        }
             .onFailure { Log.e(TAG, "Error counting today's pomodoro work sessions", it) }
             .getOrDefault(0)
 
     fun getTodaySessions(): Flow<List<FocusSessionEntity>> =
         _currentDayStart.flatMapLatest { dayStart ->
-            sessionDao.getSessionsForDay(dayStart)
+            val dayEnd = addDays(dayStart, 1)
+            sessionDao.getSessionsForDay(dayStart, dayEnd)
                 .catch { e -> Log.e(TAG, "Error loading today sessions", e); emit(emptyList()) }
         }
 
     fun getTodaySessionCount(): Flow<Int> =
         _currentDayStart.flatMapLatest { dayStart ->
-            sessionDao.getSessionCountForDay(dayStart)
+            val dayEnd = addDays(dayStart, 1)
+            sessionDao.getSessionCountForDay(dayStart, dayEnd)
                 .catch { e -> Log.e(TAG, "Error loading session count", e); emit(0) }
         }
 
@@ -155,7 +161,7 @@ class SessionRepository @Inject constructor(
         _currentDayStart.flatMapLatest { todayStart ->
             // 7-day window: [today - 6 days .. today], matching the chart's (6 downTo 0) range.
             // getStatsInRange uses >= startDate AND <= endDate (both inclusive).
-            val weekStart = todayStart - 6L * 24 * 60 * 60 * 1000
+            val weekStart = addDays(todayStart, -6)
             dailyStatsDao.getStatsInRange(weekStart, todayStart)
                 .catch { e -> Log.e(TAG, "Error loading week stats", e); emit(emptyList()) }
         }
@@ -163,7 +169,7 @@ class SessionRepository @Inject constructor(
     fun getMonthStats(): Flow<List<DailyStatsEntity>> =
         _currentDayStart.flatMapLatest { todayStart ->
             // 30-day window: [today - 29 days .. today], consistent with getMonthSessions.
-            val monthStart = todayStart - 29L * 24 * 60 * 60 * 1000
+            val monthStart = addDays(todayStart, -29)
             dailyStatsDao.getStatsInRange(monthStart, todayStart)
                 .catch { e -> Log.e(TAG, "Error loading month stats", e); emit(emptyList()) }
         }
@@ -171,7 +177,7 @@ class SessionRepository @Inject constructor(
     fun getYearStats(): Flow<List<DailyStatsEntity>> =
         _currentDayStart.flatMapLatest { todayStart ->
             // 364-day window: [today - 363 days .. today].
-            val yearStart = todayStart - 363L * 24 * 60 * 60 * 1000
+            val yearStart = addDays(todayStart, -363)
             dailyStatsDao.getStatsInRange(yearStart, todayStart)
                 .catch { e -> Log.e(TAG, "Error loading year stats", e); emit(emptyList()) }
         }
@@ -179,8 +185,8 @@ class SessionRepository @Inject constructor(
     fun getPreviousWeekStats(): Flow<List<DailyStatsEntity>> =
         _currentDayStart.flatMapLatest { todayStart ->
             // Previous 7-day window: [today - 13 days .. today - 7 days].
-            val twoWeeksStart = todayStart - 13L * 24 * 60 * 60 * 1000
-            val weekAgoStart = todayStart - 7L * 24 * 60 * 60 * 1000
+            val twoWeeksStart = addDays(todayStart, -13)
+            val weekAgoStart = addDays(todayStart, -7)
             dailyStatsDao.getStatsInRange(twoWeeksStart, weekAgoStart)
                 .catch { e -> Log.e(TAG, "Error loading previous week stats", e); emit(emptyList()) }
         }
@@ -200,8 +206,8 @@ class SessionRepository @Inject constructor(
         _currentDayStart.flatMapLatest { todayStart ->
             // Same 7-day window as getWeekStats. getSessionsInRange uses exclusive upper bound,
             // so add one full day to include all sessions that started today.
-            val weekStart = todayStart - 6L * 24 * 60 * 60 * 1000
-            val tomorrowStart = todayStart + 24 * 60 * 60 * 1000
+            val weekStart = addDays(todayStart, -6)
+            val tomorrowStart = addDays(todayStart, 1)
             sessionDao.getSessionsInRange(weekStart, tomorrowStart)
                 .catch { e -> Log.e(TAG, "Error loading week sessions", e); emit(emptyList()) }
         }
@@ -209,8 +215,8 @@ class SessionRepository @Inject constructor(
     fun getMonthSessions(): Flow<List<FocusSessionEntity>> =
         _currentDayStart.flatMapLatest { todayStart ->
             // Same 30-day window as getMonthStats.
-            val monthStart = todayStart - 29L * 24 * 60 * 60 * 1000
-            val tomorrowStart = todayStart + 24 * 60 * 60 * 1000
+            val monthStart = addDays(todayStart, -29)
+            val tomorrowStart = addDays(todayStart, 1)
             sessionDao.getSessionsInRange(monthStart, tomorrowStart)
                 .catch { e -> Log.e(TAG, "Error loading month sessions", e); emit(emptyList()) }
         }
@@ -218,8 +224,8 @@ class SessionRepository @Inject constructor(
     fun getYearSessions(): Flow<List<FocusSessionEntity>> =
         _currentDayStart.flatMapLatest { todayStart ->
             // Same 364-day window as getYearStats.
-            val yearStart = todayStart - 363L * 24 * 60 * 60 * 1000
-            val tomorrowStart = todayStart + 24 * 60 * 60 * 1000
+            val yearStart = addDays(todayStart, -363)
+            val tomorrowStart = addDays(todayStart, 1)
             sessionDao.getSessionsInRange(yearStart, tomorrowStart)
                 .catch { e -> Log.e(TAG, "Error loading year sessions", e); emit(emptyList()) }
         }
@@ -229,8 +235,8 @@ class SessionRepository @Inject constructor(
             // Same previous-week window as getPreviousWeekStats: [today-13 .. today-7].
             // getSessionsInRange uses exclusive upper bound, so add one full day to include all
             // sessions that started on today-7 (mirroring the current-week alignment).
-            val twoWeeksStart = todayStart - 13L * 24 * 60 * 60 * 1000
-            val weekAgoEnd = todayStart - 6L * 24 * 60 * 60 * 1000 // exclusive: day after today-7
+            val twoWeeksStart = addDays(todayStart, -13)
+            val weekAgoEnd = addDays(todayStart, -6) // exclusive: day after today-7
             sessionDao.getSessionsInRange(twoWeeksStart, weekAgoEnd)
                 .catch { e -> Log.e(TAG, "Error loading previous week sessions", e); emit(emptyList()) }
         }
@@ -240,8 +246,8 @@ class SessionRepository @Inject constructor(
             // Same previous-month window as getPreviousMonthStats: [today-59 .. today-30].
             // getSessionsInRange uses exclusive upper bound, so today-29 as exclusive upper means
             // the last fully-included day is today-30 (no overlap with current month's today-29).
-            val twoMonthsStart = todayStart - 59L * 24 * 60 * 60 * 1000
-            val monthAgoEnd = todayStart - 29L * 24 * 60 * 60 * 1000 // exclusive: day after today-30
+            val twoMonthsStart = addDays(todayStart, -59)
+            val monthAgoEnd = addDays(todayStart, -29) // exclusive: day after today-30
             sessionDao.getSessionsInRange(twoMonthsStart, monthAgoEnd)
                 .catch { e -> Log.e(TAG, "Error loading previous month sessions", e); emit(emptyList()) }
         }
@@ -249,15 +255,16 @@ class SessionRepository @Inject constructor(
     fun getPreviousMonthStats(): Flow<List<DailyStatsEntity>> =
         _currentDayStart.flatMapLatest { todayStart ->
             // Previous month window: [today-59 .. today-30], matching getPreviousMonthSessions.
-            val twoMonthsStart = todayStart - 59L * 24 * 60 * 60 * 1000
-            val monthAgoStart = todayStart - 30L * 24 * 60 * 60 * 1000
+            val twoMonthsStart = addDays(todayStart, -59)
+            val monthAgoStart = addDays(todayStart, -30)
             dailyStatsDao.getStatsInRange(twoMonthsStart, monthAgoStart)
                 .catch { e -> Log.e(TAG, "Error loading previous month stats", e); emit(emptyList()) }
         }
 
     fun getSessionsForDate(dateMillis: Long): Flow<List<FocusSessionEntity>> {
-        val endOfDay = dateMillis + 24 * 60 * 60 * 1000
-        return sessionDao.getSessionsInRange(dateMillis, endOfDay)
+        val startOfDay = startOfDay(dateMillis)
+        val endOfDay = addDays(startOfDay, 1)
+        return sessionDao.getSessionsInRange(startOfDay, endOfDay)
             .catch { e -> Log.e(TAG, "Error loading sessions for date", e); emit(emptyList()) }
     }
 
@@ -430,6 +437,17 @@ class SessionRepository @Inject constructor(
             cal.set(Calendar.MINUTE, 0)
             cal.set(Calendar.SECOND, 0)
             cal.set(Calendar.MILLISECOND, 0)
+            return cal.timeInMillis
+        }
+
+        fun addDays(startOfDayMillis: Long, days: Int): Long {
+            val cal = Calendar.getInstance(TimeZone.getDefault())
+            cal.timeInMillis = startOfDayMillis
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
+            cal.add(Calendar.DAY_OF_YEAR, days)
             return cal.timeInMillis
         }
     }

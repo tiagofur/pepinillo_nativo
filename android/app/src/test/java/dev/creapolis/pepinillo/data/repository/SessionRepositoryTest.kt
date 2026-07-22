@@ -29,11 +29,11 @@ import java.util.TimeZone
 
 private class FakeFocusSessionDao : FocusSessionDao {
     override suspend fun insertSession(session: FocusSessionEntity) = Unit
-    override fun getSessionsForDay(startOfDay: Long): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
-    override fun getSessionCountForDay(startOfDay: Long): Flow<Int> = flowOf(0)
+    override fun getSessionsForDay(startOfDay: Long, endOfDay: Long): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
+    override fun getSessionCountForDay(startOfDay: Long, endOfDay: Long): Flow<Int> = flowOf(0)
     override fun getSessionsInRange(startTime: Long, endTime: Long): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
     override fun getSessionsForTask(taskId: String): Flow<List<FocusSessionEntity>> = flowOf(emptyList())
-    override suspend fun getTodayPomodoroWorkCount(startOfDay: Long): Int = 0
+    override suspend fun getTodayPomodoroWorkCount(startOfDay: Long, endOfDay: Long): Int = 0
     override suspend fun updateJournalEntry(sessionId: String, journalNote: String?, satisfactionRating: Int?, now: Long) = Unit
     override suspend fun getDirtySessions(): List<FocusSessionEntity> = emptyList()
     override suspend fun markSynced(sessionId: String, syncedAt: Long) = Unit

@@ -191,8 +191,8 @@ class TaskRepository @Inject constructor(
             .onFailure { Log.e(TAG, "Error incrementing pomodoros for $taskId", it) }
     }
 
-    suspend fun getCompletedTodayCount(startOfDay: Long): Int =
-        runCatching { taskDao.getCompletedTodayCount(startOfDay) }
+    suspend fun getCompletedTodayCount(startOfDay: Long, endOfDay: Long = SessionRepository.addDays(startOfDay, 1)): Int =
+        runCatching { taskDao.getCompletedTodayCount(startOfDay, endOfDay) }
             .onFailure { Log.e(TAG, "Error counting completed tasks today", it) }
             .getOrDefault(0)
 
@@ -295,7 +295,8 @@ class TaskRepository @Inject constructor(
                 set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
             }
-            val completedToday = taskDao.getCompletedTodayCount(cal.timeInMillis)
+            val dayStart = cal.timeInMillis
+            val completedToday = taskDao.getCompletedTodayCount(dayStart, SessionRepository.addDays(dayStart, 1))
             WearDataLayerHelper.pushTasksAndStats(
                 context = appContext,
                 tasks = widgetTasks,

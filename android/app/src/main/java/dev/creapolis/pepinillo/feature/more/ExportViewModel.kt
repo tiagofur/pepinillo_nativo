@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.TaskDao
+import dev.creapolis.pepinillo.data.repository.SessionRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -170,13 +171,14 @@ class ExportViewModel @Inject constructor(
 
     private fun dateRangeToEpoch(range: ExportDateRange): Pair<Long, Long> {
         val now = System.currentTimeMillis()
-        val daysMs = when (range) {
-            ExportDateRange.LAST_7_DAYS -> 7L * 24 * 60 * 60 * 1000
-            ExportDateRange.LAST_30_DAYS -> 30L * 24 * 60 * 60 * 1000
-            ExportDateRange.LAST_90_DAYS -> 90L * 24 * 60 * 60 * 1000
+        val todayStart = SessionRepository.startOfDay(now)
+        val startTime = when (range) {
+            ExportDateRange.LAST_7_DAYS -> SessionRepository.addDays(todayStart, -7)
+            ExportDateRange.LAST_30_DAYS -> SessionRepository.addDays(todayStart, -30)
+            ExportDateRange.LAST_90_DAYS -> SessionRepository.addDays(todayStart, -90)
             ExportDateRange.ALL_TIME -> 0L
         }
-        return Pair(now - daysMs, now)
+        return Pair(startTime, now)
     }
 
     private fun formatEpoch(epochMs: Long): String =
