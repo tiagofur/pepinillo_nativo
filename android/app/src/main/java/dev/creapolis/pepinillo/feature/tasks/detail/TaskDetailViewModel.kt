@@ -34,6 +34,7 @@ data class TaskDetailUiState(
     val focusSessions: List<FocusSessionEntity> = emptyList(),
     val isLoading: Boolean = true,
     val showDeleteDialog: Boolean = false,
+    val isPro: Boolean = false,
 ) {
     val subtaskProgress: Pair<Int, Int>
         get() = subtasks.count { it.isCompleted } to subtasks.size
@@ -99,13 +100,15 @@ class TaskDetailViewModel @Inject constructor(
                     taskRepository.getSubtasksForTask(id),
                     taskRepository.getSessionsForTask(id),
                     _showDeleteDialog,
-                ) { task, subtasks, sessions, showDelete ->
+                    featureGate.subscriptionState,
+                ) { task, subtasks, sessions, showDelete, subState ->
                     TaskDetailUiState(
                         task = task,
                         subtasks = subtasks,
                         focusSessions = sessions,
                         isLoading = false,
                         showDeleteDialog = showDelete,
+                        isPro = subState.hasLocalPremium,
                     )
                 }
             }

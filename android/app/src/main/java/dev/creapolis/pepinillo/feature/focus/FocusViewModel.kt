@@ -250,7 +250,7 @@ class FocusViewModel @Inject constructor(
             sessionsToday = combined.todayCount,
             currentStreak = StreakProtectionService.computeProtectedStreak(
                 history = combined.allDays,
-                isPro = featureGate.isPro,
+                isPro = settings.subState.hasLocalPremium,
             ).days,
             greetingRes = computeGreetingRes(),
             currentDate = computeDate(),
