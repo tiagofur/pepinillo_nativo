@@ -26,4 +26,10 @@ interface DailyStatsDao {
 
     @Query("DELETE FROM daily_stats")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM daily_stats WHERE is_dirty = 1")
+    suspend fun getDirtyStats(): List<DailyStatsEntity>
+
+    @Query("UPDATE daily_stats SET is_dirty = 0, synced_at = :syncedAt WHERE date = :date")
+    suspend fun markSynced(date: Long, syncedAt: Long)
 }
