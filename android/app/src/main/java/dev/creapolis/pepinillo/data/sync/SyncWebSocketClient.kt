@@ -56,7 +56,7 @@ class SyncWebSocketClient @Inject constructor(
 
     fun connect() {
         synchronized(connectionLock) {
-            if (shouldConnect && isConnected) return
+            if (shouldConnect && (isConnected || webSocket != null)) return
             val token = authStore.getAccessToken()
             if (token == null) {
                 // Not authenticated — do not open a socket that would just 401.
@@ -64,6 +64,11 @@ class SyncWebSocketClient @Inject constructor(
                 return
             }
             shouldConnect = true
+
+            // Clean up any old dangling webSocket reference if one exists
+            webSocket?.cancel()
+            webSocket = null
+
             val deviceId = authStore.getOrCreateDeviceId()
 
             val wsUrl = buildWsUrl(deviceId)
@@ -77,38 +82,67 @@ class SyncWebSocketClient @Inject constructor(
                 .url(wsUrl)
                 .header("Sec-WebSocket-Protocol", "bearer, $token")
                 .build()
-            webSocket = client.newWebSocket(request, object : WebSocketListener() {
+
+            val listener = object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
-                    Log.d(TAG, "WebSocket connected")
-                    isConnected = true
-                    reconnectAttempt = 0
-                    startHeartbeat()
+                    synchronized(connectionLock) {
+                        if (this@SyncWebSocketClient.webSocket !== webSocket || !shouldConnect) {
+                            Log.d(TAG, "Ignoring stale onOpen callback")
+                            webSocket.close(1000, "Stale socket")
+                            return
+                        }
+                        Log.d(TAG, "WebSocket connected")
+                        isConnected = true
+                        reconnectAttempt = 0
+                        startHeartbeat()
+                    }
+                    scope.launch(Dispatchers.Default) {
+                        try {
+                            syncEngine.syncAll()
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error performing resync on open", e)
+                        }
+                    }
                 }
 
                 override fun onMessage(webSocket: WebSocket, text: String) {
+                    synchronized(connectionLock) {
+                        if (this@SyncWebSocketClient.webSocket !== webSocket || !isConnected) return
+                    }
                     Log.d(TAG, "WebSocket message: $text")
                     handleMessage(text)
                 }
 
                 override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                    // Pong frames are handled by OkHttp at the protocol level,
-                    // but any binary message resets our pong awaiting state
-                    awaitingPong = false
+                    synchronized(connectionLock) {
+                        if (this@SyncWebSocketClient.webSocket !== webSocket || !isConnected) return
+                        awaitingPong = false
+                    }
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    Log.d(TAG, "WebSocket closed: $code $reason")
-                    isConnected = false
-                    stopHeartbeat()
+                    synchronized(connectionLock) {
+                        if (this@SyncWebSocketClient.webSocket !== webSocket) return
+                        Log.d(TAG, "WebSocket closed: $code $reason")
+                        this@SyncWebSocketClient.webSocket = null
+                        isConnected = false
+                        stopHeartbeat()
+                    }
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    Log.w(TAG, "WebSocket failure: ${t.message}")
-                    isConnected = false
-                    stopHeartbeat()
-                    scheduleReconnect()
+                    synchronized(connectionLock) {
+                        if (this@SyncWebSocketClient.webSocket !== webSocket) return
+                        Log.w(TAG, "WebSocket failure: ${t.message}")
+                        this@SyncWebSocketClient.webSocket = null
+                        isConnected = false
+                        stopHeartbeat()
+                        scheduleReconnect()
+                    }
                 }
-            })
+            }
+
+            webSocket = client.newWebSocket(request, listener)
         }
     }
 
@@ -130,19 +164,38 @@ class SyncWebSocketClient @Inject constructor(
                 delay(PING_INTERVAL_MS)
                 if (!isConnected) break
                 awaitingPong = true
-                val sent = webSocket?.send("{\"type\":\"ping\"}") ?: false
+
+                val currentWs: WebSocket?
+                synchronized(connectionLock) {
+                    currentWs = webSocket
+                }
+
+                val sent = currentWs?.send("{\"type\":\"ping\"}") ?: false
                 if (!sent) {
                     Log.w(TAG, "Heartbeat ping failed to send, triggering reconnect")
-                    isConnected = false
-                    scheduleReconnect()
+                    synchronized(connectionLock) {
+                        if (webSocket === currentWs) {
+                            currentWs?.cancel()
+                            webSocket = null
+                            isConnected = false
+                            stopHeartbeat()
+                            scheduleReconnect()
+                        }
+                    }
                     break
                 }
                 delay(PONG_TIMEOUT_MS)
                 if (awaitingPong) {
                     Log.w(TAG, "Pong timeout, triggering reconnect")
-                    webSocket?.cancel()
-                    isConnected = false
-                    scheduleReconnect()
+                    synchronized(connectionLock) {
+                        if (webSocket === currentWs) {
+                            currentWs?.cancel()
+                            webSocket = null
+                            isConnected = false
+                            stopHeartbeat()
+                            scheduleReconnect()
+                        }
+                    }
                     break
                 }
             }
@@ -198,7 +251,11 @@ class SyncWebSocketClient @Inject constructor(
         Log.d(TAG, "Scheduling reconnect in ${delayMs}ms (attempt $reconnectAttempt)")
         scope.launch {
             delay(delayMs)
-            if (!isConnected && shouldConnect) connect()
+            synchronized(connectionLock) {
+                if (!isConnected && shouldConnect && webSocket == null) {
+                    connect()
+                }
+            }
         }
     }
 
