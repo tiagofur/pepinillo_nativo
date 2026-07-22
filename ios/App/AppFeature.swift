@@ -229,6 +229,8 @@ struct AppFeature {
         /// Cold-start restore of a still-authorized Apple credential — no fresh SIWA (#199).
         case appleIdentityRestored(AppleUserInfo)
         case signInWithAppleFailed(wasUserCancelled: Bool = false)
+        /// Apple credential accepted locally, but backend `/auth/apple` failed.
+        case signInWithAppleBackendFailed
         case signOutTapped
         case deleteAccountTapped
         case deleteAccountSucceeded
@@ -1001,7 +1003,13 @@ struct AppFeature {
 
                                 await send(.cachedUserLoaded(dto))
                             } catch {
-                                // Backend auth failed — keep local Apple identity; getMe may recover later.
+                                // Keep local Apple identity so UX does not hard-fail SIWA
+                                // (Apple credential already accepted). Surface the failure
+                                // via the existing signInWithAppleError alert channel.
+                                appLaunchLogger.error(
+                                    "Apple backend login failed: \(error.localizedDescription, privacy: .public)"
+                                )
+                                await send(.signInWithAppleBackendFailed)
                             }
                         }
                     }()
@@ -1011,6 +1019,13 @@ struct AppFeature {
                 guard !wasUserCancelled else { return .none }
                 state.signInWithAppleError = String(
                     localized: "Could not sign in with Apple. Please try again."
+                )
+                return .none
+
+            case .signInWithAppleBackendFailed:
+                // Local SIWA identity is already applied; tell the user cloud sync failed.
+                state.signInWithAppleError = String(
+                    localized: "Signed in with Apple, but account sync failed. Some cloud features may be unavailable."
                 )
                 return .none
 

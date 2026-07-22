@@ -119,10 +119,36 @@ struct ProfileFeature {
                 return .none
 
             case .profileRefreshed(.success(let apiUser)):
+                // Merge with local cache so empty / "Apple User" server fields do not
+                // clobber a better local name/email (SIWA + partial backend profiles).
+                // Mirrors AppFeature getMe resolution.
+                let localUser = state.user
+                let localName = localUser?.name.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let serverName = apiUser.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                let resolvedName: String
+                if !serverName.isEmpty && serverName != "Apple User" {
+                    resolvedName = serverName
+                } else if !localName.isEmpty && localName != "Apple User" {
+                    resolvedName = localName
+                } else if let prefix = apiUser.email.components(separatedBy: "@").first, !prefix.isEmpty {
+                    resolvedName = String(prefix)
+                } else if let localEmail = localUser?.email,
+                          let prefix = localEmail.components(separatedBy: "@").first,
+                          !prefix.isEmpty {
+                    resolvedName = String(prefix)
+                } else {
+                    resolvedName = "Apple User"
+                }
+
+                let serverEmail = apiUser.email.trimmingCharacters(in: .whitespacesAndNewlines)
+                let localEmail = localUser?.email.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let resolvedEmail = !serverEmail.isEmpty ? serverEmail : localEmail
+
                 let dto = CachedUserDTO(
                     id: apiUser.id,
-                    email: apiUser.email,
-                    name: apiUser.name,
+                    email: resolvedEmail,
+                    name: resolvedName,
                     imageUrl: apiUser.imageUrl,
                     subscriptionTier: apiUser.subscriptionTier,
                     subscriptionExpiresAt: apiUser.subscriptionExpiresAt,
