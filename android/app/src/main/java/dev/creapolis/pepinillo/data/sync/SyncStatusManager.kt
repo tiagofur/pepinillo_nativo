@@ -6,9 +6,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.util.Log
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.creapolis.pepinillo.data.local.dao.FocusSessionDao
 import dev.creapolis.pepinillo.data.local.dao.PreferenceSyncDao
@@ -28,7 +25,6 @@ sealed class SyncState {
 }
 
 private const val TAG = "SyncStatusManager"
-private const val IMMEDIATE_SYNC_WORK = "pepinillo_immediate_sync"
 
 @Singleton
 class SyncStatusManager @Inject constructor(
@@ -120,12 +116,6 @@ class SyncStatusManager @Inject constructor(
 
     fun requestImmediateSync() {
         Log.d(TAG, "Requesting immediate sync")
-        val request = OneTimeWorkRequestBuilder<SyncWorker>().build()
-        WorkManager.getInstance(context)
-            .enqueueUniqueWork(
-                IMMEDIATE_SYNC_WORK,
-                ExistingWorkPolicy.REPLACE,
-                request,
-            )
+        SyncWorker.scheduleOneTime(context)
     }
 }
