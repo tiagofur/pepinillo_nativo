@@ -56,4 +56,42 @@ struct AppleSignInTests {
         await store.send(.signInWithAppleFailed(wasUserCancelled: true))
         #expect(store.state.signInWithAppleError == nil)
     }
+
+    @Test("signInWithAppleBackendFailed surfaces sync error without clearing local identity")
+    func backendFailureSurfacesError() async {
+        var state = AppFeature.State()
+        state.appleUserID = "apple-1"
+        state.displayName = "Tiago"
+        state.userEmail = "tiago@example.com"
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        }
+
+        await store.send(.signInWithAppleBackendFailed) {
+            $0.signInWithAppleError = String(
+                localized: "Signed in with Apple, but account sync failed. Some cloud features may be unavailable."
+            )
+        }
+
+        #expect(store.state.appleUserID == "apple-1")
+        #expect(store.state.displayName == "Tiago")
+        #expect(store.state.userEmail == "tiago@example.com")
+    }
+
+    @Test("AppleLoginRequest encodes camelCase keys for backend Fiber")
+    func appleLoginRequestEncodesCamelCase() throws {
+        let request = AppleLoginRequest(
+            idToken: "token-value",
+            nonce: "nonce-value",
+            name: "Tiago",
+            email: "tiago@example.com"
+        )
+        let data = try JSONEncoder().encode(request)
+        let json = try #require(String(data: data, encoding: .utf8))
+        #expect(json.contains("\"idToken\""))
+        #expect(json.contains("\"nonce\""))
+        #expect(!json.contains("id_token"))
+        #expect(!json.contains("refresh_token"))
+    }
 }

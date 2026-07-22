@@ -139,12 +139,14 @@ private struct APIHelper: Sendable {
     }
 
     private var encoder: JSONEncoder {
-        let encoder = JSONEncoder()
-        encoder.keyEncodingStrategy = .convertToSnakeCase
-        return encoder
+        // Backend Fiber handlers use camelCase JSON tags (idToken, refreshToken,
+        // newPassword, imageUrl, appleAuthorizationCode). Encode property names as-is.
+        JSONEncoder()
     }
 
     private var decoder: JSONDecoder {
+        // Responses are also camelCase; convertFromSnakeCase is a no-op for pure
+        // camelCase keys and keeps us tolerant if any snake_case slips through.
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         return decoder
