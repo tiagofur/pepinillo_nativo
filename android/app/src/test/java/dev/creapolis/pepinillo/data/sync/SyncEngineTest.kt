@@ -855,5 +855,37 @@ class SyncEngineTest {
         assertTrue(mergedA != null && mergedA.isCompleted)
         assertTrue(mergedB != null && !mergedB.isCompleted)
     }
+
+    @Test
+    fun `mergeServerTasks applies server task update when server updatedAt is unparseable and local task is not dirty`() = runTest {
+        val localTask = TaskEntity(
+            id = "task-100",
+            title = "Old Local Title",
+            serverId = 100,
+            updatedAt = 1720000000000L,
+            isDirty = false,
+        )
+        coEvery { taskDao.getTaskById("task-100") } returns localTask
+        coEvery { taskDao.getTaskByServerId(100) } returns localTask
+        coEvery { taskDao.getDirtyTasks() } returns emptyList()
+
+        val serverTaskWithInvalidDate = TaskDto(
+            id = 100,
+            syncId = "task-100",
+            title = "Updated Server Title",
+            updatedAt = "invalid-date-format",
+            createdDate = null,
+        )
+        coEvery { apiClient.getTasks() } returns NetworkResult.Success(listOf(serverTaskWithInvalidDate))
+
+        val capturedTask = slot<TaskEntity>()
+        coEvery { taskDao.updateTask(capture(capturedTask)) } returns Unit
+
+        syncEngine.syncTasks()
+
+        assertTrue(capturedTask.isCaptured)
+        assertEquals("Updated Server Title", capturedTask.captured.title)
+        assertTrue("updatedAt should not be 0L", capturedTask.captured.updatedAt > 0L)
+    }
 }
 

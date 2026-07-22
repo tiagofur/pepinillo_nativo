@@ -226,4 +226,29 @@ class SettingsSyncEngineTest {
         coVerify { apiClient.getPreferences() }
         coVerify { userPreferencesRepository.updatePomodoroMinutes(30) }
     }
+
+    @Test
+    fun `applyServerPreferences applies preference when server updatedAt is unparseable and local is not dirty`() = runTest {
+        val localPref = PreferenceSyncEntity(
+            key = "pomodoro_minutes",
+            updatedAt = 1000L,
+            isDirty = false,
+        )
+        coEvery { preferenceSyncDao.getByKey("pomodoro_minutes") } returns localPref
+
+        val serverItem = PreferenceSyncItem(
+            key = "pomodoro_minutes",
+            value = "45",
+            updatedAt = "malformed-date",
+        )
+
+        engine.applyServerPreferences(listOf(serverItem))
+
+        coVerify { userPreferencesRepository.updatePomodoroMinutes(45) }
+        coVerify {
+            preferenceSyncDao.upsert(match {
+                it.key == "pomodoro_minutes" && it.updatedAt > 0L && !it.isDirty
+            })
+        }
+    }
 }
