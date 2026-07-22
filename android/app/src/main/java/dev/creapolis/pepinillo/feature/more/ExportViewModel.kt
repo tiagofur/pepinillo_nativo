@@ -49,6 +49,14 @@ class ExportViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ExportUiState(isPro = featureGate.isPro))
     val uiState: StateFlow<ExportUiState> = _uiState.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            featureGate.subscriptionState.collect { subState ->
+                _uiState.update { it.copy(isPro = subState.hasLocalPremium) }
+            }
+        }
+    }
+
     fun setDateRange(range: ExportDateRange) {
         _uiState.update { it.copy(dateRange = range) }
     }
@@ -66,6 +74,7 @@ class ExportViewModel @Inject constructor(
     }
 
     fun triggerExport(context: Context) {
+        if (!featureGate.isPro) return
         val state = _uiState.value
         if (!state.includeSessions && !state.includeTasks) return
 

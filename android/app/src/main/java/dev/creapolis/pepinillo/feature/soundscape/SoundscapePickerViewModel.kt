@@ -11,6 +11,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -33,6 +34,14 @@ class SoundscapePickerViewModel @Inject constructor(
         )
     )
     val uiState: StateFlow<SoundscapePickerUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            featureGate.subscriptionState.collect { subState ->
+                _uiState.update { it.copy(isPro = subState.hasLocalPremium) }
+            }
+        }
+    }
 
     private var previewJob: Job? = null
 

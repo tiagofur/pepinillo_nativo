@@ -75,7 +75,8 @@ class DashboardViewModel @Inject constructor(
             getStatsForPeriod(period),
             sessionRepository.getAllDaysWithSessions(),
             getSessionsForPeriod(period),
-        ) { todayStats, periodStats, allDays, periodSessions ->
+            featureGate.subscriptionState,
+        ) { todayStats, periodStats, allDays, periodSessions, _ ->
             buildStats(todayStats, periodStats, allDays, periodSessions, period)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
@@ -85,7 +86,8 @@ class DashboardViewModel @Inject constructor(
         sessionRepository.getPreviousWeekSessions(),
         sessionRepository.getWeekStats(),
         sessionRepository.getAllDaysWithSessions(),
-    ) { currentWeekSessions, previousWeekSessions, currentWeekStats, allDays ->
+        featureGate.subscriptionState,
+    ) { currentWeekSessions, previousWeekSessions, currentWeekStats, allDays, _ ->
         buildWeeklyReport(currentWeekSessions, previousWeekSessions, currentWeekStats, allDays)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), WeeklyReportData())
 

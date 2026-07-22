@@ -320,7 +320,7 @@ fun TaskDetailScreen(
                         }
                     }
 
-                    if (viewModel.isPro) {
+                    if (uiState.isPro) {
                         var newSubtaskTitle by remember { mutableStateOf("") }
                         OutlinedTextField(
                             value = newSubtaskTitle,
@@ -798,7 +798,7 @@ fun TaskDetailScreen(
                         }
                     }
                 } else {
-                    if (viewModel.isPro) {
+                    if (uiState.isPro) {
                         var repeatExpanded by remember { mutableStateOf(false) }
                         Box(
                             modifier = Modifier
