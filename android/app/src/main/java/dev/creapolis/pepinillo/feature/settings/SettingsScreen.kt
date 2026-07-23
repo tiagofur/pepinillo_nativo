@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AvTimer
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -102,6 +103,7 @@ private const val TERMS_OF_USE_URL = "https://creapolis.dev/terms-of-use/"
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onNavigateBack: (() -> Unit)? = null,
     onNavigateToAppSetup: () -> Unit = {},
     onNavigateToPaywall: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -133,18 +135,37 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── HEADER ──
-        Text(
-            text = stringResource(R.string.settings_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = stringResource(R.string.settings_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (onNavigateBack != null) {
+                IconButton(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.padding(end = 4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = stringResource(R.string.cd_back),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+            Column {
+                Text(
+                    text = stringResource(R.string.settings_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.settings_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
