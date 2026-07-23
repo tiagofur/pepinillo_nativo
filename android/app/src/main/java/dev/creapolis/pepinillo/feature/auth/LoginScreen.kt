@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.feature.auth
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Login
+import androidx.compose.material.icons.automirrored.rounded.Login
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
@@ -225,8 +226,9 @@ fun LoginScreen(
                 .height(52.dp),
             enabled = !uiState.googleSignInLoading && !uiState.isLoading,
             shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ),
         ) {
@@ -237,7 +239,7 @@ fun LoginScreen(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Rounded.Login,
+                    imageVector = Icons.AutoMirrored.Rounded.Login,
                     contentDescription = stringResource(R.string.auth_google_logo),
                     modifier = Modifier.size(20.dp),
                 )

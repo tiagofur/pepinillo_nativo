@@ -326,6 +326,11 @@ fun PepinilloApp(
     val isImeVisible = WindowInsets.isImeVisible
     val showBottomBar = currentRoute in topLevelRoutes && !isPipMode && !isImeVisible
 
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isExpanded = configuration.screenWidthDp >= 600
+    val showNavRail = isExpanded && showBottomBar
+    val showBottomNav = !isExpanded && showBottomBar
+
     // Global connectivity indicator: a subtle banner when offline.
     val isOnline by syncStatusManager.isOnline.collectAsState()
 
@@ -338,7 +343,7 @@ fun PepinilloApp(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarController.hostState) },
         bottomBar = {
             AnimatedVisibility(
-                visible = showBottomBar,
+                visible = showBottomNav,
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it }),
             ) {
@@ -363,9 +368,6 @@ fun PepinilloApp(
                                     } else {
                                         destination.unselectedIcon
                                     },
-                                    // No contentDescription — the NavigationBarItem label already
-                                    // announces the tab name to TalkBack. A duplicate description
-                                    // caused double announcements (#402).
                                     contentDescription = null,
                                 )
                             },
@@ -376,22 +378,52 @@ fun PepinilloApp(
             }
         },
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
-            // Offline banner — surfaces connectivity state that previously only lived in Settings.
-            OfflineBanner(isOnline = isOnline)
-            val reduceMotion = dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled()
-            val navDuration = if (reduceMotion) 0 else DURATION_NAV_MS
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
-                modifier = Modifier.fillMaxSize(),
-                // Default transition for push/pop: a gentle Material axis-Z slide + fade.
-                // Disabled (0ms) when reduce motion is enabled (#401).
-                enterTransition = { fadeIn(tween(navDuration)) },
-                exitTransition = { fadeOut(tween(navDuration)) },
-                popEnterTransition = { fadeIn(tween(navDuration)) },
-                popExitTransition = { fadeOut(tween(navDuration)) },
-            ) {
+        Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            if (showNavRail) {
+                androidx.compose.material3.NavigationRail {
+                    TopLevelDestination.entries.forEach { destination ->
+                        val isSelected = currentRoute == destination.route
+                        androidx.compose.material3.NavigationRailItem(
+                            selected = isSelected,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = if (isSelected) {
+                                        destination.selectedIcon
+                                    } else {
+                                        destination.unselectedIcon
+                                    },
+                                    contentDescription = null,
+                                )
+                            },
+                            label = { Text(stringResource(destination.labelRes)) },
+                        )
+                    }
+                }
+            }
+
+            Column(modifier = Modifier.weight(1f).fillMaxSize()) {
+                // Offline banner — surfaces connectivity state that previously only lived in Settings.
+                OfflineBanner(isOnline = isOnline)
+                val reduceMotion = dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled()
+                val navDuration = if (reduceMotion) 0 else DURATION_NAV_MS
+                NavHost(
+                    navController = navController,
+                    startDestination = startDestination,
+                    modifier = Modifier.fillMaxSize(),
+                    enterTransition = { fadeIn(tween(navDuration)) },
+                    exitTransition = { fadeOut(tween(navDuration)) },
+                    popEnterTransition = { fadeIn(tween(navDuration)) },
+                    popExitTransition = { fadeOut(tween(navDuration)) },
+                ) {
             composable(TopLevelDestination.Focus.route) {
                 FocusScreen(
                     isPipMode = isPipMode,
@@ -674,10 +706,11 @@ fun PepinilloApp(
                     },
                 )
             }
-        }
+        } // NavHost
         } // Column
-    }
-    } // CompositionLocalProvider(LocalSnackbarController)
+        } // Row
+    } // Scaffold
+    } // CompositionLocalProvider
 }
 
 /**
