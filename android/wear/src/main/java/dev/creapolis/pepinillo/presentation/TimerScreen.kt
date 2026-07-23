@@ -19,15 +19,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.Lock
-import androidx.wear.compose.material.ChipDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,31 +35,32 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.ChildButton
+import androidx.wear.compose.material3.CircularProgressIndicator
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.ProgressIndicatorDefaults
+import androidx.wear.compose.material3.Text
 import dev.creapolis.pepinillo.R
-import kotlinx.coroutines.delay
-import androidx.wear.compose.material.Button
-import androidx.wear.compose.material.ButtonDefaults
-import androidx.wear.compose.material.CircularProgressIndicator
-import androidx.wear.compose.material.CompactChip
-import androidx.wear.compose.material.Icon
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
 import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearTimerDisplay
 import dev.creapolis.pepinillo.data.WearTimerState
+import kotlinx.coroutines.delay
 
 @Composable
 fun TimerScreen(
@@ -82,7 +82,7 @@ fun TimerScreen(
 
     when {
         // Ambient: render minimal — dimmed time text on black, no colors/icons/chrome.
-        // Minimizes lit pixels and burn-in risk during always-on.
+        // Minimises lit pixels and burn-in risk during always-on.
         isAmbient && (state.status == "Running" || state.status == "Paused") -> {
             var ambientDisplayTime by remember { mutableStateOf(state.displayTime) }
             LaunchedEffect(
@@ -194,8 +194,6 @@ private fun TimerActiveLayout(
     var localDisplayTime by remember { mutableStateOf(state.displayTime) }
 
     // Keys: only restart the countdown loop when the phase/status fundamentally changes.
-    // Avoid displayTime/progress as keys — they update every 30s from the phone push
-    // and would restart the local tick loop unnecessarily.
     LaunchedEffect(
         state.status,
         state.phaseEndEpochMs,
@@ -224,16 +222,17 @@ private fun TimerActiveLayout(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        // Display floor: ensure the ring reads active even at progress ~0 (count-up
-        // modes such as Flow and Chrono start empty). Mirrors the phone-side fix.
+        // Display floor: ensure the ring reads active even at progress ~0 (count-up modes).
         val displayProgress = if (localProgress < 0.02f) 0.02f else localProgress
         CircularProgressIndicator(
-            progress = displayProgress.coerceIn(0f, 1f),
+            progress = { displayProgress.coerceIn(0f, 1f) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp),
-            indicatorColor = modeColor,
-            trackColor = modeColor.copy(alpha = 0.15f),
+            colors = ProgressIndicatorDefaults.colors(
+                indicatorColor = modeColor,
+                trackColor = modeColor.copy(alpha = 0.15f),
+            ),
             strokeWidth = 6.dp,
         )
 
@@ -249,13 +248,12 @@ private fun TimerActiveLayout(
             }
             Text(
                 text = modeLabel,
-                style = MaterialTheme.typography.caption2,
+                style = MaterialTheme.typography.labelSmall,
                 color = modeColor,
                 textAlign = TextAlign.Center,
             )
 
-            // Timer display — TalkBack reads a rich description (phase + time + progress)
-            // instead of the raw "05:23" string which it parses awkwardly as separate digits.
+            // Timer display — TalkBack reads a rich description.
             val timeAnnouncement = buildString {
                 append(state.phaseLabel)
                 append(", ")
@@ -266,7 +264,7 @@ private fun TimerActiveLayout(
                 text = localDisplayTime,
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Light,
-                color = MaterialTheme.colors.onSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.clearAndSetSemantics {
                     contentDescription = timeAnnouncement
@@ -277,8 +275,8 @@ private fun TimerActiveLayout(
             // Phase label
             Text(
                 text = state.phaseLabel,
-                style = MaterialTheme.typography.caption2,
-                color = MaterialTheme.colors.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
 
@@ -286,7 +284,7 @@ private fun TimerActiveLayout(
             state.linkedTaskName?.let { taskName ->
                 Text(
                     text = "🔗 $taskName",
-                    style = MaterialTheme.typography.caption2,
+                    style = MaterialTheme.typography.labelSmall,
                     color = modeColor.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center,
                     maxLines = 1,
@@ -299,12 +297,11 @@ private fun TimerActiveLayout(
 
             val isBreakPhase = state.phase == "ShortBreak" || state.phase == "LongBreak"
 
-            // Action buttons — round, large touch targets (48dp+)
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Stop (44x44) — Material You tonal style
+                // Stop (44×44)
                 Button(
                     onClick = {
                         if (showStopConfirm) {
@@ -316,8 +313,8 @@ private fun TimerActiveLayout(
                     },
                     modifier = Modifier.size(44.dp),
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = if (showStopConfirm) Color(0xFFB71C1C) else MaterialTheme.colors.surface,
-                        contentColor = if (showStopConfirm) Color.White else MaterialTheme.colors.onSurface,
+                        containerColor = if (showStopConfirm) Color(0xFFB71C1C) else MaterialTheme.colorScheme.surfaceContainer,
+                        contentColor = if (showStopConfirm) Color.White else MaterialTheme.colorScheme.onSurface,
                     ),
                 ) {
                     if (showStopConfirm) {
@@ -335,12 +332,12 @@ private fun TimerActiveLayout(
                     }
                 }
 
-                // Pause / Resume (52x52, primary action — biggest)
+                // Pause / Resume (52×52, primary action)
                 Button(
                     onClick = if (state.status == "Running") onPause else onResume,
                     modifier = Modifier.size(52.dp),
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = modeColor,
+                        containerColor = modeColor,
                         contentColor = Color.White,
                     ),
                 ) {
@@ -351,14 +348,14 @@ private fun TimerActiveLayout(
                     )
                 }
 
-                // Skip (44x44) — only during break phases, tonal style
+                // Skip (44×44) — only during break phases
                 if (isBreakPhase) {
                     Button(
                         onClick = onSkip,
                         modifier = Modifier.size(44.dp),
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = MaterialTheme.colors.surface,
-                            contentColor = MaterialTheme.colors.onSurface,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            contentColor = MaterialTheme.colorScheme.onSurface,
                         ),
                     ) {
                         Icon(
@@ -391,14 +388,15 @@ private fun WaitingForNextLayout(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        // Pulsing completed ring
         CircularProgressIndicator(
-            progress = 1f,
+            progress = { 1f },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp),
-            indicatorColor = modeColor.copy(alpha = 0.4f),
-            trackColor = modeColor.copy(alpha = 0.1f),
+            colors = ProgressIndicatorDefaults.colors(
+                indicatorColor = modeColor.copy(alpha = 0.4f),
+                trackColor = modeColor.copy(alpha = 0.1f),
+            ),
             strokeWidth = 6.dp,
         )
 
@@ -406,7 +404,6 @@ private fun WaitingForNextLayout(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Celebration emoji
             Text(
                 text = completionEmoji,
                 fontSize = 28.sp,
@@ -415,16 +412,14 @@ private fun WaitingForNextLayout(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Title
             Text(
                 text = completionTitle,
-                style = MaterialTheme.typography.body2,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colors.onSurface,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
 
-            // Pomodoro progress dots (for Pomodoro mode)
             if (state.mode == "Pomodoro" && state.completedSessions > 0) {
                 Spacer(modifier = Modifier.height(4.dp))
                 PomodoroDots(
@@ -434,13 +429,12 @@ private fun WaitingForNextLayout(
                 )
             }
 
-            // Linked task
             state.linkedTaskName?.let { taskName ->
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "🔗 $taskName",
-                    style = MaterialTheme.typography.caption2,
-                    color = MaterialTheme.colors.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -450,7 +444,7 @@ private fun WaitingForNextLayout(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Primary action: Start next phase (large, easy to tap)
+            // Primary action: Start next phase
             Button(
                 onClick = onResume,
                 modifier = Modifier
@@ -458,13 +452,13 @@ private fun WaitingForNextLayout(
                     .padding(horizontal = 24.dp)
                     .height(48.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = modeColor,
+                    containerColor = modeColor,
                     contentColor = Color.White,
                 ),
             ) {
                 Text(
                     text = actionLabel,
-                    style = MaterialTheme.typography.body2,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                 )
@@ -472,12 +466,17 @@ private fun WaitingForNextLayout(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Secondary: Stop (also tappable)
-            CompactChip(
+            // Secondary: Stop
+            ChildButton(
                 onClick = onStop,
-                label = { Text(stringResource(R.string.stop), maxLines = 1) },
-                colors = androidx.wear.compose.material.ChipDefaults.secondaryChipColors(),
-            )
+                colors = ButtonDefaults.childButtonColors(),
+            ) {
+                Text(
+                    text = stringResource(R.string.stop),
+                    maxLines = 1,
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
         }
     }
 }
@@ -497,14 +496,7 @@ private fun PomodoroDots(
             Box(
                 modifier = Modifier
                     .size(8.dp)
-                    .clip(CircleShape)
-                    .then(
-                        if (isFilled) {
-                            Modifier.padding(0.dp) // filled handled by background
-                        } else {
-                            Modifier.padding(0.dp)
-                        },
-                    ),
+                    .clip(CircleShape),
             ) {
                 androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
                     if (isFilled) {
@@ -532,8 +524,10 @@ private fun DisconnectedLayout(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(8.dp),
-            indicatorColor = MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.3f),
-            trackColor = MaterialTheme.colors.onSurfaceVariant.copy(alpha = 0.08f),
+            colors = ProgressIndicatorDefaults.colors(
+                indicatorColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
+                trackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.08f),
+            ),
             strokeWidth = 4.dp,
         )
 
@@ -546,16 +540,16 @@ private fun DisconnectedLayout(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.connecting_to_phone),
-                style = MaterialTheme.typography.body2,
-                color = MaterialTheme.colors.onSurface,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
             if (pendingCommandCount > 0) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.queued, pendingCommandCount),
-                    style = MaterialTheme.typography.caption2,
-                    color = MaterialTheme.colors.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                 )
             }
@@ -581,7 +575,6 @@ private fun IdleLayout(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
         ) {
-            // ... (stats and linked task code remains the same)
             // Today's stats (compact row)
             if (stats.totalMinutes > 0 || stats.sessions > 0 || stats.streak > 0) {
                 Row(
@@ -591,21 +584,21 @@ private fun IdleLayout(
                     if (stats.totalMinutes > 0) {
                         Text(
                             text = "⏱ ${formatMinutes(stats.totalMinutes)}",
-                            style = MaterialTheme.typography.caption2,
-                            color = MaterialTheme.colors.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     if (stats.sessions > 0) {
                         Text(
                             text = "✅ ${stats.sessions}",
-                            style = MaterialTheme.typography.caption2,
-                            color = MaterialTheme.colors.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     if (stats.streak > 0) {
                         Text(
                             text = "🔥 ${stats.streak}d",
-                            style = MaterialTheme.typography.caption2,
+                            style = MaterialTheme.typography.labelSmall,
                             color = Color(0xFFFF9800),
                         )
                     }
@@ -617,8 +610,8 @@ private fun IdleLayout(
             linkedTaskName?.let { name ->
                 Text(
                     text = "🔗 $name",
-                    style = MaterialTheme.typography.caption2,
-                    color = MaterialTheme.colors.primary,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -629,19 +622,17 @@ private fun IdleLayout(
 
             Text(
                 text = stringResource(R.string.start),
-                style = MaterialTheme.typography.title3,
-                color = MaterialTheme.colors.onSurface,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Voice input — the most native watch affordance for "start focus".
             VoiceStartChip(isPro = isPro, onStartMode = onStartMode)
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Mode buttons in 2x2 grid
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth(),
@@ -678,7 +669,7 @@ private fun IdleLayout(
                     label = stringResource(R.string.mode_chrono),
                     color = WearModeColors.Chrono,
                     onClick = { onStartMode("Chrono") },
-                    isLocked = false, // Chrono is free per PRD v3.1
+                    isLocked = false,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -694,11 +685,6 @@ private fun formatMinutes(totalMinutes: Int): String {
 
 // ─────────────────────────── Shared ───────────────────────────────────────
 
-/**
- * Voice input chip: launches the system speech recognizer and maps spoken mode names
- * to the corresponding focus mode. "Start focus" / "start pomodoro" → Pomodoro, etc.
- * The most native watch affordance for hands-free timer start.
- */
 @Composable
 private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
     val voiceLauncher = rememberLauncherForActivityResult(
@@ -733,8 +719,8 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
             .height(40.dp),
         shape = RoundedCornerShape(20.dp),
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = MaterialTheme.colors.surface,
-            contentColor = MaterialTheme.colors.primary,
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            contentColor = MaterialTheme.colorScheme.primary,
         ),
     ) {
         Icon(
@@ -745,8 +731,8 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
         Spacer(modifier = Modifier.size(4.dp))
         Text(
             text = "Voice start",
-            style = MaterialTheme.typography.caption2,
-            color = MaterialTheme.colors.primary,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -764,8 +750,8 @@ private fun ModeButton(
         modifier = modifier.height(40.dp),
         shape = RoundedCornerShape(20.dp),
         colors = ButtonDefaults.buttonColors(
-            backgroundColor = if (isLocked) MaterialTheme.colors.surface.copy(alpha = 0.5f) else color.copy(alpha = 0.15f),
-            contentColor = if (isLocked) MaterialTheme.colors.onSurface.copy(alpha = 0.4f) else color,
+            containerColor = if (isLocked) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f) else color.copy(alpha = 0.15f),
+            contentColor = if (isLocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f) else color,
         ),
     ) {
         Row(
@@ -782,7 +768,7 @@ private fun ModeButton(
             }
             Text(
                 text = label,
-                style = MaterialTheme.typography.caption2,
+                style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
