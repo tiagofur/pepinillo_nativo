@@ -267,24 +267,23 @@ class FocusEngine @Inject constructor(
             interruptionCount = 0
         }        // Seed completedSessions from DB if starting fresh (Idle or WaitingForNext with 0 sessions)
         if (current.mode == FocusMode.Pomodoro && current.status == TimerStatus.Idle) {
+            _state.update {
+                it.copy(
+                    status = TimerStatus.Running,
+                    sessionStartTime = if (it.sessionStartTime == 0L) System.currentTimeMillis() else it.sessionStartTime,
+                )
+            }
             startJob?.cancel()
             val job = scope.launch {
                 val todayCount = sessionRepository.getTodayPomodoroWorkCount()
                 if (!isActive || startJob != coroutineContext[Job]) return@launch
                 pomodoroNumber = todayCount + 1
-                var shouldStartLoop = false
-                _state.update {
-                    if (!isActive || startJob != coroutineContext[Job] || it.status != TimerStatus.Idle) return@update it
-                    shouldStartLoop = true
-                    it.copy(
-                        status = TimerStatus.Running,
-                        completedSessions = todayCount,
-                        sessionStartTime = if (it.sessionStartTime == 0L) System.currentTimeMillis() else it.sessionStartTime,
-                    )
+                _state.update { s ->
+                    if (s.status == TimerStatus.Running) s.copy(completedSessions = todayCount) else s
                 }
-                if (shouldStartLoop && isActive && startJob == coroutineContext[Job]) startTimerLoop()
             }
             startJob = job
+            startTimerLoop()
             return
         }
 
