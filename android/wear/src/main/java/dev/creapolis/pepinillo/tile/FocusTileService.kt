@@ -24,8 +24,9 @@ class FocusTileService : TileService() {
 
     companion object {
         private const val RESOURCES_VERSION = "1"
-        private const val REFRESH_IDLE_MS = 60_000L
-        private const val REFRESH_ACTIVE_MS = 1_000L
+        internal const val REFRESH_IDLE_MS = 60_000L
+        // 5s is sufficient for a countdown tile; 1s burns battery with no user-visible benefit (#389).
+        internal const val REFRESH_ACTIVE_MS = 30_000L
     }
 
     override fun onTileRequest(
@@ -73,7 +74,8 @@ class FocusTileService : TileService() {
             state
         }
 
-        val isActive = liveState.status == "Running"
+        // WaitingForNext keeps a live countdown too, so treat it as active (#389).
+        val isActive = liveState.status == "Running" || liveState.status == "WaitingForNext"
         val refreshMs = if (isActive) REFRESH_ACTIVE_MS else REFRESH_IDLE_MS
 
         val root = if (!isPro) {
@@ -105,20 +107,21 @@ class FocusTileService : TileService() {
             .build()
     }
 
+    // Mode keys match FocusMode.name — align with enum (Flow/Blocks/Chrono not Flowtime/TimeBlock/Stopwatch) (#389).
     private fun modeColor(mode: String, colors: WearThemeColors): Long = when (mode) {
         "Pomodoro" -> colors.pomodoroColor
-        "Flowtime" -> colors.flowtimeColor
-        "TimeBlock" -> colors.timeBlockColor
-        "Stopwatch" -> colors.stopwatchColor
-        else -> 0xFFE84D3D
+        "Flow"     -> colors.flowtimeColor
+        "Blocks"   -> colors.timeBlockColor
+        "Chrono"   -> colors.stopwatchColor
+        else       -> 0xFFE84D3D
     }
 
     private fun modeEmoji(mode: String): String = when (mode) {
         "Pomodoro" -> "\uD83C\uDF45"
-        "Flowtime" -> "\uD83C\uDF0A"
-        "TimeBlock" -> "\u23F3"
-        "Stopwatch" -> "\u23F1\uFE0F"
-        else -> "\uD83C\uDF45"
+        "Flow"     -> "\uD83C\uDF0A"
+        "Blocks"   -> "\u23F3"
+        "Chrono"   -> "\u23F1\uFE0F"
+        else       -> "\uD83C\uDF45"
     }
 
     private fun launchAction(): ActionBuilders.LaunchAction =
