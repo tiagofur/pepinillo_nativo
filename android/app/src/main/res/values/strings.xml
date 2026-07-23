@@ -318,6 +318,7 @@
 
     <!-- Feedback Messages -->
     <string name="msg_task_added">Task added</string>
+    <string name="msg_task_added_to_inbox">Task added to Inbox</string>
     <string name="msg_task_update_failed">Failed to update task</string>
     <string name="msg_task_add_failed">Failed to add task</string>
     <string name="msg_task_delete_failed">Failed to delete task</string>
