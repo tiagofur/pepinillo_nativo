@@ -379,17 +379,19 @@ fun PepinilloApp(
         Column(modifier = Modifier.padding(innerPadding)) {
             // Offline banner — surfaces connectivity state that previously only lived in Settings.
             OfflineBanner(isOnline = isOnline)
+            val reduceMotion = dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled()
+            val navDuration = if (reduceMotion) 0 else DURATION_NAV_MS
             NavHost(
-            navController = navController,
-            startDestination = startDestination,
-            modifier = Modifier.fillMaxSize(),
-            // Default transition for push/pop: a gentle Material axis-Z slide + fade.
-            // This replaces the previous hard cut between every screen.
-            enterTransition = { fadeIn(tween(DURATION_NAV_MS)) },
-            exitTransition = { fadeOut(tween(DURATION_NAV_MS)) },
-            popEnterTransition = { fadeIn(tween(DURATION_NAV_MS)) },
-            popExitTransition = { fadeOut(tween(DURATION_NAV_MS)) },
-        ) {
+                navController = navController,
+                startDestination = startDestination,
+                modifier = Modifier.fillMaxSize(),
+                // Default transition for push/pop: a gentle Material axis-Z slide + fade.
+                // Disabled (0ms) when reduce motion is enabled (#401).
+                enterTransition = { fadeIn(tween(navDuration)) },
+                exitTransition = { fadeOut(tween(navDuration)) },
+                popEnterTransition = { fadeIn(tween(navDuration)) },
+                popExitTransition = { fadeOut(tween(navDuration)) },
+            ) {
             composable(TopLevelDestination.Focus.route) {
                 FocusScreen(
                     isPipMode = isPipMode,
@@ -523,6 +525,7 @@ fun PepinilloApp(
                 popExitTransition = SecondaryPopExitTransition,
             ) {
                 SettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
                     onNavigateToAppSetup = { navController.navigate("app_setup") },
                     onNavigateToPaywall = { navController.navigate("paywall") },
                 )
