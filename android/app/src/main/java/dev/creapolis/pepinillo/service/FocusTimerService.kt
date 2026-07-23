@@ -99,6 +99,9 @@ class FocusTimerService : Service() {
         private const val KEY_R_DAY_START = "r_day_start"
         private const val KEY_R_ELAPSED = "r_elapsed"
         private const val KEY_R_LINKED_TASK_ID = "linked_task_id"
+        private const val KEY_R_POMODORO_NUMBER = "r_pomodoro_number"
+        private const val KEY_R_PAUSE_COUNT = "r_pause_count"
+        private const val KEY_R_TOTAL_PAUSE_MILLIS = "r_total_pause_millis"
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, FocusTimerService::class.java))
@@ -122,6 +125,7 @@ class FocusTimerService : Service() {
                 .putString(KEY_R_LINKED_TASK_ID, state.linkedTaskId)
                 .putBoolean(KEY_R_ACTIVE, true)
                 .putLong(KEY_R_DAY_START, SessionRepository.startOfDay(System.currentTimeMillis()))
+                .putInt(KEY_R_POMODORO_NUMBER, state.completedSessions + 1)
                 .apply()
         }
 
@@ -149,6 +153,9 @@ class FocusTimerService : Service() {
                 completedSessions = prefs.getInt(KEY_R_COMPLETED, 0),
                 linkedTaskId = prefs.getString(KEY_R_LINKED_TASK_ID, null),
                 savedDayStart = prefs.getLong(KEY_R_DAY_START, 0L),
+                pomodoroNumber = prefs.getInt(KEY_R_POMODORO_NUMBER, 1),
+                pauseCount = prefs.getInt(KEY_R_PAUSE_COUNT, 0),
+                totalPauseMillis = prefs.getLong(KEY_R_TOTAL_PAUSE_MILLIS, 0L),
             )
         }
     }
@@ -163,6 +170,9 @@ class FocusTimerService : Service() {
         val completedSessions: Int,
         val linkedTaskId: String? = null,
         val savedDayStart: Long = 0L,
+        val pomodoroNumber: Int = 1,
+        val pauseCount: Int = 0,
+        val totalPauseMillis: Long = 0L,
     )
 
     override fun onCreate() {
@@ -212,6 +222,9 @@ class FocusTimerService : Service() {
                         status = recovery.status,
                         savedDayStart = recovery.savedDayStart,
                         linkedTaskId = recovery.linkedTaskId,
+                        pomodoroNumber = recovery.pomodoroNumber,
+                        pauseCount = recovery.pauseCount,
+                        totalPauseMillis = recovery.totalPauseMillis,
                     )
                 }
             } else {
@@ -332,13 +345,6 @@ class FocusTimerService : Service() {
                 val sessionsToday = info.sessionsToday
                 val themeId = info.themeId
                 try {
-                    // Update notification every tick
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                        ContextCompat.checkSelfPermission(this@FocusTimerService, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-                        getSystemService(NotificationManager::class.java)
-                            .notify(NOTIFICATION_ID, buildNotification(state))
-                    }
-
                     // Resolve linked task title
                     val taskTitle = if (state.linkedTaskId != null) {
                         taskRepository.getTaskTitle(state.linkedTaskId)
@@ -347,8 +353,20 @@ class FocusTimerService : Service() {
                     // Detect changes to bypass throttle
                     val now = System.currentTimeMillis()
                     val statusChanged = state.status != previousStatus
+                    val phaseChanged = state.phase != previousPhase
                     val modeChanged = state.mode != previousMode
                     val themeChanged = themeId != previousThemeId
+
+                    // Update notification on status/phase/mode changes or widget throttle,
+                    // relying on standard Chronometer countdown for smooth 1Hz ticks without 4Hz binder spam
+                    val shouldUpdateNotification = statusChanged || phaseChanged || modeChanged || themeChanged
+                    if (shouldUpdateNotification) {
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                            ContextCompat.checkSelfPermission(this@FocusTimerService, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                            getSystemService(NotificationManager::class.java)
+                                .notify(NOTIFICATION_ID, buildNotification(state))
+                        }
+                    }
 
                     val phaseCompletedForWaiting = previousStatus == TimerStatus.Running &&
                         state.status == TimerStatus.WaitingForNext &&
@@ -398,7 +416,8 @@ class FocusTimerService : Service() {
                     if (shouldUpdateWidget) {
                         lastWidgetUpdate = now
 
-                        val finishTimestamp = if (state.status == TimerStatus.Running) {
+                        val finishTimestamp = if (state.status == TimerStatus.Running &&
+                            state.mode != FocusMode.Flow && state.mode != FocusMode.Chrono && state.totalMillis > 0L) {
                             val remainingMillis = (state.totalMillis - state.elapsedMillis).coerceAtLeast(0L)
                             System.currentTimeMillis() + remainingMillis
                         } else null

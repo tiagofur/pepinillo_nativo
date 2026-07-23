@@ -118,7 +118,19 @@ class FocusEngine @Inject constructor(
 
     // Day-change tracking for mid-session midnight crossing
     @Volatile private var currentDayStartMillis: Long = SessionRepository.startOfDay(System.currentTimeMillis())
-    @Volatile private var nextDayStartMillis: Long = currentDayStartMillis + 86_400_000L
+    @Volatile private var nextDayStartMillis: Long = calculateNextDayStart(currentDayStartMillis)
+
+    private fun calculateNextDayStart(dayStartMillis: Long): Long {
+        val cal = java.util.Calendar.getInstance().apply {
+            timeInMillis = dayStartMillis
+            add(java.util.Calendar.DAY_OF_YEAR, 1)
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }
+        return cal.timeInMillis
+    }
 
     /**
      * Resets daily counters when the calendar day changes.
@@ -130,7 +142,7 @@ class FocusEngine @Inject constructor(
         val newDayStart = SessionRepository.startOfDay(System.currentTimeMillis())
         if (newDayStart == currentDayStartMillis) return
         currentDayStartMillis = newDayStart
-        nextDayStartMillis = newDayStart + 86_400_000L
+        nextDayStartMillis = calculateNextDayStart(newDayStart)
         _state.update { it.copy(completedSessions = 0) }
         pomodoroNumber = 1
         sessionRepository.notifyDayChanged()
@@ -157,14 +169,21 @@ class FocusEngine @Inject constructor(
         status: TimerStatus = TimerStatus.Running,
         savedDayStart: Long = 0L,
         linkedTaskId: String? = null,
+        pomodoroNumber: Int = 1,
+        pauseCount: Int = 0,
+        totalPauseMillis: Long = 0L,
     ) {
+        this.pomodoroNumber = pomodoroNumber
+        this.pauseCount = pauseCount
+        this.totalPauseMillis = totalPauseMillis
+
         // If the day changed since the last save, reset the cycle counter
         val effectiveCompletedSessions = if (savedDayStart != 0L) {
             val currentDay = SessionRepository.startOfDay(System.currentTimeMillis())
             if (savedDayStart != currentDay) {
                 currentDayStartMillis = currentDay
-                nextDayStartMillis = currentDay + 86_400_000L
-                pomodoroNumber = 1
+                nextDayStartMillis = calculateNextDayStart(currentDay)
+                this.pomodoroNumber = 1
                 sessionRepository.notifyDayChanged()
                 0
             } else completedSessions
@@ -246,18 +265,16 @@ class FocusEngine @Inject constructor(
             pauseStartTime = 0L
             totalPauseMillis = 0L
             interruptionCount = 0
-        }
-
-        // Seed completedSessions from DB if starting fresh (Idle or WaitingForNext with 0 sessions)
+        }        // Seed completedSessions from DB if starting fresh (Idle or WaitingForNext with 0 sessions)
         if (current.mode == FocusMode.Pomodoro && current.status == TimerStatus.Idle) {
             startJob?.cancel()
-            startJob = scope.launch {
+            val job = scope.launch {
                 val todayCount = sessionRepository.getTodayPomodoroWorkCount()
-                if (!isActive) return@launch
+                if (!isActive || startJob == null) return@launch
                 pomodoroNumber = todayCount + 1
                 var shouldStartLoop = false
                 _state.update {
-                    if (it.status != TimerStatus.Idle) return@update it
+                    if (!isActive || startJob == null || it.status != TimerStatus.Idle) return@update it
                     shouldStartLoop = true
                     it.copy(
                         status = TimerStatus.Running,
@@ -265,8 +282,9 @@ class FocusEngine @Inject constructor(
                         sessionStartTime = if (it.sessionStartTime == 0L) System.currentTimeMillis() else it.sessionStartTime,
                     )
                 }
-                if (shouldStartLoop && isActive) startTimerLoop()
+                if (shouldStartLoop && isActive && startJob != null) startTimerLoop()
             }
+            startJob = job
             return
         }
 
@@ -389,6 +407,7 @@ class FocusEngine @Inject constructor(
     }
 
     fun pause() {
+        if (_state.value.status != TimerStatus.Running) return
         startJob?.cancel()
         startJob = null
         timerJob?.cancel()
@@ -444,16 +463,16 @@ class FocusEngine @Inject constructor(
         feedbackManager.onPhaseComplete(s.mode, s.phase)
 
         // Record the completed phase as a session
-        recordSession(s, wasCompleted = true)
+        val saveSuccessful = recordSession(s, wasCompleted = true)
 
         val prefs = prefsRepo.preferences.first()
 
         when {
             // Pomodoro mode: cycle through work → break → work → ... → long break
             s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.Work -> {
-                val newCompleted = s.completedSessions + 1
+                val newCompleted = if (saveSuccessful) s.completedSessions + 1 else s.completedSessions
                 val isLongBreak = prefs.sessionsBeforeLongBreak > 0 &&
-                    newCompleted % prefs.sessionsBeforeLongBreak == 0
+                    newCompleted > 0 && newCompleted % prefs.sessionsBeforeLongBreak == 0
                 val breakMillis = if (isLongBreak) {
                     prefs.longBreakMinutes * 60 * 1000L
                 } else {
@@ -495,7 +514,7 @@ class FocusEngine @Inject constructor(
                 _state.value = FocusTimerState(
                     mode = FocusMode.Blocks,
                     totalMillis = getTotalMillis(FocusMode.Blocks, FocusPhase.Work, prefs),
-                    completedSessions = s.completedSessions + 1,
+                    completedSessions = if (saveSuccessful) s.completedSessions + 1 else s.completedSessions,
                     linkedTaskId = s.linkedTaskId,
                 )
             }
@@ -510,8 +529,8 @@ class FocusEngine @Inject constructor(
         }
     }
 
-    private suspend fun recordSession(s: FocusTimerState, wasCompleted: Boolean = true) {
-        if (s.elapsedMillis < 1000) return // ignore sessions shorter than 1 second
+    private suspend fun recordSession(s: FocusTimerState, wasCompleted: Boolean = true): Boolean {
+        if (s.elapsedMillis < 1000) return true // ignore sessions shorter than 1 second
 
         val now = System.currentTimeMillis()
         val targetMillis = if (s.mode == FocusMode.Flow || s.mode == FocusMode.Chrono) null else s.totalMillis
@@ -550,7 +569,7 @@ class FocusEngine @Inject constructor(
                     targetDurationMillis = targetMillis,
                 ),
             )
-            return
+            return false
         }
 
         // Emit event for work session completion (for journal UI)
@@ -562,6 +581,7 @@ class FocusEngine @Inject constructor(
         if (s.linkedTaskId != null && s.phase == FocusPhase.Work) {
             taskRepository.incrementPomodoros(s.linkedTaskId)
         }
+        return true
     }
 
     /** Re-attempt persisting a [FailedSession]. Returns the new session id, or null if it failed again. */

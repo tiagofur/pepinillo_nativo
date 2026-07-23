@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import dev.creapolis.pepinillo.core.billing.SubscriptionManager
+
 private const val TAG = "SyncWebSocketClient"
 private const val PING_INTERVAL_MS = 30_000L // 30 seconds
 private const val PONG_TIMEOUT_MS = 10_000L // 10 seconds to receive pong
@@ -30,6 +32,7 @@ class SyncWebSocketClient @Inject constructor(
     private val authStore: AuthStore,
     private val syncEngine: SyncEngine,
     private val settingsSyncEngine: SettingsSyncEngine,
+    private val subscriptionManager: SubscriptionManager,
     @ApplicationScope private val scope: CoroutineScope,
 ) {
     private var webSocket: WebSocket? = null
@@ -96,11 +99,13 @@ class SyncWebSocketClient @Inject constructor(
                         reconnectAttempt = 0
                         startHeartbeat()
                     }
-                    scope.launch(Dispatchers.Default) {
-                        try {
-                            syncEngine.syncAll()
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Error performing resync on open", e)
+                    if (subscriptionManager.subscriptionState.value.canSync) {
+                        scope.launch(Dispatchers.Default) {
+                            try {
+                                syncEngine.syncAll()
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error performing resync on open", e)
+                            }
                         }
                     }
                 }
@@ -217,8 +222,16 @@ class SyncWebSocketClient @Inject constructor(
         scope.launch(Dispatchers.Default) {
             try {
                 val json = JSONObject(text)
-                when (json.optString("type")) {
-                    "pong" -> awaitingPong = false
+                val type = json.optString("type")
+                if (type == "pong") {
+                    awaitingPong = false
+                    return@launch
+                }
+                if (!subscriptionManager.subscriptionState.value.canSync) {
+                    Log.d(TAG, "Skipping push sync ($type): user has no backend sync entitlement")
+                    return@launch
+                }
+                when (type) {
                     "task_updated" -> syncEngine.syncTasks()
                     "sessions_synced" -> syncEngine.syncSessions()
                     "settings_updated" -> settingsSyncEngine.syncSettings()

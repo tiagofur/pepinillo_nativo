@@ -317,6 +317,10 @@ class SyncEngine @Inject constructor(
     suspend fun syncTasks() = syncLock.withLock { syncTasksImpl() }
 
     internal suspend fun syncTasksImpl() {
+        if (!subscriptionManager.subscriptionState.value.canSync) {
+            println("[$TAG]syncTasksImpl: NO BACKEND SYNC ENTITLEMENT")
+            return
+        }
         val dirtyTasks = taskDao.getDirtyTasks()
 
         if (dirtyTasks.isEmpty()) {
@@ -427,13 +431,19 @@ class SyncEngine @Inject constructor(
                 mergeServerSubtasks(entity.id, serverTask.subTasks)
                 inserted++
             } else if (!local.isDirty && serverUpdatedAt >= local.updatedAt) {
-
-                taskDao.updateTask(serverTask.toEntity().copy(
+                val serverEntity = serverTask.toEntity()
+                val merged = serverEntity.copy(
                     id = local.id,
+                    dueDate = serverEntity.dueDate ?: local.dueDate,
+                    scheduledForToday = if (serverTask.dueDate != null || serverTask.scheduledForToday) serverEntity.scheduledForToday else local.scheduledForToday,
+                    sortOrder = if (serverEntity.sortOrder != 0) serverEntity.sortOrder else local.sortOrder,
+                    recurrenceRule = serverEntity.recurrenceRule ?: local.recurrenceRule,
+                    recurringTemplateID = serverEntity.recurringTemplateID ?: local.recurringTemplateID,
                     isDirty = false,
                     syncedAt = now,
                     serverId = serverTask.id,
-                ))
+                )
+                taskDao.updateTask(merged)
                 mergeServerSubtasks(local.id, serverTask.subTasks)
                 updated++
             }
@@ -535,6 +545,10 @@ class SyncEngine @Inject constructor(
         syncLock.withLock { syncSessionsImpl(precomputedTaskIdMap) }
 
     internal suspend fun syncSessionsImpl(precomputedTaskIdMap: Map<String, Int>? = null) {
+        if (!subscriptionManager.subscriptionState.value.canSync) {
+            println("[$TAG]syncSessionsImpl: NO BACKEND SYNC ENTITLEMENT")
+            return
+        }
         val dirtySessions = sessionDao.getDirtySessions()
         val userId = authStore.getUserId() ?: ""
         val taskIdMap = precomputedTaskIdMap ?: buildTaskIdMap()
@@ -672,6 +686,10 @@ class SyncEngine @Inject constructor(
     suspend fun syncDailyStats() = syncLock.withLock { syncDailyStatsImpl() }
 
     internal suspend fun syncDailyStatsImpl() {
+        if (!subscriptionManager.subscriptionState.value.canSync) {
+            println("[$TAG]syncDailyStatsImpl: NO BACKEND SYNC ENTITLEMENT")
+            return
+        }
         try {
             pushDirtyDailyStats()
 
@@ -904,6 +922,11 @@ class SyncEngine @Inject constructor(
             title = title,
             description = notes,
             energyLevel = energyLevel.lowercase(),
+            recurrenceRule = recurrenceRule,
+            recurringTemplateId = recurringTemplateID,
+            dueDate = dueDate?.toRfc3339(),
+            scheduledForToday = scheduledForToday,
+            sortOrder = sortOrder,
             isFinished = isCompleted,
             priority = when (priority) {
                 "High" -> 3; "Medium" -> 2; "Low" -> 1; else -> 0
@@ -948,6 +971,11 @@ class SyncEngine @Inject constructor(
             energyLevel = when (energyLevel?.lowercase()) {
                 "deep" -> "Deep"; "light" -> "Light"; else -> "Regular"
             },
+            recurrenceRule = recurrenceRule,
+            recurringTemplateID = recurringTemplateId,
+            dueDate = dueDate?.let { parseRfc3339(it, fallback = 0L).takeIf { d -> d > 0L } },
+            scheduledForToday = scheduledForToday,
+            sortOrder = sortOrder,
             estimatedPomodoros = estimatedPomodoros,
             completedPomodoros = completedPomodoros,
             createdAt = created,
