@@ -67,7 +67,7 @@ class WearFocusService : Service() {
     private fun observeTimerState() {
         WearDataStore.timerState
             .onEach { timerState ->
-                if (timerState.status == "Idle") {
+                if (!isForegroundServiceStatus(timerState.status)) {
                     stopSelf()
                 } else {
                     val notification = buildNotification(timerState)
@@ -149,6 +149,14 @@ class WearFocusService : Service() {
     companion object {
         private const val NOTIFICATION_ID = 4201
         private const val CHANNEL_ID = "wear_focus_timer_channel"
+
+        /**
+         * Returns true if the given timer status should keep the foreground service alive.
+         * Used by observeTimerState() to decide whether to call stopSelf().
+         */
+        fun isForegroundServiceStatus(status: String): Boolean {
+            return status == "Running" || status == "Paused" || status == "WaitingForNext"
+        }
 
         fun start(context: Context) {
             val intent = Intent(context, WearFocusService::class.java)

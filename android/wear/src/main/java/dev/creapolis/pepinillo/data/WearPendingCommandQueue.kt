@@ -8,10 +8,29 @@ internal data class PendingCommand(
 )
 
 internal object WearPendingCommandQueue {
-    const val MAX_PENDING_COMMANDS = 40
+    private const val MAX_PENDING_COMMANDS = 40
 
-    fun enqueue(existing: List<PendingCommand>, path: String, data: ByteArray): List<PendingCommand> =
-        (existing + PendingCommand(path = path, data = data)).takeLast(MAX_PENDING_COMMANDS)
+    /**
+     * Timer paths that should be coalesced: only the most-recent command for each path survives
+     * offline queuing. This preserves start→stop ordering without dropping unrelated items (#391).
+     */
+    private val COALESCED_PATHS = setOf(
+        "/pepinillo/cmd/timer_start",
+        "/pepinillo/cmd/timer_stop",
+        "/pepinillo/cmd/timer_pause",
+        "/pepinillo/cmd/timer_resume",
+    )
+
+    fun enqueue(existing: List<PendingCommand>, path: String, data: ByteArray): List<PendingCommand> {
+        val incoming = PendingCommand(path = path, data = data)
+        val deduplicated = if (path in COALESCED_PATHS) {
+            // Drop any earlier queued command for this path — only the latest intent matters.
+            existing.filterNot { it.path == path } + incoming
+        } else {
+            existing + incoming
+        }
+        return deduplicated.takeLast(MAX_PENDING_COMMANDS)
+    }
 
     suspend fun flush(
         existing: List<PendingCommand>,
