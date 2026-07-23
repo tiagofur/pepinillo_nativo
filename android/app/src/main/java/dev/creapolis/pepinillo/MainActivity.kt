@@ -14,6 +14,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
 import dev.creapolis.pepinillo.data.sync.SyncEngine
+import dev.creapolis.pepinillo.domain.timer.FocusEngine
+import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -137,8 +139,7 @@ class MainActivity : ComponentActivity() {
     private var pendingNavRoute by mutableStateOf<String?>(null)
     private var onboardingCompleted by mutableStateOf(true)
 
-    private val focusViewModel: FocusViewModel by viewModels()
-
+    @Inject lateinit var focusEngine: FocusEngine
     @Inject lateinit var syncEngine: SyncEngine
     @Inject lateinit var authStore: AuthStore
     @Inject lateinit var prefsRepository: UserPreferencesRepository
@@ -258,8 +259,7 @@ class MainActivity : ComponentActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         // Enter PiP if a focus session is active
-        val uiState = focusViewModel.uiState.value
-        if (uiState.isRunning) {
+        if (focusEngine.state.value.status == TimerStatus.Running) {
             enterPictureInPictureMode(
                 android.app.PictureInPictureParams.Builder().build()
             )

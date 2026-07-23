@@ -15,6 +15,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.glance.appwidget.updateAll
@@ -279,12 +280,19 @@ class FocusTimerService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
+
             ACTION_START_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
-                val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
+                val requestedMode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
+                val effectiveMode = if (featureGate.canUseMode(requestedMode)) {
+                    requestedMode
+                } else {
+                    Log.w("FocusTimerService", "Blocked mode $modeName for free tier — falling back to Pomodoro")
+                    FocusMode.Pomodoro
+                }
                 startCollectingIfNeeded()
                 serviceScope.launch {
-                    focusEngine.selectMode(mode)
+                    focusEngine.selectMode(effectiveMode)
                     focusEngine.start()
                 }
                 // Push tasks+stats to watch immediately
@@ -295,9 +303,15 @@ class FocusTimerService : Service() {
             }
             ACTION_SELECT_MODE -> {
                 val modeName = intent.getStringExtra("mode") ?: "Pomodoro"
-                val mode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
+                val requestedMode = FocusMode.entries.find { it.name == modeName } ?: FocusMode.Pomodoro
+                val effectiveMode = if (featureGate.canUseMode(requestedMode)) {
+                    requestedMode
+                } else {
+                    Log.w("FocusTimerService", "Blocked mode selection $modeName for free tier — falling back to Pomodoro")
+                    FocusMode.Pomodoro
+                }
                 startCollectingIfNeeded()
-                serviceScope.launch { focusEngine.selectMode(mode) }
+                serviceScope.launch { focusEngine.selectMode(effectiveMode) }
                 return START_STICKY
             }
         }

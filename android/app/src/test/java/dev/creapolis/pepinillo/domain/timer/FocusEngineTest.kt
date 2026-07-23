@@ -1705,4 +1705,49 @@ class FocusEngineTest {
 
         assertEquals(0, engine.state.value.completedSessions)
     }
+
+    @Test
+    fun `shortening duration mid-session from preferences does not double record session`() = runTest {
+        coEvery {
+            sessionRepository.recordSession(
+                mode = any(),
+                startTime = any(),
+                endTime = any(),
+                durationMillis = any(),
+                linkedTaskId = any(),
+                phase = any(),
+                wasCompleted = any(),
+                interruptions = any(),
+                pauseCount = any(),
+                totalPauseMillis = any(),
+                pomodoroNumber = any(),
+                targetDurationMillis = any(),
+            )
+        } returns "session_1"
+
+        engine.start()
+        testScope.testScheduler.advanceTimeBy(5_000L)
+
+        // Shorten pomodoro duration to 1 minute
+        prefsFlow.value = UserPreferences(pomodoroMinutes = 1)
+        testScope.testScheduler.advanceTimeBy(60_000L)
+
+        // Verify sessionRepository.recordSession was called exactly once for work phase completion
+        coVerify(exactly = 1) {
+            sessionRepository.recordSession(
+                mode = FocusMode.Pomodoro.name,
+                startTime = any(),
+                endTime = any(),
+                durationMillis = any(),
+                linkedTaskId = any(),
+                phase = FocusPhase.Work.name,
+                wasCompleted = true,
+                interruptions = any(),
+                pauseCount = any(),
+                totalPauseMillis = any(),
+                pomodoroNumber = any(),
+                targetDurationMillis = any(),
+            )
+        }
+    }
 }

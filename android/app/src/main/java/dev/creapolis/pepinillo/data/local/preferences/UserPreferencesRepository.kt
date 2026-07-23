@@ -19,6 +19,8 @@ import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
+import androidx.datastore.preferences.core.floatPreferencesKey
+
 data class UserPreferences(
     val pomodoroMinutes: Int = 25,
     val shortBreakMinutes: Int = 5,
@@ -43,6 +45,8 @@ data class UserPreferences(
     val midpointCheckIn: Boolean = false,
     val timerNotificationsEnabled: Boolean = true,
     val showJournalAfterSession: Boolean = true,
+    val selectedSoundscape: String? = null,
+    val soundscapeVolume: Float = 0.5f,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -79,6 +83,8 @@ class UserPreferencesRepository @Inject constructor(
         val MIDPOINT_CHECK_IN = booleanPreferencesKey("midpoint_check_in")
         val TIMER_NOTIFICATIONS_ENABLED = booleanPreferencesKey("timer_notifications_enabled")
         val SHOW_JOURNAL_AFTER_SESSION = booleanPreferencesKey("show_journal_after_session")
+        val SELECTED_SOUNDSCAPE = stringPreferencesKey("selected_soundscape")
+        val SOUNDSCAPE_VOLUME = floatPreferencesKey("soundscape_volume")
     }
 
     val preferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -106,6 +112,8 @@ class UserPreferencesRepository @Inject constructor(
             midpointCheckIn = prefs[Keys.MIDPOINT_CHECK_IN] ?: false,
             timerNotificationsEnabled = prefs[Keys.TIMER_NOTIFICATIONS_ENABLED] ?: true,
             showJournalAfterSession = prefs[Keys.SHOW_JOURNAL_AFTER_SESSION] ?: true,
+            selectedSoundscape = prefs[Keys.SELECTED_SOUNDSCAPE],
+            soundscapeVolume = prefs[Keys.SOUNDSCAPE_VOLUME] ?: 0.5f,
         )
     }
 
@@ -140,6 +148,10 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun updateDailyReminderHour(value: Int) = update { it[Keys.DAILY_REMINDER_HOUR] = value }
     suspend fun updateDailyReminderMinute(value: Int) = update { it[Keys.DAILY_REMINDER_MINUTE] = value }
     suspend fun updateTimerNotificationsEnabled(value: Boolean) = update { it[Keys.TIMER_NOTIFICATIONS_ENABLED] = value }
+    suspend fun updateSelectedSoundscape(name: String?) = update {
+        if (name != null) it[Keys.SELECTED_SOUNDSCAPE] = name else it.remove(Keys.SELECTED_SOUNDSCAPE)
+    }
+    suspend fun updateSoundscapeVolume(volume: Float) = update { it[Keys.SOUNDSCAPE_VOLUME] = volume }
 
     // ── Sync applying helper (clean update from server) ──
 

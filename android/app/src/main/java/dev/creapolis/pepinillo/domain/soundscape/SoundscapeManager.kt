@@ -2,7 +2,10 @@ package dev.creapolis.pepinillo.domain.soundscape
 
 import android.content.Context
 import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.media.MediaPlayer
+import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -17,6 +20,7 @@ import javax.inject.Singleton
  *
  * Features:
  * - Looping playback from raw resources
+ * - AudioFocus management (ducking, pause/resume on focus loss/gain)
  * - Smooth fade-in (1.5s) and fade-out (1.2s)
  * - Real-time volume adjustment
  * - Thread-safe via single-threaded coroutine scope
@@ -33,6 +37,32 @@ class SoundscapeManager @Inject constructor(
         private set
 
     private var targetVolume: Float = 0.5f
+
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+    private var focusRequest: AudioFocusRequest? = null
+
+    private val audioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_LOSS -> stop()
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                try {
+                    mediaPlayer?.pause()
+                } catch (_: Exception) {}
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                val ducked = (targetVolume * 0.2f).coerceIn(0f, 1f)
+                try {
+                    mediaPlayer?.setVolume(ducked, ducked)
+                } catch (_: Exception) {}
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                try {
+                    mediaPlayer?.start()
+                    mediaPlayer?.setVolume(targetVolume, targetVolume)
+                } catch (_: Exception) {}
+            }
+        }
+    }
 
     companion object {
         private const val FADE_IN_DURATION_MS = 1500L
@@ -54,6 +84,10 @@ class SoundscapeManager @Inject constructor(
         stopInternal()
 
         targetVolume = volume.coerceIn(0f, 1f)
+
+        if (!requestAudioFocus()) {
+            return
+        }
 
         try {
             val player = MediaPlayer().apply {
@@ -126,7 +160,43 @@ class SoundscapeManager @Inject constructor(
         }
     }
 
+    private fun requestAudioFocus(): Boolean {
+        val am = audioManager ?: return true
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+                .setOnAudioFocusChangeListener(audioFocusChangeListener)
+                .build()
+            focusRequest = req
+            am.requestAudioFocus(req) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        } else {
+            @Suppress("DEPRECATION")
+            am.requestAudioFocus(
+                audioFocusChangeListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
+            ) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED
+        }
+    }
+
+    private fun abandonAudioFocus() {
+        val am = audioManager ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            focusRequest?.let { am.abandonAudioFocusRequest(it) }
+            focusRequest = null
+        } else {
+            @Suppress("DEPRECATION")
+            am.abandonAudioFocus(audioFocusChangeListener)
+        }
+    }
+
     private fun stopInternal() {
+        abandonAudioFocus()
         try {
             mediaPlayer?.stop()
             mediaPlayer?.release()

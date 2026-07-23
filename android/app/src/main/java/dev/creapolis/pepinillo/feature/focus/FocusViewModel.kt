@@ -153,6 +153,15 @@ class FocusViewModel @Inject constructor(
             }
         }
 
+        viewModelScope.launch {
+            val prefs = prefsRepo.preferences.first()
+            val restoredSoundscape = prefs.selectedSoundscape?.let { name ->
+                Soundscape.entries.find { it.name == name }
+            }
+            _selectedSoundscape.value = restoredSoundscape
+            _soundscapeVolume.value = prefs.soundscapeVolume
+        }
+
         // Manage soundscape playback tied to timer lifecycle
         viewModelScope.launch {
             var wasRunningOrPaused = false
@@ -162,8 +171,8 @@ class FocusViewModel @Inject constructor(
                 val volume = _soundscapeVolume.value
 
                 when {
-                    // Timer just started → play soundscape
-                    state.status == TimerStatus.Running && !wasRunningOrPaused && soundscape != null -> {
+                    // Timer is running → play soundscape if set and not currently playing
+                    state.status == TimerStatus.Running && soundscape != null && soundscapeManager.currentSoundscape == null -> {
                         soundscapeManager.play(soundscape, volume)
                     }
                     // Timer stopped/completed → fade out soundscape
@@ -414,6 +423,10 @@ class FocusViewModel @Inject constructor(
         _selectedSoundscape.value = soundscape
         _showSoundscapePicker.value = false
 
+        viewModelScope.launch {
+            prefsRepo.updateSelectedSoundscape(soundscape?.name)
+        }
+
         // If the timer is currently running, start/stop the soundscape immediately
         val state = focusEngine.state.value
         if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused) {
@@ -426,10 +439,14 @@ class FocusViewModel @Inject constructor(
     }
 
     fun setSoundscapeVolume(volume: Float) {
-        _soundscapeVolume.value = volume.coerceIn(0f, 1f)
+        val clamped = volume.coerceIn(0f, 1f)
+        _soundscapeVolume.value = clamped
+        viewModelScope.launch {
+            prefsRepo.updateSoundscapeVolume(clamped)
+        }
         val state = focusEngine.state.value
         if (state.status == TimerStatus.Running || state.status == TimerStatus.Paused) {
-            soundscapeManager.setVolume(volume)
+            soundscapeManager.setVolume(clamped)
         }
     }
 
