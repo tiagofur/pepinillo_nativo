@@ -36,6 +36,7 @@ private const val TAG = "WearSyncListener"
 
 class WearSyncListenerService : WearableListenerService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val debouncedRefresh = DebouncedRefreshSurfaces(scope) { refreshWearSurfaces() }
     private val processor = WearSyncProcessor(
         object : WearSyncSink {
             override fun updateTimer(state: WearTimerState) {
@@ -68,7 +69,7 @@ class WearSyncListenerService : WearableListenerService() {
             }
 
             override fun refreshWearSurfaces() {
-                this@WearSyncListenerService.refreshWearSurfaces()
+                this@WearSyncListenerService.debouncedRefresh.submit()
             }
 
             override fun recordSyncEvent() {

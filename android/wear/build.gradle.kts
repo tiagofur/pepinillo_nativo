@@ -94,6 +94,7 @@ dependencies {
     // org.json is bundled in the Android runtime; provide a real impl for JVM unit tests
     // so WearDataStore.parseTasksJson (org.json.JSONArray) can be exercised in tests.
     testImplementation("org.json:json:20240303")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
