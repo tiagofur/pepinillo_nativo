@@ -48,6 +48,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -98,6 +101,14 @@ fun TaskDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val task = uiState.task ?: return
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.errorEvent.collect { errorMessage ->
+            snackbarHostState.showSnackbar(errorMessage)
+        }
+    }
+
     LaunchedEffect(viewModel.navigateBack) {
         viewModel.navigateBack.collect {
             onBack()
@@ -130,13 +141,18 @@ fun TaskDetailScreen(
         )
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
         // ── Header (Listo) ──
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1001,6 +1017,7 @@ fun TaskDetailScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+}
 }
 
 internal fun getUtcMidnightOfLocalToday(): Long {

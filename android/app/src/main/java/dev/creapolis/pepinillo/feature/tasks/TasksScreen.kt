@@ -340,9 +340,11 @@ fun TasksScreen(
 
     // Paywall navigation
     val showPaywall by viewModel.showPaywall.collectAsState()
-    if (showPaywall) {
-        viewModel.dismissPaywall()
-        onNavigateToPaywall()
+    LaunchedEffect(showPaywall) {
+        if (showPaywall) {
+            viewModel.dismissPaywall()
+            onNavigateToPaywall()
+        }
     }
 }
 

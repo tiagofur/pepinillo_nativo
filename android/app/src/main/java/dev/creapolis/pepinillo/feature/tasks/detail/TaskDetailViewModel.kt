@@ -193,11 +193,15 @@ class TaskDetailViewModel @Inject constructor(
 
     fun confirmDelete() {
         viewModelScope.launch {
-            taskRepository.deleteTask(currentTaskId).onFailure {
-                _errorEvent.emit("Failed to delete task")
-            }
-            _showDeleteDialog.value = false
-            _navigateBack.emit(Unit)
+            taskRepository.deleteTask(currentTaskId)
+                .onSuccess {
+                    _showDeleteDialog.value = false
+                    _navigateBack.emit(Unit)
+                }
+                .onFailure {
+                    _showDeleteDialog.value = false
+                    _errorEvent.emit("Failed to delete task")
+                }
         }
     }
 }

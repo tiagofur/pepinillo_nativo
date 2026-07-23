@@ -235,14 +235,30 @@ class TasksViewModel @Inject constructor(
         }
         viewModelScope.launch {
             val currentFilter = _selectedFilter.value
+            val scheduledForToday = currentFilter == TaskFilter.Today
+            val dueDate = if (currentFilter == TaskFilter.Upcoming) {
+                Calendar.getInstance().apply {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+            } else null
+
             taskRepository.addTask(
                 Task(
                     title = title.trim(),
-                    scheduledForToday = currentFilter == TaskFilter.Today,
+                    scheduledForToday = scheduledForToday,
+                    dueDate = dueDate,
                     sortOrder = uiState.value.tasks.size,
                 ),
             ).onSuccess {
-                _successMessage.value = R.string.msg_task_added
+                if (currentFilter == TaskFilter.Completed) {
+                    _successMessage.value = R.string.msg_task_added_to_inbox
+                } else {
+                    _successMessage.value = R.string.msg_task_added
+                }
             }.onFailure {
                 _errorEvent.emit(R.string.msg_task_add_failed)
             }

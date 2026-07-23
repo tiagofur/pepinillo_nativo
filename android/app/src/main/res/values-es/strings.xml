@@ -317,7 +317,8 @@
     <string name="task_status_completed">Completada</string>
 
     <!-- Feedback Messages -->
-    <string name="msg_task_added">Tarea a\u00f1adida</string>
+    <string name="msg_task_added">Tarea añadida</string>
+    <string name="msg_task_added_to_inbox">Tarea añadida al Inbox</string>
     <string name="msg_task_update_failed">Error al actualizar tarea</string>
     <string name="msg_task_add_failed">Error al a\u00f1adir tarea</string>
     <string name="msg_task_delete_failed">Error al eliminar tarea</string>
