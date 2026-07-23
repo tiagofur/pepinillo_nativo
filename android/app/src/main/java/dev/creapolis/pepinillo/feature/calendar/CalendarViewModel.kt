@@ -3,11 +3,8 @@ package dev.creapolis.pepinillo.feature.calendar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dev.creapolis.pepinillo.data.local.dao.TaskDao
-import dev.creapolis.pepinillo.data.local.entity.DailyStatsEntity
-import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
-import dev.creapolis.pepinillo.data.local.entity.TaskEntity
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.data.repository.TaskRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,9 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -48,7 +45,7 @@ data class TaskSummary(
 @HiltViewModel
 class CalendarViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
-    private val taskDao: TaskDao,
+    private val taskRepository: TaskRepository,
 ) : ViewModel() {
 
     private val _displayedMonth = MutableStateFlow(Calendar.getInstance())
@@ -65,15 +62,50 @@ class CalendarViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
-    private val _dayDetail = MutableStateFlow<DayDetail?>(null)
-    val dayDetail: StateFlow<DayDetail?> = _dayDetail.asStateFlow()
+    val dayDetail: StateFlow<DayDetail?> = _selectedDate.flatMapLatest { dateMillis ->
+        if (dateMillis == null) {
+            flowOf(null)
+        } else {
+            val startOfDay = SessionRepository.startOfDay(dateMillis)
+            val endOfDay = SessionRepository.addDays(startOfDay, 1)
+            val dateFormat = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
+
+            combine(
+                sessionRepository.getSessionsForDate(dateMillis),
+                taskRepository.getTasksForDateFlow(startOfDay, endOfDay),
+            ) { sessions, tasks ->
+                val focusSessions = sessions.filter { it.phase == null || it.phase == "Work" }
+                val totalMinutes = focusSessions.sumOf { (it.durationMillis / 60_000).toInt() }
+
+                DayDetail(
+                    dateLabel = dateFormat.format(dateMillis),
+                    totalMinutes = totalMinutes,
+                    sessionsCompleted = focusSessions.size,
+                    taskCount = tasks.size,
+                    sessions = focusSessions.map { s ->
+                        SessionSummary(
+                            mode = s.mode,
+                            startTime = s.startTime,
+                            durationMinutes = (s.durationMillis / 60_000).toInt(),
+                        )
+                    },
+                    tasks = tasks.map { t ->
+                        TaskSummary(
+                            title = t.title,
+                            isCompleted = t.isCompleted,
+                            isDue = t.dueDate != null && t.dueDate >= startOfDay && t.dueDate < endOfDay && !t.isCompleted,
+                        )
+                    },
+                )
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun previousMonth() {
         val cal = _displayedMonth.value.clone() as Calendar
         cal.add(Calendar.MONTH, -1)
         _displayedMonth.value = cal
         _selectedDate.value = null
-        _dayDetail.value = null
     }
 
     fun nextMonth() {
@@ -81,57 +113,9 @@ class CalendarViewModel @Inject constructor(
         cal.add(Calendar.MONTH, 1)
         _displayedMonth.value = cal
         _selectedDate.value = null
-        _dayDetail.value = null
     }
 
     fun selectDay(dateMillis: Long) {
         _selectedDate.value = dateMillis
-        viewModelScope.launch {
-            loadDayDetail(dateMillis)
-        }
-    }
-
-    private suspend fun loadDayDetail(dateMillis: Long) {
-        val startOfDay = SessionRepository.startOfDay(dateMillis)
-        val endOfDay = SessionRepository.addDays(startOfDay, 1)
-        val dateFormat = SimpleDateFormat("EEEE, MMMM d, yyyy", Locale.getDefault())
-
-        // Collect sessions for this day
-        val sessions = mutableListOf<FocusSessionEntity>()
-        sessionRepository.getSessionsForDate(dateMillis).collect { list ->
-            sessions.clear()
-            sessions.addAll(list)
-
-            val tasks = try {
-                taskDao.getTasksForDate(dateMillis, endOfDay)
-            } catch (_: Exception) {
-                emptyList()
-            }
-
-            val focusSessions = sessions.filter { it.phase == null || it.phase == "Work" }
-            val totalMinutes = focusSessions.sumOf { (it.durationMillis / 60_000).toInt() }
-
-            _dayDetail.value = DayDetail(
-                dateLabel = dateFormat.format(dateMillis),
-                totalMinutes = totalMinutes,
-                sessionsCompleted = focusSessions.size,
-                taskCount = tasks.size,
-                sessions = focusSessions.map { s ->
-                    SessionSummary(
-                        mode = s.mode,
-                        startTime = s.startTime,
-                        durationMinutes = (s.durationMillis / 60_000).toInt(),
-                    )
-                },
-                tasks = tasks.map { t ->
-                    TaskSummary(
-                        title = t.title,
-                        isCompleted = t.isCompleted,
-                        isDue = t.dueDate != null && t.dueDate >= dateMillis && t.dueDate < endOfDay && !t.isCompleted,
-                    )
-                },
-            )
-            return@collect
-        }
     }
 }
