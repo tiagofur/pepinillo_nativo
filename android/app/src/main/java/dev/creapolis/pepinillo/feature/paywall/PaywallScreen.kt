@@ -47,7 +47,10 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -71,11 +74,13 @@ fun PaywallScreen(
     viewModel: PaywallViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val activity = LocalContext.current as? Activity
+    val context = LocalContext.current
+    val activity = context as? Activity
 
-    if (uiState.shouldAutoDismiss) {
-        onDismiss()
-        return
+    LaunchedEffect(uiState.shouldAutoDismiss) {
+        if (uiState.shouldAutoDismiss) {
+            onDismiss()
+        }
     }
 
     Column(
@@ -190,29 +195,58 @@ fun PaywallScreen(
                     isSelected = isSelected,
                     isFeatured = isAnnual,
                     onClick = { viewModel.selectProduct(product.productId) },
-                    // Per-month equivalent for annual — boosts conversion.
+                    // Safe locale-aware per-month equivalent for annual (#360)
                     subtitle = if (isAnnual && product.priceMicros > 0) {
                         val monthlyMicros = product.priceMicros / 12
-                        val currency = product.formattedPrice.takeWhile { !it.isDigit() }.trim()
-                        val monthlyStr = currency + "%.2f".format(monthlyMicros / 1_000_000.0)
+                        val monthlyAmount = monthlyMicros / 1_000_000.0
+                        val currencyCode = product.`package`.product.price.currencyCode
+                        val monthlyStr = if (!currencyCode.isNullOrBlank()) {
+                            runCatching {
+                                val format = java.text.NumberFormat.getCurrencyInstance()
+                                format.currency = java.util.Currency.getInstance(currencyCode)
+                                format.format(monthlyAmount)
+                            }.getOrElse {
+                                product.formattedPrice.replace(Regex("[0-9]+([.,][0-9]+)?")) { "%.2f".format(monthlyAmount) }
+                            }
+                        } else {
+                            product.formattedPrice.replace(Regex("[0-9]+([.,][0-9]+)?")) { "%.2f".format(monthlyAmount) }
+                        }
                         stringResource(R.string.paywall_per_month, monthlyStr)
                     } else null,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
         } else {
-            // Loading products
-            Box(
+            // Loading products or error state with retry button (#358)
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp),
-                contentAlignment = Alignment.Center,
+                    .heightIn(min = 120.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                if (uiState.errorRes != null) {
+                    Text(
+                        text = stringResource(uiState.errorRes!!),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(onClick = { viewModel.retryProducts() }) {
+                        Text(stringResource(R.string.paywall_btn_retry))
+                    }
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(onClick = { viewModel.retryProducts() }) {
+                        Text(stringResource(R.string.paywall_btn_retry))
+                    }
+                }
             }
         }
 
@@ -299,6 +333,50 @@ fun PaywallScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // ── LEGAL & SUBSCRIPTION LINKS (#361) ──
+        fun openUrl(url: String) {
+            try {
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+            } catch (_: Exception) {}
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.support_btn_terms),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { openUrl("https://creapolis.dev/terms-of-use/") },
+            )
+            Text(
+                text = "  •  ",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+            Text(
+                text = stringResource(R.string.support_btn_privacy),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { openUrl("https://creapolis.dev/privacy-policy/") },
+            )
+            Text(
+                text = "  •  ",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            )
+            Text(
+                text = stringResource(R.string.paywall_manage_subscription),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { openUrl("https://play.google.com/store/account/subscriptions") },
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
     }

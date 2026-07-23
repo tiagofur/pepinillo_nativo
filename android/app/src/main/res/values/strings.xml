@@ -370,6 +370,8 @@
     <string name="paywall_btn_get_plus">Get Pepinillo+</string>
     <string name="paywall_btn_start_sub">Start Subscription</string>
     <string name="paywall_btn_continue">Continue</string>
+    <string name="paywall_manage_subscription">Manage Subscription</string>
+    <string name="paywall_btn_retry">Retry Loading Products</string>
 
     <!-- Paywall Features -->
     <string name="feature_local_premium">Local Premium</string>
