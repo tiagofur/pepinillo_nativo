@@ -252,9 +252,14 @@ fun PaywallScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Risk-reversal line — aids conversion by reducing purchase anxiety.
+        // Risk-reversal line — matches selected SKU type (#364)
+        val riskReversalText = if (uiState.selectedProductId == PepinilloProducts.PEPINILLO_PLUS) {
+            stringResource(R.string.paywall_risk_reversal_one_time)
+        } else {
+            stringResource(R.string.paywall_risk_reversal)
+        }
         Text(
-            text = stringResource(R.string.paywall_risk_reversal),
+            text = riskReversalText,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

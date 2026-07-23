@@ -475,7 +475,7 @@ private fun SortButton(
                     TaskSortOption.Priority -> stringResource(R.string.sort_priority)
                     TaskSortOption.DueDate -> stringResource(R.string.sort_time)
                     TaskSortOption.Energy -> stringResource(R.string.sort_energy)
-                    TaskSortOption.Newest -> "Newest" // To be localized if needed
+                    TaskSortOption.Newest -> stringResource(R.string.sort_newest)
                 }
                 DropdownMenuItem(
                     text = {

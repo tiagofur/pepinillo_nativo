@@ -372,6 +372,7 @@
     <string name="paywall_btn_continue">Continue</string>
     <string name="paywall_manage_subscription">Manage Subscription</string>
     <string name="paywall_btn_retry">Retry Loading Products</string>
+    <string name="paywall_risk_reversal_one_time">One-time purchase • Pay once, keep forever</string>
 
     <!-- Paywall Features -->
     <string name="feature_local_premium">Local Premium</string>
@@ -424,7 +425,7 @@
     <string name="more_btn_about">About</string>
     <string name="more_desc_about">Version and legal info</string>
     <string name="more_promo_title">Get Pepinillo+</string>
-    <string name="more_promo_desc">Unlock all features and cloud sync</string>
+    <string name="more_promo_desc">Unlock all local premium features forever</string>
     <string name="more_signin_desc">Sync your data across devices</string>
     <string name="more_register_desc">Join the community</string>
     <string name="more_footer">Made with \u2764 by Creapolis</string>
@@ -515,6 +516,13 @@
     <string name="sort_priority">Priority</string>
     <string name="sort_time">Time</string>
     <string name="sort_energy">Energy</string>
+    <string name="sort_newest">Newest</string>
+    <string name="cd_mark_complete">Mark %1$s complete</string>
+    <string name="cd_mark_incomplete">Mark %1$s incomplete</string>
+    <string name="task_detail_subtasks">Subtasks</string>
+    <string name="task_detail_subtasks_count">Subtasks (%1$d/%2$d)</string>
+    <string name="task_detail_priority_focus">Priority &amp; Focus</string>
+    <string name="task_detail_focus_history">Focus History</string>
 
     <!-- Auth -->
     <string name="auth_slogan">Your deep work companion</string>
@@ -589,6 +597,9 @@
     <string name="settings_theme">Theme</string>
     <string name="settings_theme_sub">Choose a color theme for your focus modes</string>
     <string name="settings_appearance_sub">Choose light, dark, or system default</string>
+    <string name="theme_mode_system">System</string>
+    <string name="theme_mode_light">Light</string>
+    <string name="theme_mode_dark">Dark</string>
     <string name="settings_sec_notifications">Notifications</string>
     <string name="settings_timer_alerts">Timer alerts</string>
     <string name="settings_timer_alerts_sub">Show notification when timer finishes</string>

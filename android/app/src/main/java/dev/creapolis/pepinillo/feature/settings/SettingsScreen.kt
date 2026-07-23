@@ -564,8 +564,13 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 ) {
                     ThemeMode.entries.forEach { mode ->
+                        val modeLabel = when (mode) {
+                            ThemeMode.System -> stringResource(R.string.theme_mode_system)
+                            ThemeMode.Light -> stringResource(R.string.theme_mode_light)
+                            ThemeMode.Dark -> stringResource(R.string.theme_mode_dark)
+                        }
                         OptionPill(
-                            label = mode.label,
+                            label = modeLabel,
                             isSelected = uiState.themeMode == mode,
                             onClick = { viewModel.setThemeMode(mode) },
                         )
