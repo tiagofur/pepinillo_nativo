@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -21,13 +20,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
-import androidx.wear.compose.material.HorizontalPageIndicator
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.PageIndicatorState
-import androidx.wear.compose.material.Scaffold
-import androidx.wear.compose.material.TimeText
-import androidx.wear.compose.material.Vignette
-import androidx.wear.compose.material.VignettePosition
+import androidx.wear.compose.material3.AppScaffold
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.TimeText
 import dev.creapolis.pepinillo.data.WearDataFetcher
 import dev.creapolis.pepinillo.data.WearDataStore
 import dev.creapolis.pepinillo.data.WearSnapshotStore
@@ -117,70 +113,55 @@ private fun WearApp(viewModel: WearViewModel, isAmbient: Boolean = false) {
         isConnected = timerState.isConnected,
     )
 
-    // Always show the wall-clock — it's the #1 checked info on a watch.
-    // Previously hidden during Running/Paused, which was jarring during 25-min sessions.
-
-    val pageIndicatorState = remember {
-        object : PageIndicatorState {
-            override val pageCount: Int get() = TOTAL_PAGES
-            override val pageOffset: Float get() = pagerState.currentPageOffsetFraction
-            override val selectedPage: Int get() = pagerState.currentPage
-        }
-    }
-
     WearTheme {
-        Scaffold(
-            // In ambient mode: hide chrome (TimeText, vignette, page indicator) to minimize
-            // lit pixels and burn-in risk — only the dimmed timer display remains.
+        // AppScaffold manages TimeText at the app level and hosts the pager.
+        // In ambient mode, TimeText is hidden to minimise lit pixels and burn-in risk.
+        AppScaffold(
             timeText = { if (!isAmbient) TimeText() },
-            vignette = { if (!isAmbient) Vignette(vignettePosition = VignettePosition.TopAndBottom) },
-            pageIndicator = {
-                if (!isAmbient) {
-                    HorizontalPageIndicator(
-                        pageIndicatorState = pageIndicatorState,
-                        selectedColor = MaterialTheme.colors.primary,
-                        unselectedColor = MaterialTheme.colors.onSurface.copy(alpha = 0.3f),
-                    )
-                }
-            },
         ) {
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colors.background),
+                    .background(MaterialTheme.colorScheme.background),
             ) { page ->
-                when (page) {
-                    0 -> StatsScreen(
-                        state = stats,
-                        syncStatusLabel = syncStatus.label,
-                        isSyncStale = syncStatus.isStale,
-                        isPro = isPro,
-                        isActive = page == pagerState.settledPage,
-                    )
-                    1 -> TimerScreen(
-                        state = timerState,
-                        stats = stats,
-                        pendingCommandCount = pendingCommandCount,
-                        syncStatusLabel = syncStatus.label,
-                        isSyncStale = syncStatus.isStale,
-                        isPro = isPro,
-                        isAmbient = isAmbient,
-                        onStartMode = viewModel::startTimer,
-                        onPause = viewModel::pauseTimer,
-                        onResume = viewModel::resumeTimer,
-                        onStop = viewModel::stopTimer,
-                        onSkip = viewModel::skipPhase,
-                    )
-                    else -> TasksScreen(
-                        tasks = tasks,
-                        timerState = timerState,
-                        syncStatusLabel = syncStatus.label,
-                        isSyncStale = syncStatus.isStale,
-                        onCompleteTask = viewModel::completeTask,
-                        onToggleTaskLink = viewModel::toggleTaskLink,
-                        isActive = page == pagerState.settledPage,
-                    )
+                // ScreenScaffold provides the per-page scroll indicator and vignette.
+                // It replaces the old Scaffold(vignette, pageIndicator) pattern from M2.
+                ScreenScaffold(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    when (page) {
+                        0 -> StatsScreen(
+                            state = stats,
+                            syncStatusLabel = syncStatus.label,
+                            isSyncStale = syncStatus.isStale,
+                            isPro = isPro,
+                            isActive = page == pagerState.settledPage,
+                        )
+                        1 -> TimerScreen(
+                            state = timerState,
+                            stats = stats,
+                            pendingCommandCount = pendingCommandCount,
+                            syncStatusLabel = syncStatus.label,
+                            isSyncStale = syncStatus.isStale,
+                            isPro = isPro,
+                            isAmbient = isAmbient,
+                            onStartMode = viewModel::startTimer,
+                            onPause = viewModel::pauseTimer,
+                            onResume = viewModel::resumeTimer,
+                            onStop = viewModel::stopTimer,
+                            onSkip = viewModel::skipPhase,
+                        )
+                        else -> TasksScreen(
+                            tasks = tasks,
+                            timerState = timerState,
+                            syncStatusLabel = syncStatus.label,
+                            isSyncStale = syncStatus.isStale,
+                            onCompleteTask = viewModel::completeTask,
+                            onToggleTaskLink = viewModel::toggleTaskLink,
+                            isActive = page == pagerState.settledPage,
+                        )
+                    }
                 }
             }
         }

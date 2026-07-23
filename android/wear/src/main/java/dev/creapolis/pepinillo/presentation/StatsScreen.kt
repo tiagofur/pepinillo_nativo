@@ -2,12 +2,16 @@ package dev.creapolis.pepinillo.presentation
 
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -22,20 +26,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material.Chip
-import androidx.wear.compose.material.ChipDefaults
-import androidx.wear.compose.material.ListHeader
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.wear.compose.material3.FilledTonalButton
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.Icon
+import androidx.wear.compose.material3.ListHeader
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Text
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.WearStatsState
 import kotlinx.coroutines.launch
-
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.wear.compose.material.Icon
 
 @Composable
 fun StatsScreen(
@@ -54,7 +55,7 @@ fun StatsScreen(
     }
 
     if (!isPro) {
-        // Tease value: show today's focus time + sessions (free), gate history/streak/tasks behind Pro.
+        // Tease value: show today's focus time + sessions (free), gate history/streak behind Pro.
         ScalingLazyColumn(
             state = listState,
             modifier = Modifier
@@ -72,52 +73,52 @@ fun StatsScreen(
                 ListHeader {
                     Text(
                         text = stringResource(R.string.today),
-                        color = MaterialTheme.colors.primary,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
             item {
-                StatChip(
+                StatRow(
                     emoji = "⏱",
                     label = stringResource(R.string.focus_time),
                     value = formatMinutes(state.totalMinutes),
                 )
             }
             item {
-                StatChip(
+                StatRow(
                     emoji = "✅",
                     label = stringResource(R.string.sessions),
                     value = "${state.sessions}",
                 )
             }
-            item {
-                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(8.dp))
-            }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
             item {
                 ListHeader {
                     Text(
                         text = stringResource(R.string.stats_unlock_history),
-                        color = MaterialTheme.colors.primary,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colors.primary,
+                        tint = MaterialTheme.colorScheme.primary,
                     )
-                    androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.stats_unlock_desc),
-                        style = MaterialTheme.typography.caption2,
+                        style = MaterialTheme.typography.labelSmall,
                         textAlign = TextAlign.Center,
-                        color = MaterialTheme.colors.onSurface,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }
@@ -138,23 +139,21 @@ fun StatsScreen(
             .focusRequester(focusRequester)
             .focusable(),
     ) {
-        // Header
         item {
             ListHeader {
                 Text(
                     text = stringResource(R.string.today),
-                    color = MaterialTheme.colors.primary,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
 
-        // Sync status
         if (!syncStatusLabel.isNullOrBlank()) {
             item {
                 Text(
                     text = syncStatusLabel,
-                    style = MaterialTheme.typography.caption2,
-                    color = if (isSyncStale) MaterialTheme.colors.error else MaterialTheme.colors.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isSyncStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -163,36 +162,29 @@ fun StatsScreen(
             }
         }
 
-        // Focus time
         item {
-            StatChip(
+            StatRow(
                 emoji = "⏱",
                 label = stringResource(R.string.focus_time),
                 value = formatMinutes(state.totalMinutes),
             )
         }
-
-        // Sessions
         item {
-            StatChip(
+            StatRow(
                 emoji = "✅",
                 label = stringResource(R.string.sessions),
                 value = "${state.sessions}",
             )
         }
-
-        // Streak
         item {
-            StatChip(
+            StatRow(
                 emoji = "🔥",
                 label = stringResource(R.string.streak),
                 value = stringResource(R.string.days, state.streak),
             )
         }
-
-        // Completed tasks
         item {
-            StatChip(
+            StatRow(
                 emoji = "📋",
                 label = stringResource(R.string.completed_tasks),
                 value = "${state.completedTasks}",
@@ -201,39 +193,50 @@ fun StatsScreen(
     }
 }
 
+/**
+ * Read-only stat row using FilledTonalButton as a visual container.
+ * M3 has no Chip component — FilledTonalButton with disabled=true serves as a
+ * non-interactive display element with the correct tonal surface color.
+ */
 @Composable
-private fun StatChip(
+private fun StatRow(
     emoji: String,
     label: String,
     value: String,
 ) {
-    Chip(
+    FilledTonalButton(
         onClick = { },
         enabled = false,
-        label = {
-            Text(
-                text = value,
-                color = MaterialTheme.colors.primary,
-            )
-        },
-        secondaryLabel = {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.caption2,
-            )
-        },
-        icon = {
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.filledTonalButtonColors(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Text(
                 text = emoji,
                 modifier = Modifier.size(24.dp),
                 textAlign = TextAlign.Center,
             )
-        },
-        colors = ChipDefaults.secondaryChipColors(),
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-    )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
 }
 
 private fun formatMinutes(totalMinutes: Int): String {

@@ -15,8 +15,8 @@ import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material.MaterialTheme
-import androidx.wear.compose.material.Text
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Text
 import dev.creapolis.pepinillo.data.WearDiagnosticsState
 import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearTask
@@ -54,8 +54,8 @@ fun DiagnosticsScreen(
         item {
             Text(
                 text = syncStatusLabel ?: "Sin sync registrada",
-                style = MaterialTheme.typography.caption3,
-                color = if (isSyncStale) MaterialTheme.colors.error else MaterialTheme.colors.onSurface,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isSyncStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             )
         }
         item { Text("Conexion: ${if (timerState.isConnected) "Activa" else "Caida"}") }
@@ -64,7 +64,7 @@ fun DiagnosticsScreen(
             item {
                 Text(
                     text = "Nodos: ${names.joinToString()}",
-                    style = MaterialTheme.typography.caption3,
+                    style = MaterialTheme.typography.labelSmall,
                 )
             }
         }
@@ -79,8 +79,8 @@ fun DiagnosticsScreen(
             item {
                 Text(
                     text = "Ultimo error: $error",
-                    style = MaterialTheme.typography.caption3,
-                    color = MaterialTheme.colors.error,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
                 )
             }
         }
@@ -90,7 +90,7 @@ fun DiagnosticsScreen(
         item {
             Text(
                 "Checklist rapido:\n1) Corta BT/WiFi telefono\n2) Lanza comando en reloj\n3) Re-conecta\n4) Verifica cola=0",
-                style = MaterialTheme.typography.caption3,
+                style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
         }
