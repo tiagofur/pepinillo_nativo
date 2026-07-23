@@ -4,6 +4,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.domain.report.OnDeviceReportGenerator
 import dev.creapolis.pepinillo.domain.report.ReportGenerator
 import dev.creapolis.pepinillo.domain.report.ReportGeneratorImpl
@@ -20,8 +21,8 @@ object ReportModule {
         remoteGenerator: dev.creapolis.pepinillo.domain.report.RemoteReportGenerator,
         onDeviceGenerator: OnDeviceReportGenerator,
         templateGenerator: TemplateReportGenerator,
-        userRepository: dev.creapolis.pepinillo.data.repository.UserRepository,
+        featureGate: FeatureGate,
     ): ReportGenerator {
-        return ReportGeneratorImpl(remoteGenerator, onDeviceGenerator, templateGenerator, userRepository)
+        return ReportGeneratorImpl(remoteGenerator, onDeviceGenerator, templateGenerator, featureGate)
     }
 }
