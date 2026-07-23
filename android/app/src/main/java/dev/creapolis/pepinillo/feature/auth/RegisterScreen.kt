@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Login
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Login
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
@@ -207,8 +208,9 @@ fun RegisterScreen(
                 .height(52.dp),
             enabled = !uiState.googleSignInLoading && !uiState.isLoading,
             shape = RoundedCornerShape(12.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
                 contentColor = MaterialTheme.colorScheme.onSurface,
             ),
         ) {
@@ -219,7 +221,7 @@ fun RegisterScreen(
                 )
             } else {
                 Icon(
-                    imageVector = Icons.Rounded.Login,
+                    imageVector = Icons.AutoMirrored.Rounded.Login,
                     contentDescription = stringResource(R.string.auth_google_logo),
                     modifier = Modifier.size(20.dp),
                 )

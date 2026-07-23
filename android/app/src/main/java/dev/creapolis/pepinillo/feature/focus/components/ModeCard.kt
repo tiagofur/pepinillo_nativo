@@ -79,10 +79,11 @@ fun ModeChip(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = mode.emoji,
-                fontSize = 18.sp,
-                textAlign = TextAlign.Center
+            Icon(
+                imageVector = mode.icon,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
