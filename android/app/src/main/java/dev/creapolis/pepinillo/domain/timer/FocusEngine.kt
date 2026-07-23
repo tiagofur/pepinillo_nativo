@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,6 +36,8 @@ class FocusEngine @Inject constructor(
 ) {
     private val _state = MutableStateFlow(FocusTimerState())
     val state: StateFlow<FocusTimerState> = _state.asStateFlow()
+
+    private val phaseCompleteMutex = Mutex()
 
     /** Emits the session ID whenever a work session completes (not breaks). */
     private val _workSessionCompleted = MutableSharedFlow<String>(extraBufferCapacity = 1)
@@ -456,75 +459,80 @@ class FocusEngine @Inject constructor(
     }
 
     private suspend fun onPhaseComplete() {
-        val s = _state.value
+        if (!phaseCompleteMutex.tryLock()) return
+        try {
+            val s = _state.value
 
-        // Sound/haptic/notification feedback on phase completion
-        feedbackManager.onPhaseComplete(s.mode, s.phase)
+            // Sound/haptic/notification feedback on phase completion
+            feedbackManager.onPhaseComplete(s.mode, s.phase)
 
-        // Record the completed phase as a session
-        val saveSuccessful = recordSession(s, wasCompleted = true)
+            // Record the completed phase as a session
+            val saveSuccessful = recordSession(s, wasCompleted = true)
 
-        val prefs = prefsRepo.preferences.first()
+            val prefs = prefsRepo.preferences.first()
 
-        when {
-            // Pomodoro mode: cycle through work → break → work → ... → long break
-            s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.Work -> {
-                val newCompleted = if (saveSuccessful) s.completedSessions + 1 else s.completedSessions
-                val isLongBreak = prefs.sessionsBeforeLongBreak > 0 &&
-                    newCompleted > 0 && newCompleted % prefs.sessionsBeforeLongBreak == 0
-                val breakMillis = if (isLongBreak) {
-                    prefs.longBreakMinutes * 60 * 1000L
-                } else {
-                    prefs.shortBreakMinutes * 60 * 1000L
+            when {
+                // Pomodoro mode: cycle through work → break → work → ... → long break
+                s.mode == FocusMode.Pomodoro && s.phase == FocusPhase.Work -> {
+                    val newCompleted = if (saveSuccessful) s.completedSessions + 1 else s.completedSessions
+                    val isLongBreak = prefs.sessionsBeforeLongBreak > 0 &&
+                        newCompleted > 0 && newCompleted % prefs.sessionsBeforeLongBreak == 0
+                    val breakMillis = if (isLongBreak) {
+                        prefs.longBreakMinutes * 60 * 1000L
+                    } else {
+                        prefs.shortBreakMinutes * 60 * 1000L
+                    }
+                    _state.value = FocusTimerState(
+                        mode = FocusMode.Pomodoro,
+                        phase = if (isLongBreak) FocusPhase.LongBreak else FocusPhase.ShortBreak,
+                        status = if (prefs.autoStartBreaks) TimerStatus.Running else TimerStatus.WaitingForNext,
+                        totalMillis = breakMillis,
+                        completedSessions = newCompleted,
+                        linkedTaskId = s.linkedTaskId,
+                        sessionStartTime = if (prefs.autoStartBreaks) System.currentTimeMillis() else 0L,
+                    )
+                    if (prefs.autoStartBreaks) startTimerLoop(cancelPrevious = false)
                 }
-                _state.value = FocusTimerState(
-                    mode = FocusMode.Pomodoro,
-                    phase = if (isLongBreak) FocusPhase.LongBreak else FocusPhase.ShortBreak,
-                    status = if (prefs.autoStartBreaks) TimerStatus.Running else TimerStatus.WaitingForNext,
-                    totalMillis = breakMillis,
-                    completedSessions = newCompleted,
-                    linkedTaskId = s.linkedTaskId,
-                    sessionStartTime = if (prefs.autoStartBreaks) System.currentTimeMillis() else 0L,
-                )
-                if (prefs.autoStartBreaks) startTimerLoop(cancelPrevious = false)
-            }
 
-            s.mode == FocusMode.Pomodoro && (s.phase == FocusPhase.ShortBreak || s.phase == FocusPhase.LongBreak) -> {
-                pomodoroNumber = s.completedSessions + 1
-                // Reset pause/interruption tracking for the new work session
-                pauseCount = 0
-                pauseStartTime = 0L
-                totalPauseMillis = 0L
-                interruptionCount = 0
-                _state.value = FocusTimerState(
-                    mode = FocusMode.Pomodoro,
-                    phase = FocusPhase.Work,
-                    status = if (prefs.autoStartNextPomodoro) TimerStatus.Running else TimerStatus.WaitingForNext,
-                    totalMillis = prefs.pomodoroMinutes * 60 * 1000L,
-                    completedSessions = s.completedSessions,
-                    linkedTaskId = s.linkedTaskId,
-                    sessionStartTime = if (prefs.autoStartNextPomodoro) System.currentTimeMillis() else 0L,
-                )
-                if (prefs.autoStartNextPomodoro) startTimerLoop(cancelPrevious = false)
-            }
+                s.mode == FocusMode.Pomodoro && (s.phase == FocusPhase.ShortBreak || s.phase == FocusPhase.LongBreak) -> {
+                    pomodoroNumber = s.completedSessions + 1
+                    // Reset pause/interruption tracking for the new work session
+                    pauseCount = 0
+                    pauseStartTime = 0L
+                    totalPauseMillis = 0L
+                    interruptionCount = 0
+                    _state.value = FocusTimerState(
+                        mode = FocusMode.Pomodoro,
+                        phase = FocusPhase.Work,
+                        status = if (prefs.autoStartNextPomodoro) TimerStatus.Running else TimerStatus.WaitingForNext,
+                        totalMillis = prefs.pomodoroMinutes * 60 * 1000L,
+                        completedSessions = s.completedSessions,
+                        linkedTaskId = s.linkedTaskId,
+                        sessionStartTime = if (prefs.autoStartNextPomodoro) System.currentTimeMillis() else 0L,
+                    )
+                    if (prefs.autoStartNextPomodoro) startTimerLoop(cancelPrevious = false)
+                }
 
-            // Blocks mode: just stop when done
-            s.mode == FocusMode.Blocks -> {
-                _state.value = FocusTimerState(
-                    mode = FocusMode.Blocks,
-                    totalMillis = getTotalMillis(FocusMode.Blocks, FocusPhase.Work, prefs),
-                    completedSessions = if (saveSuccessful) s.completedSessions + 1 else s.completedSessions,
-                    linkedTaskId = s.linkedTaskId,
-                )
-            }
+                // Blocks mode: just stop when done
+                s.mode == FocusMode.Blocks -> {
+                    _state.value = FocusTimerState(
+                        mode = FocusMode.Blocks,
+                        totalMillis = getTotalMillis(FocusMode.Blocks, FocusPhase.Work, prefs),
+                        completedSessions = if (saveSuccessful) s.completedSessions + 1 else s.completedSessions,
+                        linkedTaskId = s.linkedTaskId,
+                    )
+                }
 
-            else -> {
-                _state.value = FocusTimerState(
-                    mode = s.mode,
-                    totalMillis = getTotalMillis(s.mode, FocusPhase.Work, prefs),
-                    linkedTaskId = s.linkedTaskId,
-                )
+                else -> {
+                    _state.value = FocusTimerState(
+                        mode = s.mode,
+                        totalMillis = getTotalMillis(s.mode, FocusPhase.Work, prefs),
+                        linkedTaskId = s.linkedTaskId,
+                    )
+                }
             }
+        } finally {
+            phaseCompleteMutex.unlock()
         }
     }
 
