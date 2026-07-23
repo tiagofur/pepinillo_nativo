@@ -278,8 +278,8 @@ class FocusEngineTest {
 
     @Test
     fun `pause can be called from Idle without crashing`() {
-        engine.pause() // should not throw
-        assertEquals(TimerStatus.Paused, engine.state.value.status)
+        engine.pause() // should not throw and status remains Idle per #306 guard
+        assertEquals(TimerStatus.Idle, engine.state.value.status)
     }
 
     @Test
@@ -1638,5 +1638,71 @@ class FocusEngineTest {
 
         assertEquals(FocusPhase.LongBreak, engine.state.value.phase)
         assertEquals(15 * 60 * 1000L, engine.state.value.totalMillis)
+    }
+
+    @Test
+    fun `pause from Idle status is rejected`() = runTest {
+        assertEquals(TimerStatus.Idle, engine.state.value.status)
+        engine.pause()
+        assertEquals(TimerStatus.Idle, engine.state.value.status)
+    }
+
+    @Test
+    fun `rapid stop after start cancels startJob and leaves state Idle`() = runTest {
+        engine.start()
+        engine.stop()
+        testScope.testScheduler.runCurrent()
+        assertEquals(TimerStatus.Idle, engine.state.value.status)
+    }
+
+    @Test
+    fun `restoreState restores pomodoroNumber, pauseCount and totalPauseMillis`() = runTest {
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = 10_000L,
+            totalMillis = 1_500_000L,
+            completedSessions = 2,
+            sessionStartTime = System.currentTimeMillis() - 10_000L,
+            status = TimerStatus.Running,
+            pomodoroNumber = 3,
+            pauseCount = 2,
+            totalPauseMillis = 5_000L,
+        )
+        assertEquals(TimerStatus.Running, engine.state.value.status)
+        assertEquals(2, engine.state.value.completedSessions)
+    }
+
+    @Test
+    fun `save failure in recordSession does not advance completedSessions`() = runTest {
+        coEvery {
+            sessionRepository.recordSession(
+                mode = any(),
+                startTime = any(),
+                endTime = any(),
+                durationMillis = any(),
+                linkedTaskId = any(),
+                phase = any(),
+                wasCompleted = any(),
+                interruptions = any(),
+                pauseCount = any(),
+                totalPauseMillis = any(),
+                pomodoroNumber = any(),
+                targetDurationMillis = any(),
+            )
+        } returns null // Save fails
+
+        val total = 25 * 60 * 1000L
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = total,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = System.currentTimeMillis() - total,
+        )
+        testScope.testScheduler.runCurrent()
+
+        assertEquals(0, engine.state.value.completedSessions)
     }
 }
