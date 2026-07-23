@@ -43,17 +43,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -69,6 +68,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.feature.auth.EmailVerificationScreen
 import dev.creapolis.pepinillo.feature.auth.ForgotPasswordScreen
@@ -321,15 +321,10 @@ fun PepinilloApp(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Hide bottom bar on non-top-level screens (like Profile, Auth) or when in PiP
+    // Hide navigation on non-top-level screens (like Profile, Auth) or when in PiP
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
     val isImeVisible = WindowInsets.isImeVisible
     val showBottomBar = currentRoute in topLevelRoutes && !isPipMode && !isImeVisible
-
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isExpanded = configuration.screenWidthDp >= 600
-    val showNavRail = isExpanded && showBottomBar
-    val showBottomNav = !isExpanded && showBottomBar
 
     // Global connectivity indicator: a subtle banner when offline.
     val isOnline by syncStatusManager.isOnline.collectAsState()
@@ -337,84 +332,45 @@ fun PepinilloApp(
     val snackbarController = rememberSnackbarController()
 
     CompositionLocalProvider(LocalSnackbarController provides snackbarController) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets.systemBars,
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarController.hostState) },
-        bottomBar = {
-            AnimatedVisibility(
-                visible = showBottomNav,
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it }),
+        // Snackbar floats above NavigationSuiteScaffold so it's always visible
+        // regardless of which navigation type is active.
+        androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+            NavigationSuiteScaffold(
+                navigationSuiteItems = {
+                    TopLevelDestination.entries.forEach { destination ->
+                        val isSelected = currentRoute == destination.route
+                        item(
+                            selected = isSelected,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = if (isSelected) destination.selectedIcon
+                                                  else destination.unselectedIcon,
+                                    contentDescription = null,
+                                )
+                            },
+                            label = { Text(stringResource(destination.labelRes)) },
+                        )
+                    }
+                },
+                layoutType = if (!showBottomBar) NavigationSuiteType.None
+                             else NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
+                                 currentWindowAdaptiveInfo()
+                             ),
             ) {
-                NavigationBar {
-                    TopLevelDestination.entries.forEach { destination ->
-                        val isSelected = currentRoute == destination.route
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) {
-                                        destination.selectedIcon
-                                    } else {
-                                        destination.unselectedIcon
-                                    },
-                                    contentDescription = null,
-                                )
-                            },
-                            label = { Text(stringResource(destination.labelRes)) },
-                        )
-                    }
-                }
-            }
-        },
-    ) { innerPadding ->
-        Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            if (showNavRail) {
-                androidx.compose.material3.NavigationRail {
-                    TopLevelDestination.entries.forEach { destination ->
-                        val isSelected = currentRoute == destination.route
-                        androidx.compose.material3.NavigationRailItem(
-                            selected = isSelected,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) {
-                                        destination.selectedIcon
-                                    } else {
-                                        destination.unselectedIcon
-                                    },
-                                    contentDescription = null,
-                                )
-                            },
-                            label = { Text(stringResource(destination.labelRes)) },
-                        )
-                    }
-                }
-            }
-
-            Column(modifier = Modifier.weight(1f).fillMaxSize()) {
-                // Offline banner — surfaces connectivity state that previously only lived in Settings.
-                OfflineBanner(isOnline = isOnline)
-                val reduceMotion = dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled()
-                val navDuration = if (reduceMotion) 0 else DURATION_NAV_MS
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Offline banner — surfaces connectivity state that previously only lived in Settings.
+                    OfflineBanner(isOnline = isOnline)
+                    val reduceMotion = dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled()
+                    val navDuration = if (reduceMotion) 0 else DURATION_NAV_MS
                 NavHost(
                     navController = navController,
                     startDestination = startDestination,
@@ -707,9 +663,13 @@ fun PepinilloApp(
                 )
             }
         } // NavHost
-        } // Column
-        } // Row
-    } // Scaffold
+                } // Column
+            } // NavigationSuiteScaffold
+            SnackbarHost(
+                hostState = snackbarController.hostState,
+                modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter),
+            )
+        } // Box
     } // CompositionLocalProvider
 }
 
