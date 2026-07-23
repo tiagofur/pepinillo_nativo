@@ -278,8 +278,8 @@ class FocusEngineTest {
 
     @Test
     fun `pause can be called from Idle without crashing`() {
-        engine.pause() // should not throw
-        assertEquals(TimerStatus.Paused, engine.state.value.status)
+        engine.pause() // should not throw and status remains Idle per #306 guard
+        assertEquals(TimerStatus.Idle, engine.state.value.status)
     }
 
     @Test
