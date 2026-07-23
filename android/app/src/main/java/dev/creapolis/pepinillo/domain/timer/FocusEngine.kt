@@ -270,11 +270,11 @@ class FocusEngine @Inject constructor(
             startJob?.cancel()
             val job = scope.launch {
                 val todayCount = sessionRepository.getTodayPomodoroWorkCount()
-                if (!isActive || startJob == null) return@launch
+                if (!isActive || startJob != coroutineContext[Job]) return@launch
                 pomodoroNumber = todayCount + 1
                 var shouldStartLoop = false
                 _state.update {
-                    if (!isActive || startJob == null || it.status != TimerStatus.Idle) return@update it
+                    if (!isActive || startJob != coroutineContext[Job] || it.status != TimerStatus.Idle) return@update it
                     shouldStartLoop = true
                     it.copy(
                         status = TimerStatus.Running,
@@ -282,7 +282,7 @@ class FocusEngine @Inject constructor(
                         sessionStartTime = if (it.sessionStartTime == 0L) System.currentTimeMillis() else it.sessionStartTime,
                     )
                 }
-                if (shouldStartLoop && isActive && startJob != null) startTimerLoop()
+                if (shouldStartLoop && isActive && startJob == coroutineContext[Job]) startTimerLoop()
             }
             startJob = job
             return
