@@ -588,7 +588,10 @@ fun FocusScreen(
                         onValueChange = { viewModel.setSoundscapeVolume(it) },
                         modifier = Modifier
                             .weight(1f)
-                            .padding(horizontal = 8.dp),
+                            .padding(horizontal = 8.dp)
+                            .semantics {
+                                contentDescription = context.getString(R.string.cd_volume_control)
+                            },
                         colors = SliderDefaults.colors(
                             thumbColor = animatedAccentColor,
                             activeTrackColor = animatedAccentColor,

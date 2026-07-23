@@ -260,9 +260,9 @@ fun TaskDetailScreen(
             Text(
                 text = if (uiState.subtasks.isNotEmpty()) {
                     val (completed, total) = uiState.subtaskProgress
-                    "Subtareas ($completed/$total)"
+                    stringResource(R.string.task_detail_subtasks_count, completed, total)
                 } else {
-                    "Subtareas"
+                    stringResource(R.string.task_detail_subtasks)
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -549,7 +549,7 @@ fun TaskDetailScreen(
         // ── Card 4: Priority & Focus ──
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Prioridad y enfoque",
+                text = stringResource(R.string.task_detail_priority_focus),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
@@ -810,7 +810,7 @@ fun TaskDetailScreen(
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                         ) {
                             Text(
-                                text = "Eliminar",
+                                text = stringResource(R.string.cd_delete),
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
@@ -903,7 +903,7 @@ fun TaskDetailScreen(
         // ── Card 6: Notes ──
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
-                text = "Notas",
+                text = stringResource(R.string.task_label_notes),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
@@ -938,7 +938,7 @@ fun TaskDetailScreen(
         if (uiState.totalFocusTimeMillis > 0) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Historial de enfoque",
+                    text = stringResource(R.string.task_detail_focus_history),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,

@@ -118,6 +118,9 @@ fun TaskItem(
 
     // "Today" recomputed per row when day-of-year changes (e.g. across midnight).
     val todayNorm = remember(Calendar.getInstance().get(Calendar.DAY_OF_YEAR)) { getNormalizedLocalDate() }
+
+    val cdMarkIncomplete = stringResource(R.string.cd_mark_incomplete, task.title)
+    val cdMarkComplete = stringResource(R.string.cd_mark_complete, task.title)
     val isDueToday = task.dueDate != null && isDueTodayMs(task.dueDate, todayNorm)
 
     val isOverdue = task.dueDate != null && isBeforeTodayMs(task.dueDate, todayNorm)
@@ -204,7 +207,7 @@ fun TaskItem(
                     )
                     .semantics {
                         role = Role.Checkbox
-                        contentDescription = if (task.isCompleted) "Mark ${task.title} incomplete" else "Mark ${task.title} complete"
+                        contentDescription = if (task.isCompleted) cdMarkIncomplete else cdMarkComplete
                     },
                 contentAlignment = Alignment.Center,
             ) {

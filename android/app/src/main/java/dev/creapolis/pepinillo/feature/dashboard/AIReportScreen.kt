@@ -82,7 +82,7 @@ fun AIReportScreen(
                 IconButton(onClick = onBack) {
                     Icon(
                         Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = stringResource(R.string.btn_cancel),
+                        contentDescription = stringResource(R.string.cd_back),
                     )
                 }
             },
