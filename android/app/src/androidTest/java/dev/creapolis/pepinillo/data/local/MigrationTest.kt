@@ -161,5 +161,97 @@ class MigrationTest {
         assertEquals(9, migration.startVersion)
         assertEquals(10, migration.endVersion)
     }
+
+    // ── MIGRATION_10_11: Drop raw_payload from productivity_reports ──
+
+    /**
+     * v10 → v11: drops the redundant `raw_payload` column from `productivity_reports`.
+     *
+     * The migration recreates the table without `raw_payload` and copies all other columns.
+     * This test validates the forward migration matches the exported schema.
+     */
+    @Test
+    fun migrate10To11_matchesExportedSchema() {
+        helper.createDatabase(dbName, 10).close()
+        val migrated = helper.runMigrationsAndValidate(
+            dbName,
+            11,
+            /* validateDroppedTables = */ true,
+            PepinilloDatabase.MIGRATION_10_11,
+        )
+        migrated.close()
+    }
+
+    /**
+     * Column-absence test: after running `MIGRATION_10_11`, the `productivity_reports`
+     * table must NOT expose the `raw_payload` column.
+     */
+    @Test
+    fun migration10To11_dropsRawPayloadColumn() {
+        helper.createDatabase(dbName, 10).close()
+        val migrated = helper.runMigrationsAndValidate(
+            dbName,
+            11,
+            /* validateDroppedTables = */ true,
+            PepinilloDatabase.MIGRATION_10_11,
+        )
+        migrated.query("SELECT * FROM productivity_reports LIMIT 0").use { cursor ->
+            val rawPayloadIndex = cursor.getColumnIndex("raw_payload")
+            assertTrue(
+                "raw_payload column should be removed after migration",
+                rawPayloadIndex < 0,
+            )
+            // Verify other columns still exist
+            assertTrue("id column missing", cursor.getColumnIndex("id") >= 0)
+            assertTrue("period column missing", cursor.getColumnIndex("period") >= 0)
+            assertTrue("title column missing", cursor.getColumnIndex("title") >= 0)
+            assertTrue("highlights column missing", cursor.getColumnIndex("highlights") >= 0)
+            assertTrue("insights column missing", cursor.getColumnIndex("insights") >= 0)
+            assertTrue("recommendations column missing", cursor.getColumnIndex("recommendations") >= 0)
+        }
+        migrated.close()
+    }
+
+    /**
+     * Smoke test: `MIGRATION_10_11` must declare the correct endpoints.
+     */
+    @Test
+    fun migration10To11_declaresCorrectEndpoints() {
+        val migration = PepinilloDatabase.MIGRATION_10_11
+        assertEquals(10, migration.startVersion)
+        assertEquals(11, migration.endVersion)
+    }
+
+    /**
+     * serverId preservation test: tasks retain serverId after migration chain.
+     *
+     * This test creates a v10 DB, inserts a task with a serverId, then runs
+     * migrations through v11 and verifies the serverId is preserved.
+     */
+    @Test
+    fun serverIdPreservedThroughMigration10To11() {
+        val db = helper.createDatabase(dbName, 10)
+        // Insert a task with server_id (column exists since v2)
+        db.execSQL(
+            "INSERT INTO tasks (id, title, server_id, is_dirty, is_deleted) " +
+                "VALUES ('task-1', 'Test Task', 42, 1, 0)",
+        )
+        db.close()
+
+        val migrated = helper.runMigrationsAndValidate(
+            dbName,
+            11,
+            /* validateDroppedTables = */ true,
+            PepinilloDatabase.MIGRATION_10_11,
+        )
+
+        // Verify server_id is preserved
+        val cursor = migrated.query("SELECT server_id FROM tasks WHERE id = 'task-1'")
+        assertTrue("Task should exist after migration", cursor.moveToFirst())
+        val serverId = cursor.getLong(0)
+        assertEquals("server_id should be preserved", 42L, serverId)
+        cursor.close()
+        migrated.close()
+    }
 }
 

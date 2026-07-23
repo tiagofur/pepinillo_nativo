@@ -57,6 +57,46 @@ class TaskPlanFilterTest {
     }
 
     @Test
+    fun upcomingFilter_includesTaskDue365DaysAhead() {
+        val todayNorm = normalizedToday()
+        val dueIn365Days = (todayNorm.clone() as Calendar).apply {
+            add(Calendar.DAY_OF_YEAR, 365)
+        }.timeInMillis
+        val task = Task(title = "Year ahead", dueDate = dueIn365Days)
+
+        val filtered = TasksUiState(
+            tasks = listOf(task),
+            selectedFilter = TaskFilter.Upcoming,
+        ).computeFilteredTasks()
+
+        assertEquals(
+            "Task due 365 days ahead must appear in Upcoming",
+            listOf(task.id),
+            filtered.map { it.id },
+        )
+    }
+
+    @Test
+    fun todayFilter_includesOverdueTaskDue30DaysAgo() {
+        val todayNorm = normalizedToday()
+        val overdue30Days = (todayNorm.clone() as Calendar).apply {
+            add(Calendar.DAY_OF_YEAR, -30)
+        }.timeInMillis
+        val task = Task(title = "Very overdue", dueDate = overdue30Days)
+
+        val filtered = TasksUiState(
+            tasks = listOf(task),
+            selectedFilter = TaskFilter.Today,
+        ).computeFilteredTasks()
+
+        assertEquals(
+            "Task overdue 30 days must appear in Today (overdue)",
+            listOf(task.id),
+            filtered.map { it.id },
+        )
+    }
+
+    @Test
     fun everyIncompleteTaskAppearsInExactlyOneActivePlanList() {
         val todayNorm = normalizedToday()
         val tomorrow = (todayNorm.clone() as Calendar).apply {

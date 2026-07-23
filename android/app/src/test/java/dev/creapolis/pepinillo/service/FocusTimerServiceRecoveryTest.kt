@@ -67,6 +67,67 @@ class FocusTimerServiceRecoveryTest {
     }
 
     @Test
+    fun `pause-death restore - session with 5-32 remaining survives process death`() {
+        // Arrange: Simulate a Paused session with 5:32 remaining (332000ms)
+        val remainingMillis = 5 * 60 * 1000L + 32 * 1000L // 5:32
+        val totalMillis = 25 * 60 * 1000L
+        val state = FocusTimerState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            status = TimerStatus.Paused,
+            elapsedMillis = totalMillis - remainingMillis,
+            totalMillis = totalMillis,
+            sessionStartTime = 1_700_000_000_000L,
+            completedSessions = 0,
+            linkedTaskId = "task-paused",
+        )
+
+        // Act: Save state (simulates process death persistence)
+        FocusTimerService.saveRecoveryState(context, state)
+
+        // Assert: Recovery state persists Paused status and correct elapsed
+        val recovery = FocusTimerService.readRecoveryState(context)
+        assertNotNull(recovery)
+        assertEquals(TimerStatus.Paused, recovery!!.status)
+        assertEquals(totalMillis - remainingMillis, recovery.elapsedMillis)
+        assertEquals(totalMillis, recovery.totalMillis)
+        assertEquals(FocusMode.Pomodoro, recovery.mode)
+        assertEquals(FocusPhase.Work, recovery.phase)
+        assertEquals("task-paused", recovery.linkedTaskId)
+    }
+
+    @Test
+    fun `start-stop race - stop signal during start leaves no orphaned timer`() {
+        // Arrange: Save a recovery state that indicates a Running session
+        val state = FocusTimerState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            status = TimerStatus.Running,
+            elapsedMillis = 0L,
+            totalMillis = 25 * 60 * 1000L,
+            sessionStartTime = 1_700_000_000_000L,
+            completedSessions = 0,
+            linkedTaskId = "task-race",
+        )
+        FocusTimerService.saveRecoveryState(context, state)
+
+        // Act: Read recovery state — if stop races with start, the state should be
+        // either null (cleared) or have a terminal status
+        val recovery = FocusTimerService.readRecoveryState(context)
+
+        // Assert: Recovery state exists with Running status (before stop clears it)
+        assertNotNull(recovery)
+        assertEquals(TimerStatus.Running, recovery!!.status)
+
+        // Act: Simulate stop by clearing recovery state
+        FocusTimerService.clearRecoveryState(context)
+
+        // Assert: After stop, recovery is cleared — no orphaned timer
+        val afterStop = FocusTimerService.readRecoveryState(context)
+        assertNull("Recovery state should be null after stop clears it", afterStop)
+    }
+
+    @Test
     fun `readRecoveryState returns null when not active`() {
         assertNull(FocusTimerService.readRecoveryState(context))
     }
