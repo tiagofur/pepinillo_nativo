@@ -76,6 +76,14 @@ class PaywallViewModel @Inject constructor(
         }
     }
 
+    fun retryProducts() {
+        _errorRes.value = null
+        viewModelScope.launch {
+            subscriptionManager.connect()
+            subscriptionManager.queryProducts()
+        }
+    }
+
     fun selectProduct(productId: String) {
         _selectedProductId.value = productId
     }
