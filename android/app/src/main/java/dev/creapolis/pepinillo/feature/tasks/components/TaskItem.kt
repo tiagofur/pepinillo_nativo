@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
+import java.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -115,8 +116,8 @@ fun TaskItem(
     // Use null to mean "no priority set" — Color.Transparent would render invisible
     val priorityColor = task.priority.priorityColor().takeIf { it != Color.Transparent }
 
-    // "Today" computed once per row per recomposition, instead of allocating 3 Calendars per helper call.
-    val todayNorm = remember { getNormalizedLocalDate() }
+    // "Today" recomputed per row when day-of-year changes (e.g. across midnight).
+    val todayNorm = remember(Calendar.getInstance().get(Calendar.DAY_OF_YEAR)) { getNormalizedLocalDate() }
     val isDueToday = task.dueDate != null && isDueTodayMs(task.dueDate, todayNorm)
 
     val isOverdue = task.dueDate != null && isBeforeTodayMs(task.dueDate, todayNorm)

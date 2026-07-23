@@ -189,9 +189,18 @@ class TasksViewModel @Inject constructor(
         tasks to subtaskProgressMap
     }
 
+    private val minuteTicker = kotlinx.coroutines.flow.flow {
+        while (true) {
+            emit(System.currentTimeMillis() / 60_000)
+            kotlinx.coroutines.delay(60_000)
+        }
+    }
+
+    private val filterWithTicker = combine(_selectedFilter, minuteTicker) { filter, _ -> filter }
+
     val uiState: StateFlow<TasksUiState> = combine(
         tasksWithSubtasks,
-        _selectedFilter,
+        filterWithTicker,
         _selectedSort,
         _energyFilter,
         featureGate.subscriptionState,
@@ -286,7 +295,7 @@ class TasksViewModel @Inject constructor(
                     undoExpiryJob?.cancel()
                     _undoEvent.value = UndoState(task = deletedTask)
                     undoExpiryJob = viewModelScope.launch {
-                        delay(5000)
+                        delay(10_000L)
                         _undoEvent.value = null
                     }
                 }

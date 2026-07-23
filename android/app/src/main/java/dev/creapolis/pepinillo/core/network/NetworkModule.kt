@@ -28,6 +28,9 @@ import android.util.Log
 import dev.creapolis.pepinillo.BuildConfig
 import java.io.IOException
 import kotlinx.serialization.json.Json
+import dev.creapolis.pepinillo.core.identity.IdentityManager
+import dev.creapolis.pepinillo.data.sync.SyncWebSocketClient
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Module
@@ -49,6 +52,8 @@ object NetworkModule {
     fun provideHttpClient(
         json: Json,
         authStore: AuthStore,
+        identityManagerProvider: Provider<IdentityManager>,
+        syncWebSocketClientProvider: Provider<SyncWebSocketClient>,
         authExpiredEvent: AuthExpiredEvent,
     ): HttpClient = HttpClient(OkHttp) {
         expectSuccess = true
@@ -99,6 +104,8 @@ object NetworkModule {
                         if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
                             Log.w("NetworkModule", "Refresh token rejected ($status), clearing auth")
                             authStore.clearAll()
+                            identityManagerProvider.get().refreshState()
+                            syncWebSocketClientProvider.get().disconnect()
                             // Signal the UI layer to force re-auth instead of leaving the
                             // user on a stale "logged-in" screen with silent sync failures.
                             authExpiredEvent.emit()

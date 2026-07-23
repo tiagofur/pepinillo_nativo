@@ -90,6 +90,14 @@ class TaskRepository @Inject constructor(
         taskDao.getActiveCount()
             .catch { e -> Log.e(TAG, "Error loading active count", e); emit(0) }
 
+    fun getTasksForDateFlow(startOfDay: Long, endOfDay: Long): Flow<List<Task>> =
+        kotlinx.coroutines.flow.flow {
+            val tasks = taskDao.getTasksForDate(startOfDay, endOfDay)
+                .filter { !it.isDeleted }
+                .map { it.toDomain() }
+            emit(tasks)
+        }.catch { e -> Log.e(TAG, "Error loading tasks for date range $startOfDay - $endOfDay", e); emit(emptyList()) }
+
     fun getTaskByIdFlow(taskId: String): Flow<Task?> =
         taskDao.getTaskByIdFlow(taskId)
             .map { it?.toDomain() }
