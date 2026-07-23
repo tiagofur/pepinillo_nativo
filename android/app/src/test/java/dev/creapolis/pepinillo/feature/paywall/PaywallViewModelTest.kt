@@ -24,6 +24,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -133,5 +134,115 @@ class PaywallViewModelTest {
 
         coVerify(exactly = 1) { subscriptionManager.restorePurchases() }
         assertEquals(R.string.paywall_restore_failed, viewModel.uiState.value.errorRes)
+    }
+
+    // ── Purchase success ──
+
+    @Test
+    fun `purchase success does not set error`() = runTest {
+        val product = mockk<ProductInfo>(relaxed = true) {
+            every { productId } returns "com.pepinillo.app.pro.annual"
+        }
+        productsFlow.value = listOf(product)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.selectProduct("com.pepinillo.app.pro.annual")
+        coEvery { subscriptionManager.launchPurchaseFlow(any(), any()) } returns PurchaseFlowResult.Success(
+            state = SubscriptionState(tier = dev.creapolis.pepinillo.core.billing.SubscriptionTier.EVERYWHERE_ANNUAL),
+            verification = null,
+        )
+        coEvery { apiClient.verifyReceipt(any()) } returns dev.creapolis.pepinillo.core.network.NetworkResult.Success(
+            dev.creapolis.pepinillo.core.network.VerifyReceiptResponse(
+                subscriptionTier = "pro",
+                subscriptionExpiresAt = null,
+            ),
+        )
+
+        val activity = mockk<android.app.Activity>(relaxed = true)
+        viewModel.purchase(activity)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.errorRes)
+    }
+
+    @Test
+    fun `purchase cancelled does not set error`() = runTest {
+        val product = mockk<ProductInfo>(relaxed = true) {
+            every { productId } returns "com.pepinillo.app.pro.annual"
+        }
+        productsFlow.value = listOf(product)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.selectProduct("com.pepinillo.app.pro.annual")
+        coEvery { subscriptionManager.launchPurchaseFlow(any(), any()) } returns PurchaseFlowResult.Cancelled
+
+        val activity = mockk<android.app.Activity>(relaxed = true)
+        viewModel.purchase(activity)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.errorRes)
+    }
+
+    // ── Restore ──
+
+    @Test
+    fun `restore success with premium does not set error`() = runTest {
+        coEvery { subscriptionManager.restorePurchases() } returns RestoreFlowResult.Success(
+            state = SubscriptionState(tier = dev.creapolis.pepinillo.core.billing.SubscriptionTier.EVERYWHERE_ANNUAL),
+            verification = null,
+        )
+
+        viewModel.restorePurchases()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.errorRes)
+    }
+
+    @Test
+    fun `restore success without premium shows no subscription error`() = runTest {
+        coEvery { subscriptionManager.restorePurchases() } returns RestoreFlowResult.Success(
+            state = SubscriptionState(tier = dev.creapolis.pepinillo.core.billing.SubscriptionTier.FREE),
+            verification = null,
+        )
+
+        viewModel.restorePurchases()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(R.string.paywall_no_subscription, viewModel.uiState.value.errorRes)
+    }
+
+    @Test
+    fun `restore failure shows error`() = runTest {
+        coEvery { subscriptionManager.restorePurchases() } returns RestoreFlowResult.Failed("Network timeout")
+
+        viewModel.restorePurchases()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(R.string.paywall_restore_failed, viewModel.uiState.value.errorRes)
+    }
+
+    // ── Offerings empty/error ──
+
+    @Test
+    fun `empty offerings list shows fallback`() = runTest {
+        productsFlow.value = emptyList()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.products.isEmpty())
+        assertNull(viewModel.uiState.value.selectedProductId)
+    }
+
+    @Test
+    fun `offerings with products selects annual by default`() = runTest {
+        val annual = mockk<ProductInfo>(relaxed = true) {
+            every { productId } returns "com.pepinillo.app.pro.annual"
+        }
+        val monthly = mockk<ProductInfo>(relaxed = true) {
+            every { productId } returns "com.pepinillo.app.pro.monthly"
+        }
+        productsFlow.value = listOf(monthly, annual)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals("com.pepinillo.app.pro.annual", viewModel.uiState.value.selectedProductId)
     }
 }

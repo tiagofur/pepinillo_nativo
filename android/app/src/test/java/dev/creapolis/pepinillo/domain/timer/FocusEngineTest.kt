@@ -1750,4 +1750,65 @@ class FocusEngineTest {
             )
         }
     }
+
+    // ── Silent completion (no notification permission) ──
+
+    @Test
+    fun `silent completion - timer completes without notification permission and status transitions`() = runTest {
+        // Arrange: Set up a Pomodoro work phase that will complete immediately
+        prefsFlow.value = UserPreferences(
+            pomodoroMinutes = 1,
+            sessionsBeforeLongBreak = 4,
+            autoStartBreaks = false,
+        )
+        val total = 1 * 60 * 1000L
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = total,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = System.currentTimeMillis() - total,
+        )
+        testScope.advanceUntilIdle()
+
+        // Assert: Timer completed, status is WaitingForNext (not crashed)
+        val state = engine.state.value
+        assertEquals(TimerStatus.WaitingForNext, state.status)
+        assertEquals(FocusPhase.ShortBreak, state.phase)
+        assertEquals(1, state.completedSessions)
+
+        // Assert: feedbackManager.onPhaseComplete was called (notification permission
+        // check happens in FocusTimerService, not here — the engine just calls feedback)
+        coVerify {
+            feedbackManager.onPhaseComplete(FocusMode.Pomodoro, FocusPhase.Work)
+        }
+    }
+
+    @Test
+    fun `silent completion - blocks mode completes to Idle without crash`() = runTest {
+        // Arrange: Blocks mode with elapsed == total
+        prefsFlow.value = UserPreferences(timeBlockMinutes = 5)
+        val total = 5 * 60 * 1000L
+        engine.restoreState(
+            mode = FocusMode.Blocks,
+            phase = FocusPhase.Work,
+            elapsedMillis = total,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = System.currentTimeMillis() - total,
+        )
+        testScope.advanceUntilIdle()
+
+        // Assert: Blocks completion goes to Idle
+        val state = engine.state.value
+        assertEquals(TimerStatus.Idle, state.status)
+        assertEquals(1, state.completedSessions)
+        assertEquals(FocusMode.Blocks, state.mode)
+
+        // Assert: No crash, feedbackManager called
+        coVerify {
+            feedbackManager.onPhaseComplete(FocusMode.Blocks, FocusPhase.Work)
+        }
+    }
 }
