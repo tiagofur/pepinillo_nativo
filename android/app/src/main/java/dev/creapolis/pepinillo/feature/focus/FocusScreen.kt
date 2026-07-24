@@ -73,7 +73,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.delay
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -96,6 +95,7 @@ import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
 import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
+import dev.creapolis.pepinillo.ui.haptics.PepinilloHaptics
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -126,6 +126,9 @@ fun FocusScreen(
         ringScaleTarget = 0.92f
         delay(80)
         ringScaleTarget = 1.0f
+        // Soft confirmation pulse on focus-mode change. The phase-completion vibration is
+        // handled centrally by FeedbackManager via FocusEngine, so it is NOT fired here.
+        PepinilloHaptics.onModeChange(haptic, uiState.vibrationEnabled)
     }
 
     // Phase-completion celebration: when a Pomodoro completes (completedSessions bumps),
@@ -135,7 +138,6 @@ fun FocusScreen(
             ringScaleTarget = 1.08f
             delay(120)
             ringScaleTarget = 1.0f
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
         }
     }
 
@@ -430,7 +432,7 @@ fun FocusScreen(
                 if (sessionActive) {
                     CircleControlButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            PepinilloHaptics.onControlTap(haptic, uiState.vibrationEnabled)
                             viewModel.onStopClick()
                         },
                         containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.16f),
@@ -446,11 +448,12 @@ fun FocusScreen(
 
                 Button(
                     onClick = {
-                        if (uiState.isRunning) {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        } else {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        }
+                        // Pause uses a lighter tap than start/resume for tactile contrast.
+                        PepinilloHaptics.onControlTap(
+                            haptic = haptic,
+                            enabled = uiState.vibrationEnabled,
+                            light = uiState.isRunning,
+                        )
                         // On the first session start (idle state), request POST_NOTIFICATIONS
                         // on Android 13+. The session starts regardless of the user's choice.
                         if (!uiState.isRunning && !uiState.isPaused && !uiState.isWaitingForNext &&
@@ -523,7 +526,7 @@ fun FocusScreen(
                 if (uiState.canSkip) {
                     CircleControlButton(
                         onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            PepinilloHaptics.onControlTap(haptic, uiState.vibrationEnabled, light = true)
                             viewModel.onSkipClick()
                         },
                         containerColor = MaterialTheme.colorScheme.surfaceVariant,

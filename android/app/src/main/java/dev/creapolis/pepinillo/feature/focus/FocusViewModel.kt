@@ -71,6 +71,8 @@ data class FocusUiState(
     val completedSessions: Int = 0,
     val sessionsBeforeLongBreak: Int = 4,
     val showBatteryWarningDialog: Boolean = false,
+    /** Master toggle for all UI haptics; mirrors [dev.creapolis.pepinillo.data.local.preferences.UserPreferences.vibrationEnabled]. */
+    val vibrationEnabled: Boolean = true,
 )
 
 @HiltViewModel
@@ -280,6 +282,7 @@ class FocusViewModel @Inject constructor(
             completedSessions = combined.timerState.completedSessions,
             sessionsBeforeLongBreak = settings.prefs.sessionsBeforeLongBreak,
             showBatteryWarningDialog = soundscape.showBatteryWarning,
+            vibrationEnabled = settings.prefs.vibrationEnabled,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FocusUiState(
         greetingRes = computeGreetingRes(),

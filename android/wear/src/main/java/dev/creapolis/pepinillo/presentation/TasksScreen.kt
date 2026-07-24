@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -189,7 +188,7 @@ fun TasksScreen(
                                 detectTapGestures(
                                     onTap = { taskToComplete = task },
                                     onLongPress = {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        WearHaptics.onConfirm(haptics)
                                         onToggleTaskLink(task.id, task.title)
                                     },
                                 )
@@ -208,7 +207,7 @@ fun TasksScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        WearHaptics.onConfirm(haptics)
                         onCompleteTask(task.id)
                         taskToComplete = null
                     },

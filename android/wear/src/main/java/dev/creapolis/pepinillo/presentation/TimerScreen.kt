@@ -37,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -119,19 +118,19 @@ fun TimerScreen(
             state = state,
             modeColor = modeColor,
             onPause = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                WearHaptics.onControlTap(haptics)
                 onPause()
             },
             onResume = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                WearHaptics.onControlTap(haptics)
                 onResume()
             },
             onStop = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                WearHaptics.onControlTap(haptics)
                 onStop()
             },
             onSkip = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                WearHaptics.onControlTap(haptics)
                 onSkip()
             },
         )
@@ -140,11 +139,11 @@ fun TimerScreen(
             state = state,
             modeColor = modeColor,
             onResume = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                WearHaptics.onControlTap(haptics)
                 onResume()
             },
             onStop = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                WearHaptics.onControlTap(haptics)
                 onStop()
             },
         )
@@ -158,7 +157,7 @@ fun TimerScreen(
             linkedTaskName = state.linkedTaskName,
             isPro = isPro,
             onStartMode = { mode ->
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                WearHaptics.onModeSelect(haptics)
                 onStartMode(mode)
             },
         )

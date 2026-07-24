@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.creapolis.pepinillo.data.local.entity.FocusSessionEntity
 import dev.creapolis.pepinillo.core.billing.FeatureGate
+import dev.creapolis.pepinillo.core.billing.SubscriptionState
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
@@ -35,6 +38,8 @@ data class TaskDetailUiState(
     val isLoading: Boolean = true,
     val showDeleteDialog: Boolean = false,
     val isPro: Boolean = false,
+    /** Master haptic toggle; gates the task-completion vibration in the UI. */
+    val vibrationEnabled: Boolean = true,
 ) {
     val subtaskProgress: Pair<Int, Int>
         get() = subtasks.count { it.isCompleted } to subtasks.size
@@ -59,6 +64,7 @@ data class TaskDetailUiState(
 class TaskDetailViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val featureGate: FeatureGate,
+    private val prefsRepo: UserPreferencesRepository,
 ) : ViewModel() {
 
     // taskId is set via initialize() after Hilt constructs the ViewModel
@@ -101,7 +107,17 @@ class TaskDetailViewModel @Inject constructor(
                     taskRepository.getSessionsForTask(id),
                     _showDeleteDialog,
                     featureGate.subscriptionState,
-                ) { task, subtasks, sessions, showDelete, subState ->
+                    prefsRepo.preferences,
+                ) { values ->
+                    @Suppress("UNCHECKED_CAST")
+                    val task = values[0] as Task?
+                    @Suppress("UNCHECKED_CAST")
+                    val subtasks = values[1] as List<Subtask>
+                    @Suppress("UNCHECKED_CAST")
+                    val sessions = values[2] as List<FocusSessionEntity>
+                    val showDelete = values[3] as Boolean
+                    val subState = values[4] as SubscriptionState
+                    val prefs = values[5] as UserPreferences
                     TaskDetailUiState(
                         task = task,
                         subtasks = subtasks,
@@ -109,6 +125,7 @@ class TaskDetailViewModel @Inject constructor(
                         isLoading = false,
                         showDeleteDialog = showDelete,
                         isPro = subState.hasLocalPremium,
+                        vibrationEnabled = prefs.vibrationEnabled,
                     )
                 }
             }

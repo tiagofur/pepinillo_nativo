@@ -47,6 +47,12 @@ data class UserPreferences(
     val showJournalAfterSession: Boolean = true,
     val selectedSoundscape: String? = null,
     val soundscapeVolume: Float = 0.5f,
+    /**
+     * Opt-in micro-vibration every ~60s while a focus session is running.
+     * Gated additionally by [vibrationEnabled] (the master toggle). Defaults off.
+     * Device-local preference — not synced across devices.
+     */
+    val hapticTimerTickEnabled: Boolean = false,
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
@@ -85,6 +91,7 @@ class UserPreferencesRepository @Inject constructor(
         val SHOW_JOURNAL_AFTER_SESSION = booleanPreferencesKey("show_journal_after_session")
         val SELECTED_SOUNDSCAPE = stringPreferencesKey("selected_soundscape")
         val SOUNDSCAPE_VOLUME = floatPreferencesKey("soundscape_volume")
+        val HAPTIC_TIMER_TICK_ENABLED = booleanPreferencesKey("haptic_timer_tick_enabled")
     }
 
     val preferences: Flow<UserPreferences> = dataStore.data.map { prefs ->
@@ -114,6 +121,7 @@ class UserPreferencesRepository @Inject constructor(
             showJournalAfterSession = prefs[Keys.SHOW_JOURNAL_AFTER_SESSION] ?: true,
             selectedSoundscape = prefs[Keys.SELECTED_SOUNDSCAPE],
             soundscapeVolume = prefs[Keys.SOUNDSCAPE_VOLUME] ?: 0.5f,
+            hapticTimerTickEnabled = prefs[Keys.HAPTIC_TIMER_TICK_ENABLED] ?: false,
         )
     }
 
@@ -152,6 +160,7 @@ class UserPreferencesRepository @Inject constructor(
         if (name != null) it[Keys.SELECTED_SOUNDSCAPE] = name else it.remove(Keys.SELECTED_SOUNDSCAPE)
     }
     suspend fun updateSoundscapeVolume(volume: Float) = update { it[Keys.SOUNDSCAPE_VOLUME] = volume }
+    suspend fun updateHapticTimerTickEnabled(value: Boolean) = update { it[Keys.HAPTIC_TIMER_TICK_ENABLED] = value }
 
     // ── Sync applying helper (clean update from server) ──
 

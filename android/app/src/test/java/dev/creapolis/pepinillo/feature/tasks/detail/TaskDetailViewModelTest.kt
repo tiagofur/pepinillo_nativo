@@ -2,6 +2,8 @@ package dev.creapolis.pepinillo.feature.tasks.detail
 
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.core.billing.SubscriptionState
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferences
+import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.Task
@@ -30,6 +32,9 @@ class TaskDetailViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private val taskRepository: TaskRepository = mockk(relaxed = true)
     private val featureGate: FeatureGate = mockk(relaxed = true)
+    private val prefsRepo: UserPreferencesRepository = mockk {
+        every { preferences } returns MutableStateFlow(UserPreferences())
+    }
 
     private val subscriptionStateFlow = MutableStateFlow(SubscriptionState())
     private val taskFlow = MutableStateFlow<Task?>(null)
@@ -52,6 +57,7 @@ class TaskDetailViewModelTest {
         viewModel = TaskDetailViewModel(
             taskRepository = taskRepository,
             featureGate = featureGate,
+            prefsRepo = prefsRepo,
         )
         viewModel.initialize("task-1")
     }

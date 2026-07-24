@@ -278,6 +278,10 @@
     <string name="settings_post_session_reflection_sub">Mostrar diário após cada sessão de foco</string>
     <string name="settings_sound_sub">Reproduzir som quando o temporizador terminar</string>
     <string name="settings_vibration_sub">Vibrar quando o temporizador terminar</string>
+    <string name="settings_haptic_feedback">Feedback háptico</string>
+    <string name="settings_haptic_feedback_sub">Vibrar ao tocar, concluir tarefas e mudar de modo</string>
+    <string name="settings_haptic_timer_tick">Pulso periódico</string>
+    <string name="settings_haptic_timer_tick_sub">Vibração sutil a cada minuto durante uma sessão ativa</string>
     <string name="settings_sec_general">Geral</string>
     <string name="settings_default_mode">Modo padrão</string>
     <string name="settings_default_mode_sub">Modo selecionado ao iniciar o app</string>
