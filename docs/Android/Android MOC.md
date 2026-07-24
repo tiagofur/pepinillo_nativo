@@ -10,7 +10,7 @@ platform: android
 type: moc
 status: active
 date: 2026-04-17
-updated: 2026-04-27
+updated: 2026-07-23
 ---
 
 # 🤖 Android — Mapa de Contenido
@@ -42,6 +42,12 @@ updated: 2026-04-27
 | Motor de foco (Pomodoro/Flowtime/TimeBlock/Stopwatch) | [[Modulo Focus Engine]] |
 | Sistema de tareas integrado | [[Modulo Tasks]] |
 | Widgets, notificacion persistente y Wear | [[Widgets & Wear OS]] |
+
+## Diseño & UX
+
+| Area | Documento |
+|------|-----------|
+| Material 3 Expressive — plan de migración (8 sprints) | [[Diseño UI-UX Material3 Expressive]] |
 
 ## Calidad
 
