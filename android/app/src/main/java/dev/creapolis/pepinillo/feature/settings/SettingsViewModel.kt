@@ -53,6 +53,7 @@ data class SettingsUiState(
     val midpointCheckIn: Boolean = false,
     val timerNotificationsEnabled: Boolean = true,
     val showJournalAfterSession: Boolean = true,
+    val hapticTimerTickEnabled: Boolean = false,
     val selectedTheme: String = "materialYou",
     val currentStreak: Int = 0,
     val isPro: Boolean = false,
@@ -220,6 +221,10 @@ class SettingsViewModel @Inject constructor(
         prefsRepo.updateShowJournalAfterSession(!uiState.value.showJournalAfterSession)
     }
 
+    fun toggleHapticTimerTick() = viewModelScope.launch {
+        prefsRepo.updateHapticTimerTickEnabled(!uiState.value.hapticTimerTickEnabled)
+    }
+
     private fun scheduleDailyReminder(hour: Int, minute: Int) {
         DailyReminderScheduler.schedule(context, hour, minute)
     }
@@ -262,6 +267,7 @@ class SettingsViewModel @Inject constructor(
         midpointCheckIn = midpointCheckIn,
         timerNotificationsEnabled = timerNotificationsEnabled,
         showJournalAfterSession = showJournalAfterSession,
+        hapticTimerTickEnabled = hapticTimerTickEnabled,
         selectedTheme = selectedTheme,
         currentStreak = currentStreak,
         isPro = isPro,

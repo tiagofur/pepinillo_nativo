@@ -588,6 +588,10 @@
     <string name="settings_post_session_reflection_sub">Show journal after each focus session</string>
     <string name="settings_sound_sub">Play sound when timer ends</string>
     <string name="settings_vibration_sub">Vibrate when timer ends</string>
+    <string name="settings_haptic_feedback">Haptic feedback</string>
+    <string name="settings_haptic_feedback_sub">Vibrate on taps, task completion, and mode changes</string>
+    <string name="settings_haptic_timer_tick">Periodic pulse</string>
+    <string name="settings_haptic_timer_tick_sub">Subtle vibration every minute while a session runs</string>
     <string name="settings_sec_general">General</string>
     <string name="settings_default_mode">Default mode</string>
     <string name="settings_default_mode_sub">Mode selected when app launches</string>

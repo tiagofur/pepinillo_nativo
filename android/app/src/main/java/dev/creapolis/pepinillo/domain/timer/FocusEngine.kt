@@ -367,6 +367,10 @@ class FocusEngine @Inject constructor(
             val loopStartRealtime = SystemClock.elapsedRealtime()
             val initialElapsed = _state.value.elapsedMillis
 
+            // Tracks the last whole-minute boundary crossed for the periodic tick-pulse haptic.
+            // Fires feedbackManager.onTimerTickPulse() every 60s of real elapsed time (opt-in).
+            var lastTickPulseSecond = (initialElapsed / 1000L).toInt()
+
             while (true) {
                 delay(tickInterval)
                 val s = _state.value
@@ -378,6 +382,15 @@ class FocusEngine @Inject constructor(
                 // Backstop: detect midnight crossing in case the broadcast was missed
                 if (System.currentTimeMillis() >= nextDayStartMillis) {
                     onDayChanged()
+                }
+
+                // Periodic haptic tick: fire once each time a new 60s boundary is crossed.
+                if (cachedPrefs.hapticTimerTickEnabled) {
+                    val currentSecond = (newElapsed / 1000L).toInt()
+                    if (currentSecond / 60 > lastTickPulseSecond / 60) {
+                        lastTickPulseSecond = currentSecond
+                        feedbackManager.onTimerTickPulse()
+                    }
                 }
 
                 // Flowtime: suggest break after minimum session time

@@ -36,6 +36,7 @@ class GatedScreensReactiveIsProTest {
 
     private lateinit var featureGate: FeatureGate
     private lateinit var subscriptionManager: SubscriptionManager
+    private lateinit var prefsRepo: dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 
     @Before
     fun setUp() {
@@ -44,6 +45,11 @@ class GatedScreensReactiveIsProTest {
             every { subscriptionState } returns subscriptionStateFlow
         }
         featureGate = FeatureGate(subscriptionManager)
+        prefsRepo = mockk {
+            every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(
+                dev.creapolis.pepinillo.data.local.preferences.UserPreferences()
+            )
+        }
     }
 
     @After
@@ -85,7 +91,7 @@ class GatedScreensReactiveIsProTest {
             every { getSubtasksForTask(any()) } returns flowOf(emptyList())
             every { getSessionsForTask(any()) } returns flowOf(emptyList())
         }
-        val vm = TaskDetailViewModel(taskRepository, featureGate)
+        val vm = TaskDetailViewModel(taskRepository, featureGate, prefsRepo)
         vm.initialize("task-1")
 
         val job = testDispatcher.scheduler.runCurrent().let {

@@ -420,12 +420,24 @@ fun SettingsScreen(
             )
             SettingsDivider()
             SwitchRow(
-                label = stringResource(R.string.vibration),
-                subtitle = stringResource(R.string.settings_vibration_sub),
+                label = stringResource(R.string.settings_haptic_feedback),
+                subtitle = stringResource(R.string.settings_haptic_feedback_sub),
                 icon = Icons.Rounded.Vibration,
                 isChecked = uiState.vibrationEnabled,
                 onToggle = viewModel::toggleVibration,
             )
+            // Periodic pulse sub-toggle — only meaningful when the master haptic toggle is on.
+            AnimatedVisibility(visible = uiState.vibrationEnabled) {
+                Column {
+                    SettingsDivider()
+                    SwitchRow(
+                        label = stringResource(R.string.settings_haptic_timer_tick),
+                        subtitle = stringResource(R.string.settings_haptic_timer_tick_sub),
+                        isChecked = uiState.hapticTimerTickEnabled,
+                        onToggle = viewModel::toggleHapticTimerTick,
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(28.dp))

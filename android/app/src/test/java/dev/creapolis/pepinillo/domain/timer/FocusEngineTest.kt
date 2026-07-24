@@ -1811,4 +1811,56 @@ class FocusEngineTest {
             feedbackManager.onPhaseComplete(FocusMode.Blocks, FocusPhase.Work)
         }
     }
+
+    // ── Periodic haptic tick pulse (#491) ──
+
+    @Test
+    fun `timer tick pulse fires onTimerTickPulse each minute when hapticTimerTickEnabled`() = runTest {
+        // Stub session recording so a phase completion (if reached) does not error.
+        coEvery {
+            sessionRepository.recordSession(
+                mode = any(), startTime = any(), endTime = any(),
+                durationMillis = any(), linkedTaskId = any(), phase = any(),
+                wasCompleted = any(), interruptions = any(), pauseCount = any(),
+                totalPauseMillis = any(), pomodoroNumber = any(), targetDurationMillis = any(),
+            )
+        } returns "session_1"
+
+        // Enable the periodic tick before starting — the loop caches prefs at start().
+        prefsFlow.value = UserPreferences(hapticTimerTickEnabled = true)
+
+        engine.start()
+        // Drive the 4Hz tick loop forward: run queued delayed coroutines at each virtual step.
+        testScope.testScheduler.advanceTimeBy(60_000L)
+        testScope.testScheduler.runCurrent()
+
+        // After one full minute, exactly one tick pulse should have fired.
+        coVerify(exactly = 1) { feedbackManager.onTimerTickPulse() }
+
+        // Advance a second minute — a second pulse should fire.
+        testScope.testScheduler.advanceTimeBy(60_000L)
+        testScope.testScheduler.runCurrent()
+
+        coVerify(exactly = 2) { feedbackManager.onTimerTickPulse() }
+    }
+
+    @Test
+    fun `timer tick pulse is silent when hapticTimerTickEnabled is false`() = runTest {
+        coEvery {
+            sessionRepository.recordSession(
+                mode = any(), startTime = any(), endTime = any(),
+                durationMillis = any(), linkedTaskId = any(), phase = any(),
+                wasCompleted = any(), interruptions = any(), pauseCount = any(),
+                totalPauseMillis = any(), pomodoroNumber = any(), targetDurationMillis = any(),
+            )
+        } returns "session_1"
+
+        // Default prefs: hapticTimerTickEnabled = false
+        engine.start()
+        testScope.testScheduler.advanceTimeBy(125_000L)
+        testScope.testScheduler.runCurrent()
+
+        // No tick pulse should fire when the opt-in is off.
+        coVerify(exactly = 0) { feedbackManager.onTimerTickPulse() }
+    }
 }

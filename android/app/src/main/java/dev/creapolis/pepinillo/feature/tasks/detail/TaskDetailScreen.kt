@@ -70,6 +70,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,6 +83,7 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.feature.tasks.model.RecurrenceOption
 import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
+import dev.creapolis.pepinillo.ui.haptics.PepinilloHaptics
 import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.priorityColor
 import java.text.SimpleDateFormat
@@ -101,6 +103,7 @@ fun TaskDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val task = uiState.task ?: return
 
+    val haptic = LocalHapticFeedback.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
@@ -199,7 +202,12 @@ fun TaskDetailScreen(
                     modifier = Modifier
                         .size(48.dp)
                         .clickable(
-                            onClick = { viewModel.toggleCompletion() }
+                            onClick = {
+                                // Fire the task-complete haptic before toggling so it fires even
+                                // when toggling back to incomplete (consistent tactile feedback).
+                                PepinilloHaptics.onTaskComplete(haptic, uiState.vibrationEnabled)
+                                viewModel.toggleCompletion()
+                            }
                         ),
                     contentAlignment = Alignment.Center,
                 ) {

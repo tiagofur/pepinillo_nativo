@@ -79,6 +79,18 @@ class FeedbackManager @Inject constructor(
         if (prefs.vibrationEnabled) vibrate()
     }
 
+    /**
+     * Opt-in micro-vibration fired periodically while a focus session runs.
+     * Gated by both [UserPreferences.vibrationEnabled] (master) and
+     * [UserPreferences.hapticTimerTickEnabled] (opt-in). Uses a single soft tick rather than
+     * the louder phase-completion waveform so it stays unobtrusive at the ~60s cadence.
+     */
+    suspend fun onTimerTickPulse() {
+        val prefs = prefsRepo.preferences.first()
+        if (!prefs.vibrationEnabled || !prefs.hapticTimerTickEnabled) return
+        vibrateTick()
+    }
+
     private fun showCompletionNotification(mode: FocusMode, phase: FocusPhase) {
         val (titleRes, textRes) = completionMessageRes(mode, phase)
         val title = context.getString(titleRes)
@@ -152,7 +164,7 @@ class FeedbackManager @Inject constructor(
     private fun vibrate() {
         try {
             if (!vibrator.hasVibrator()) return
-            
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 val composition = VibrationEffect.startComposition()
                     .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
@@ -169,6 +181,25 @@ class FeedbackManager @Inject constructor(
             }
         } catch (_: Exception) {
             // Silently fail
+        }
+    }
+
+    /** Single soft tick for the periodic timer-tick pulse. Quieter than [vibrate]. */
+    private fun vibrateTick() {
+        try {
+            if (!vibrator.hasVibrator()) return
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                val composition = VibrationEffect.startComposition()
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.4f)
+                    .compose()
+                vibrator.vibrate(composition)
+            } else {
+                val effect = VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE)
+                vibrator.vibrate(effect)
+            }
+        } catch (_: Exception) {
+            // Silently fail (e.g. emulator without a vibrator)
         }
     }
 }
