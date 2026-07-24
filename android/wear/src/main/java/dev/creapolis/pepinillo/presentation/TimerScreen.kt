@@ -5,6 +5,9 @@ import android.content.Intent
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -221,18 +224,26 @@ private fun TimerActiveLayout(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        // Display floor: ensure the ring reads active even at progress ~0 (count-up modes).
-        val displayProgress = if (localProgress < 0.02f) 0.02f else localProgress
-        CircularProgressIndicator(
-            progress = { displayProgress.coerceIn(0f, 1f) },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            colors = ProgressIndicatorDefaults.colors(
-                indicatorColor = modeColor,
-                trackColor = modeColor.copy(alpha = 0.15f),
-            ),
+        // Sprint 6 (#492): circular→squircle morph during the last 20% of countdown sessions.
+        // Count-up modes (Flow, Chrono) and Reduce Motion stay circular, matching the phone.
+        val hasCountdown = !WearTimerDisplay.isCountUpMode(state.mode)
+        val rawMorphTarget = WearTimerMorph.calculateMorphTarget(
+            progress = localProgress,
+            hasCountdown = hasCountdown,
+            reduceMotion = isReduceMotionEnabled(),
+        )
+        val morphProgress by animateFloatAsState(
+            targetValue = rawMorphTarget,
+            animationSpec = spring(stiffness = Spring.StiffnessLow),
+            label = "wearMorphProgress",
+        )
+        WearTimerRing(
+            progress = localProgress,
+            color = modeColor,
+            trackColor = modeColor.copy(alpha = 0.15f),
             strokeWidth = 6.dp,
+            modifier = Modifier.padding(8.dp),
+            morphProgress = morphProgress,
         )
 
         Column(
