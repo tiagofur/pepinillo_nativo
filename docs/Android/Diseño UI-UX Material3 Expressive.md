@@ -14,7 +14,7 @@ type: module
 doc_role: design-spec
 status: active
 date: 2026-05-28
-updated: 2026-05-28
+updated: 2026-07-24
 ---
 
 # 🎨 Android — Diseño UI/UX Material 3 Expressive
@@ -23,7 +23,19 @@ updated: 2026-05-28
 > Plan de implementación en 8 sprints para alinear Pepinillo Android + Wear OS con los estándares de Material 3 Expressive y Material You. Cada sección es la especificación de referencia para su issue de GitHub correspondiente.
 
 > [!info] Cómo usar este documento
-> Cada sección `## Sprint N` corresponde exactamente a un issue de GitHub etiquetado con `design/material3`. El agente de ejecución debe leer la sección completa antes de implementar el issue.
+> Cada sección `## Sprint N` corresponde exactamente a un issue de GitHub. El agente de ejecución debe leer la sección completa antes de implementar el issue.
+
+> [!warning] Estado post Judgment Day (2026-07-24)
+> Auditoría adversarial completa + backlog de fixes: [[Judgment Day Android UI-UX 2026-07-24]].
+>
+> | Sprint issue | Estado | Notas |
+> |-------------:|--------|-------|
+> | #487–#491 | CLOSED | Entregados (estructura OK) |
+> | #492 Morph | CLOSED con **regresión** | Track: [#501](https://github.com/tiagofur/pepinillo_nativo/issues/501) |
+> | #493 Adaptive | OPEN + WIP branch | Extensión MEDIUM: #523 |
+> | #494 Palettes | OPEN | Alto impacto premium |
+>
+> Residual funcional/UX (27 issues): **#501–#527**.
 
 ---
 
