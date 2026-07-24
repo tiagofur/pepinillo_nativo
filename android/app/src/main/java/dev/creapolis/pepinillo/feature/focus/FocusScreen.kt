@@ -91,6 +91,7 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.feature.focus.components.CircularTimerRing
 import dev.creapolis.pepinillo.feature.focus.components.ModeChip
+import dev.creapolis.pepinillo.feature.focus.components.TimerMorph
 import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
@@ -197,6 +198,20 @@ fun FocusScreen(
         targetValue = uiState.progress,
         animationSpec = tween(500),
         label = "progress",
+    )
+    // Sprint 6 (#492): circular→squircle morph during the last 20% of countdown sessions to
+    // communicate urgency peripherally. Count-up modes (Flow, Chrono) and Reduce Motion stay
+    // circular. The spring naturally bounces back to circle when a new phase resets progress to 0.
+    val hasCountdown = uiState.selectedMode.defaultTotalSeconds != null
+    val rawMorphTarget = TimerMorph.calculateMorphTarget(
+        progress = uiState.progress,
+        hasCountdown = hasCountdown,
+        reduceMotion = reduceMotion,
+    )
+    val morphProgress by animateFloatAsState(
+        targetValue = rawMorphTarget,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "morphProgress",
     )
     val sessionActive = uiState.isRunning || uiState.isPaused || uiState.isWaitingForNext
     val primaryTimerActionVisual = when {
@@ -328,6 +343,7 @@ fun FocusScreen(
                     modifier = Modifier.size(timerSize.dp),
                     isRunning = uiState.isRunning,
                     showDashedOverlay = !uiState.isRunning && uiState.selectedMode.defaultTotalSeconds == null,
+                    morphProgress = morphProgress,
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
