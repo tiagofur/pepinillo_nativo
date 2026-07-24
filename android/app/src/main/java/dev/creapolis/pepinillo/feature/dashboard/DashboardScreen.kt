@@ -72,6 +72,7 @@ import dev.creapolis.pepinillo.feature.dashboard.model.AnalyticsPeriod
 import dev.creapolis.pepinillo.feature.dashboard.model.isEmpty
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.components.DashboardSkeleton
+import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
 import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 
@@ -200,11 +201,15 @@ fun DashboardScreen(
                     },
                     state = rememberTooltipState()
                 ) {
+                    // Shared-bounds anchor matched by the CalendarScreen title ("calendar-entry")
+                    // so the icon morphs into the screen title on navigation (#489).
+                    val calendarSharedModifier = rememberSharedBoundsModifier("calendar-entry")
                     IconButton(onClick = onCalendarClick) {
                         Icon(
                             Icons.Rounded.CalendarMonth,
                             contentDescription = stringResource(R.string.cd_calendar),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = calendarSharedModifier,
                         )
                     }
                 }

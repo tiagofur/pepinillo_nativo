@@ -4,7 +4,11 @@ import dev.creapolis.pepinillo.ui.theme.DomainColors
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -84,8 +88,11 @@ import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.feature.tasks.components.TaskItem
+import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
 import dev.creapolis.pepinillo.ui.components.TasksListSkeleton
+import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
+import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -278,6 +285,9 @@ fun TasksScreen(
                                 onStartFocusTask()
                             },
                             modifier = Modifier.animateItem(),
+                            // Shared-bounds anchor keyed by task id; the TaskAnalyticsScreen
+                            // title uses the same key so the row title morphs into it (#489).
+                            titleModifier = rememberSharedBoundsModifier("task-analytics-${task.id}"),
                         )
                         } // SwipeToDismissBox
                     }
@@ -320,20 +330,41 @@ fun TasksScreen(
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                 containerColor = MaterialTheme.colorScheme.surface,
             ) {
-                TaskDetailScreen(
-                    onBack = { selectedTaskId = null },
-                    onNavigateToPaywall = onNavigateToPaywall,
-                    viewModel = detailViewModel,
-                    onNavigateToAnalytics = { taskId ->
-                        selectedTaskId = null
-                        onNavigateToAnalytics(taskId)
+                // Expressive sheet content entrance: scale up from 0.93 + fade, with a
+                // medium-bouncy spring. Under "Reduce motion" it snaps in instantly (#489).
+                val reduceMotion = isReduceMotionEnabled()
+                var contentVisible by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) { contentVisible = true }
+                AnimatedVisibility(
+                    visible = contentVisible,
+                    enter = if (reduceMotion) {
+                        fadeIn(androidx.compose.animation.core.tween(0))
+                    } else {
+                        fadeIn(androidx.compose.animation.core.tween(NavigationTransitions.DURATION_MODAL)) +
+                            scaleIn(
+                                initialScale = 0.93f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessMedium,
+                                ),
+                            )
                     },
-                    onStartFocusTask = { taskId ->
-                        selectedTaskId = null
-                        viewModel.startFocusOnTask(taskId)
-                        onStartFocusTask()
-                    }
-                )
+                ) {
+                    TaskDetailScreen(
+                        onBack = { selectedTaskId = null },
+                        onNavigateToPaywall = onNavigateToPaywall,
+                        viewModel = detailViewModel,
+                        onNavigateToAnalytics = { taskId ->
+                            selectedTaskId = null
+                            onNavigateToAnalytics(taskId)
+                        },
+                        onStartFocusTask = { taskId ->
+                            selectedTaskId = null
+                            viewModel.startFocusOnTask(taskId)
+                            onStartFocusTask()
+                        }
+                    )
+                }
             }
         }
     }

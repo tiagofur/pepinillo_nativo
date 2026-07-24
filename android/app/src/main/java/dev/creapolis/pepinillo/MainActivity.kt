@@ -24,6 +24,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -43,17 +45,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffoldDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -69,6 +70,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import dev.creapolis.pepinillo.data.local.preferences.UserPreferencesRepository
 import dev.creapolis.pepinillo.feature.auth.EmailVerificationScreen
 import dev.creapolis.pepinillo.feature.auth.ForgotPasswordScreen
@@ -93,7 +95,10 @@ import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
 import dev.creapolis.pepinillo.feature.settings.SettingsScreen
 import dev.creapolis.pepinillo.feature.tasks.TaskAnalyticsScreen
 import dev.creapolis.pepinillo.feature.tasks.TasksScreen
+import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.navigation.TopLevelDestination
+import dev.creapolis.pepinillo.ui.components.LocalNavAnimatedVisibilityScope
+import dev.creapolis.pepinillo.ui.components.LocalSharedTransitionScope
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
@@ -105,27 +110,11 @@ import androidx.compose.runtime.setValue
 
 private const val SYNC_DEBOUNCE_MS = 30_000L
 
-/** Nav transition durations (ms). */
-private const val DURATION_NAV_MS = 220
-private const val DURATION_NAV_DETAIL_MS = 280
+// Navigation transition timings live in NavigationTransitions (#489).
 
 /** Translucent scrims so the gesture-nav buttons stay legible over content. */
 private const val LIGHT_NAV_SCRIM = 0xE6FFFFFF.toInt()
 private const val DARK_NAV_SCRIM = 0x801B1B1B.toInt()
-
-/**
- * Secondary-route (detail/push) transition: a subtle slide-up + fade that reads as
- * "stacking" on top of the current screen. Applied per-composable to override the
- * default tab fade for routes reached via navigate() (analytics, calendar, settings, …).
- */
-private val SecondaryEnterTransition: AnimatedContentTransitionScope<*>.() -> androidx.compose.animation.EnterTransition = {
-    fadeIn(tween(DURATION_NAV_DETAIL_MS)) +
-        slideInVertically(initialOffsetY = { it / 12 }, animationSpec = tween(DURATION_NAV_DETAIL_MS))
-}
-private val SecondaryPopExitTransition: AnimatedContentTransitionScope<*>.() -> androidx.compose.animation.ExitTransition = {
-    fadeOut(tween(DURATION_NAV_DETAIL_MS)) +
-        slideOutVertically(targetOffsetY = { it / 12 }, animationSpec = tween(DURATION_NAV_DETAIL_MS))
-}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -273,7 +262,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun PepinilloApp(
     prefsRepository: UserPreferencesRepository,
@@ -321,15 +310,10 @@ fun PepinilloApp(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Hide bottom bar on non-top-level screens (like Profile, Auth) or when in PiP
+    // Hide navigation on non-top-level screens (like Profile, Auth) or when in PiP
     val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
     val isImeVisible = WindowInsets.isImeVisible
     val showBottomBar = currentRoute in topLevelRoutes && !isPipMode && !isImeVisible
-
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isExpanded = configuration.screenWidthDp >= 600
-    val showNavRail = isExpanded && showBottomBar
-    val showBottomNav = !isExpanded && showBottomBar
 
     // Global connectivity indicator: a subtle banner when offline.
     val isOnline by syncStatusManager.isOnline.collectAsState()
@@ -337,92 +321,60 @@ fun PepinilloApp(
     val snackbarController = rememberSnackbarController()
 
     CompositionLocalProvider(LocalSnackbarController provides snackbarController) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        contentWindowInsets = WindowInsets.systemBars,
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarController.hostState) },
-        bottomBar = {
-            AnimatedVisibility(
-                visible = showBottomNav,
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it }),
+        // Snackbar floats above NavigationSuiteScaffold so it's always visible
+        // regardless of which navigation type is active.
+        androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+            NavigationSuiteScaffold(
+                navigationSuiteItems = {
+                    TopLevelDestination.entries.forEach { destination ->
+                        val isSelected = currentRoute == destination.route
+                        item(
+                            selected = isSelected,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = if (isSelected) destination.selectedIcon
+                                                  else destination.unselectedIcon,
+                                    contentDescription = null,
+                                )
+                            },
+                            label = { Text(stringResource(destination.labelRes)) },
+                        )
+                    }
+                },
+                layoutType = if (!showBottomBar) NavigationSuiteType.None
+                             else NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
+                                 currentWindowAdaptiveInfo()
+                             ),
             ) {
-                NavigationBar {
-                    TopLevelDestination.entries.forEach { destination ->
-                        val isSelected = currentRoute == destination.route
-                        NavigationBarItem(
-                            selected = isSelected,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) {
-                                        destination.selectedIcon
-                                    } else {
-                                        destination.unselectedIcon
-                                    },
-                                    contentDescription = null,
-                                )
-                            },
-                            label = { Text(stringResource(destination.labelRes)) },
-                        )
-                    }
-                }
-            }
-        },
-    ) { innerPadding ->
-        Row(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            if (showNavRail) {
-                androidx.compose.material3.NavigationRail {
-                    TopLevelDestination.entries.forEach { destination ->
-                        val isSelected = currentRoute == destination.route
-                        androidx.compose.material3.NavigationRailItem(
-                            selected = isSelected,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = if (isSelected) {
-                                        destination.selectedIcon
-                                    } else {
-                                        destination.unselectedIcon
-                                    },
-                                    contentDescription = null,
-                                )
-                            },
-                            label = { Text(stringResource(destination.labelRes)) },
-                        )
-                    }
-                }
-            }
-
-            Column(modifier = Modifier.weight(1f).fillMaxSize()) {
-                // Offline banner — surfaces connectivity state that previously only lived in Settings.
-                OfflineBanner(isOnline = isOnline)
-                val reduceMotion = dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled()
-                val navDuration = if (reduceMotion) 0 else DURATION_NAV_MS
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Offline banner — surfaces connectivity state that previously only lived in Settings.
+                    OfflineBanner(isOnline = isOnline)
+                    // Resolve Reduce motion once: every transition gets 0ms so it's instant (#489).
+                    val reduceMotion = dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled()
+                    val topLevelDur = if (reduceMotion) 0 else NavigationTransitions.DURATION_TOP_LEVEL
+                    val detailDur = if (reduceMotion) 0 else NavigationTransitions.DURATION_DETAIL
+                // SharedTransitionLayout wraps the NavHost so destinations can connect
+                // shared-element anchors (Dashboard↔Calendar icon/title, TaskItem↔Analytics title)
+                // via LocalSharedTransitionScope + LocalNavAnimatedVisibilityScope (#489).
+                SharedTransitionLayout {
+                    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
                 NavHost(
                     navController = navController,
                     startDestination = startDestination,
                     modifier = Modifier.fillMaxSize(),
-                    enterTransition = { fadeIn(tween(navDuration)) },
-                    exitTransition = { fadeOut(tween(navDuration)) },
-                    popEnterTransition = { fadeIn(tween(navDuration)) },
-                    popExitTransition = { fadeOut(tween(navDuration)) },
+                    enterTransition = NavigationTransitions.topLevelEnter(topLevelDur),
+                    exitTransition = NavigationTransitions.topLevelExit(topLevelDur),
+                    popEnterTransition = NavigationTransitions.topLevelEnter(topLevelDur),
+                    popExitTransition = NavigationTransitions.topLevelExit(topLevelDur),
                 ) {
             composable(TopLevelDestination.Focus.route) {
                 FocusScreen(
@@ -442,52 +394,59 @@ fun PepinilloApp(
                 )
             }
             composable(TopLevelDestination.Plan.route) {
-                TasksScreen(
-                    onTaskClick = {},
-                    onNavigateToAnalytics = { taskId ->
-                        navController.navigate("tasks/$taskId/analytics")
-                    },
-                    onNavigateToPaywall = {
-                        navController.navigate("paywall")
-                    },
-                    onStartFocusTask = {
-                        navController.navigate(TopLevelDestination.Focus.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+                    TasksScreen(
+                        onTaskClick = {},
+                        onNavigateToAnalytics = { taskId ->
+                            navController.navigate("tasks/$taskId/analytics")
+                        },
+                        onNavigateToPaywall = {
+                            navController.navigate("paywall")
+                        },
+                        onStartFocusTask = {
+                            navController.navigate(TopLevelDestination.Focus.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                )
+                        },
+                    )
+                }
             }
             composable(
                 "tasks/{taskId}/analytics",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
-            ) {
-                TaskAnalyticsScreen(
-                    onBack = { navController.popBackStack() },
-                )
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
+            ) { backStackEntry ->
+                CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+                    TaskAnalyticsScreen(
+                        onBack = { navController.popBackStack() },
+                        taskId = backStackEntry.arguments?.getString("taskId"),
+                    )
+                }
             }
             composable(TopLevelDestination.Dashboard.route) {
-                DashboardScreen(
-                    onCalendarClick = { navController.navigate("calendar") },
-                    onNavigateToPaywall = { navController.navigate("paywall") },
-                    onStartFocusClick = {
-                        navController.navigate(TopLevelDestination.Focus.route) {
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    onNavigateToAIReport = { navController.navigate("ai_report") },
-                )
+                CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+                    DashboardScreen(
+                        onCalendarClick = { navController.navigate("calendar") },
+                        onNavigateToPaywall = { navController.navigate("paywall") },
+                        onStartFocusClick = {
+                            navController.navigate(TopLevelDestination.Focus.route) {
+                                popUpTo(navController.graph.startDestinationId) { saveState = true }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                        onNavigateToAIReport = { navController.navigate("ai_report") },
+                    )
+                }
             }
             composable(
                 "ai_report",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
                 AIReportScreen(
                     onBack = { navController.popBackStack() },
@@ -495,15 +454,17 @@ fun PepinilloApp(
             }
             composable(
                 "calendar",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
-                CalendarScreen(onBack = { navController.popBackStack() })
+                CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
+                    CalendarScreen(onBack = { navController.popBackStack() })
+                }
             }
             composable(
                 "profile",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
                 ProfileScreen(
                     onBackClick = { navController.popBackStack() },
@@ -532,29 +493,29 @@ fun PepinilloApp(
             }
             composable(
                 "help",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
                 HelpSupportScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 "about",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
                 AboutScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 "export",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
                 ExportScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 "settings",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
                 SettingsScreen(
                     onNavigateBack = { navController.popBackStack() },
@@ -564,8 +525,8 @@ fun PepinilloApp(
             }
             composable(
                 "app_setup",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
                 AppSetupScreen(
                     onBack = { navController.popBackStack() },
@@ -676,8 +637,8 @@ fun PepinilloApp(
 
             composable(
                 "paywall",
-                enterTransition = SecondaryEnterTransition,
-                popExitTransition = SecondaryPopExitTransition,
+                enterTransition = NavigationTransitions.detailEnter(detailDur),
+                popExitTransition = NavigationTransitions.detailPopExit(detailDur),
             ) {
                 PaywallScreen(
                     onDismiss = { navController.popBackStack() },
@@ -707,9 +668,15 @@ fun PepinilloApp(
                 )
             }
         } // NavHost
-        } // Column
-        } // Row
-    } // Scaffold
+                    } // CompositionLocalProvider(LocalSharedTransitionScope)
+                } // SharedTransitionLayout
+                } // Column
+            } // NavigationSuiteScaffold
+            SnackbarHost(
+                hostState = snackbarController.hostState,
+                modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter),
+            )
+        } // Box
     } // CompositionLocalProvider
 }
 

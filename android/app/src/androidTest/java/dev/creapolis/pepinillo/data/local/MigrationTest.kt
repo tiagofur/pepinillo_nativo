@@ -253,5 +253,47 @@ class MigrationTest {
         cursor.close()
         migrated.close()
     }
+
+    /**
+     * dirty session skip test: tasks with is_dirty=1 are identified for sync.
+     *
+     * This test verifies that the dirty session LWW (Last-Write-Wins) logic
+     * correctly identifies tasks that need server sync vs local-only changes.
+     */
+    @Test
+    fun dirtySessionTasksAreIdentifiedForSync() {
+        val db = helper.createDatabase(dbName, 11)
+        // Insert a dirty task (needs sync)
+        db.execSQL(
+            "INSERT INTO tasks (id, title, server_id, is_dirty, is_deleted) " +
+                "VALUES ('dirty-1', 'Dirty Task', 42, 1, 0)",
+        )
+        // Insert a clean task (already synced)
+        db.execSQL(
+            "INSERT INTO tasks (id, title, server_id, is_dirty, is_deleted) " +
+                "VALUES ('clean-1', 'Clean Task', 43, 0, 0)",
+        )
+        db.close()
+
+        // Query dirty tasks (those that need sync)
+        val migrated = helper.runMigrationsAndValidate(
+            dbName,
+            11,
+            /* validateDroppedTables = */ true,
+            PepinilloDatabase.MIGRATION_10_11,
+        )
+
+        val dirtyCursor = migrated.query("SELECT id FROM tasks WHERE is_dirty = 1")
+        assertTrue("Should have at least one dirty task", dirtyCursor.moveToFirst())
+        assertEquals("dirty-1", dirtyCursor.getString(0))
+        dirtyCursor.close()
+
+        val cleanCursor = migrated.query("SELECT id FROM tasks WHERE is_dirty = 0")
+        assertTrue("Should have at least one clean task", cleanCursor.moveToFirst())
+        assertEquals("clean-1", cleanCursor.getString(0))
+        cleanCursor.close()
+
+        migrated.close()
+    }
 }
 

@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.repository.TaskAnalytics
+import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +57,12 @@ fun TaskAnalyticsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TaskAnalyticsViewModel = hiltViewModel(),
+    /**
+     * Task id of the analytics target, used to build the shared-bounds key so the task row title
+     * morphs into this screen's title on enter (#489). Null when the caller doesn't participate
+     * (then no shared element is attached).
+     */
+    taskId: String? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -128,12 +135,15 @@ fun TaskAnalyticsScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Task title
+            // Task title — shared-bounds target keyed by task id ("task-analytics-{taskId}")
+            // so the TaskItem row title morphs into it on enter and back on pop (#489).
+            val titleSharedModifier = taskId?.let { rememberSharedBoundsModifier("task-analytics-$it") } ?: Modifier
             Text(
                 text = uiState.taskTitle,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
+                modifier = titleSharedModifier,
             )
 
             Spacer(modifier = Modifier.height(20.dp))
