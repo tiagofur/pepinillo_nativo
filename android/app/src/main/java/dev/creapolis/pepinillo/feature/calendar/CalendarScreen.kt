@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.repository.SessionRepository
+import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -85,6 +86,9 @@ fun CalendarScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // ── BACK + TITLE ──
+        // Title is the shared-bounds target for the Dashboard calendar icon ("calendar-entry")
+        // so the icon morphs into it on enter and back on pop (#489).
+        val titleSharedModifier = rememberSharedBoundsModifier("calendar-entry")
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.cd_go_back), modifier = Modifier.size(20.dp))
@@ -93,6 +97,7 @@ fun CalendarScreen(
                 text = stringResource(R.string.calendar_title),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
+                modifier = titleSharedModifier,
             )
         }
 

@@ -80,6 +80,11 @@ fun TaskItem(
     modifier: Modifier = Modifier,
     subtaskProgress: Pair<Int, Int>? = null,
     onStartFocus: () -> Unit = {},
+    /**
+     * Modifier applied to the task title [Text], so callers can attach a shared-bounds anchor
+     * (key `task-analytics-${task.id}`) that morphs into the TaskAnalyticsScreen title (#489).
+     */
+    titleModifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -264,6 +269,7 @@ fun TaskItem(
                     textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = titleModifier,
                 )
 
                 // Notes snippet (first line)
