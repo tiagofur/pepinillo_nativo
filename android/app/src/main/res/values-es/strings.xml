@@ -489,6 +489,8 @@
 
     <!-- Tasks -->
     <string name="tasks_title">Plan</string>
+    <string name="select_task_to_view_details">Selecciona una tarea para ver sus detalles</string>
+    <string name="select_dashboard_detail">Selecciona un elemento para ver los detalles</string>
     <string name="tasks_active_count">%1$d activas</string>
     <string name="tasks_active_limit">%1$d/%2$d activas</string>
     <string name="tasks_no_tasks">Sin tareas a\u00fan</string>

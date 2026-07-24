@@ -54,6 +54,12 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
+# Core adaptive APIs (ListDetailPaneScaffold, rememberListDetailPaneScaffoldNavigator) for the
+# Sprint 7 two-pane Tasks/Dashboard layouts (#493). Version flows transitively from
+# material3-adaptive-navigation-suite (1.1.0) rather than being pinned, since the core artifacts
+# don't share the nav-suite's version cadence.
+androidx-material3-adaptive-layout = { group = "androidx.compose.material3.adaptive", name = "adaptive-layout" }
+androidx-material3-adaptive-navigation = { group = "androidx.compose.material3.adaptive", name = "adaptive-navigation" }
 # Explicit (version managed by composeBom) so SharedTransitionLayout/shared-element APIs
 # are guaranteed present regardless of what material3 pulls transitively (#489).
 androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
