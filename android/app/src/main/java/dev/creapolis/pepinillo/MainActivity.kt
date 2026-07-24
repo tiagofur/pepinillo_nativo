@@ -41,6 +41,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudOff
@@ -355,7 +356,15 @@ fun PepinilloApp(
                                  currentWindowAdaptiveInfo()
                              ),
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
+                Column(
+                    // statusBarsPadding keeps the app chrome (offline banner + every destination's
+                    // header) below the status bar under edge-to-edge — previously each screen's
+                    // manual top padding landed *inside* the status bar and clipped the app bar
+                    // (#490 safe-area fix).
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding(),
+                ) {
                     // Offline banner — surfaces connectivity state that previously only lived in Settings.
                     OfflineBanner(isOnline = isOnline)
                     // Resolve Reduce motion once: every transition gets 0ms so it's instant (#489).
