@@ -351,7 +351,7 @@ Complete Wear OS app:
 
 #### Platform-Specific Effects
 
-- **[iOS]**: Support for **Liquid Glass** (iOS 26) as an additional premium theme. Glassmorphism effects in UI components.
+- **[iOS]**: iOS 26 **system glass** aesthetic (`.glassEffect`, adaptive materials, widget glass) applied app-wide as an always-on, free platform treatment. Not a selectable theme — the iOS 26 system glass composites over whichever of the 4 named themes the user picks.
 - **[Android]**: **Material You** dynamic colors as an additional option alongside the 4 named themes. Material 3 theming system.
 
 ---
@@ -819,7 +819,6 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | Classic theme                          | ✅  | ✅      | ✅      | ✅      | FREE |
 | Forest / Ocean / Sunset                | ✅  | ✅      | ⬜      | ✅      | APPLE / EVERYWHERE  |
 | Theme picker (horizontal scroll cards) | ✅  | ✅      | ➖      | ➖      | FREE |
-| Liquid Glass (iOS 26)                  | ⬜  | ➖      | ⬜      | ➖      | APPLE / EVERYWHERE  |
 | Material You dynamic colors            | ➖  | ✅      | ➖      | ✅      | FREE |
 | Light/Dark/System appearance selector  | ✅  | ✅      | ✅      | ✅      | FREE |
 | Focus mode colors (red/purple/green)   | ✅  | ✅      | ✅      | ✅      | FREE |

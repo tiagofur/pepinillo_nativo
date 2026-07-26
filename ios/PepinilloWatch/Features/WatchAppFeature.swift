@@ -28,6 +28,11 @@ struct WatchAppFeature {
         var dashboard = WatchDashboardFeature.State()
 
         var isConnected: Bool = false
+
+        /// Theme name synced from the phone ("default" / "forest" / "ocean" / "sunset").
+        /// Unknown / missing → `AppTheme.named(_:)` falls back to `.classic`. Injected
+        /// into the view tree via `.environment(\.appTheme, …)` in `WatchRootView`.
+        var themeName: String = AppTheme.classic.name
     }
 
     enum WatchTab: Int, Equatable {
@@ -50,6 +55,7 @@ struct WatchAppFeature {
         case statsReceived(todayMinutes: Int, sessions: Int, streak: Int)
         case tasksReceived([WatchTaskItem], sentAt: TimeInterval)
         case dashboardStatsReceived(WatchDashboardStats)
+        case themeReceived(String)
         case connectivityChanged(Bool)
     }
 
@@ -85,6 +91,8 @@ struct WatchAppFeature {
                             await send(.tasksReceived(items, sentAt: sentAt))
                         case .dashboardStats(let stats):
                             await send(.dashboardStatsReceived(stats))
+                        case .theme(let themeName):
+                            await send(.themeReceived(themeName))
                         case .connectivityStatus(let connected):
                             await send(.connectivityChanged(connected))
                         case .command:
@@ -130,6 +138,11 @@ struct WatchAppFeature {
 
             case .dashboardStatsReceived(let stats):
                 return .send(.dashboard(.dashboardStatsReceived(stats)))
+
+            case .themeReceived(let themeName):
+                // Unknown / missing themes fall back to classic via AppTheme.named(_:).
+                state.themeName = themeName
+                return .none
 
             case .connectivityChanged(let connected):
                 state.isConnected = connected

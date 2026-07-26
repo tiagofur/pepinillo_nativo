@@ -386,6 +386,9 @@
     <string name="paywall_annual">Anual</string>
     <string name="paywall_best_value">MEJOR VALOR</string>
     <string name="paywall_btn_restore">Restaurar Compras</string>
+    <string name="paywall_btn_retry">Reintentar carga de productos</string>
+    <string name="paywall_manage_subscription">Gestionar suscripción</string>
+    <string name="paywall_risk_reversal_one_time">Compra única • Paga una vez, mantén para siempre</string>
     <string name="paywall_legal">Las suscripciones se renuevan autom\u00e1ticamente a menos que se cancelen al menos 24 horas antes del final del periodo actual. Gestiona tus suscripciones en los ajustes de Google Play.</string>
     <string name="paywall_unit_month">/mes</string>
     <string name="paywall_unit_year">/a\u00f1o</string>
@@ -515,6 +518,15 @@
     <string name="sort_priority">Prioridad</string>
     <string name="sort_time">Tiempo</string>
     <string name="sort_energy">Energ\u00eda</string>
+    <string name="sort_newest">Más recientes</string>
+
+    <!-- Task Detail & Accessibility -->
+    <string name="task_detail_subtasks">Subtareas</string>
+    <string name="task_detail_subtasks_count">Subtareas (%1$d/%2$d)</string>
+    <string name="task_detail_priority_focus">Prioridad y enfoque</string>
+    <string name="task_detail_focus_history">Historial de enfoque</string>
+    <string name="cd_mark_complete">Marcar %1$s como completado</string>
+    <string name="cd_mark_incomplete">Marcar %1$s como incompleto</string>
 
     <!-- Auth -->
     <string name="auth_slogan">Tu compa\u00f1ero de trabajo profundo</string>
@@ -672,6 +684,9 @@
     <string name="minutes_format">%1$d min</string>
     <string name="theme_classic">Clásico</string>
     <string name="theme_material_you">Material You</string>
+    <string name="theme_mode_system">Sistema</string>
+    <string name="theme_mode_light">Claro</string>
+    <string name="theme_mode_dark">Oscuro</string>
     <string name="theme_forest">Bosque</string>
     <string name="theme_ocean">Océano</string>
     <string name="theme_sunset">Atardecer</string>

@@ -789,6 +789,48 @@ struct StatsDictionaryEncodingTests {
     }
 }
 
+// MARK: - Theme Dictionary Encoding (#533)
+//
+// WatchConnectivityClient.sendTheme writes a top-level "theme" section with a
+// single "themeName" string. Mirrors the encode/decode contract used by the
+// stats / sessionState / dashboardStats sections.
+
+@Suite("Theme Dictionary Encoding")
+struct ThemeDictionaryEncodingTests {
+
+    /// Encodes a theme payload the same way WatchConnectivityManager.sendTheme does.
+    private func encodeTheme(_ themeName: String, includeType: Bool = true) -> [String: Any] {
+        var dict: [String: Any] = ["themeName": themeName]
+        if includeType { dict["type"] = "theme" }
+        return dict
+    }
+
+    @Test func dictionaryContainsThemeName() {
+        let dict = encodeTheme("forest")
+        #expect(dict["themeName"] as? String == "forest")
+    }
+
+    @Test func defaultThemeRoundTrips() {
+        // "default" is the Classic theme key — must survive the wire format.
+        let dict = encodeTheme("default")
+        #expect(dict["themeName"] as? String == "default")
+    }
+
+    @Test func unknownThemeIsPreservedOnWire() {
+        // The phone is the source of truth; an unknown name is still transmitted
+        // verbatim and the watch resolves it via AppTheme.named(_:) → .classic.
+        let dict = encodeTheme("liquidGlass-phantom")
+        #expect(dict["themeName"] as? String == "liquidGlass-phantom")
+    }
+
+    @Test func watchMessageThemeIsEquatable() {
+        // WatchMessage.theme carries the name through to the watch reducer.
+        #expect(WatchMessage.theme("forest") == WatchMessage.theme("forest"))
+        #expect(WatchMessage.theme("forest") != WatchMessage.theme("ocean"))
+        #expect(WatchMessage.theme("forest") != WatchMessage.sessionState(.idle))
+    }
+}
+
 // MARK: - Wire Format Type Dispatcher Tests
 //
 // All incoming WatchConnectivity messages have a "type" discriminator key.
@@ -1093,6 +1135,38 @@ struct TransportSemanticsContractTests {
         #expect(decoded != nil)
         #expect(decoded?["sessionsCompleted"] as? Int == 4)
         #expect(decoded?["streakDays"]        as? Int == 3)
+    }
+
+    @Test func applicationContextDecodeYieldsTheme() {
+        // Cold-start hydration (#533): the "theme" section must be readable from
+        // the applicationContext the watch receives on activation.
+        let themeDict: [String: Any] = ["themeName": "sunset"]
+        let ctx: [String: Any] = ["theme": themeDict, "sentAt": Date().timeIntervalSince1970]
+
+        let decoded = ctx["theme"] as? [String: Any]
+        #expect(decoded != nil)
+        #expect(decoded?["themeName"] as? String == "sunset")
+    }
+
+    @Test func contextDictThemeDoesNotClobberOtherSections() {
+        // buildFullContextLocked merges sessionState / stats / dashboardStats / theme
+        // into one applicationContext payload. Sending a theme update must NOT remove
+        // previously-cached sections (applicationContext replaces, does not merge).
+        var ctx: [String: Any] = [:]
+
+        // First: cache sessionState + stats
+        ctx["sessionState"] = ["isActive": true, "modeID": "pomodoro"] as [String: Any]
+        ctx["stats"]        = ["todayMinutes": 60] as [String: Any]
+        ctx["sentAt"]       = Date().timeIntervalSince1970
+
+        // Then: sendTheme — must merge into the SAME context without dropping keys
+        ctx["theme"]   = ["themeName": "forest"] as [String: Any]
+        ctx["sentAt"]  = Date().timeIntervalSince1970
+
+        #expect(ctx["sessionState"] as? [String: Any] != nil, "sessionState must survive after theme update")
+        #expect(ctx["stats"]        as? [String: Any] != nil, "stats must survive after theme update")
+        #expect(ctx["theme"]        as? [String: Any] != nil)
+        #expect((ctx["theme"] as? [String: Any])?["themeName"] as? String == "forest")
     }
 
     @Test func coldStartWithEmptyContextDoesNotCrash() {

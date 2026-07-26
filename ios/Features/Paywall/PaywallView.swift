@@ -23,6 +23,7 @@ struct PaywallView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
+                        HapticManager.impact(.light)
                         store.send(.closeTapped)
                     } label: {
                         Image(systemName: "xmark.circle.fill")

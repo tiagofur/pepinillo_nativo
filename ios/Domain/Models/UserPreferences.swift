@@ -32,7 +32,7 @@ public final class UserPreferences {
     public var defaultMode: String  // FocusMode.rawValue
 
     // Theme
-    public var themeName: String    // "default", "forest", "ocean", "sunset", "liquidGlass"
+    public var themeName: String    // "default", "forest", "ocean", "sunset"
     public var followSystemAppearance: Bool
     public var appearanceMode: String  // "system", "light", "dark"
 

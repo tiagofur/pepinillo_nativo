@@ -188,11 +188,20 @@ struct SettingsView: View {
                 String(localized: "Default mode"),
                 selection: Binding(
                     get: { store.defaultMode },
-                    set: { store.send(.defaultModeChanged($0)) }
+                    set: {
+                        HapticManager.selection()
+                        store.send(.defaultModeChanged($0))
+                    }
                 )
             ) {
                 ForEach(FocusMode.allCases) { mode in
-                    Label(mode.displayName, systemImage: mode.systemImage).tag(mode)
+                    // Suffix Pro-only modes when the user is free, so the picker
+                    // signals the gate before tap (Flowtime / TimeBlock). Selecting
+                    // one routes to the paywall via SettingsFeature.defaultModeChanged.
+                    let label = store.isProUser || mode.isFreeTier
+                        ? mode.displayName
+                        : "\(mode.displayName) (Pro)"
+                    Label(label, systemImage: mode.systemImage).tag(mode)
                 }
             }
             Toggle(
@@ -237,7 +246,8 @@ struct SettingsView: View {
                     ForEach(AppTheme.all, id: \.name) { t in
                         ThemePreviewCell(
                             theme: t,
-                            isSelected: store.themeName == t.name
+                            isSelected: store.themeName == t.name,
+                            isLocked: !store.isProUser && t.name != AppTheme.classic.name
                         ) {
                             store.send(.themeChanged(t.name))
                         }
@@ -250,7 +260,10 @@ struct SettingsView: View {
 
             Picker(String(localized: "Appearance"), selection: Binding(
                 get: { store.appearanceMode },
-                set: { store.send(.appearanceModeChanged($0)) }
+                set: {
+                    HapticManager.selection()
+                    store.send(.appearanceModeChanged($0))
+                }
             )) {
                 Text(String(localized: "System")).tag("system")
                 Text(String(localized: "Light")).tag("light")
@@ -448,6 +461,10 @@ struct SettingsView: View {
 struct ThemePreviewCell: View {
     let theme: AppTheme
     let isSelected: Bool
+    /// True when the theme requires Pro AND the user is not Pro. Shows a lock
+    /// affordance so free users can see which themes are premium before tapping.
+    /// The actual gating lives in `SettingsFeature.themeChanged` — this is visual only.
+    var isLocked: Bool = false
     let onTap: () -> Void
 
     var body: some View {
@@ -473,6 +490,16 @@ struct ThemePreviewCell: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(isSelected ? AnyShapeStyle(.tint.opacity(0.12)) : AnyShapeStyle(Color.clear))
+            .overlay(alignment: .topTrailing) {
+                // Pro lock cue — mirrors the lock.fill convention used in SoundscapePicker
+                // and TaskDetail (gating on premium items). Hidden for Pro users.
+                if isLocked {
+                    Image(systemName: "lock.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .padding(6)
+                }
+            }
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(
@@ -483,6 +510,6 @@ struct ThemePreviewCell: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(theme.displayName) theme\(isSelected ? ", selected" : "")")
+        .accessibilityLabel("\(theme.displayName) theme\(isSelected ? ", selected" : "")\(isLocked ? String(localized: ", requires Pro") : "")")
     }
 }

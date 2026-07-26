@@ -11,6 +11,15 @@ import ComposableArchitecture
 
 struct WatchDashboardView: View {
     @Bindable var store: StoreOf<WatchDashboardFeature>
+    /// Phone-synced theme (#533). Per-mode accents resolve from the theme so
+    /// Forest/Ocean/Sunset on the phone propagate to the watch dashboard.
+    @Environment(\.appTheme) private var appTheme
+
+    private var pomodoroAccent: Color { appTheme.color(for: .pomodoro) }
+    private var flowtimeAccent: Color { appTheme.color(for: .flowtime) }
+    private var timeBlockAccent: Color { appTheme.color(for: .timeBlock) }
+    private var stopwatchAccent: Color { appTheme.color(for: .stopwatch) }
+    private var streakAccent: Color { appTheme.streakColor }
 
     var body: some View {
         ScrollView {
@@ -106,7 +115,7 @@ struct WatchDashboardView: View {
                 icon: "bolt.fill",
                 value: store.streakDays > 0 ? "\(store.streakDays)d" : "—",
                 label: String(localized: "Streak"),
-                color: ModeColors.streak
+                color: streakAccent
             )
         }
     }
@@ -129,10 +138,10 @@ struct WatchDashboardView: View {
                 let total = max(CGFloat(totalModeMinutes), 1)
                 HStack(spacing: 1) {
                     let modes: [(Int, Color)] = [
-                        (store.pomodoroMinutes, ModeColors.pomodoro),
-                        (store.flowtimeMinutes, ModeColors.flowtime),
-                        (store.timeBlockMinutes, ModeColors.timeBlock),
-                        (store.stopwatchMinutes, ModeColors.stopwatch),
+                        (store.pomodoroMinutes, pomodoroAccent),
+                        (store.flowtimeMinutes, flowtimeAccent),
+                        (store.timeBlockMinutes, timeBlockAccent),
+                        (store.stopwatchMinutes, stopwatchAccent),
                     ]
                     ForEach(Array(modes.enumerated()), id: \.offset) { _, item in
                         if item.0 > 0 {
@@ -150,23 +159,23 @@ struct WatchDashboardView: View {
             // Legend
             HStack(spacing: 6) {
                 if store.pomodoroMinutes > 0 {
-                    ModeLegendItem(emoji: "🍅", minutes: store.pomodoroMinutes, color: ModeColors.pomodoro)
+                    ModeLegendItem(emoji: "🍅", minutes: store.pomodoroMinutes, color: pomodoroAccent)
                 }
                 if store.flowtimeMinutes > 0 {
-                    ModeLegendItem(emoji: "🌊", minutes: store.flowtimeMinutes, color: ModeColors.flowtime)
+                    ModeLegendItem(emoji: "🌊", minutes: store.flowtimeMinutes, color: flowtimeAccent)
                 }
                 if store.timeBlockMinutes > 0 {
-                    ModeLegendItem(emoji: "📦", minutes: store.timeBlockMinutes, color: ModeColors.timeBlock)
+                    ModeLegendItem(emoji: "📦", minutes: store.timeBlockMinutes, color: timeBlockAccent)
                 }
                 if store.stopwatchMinutes > 0 {
-                    ModeLegendItem(emoji: "⏱️", minutes: store.stopwatchMinutes, color: ModeColors.stopwatch)
+                    ModeLegendItem(emoji: "⏱️", minutes: store.stopwatchMinutes, color: stopwatchAccent)
                 }
             }
             .padding(.horizontal, 4)
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 4)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .pepinilloGlass(cornerRadius: 10)
     }
 
     // MARK: - Best Session
@@ -186,7 +195,7 @@ struct WatchDashboardView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .pepinilloGlass(cornerRadius: 10)
     }
 
     // MARK: - Helpers
@@ -223,7 +232,7 @@ private struct DashboardStatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .background(Color.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+        .pepinilloGlass(cornerRadius: 10)
     }
 }
 

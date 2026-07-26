@@ -137,7 +137,8 @@
 
 ### Design ✅
 
-- 4 named themes (Classic, Forest, Ocean, Sunset) + Liquid Glass
+- 4 named themes (Classic, Forest, Ocean, Sunset)
+- iOS 26 **system glass** aesthetic (`.glassEffect`, adaptive materials, widget glass) applied always-on and free — distinct from the selectable themes above (#28).
 - **Theme picker:** horizontal scroll cards with preview
 - **Appearance selector:** Light / Dark / System
 - **Focus mode colors:** consistent colors per mode (Pomodoro=red, TimeBlock=purple, Chrono=green)
@@ -461,11 +462,11 @@
 
 | Feature                                 | iOS                       | Android                   | Notes                                         |
 | --------------------------------------- | ------------------------- | ------------------------- | --------------------------------------------- |
-| Theming                                 | ✅ 4 themes + Liquid Glass | ✅ 4 themes + Material You | Strong parity baseline                        |
+| Theming                                 | ✅ 4 themes + iOS 26 system glass | ✅ 4 themes + Material You | Strong parity baseline                        |
 | Theme picker (horizontal scroll)        | ✅                        | ✅                        | Available on both platforms                   |
 | Appearance selector (Light/Dark/System) | ✅                        | ✅                        |                                               |
 | Focus mode colors (red/purple/green)    | ✅                        | ✅                        | Consistent on both platforms                  |
-| Wear OS / watchOS theme sync            | ✅ WatchConnectivity      | ✅ Data Layer             | Phone -> watch                                |
+| Wear OS / watchOS theme sync            | ✅ WatchConnectivity (#546) | ✅ Data Layer             | Phone → watch on both platforms               |
 | Glassmorphism                           | ✅                        | ⬜                        | iOS only                                      |
 | Haptic feedback                         | ✅                        | ⬜                        | Android haptics not fully implemented         |
 | Reduce Motion                           | ✅                        | ⬜                        |                                               |

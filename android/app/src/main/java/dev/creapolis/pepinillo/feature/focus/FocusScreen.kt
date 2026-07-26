@@ -112,6 +112,8 @@ fun FocusScreen(
     onNavigateToPaywall: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    // #505: hero ring + live time read the high-rate (4Hz) flow; everything else stays on uiState.
+    val ringState by viewModel.ringState.collectAsState()
     val activeTasks by viewModel.activeTasks.collectAsState()
     val modeColors = uiState.selectedMode.colorScheme(uiState.currentPhase)
     val haptic = LocalHapticFeedback.current
@@ -195,8 +197,10 @@ fun FocusScreen(
         label = "onAccentColor",
     )
     val animatedProgress by animateFloatAsState(
-        targetValue = uiState.progress,
-        animationSpec = tween(500),
+        targetValue = ringState.progress,
+        // #505: with the 4Hz ringState source the ring already updates ~4x/sec; a short tween
+        // smooths the discrete ticks without reintroducing the ~1s lag the old 500ms spec had.
+        animationSpec = tween(180),
         label = "progress",
     )
     // Sprint 6 (#492): circular→squircle morph during the last 20% of countdown sessions to
@@ -204,12 +208,12 @@ fun FocusScreen(
     // Reduce Motion stay circular. The spring naturally bounces back to circle when a new phase
     // resets elapsed to 0.
     //
-    // Polarity (#501): uiState.progress is the *remaining* fraction (1f = full, 0f = done), but
+    // Polarity (#501): ringState.progress is the *remaining* fraction (1f = full, 0f = done), but
     // TimerMorph reasons over the *elapsed* fraction — so invert it. Gate on Running/Paused only:
     // Idle and WaitingForNext pin progress at 1f and would otherwise read as "session complete".
     val hasCountdown = uiState.selectedMode.defaultTotalSeconds != null
-    val morphSessionActive = uiState.isRunning || uiState.isPaused
-    val elapsedFraction = if (morphSessionActive) 1f - uiState.progress else 0f
+    val morphSessionActive = ringState.isRunning || ringState.isPaused
+    val elapsedFraction = if (morphSessionActive) 1f - ringState.progress else 0f
     val rawMorphTarget = TimerMorph.calculateMorphTarget(
         progress = elapsedFraction,
         hasCountdown = hasCountdown,
@@ -268,6 +272,15 @@ fun FocusScreen(
         )
     }
 
+    // #503: navigation must run as a one-shot side effect, not during composition.
+    // Dismissing the flag inside the composition body risked double navigation and
+    // recomposition races; LaunchedEffect keys on the flag so it fires once per transition.
+    LaunchedEffect(uiState.showPaywall) {
+        if (!uiState.showPaywall) return@LaunchedEffect
+        viewModel.dismissPaywall()
+        onNavigateToPaywall()
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -302,11 +315,6 @@ fun FocusScreen(
 
             if (!isPipMode && !sessionActive) {
                 Spacer(modifier = Modifier.height(22.dp))
-            }
-
-            if (uiState.showPaywall) {
-                viewModel.dismissPaywall()
-                onNavigateToPaywall()
             }
 
             Spacer(modifier = Modifier.weight(if (sessionActive) 0.55f else 0.28f))
@@ -365,7 +373,8 @@ fun FocusScreen(
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = uiState.displayTime,
+                        // #505: read the 4Hz displayTime so the digits stay in lockstep with the ring.
+                        text = ringState.displayTime,
                         style = MaterialTheme.typography.displayLarge.copy(
                             fontSize = if (sessionActive) 62.sp else 56.sp,
                             letterSpacing = 1.5.sp,

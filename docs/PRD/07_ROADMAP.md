@@ -39,7 +39,7 @@
 | | RevenueCat (StoreKit 2 / Play Billing) | ✅ 100% | ✅ 100% | — | Code complete; awaiting v3.1 config (API key swap) |
 | **Monetization** | Paywall (Pepinillo+ / Everywhere/AI+) | ✅ 100% | ✅ 95% | — | iOS ready; Android needs parity UI update |
 | | Entitlements (pepinillo_plus / everywhere_plus) | ✅ Code done | ✅ Code done | — | **Config pending in RevenueCat + ASC** |
-| **Design & UX** | Themes (4 themes + Liquid Glass) | ✅ 100% | ✅ 100% | ✅ 100% | Material You dynamic colors |
+| **Design & UX** | Themes (4 themes) + iOS 26 system glass | ✅ 100% | ✅ 100% | ✅ 100% | Material You dynamic colors |
 | | Glassmorphism + accessibility | ✅ 100% | ✅ 100% | ✅ 100% | VoiceOver/TalkBack, reduce motion support |
 | | Localization (EN, ES, PT) | ✅ 95% | ✅ 95% | ✅ 95% | Minor strings may fall back to EN |
 | **Testing** | Unit tests (strategies, engine, models) | ✅ 80% | ✅ 75% | — | TCA TestStore (iOS), JUnit 5 + Turbine (Android) |
@@ -146,7 +146,7 @@
 | Link tasks to focus sessions                                  | 8h    | High        |
 | Analytics dashboard (SwiftCharts, mode breakdown)             | 24h   | Medium      |
 | Settings, Navigation, Notifications                           | 32h   | High        |
-| Themes (4 themes + Liquid Glass)                              | 16h   | Medium      |
+| Themes (4 themes)                                             | 16h   | Medium      |
 | Onboarding with mode selector                                 | 10h   | Medium      |
 | Localization (EN, ES, PT)                                     | 12h   | High        |
 | Unit tests (4 strategies + FocusEngine + Tasks)               | 20h   | High        |
