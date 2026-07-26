@@ -224,8 +224,24 @@ class FocusEngine @Inject constructor(
             return
         }
 
+        // #513: recompute elapsed from wall-clock on recovery. The saved elapsedMillis is a
+        // ≤1s-stale snapshot; after a long reboot the real elapsed (sessionStart → now, minus the
+        // accumulated pause time) can be much larger — and may have already crossed total. Using
+        // the stale value would rewind the countdown (and could resurrect a session that already
+        // completed while the process was dead). sessionStartTime == 0 means we never anchored the
+        // session to wall-clock (e.g. legacy/edge state) — fall back to the saved snapshot.
+        val effectiveElapsed = if (sessionStartTime > 0L) {
+            val now = System.currentTimeMillis()
+            val wallClockElapsed = now - sessionStartTime - totalPauseMillis
+            // Never rewind below the persisted snapshot — guards against clock skew / NTP jumps
+            // that would make `now` appear older than sessionStartTime.
+            wallClockElapsed.coerceAtLeast(elapsedMillis).coerceAtLeast(0L)
+        } else {
+            elapsedMillis
+        }
+
         // If the phase already completed while the process was dead, handle it
-        if (mode != FocusMode.Flow && mode != FocusMode.Chrono && elapsedMillis >= resolvedTotal) {
+        if (mode != FocusMode.Flow && mode != FocusMode.Chrono && effectiveElapsed >= resolvedTotal) {
             _state.value = FocusTimerState(
                 mode = mode,
                 phase = phase,
@@ -242,7 +258,7 @@ class FocusEngine @Inject constructor(
                 mode = mode,
                 phase = phase,
                 status = TimerStatus.Running,
-                elapsedMillis = elapsedMillis,
+                elapsedMillis = effectiveElapsed,
                 totalMillis = resolvedTotal,
                 completedSessions = effectiveCompletedSessions,
                 sessionStartTime = sessionStartTime,

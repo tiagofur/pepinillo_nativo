@@ -10,6 +10,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -404,25 +405,31 @@ class FocusEngineTest {
     @Test
     fun `stop records session when elapsed and sessionStartTime are positive`() = runTest {
         // Use restoreState to set up a state with elapsed time
+        val expectedDuration = 5 * 60 * 1000L
         engine.restoreState(
             mode = FocusMode.Pomodoro,
             phase = FocusPhase.Work,
-            elapsedMillis = 5 * 60 * 1000L,
+            elapsedMillis = expectedDuration,
             totalMillis = 25 * 60 * 1000L,
             completedSessions = 0,
-            sessionStartTime = System.currentTimeMillis() - 5 * 60 * 1000L,
+            sessionStartTime = System.currentTimeMillis() - expectedDuration,
         )
         testScope.testScheduler.runCurrent()
 
         engine.stop()
         testScope.testScheduler.runCurrent()
 
+        // #513: restoreState recomputes elapsed from the wall-clock
+        // (now - sessionStartTime - pause). The recorded duration therefore equals
+        // the original 5 min plus a small real-time delta that elapses between
+        // restoreState() and stop(), so we assert a range instead of an exact value.
+        val recordedDuration = slot<Long>()
         coVerify(exactly = 1) {
             sessionRepository.recordSession(
                 mode = "Pomodoro",
                 startTime = any(),
                 endTime = any(),
-                durationMillis = 5 * 60 * 1000L,
+                durationMillis = capture(recordedDuration),
                 linkedTaskId = null,
                 phase = "Work",
                 wasCompleted = false,
@@ -430,6 +437,10 @@ class FocusEngineTest {
                 targetDurationMillis = 25 * 60 * 1000L,
             )
         }
+        assertTrue(
+            "expected duration ~$expectedDuration ms (wall-clock delta allowed), got ${recordedDuration.captured}",
+            recordedDuration.captured in expectedDuration..(expectedDuration + 5_000L),
+        )
     }
 
     @Test
@@ -599,6 +610,105 @@ class FocusEngineTest {
         assertEquals(FocusPhase.Work, state.phase)
         assertEquals(1, state.completedSessions)
         assertEquals(startTime, state.sessionStartTime)
+    }
+
+    // #513: recovery must recompute elapsed from wall-clock, not trust the stale snapshot.
+    @Test
+    fun `restoreState Running recomputes elapsed from wall-clock after process death`() = runTest {
+        // Snapshot was saved at 10min elapsed. Process stayed dead ~2min before recovery, so the
+        // real wall-clock elapsed (sessionStart → now) is ~12min. The restored value must reflect
+        // that, not the stale 10min snapshot — otherwise the countdown rewinds.
+        val savedElapsed = 10 * 60 * 1000L
+        val deadTimeMillis = 2 * 60 * 1000L
+        val total = 25 * 60 * 1000L
+        val startTime = System.currentTimeMillis() - (savedElapsed + deadTimeMillis)
+
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = savedElapsed,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = startTime,
+            status = TimerStatus.Running,
+        )
+        testScope.testScheduler.runCurrent()
+
+        val state = engine.state.value
+        assertEquals(TimerStatus.Running, state.status)
+        // effectiveElapsed = (now - startTime) - 0 pause, coerced to ≥ savedElapsed. The dead time
+        // must be counted in: expect ~12min, well above the 10min snapshot.
+        assertTrue(
+            "expected elapsed ≥ savedElapsed + deadTime (≈${savedElapsed + deadTimeMillis}ms), got ${state.elapsedMillis}",
+            state.elapsedMillis >= savedElapsed + deadTimeMillis - 1_000L, // 1s scheduling slack
+        )
+        assertTrue(
+            "expected elapsed to reflect dead time (> saved snapshot $savedElapsed)",
+            state.elapsedMillis > savedElapsed,
+        )
+        assertTrue("still within total", state.elapsedMillis < total)
+    }
+
+    @Test
+    fun `restoreState Running auto-completes when wall-clock elapsed exceeds total`() = runTest {
+        // Session was 10min in, total 15min. Process stayed dead 10min — real elapsed ~20min,
+        // already past total. Recovery must NOT resurrect a Running session; it must complete.
+        val savedElapsed = 10 * 60 * 1000L
+        val total = 15 * 60 * 1000L
+        val deadTimeMillis = 10 * 60 * 1000L
+        val startTime = System.currentTimeMillis() - (savedElapsed + deadTimeMillis)
+
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = savedElapsed,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = startTime,
+            status = TimerStatus.Running,
+        )
+        testScope.testScheduler.runCurrent()
+
+        // onPhaseComplete advances Pomodoro Work → break phase. The recovered session must NOT
+        // still be in Work/Running.
+        val state = engine.state.value
+        assertNotEquals(
+            "session that already completed while dead must not resume in Work/Running: $state",
+            FocusPhase.Work to TimerStatus.Running,
+            state.phase to state.status,
+        )
+    }
+
+    @Test
+    fun `restoreState Running subtracts accumulated pause from wall-clock elapsed`() = runTest {
+        // 10min elapsed snapshot, but 1min of that window was paused → effective elapsed should be
+        // wall-clock (10min) minus pause (1min) = 9min, never below the saved snapshot (10min) due
+        // to the anti-rewind coerce. This pins that pause time is honored yet never causes rewind.
+        val savedElapsed = 10 * 60 * 1000L
+        val pauseMillis = 60 * 1000L
+        val total = 25 * 60 * 1000L
+        val startTime = System.currentTimeMillis() - savedElapsed
+
+        engine.restoreState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            elapsedMillis = savedElapsed,
+            totalMillis = total,
+            completedSessions = 0,
+            sessionStartTime = startTime,
+            status = TimerStatus.Running,
+            totalPauseMillis = pauseMillis,
+        )
+        testScope.testScheduler.runCurrent()
+
+        val state = engine.state.value
+        assertEquals(TimerStatus.Running, state.status)
+        // Anti-rewind: even though wall-clock-minus-pause < savedElapsed, the coerce keeps us at
+        // the snapshot so recovery never moves the countdown backwards.
+        assertTrue(
+            "elapsed must not rewind below saved snapshot ($savedElapsed), got ${state.elapsedMillis}",
+            state.elapsedMillis >= savedElapsed,
+        )
     }
 
     @Test
