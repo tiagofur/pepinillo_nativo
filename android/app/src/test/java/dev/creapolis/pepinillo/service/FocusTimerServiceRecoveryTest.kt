@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.FocusTimerState
+import dev.creapolis.pepinillo.domain.timer.PauseMetrics
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import io.mockk.every
@@ -130,6 +131,51 @@ class FocusTimerServiceRecoveryTest {
     @Test
     fun `readRecoveryState returns null when not active`() {
         assertNull(FocusTimerService.readRecoveryState(context))
+    }
+
+    // #504: pauseCount/totalPauseMillis were read on restore but never written, so every recovered
+    // session lost its pause analytics. These pin the round-trip.
+    @Test
+    fun `saveRecoveryState persists pauseCount and totalPauseMillis when provided`() {
+        val state = FocusTimerState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            status = TimerStatus.Running,
+            elapsedMillis = 5 * 60 * 1000L,
+            totalMillis = 25 * 60 * 1000L,
+            sessionStartTime = 1_700_000_000_000L,
+            completedSessions = 0,
+        )
+        val metrics = PauseMetrics(pauseCount = 2, totalPauseMillis = 45_000L)
+
+        FocusTimerService.saveRecoveryState(context, state, metrics)
+
+        val recovery = FocusTimerService.readRecoveryState(context)
+        assertNotNull(recovery)
+        assertEquals(2, recovery!!.pauseCount)
+        assertEquals(45_000L, recovery.totalPauseMillis)
+    }
+
+    @Test
+    fun `saveRecoveryState defaults pause metrics to zero when not supplied`() {
+        // Backwards-compat: pre-#504 callers (and any code path that still omits the parameter)
+        // must keep compiling and produce a valid, zeroed recovery state.
+        val state = FocusTimerState(
+            mode = FocusMode.Pomodoro,
+            phase = FocusPhase.Work,
+            status = TimerStatus.Running,
+            elapsedMillis = 5 * 60 * 1000L,
+            totalMillis = 25 * 60 * 1000L,
+            sessionStartTime = 1_700_000_000_000L,
+            completedSessions = 0,
+        )
+
+        FocusTimerService.saveRecoveryState(context, state) // no metrics arg
+
+        val recovery = FocusTimerService.readRecoveryState(context)
+        assertNotNull(recovery)
+        assertEquals(0, recovery!!.pauseCount)
+        assertEquals(0L, recovery.totalPauseMillis)
     }
 
     private class FakeSharedPreferences : SharedPreferences {

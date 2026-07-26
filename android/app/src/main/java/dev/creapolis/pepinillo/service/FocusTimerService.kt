@@ -28,6 +28,7 @@ import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
 import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.domain.timer.FocusPhase
 import dev.creapolis.pepinillo.domain.timer.FocusTimerState
+import dev.creapolis.pepinillo.domain.timer.PauseMetrics
 import dev.creapolis.pepinillo.domain.timer.TimerStatus
 import dev.creapolis.pepinillo.domain.timer.displayTime
 import dev.creapolis.pepinillo.domain.timer.phaseLabelRes
@@ -112,9 +113,16 @@ class FocusTimerService : Service() {
             context.stopService(Intent(context, FocusTimerService::class.java))
         }
 
-        fun saveRecoveryState(context: Context, state: FocusTimerState) {
+        fun saveRecoveryState(
+            context: Context,
+            state: FocusTimerState,
+            pauseMetrics: PauseMetrics = PauseMetrics(),
+        ) {
             // W-8: persist linkedTaskId so restored sessions keep the task link.
             // putString(key, null) removes the key, which reads back as the null default.
+            // #504: also persist pauseCount/totalPauseMillis — readRecoveryState already expected
+            // them (KEY_R_PAUSE_COUNT / KEY_R_TOTAL_PAUSE_MILLIS) but they were never written, so
+            // restored sessions always resumed with zeroed pause analytics.
             context.getSharedPreferences(RECOVERY_PREFS, Context.MODE_PRIVATE).edit()
                 .putString(KEY_R_MODE, state.mode.name)
                 .putString(KEY_R_PHASE, state.phase.name)
@@ -127,6 +135,8 @@ class FocusTimerService : Service() {
                 .putBoolean(KEY_R_ACTIVE, true)
                 .putLong(KEY_R_DAY_START, SessionRepository.startOfDay(System.currentTimeMillis()))
                 .putInt(KEY_R_POMODORO_NUMBER, state.completedSessions + 1)
+                .putInt(KEY_R_PAUSE_COUNT, pauseMetrics.pauseCount)
+                .putLong(KEY_R_TOTAL_PAUSE_MILLIS, pauseMetrics.totalPauseMillis)
                 .apply()
         }
 
@@ -415,7 +425,11 @@ class FocusTimerService : Service() {
                         val recoveryPhaseChanged = state.phase != recoveryPhase
                         val throttleElapsed = (now - lastRecoveryWriteMs) >= 1_000L
                         if (recoveryStatusChanged || recoveryPhaseChanged || throttleElapsed) {
-                            saveRecoveryState(this@FocusTimerService, state)
+                            saveRecoveryState(
+                                this@FocusTimerService,
+                                state,
+                                focusEngine.snapshotPauseMetrics(),
+                            )
                             lastRecoveryWriteMs = now
                             recoveryStatus = state.status
                             recoveryPhase = state.phase
