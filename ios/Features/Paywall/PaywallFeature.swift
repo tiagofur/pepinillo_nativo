@@ -122,13 +122,17 @@ struct PaywallFeature {
 
         enum Delegate: Equatable {
             case proUnlocked(SubscriptionState)
+            /// User tapped the close (X) button. The paywall is presented by AppFeature
+            /// via `.sheet(isPresented: store.focus.showPaywall)`, so `@Dependency(\.dismiss)`
+            /// cannot close it (dismiss only works for `sheet(item:)` or NavigationStack
+            /// paths). The parent owns the boolean and must flip it to false.
+            case closeRequested
         }
     }
 
     // MARK: - Dependencies
 
     @Dependency(\.subscriptionClient) var subscriptionClient
-    @Dependency(\.dismiss) var dismiss
     @Dependency(\.openURL) var openURL
 
     // MARK: - Reducer
@@ -270,7 +274,11 @@ struct PaywallFeature {
                 return .none
 
             case .closeTapped:
-                return .run { _ in await dismiss() }
+                // Delegate to the parent, which owns the `showPaywall` boolean that
+                // drives the sheet. The previous `await dismiss()` was a no-op for a
+                // sheet presented via `isPresented: Bool`, which is why the X button
+                // did nothing and only the swipe-down gesture closed the paywall.
+                return .send(.delegate(.closeRequested))
 
             case .privacyPolicyTapped:
                 return .run { _ in await openURL(URL(string: "https://creapolis.dev/privacy-policy/")!) }

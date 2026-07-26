@@ -327,6 +327,11 @@ struct SettingsFeature {
                 return .send(.saveSettings)
 
             case .defaultModeChanged(let mode):
+                // Pro gating — mirrors themeChanged. Free tier can pick Pomodoro /
+                // Stopwatch (FocusMode.isFreeTier); Flowtime / TimeBlock require Pro.
+                guard state.isProUser || mode.isFreeTier else {
+                    return .send(.upgradeTapped)
+                }
                 state.defaultMode = mode
                 PreferenceDirtyTracker.markDirty("defaultMode")
                 return .send(.saveSettings)
