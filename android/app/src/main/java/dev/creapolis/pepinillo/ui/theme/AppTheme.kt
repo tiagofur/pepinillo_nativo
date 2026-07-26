@@ -1,5 +1,6 @@
 package dev.creapolis.pepinillo.ui.theme
 
+import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
@@ -37,38 +38,55 @@ data class AppTheme(
             isFree = true,
         )
 
-        val Forest = AppTheme(
+        // Sprint 8 (#494): Forest/Ocean/Sunset accents are now derived from their own M3
+        // ColorSchemes (see Theme.kt) via [fromColorScheme], so the focus-mode accents stay
+        // coherent with the surfaces/containers of each theme. Classic/MaterialYou keep their
+        // hand-tuned brand accents (criterion: Free users see no unexpected change).
+        val Forest = fromColorScheme(
             id = "forest",
-            pomodoroColor = Color(0xFF2E8C3A),
-            flowtimeColor = Color(0xFF216A4A),
-            timeBlockColor = Color(0xFF578F33),
-            stopwatchColor = Color(0xFF84B54D),
-            streakColor = Color(0xFF99C626),
+            scheme = ForestDarkColorScheme,
             isFree = false,
         )
 
-        val Ocean = AppTheme(
+        val Ocean = fromColorScheme(
             id = "ocean",
-            pomodoroColor = Color(0xFF0082CA),
-            flowtimeColor = Color(0xFF0DABD9),
-            timeBlockColor = Color(0xFF1F5CB5),
-            stopwatchColor = Color(0xFF00BDD3),
-            streakColor = Color(0xFF00CDF2),
+            scheme = OceanDarkColorScheme,
             isFree = false,
         )
 
-        val Sunset = AppTheme(
+        val Sunset = fromColorScheme(
             id = "sunset",
-            pomodoroColor = Color(0xFFED5C26),
-            flowtimeColor = Color(0xFFF5A11A),
-            timeBlockColor = Color(0xFFCD407A),
-            stopwatchColor = Color(0xFFF5C239),
-            streakColor = Color(0xFFFFB31F),
+            scheme = SunsetDarkColorScheme,
             isFree = false,
         )
 
         val all = listOf(MaterialYou, Classic, Forest, Ocean, Sunset)
         fun named(id: String) = all.firstOrNull { it.id == id } ?: MaterialYou
+
+        /**
+         * Derives an [AppTheme]'s focus-mode accents from a generated [ColorScheme], so the accents
+         * stay visually coherent with the theme's surfaces and containers (Sprint 8, #494).
+         *
+         * Mapping (mirrors the doc's proposal):
+         *  - pomodoroColor  ← error           (warm/red urgency)
+         *  - flowtimeColor  ← primary         (the theme's identity hue)
+         *  - timeBlockColor ← tertiary        (complementary)
+         *  - stopwatchColor ← secondary       (analog)
+         *  - streakColor    ← tertiaryContainer (warm container)
+         */
+        fun fromColorScheme(
+            id: String,
+            scheme: ColorScheme,
+            isFree: Boolean = false,
+        ): AppTheme = AppTheme(
+            id = id,
+            pomodoroColor = scheme.error,
+            flowtimeColor = scheme.primary,
+            timeBlockColor = scheme.tertiary,
+            stopwatchColor = scheme.secondary,
+            streakColor = scheme.tertiaryContainer,
+            isFree = isFree,
+        )
     }
 }
 
