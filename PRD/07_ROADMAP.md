@@ -68,7 +68,7 @@
 | Link tasks to focus sessions                                  | 8h    | High        |
 | Analytics dashboard (SwiftCharts, mode breakdown)             | 24h   | Medium      |
 | Settings, Navigation, Notifications                           | 32h   | High        |
-| Themes (4 themes + Liquid Glass)                              | 16h   | Medium      |
+| Themes (4 themes)                                             | 16h   | Medium      |
 | Onboarding with mode selector                                 | 10h   | Medium      |
 | Localization (EN, ES, PT)                                     | 12h   | High        |
 | Unit tests (4 strategies + FocusEngine + Tasks)               | 20h   | High        |
