@@ -373,6 +373,9 @@
     <string name="minutes_format">%1$d min</string>
     <string name="theme_classic">Clássico</string>
     <string name="theme_material_you">Material You</string>
+    <string name="theme_mode_system">Sistema</string>
+    <string name="theme_mode_light">Claro</string>
+    <string name="theme_mode_dark">Escuro</string>
     <string name="theme_forest">Floresta</string>
     <string name="theme_ocean">Oceano</string>
     <string name="theme_sunset">Pôr do sol</string>
@@ -575,6 +578,7 @@
 
     <!-- Feedback Messages -->
     <string name="msg_task_added">Tarefa adicionada</string>
+    <string name="msg_task_added_to_inbox">Tarefa adicionada à Inbox</string>
     <string name="msg_task_update_failed">Falha ao atualizar tarefa</string>
     <string name="msg_task_add_failed">Falha ao adicionar tarefa</string>
     <string name="msg_task_delete_failed">Falha ao excluir tarefa</string>
@@ -619,6 +623,9 @@
     <string name="paywall_annual">Anual</string>
     <string name="paywall_best_value">MELHOR CUSTO-BENEFÍCIO</string>
     <string name="paywall_btn_restore">Restaurar Compras</string>
+    <string name="paywall_btn_retry">Tentar carregar produtos novamente</string>
+    <string name="paywall_manage_subscription">Gerenciar assinatura</string>
+    <string name="paywall_risk_reversal_one_time">Compra única • Pague uma vez, mantenha para sempre</string>
     <string name="paywall_legal">As assinaturas se renovam automaticamente a menos que sejam canceladas pelo menos 24 horas antes do fim do período atual. Gerencie assinaturas nas configurações do Google Play.</string>
     <string name="paywall_unit_month">/mês</string>
     <string name="paywall_unit_year">/ano</string>
@@ -716,6 +723,15 @@
     <string name="sort_priority">Prioridade</string>
     <string name="sort_time">Tempo</string>
     <string name="sort_energy">Energia</string>
+    <string name="sort_newest">Mais recentes</string>
+
+    <!-- Task Detail & Accessibility -->
+    <string name="task_detail_subtasks">Subtarefas</string>
+    <string name="task_detail_subtasks_count">Subtarefas (%1$d/%2$d)</string>
+    <string name="task_detail_priority_focus">Prioridade e foco</string>
+    <string name="task_detail_focus_history">Histórico de foco</string>
+    <string name="cd_mark_complete">Marcar %1$s como concluído</string>
+    <string name="cd_mark_incomplete">Marcar %1$s como incompleto</string>
 
     <!-- Auth -->
     <string name="auth_slogan">Seu companheiro de trabalho profundo</string>
