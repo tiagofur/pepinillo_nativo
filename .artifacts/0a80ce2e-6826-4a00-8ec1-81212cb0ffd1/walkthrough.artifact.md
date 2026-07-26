@@ -21,10 +21,13 @@ He completado el lote de mejoras visuales y de identidad de marca para la aplica
 - Se ha creado un token de movimiento estándar `expressiveSpring()` en [NavigationTransitions.kt](file:///Users/tiagofur/dev/pepinillo_nativo/android/app/src/main/java/dev/creapolis/pepinillo/navigation/NavigationTransitions.kt).
 - Se han actualizado todas las animaciones de escala y botones en `FocusScreen` y `ModeCard` para usar este token, logrando una respuesta táctil más cohesiva y "Premium" que se alinea con los principios de Material 3 Expressive.
 
-## Verificación
+## Verificación y Entrega
 
 ### Pruebas de Calidad:
-- [x] Verificación de la compilación de `:app`.
-- [x] Sincronización de Gradle exitosa tras añadir la dependencia de Google Fonts.
-- [x] Validación de la resolución de recursos `R.array` para los certificados de fuentes.
-- [x] Confirmación de que el layout 2x2 no causa desbordamientos en la pantalla de foco.
+- [x] Verificación de la compilación de `:app` y `:wear`.
+- [x] Corrección de más de 20 advertencias del IDE (imports no usados, tipos de estado optimizados, trailing commas).
+- [x] Resolución de error de acceso a recursos vía `context` en Compose.
+- [x] Sincronización exitosa de Gradle con nuevas dependencias.
+
+### Pull Request:
+- Se ha creado el PR [#552](https://github.com/tiagofur/pepinillo_nativo/pull/552) que consolida todos los cambios de este lote de pulido y paridad.
