@@ -466,7 +466,7 @@
 | Theme picker (horizontal scroll)        | ✅                        | ✅                        | Available on both platforms                   |
 | Appearance selector (Light/Dark/System) | ✅                        | ✅                        |                                               |
 | Focus mode colors (red/purple/green)    | ✅                        | ✅                        | Consistent on both platforms                  |
-| Wear OS / watchOS theme sync            | ⬜ watchOS (#533) / ✅ Wear | ✅ Data Layer             | Wear OS shippable; watchOS pending #533       |
+| Wear OS / watchOS theme sync            | ✅ WatchConnectivity (#546) | ✅ Data Layer             | Phone → watch on both platforms               |
 | Glassmorphism                           | ✅                        | ⬜                        | iOS only                                      |
 | Haptic feedback                         | ✅                        | ⬜                        | Android haptics not fully implemented         |
 | Reduce Motion                           | ✅                        | ⬜                        |                                               |

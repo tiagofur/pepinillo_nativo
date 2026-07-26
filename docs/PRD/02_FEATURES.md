@@ -821,7 +821,7 @@ Pepinillo Everywhere is the recurring layer that funds backend sync, account-bas
 | Material You dynamic colors            | ➖  | ✅      | ➖      | ✅      | FREE |
 | Light/Dark/System appearance selector  | ✅  | ✅      | ✅      | ✅      | FREE |
 | Focus mode colors (red/purple/green)   | ✅  | ✅      | ✅      | ✅      | FREE |
-| Theme sync phone -> watch              | ➖  | ➖      | ⬜      | ✅      | FREE (#533) |
+| Theme sync phone -> watch              | ➖  | ➖      | ✅      | ✅      | FREE |
 | Glassmorphism effects                  | ✅  | ✅      | ➖      | ➖      | FREE |
 | **Localization**                       |     |         |         |         |      |
 | English (EN)                           | ✅  | ✅      | ⬜      | ⬜      | FREE |
