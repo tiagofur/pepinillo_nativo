@@ -626,6 +626,24 @@ class FocusEngine @Inject constructor(
         return sessionId
     }
 
+    /**
+     * Snapshot of the internal pause/interruption counters so they can be persisted across process
+     * death (#504). These fields are not part of [FocusTimerState] (they are session-scoped engine
+     * bookkeeping), so recovery state must request them explicitly via this method.
+     *
+     * [pauseStartTime] is folded into [totalPauseMillis] when the timer is currently paused so the
+     * restored total reflects the pause in flight at the moment of death.
+     */
+    fun snapshotPauseMetrics(): PauseMetrics {
+        val effectiveTotalPause = if (pauseStartTime > 0L) {
+            totalPauseMillis + (System.currentTimeMillis() - pauseStartTime)
+        } else totalPauseMillis
+        return PauseMetrics(
+            pauseCount = pauseCount,
+            totalPauseMillis = effectiveTotalPause,
+        )
+    }
+
     private fun getTotalMillis(mode: FocusMode, phase: FocusPhase, prefs: UserPreferences): Long = when {
         mode == FocusMode.Pomodoro && phase == FocusPhase.Work -> prefs.pomodoroMinutes * 60 * 1000L
         mode == FocusMode.Pomodoro && phase == FocusPhase.ShortBreak -> prefs.shortBreakMinutes * 60 * 1000L
@@ -634,6 +652,14 @@ class FocusEngine @Inject constructor(
         else -> 0L
     }
 }
+
+/**
+ * Persistable snapshot of the engine's pause counters (#504). See [FocusEngine.snapshotPauseMetrics].
+ */
+data class PauseMetrics(
+    val pauseCount: Int = 0,
+    val totalPauseMillis: Long = 0L,
+)
 
 /** Snapshot of a session whose persistence failed, retained so the UI can offer retry. */
 data class FailedSession(
