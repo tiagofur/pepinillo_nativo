@@ -32,6 +32,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.first
@@ -73,6 +76,21 @@ data class FocusUiState(
     val showBatteryWarningDialog: Boolean = false,
     /** Master toggle for all UI haptics; mirrors [dev.creapolis.pepinillo.data.local.preferences.UserPreferences.vibrationEnabled]. */
     val vibrationEnabled: Boolean = true,
+)
+
+/**
+ * Minimal high-rate projection of [FocusTimerState] for the hero timer ring and the live time
+ * text. Kept intentionally small so [FocusViewModel.ringState] can emit at the engine's native
+ * 4Hz tick without re-running the heavy [FocusViewModel.uiState] combine.
+ *
+ * Polarity matches [FocusTimerState.progress]: `progress` is the *remaining* fraction for
+ * countdown modes (1f = full ring, 0f = done); count-up modes report an elapsed/1h fraction.
+ */
+data class RingState(
+    val progress: Float = 1f,
+    val displayTime: String = "25:00",
+    val isRunning: Boolean = false,
+    val isPaused: Boolean = false,
 )
 
 @HiltViewModel
@@ -221,8 +239,10 @@ class FocusViewModel @Inject constructor(
     val uiState: StateFlow<FocusUiState> = combine(
         combine(
             // Sample the ticking engine state at most once per second (4Hz → 1Hz) for the uiState
-            // combine. displayTime/progress only need ~1Hz granularity; the timer ring subview
-            // reads the raw engine flow for smoother animation. This cuts body recomposition 75%.
+            // combine. The heavy combine (settings/soundscape/tasks/session history) only needs
+            // ~1Hz granularity — this cuts body recomposition ~75%. The hero timer ring and the
+            // live display time read the dedicated high-rate `ringState` flow below instead, so
+            // they animate smoothly at the engine's native 4Hz without re-running this combine.
             focusEngine.state.sample(1.seconds),
             sessionRepository.getTodaySessionCount(),
             sessionRepository.getAllDaysWithSessions(),
@@ -288,6 +308,30 @@ class FocusViewModel @Inject constructor(
         greetingRes = computeGreetingRes(),
         currentDate = computeDate(),
     ))
+
+    /**
+     * High-rate view of the timer state for the hero ring + live time text (#505).
+     *
+     * Reads the unsampled [FocusEngine.state] (4Hz tick) and projects only the fields the ring
+     * surface needs. [conflate] keeps the latest value so a slow consumer never backpressures the
+     * engine; [distinctUntilChanged] on the projected [RingState] drops no-op emissions (e.g.
+     * midpoint/break-suggested flag flips that don't change progress or displayTime).
+     *
+     * The rest of the screen keeps reading [uiState] at 1Hz — this flow exists precisely so the
+     * ring doesn't chop once per second while the dashboard combine stays cheap.
+     */
+    val ringState: StateFlow<RingState> = focusEngine.state
+        .map { state ->
+            RingState(
+                progress = state.progress,
+                displayTime = state.displayTime,
+                isRunning = state.status == TimerStatus.Running,
+                isPaused = state.status == TimerStatus.Paused,
+            )
+        }
+        .distinctUntilChanged()
+        .conflate()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RingState())
 
     fun selectMode(mode: FocusMode) {
         if (!featureGate.canUseMode(mode)) {
