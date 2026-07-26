@@ -31,6 +31,7 @@ object WearSnapshotStore {
     private const val KEY_REMAINING_DURATION_MS = "remaining_duration_ms"
     private const val KEY_TOTAL_DURATION_MS = "total_duration_ms"
     private const val KEY_IS_PRO = "is_pro"
+    private const val KEY_SESSIONS_BEFORE_LONG_BREAK = "sessions_before_long_break"
 
     fun bootstrap(context: Context) {
         WearDataStore.updateTimer(readTimerState(context))
@@ -58,6 +59,7 @@ object WearSnapshotStore {
             .putLong(KEY_PHASE_START_EPOCH_MS, state.phaseStartEpochMs)
             .putLong(KEY_REMAINING_DURATION_MS, state.remainingDurationMs)
             .putLong(KEY_TOTAL_DURATION_MS, state.totalDurationMs)
+            .putInt(KEY_SESSIONS_BEFORE_LONG_BREAK, state.sessionsBeforeLongBreak)
             .apply()
     }
 
@@ -104,6 +106,7 @@ object WearSnapshotStore {
             phaseStartEpochMs = prefs.getLong(KEY_PHASE_START_EPOCH_MS, 0L),
             remainingDurationMs = prefs.getLong(KEY_REMAINING_DURATION_MS, 0L),
             totalDurationMs = prefs.getLong(KEY_TOTAL_DURATION_MS, 0L),
+            sessionsBeforeLongBreak = prefs.getInt(KEY_SESSIONS_BEFORE_LONG_BREAK, 4),
         )
     }
 

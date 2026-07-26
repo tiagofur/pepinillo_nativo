@@ -136,7 +136,12 @@ fun CircularTimerRing(
                 val fraction = displayProgress.coerceIn(0f, 1f)
                 val progressPath = Path()
                 val measure = PathMeasure().apply { setPath(ringPath, false) }
-                measure.getSegment(0f, measure.length * fraction, progressPath, true)
+                
+                // Align squircle origin with circle (12 o'clock) (#510).
+                // addRoundRect starts at the top-left corner's start (x+radius, y).
+                // 12 o'clock is at (x+width/2, y).
+                val startOffset = (arcSize.width / 2f) - cornerRadius
+                measure.getSegment(startOffset, startOffset + measure.length * fraction, progressPath, true)
                 drawPath(
                     path = progressPath,
                     color = ringColor,

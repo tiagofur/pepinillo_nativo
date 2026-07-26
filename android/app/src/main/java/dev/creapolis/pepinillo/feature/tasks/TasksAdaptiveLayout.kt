@@ -21,8 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.window.core.layout.WindowWidthSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass.Companion.EXPANDED
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailScreen
 import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailViewModel
@@ -30,14 +29,6 @@ import kotlinx.coroutines.launch
 
 /**
  * Adaptive wrapper around [TasksScreen] for the Plan tab (Sprint 7, #493).
- *
- * - **Compact widths (phones):** renders [TasksScreen] exactly as before — task details open in an
- *   in-screen `ModalBottomSheet`. No visual change.
- * - **Expanded widths (tablets, foldables open):** renders a two-pane [ListDetailPaneScaffold] with
- *   the task list on the left and the selected task's detail on the right. Task selection state is
- *   owned by the scaffold navigator, so it survives configuration changes (rotation, fold).
- *
- * `TaskDetailViewModel` keeps its imperative `initialize(taskId)` contract — no VM refactor needed.
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -47,7 +38,7 @@ fun TasksAdaptiveLayout(
     onStartFocusTask: () -> Unit,
 ) {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    val isExpanded = windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
+    val isExpanded = windowSizeClass.windowWidthSizeClass == EXPANDED
 
     if (isExpanded) {
         val navigator = rememberListDetailPaneScaffoldNavigator<String>()
@@ -74,10 +65,9 @@ fun TasksAdaptiveLayout(
                 )
             },
             detailPane = {
-                val currentDestination = navigator.currentDestination
-                val taskId = currentDestination?.contentKey?.let { it as? String }
+                val taskId = navigator.currentDestination?.contentKey
                 if (taskId != null) {
-                    val detailViewModel: TaskDetailViewModel = hiltViewModel(key = taskId)
+                    val detailViewModel: TaskDetailViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel(key = taskId)
                     LaunchedEffect(taskId) {
                         detailViewModel.initialize(taskId)
                     }

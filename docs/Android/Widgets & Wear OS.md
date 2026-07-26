@@ -20,7 +20,7 @@ updated: 2026-04-21
 
 ## Widgets phone
 
-- Home widgets (Glance).
+- Home widgets (Glance): Use **REMAINING** progress polarity (emptying ring) to align with phone/Wear (#502). Intentionally remain circular (no morph) for performance stability (#527).
 - Lock screen widget (segun version Android).
 - Quick Settings tile para accion inmediata.
 

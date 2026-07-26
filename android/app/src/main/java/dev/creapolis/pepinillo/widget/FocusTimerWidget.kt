@@ -484,7 +484,10 @@ private fun TimerRing(
 ) {
     val rv = RemoteViews(context.packageName, R.layout.widget_timer_ring)
 
-    // Set determinate progress (1.0 = full ring, 0.0 = empty ring)
+    // Set determinate progress using REMAINING polarity (JD-02).
+    // 1.0 (start) = full ring (10000), 0.0 (done) = empty ring (0).
+    // Note: The widget ring is intentionally always circular (no morph) due to Glance/RemoteViews
+    // performance constraints compared to the phone's custom Canvas morphing (#527).
     val progressValue = (state.progress * 10000).toInt().coerceIn(0, 10000)
     rv.setProgressBar(R.id.progress_ring, 10000, progressValue, false)
     

@@ -199,7 +199,16 @@ class WearSyncListenerService : WearableListenerService() {
 
                 WearDataPaths.PATH_USER -> {
                     val isPro = dataMap.getBoolean("isPro", false)
-                    Log.d(TAG, "User DataItem changed, isPro=$isPro")
+                    val sessions = dataMap.getInt("sessionsBeforeLongBreak", 4)
+                    Log.d(TAG, "User DataItem changed, isPro=$isPro, sessions=$sessions")
+                    
+                    val currentTimer = WearDataStore.timerState.value
+                    if (currentTimer.sessionsBeforeLongBreak != sessions) {
+                        val updated = currentTimer.copy(sessionsBeforeLongBreak = sessions)
+                        WearDataStore.updateTimer(updated)
+                        WearSnapshotStore.persistTimerState(this@WearSyncListenerService, updated)
+                    }
+
                     WearDataStore.updateIsPro(isPro)
                     WearSnapshotStore.persistIsPro(this@WearSyncListenerService, isPro)
                 }

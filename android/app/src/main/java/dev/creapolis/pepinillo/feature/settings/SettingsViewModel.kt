@@ -129,7 +129,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updatePomodoroMinutes(value: Int) = viewModelScope.launch {
-        prefsRepo.updatePomodoroMinutes(value.coerceIn(1, 120))
+        // Snap to nearest multiple of 5 and enforce minimum of 5
+        val snapped = (Math.round(value / 5.0) * 5).toInt().coerceIn(5, 120)
+        prefsRepo.updatePomodoroMinutes(snapped)
     }
 
     fun updateShortBreakMinutes(value: Int) = viewModelScope.launch {
@@ -137,7 +139,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateLongBreakMinutes(value: Int) = viewModelScope.launch {
-        prefsRepo.updateLongBreakMinutes(value.coerceIn(5, 60))
+        // Snap to nearest multiple of 5 and enforce minimum of 5
+        val snapped = (Math.round(value / 5.0) * 5).toInt().coerceIn(5, 60)
+        prefsRepo.updateLongBreakMinutes(snapped)
     }
 
     fun updateSessionsBeforeLongBreak(value: Int) = viewModelScope.launch {
@@ -145,7 +149,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun updateTimeBlockMinutes(value: Int) = viewModelScope.launch {
-        prefsRepo.updateTimeBlockMinutes(value.coerceIn(5, 480))
+        // Snap to nearest multiple of 15 and enforce minimum of 15
+        val snapped = (Math.round(value / 15.0) * 15).toInt().coerceIn(15, 480)
+        prefsRepo.updateTimeBlockMinutes(snapped)
     }
 
     fun toggleAutoStartBreaks() = viewModelScope.launch {

@@ -81,7 +81,10 @@ internal fun WearTimerRing(
                 val fraction = displayProgress.coerceIn(0f, 1f)
                 val progressPath = Path()
                 val measure = PathMeasure().apply { setPath(ringPath, false) }
-                measure.getSegment(0f, measure.length * fraction, progressPath, true)
+                
+                // Align squircle origin with circle (12 o'clock) (#510).
+                val startOffset = (arcSize.width / 2f) - cornerRadius
+                measure.getSegment(startOffset, startOffset + measure.length * fraction, progressPath, true)
                 drawPath(
                     path = progressPath,
                     color = color,

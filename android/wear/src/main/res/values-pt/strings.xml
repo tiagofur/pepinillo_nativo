@@ -8,6 +8,22 @@
     <string name="connecting_to_phone">Conectando ao telefone</string>
     <string name="queued">%d na fila</string>
     <string name="start">Iniciar</string>
+    <string name="cancel">Cancelar</string>
+
+    <!-- Buttons & A11y -->
+    <string name="btn_pause">Pausar</string>
+    <string name="btn_resume">Continuar</string>
+    <string name="btn_stop">Parar</string>
+    <string name="btn_skip">Pular</string>
+    <string name="btn_voice_start">In\u00edcio por voz</string>
+    <string name="state_locked">Bloqueado</string>
+    <string name="cd_pause">Pausar sess\u00e3o</string>
+    <string name="cd_resume">Retomar sess\u00e3o</string>
+    <string name="cd_stop">Parar sess\u00e3o</string>
+    <string name="cd_skip_phase">Pular para a pr\u00f3xima fase</string>
+    <string name="cd_voice_start">Iniciar com voz</string>
+    <string name="cd_pro_badge">Requer Everywhere+</string>
+    <string name="msg_pro_required">Requer Everywhere+ no telefone</string>
 
     <!-- TasksScreen -->
     <string name="tasks_count">Tarefas (%d)</string>
@@ -49,7 +65,11 @@
 
     <!-- Notification phase labels -->
     <string name="phase_focus">Foco</string>
+    <string name="phase_focus_numbered">Foco #%1$d</string>
+    <string name="phase_flowing">Fluindo</string>
+    <string name="phase_timing">Cronometrando</string>
     <string name="phase_break">Descanso</string>
+    <string name="state_ready">Pronto</string>
     <string name="state_paused_suffix"> (Pausado)</string>
 
     <!-- Metadata labels -->

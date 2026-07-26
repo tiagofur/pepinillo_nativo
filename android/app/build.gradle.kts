@@ -1,8 +1,8 @@
 import java.util.Properties
+import com.android.build.api.dsl.ApplicationExtension
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt.android)
@@ -13,39 +13,48 @@ plugins {
 
 val hasGoogleServices = file("google-services.json").exists()
 if (hasGoogleServices) {
-    apply(plugin = "com.google.gms.google-services")
-    apply(plugin = "com.google.firebase.crashlytics")
+    pluginManager.apply("com.google.gms.google-services")
+    pluginManager.apply("com.google.firebase.crashlytics")
 }
 
-android {
-    namespace = "dev.creapolis.pepinillo"
-    compileSdk = 36
-
-    val localProperties = Properties().apply {
-        val localPropertiesFile = rootProject.file("local.properties")
-        if (localPropertiesFile.exists()) {
-            localPropertiesFile.inputStream().use { load(it) }
-        }
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { load(it) }
     }
+}
 
-    // Keys are required for release builds. Debug/dev can proceed with empty strings to allow
-    // generic Gradle tasks (clean, help, tasks) to succeed on fresh checkouts without credentials.
-    val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }
+// Keys are required for release builds. Debug/dev can proceed with empty strings to allow
+// generic Gradle tasks (clean, help, tasks) to succeed on fresh checkouts without credentials.
+val isReleaseBuild = gradle.startParameter.taskNames.any { it.contains("release", ignoreCase = true) }
 
-    val googleWebClientId = localProperties.getProperty("google.web.client.id")
-        ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
-        ?: if (isReleaseBuild) throw GradleException("Missing google.web.client.id in local.properties or GOOGLE_WEB_CLIENT_ID environment variable.")
-           else ""
+val googleWebClientId = localProperties.getProperty("google.web.client.id")
+    ?: System.getenv("GOOGLE_WEB_CLIENT_ID")
+    ?: if (isReleaseBuild) throw GradleException("Missing google.web.client.id in local.properties or GOOGLE_WEB_CLIENT_ID environment variable.")
+       else ""
 
-    val revenuecatApiKey = localProperties.getProperty("revenuecat.api.key")
-        ?: System.getenv("REVENUECAT_API_KEY")
-        ?: if (isReleaseBuild) throw GradleException("Missing revenuecat.api.key in local.properties or REVENUECAT_API_KEY environment variable.")
-           else ""
+val revenuecatApiKey = localProperties.getProperty("revenuecat.api.key")
+    ?: System.getenv("REVENUECAT_API_KEY")
+    ?: if (isReleaseBuild) throw GradleException("Missing revenuecat.api.key in local.properties or REVENUECAT_API_KEY environment variable.")
+       else ""
+
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
+val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { key -> keystoreProperties[key]?.toString()?.isNotBlank() == true }
+
+extensions.configure<ApplicationExtension> {
+    namespace = "dev.creapolis.pepinillo"
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 29
-        targetSdk = 35
+        targetSdk = 37
         versionCode = 20
         versionName = "3.0.0"
 
@@ -54,16 +63,8 @@ android {
 
     buildFeatures {
         buildConfig = true
+        compose = true
     }
-
-    val keystorePropertiesFile = rootProject.file("key.properties")
-    val keystoreProperties = Properties()
-    if (keystorePropertiesFile.exists()) {
-        keystoreProperties.load(keystorePropertiesFile.inputStream())
-    }
-
-    val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
-        .all { key -> keystoreProperties[key]?.toString()?.isNotBlank() == true }
 
     if (hasReleaseSigning) {
         signingConfigs {
@@ -84,9 +85,10 @@ android {
         }
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             buildConfigField("String", "BASE_URL", "\"https://api.ppn.creapolis.dev/api/v1/\"")
             buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"$googleWebClientId\"")
@@ -100,12 +102,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-    buildFeatures {
-        compose = true
-    }
     testOptions {
         unitTests.isReturnDefaultValues = true
         unitTests.all {
@@ -114,17 +110,20 @@ android {
         }
     }
 
-    // Exported Room schemas (one JSON per DB version) live under app/schemas/ and are
-    // committed to VCS. They are consumed by MigrationTestHelper to validate that
-    // hand-written migrations produce a schema matching the entity definitions.
     sourceSets {
-        getByName("androidTest").assets.srcDirs("$projectDir/schemas")
+        getByName("androidTest") {
+            @Suppress("DEPRECATION")
+            assets.srcDir("$projectDir/schemas")
+        }
     }
 }
 
-// Room schema export. KSP emits one JSON per DB version to app/schemas/ for
-// MigrationTestHelper to consume. Runs on every KSP execution so CI catches
-// schema drift automatically; regenerated JSONs must be committed to VCS.
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
@@ -138,6 +137,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.googlefonts)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.material3.adaptive.navigation.suite)
@@ -150,16 +150,15 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-crashlytics")
-    implementation("com.google.firebase:firebase-messaging")
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.messaging)
 
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-    // Room schema migration testing (same version as runtime, see libs.versions.toml).
     androidTestImplementation("androidx.room:room-testing:${libs.versions.room.get()}")
 
     // Hilt
@@ -204,15 +203,15 @@ dependencies {
     implementation(libs.mlkit.genai.prompt)
 
     // Google Sign-In (Credential Manager)
-    implementation("androidx.credentials:credentials:1.3.0")
-    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
-    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.com.google.android.libraries.identity.googleid)
 
     // Wear OS (Data Layer)
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
 
-    implementation("com.google.android.material:material:1.12.0")
+    implementation(libs.com.google.android.material.material)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -221,7 +220,6 @@ dependencies {
     testImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

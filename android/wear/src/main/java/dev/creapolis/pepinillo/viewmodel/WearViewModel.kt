@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 import dev.creapolis.pepinillo.service.WearFocusService
+import dev.creapolis.pepinillo.R
 
 class WearViewModel(application: Application) : AndroidViewModel(application) {
     private val sender = WearMessageSender(application)
@@ -77,7 +78,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 mode = mode,
                 phase = "Work",
                 status = "Running",
-                phaseLabel = "Focus",
+                phaseLabel = getApplication<Application>().getString(R.string.phase_focus),
                 // #502: REMAINING for countdown (full ring at start), elapsed-0 for count-up.
                 progress = if (isCountUp) 0f else 1f,
                 displayTime = if (isCountUp) "00:00" else current.displayTime,
@@ -170,7 +171,7 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 status = "Idle",
                 displayTime = timerState.value.displayTime,
                 progress = 1f,
-                phaseLabel = "Ready",
+                phaseLabel = getApplication<Application>().getString(R.string.state_ready),
                 phaseEndEpochMs = 0L,
                 phaseStartEpochMs = 0L,
                 remainingDurationMs = 0L,
@@ -192,10 +193,17 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         // phase string. The phone will sync the authoritative phase on its next push.
         val current = timerState.value
         val nextPhase = when (current.phase) {
-            "Work" -> "ShortBreak" // optimistic; phone corrects to LongBreak if needed on next sync
+            "Work" -> {
+                val cycleComplete = (current.completedSessions + 1) % current.sessionsBeforeLongBreak == 0
+                if (cycleComplete) "LongBreak" else "ShortBreak"
+            }
             else -> "Work"
         }
-        val nextLabel = if (nextPhase == "Work") "Focus" else "Break"
+        val nextLabel = if (nextPhase == "Work") {
+            getApplication<Application>().getString(R.string.phase_focus)
+        } else {
+            getApplication<Application>().getString(R.string.phase_break)
+        }
         val durationMs = defaultPhaseDurationMs(current.mode, nextPhase)
         val now = System.currentTimeMillis()
         applyTimerOptimistically(

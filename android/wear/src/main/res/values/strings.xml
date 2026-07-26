@@ -10,6 +10,22 @@
     <string name="connecting_to_phone">Connecting to phone</string>
     <string name="queued">%d queued</string>
     <string name="start">Start</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Buttons & A11y -->
+    <string name="btn_pause">Pause</string>
+    <string name="btn_resume">Resume</string>
+    <string name="btn_stop">Stop</string>
+    <string name="btn_skip">Skip</string>
+    <string name="btn_voice_start">Voice start</string>
+    <string name="state_locked">Locked</string>
+    <string name="cd_pause">Pause session</string>
+    <string name="cd_resume">Resume session</string>
+    <string name="cd_stop">Stop session</string>
+    <string name="cd_skip_phase">Skip to next phase</string>
+    <string name="cd_voice_start">Start with voice</string>
+    <string name="cd_pro_badge">Everywhere+ required</string>
+    <string name="msg_pro_required">Everywhere+ required on phone</string>
 
     <!-- Modes -->
     <string name="mode_pomodoro">Pomodoro</string>
@@ -51,7 +67,11 @@
 
     <!-- Notification phase labels -->
     <string name="phase_focus">Focus</string>
+    <string name="phase_focus_numbered">Focus #%1$d</string>
+    <string name="phase_flowing">Flowing</string>
+    <string name="phase_timing">Timing</string>
     <string name="phase_break">Break</string>
+    <string name="state_ready">Ready</string>
     <string name="state_paused_suffix"> (Paused)</string>
 
     <!-- Metadata labels -->

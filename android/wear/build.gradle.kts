@@ -1,31 +1,31 @@
 import java.util.Properties
+import com.android.build.api.dsl.ApplicationExtension
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
-android {
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
+}
+
+val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { key -> keystoreProperties[key]?.toString()?.isNotBlank() == true }
+
+extensions.configure<ApplicationExtension> {
     namespace = "dev.creapolis.pepinillo"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 10021
         versionName = "3.0.0"
     }
-
-    val keystorePropertiesFile = rootProject.file("key.properties")
-    val keystoreProperties = Properties()
-    if (keystorePropertiesFile.exists()) {
-        keystoreProperties.load(keystorePropertiesFile.inputStream())
-    }
-
-    val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
-        .all { key -> keystoreProperties[key]?.toString()?.isNotBlank() == true }
 
     if (hasReleaseSigning) {
         signingConfigs {
@@ -41,9 +41,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
@@ -56,12 +57,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
     buildFeatures {
         compose = true
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
@@ -93,8 +96,8 @@ dependencies {
     testImplementation(libs.junit)
     // org.json is bundled in the Android runtime; provide a real impl for JVM unit tests
     // so WearDataStore.parseTasksJson (org.json.JSONArray) can be exercised in tests.
-    testImplementation("org.json:json:20240303")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation(libs.org.json)
+    testImplementation(libs.kotlinx.coroutines.test)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

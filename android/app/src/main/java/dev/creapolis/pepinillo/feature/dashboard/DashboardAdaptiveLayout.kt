@@ -20,23 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.window.core.layout.WindowWidthSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass.Companion.EXPANDED
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import kotlinx.coroutines.launch
 
 /**
  * Adaptive wrapper around [DashboardScreen] for the Dashboard tab (Sprint 7, #493).
- *
- * - **Compact widths (phones):** renders [DashboardScreen] exactly as before — Calendar and AI
- *   Report open as full NavHost destinations. No visual change.
- * - **Expanded widths (tablets, foldables open):** renders a two-pane [ListDetailPaneScaffold]
- *   with the Dashboard cards on the left and the selected report (Calendar or AI Report) on the
- *   right. Selection state is owned by the scaffold navigator and survives configuration changes.
- *
- * Note: Calendar/AI Report are rendered inline (own VM via `hiltViewModel()`) rather than via the
- * NavHost, so their shared-element transitions are not active in the pane — the pane swap provides
- * the animation instead. The Compact path is unaffected and keeps its NavHost-driven transitions.
  */
 @OptIn(ExperimentalMaterial3AdaptiveApi::class)
 @Composable
@@ -47,7 +37,7 @@ fun DashboardAdaptiveLayout(
     onNavigateToAIReport: () -> Unit,
 ) {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    val isExpanded = windowSizeClass.windowWidthSizeClass == WindowWidthSizeClass.EXPANDED
+    val isExpanded = windowSizeClass.windowWidthSizeClass == EXPANDED
 
     if (isExpanded) {
         val navigator = rememberListDetailPaneScaffoldNavigator<DashboardDetail>()
@@ -69,16 +59,14 @@ fun DashboardAdaptiveLayout(
                     },
                     onNavigateToPaywall = onNavigateToPaywall,
                     onStartFocusClick = onStartFocusClick,
-                    onNavigateToAIReport = {
-                        scope.launch {
-                            navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, DashboardDetail.AIReport)
-                        }
-                    },
-                )
+                ) {
+                    scope.launch {
+                        navigator.navigateTo(ListDetailPaneScaffoldRole.Detail, DashboardDetail.AIReport)
+                    }
+                }
             },
             detailPane = {
-                val currentDestination = navigator.currentDestination
-                val detail = currentDestination?.contentKey as? DashboardDetail
+                val detail = navigator.currentDestination?.contentKey
                 when (detail) {
                     DashboardDetail.Calendar -> CalendarScreen(
                         onBack = { scope.launch { navigator.navigateBack() } },
@@ -86,7 +74,7 @@ fun DashboardAdaptiveLayout(
                     DashboardDetail.AIReport -> AIReportScreen(
                         onBack = { scope.launch { navigator.navigateBack() } },
                     )
-                    null -> DashboardDetailPlaceholder()
+                    else -> DashboardDetailPlaceholder()
                 }
             },
         )
