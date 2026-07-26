@@ -334,7 +334,8 @@ class WearViewModelTest {
                 phase = "Work",
                 status = "Running",
                 phaseLabel = "Focus",
-                progress = 0f,
+                // #502: countdown starts at full ring (REMAINING); count-up would stay 0f.
+                progress = 1f,
                 totalDurationMs = durationMs,
                 phaseEndEpochMs = System.currentTimeMillis() + durationMs,
             ),
@@ -410,7 +411,8 @@ class WearViewModelTest {
                 status = "Running",
                 phase = nextPhase,
                 phaseLabel = nextLabel,
-                progress = 0f,
+                // #502: REMAINING — fresh countdown phase starts at full ring.
+                progress = 1f,
                 totalDurationMs = durationMs,
                 phaseEndEpochMs = System.currentTimeMillis() + durationMs,
             ),

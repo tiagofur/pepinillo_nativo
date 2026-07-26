@@ -53,7 +53,8 @@ internal fun WearTimerRing(
         val inset = strokeWidthPx / 2f
         val arcSize = Size(diameter - strokeWidthPx, diameter - strokeWidthPx)
         val topLeft = Offset(inset, inset)
-        // Display floor: keep the ring reading as active at ~0 progress (count-up modes).
+        // Display floor: keep a sliver visible at very-near-zero progress. Under REMAINING
+        // (#502) that happens at the *end* of a countdown; under count-up it's the *start*.
         val displayProgress = if (progress < 0.02f) 0.02f else progress
 
         if (actualMorph > 0.01f) {
@@ -140,15 +141,18 @@ internal fun isReduceMotionEnabled(): Boolean {
  * Pure (no-Compose) morph target for Wear, mirroring the app's `TimerMorph.calculateMorphTarget`
  * so the formula stays consistent across surfaces without a cross-module dependency.
  *
- * **Polarity contract (#501 regression fix):** [progress] is the **elapsed fraction** of the
- * session (0f = just started, 1f = finished). `WearTimerDisplay.tick` already yields elapsed for
- * countdown modes, so callers can pass `localProgress` directly. [sessionActive] gates Idle and
- * WaitingForNext (where the synced snapshot may still carry a stale full-progress value).
+ * **Polarity contract (#502 unified REMAINING):** [progress] is the **remaining fraction** of the
+ * session for countdown modes (1f = full ring / just started, 0f = done). Count-up modes
+ * (Flow/Chrono) are out of scope here — `hasCountdown` is false for them and the morph returns 0.
+ * Callers pass `localProgress` directly: `WearTimerDisplay.tick` and the tile/complication
+ * producers all yield REMAINING for countdown modes. The morph fires over the last 20% of the
+ * session, i.e. when `progress` drops below [REMAINING_TRIGGER] (0.2f).
  *
  * @param sessionActive True only while a countdown is actually in progress (Running or Paused).
  */
 internal object WearTimerMorph {
-    const val THRESHOLD = 0.8f
+    /** Below this remaining fraction the squircle morph ramps in (the last 20% of the session). */
+    const val REMAINING_TRIGGER = 0.2f
     const val WINDOW = 0.2f
 
     fun calculateMorphTarget(
@@ -158,7 +162,8 @@ internal object WearTimerMorph {
         reduceMotion: Boolean,
     ): Float {
         if (!hasCountdown || !sessionActive || reduceMotion) return 0f
-        if (progress <= THRESHOLD) return 0f
-        return ((progress - THRESHOLD) / WINDOW).coerceIn(0f, 1f)
+        // REMAINING polarity (#502): morph ramps as progress falls from 0.2f → 0f (last 20%).
+        if (progress >= REMAINING_TRIGGER) return 0f
+        return ((REMAINING_TRIGGER - progress) / WINDOW).coerceIn(0f, 1f)
     }
 }

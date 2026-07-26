@@ -63,9 +63,9 @@ class FocusTileService : TileService() {
             val mins = totalSec / 60
             val secs = totalSec % 60
             val liveDisplayTime = "%02d:%02d".format(mins, secs)
-            val elapsedMs = (state.totalDurationMs - remainingMs).coerceAtLeast(0L)
+            // #502: REMAINING polarity — 1f at start, 0f at the end (phone/widget match).
             val liveProgress = if (state.totalDurationMs > 0) {
-                (elapsedMs.toFloat() / state.totalDurationMs.toFloat()).coerceIn(0f, 1f)
+                (remainingMs.toFloat() / state.totalDurationMs.toFloat()).coerceIn(0f, 1f)
             } else {
                 state.progress
             }
