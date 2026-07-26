@@ -268,6 +268,15 @@ fun FocusScreen(
         )
     }
 
+    // #503: navigation must run as a one-shot side effect, not during composition.
+    // Dismissing the flag inside the composition body risked double navigation and
+    // recomposition races; LaunchedEffect keys on the flag so it fires once per transition.
+    LaunchedEffect(uiState.showPaywall) {
+        if (!uiState.showPaywall) return@LaunchedEffect
+        viewModel.dismissPaywall()
+        onNavigateToPaywall()
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -301,11 +310,6 @@ fun FocusScreen(
 
             if (!isPipMode && !sessionActive) {
                 Spacer(modifier = Modifier.height(22.dp))
-            }
-
-            if (uiState.showPaywall) {
-                viewModel.dismissPaywall()
-                onNavigateToPaywall()
             }
 
             Spacer(modifier = Modifier.weight(if (sessionActive) 0.55f else 0.28f))

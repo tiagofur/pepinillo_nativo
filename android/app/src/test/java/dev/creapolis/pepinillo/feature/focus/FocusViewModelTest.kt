@@ -462,6 +462,33 @@ class FocusViewModelTest {
         assertFalse(viewModel.uiState.value.showPaywall)
     }
 
+    // #503: FocusScreen keys a LaunchedEffect on `showPaywall`, so the flag must be a
+    // single rising edge that dismissPaywall clears. This pins the contract: a blocked
+    // selectMode flips it true exactly once, dismiss flips it false, and re-selecting a
+    // blocked mode re-arms it (so the effect re-fires).
+    @Test
+    fun `showPaywall is edge-triggered across blocked selections and dismiss`() = runTest {
+        collectUiState()
+        subscriptionStateFlow.value = SubscriptionState(tier = SubscriptionTier.FREE)
+
+        assertFalse(viewModel.uiState.value.showPaywall)
+        viewModel.selectMode(FocusMode.Flow)
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.showPaywall)
+
+        viewModel.dismissPaywall()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.showPaywall)
+
+        // Re-arming must work — the LaunchedEffect in FocusScreen re-fires on the next rising edge.
+        viewModel.selectMode(FocusMode.Blocks)
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.showPaywall)
+        viewModel.dismissPaywall()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.showPaywall)
+    }
+
     // -----------------------------------------------------------------------
     // Task picker
     // -----------------------------------------------------------------------
