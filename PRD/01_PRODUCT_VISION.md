@@ -241,7 +241,7 @@ After **2+ weeks of data**, Pepinillo suggests which mode works best for differe
 
 | ID     | Story                                                                                                                                                  | Platform  |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
-| US-20a | As someone who values aesthetics, I want multiple themes including a Liquid Glass theme for iOS 26.                                                    | [iOS]     |
+| US-20a | As someone who values aesthetics, I want multiple selectable themes (Classic, Forest, Ocean, Sunset) on iOS 26, plus the iOS 26 system glass aesthetic applied app-wide. | [iOS]     |
 | US-20b | As someone who values aesthetics, I want dynamic Material You theming based on my wallpaper.                                                           | [Android] |
 | US-21  | As a user who works at night, I want ambient soundscapes (rain, cafe, white noise) to play during focus sessions and stop automatically during breaks. | [All]     |
 
@@ -301,7 +301,7 @@ Cross-platform parity is **MANDATORY** in this project. This means:
 | **Health**          | Apple HealthKit                | Google Health Connect                          |
 | **Payments**        | StoreKit 2                     | Google Play Billing 7                          |
 | **OS focus mode**   | Apple Focus Filters            | Android Focus Mode / DND                       |
-| **Theming**         | Manual themes + Liquid Glass   | Material You (Dynamic Color)                   |
+| **Theming**         | 4 manual themes + iOS 26 system glass | Material You (Dynamic Color)                   |
 
 ### Verification Process
 
@@ -315,7 +315,7 @@ The only acceptable differences are those **imposed by the platform**:
 
 - Dynamic Island (only iOS) vs. Ongoing Notification (only Android)
 - CloudKit as secondary sync layer (iOS only) alongside shared Backend REST sync
-- Material You dynamic theming (only Android) vs. Liquid Glass (only iOS)
+- Material You dynamic theming (only Android) vs. iOS 26 system glass aesthetic (only iOS)
 - Apple Reminders import (iOS) vs. Google Tasks import (Android)
 - Siri (iOS) vs. Google Assistant (Android)
 

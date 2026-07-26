@@ -72,7 +72,7 @@ Pepinillo+ is the one-time premium purchase for iPhone, iPad, macOS, and watchOS
 | Analytics | 30-day + 1-year history, Weekly Review, Monthly Review |
 | Apple Intelligence | On-device AI Reports via Apple Foundation Models (iOS 26+) with template fallback for all devices |
 | Mode Intelligence | Smart mode suggestions based on historical session data |
-| Themes and soundscapes | All premium themes (Forest, Ocean, Sunset + Liquid Glass) and premium soundscapes |
+| Themes and soundscapes | All premium themes (Forest, Ocean, Sunset) and premium soundscapes |
 | Apple ecosystem surfaces | All widgets (S/M/L + Lock Screen), full watchOS companion, Live Activity, Dynamic Island |
 | Export | CSV / PDF export |
 | Apple sync | iCloud / CloudKit sync between Apple devices |
