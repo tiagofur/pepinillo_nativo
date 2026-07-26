@@ -179,14 +179,15 @@ object WearDataLayerHelper {
         }
     }
 
-    fun pushUserStatus(context: Context, isPro: Boolean) {
+    fun pushUserStatus(context: Context, isPro: Boolean, sessionsBeforeLongBreak: Int = 4) {
         val appContext = context.applicationContext
         val request = PutDataMapRequest.create(PATH_USER).apply {
             dataMap.putBoolean("isPro", isPro)
+            dataMap.putInt("sessionsBeforeLongBreak", sessionsBeforeLongBreak)
             dataMap.putLong("timestamp", System.currentTimeMillis())
         }.asPutDataRequest().setUrgent()
 
-        putWithRetry(appContext, request, "pushUserStatus($isPro)")
+        putWithRetry(appContext, request, "pushUserStatus(isPro=$isPro, sessions=$sessionsBeforeLongBreak)")
     }
 
     /**

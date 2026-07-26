@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.focus.FocusMode
+import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
 @Composable
@@ -53,7 +54,7 @@ fun ModeChip(
         } else {
             Color.Transparent
         },
-        animationSpec = spring(),
+        animationSpec = NavigationTransitions.expressiveSpring(),
         label = "modeChipContainer",
     )
     val contentColor by animateColorAsState(
@@ -62,13 +63,13 @@ fun ModeChip(
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
-        animationSpec = spring(),
+        animationSpec = NavigationTransitions.expressiveSpring(),
         label = "modeChipContent",
     )
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(containerColor)
             .clickable(role = Role.Tab, onClick = onClick)
             .heightIn(min = 48.dp)
@@ -92,7 +93,7 @@ fun ModeChip(
                 color = contentColor,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
-                fontSize = 10.sp,
+                fontSize = 12.sp,
                 textAlign = TextAlign.Center
             )
         }

@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -63,4 +65,13 @@ object NavigationTransitions {
                 animationSpec = tween(durationMs),
             )
     }
+
+    /**
+     * Standard expressive spring for UI components (buttons, cards, chips) (#517).
+     * High damping for stability with enough "snap" to feel responsive.
+     */
+    fun <T> expressiveSpring() = spring<T>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMediumLow,
+    )
 }

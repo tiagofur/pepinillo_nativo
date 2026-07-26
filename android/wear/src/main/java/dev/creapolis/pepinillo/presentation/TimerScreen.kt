@@ -50,6 +50,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ChildButton
@@ -179,7 +183,7 @@ private fun TimerActiveLayout(
     onSkip: () -> Unit,
 ) {
     var showStopConfirm by remember { mutableStateOf(false) }
-    var stopCountdown by remember { mutableStateOf(3) }
+    var stopCountdown by remember { mutableIntStateOf(3) }
 
     if (showStopConfirm) {
         LaunchedEffect(Unit) {
@@ -192,7 +196,7 @@ private fun TimerActiveLayout(
         }
     }
 
-    var localProgress by remember { mutableStateOf(state.progress) }
+    var localProgress by remember { mutableFloatStateOf(state.progress) }
     var localDisplayTime by remember { mutableStateOf(state.displayTime) }
 
     // Keys: only restart the countdown loop when the phase/status fundamentally changes.
@@ -254,11 +258,17 @@ private fun TimerActiveLayout(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // Mode + pomodoro number
+            // Mode + pomodoro number (#508: localize)
             val modeLabel = if (state.mode == "Pomodoro" && state.completedSessions >= 0) {
-                "${state.mode} #${state.completedSessions + 1}"
+                stringResource(R.string.phase_focus_numbered, state.completedSessions + 1)
             } else {
-                state.mode
+                stringResource(when(state.mode) {
+                    "Pomodoro" -> R.string.mode_pomodoro
+                    "Flow" -> R.string.mode_flow
+                    "Blocks" -> R.string.mode_blocks
+                    "Chrono" -> R.string.mode_chrono
+                    else -> R.string.mode_pomodoro
+                })
             }
             Text(
                 text = modeLabel,
@@ -286,7 +296,7 @@ private fun TimerActiveLayout(
                 },
             )
 
-            // Phase label
+            // Phase label (#508: Phase label is already localized from ViewModel/Push)
             Text(
                 text = state.phaseLabel,
                 style = MaterialTheme.typography.labelSmall,
@@ -340,13 +350,13 @@ private fun TimerActiveLayout(
                     } else {
                         Icon(
                             imageVector = Icons.Filled.Stop,
-                            contentDescription = "Stop",
+                            contentDescription = stringResource(R.string.cd_stop),
                             modifier = Modifier.size(20.dp),
                         )
                     }
                 }
 
-                // Pause / Resume (52×52, primary action)
+                // Pause / Resume (52×52, primary action) (#508: localize CD)
                 Button(
                     onClick = if (state.status == "Running") onPause else onResume,
                     modifier = Modifier.size(52.dp),
@@ -357,12 +367,12 @@ private fun TimerActiveLayout(
                 ) {
                     Icon(
                         imageVector = if (state.status == "Running") Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (state.status == "Running") "Pause" else "Resume",
+                        contentDescription = if (state.status == "Running") stringResource(R.string.cd_pause) else stringResource(R.string.cd_resume),
                         modifier = Modifier.size(24.dp),
                     )
                 }
 
-                // Skip (44×44) — only during break phases
+                // Skip (44×44) — only during break phases (#508: localize CD)
                 if (isBreakPhase) {
                     Button(
                         onClick = onSkip,
@@ -374,7 +384,7 @@ private fun TimerActiveLayout(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.SkipNext,
-                            contentDescription = "Skip",
+                            contentDescription = stringResource(R.string.cd_skip_phase),
                             modifier = Modifier.size(20.dp),
                         )
                     }
@@ -402,16 +412,14 @@ private fun WaitingForNextLayout(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        CircularProgressIndicator(
-            progress = { 1f },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            colors = ProgressIndicatorDefaults.colors(
-                indicatorColor = modeColor.copy(alpha = 0.4f),
-                trackColor = modeColor.copy(alpha = 0.1f),
-            ),
+        // Sprint 6 (#492, #509): Use WearTimerRing for shape consistency (morph=0).
+        WearTimerRing(
+            progress = 1f,
+            color = modeColor.copy(alpha = 0.4f),
+            trackColor = modeColor.copy(alpha = 0.1f),
             strokeWidth = 6.dp,
+            modifier = Modifier.padding(8.dp),
+            morphProgress = 0f,
         )
 
         Column(
@@ -438,7 +446,7 @@ private fun WaitingForNextLayout(
                 Spacer(modifier = Modifier.height(4.dp))
                 PomodoroDots(
                     completed = state.completedSessions,
-                    total = 4,
+                    total = state.sessionsBeforeLongBreak,
                     activeColor = modeColor,
                 )
             }
@@ -739,12 +747,12 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
     ) {
         Icon(
             imageVector = Icons.Default.Mic,
-            contentDescription = "Voice start",
+            contentDescription = stringResource(R.string.cd_voice_start),
             modifier = Modifier.size(16.dp),
         )
         Spacer(modifier = Modifier.size(4.dp))
         Text(
-            text = "Voice start",
+            text = stringResource(R.string.btn_voice_start),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
         )
@@ -759,8 +767,15 @@ private fun ModeButton(
     isLocked: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     Button(
-        onClick = { if (!isLocked) onClick() },
+        onClick = {
+            if (isLocked) {
+                Toast.makeText(context, R.string.msg_pro_required, Toast.LENGTH_SHORT).show()
+            } else {
+                onClick()
+            }
+        },
         modifier = modifier.height(40.dp),
         shape = RoundedCornerShape(20.dp),
         colors = ButtonDefaults.buttonColors(
@@ -775,7 +790,7 @@ private fun ModeButton(
             if (isLocked) {
                 Icon(
                     imageVector = Icons.Default.Lock,
-                    contentDescription = "Locked",
+                    contentDescription = stringResource(R.string.state_locked),
                     modifier = Modifier.size(12.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))

@@ -16,11 +16,13 @@ class FocusComplicationDataSource : SuspendingComplicationDataSourceService() {
         buildData(type, displayTime = "25:00", mode = "Pomodoro", progress = 1f)
 
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
-        if (!WearSnapshotStore.readIsPro(this)) {
+        val state = WearSnapshotStore.readTimerState(this)
+        val isPro = WearSnapshotStore.readIsPro(this)
+        val isFreeMode = state.mode == "Pomodoro" || state.mode == "Chrono"
+
+        if (!isPro && !isFreeMode) {
             return buildLockedData(request.complicationType)
         }
-
-        val state = WearSnapshotStore.readTimerState(this)
 
         // When running, recalculate from the stored end epoch for a live countdown
         val (liveDisplayTime, liveProgress) = if (

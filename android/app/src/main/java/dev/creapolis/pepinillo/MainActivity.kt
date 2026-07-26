@@ -9,7 +9,6 @@ import androidx.activity.SystemBarStyle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.activity.viewModels
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import dev.creapolis.pepinillo.core.auth.AuthStore
 import dev.creapolis.pepinillo.core.billing.SubscriptionManager
@@ -20,13 +19,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -40,8 +40,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudOff
@@ -84,9 +84,7 @@ import kotlinx.coroutines.flow.first
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.AIReportScreen
 import dev.creapolis.pepinillo.feature.dashboard.DashboardAdaptiveLayout
-import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
-import dev.creapolis.pepinillo.feature.focus.FocusViewModel
 import dev.creapolis.pepinillo.feature.more.MoreScreen
 import dev.creapolis.pepinillo.feature.more.HelpSupportScreen
 import dev.creapolis.pepinillo.feature.more.AboutScreen
@@ -97,7 +95,6 @@ import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
 import dev.creapolis.pepinillo.feature.settings.SettingsScreen
 import dev.creapolis.pepinillo.feature.tasks.TaskAnalyticsScreen
 import dev.creapolis.pepinillo.feature.tasks.TasksAdaptiveLayout
-import dev.creapolis.pepinillo.feature.tasks.TasksScreen
 import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.navigation.TopLevelDestination
 import dev.creapolis.pepinillo.ui.components.LocalNavAnimatedVisibilityScope
@@ -127,9 +124,9 @@ class MainActivity : ComponentActivity() {
         const val ROUTE_PAYWALL = "paywall"
     }
 
-    private var isPipMode by mutableStateOf(false)
+    private var isPipMode by mutableStateOf(value = false)
     private var pendingNavRoute by mutableStateOf<String?>(null)
-    private var onboardingCompleted by mutableStateOf(true)
+    private var onboardingCompleted by mutableStateOf(value = true)
 
     @Inject lateinit var focusEngine: FocusEngine
     @Inject lateinit var syncEngine: SyncEngine
@@ -147,7 +144,7 @@ class MainActivity : ComponentActivity() {
     private val foregroundSyncObserver = LifecycleEventObserver { _, event ->
         if (event == Lifecycle.Event.ON_RESUME) {
             val now = System.currentTimeMillis()
-            if (now - lastSyncTime < SYNC_DEBOUNCE_MS) return@LifecycleEventObserver
+            if ((now - lastSyncTime) < SYNC_DEBOUNCE_MS) return@LifecycleEventObserver
             if (authStore.getAccessToken() == null) return@LifecycleEventObserver
 
             lastSyncTime = now
@@ -174,7 +171,7 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         pendingNavRoute = intent?.getStringExtra(EXTRA_NAV_ROUTE)
-        var isAppReady by mutableStateOf(false)
+        var isAppReady by mutableStateOf(value = false)
 
         // Keep the splash screen on-screen until the app is ready
         splashScreen.setKeepOnScreenCondition { !isAppReady }
@@ -186,11 +183,16 @@ class MainActivity : ComponentActivity() {
 
         ProcessLifecycleOwner.get().lifecycle.addObserver(foregroundSyncObserver)
 
-        // ... existing syncScope logic ...
+        // Sync subscription and cycle preferences to Wear OS
         syncScope.launch {
-            subscriptionManager.subscriptionState.collect { state ->
-                Log.d("MainActivity", "Subscription state changed: ${state.tier}, syncing to Wear OS")
-                WearDataLayerHelper.pushUserStatus(this@MainActivity, state.hasLocalPremium)
+            combine(
+                subscriptionManager.subscriptionState,
+                prefsRepository.preferences
+            ) { subState, prefs ->
+                subState.hasLocalPremium to prefs.sessionsBeforeLongBreak
+            }.collect { (isPro, sessions) ->
+                Log.d("MainActivity", "Syncing user status to Wear: isPro=$isPro, sessions=$sessions")
+                WearDataLayerHelper.pushUserStatus(this@MainActivity, isPro, sessions)
             }
         }
 
@@ -242,7 +244,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
-        newConfig: android.content.res.Configuration
+        newConfig: android.content.res.Configuration,
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         isPipMode = isInPictureInPictureMode
@@ -253,7 +255,7 @@ class MainActivity : ComponentActivity() {
         // Enter PiP if a focus session is active
         if (focusEngine.state.value.status == TimerStatus.Running) {
             enterPictureInPictureMode(
-                android.app.PictureInPictureParams.Builder().build()
+                android.app.PictureInPictureParams.Builder().build(),
             )
         }
     }
@@ -306,7 +308,7 @@ fun PepinilloApp(
         } else {
             val token = authStore?.getAccessToken()
             val verified = authStore?.isEmailVerified() ?: false
-            if (token != null && !verified) "email-verification/cold-start" else TopLevelDestination.Focus.route
+            if (((token != null) && verified.not())) "email-verification/cold-start" else TopLevelDestination.Focus.route
         }
     }
 
@@ -314,9 +316,9 @@ fun PepinilloApp(
     val currentRoute = navBackStackEntry?.destination?.route
 
     // Hide navigation on non-top-level screens (like Profile, Auth) or when in PiP
-    val topLevelRoutes = TopLevelDestination.entries.map { it.route }.toSet()
+    val topLevelRoutes = remember { TopLevelDestination.entries.asSequence().map { it.route }.toSet() }
     val isImeVisible = WindowInsets.isImeVisible
-    val showBottomBar = currentRoute in topLevelRoutes && !isPipMode && !isImeVisible
+    val showBottomBar = (currentRoute in topLevelRoutes) && !isPipMode && !isImeVisible
 
     // Global connectivity indicator: a subtle banner when offline.
     val isOnline by syncStatusManager.isOnline.collectAsState()
@@ -346,7 +348,7 @@ fun PepinilloApp(
                                 Icon(
                                     imageVector = if (isSelected) destination.selectedIcon
                                                   else destination.unselectedIcon,
-                                    contentDescription = null,
+                                    contentDescription = stringResource(destination.labelRes),
                                 )
                             },
                             label = { Text(stringResource(destination.labelRes)) },
@@ -355,17 +357,15 @@ fun PepinilloApp(
                 },
                 layoutType = if (!showBottomBar) NavigationSuiteType.None
                              else NavigationSuiteScaffoldDefaults.calculateFromAdaptiveInfo(
-                                 currentWindowAdaptiveInfo()
+                                 currentWindowAdaptiveInfo(),
                              ),
             ) {
                 Column(
-                    // statusBarsPadding keeps the app chrome (offline banner + every destination's
-                    // header) below the status bar under edge-to-edge — previously each screen's
-                    // manual top padding landed *inside* the status bar and clipped the app bar
-                    // (#490 safe-area fix).
+                    // safeDrawingPadding handles both status and navigation bars automatically
+                    // across all form factors and edge-to-edge configurations (#490).
                     modifier = Modifier
                         .fillMaxSize()
-                        .statusBarsPadding(),
+                        .safeDrawingPadding(),
                 ) {
                     // Offline banner — surfaces connectivity state that previously only lived in Settings.
                     OfflineBanner(isOnline = isOnline)
@@ -399,10 +399,9 @@ fun PepinilloApp(
                             restoreState = true
                         }
                     },
-                    onNavigateToPaywall = {
-                        navController.navigate("paywall")
-                    },
-                )
+                ) {
+                    navController.navigate("paywall")
+                }
             }
             composable(TopLevelDestination.Plan.route) {
                 CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
@@ -413,16 +412,15 @@ fun PepinilloApp(
                         onNavigateToPaywall = {
                             navController.navigate("paywall")
                         },
-                        onStartFocusTask = {
-                            navController.navigate(TopLevelDestination.Focus.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                    ) {
+                        navController.navigate(TopLevelDestination.Focus.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
                             }
-                        },
-                    )
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 }
             }
             composable(
@@ -449,8 +447,9 @@ fun PepinilloApp(
                                 restoreState = true
                             }
                         },
-                        onNavigateToAIReport = { navController.navigate("ai_report") },
-                    )
+                    ) {
+                        navController.navigate("ai_report")
+                    }
                 }
             }
             composable(
@@ -479,14 +478,13 @@ fun PepinilloApp(
                 ProfileScreen(
                     onBackClick = { navController.popBackStack() },
                     onSignInClick = { navController.navigate("login") },
-                    onSignOutClick = {
-                        // Navigate to login after sessionManager.signOut() completes
-                        // (ProfileViewModel.logout awaits it before calling this) (#351).
-                        navController.navigate("login") {
-                            popUpTo(TopLevelDestination.Focus.route) { inclusive = true }
-                        }
-                    },
-                )
+                ) {
+                    // Navigate to login after sessionManager.signOut() completes
+                    // (ProfileViewModel.logout awaits it before calling this) (#351).
+                    navController.navigate("login") {
+                        popUpTo(TopLevelDestination.Focus.route) { inclusive = true }
+                    }
+                }
             }
             composable(TopLevelDestination.More.route) {
                 MoreScreen(
@@ -498,8 +496,9 @@ fun PepinilloApp(
                     onExportClick = { navController.navigate("export") },
                     onHelpSupportClick = { navController.navigate("help") },
                     onAboutClick = { navController.navigate("about") },
-                    onNavigateToPaywall = { navController.navigate("paywall") },
-                )
+                ) {
+                    navController.navigate("paywall")
+                }
             }
             composable(
                 "help",
@@ -585,7 +584,7 @@ fun PepinilloApp(
             }
             composable("email-verification/{email}") { backStackEntry ->
                 val email = backStackEntry.arguments?.getString("email") ?: ""
-                val authViewModel = androidx.hilt.navigation.compose.hiltViewModel<dev.creapolis.pepinillo.feature.auth.AuthViewModel>()
+                val authViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<dev.creapolis.pepinillo.feature.auth.AuthViewModel>()
                 val uiState by authViewModel.uiState.collectAsState()
                 LaunchedEffect(Unit) {
                     authViewModel.restoreEmailVerificationState(email)
@@ -617,7 +616,7 @@ fun PepinilloApp(
             composable("email-verification/cold-start") {
                 val authStore = (authStore)
                 val userEmail = authStore?.getUserEmail() ?: ""
-                val authViewModel = androidx.hilt.navigation.compose.hiltViewModel<dev.creapolis.pepinillo.feature.auth.AuthViewModel>()
+                val authViewModel = androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel<dev.creapolis.pepinillo.feature.auth.AuthViewModel>()
                 val uiState by authViewModel.uiState.collectAsState()
                 LaunchedEffect(Unit) {
                     authViewModel.restoreEmailVerificationState(userEmail)
@@ -684,7 +683,7 @@ fun PepinilloApp(
             } // NavigationSuiteScaffold
             SnackbarHost(
                 hostState = snackbarController.hostState,
-                modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter),
+                modifier = Modifier.align(Alignment.BottomCenter),
             )
         } // Box
     } // CompositionLocalProvider
@@ -696,7 +695,7 @@ fun PepinilloApp(
  */
 @Composable
 private fun OfflineBanner(isOnline: Boolean) {
-    androidx.compose.animation.AnimatedVisibility(
+    AnimatedVisibility(
         visible = !isOnline,
         enter = slideInVertically { -it } + fadeIn(),
         exit = slideOutVertically { -it } + fadeOut(),

@@ -236,7 +236,7 @@ fun TasksScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Close,
-                        contentDescription = "Cancel",
+                        contentDescription = stringResource(R.string.cancel),
                         modifier = Modifier.size(24.dp),
                     )
                 }

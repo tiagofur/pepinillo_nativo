@@ -25,6 +25,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
 import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 import androidx.compose.foundation.clickable
@@ -40,6 +41,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -95,6 +97,7 @@ import dev.creapolis.pepinillo.feature.focus.components.TimerMorph
 import dev.creapolis.pepinillo.feature.focus.components.SessionJournalSheet
 import dev.creapolis.pepinillo.feature.focus.components.TaskPickerDialog
 import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
+import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
 import dev.creapolis.pepinillo.ui.haptics.PepinilloHaptics
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
@@ -116,14 +119,11 @@ fun FocusScreen(
     val haptic = LocalHapticFeedback.current
 
     // Spring scale on mode change
-    var ringScaleTarget by remember { mutableStateOf(1f) }
+    var ringScaleTarget by remember { androidx.compose.runtime.mutableFloatStateOf(1f) }
     val ringScale by animateFloatAsState(
         targetValue = ringScaleTarget,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "ringScale"
+        animationSpec = NavigationTransitions.expressiveSpring(),
+        label = "ringScale",
     )
     LaunchedEffect(uiState.selectedMode) {
         ringScaleTarget = 0.92f
@@ -222,7 +222,7 @@ fun FocusScreen(
     )
     val morphProgress by animateFloatAsState(
         targetValue = rawMorphTarget,
-        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        animationSpec = NavigationTransitions.expressiveSpring(),
         label = "morphProgress",
     )
     val sessionActive = uiState.isRunning || uiState.isPaused || uiState.isWaitingForNext
@@ -238,17 +238,17 @@ fun FocusScreen(
     )
     val buttonWidth by animateDpAsState(
         targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 280.dp else 72.dp,
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
+        animationSpec = NavigationTransitions.expressiveSpring(),
         label = "buttonWidth",
     )
     val buttonHeight by animateDpAsState(
         targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 60.dp else 72.dp,
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
+        animationSpec = NavigationTransitions.expressiveSpring(),
         label = "buttonHeight",
     )
     val buttonCornerRadius by animateDpAsState(
         targetValue = if (primaryTimerActionVisual == PrimaryTimerActionVisual.StartExpanded) 30.dp else 36.dp,
-        animationSpec = spring(dampingRatio = 0.65f, stiffness = 300f),
+        animationSpec = NavigationTransitions.expressiveSpring(),
         label = "buttonCornerRadius",
     )
     val snackbarController = LocalSnackbarController.current
@@ -263,7 +263,7 @@ fun FocusScreen(
     // Surface session-save failures with a Retry action instead of silent data loss.
     val failedSession by viewModel.lastFailedSession.collectAsState()
     LaunchedEffect(failedSession) {
-        val failed = failedSession ?: return@LaunchedEffect
+        if (failedSession == null) return@LaunchedEffect
         snackbarController?.show(
             message = R.string.msg_session_save_failed,
             actionLabel = R.string.btn_retry,
@@ -297,8 +297,9 @@ fun FocusScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
                         .padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     FocusMode.entries.forEach { mode ->
                         ModeChip(
@@ -306,7 +307,7 @@ fun FocusScreen(
                             isSelected = mode == uiState.selectedMode,
                             onClick = { viewModel.selectMode(mode) },
                             isLocked = !mode.isFreeTier && !uiState.isPro,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.width(88.dp)
                         )
                     }
                 }
@@ -362,12 +363,15 @@ fun FocusScreen(
                     morphProgress = morphProgress,
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = uiState.selectedMode.emoji,
-                        fontSize = 28.sp,
-                        modifier = Modifier.scale(breatheScale),
+                    Icon(
+                        imageVector = uiState.selectedMode.icon,
+                        contentDescription = null,
+                        tint = animatedAccentColor,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .scale(breatheScale),
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
                         // #505: read the 4Hz displayTime so the digits stay in lockstep with the ring.
                         text = ringState.displayTime,
@@ -423,7 +427,7 @@ fun FocusScreen(
                     modifier = Modifier
                         .padding(top = 10.dp)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                 )
@@ -445,7 +449,7 @@ fun FocusScreen(
                     modifier = Modifier
                         .padding(top = 10.dp)
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(MaterialTheme.shapes.medium)
                         .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.4f))
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                 )
@@ -606,17 +610,17 @@ fun FocusScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                        .semantics {
-                            contentDescription = context.getString(R.string.cd_volume_control)
-                        },
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val volControlCd = stringResource(R.string.cd_volume_control)
+                    val volLowCd = stringResource(R.string.cd_volume_low)
+                    val volHighCd = stringResource(R.string.cd_volume_high)
                     Text(
                         text = "\uD83D\uDD08",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.semantics {
-                            contentDescription = context.getString(R.string.cd_volume_low)
+                            contentDescription = volLowCd
                         },
                     )
                     Slider(
@@ -626,7 +630,7 @@ fun FocusScreen(
                             .weight(1f)
                             .padding(horizontal = 8.dp)
                             .semantics {
-                                contentDescription = context.getString(R.string.cd_volume_control)
+                                contentDescription = volControlCd
                             },
                         colors = SliderDefaults.colors(
                             thumbColor = animatedAccentColor,
@@ -637,7 +641,7 @@ fun FocusScreen(
                         text = "\uD83D\uDD0A",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.semantics {
-                            contentDescription = context.getString(R.string.cd_volume_high)
+                            contentDescription = volHighCd
                         },
                     )
                 }
@@ -755,7 +759,7 @@ private fun CompactFocusChip(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f))
             .clickable(onClick = onClick)
             .height(minHeight)

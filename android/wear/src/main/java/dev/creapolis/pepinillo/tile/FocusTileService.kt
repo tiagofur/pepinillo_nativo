@@ -78,7 +78,8 @@ class FocusTileService : TileService() {
         val isActive = liveState.status == "Running" || liveState.status == "WaitingForNext"
         val refreshMs = if (isActive) REFRESH_ACTIVE_MS else REFRESH_IDLE_MS
 
-        val root = if (!isPro) {
+        val isFreeMode = liveState.mode == "Pomodoro" || liveState.mode == "Chrono"
+        val root = if (!isPro && !isFreeMode) {
             buildLockedLayout(modeColor(liveState.mode, colors).toInt())
         } else {
             when (liveState.status) {
@@ -212,7 +213,8 @@ class FocusTileService : TileService() {
         colors: WearThemeColors,
     ): LayoutElementBuilders.LayoutElement {
         val color = modeColor(state.mode, colors)
-        val sessionLabel = "${state.phaseLabel} \u00b7 ${state.completedSessions + 1}/4"
+        val totalSessions = state.sessionsBeforeLongBreak.coerceAtLeast(1)
+        val sessionLabel = "${state.phaseLabel} \u00b7 ${state.completedSessions + 1}/$totalSessions"
 
         return LayoutElementBuilders.Box.Builder()
             .setWidth(DimensionBuilders.expand())
