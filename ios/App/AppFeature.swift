@@ -732,6 +732,13 @@ struct AppFeature {
             case .paywall(.delegate(.proUnlocked(let sub))):
                 return applySubscriptionUpdate(sub, state: &state)
 
+            case .paywall(.delegate(.closeRequested)):
+                // PaywallView's X button. The sheet is bound to this boolean, so
+                // flipping it here is what actually dismisses the sheet (the
+                // paywall's own `dismiss()` cannot close an isPresented sheet).
+                state.focus.showPaywall = false
+                return .none
+
             // MARK: - Calendar & Weekly Review
 
             case .calendarTapped:

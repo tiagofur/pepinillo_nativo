@@ -387,9 +387,34 @@ struct SettingsFeatureTests {
 
     // MARK: - Default Mode
 
-    @Test("Default mode change updates state")
-    func testDefaultModeChanged() async {
-        let store = makeStore()
+    @Test("Free user can pick free-tier modes (Pomodoro, Stopwatch)")
+    func testFreeUserDefaultModeFreeTier() async {
+        let store = makeStore()  // default: isProUser = false
+        store.exhaustivity = .off
+
+        // Pomodoro is the default; Stopwatch is also free-tier — both apply.
+        await store.send(.defaultModeChanged(.stopwatch)) {
+            $0.defaultMode = .stopwatch
+        }
+    }
+
+    @Test("Free user picking a Pro mode (Flowtime / TimeBlock) routes to paywall")
+    func testFreeUserDefaultModeProGated() async {
+        let store = makeStore()  // default: isProUser = false
+        store.exhaustivity = .off
+
+        await store.send(.defaultModeChanged(.flowtime))
+        await store.receive(.upgradeTapped)
+
+        await store.send(.defaultModeChanged(.timeBlock))
+        await store.receive(.upgradeTapped)
+    }
+
+    @Test("Pro user can pick any default mode")
+    func testProUserDefaultModeUnrestricted() async {
+        var state = SettingsFeature.State()
+        state.isProUser = true
+        let store = makeStore(state: state)
         store.exhaustivity = .off
 
         await store.send(.defaultModeChanged(.flowtime)) {

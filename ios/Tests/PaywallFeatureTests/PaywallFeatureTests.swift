@@ -474,6 +474,22 @@ struct PaywallFeatureTests {
             $0.purchaseResult = nil
         }
     }
+
+    @Test("Close (X) button delegates closeRequested to the parent")
+    func testCloseTappedDelegates() async {
+        // The paywall sheet is presented by AppFeature via
+        // `.sheet(isPresented: store.focus.showPaywall)`, so the close button must
+        // ask the parent to flip that boolean — `@Dependency(\.dismiss)` cannot
+        // close an isPresented sheet (regression: the X did nothing; only the
+        // swipe-down gesture worked).
+        let store = TestStore(initialState: PaywallFeature.State()) {
+            PaywallFeature()
+        }
+
+        await store.send(.closeTapped)
+
+        await store.receive(.delegate(.closeRequested))
+    }
 }
 
 // MARK: - Notification Client Tests

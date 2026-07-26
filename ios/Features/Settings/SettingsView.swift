@@ -188,11 +188,20 @@ struct SettingsView: View {
                 String(localized: "Default mode"),
                 selection: Binding(
                     get: { store.defaultMode },
-                    set: { store.send(.defaultModeChanged($0)) }
+                    set: {
+                        HapticManager.selection()
+                        store.send(.defaultModeChanged($0))
+                    }
                 )
             ) {
                 ForEach(FocusMode.allCases) { mode in
-                    Label(mode.displayName, systemImage: mode.systemImage).tag(mode)
+                    // Suffix Pro-only modes when the user is free, so the picker
+                    // signals the gate before tap (Flowtime / TimeBlock). Selecting
+                    // one routes to the paywall via SettingsFeature.defaultModeChanged.
+                    let label = store.isProUser || mode.isFreeTier
+                        ? mode.displayName
+                        : "\(mode.displayName) (Pro)"
+                    Label(label, systemImage: mode.systemImage).tag(mode)
                 }
             }
             Toggle(
@@ -251,7 +260,10 @@ struct SettingsView: View {
 
             Picker(String(localized: "Appearance"), selection: Binding(
                 get: { store.appearanceMode },
-                set: { store.send(.appearanceModeChanged($0)) }
+                set: {
+                    HapticManager.selection()
+                    store.send(.appearanceModeChanged($0))
+                }
             )) {
                 Text(String(localized: "System")).tag("system")
                 Text(String(localized: "Light")).tag("light")
