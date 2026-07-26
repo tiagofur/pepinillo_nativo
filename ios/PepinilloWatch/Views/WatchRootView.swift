@@ -30,6 +30,10 @@ struct WatchRootView: View {
             .tag(WatchAppFeature.WatchTab.tasks)
         }
         .tabViewStyle(.verticalPage)
+        // Resolve the phone-synced theme into the view environment. Unknown names
+        // fall back to classic via AppTheme.named(_:). Child views read
+        // @Environment(\.appTheme) for per-mode accent colors.
+        .environment(\.appTheme, AppTheme.named(store.themeName))
         .onAppear { store.send(.onAppear) }
     }
 }

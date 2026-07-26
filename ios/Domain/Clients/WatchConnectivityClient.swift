@@ -107,6 +107,10 @@ enum WatchMessage: Equatable, Sendable {
     case tasks([WatchTaskItem], sentAt: TimeInterval)
     /// iOS → Watch: dashboard stats.
     case dashboardStats(WatchDashboardStats)
+    /// iOS → Watch: theme identity (themeName, e.g. "default" / "forest" / "ocean" / "sunset").
+    /// Pushed on theme change and on cold-start hydration so the watch can resolve
+    /// accents via `AppTheme.named(_:)`. Rare event — never at tick rate.
+    case theme(String)
     /// Both sides: reachability changes.
     case connectivityStatus(Bool)
     /// Watch → iOS: user tapped a control on the Watch.
@@ -134,6 +138,10 @@ struct WatchConnectivityClient: Sendable {
 
     /// iOS → Watch: push dashboard stats.
     var sendDashboardStats: @Sendable (WatchDashboardStats) async -> Void = { _ in }
+
+    /// iOS → Watch: push the selected theme name so the watch can resolve accents.
+    /// Merged into `applicationContext` (cold-start hydration) + `sendMessage` when reachable.
+    var sendTheme: @Sendable (_ themeName: String) async -> Void = { _ in }
 
     /// Whether WatchConnectivity is supported on this device.
     var isSupported: @Sendable () -> Bool = { false }
@@ -166,6 +174,7 @@ extension WatchConnectivityClient {
             sendStats:        { m, c, s in await manager.sendStats(todayMinutes: m, sessions: c, streak: s) },
             sendTasks:        { tasks in await manager.sendTasks(tasks) },
             sendDashboardStats: { stats in await manager.sendDashboardStats(stats) },
+            sendTheme:        { themeName in await manager.sendTheme(themeName) },
             isSupported:      { WCSession.isSupported() }
         )
 #else
@@ -194,6 +203,7 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     private var cachedSessionStateDict: [String: Any] = [:]
     private var cachedStatsDict: [String: Any] = [:]
     private var cachedDashboardStatsDict: [String: Any] = [:]
+    private var cachedThemeDict: [String: Any] = [:]
     private let contextCacheLock = NSLock()
 
     private override init() {
@@ -412,6 +422,37 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         }
     }
 
+    /// iOS → Watch: push the selected theme name.
+    ///
+    /// Theme changes are rare (a few times ever), so we always republish the full
+    /// `applicationContext` (cold-start hydration for the watch) AND `sendMessage`
+    /// when reachable for low-latency live update. Merged into the same
+    /// applicationContext as sessionState/stats/dashboardStats via `updateContextCache`
+    /// — the top-level `"theme"` key never clobbers the other sections.
+    func sendTheme(_ themeName: String) async {
+        guard let session else { return }
+
+        let themeDict: [String: Any] = [
+            "themeName": themeName,
+        ]
+
+        let fullContext = updateContextCache { self.cachedThemeDict = themeDict }
+
+        do {
+            try session.updateApplicationContext(fullContext)
+        } catch {
+            Self.log.error("updateApplicationContext(theme) failed: \(error.localizedDescription)")
+        }
+
+        if session.isReachable {
+            var messageDict = themeDict
+            messageDict["type"] = "theme"
+            session.sendMessage(messageDict, replyHandler: nil) { error in
+                Self.log.error("sendMessage(theme) failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
     /// Applies a cache mutation under the lock and returns the merged full context.
     /// Synchronous on purpose: NSLock.lock()/unlock() is unavailable in async
     /// contexts under Swift 6, and no suspension may occur while holding the lock.
@@ -434,6 +475,9 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         }
         if !cachedDashboardStatsDict.isEmpty {
             ctx["dashboardStats"] = cachedDashboardStatsDict
+        }
+        if !cachedThemeDict.isEmpty {
+            ctx["theme"] = cachedThemeDict
         }
         ctx["sentAt"] = Date().timeIntervalSince1970
         return ctx
@@ -488,6 +532,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
             if let stats = decodeDashboardStats(message) {
                 yield(.dashboardStats(stats))
             }
+        case "theme":
+            if let themeName = message["themeName"] as? String {
+                yield(.theme(themeName))
+            }
         default:
             break
         }
@@ -538,6 +586,10 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         if let dashDict = ctx["dashboardStats"] as? [String: Any],
            let stats = decodeDashboardStats(dashDict) {
             yield(.dashboardStats(stats))
+        }
+        if let themeDict = ctx["theme"] as? [String: Any],
+           let themeName = themeDict["themeName"] as? String {
+            yield(.theme(themeName))
         }
     }
 
