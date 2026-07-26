@@ -10,6 +10,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -404,25 +405,31 @@ class FocusEngineTest {
     @Test
     fun `stop records session when elapsed and sessionStartTime are positive`() = runTest {
         // Use restoreState to set up a state with elapsed time
+        val expectedDuration = 5 * 60 * 1000L
         engine.restoreState(
             mode = FocusMode.Pomodoro,
             phase = FocusPhase.Work,
-            elapsedMillis = 5 * 60 * 1000L,
+            elapsedMillis = expectedDuration,
             totalMillis = 25 * 60 * 1000L,
             completedSessions = 0,
-            sessionStartTime = System.currentTimeMillis() - 5 * 60 * 1000L,
+            sessionStartTime = System.currentTimeMillis() - expectedDuration,
         )
         testScope.testScheduler.runCurrent()
 
         engine.stop()
         testScope.testScheduler.runCurrent()
 
+        // #513: restoreState recomputes elapsed from the wall-clock
+        // (now - sessionStartTime - pause). The recorded duration therefore equals
+        // the original 5 min plus a small real-time delta that elapses between
+        // restoreState() and stop(), so we assert a range instead of an exact value.
+        val recordedDuration = slot<Long>()
         coVerify(exactly = 1) {
             sessionRepository.recordSession(
                 mode = "Pomodoro",
                 startTime = any(),
                 endTime = any(),
-                durationMillis = 5 * 60 * 1000L,
+                durationMillis = capture(recordedDuration),
                 linkedTaskId = null,
                 phase = "Work",
                 wasCompleted = false,
@@ -430,6 +437,10 @@ class FocusEngineTest {
                 targetDurationMillis = 25 * 60 * 1000L,
             )
         }
+        assertTrue(
+            "expected duration ~$expectedDuration ms (wall-clock delta allowed), got ${recordedDuration.captured}",
+            recordedDuration.captured in expectedDuration..(expectedDuration + 5_000L),
+        )
     }
 
     @Test
