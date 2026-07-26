@@ -32,8 +32,8 @@ class FocusComplicationDataSource : SuspendingComplicationDataSourceService() {
             val mins = totalSec / 60
             val secs = totalSec % 60
             val display = "%02d:%02d".format(mins, secs)
-            val elapsed = (state.totalDurationMs - remainingMs).coerceAtLeast(0L)
-            val prog = (elapsed.toFloat() / state.totalDurationMs.toFloat()).coerceIn(0f, 1f)
+            // #502: REMAINING polarity — 1f at start, 0f at the end (phone/widget match).
+            val prog = (remainingMs.toFloat() / state.totalDurationMs.toFloat()).coerceIn(0f, 1f)
             display to prog
         } else {
             state.displayTime to state.progress.coerceIn(0f, 1f)

@@ -78,7 +78,8 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 phase = "Work",
                 status = "Running",
                 phaseLabel = "Focus",
-                progress = 0f,
+                // #502: REMAINING for countdown (full ring at start), elapsed-0 for count-up.
+                progress = if (isCountUp) 0f else 1f,
                 displayTime = if (isCountUp) "00:00" else current.displayTime,
                 totalDurationMs = if (isCountUp) 0L else durationMs,
                 phaseEndEpochMs = if (isCountUp) 0L else now + durationMs,
@@ -110,7 +111,8 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
         val progress = if (isCountUp) {
             ticked.progress
         } else if (current.totalDurationMs > 0L) {
-            (1f - (remainingMs.toFloat() / current.totalDurationMs)).coerceIn(0f, 1f)
+            // #502: REMAINING polarity — pause freezes the remaining fraction directly.
+            (remainingMs.toFloat() / current.totalDurationMs).coerceIn(0f, 1f)
         } else {
             current.progress
         }
@@ -201,7 +203,8 @@ class WearViewModel(application: Application) : AndroidViewModel(application) {
                 status = "Running",
                 phase = nextPhase,
                 phaseLabel = nextLabel,
-                progress = 0f,
+                // #502: REMAINING — full ring at the start of the next countdown phase.
+                progress = 1f,
                 totalDurationMs = durationMs,
                 phaseEndEpochMs = now + durationMs,
                 phaseStartEpochMs = 0L,

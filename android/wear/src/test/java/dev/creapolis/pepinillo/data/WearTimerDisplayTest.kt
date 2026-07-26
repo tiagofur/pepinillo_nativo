@@ -20,7 +20,9 @@ class WearTimerDisplayTest {
         val ticked = WearTimerDisplay.tick(state, now)
 
         assertEquals("05:23", ticked.displayTime)
-        assertTrue(ticked.progress in 0.78f..0.79f)
+        // #502: REMAINING polarity — progress is now remaining/total (≈0.215 for 5:23 of 25:00),
+        // not the old elapsed fraction (which was ≈0.785). Matches the phone + widget.
+        assertTrue("progress=${ticked.progress} should be ~0.215", ticked.progress in 0.21f..0.22f)
     }
 
     @Test

@@ -49,7 +49,9 @@ object WearTimerDisplay {
             return TickResult(state.displayTime, state.progress)
         }
         val remaining = (state.phaseEndEpochMs - nowMs).coerceAtLeast(0L)
-        val progress = (1f - (remaining.toFloat() / state.totalDurationMs)).coerceIn(0f, 1f)
+        // #502: REMAINING polarity — 1f at session start, 0f at the end. Matches the phone's
+        // FocusTimerState.progress and the widget, so the Wear ring empties in lockstep with them.
+        val progress = (remaining.toFloat() / state.totalDurationMs).coerceIn(0f, 1f)
         return TickResult(formatMillis(remaining, ceilSeconds = true), progress)
     }
 

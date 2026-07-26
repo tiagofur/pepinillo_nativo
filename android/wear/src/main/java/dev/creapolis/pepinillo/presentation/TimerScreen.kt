@@ -227,8 +227,8 @@ private fun TimerActiveLayout(
         // Sprint 6 (#492): circular→squircle morph during the last 20% of countdown sessions.
         // Count-up modes (Flow, Chrono), inactive sessions, and Reduce Motion stay circular,
         // matching the phone. This layout only renders for Running/Paused (see TimerScreen),
-        // so the countdown is always active here; localProgress is the elapsed fraction
-        // (WearTimerDisplay already returns elapsed for countdown modes).
+        // so the countdown is always active here; localProgress is the REMAINING fraction
+        // (WearTimerDisplay returns REMAINING for countdown modes — #502 unified polarity).
         val hasCountdown = !WearTimerDisplay.isCountUpMode(state.mode)
         val rawMorphTarget = WearTimerMorph.calculateMorphTarget(
             progress = localProgress,
