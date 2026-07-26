@@ -83,6 +83,7 @@ import dev.creapolis.pepinillo.ui.components.rememberSnackbarController
 import kotlinx.coroutines.flow.first
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import dev.creapolis.pepinillo.feature.dashboard.AIReportScreen
+import dev.creapolis.pepinillo.feature.dashboard.DashboardAdaptiveLayout
 import dev.creapolis.pepinillo.feature.dashboard.DashboardScreen
 import dev.creapolis.pepinillo.feature.focus.FocusScreen
 import dev.creapolis.pepinillo.feature.focus.FocusViewModel
@@ -95,6 +96,7 @@ import dev.creapolis.pepinillo.feature.profile.ProfileScreen
 import dev.creapolis.pepinillo.feature.settings.AppSetupScreen
 import dev.creapolis.pepinillo.feature.settings.SettingsScreen
 import dev.creapolis.pepinillo.feature.tasks.TaskAnalyticsScreen
+import dev.creapolis.pepinillo.feature.tasks.TasksAdaptiveLayout
 import dev.creapolis.pepinillo.feature.tasks.TasksScreen
 import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.navigation.TopLevelDestination
@@ -404,8 +406,7 @@ fun PepinilloApp(
             }
             composable(TopLevelDestination.Plan.route) {
                 CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
-                    TasksScreen(
-                        onTaskClick = {},
+                    TasksAdaptiveLayout(
                         onNavigateToAnalytics = { taskId ->
                             navController.navigate("tasks/$taskId/analytics")
                         },
@@ -438,7 +439,7 @@ fun PepinilloApp(
             }
             composable(TopLevelDestination.Dashboard.route) {
                 CompositionLocalProvider(LocalNavAnimatedVisibilityScope provides this) {
-                    DashboardScreen(
+                    DashboardAdaptiveLayout(
                         onCalendarClick = { navController.navigate("calendar") },
                         onNavigateToPaywall = { navController.navigate("paywall") },
                         onStartFocusClick = {

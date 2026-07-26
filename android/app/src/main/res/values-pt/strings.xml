@@ -696,6 +696,8 @@
 
     <!-- Tasks -->
     <string name="tasks_title">Plano</string>
+    <string name="select_task_to_view_details">Selecione uma tarefa para ver os detalhes</string>
+    <string name="select_dashboard_detail">Selecione um item para ver os detalhes</string>
     <string name="tasks_active_count">%1$d ativas</string>
     <string name="tasks_active_limit">%1$d/%2$d ativas</string>
     <string name="tasks_no_tasks">Sem tarefas ainda</string>

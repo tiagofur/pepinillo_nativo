@@ -104,6 +104,12 @@ fun TasksScreen(
     viewModel: TasksViewModel = hiltViewModel(),
     onNavigateToPaywall: () -> Unit = {},
     onStartFocusTask: () -> Unit = {},
+    /**
+     * Whether to show task details in an in-screen [ModalBottomSheet] (the original compact-width
+     * behaviour). When `false` (expanded widths / Sprint 7 #493), task taps are forwarded to
+     * [onTaskClick] so the two-pane [TasksAdaptiveLayout] can render the detail pane instead.
+     */
+    useBottomSheet: Boolean = true,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val filteredTasks = uiState.filteredTasks
@@ -279,7 +285,15 @@ fun TasksScreen(
                             task = task,
                             subtaskProgress = uiState.subtaskProgressMap[task.id],
                             onToggleCompletion = { viewModel.toggleTaskCompletion(task.id) },
-                            onClick = { selectedTaskId = task.id },
+                            onClick = {
+                                // In two-pane mode the detail is rendered by the parent
+                                // TasksAdaptiveLayout, so forward the selection up (#493).
+                                if (useBottomSheet) {
+                                    selectedTaskId = task.id
+                                } else {
+                                    onTaskClick(task.id)
+                                }
+                            },
                             onStartFocus = {
                                 viewModel.startFocusOnTask(task.id)
                                 onStartFocusTask()
@@ -319,7 +333,7 @@ fun TasksScreen(
             )
         }
 
-        if (selectedTaskId != null) {
+        if (useBottomSheet && selectedTaskId != null) {
             val detailViewModel: TaskDetailViewModel = hiltViewModel(key = selectedTaskId!!)
             LaunchedEffect(selectedTaskId) {
                 detailViewModel.initialize(selectedTaskId!!)
