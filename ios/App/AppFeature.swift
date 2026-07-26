@@ -1348,7 +1348,16 @@ struct AppFeature {
                 )
                 return .send(.focus(.configUpdated(updatedConfig)))
 
-            // MARK: - Settings: daily reminder sync
+            // MARK: - Settings: theme sync phone → watch (#533)
+
+            case .settings(.themeChanged):
+                // Push the newly-selected theme to the Apple Watch so its accents
+                // resolve via AppTheme.named(_:). Theme changes are rare user
+                // events; the watch is idempotent and ignores unchanged names.
+                let themeName = state.settings.themeName
+                return .run { [watchClient] _ in
+                    await watchClient.sendTheme(themeName)
+                }
 
             case .settings(.dailyReminderToggled), .settings(.dailyReminderTimeChanged):
                 let enabled = state.settings.dailyReminderEnabled
@@ -1710,10 +1719,16 @@ extension AppFeature {
         from state: State,
         publishContext: Bool
     ) -> Effect<Action> {
-        .run { [watchClient] _ in
+        .run { [watchClient, themeName = state.settings.themeName] _ in
             guard watchClient.isSupported() else { return }
             let watchState = WatchSessionState(from: state.focus)
             await watchClient.sendSessionState(watchState, publishContext)
+            // Cold-start theme hydration (#533): when publishing context (connect /
+            // launch / phase transitions), also push the current theme name so the
+            // watch resolves accents without waiting for a separate theme change.
+            if publishContext {
+                await watchClient.sendTheme(themeName)
+            }
         }
     }
 }

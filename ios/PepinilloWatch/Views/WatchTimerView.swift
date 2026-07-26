@@ -12,6 +12,10 @@ import ComposableArchitecture
 struct WatchTimerView: View {
     @Bindable var store: StoreOf<WatchTimerFeature>
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Phone-synced theme (resolved by WatchRootView via `.environment(\.appTheme, …)`).
+    /// Per-mode accents come from the theme instead of the hardcoded ModeColors palette
+    /// so Forest/Ocean/Sunset on the phone propagate to the watch (#533).
+    @Environment(\.appTheme) private var appTheme
 
     var body: some View {
         if store.isSessionActive {
@@ -348,7 +352,10 @@ struct WatchTimerView: View {
     }
 
     private func colorFor(_ mode: FocusMode) -> Color {
-        ModeColors.color(for: mode.rawValue)
+        // Resolve accent from the phone-synced theme (#533). Unknown / missing
+        // themes fall back to .classic via AppTheme.named(_:), so a watch that
+        // never received a theme update still renders the Classic palette.
+        appTheme.color(for: mode)
     }
 
     private func formatMinutes(_ minutes: Int) -> String {
