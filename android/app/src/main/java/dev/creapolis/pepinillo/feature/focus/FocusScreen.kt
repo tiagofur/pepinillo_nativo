@@ -200,12 +200,20 @@ fun FocusScreen(
         label = "progress",
     )
     // Sprint 6 (#492): circular→squircle morph during the last 20% of countdown sessions to
-    // communicate urgency peripherally. Count-up modes (Flow, Chrono) and Reduce Motion stay
-    // circular. The spring naturally bounces back to circle when a new phase resets progress to 0.
+    // communicate urgency peripherally. Count-up modes (Flow, Chrono), inactive sessions, and
+    // Reduce Motion stay circular. The spring naturally bounces back to circle when a new phase
+    // resets elapsed to 0.
+    //
+    // Polarity (#501): uiState.progress is the *remaining* fraction (1f = full, 0f = done), but
+    // TimerMorph reasons over the *elapsed* fraction — so invert it. Gate on Running/Paused only:
+    // Idle and WaitingForNext pin progress at 1f and would otherwise read as "session complete".
     val hasCountdown = uiState.selectedMode.defaultTotalSeconds != null
+    val morphSessionActive = uiState.isRunning || uiState.isPaused
+    val elapsedFraction = if (morphSessionActive) 1f - uiState.progress else 0f
     val rawMorphTarget = TimerMorph.calculateMorphTarget(
-        progress = uiState.progress,
+        progress = elapsedFraction,
         hasCountdown = hasCountdown,
+        sessionActive = morphSessionActive,
         reduceMotion = reduceMotion,
     )
     val morphProgress by animateFloatAsState(

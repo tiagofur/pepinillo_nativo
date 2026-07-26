@@ -139,6 +139,13 @@ internal fun isReduceMotionEnabled(): Boolean {
 /**
  * Pure (no-Compose) morph target for Wear, mirroring the app's `TimerMorph.calculateMorphTarget`
  * so the formula stays consistent across surfaces without a cross-module dependency.
+ *
+ * **Polarity contract (#501 regression fix):** [progress] is the **elapsed fraction** of the
+ * session (0f = just started, 1f = finished). `WearTimerDisplay.tick` already yields elapsed for
+ * countdown modes, so callers can pass `localProgress` directly. [sessionActive] gates Idle and
+ * WaitingForNext (where the synced snapshot may still carry a stale full-progress value).
+ *
+ * @param sessionActive True only while a countdown is actually in progress (Running or Paused).
  */
 internal object WearTimerMorph {
     const val THRESHOLD = 0.8f
@@ -147,9 +154,10 @@ internal object WearTimerMorph {
     fun calculateMorphTarget(
         progress: Float,
         hasCountdown: Boolean,
+        sessionActive: Boolean,
         reduceMotion: Boolean,
     ): Float {
-        if (!hasCountdown || reduceMotion) return 0f
+        if (!hasCountdown || !sessionActive || reduceMotion) return 0f
         if (progress <= THRESHOLD) return 0f
         return ((progress - THRESHOLD) / WINDOW).coerceIn(0f, 1f)
     }
