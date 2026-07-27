@@ -17,6 +17,7 @@ import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.data.repository.TaskRepository
 import dev.creapolis.pepinillo.domain.streak.StreakProtectionService
+import dev.creapolis.pepinillo.domain.timer.FocusEngine
 import dev.creapolis.pepinillo.feature.tasks.model.EnergyLevel
 import dev.creapolis.pepinillo.wear.WearDataLayerHelper
 import dev.creapolis.pepinillo.widget.WidgetStateManager
@@ -36,10 +37,21 @@ class WidgetRefreshWorker @AssistedInject constructor(
     private val sessionRepository: SessionRepository,
     private val taskRepository: TaskRepository,
     private val featureGate: FeatureGate,
+    private val focusEngine: FocusEngine,
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
         return runCatching {
+            // Issue #551: refresh the FocusEngine day marker + "today" flows so
+            // widgets and Wear reflect the new day even if the user never reopens
+            // the app. The midnight job (MidnightWidgetRefreshScheduler) fires
+            // here, but without this call the repository's _currentDayStart would
+            // still hold yesterday's value and getTodayStats() would re-emit stale
+            // data. onDayChanged() is idempotent (no-op if same day), so this is
+            // also safe for the 15-minute periodic schedule.
+            focusEngine.onDayChanged()
+
+            // ── 1. Focus stats ──────────────────────────────────────────────
             // ── 1. Focus stats ──────────────────────────────────────────────
             val stats = sessionRepository.getTodayStats().first()
             val allDays = sessionRepository.getAllDaysWithSessions().first()
