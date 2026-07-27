@@ -75,6 +75,16 @@ object WearDataStore {
         _timerState.value = newState
     }
 
+    /**
+     * Zeros the in-memory `completedSessions` on a day change. Atomic copy avoids
+     * the read-modify-write race a caller would otherwise have to perform against
+     * [timerState]. Does not touch the persisted snapshot (callers do that via
+     * [WearSnapshotStore]).
+     */
+    fun resetCompletedSessions() {
+        _timerState.value = _timerState.value.copy(completedSessions = 0)
+    }
+
     fun updateTasksFromJson(tasksJson: String) {
         val parsed = runCatching {
             parseTasksJson(tasksJson)

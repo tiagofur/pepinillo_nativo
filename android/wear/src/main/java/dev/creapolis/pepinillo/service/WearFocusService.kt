@@ -4,15 +4,19 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.wear.ongoing.OngoingActivity
 import androidx.wear.ongoing.Status
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.WearDataStore
+import dev.creapolis.pepinillo.data.WearDayReset
 import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.data.WearTimerDisplay
 import dev.creapolis.pepinillo.data.WearTimerState
@@ -21,17 +25,30 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 class WearFocusService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isStarted = false
+    private var dayChangeReceiver: BroadcastReceiver? = null
 
     override fun onCreate() {
         super.onCreate()
         WearSnapshotStore.bootstrap(applicationContext)
         createNotificationChannel()
+        // Mechanism B: system broadcast for date/time/timezone changes. Only
+        // registered while this foreground service is alive (timer active).
+        // Mirrors FocusTimerService.registerDayChangeReceiver() on the phone.
+        registerDayChangeReceiver()
+        // Mechanism C: backstop coroutine. ACTION_DATE_CHANGED is not in the
+        // list of implicit broadcasts exempt from the background-delivery
+        // restrictions on API 26+, so natural-midnight delivery is unreliable.
+        // A 60s poll guarantees we still reset even if the broadcast is missed.
+        startDayChangeBackstop()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -142,13 +159,60 @@ class WearFocusService : Service() {
     }
 
     override fun onDestroy() {
+        dayChangeReceiver?.let { unregisterReceiver(it) }
+        dayChangeReceiver = null
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    private fun registerDayChangeReceiver() {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                resetCompletedSessionsIfNewDay(context)
+            }
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_DATE_CHANGED)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        }
+        ContextCompat.registerReceiver(
+            this,
+            receiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
+        dayChangeReceiver = receiver
+    }
+
+    private fun startDayChangeBackstop() {
+        serviceScope.launch {
+            while (isActive) {
+                // Cheap: reads one SharedPreferences Long and short-circuits if
+                // the day is unchanged (no write, no state update).
+                resetCompletedSessionsIfNewDay(applicationContext)
+                delay(DAY_CHANGE_BACKSTOP_INTERVAL_MS)
+            }
+        }
+    }
+
+    /**
+     * Applies the day-change reset policy: zero the persisted + in-memory
+     * `completedSessions` if the calendar day differs from the persisted one.
+     * No-op (returns false) when the day hasn't changed, so the backstop
+     * coroutine polling at 60s is essentially free within a single day.
+     */
+    private fun resetCompletedSessionsIfNewDay(context: Context): Boolean {
+        val reset = WearDayReset.maybeResetForNewDay(context)
+        if (reset) WearDataStore.resetCompletedSessions()
+        return reset
     }
 
     companion object {
         private const val NOTIFICATION_ID = 4201
         private const val CHANNEL_ID = "wear_focus_timer_channel"
+        /** Polling interval for the day-change backstop coroutine. */
+        private const val DAY_CHANGE_BACKSTOP_INTERVAL_MS = 60_000L
 
         /**
          * Returns true if the given timer status should keep the foreground service alive.

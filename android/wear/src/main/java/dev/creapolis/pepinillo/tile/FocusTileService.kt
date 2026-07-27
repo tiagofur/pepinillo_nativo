@@ -16,6 +16,7 @@ import androidx.wear.tiles.ResourceBuilders
 import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.ListenableFuture
+import dev.creapolis.pepinillo.data.WearDayReset
 import dev.creapolis.pepinillo.data.WearSnapshotStore
 import dev.creapolis.pepinillo.data.WearTimerState
 import dev.creapolis.pepinillo.data.WearThemeColors
@@ -50,6 +51,10 @@ class FocusTileService : TileService() {
         }
 
     private fun buildTile(): TileBuilders.Tile {
+        // Self-heal: a tile can render without the app ever being foregrounded
+        // today, so the persisted completedSessions may belong to yesterday.
+        // Zero it (idempotently) before reading so the "x/N" label is correct.
+        WearDayReset.maybeResetForNewDay(this)
         val state = WearSnapshotStore.readTimerState(this)
         val stats = WearSnapshotStore.readStats(this)
         val colors = WearSnapshotStore.readThemeColors(this)
