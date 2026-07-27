@@ -110,6 +110,13 @@ type FocusRepository interface {
 	UpsertSessionBatch(ctx context.Context, sessions []domain.FocusSession) error
 	ListSessionsUpdatedSince(ctx context.Context, userID string, since time.Time) ([]domain.FocusSession, error)
 	RecomputeStatsForDates(ctx context.Context, userID string, dates []time.Time) error
+
+	// CloseStaleSessions closes focus sessions left open beyond ttl (issue #550):
+	// rows with ended_at IS NULL AND started_at < now() - ttl are updated to
+	// ended_at = now() and updated_at = now(), without touching was_completed.
+	// Returns one StaleSessionClosed per affected row so the caller can group by
+	// (user, day-of-started_at) and recompute the affected daily stats.
+	CloseStaleSessions(ctx context.Context, ttl time.Duration) ([]domain.StaleSessionClosed, error)
 }
 
 type AnalyticsRepository interface {

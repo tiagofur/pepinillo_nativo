@@ -93,6 +93,11 @@ type Config struct {
 	SentrySampleRate                       float64
 	SentryTracesSampleRate                 float64
 	SentryRelease                          string
+	// FocusSessionStaleTTLHours is how long a focus session may remain open
+	// (ended_at IS NULL) before the stale-session reconciler closes it. Default
+	// 168h (7 days) — only truly orphaned sessions (device lost, app uninstalled,
+	// client crash with no recovery) get this old. Issue #550.
+	FocusSessionStaleTTLHours int64
 }
 
 func Load() (*Config, error) {
@@ -180,6 +185,7 @@ func Load() (*Config, error) {
 		SentrySampleRate:                       getEnvFloat64("SENTRY_SAMPLE_RATE", 1.0),
 		SentryTracesSampleRate:                 getEnvFloat64("SENTRY_TRACES_SAMPLE_RATE", 0.1),
 		SentryRelease:                          getEnv("SENTRY_RELEASE", ""),
+		FocusSessionStaleTTLHours:              getEnvInt64("FOCUS_SESSION_STALE_TTL_HOURS", 168),
 	}
 
 	if cfg.JWTSecret == "" {

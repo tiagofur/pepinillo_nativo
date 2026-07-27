@@ -24,3 +24,12 @@ type FocusSession struct {
 	CreatedAt          time.Time  `json:"createdAt"`
 	UpdatedAt          time.Time  `json:"updatedAt"`
 }
+
+// StaleSessionClosed is returned by the stale-session reconciler (issue #550)
+// for each focus session it closes. Callers use UserID + StartedAt to recompute
+// the affected daily stats — the relevant day is the one the session was
+// attributed to (DATE(started_at)), not the moment it was closed.
+type StaleSessionClosed struct {
+	UserID    string    `json:"userId"`
+	StartedAt time.Time `json:"startedAt"`
+}

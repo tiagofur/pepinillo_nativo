@@ -458,9 +458,9 @@ func TestHub_TotalUsers(t *testing.T) {
 	hub.register <- client2
 	hub.register <- client3
 
+	// TotalUsers() takes the read lock internally, so do not pre-lock here —
+	// re-entrant RLock on sync.RWMutex deadlocks when a writer is pending.
 	waitForCondition(t, 200*time.Millisecond, func() bool {
-		hub.mu.RLock()
-		defer hub.mu.RUnlock()
 		return hub.TotalUsers() == 2
 	})
 

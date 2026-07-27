@@ -326,6 +326,11 @@ func main() {
 	aiService := services.NewAIService(userRepo, aiRepo, taskRepo, pomodoroRepo, llmProvider, cfg.MLServiceURL)
 	startRecurringTaskGenerator(taskService, pushService)
 
+	// Issue #550: close focus sessions left open beyond the configured TTL.
+	// focusRepo is already constructed above; the reconciler reuses it.
+	sessionReconciler := services.NewSessionReconciler(focusRepo, time.Duration(cfg.FocusSessionStaleTTLHours)*time.Hour)
+	startSessionReconciler(sessionReconciler)
+
 	preferenceRepo := postgres.NewPreferenceRepository(db)
 	preferenceService := services.NewPreferenceService(preferenceRepo, wsManager)
 
@@ -443,6 +448,36 @@ func startRecurringTaskGenerator(taskService *services.TaskService, pushService 
 			}
 
 			slog.Info("recurrence generator completed", "users", users, "created", created)
+		}
+
+		run()
+		ticker := time.NewTicker(24 * time.Hour)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			run()
+		}
+	}()
+}
+
+// startSessionReconciler runs the stale-session reconciler (issue #550) in the
+// background: immediately on startup (to repair sessions orphaned before the
+// job existed) and then every 24h. Follows the same shape as
+// startRecurringTaskGenerator.
+func startSessionReconciler(reconciler *services.SessionReconciler) {
+	go func() {
+		run := func() {
+			summary, err := reconciler.Run(context.Background())
+			if err != nil {
+				// Run already logged; nothing else to do here.
+				return
+			}
+			if summary.SessionsClosed > 0 {
+				slog.Info("session reconciler summary",
+					"closed", summary.SessionsClosed,
+					"users", len(summary.DatesRecomputed),
+				)
+			}
 		}
 
 		run()
