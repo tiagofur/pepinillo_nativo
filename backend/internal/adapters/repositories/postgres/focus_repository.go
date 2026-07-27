@@ -425,3 +425,44 @@ func (r *FocusRepository) RecomputeStatsForDates(ctx context.Context, userID str
 		return nil
 	})
 }
+
+// CloseStaleSessions closes focus sessions that have been left open longer than
+// ttl (ended_at IS NULL AND started_at < now() - ttl), setting ended_at = now()
+// and updated_at = now(). It does not touch was_completed — a session that was
+// completed but never got its ended_at timestamp keeps was_completed=true, and a
+// session abandoned by the client stays was_completed=false (now queryable as
+// abandoned since ended_at is set). Returns one StaleSessionClosed per row so
+// the caller can recompute the affected daily stats.
+//
+// Uses explicit SQL rather than gorm.Updates(struct) because the latter ignores
+// zero-value fields and ended_at/updated_at are being set to non-zero values
+// that must always be written.
+func (r *FocusRepository) CloseStaleSessions(ctx context.Context, ttl time.Duration) ([]domain.StaleSessionClosed, error) {
+	threshold := time.Now().Add(-ttl)
+
+	rows, err := r.db.WithContext(ctx).Raw(`
+		UPDATE focus_sessions
+		SET ended_at = now(),
+		    updated_at = now()
+		WHERE ended_at IS NULL
+		  AND started_at < ?
+		RETURNING user_id, started_at
+	`, threshold).Rows()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []domain.StaleSessionClosed
+	for rows.Next() {
+		var c domain.StaleSessionClosed
+		if err := rows.Scan(&c.UserID, &c.StartedAt); err != nil {
+			return nil, err
+		}
+		result = append(result, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}

@@ -25,6 +25,10 @@ type fakeFocusRepository struct {
 	paginatedErr     error
 	recomputedDates  []time.Time
 	upsertedSessions []domain.FocusSession
+	// Stale-session reconciler (#550)
+	closeStaleResult []domain.StaleSessionClosed
+	closeStaleErr    error
+	closeStaleTTLDur time.Duration
 }
 
 func (f *fakeFocusRepository) GetConfig(_ context.Context, _ string) (*domain.FocusConfig, error) {
@@ -95,6 +99,13 @@ func (f *fakeFocusRepository) RecomputeStatsForDates(_ context.Context, _ string
 	}
 	f.recomputedDates = append(f.recomputedDates, dates...)
 	return nil
+}
+func (f *fakeFocusRepository) CloseStaleSessions(_ context.Context, ttl time.Duration) ([]domain.StaleSessionClosed, error) {
+	f.closeStaleTTLDur = ttl
+	if f.closeStaleErr != nil {
+		return nil, f.closeStaleErr
+	}
+	return f.closeStaleResult, nil
 }
 
 // fakeSyncTaskRepository implements ports.TaskRepository for sync tests.
