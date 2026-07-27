@@ -20,6 +20,12 @@ object WearSnapshotStore {
     private const val KEY_LINKED_TASK_ID = "linked_task_id"
     private const val KEY_LINKED_TASK_NAME = "linked_task_name"
     private const val KEY_COMPLETED_SESSIONS = "completed_sessions"
+    /**
+     * Epoch millis (start-of-day, local tz) of the day whose `completedSessions`
+     * is currently persisted. Lets the watch reset the counter on its own when
+     * the calendar day changes without phone connectivity. See [WearDayReset].
+     */
+    private const val KEY_DAY_START_MILLIS = "day_start_millis"
     private const val KEY_THEME_ID = "theme_id"
     private const val KEY_POMODORO_COLOR = "pomodoro_color"
     private const val KEY_FLOWTIME_COLOR = "flowtime_color"
@@ -34,6 +40,12 @@ object WearSnapshotStore {
     private const val KEY_SESSIONS_BEFORE_LONG_BREAK = "sessions_before_long_break"
 
     fun bootstrap(context: Context) {
+        // Day-change reset (mechanism A): runs at every process entry point that
+        // calls bootstrap() (MainActivity, WearFocusService). If the persisted
+        // day differs from today, completedSessions is zeroed in prefs BEFORE we
+        // read it back into the in-memory store, so the UI never sees yesterday's
+        // counter on a fresh launch.
+        WearDayReset.maybeResetForNewDay(context)
         WearDataStore.updateTimer(readTimerState(context))
         WearDataStore.updateTasks(readTasks(context))
         WearDataStore.updateStats(readStats(context))
@@ -60,6 +72,31 @@ object WearSnapshotStore {
             .putLong(KEY_REMAINING_DURATION_MS, state.remainingDurationMs)
             .putLong(KEY_TOTAL_DURATION_MS, state.totalDurationMs)
             .putInt(KEY_SESSIONS_BEFORE_LONG_BREAK, state.sessionsBeforeLongBreak)
+            .apply()
+    }
+
+    /**
+     * Writes only [completedSessions]. Used by [WearDayReset] to zero the
+     * counter on a day change without rewriting the whole WearTimerState.
+     */
+    fun persistCompletedSessions(context: Context, completedSessions: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putInt(KEY_COMPLETED_SESSIONS, completedSessions)
+            .apply()
+    }
+
+    /** @return the start-of-day millis of the persisted day, or 0 if never set. */
+    fun readDayStartMillis(context: Context): Long {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getLong(KEY_DAY_START_MILLIS, 0L)
+    }
+
+    /** Persists the start-of-day marker used by [WearDayReset] for idempotency. */
+    fun persistDayStartMillis(context: Context, dayStartMillis: Long) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putLong(KEY_DAY_START_MILLIS, dayStartMillis)
             .apply()
     }
 
