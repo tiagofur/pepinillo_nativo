@@ -241,6 +241,9 @@ private fun TimerActiveLayout(
         )
         val morphProgress by animateFloatAsState(
             targetValue = rawMorphTarget,
+            // Deliberately softer than the phone's MotionScheme.standardSpring() (StiffnessMediumLow):
+            // the round Wear display reads better with a slower, gentler morph arc. Intentional
+            // divergence documented under #517 — wear cannot consume the phone MotionScheme.
             animationSpec = spring(stiffness = Spring.StiffnessLow),
             label = "wearMorphProgress",
         )

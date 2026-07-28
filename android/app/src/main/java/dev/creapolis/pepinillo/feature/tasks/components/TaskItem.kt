@@ -1,10 +1,9 @@
 package dev.creapolis.pepinillo.feature.tasks.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import java.util.Calendar
@@ -89,19 +88,13 @@ fun TaskItem(
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.8f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
+        animationSpec = MotionScheme.effectsSpring(),
         label = "checkboxScale"
     )
 
     val checkmarkScale by animateFloatAsState(
         targetValue = if (task.isCompleted) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = MotionScheme.effectsSpring(),
         label = "checkmarkScale"
     )
 
@@ -111,7 +104,7 @@ fun TaskItem(
         } else {
             Color.Transparent
         },
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "checkboxBg",
     )
 
@@ -143,7 +136,7 @@ fun TaskItem(
             isScheduledToday -> brandGreen().copy(alpha = 0.06f)
             else -> Color.Transparent
         },
-        animationSpec = tween(500),
+        animationSpec = tween(MotionScheme.DURATION_COLOR_SLOW),
         label = "taskRowBg",
     )
 
@@ -155,7 +148,7 @@ fun TaskItem(
             isScheduledToday -> brandGreen().copy(alpha = 0.35f)
             else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
         },
-        animationSpec = tween(500),
+        animationSpec = tween(MotionScheme.DURATION_COLOR_SLOW),
         label = "taskRowBorder",
     )
 
@@ -255,7 +248,7 @@ fun TaskItem(
                     } else {
                         MaterialTheme.colorScheme.onSurface
                     },
-                    animationSpec = tween(500),
+                    animationSpec = tween(MotionScheme.DURATION_COLOR_SLOW),
                     label = "textColor"
                 )
 

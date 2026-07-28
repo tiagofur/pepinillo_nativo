@@ -24,6 +24,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
@@ -100,6 +101,7 @@ import dev.creapolis.pepinillo.feature.soundscape.SoundscapePickerSheet
 import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
 import dev.creapolis.pepinillo.ui.haptics.PepinilloHaptics
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.colorScheme
 
@@ -152,7 +154,7 @@ fun FocusScreen(
             initialValue = 1f,
             targetValue = 1.06f,
             animationSpec = infiniteRepeatable(
-                animation = tween(1000, easing = FastOutSlowInEasing),
+                animation = tween(MotionScheme.DURATION_BREATHE, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "breatheScale"
@@ -183,24 +185,24 @@ fun FocusScreen(
 
     val animatedAccentColor by animateColorAsState(
         targetValue = modeColors.accentColor,
-        animationSpec = tween(400),
+        animationSpec = tween(MotionScheme.DURATION_COLOR),
         label = "accentColor",
     )
     val animatedContentColor by animateColorAsState(
         targetValue = modeColors.contentColor,
-        animationSpec = tween(400),
+        animationSpec = tween(MotionScheme.DURATION_COLOR),
         label = "contentColor",
     )
     val animatedOnAccentColor by animateColorAsState(
         targetValue = modeColors.onAccentColor,
-        animationSpec = tween(400),
+        animationSpec = tween(MotionScheme.DURATION_COLOR),
         label = "onAccentColor",
     )
     val animatedProgress by animateFloatAsState(
         targetValue = ringState.progress,
         // #505: with the 4Hz ringState source the ring already updates ~4x/sec; a short tween
         // smooths the discrete ticks without reintroducing the ~1s lag the old 500ms spec had.
-        animationSpec = tween(180),
+        animationSpec = tween(MotionScheme.DURATION_FADE_FAST),
         label = "progress",
     )
     // Sprint 6 (#492): circular→squircle morph during the last 20% of countdown sessions to
@@ -233,7 +235,7 @@ fun FocusScreen(
     }
     val timerSize by animateFloatAsState(
         targetValue = if (sessionActive) 292f else 268f,
-        animationSpec = tween(500),
+        animationSpec = tween(MotionScheme.DURATION_COLOR_SLOW),
         label = "timerSize",
     )
     val buttonWidth by animateDpAsState(
@@ -291,8 +293,8 @@ fun FocusScreen(
         ) {
             AnimatedVisibility(
                 visible = !isPipMode && !sessionActive,
-                enter = fadeIn(tween(240)) + slideInVertically { -it / 3 },
-                exit = fadeOut(tween(180)) + slideOutVertically { -it / 3 },
+                enter = fadeIn(tween(MotionScheme.DURATION_FADE)) + slideInVertically { -it / 3 },
+                exit = fadeOut(tween(MotionScheme.DURATION_FADE_FAST)) + slideOutVertically { -it / 3 },
             ) {
                 Row(
                     modifier = Modifier
@@ -517,6 +519,10 @@ fun FocusScreen(
                 ) {
                     AnimatedContent(
                         targetState = primaryTimerActionVisual,
+                        transitionSpec = {
+                            fadeIn(tween(NavigationTransitions.DURATION_DETAIL)) togetherWith
+                                fadeOut(tween(NavigationTransitions.DURATION_DETAIL))
+                        },
                         label = "startStop",
                     ) { visual ->
                         when (visual) {

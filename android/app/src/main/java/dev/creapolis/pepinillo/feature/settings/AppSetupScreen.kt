@@ -11,7 +11,6 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +54,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.creapolis.pepinillo.util.ManufacturerUtils
 import androidx.compose.ui.res.stringResource
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
@@ -338,7 +338,7 @@ private fun StatusBadge(
         } else {
             MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
         },
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "badgeBg",
     )
     val textColor by animateColorAsState(
@@ -347,7 +347,7 @@ private fun StatusBadge(
         } else {
             MaterialTheme.colorScheme.error
         },
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "badgeText",
     )
 

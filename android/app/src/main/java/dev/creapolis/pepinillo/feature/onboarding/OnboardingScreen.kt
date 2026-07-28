@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import kotlinx.coroutines.launch
 
@@ -112,13 +113,13 @@ fun OnboardingScreen(
     val targetBg = pageBackground(pagerState.currentPage)
     val animatedBg by animateColorAsState(
         targetValue = targetBg,
-        animationSpec = tween(durationMillis = 350),
+        animationSpec = tween(MotionScheme.DURATION_ONBOARDING),
         label = "onboardingBg",
     )
     val targetContent = pageContentColor(pagerState.currentPage)
     val animatedContent by animateColorAsState(
         targetValue = targetContent,
-        animationSpec = tween(durationMillis = 350),
+        animationSpec = tween(MotionScheme.DURATION_ONBOARDING),
         label = "onboardingContent",
     )
 
