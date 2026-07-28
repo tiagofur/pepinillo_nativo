@@ -65,8 +65,8 @@ class WearFocusService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Focus Timer"
-            val descriptionText = "Displays the active focus timer countdown"
+            val name = getString(R.string.notif_channel_focus_name)
+            val descriptionText = getString(R.string.notif_channel_focus_desc)
             val importance = NotificationManager.IMPORTANCE_LOW
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
