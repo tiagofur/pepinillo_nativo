@@ -195,6 +195,13 @@ class FocusViewModel @Inject constructor(
                     state.status == TimerStatus.Running && soundscape != null && soundscapeManager.currentSoundscape == null -> {
                         soundscapeManager.play(soundscape, volume)
                     }
+                    // Phase completed and waiting for user to start the next one → fade out.
+                    // WaitingForNext is only reached when auto-start is OFF (FocusEngine transitions
+                    // straight to Running when autoStartBreaks/autoStartNextPomodoro are on), so the
+                    // user expects silence here rather than continuous ambient (#525).
+                    state.status == TimerStatus.WaitingForNext && wasRunningOrPaused -> {
+                        soundscapeManager.fadeOut()
+                    }
                     // Timer stopped/completed → fade out soundscape
                     state.status == TimerStatus.Idle && wasRunningOrPaused -> {
                         soundscapeManager.fadeOut()
