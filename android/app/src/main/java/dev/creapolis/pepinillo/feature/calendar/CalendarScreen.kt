@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -50,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -128,8 +128,8 @@ fun CalendarScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
+                .clip(PepinilloShapeTokens.card)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, PepinilloShapeTokens.card)
                 .padding(16.dp),
         ) {
             Column {
@@ -245,8 +245,8 @@ private fun DayDetailCard(detail: DayDetail) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, PepinilloShapeTokens.card)
             .padding(20.dp),
     ) {
         Text(
@@ -395,7 +395,7 @@ private fun TaskRow(task: TaskSummary) {
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(PepinilloShapeTokens.badge)
                     .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
                     .padding(horizontal = 6.dp, vertical = 2.dp),
             )

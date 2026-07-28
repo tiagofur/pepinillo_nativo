@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -56,6 +55,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import dev.creapolis.pepinillo.util.ManufacturerUtils
 import androidx.compose.ui.res.stringResource
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
 fun AppSetupScreen(
@@ -353,7 +353,7 @@ private fun StatusBadge(
 
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(PepinilloShapeTokens.button)
             .background(bgColor)
             .let { if (!isGranted) it.clickable(onClick = onAction) else it }
             .padding(horizontal = 12.dp, vertical = 6.dp),

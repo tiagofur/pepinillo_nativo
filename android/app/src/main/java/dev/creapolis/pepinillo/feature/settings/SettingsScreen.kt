@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -94,6 +93,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.theme.AppTheme
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
 
@@ -237,7 +237,7 @@ fun SettingsScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(PepinilloShapeTokens.card)
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickable(onClick = onNavigateToPaywall)
                     .padding(20.dp),
@@ -989,7 +989,7 @@ private fun OptionPill(
         style = MaterialTheme.typography.labelLarge,
         color = textColor,
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(bgColor)
             .clickable(onClick = onClick)
             .heightIn(min = 48.dp)
@@ -1018,11 +1018,11 @@ private fun ThemeCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(80.dp)
-            .clip(RoundedCornerShape(12.dp))
+            .clip(PepinilloShapeTokens.button)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 color = borderColor,
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.button,
             )
             .background(backgroundColor)
             .clickable(enabled = !isLocked, onClick = onClick)
@@ -1107,7 +1107,7 @@ private fun ReminderTimeRow(
         Dialog(onDismissRequest = { showPicker = false }) {
             Column(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(PepinilloShapeTokens.card)
                     .background(MaterialTheme.colorScheme.surface)
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -1129,7 +1129,7 @@ private fun ReminderTimeRow(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(PepinilloShapeTokens.button)
                             .clickable { showPicker = false }
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                     )
@@ -1139,7 +1139,7 @@ private fun ReminderTimeRow(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(PepinilloShapeTokens.button)
                             .clickable {
                                 onTimeSelected(timePickerState.hour, timePickerState.minute)
                                 showPicker = false

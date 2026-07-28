@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -56,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import androidx.compose.ui.res.stringResource
 
 @Composable
@@ -167,7 +167,7 @@ fun ProfileScreen(
                             if (!tier.isNullOrEmpty() && tier != "free") {
                                 Surface(
                                     color = MaterialTheme.colorScheme.primary,
-                                    shape = RoundedCornerShape(6.dp),
+                                    shape = MaterialTheme.shapes.extraSmall,
                                 ) {
                                     Text(
                                         text = stringResource(R.string.profile_tier_pro),
@@ -376,11 +376,11 @@ private fun ProfileCard(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
             )
             .padding(horizontal = 20.dp, vertical = 4.dp),
     ) {
@@ -407,11 +407,11 @@ private fun StatMiniCard(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
             )
             .padding(vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -587,7 +587,7 @@ private fun GuestSignInCard(onSignInClick: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onSignInClick,
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.button,
                 contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
             ) {
                 Text(stringResource(R.string.profile_guest_btn_signin), style = MaterialTheme.typography.labelLarge)

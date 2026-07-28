@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
 fun EmailVerificationScreen(
@@ -90,7 +90,7 @@ fun EmailVerificationScreen(
                 }
             }),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.textField,
         )
 
         if (uiState.error != null) {
@@ -110,7 +110,7 @@ fun EmailVerificationScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.isLoading && code.length >= 4,
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.button,
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(

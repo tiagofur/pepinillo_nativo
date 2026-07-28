@@ -92,6 +92,7 @@ import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
 import dev.creapolis.pepinillo.ui.components.TasksListSkeleton
 import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 import kotlinx.coroutines.delay
 
@@ -268,7 +269,7 @@ fun TasksScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .clip(RoundedCornerShape(16.dp))
+                                        .clip(MaterialTheme.shapes.medium)
                                         .background(bgColor)
                                         .padding(horizontal = 20.dp),
                                     contentAlignment = if (isCompleteSwipe) Alignment.CenterStart else Alignment.CenterEnd,
@@ -439,7 +440,7 @@ private fun QuickAddBar(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
                     ),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = MaterialTheme.shapes.medium,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
                         if (title.isNotBlank()) {
@@ -475,7 +476,7 @@ private fun QuickAddBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(MaterialTheme.shapes.medium)
                     .clickable { onExpandedChange(true) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -628,7 +629,7 @@ private fun EmptyTasksState(
         Spacer(modifier = Modifier.height(20.dp))
         androidx.compose.material3.OutlinedButton(
             onClick = onCreateTaskClick,
-            shape = RoundedCornerShape(20.dp),
+            shape = PepinilloShapeTokens.card,
         ) {
             Icon(
                 imageVector = Icons.Rounded.Add,

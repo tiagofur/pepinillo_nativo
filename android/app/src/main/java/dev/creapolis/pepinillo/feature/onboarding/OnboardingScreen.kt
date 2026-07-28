@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.Rocket
@@ -43,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import kotlinx.coroutines.launch
 
 private data class OnboardingPage(
@@ -147,7 +147,7 @@ fun OnboardingScreen(
                 if (!isLastPage) {
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(PepinilloShapeTokens.card)
                             .background(Color.Black.copy(alpha = 0.18f))
                             .padding(horizontal = 4.dp),
                     ) {
@@ -244,7 +244,7 @@ fun OnboardingScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 56.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.button,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = animatedContent,
                     contentColor = animatedBg,

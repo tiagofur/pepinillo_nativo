@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -53,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.auth.components.DataMergeDialog
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
 fun LoginScreen(
@@ -98,7 +98,7 @@ fun LoginScreen(
             contentAlignment = Alignment.Center,
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.button,
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Icon(
@@ -127,7 +127,7 @@ fun LoginScreen(
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
+            shape = PepinilloShapeTokens.card,
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             tonalElevation = 2.dp,
         ) {
@@ -139,7 +139,7 @@ fun LoginScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = PepinilloShapeTokens.textField,
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -161,7 +161,7 @@ fun LoginScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = PepinilloShapeTokens.textField,
                 )
             }
         }
@@ -183,7 +183,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.button,
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
@@ -208,7 +208,7 @@ fun LoginScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.button,
         ) {
             Text(stringResource(R.string.auth_btn_register), style = MaterialTheme.typography.titleMedium)
         }
@@ -225,7 +225,7 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.googleSignInLoading && !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.button,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),

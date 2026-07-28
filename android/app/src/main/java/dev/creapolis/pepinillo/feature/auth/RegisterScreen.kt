@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -53,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.auth.components.DataMergeDialog
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
 fun RegisterScreen(
@@ -112,7 +112,7 @@ fun RegisterScreen(
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.textField,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -124,7 +124,7 @@ fun RegisterScreen(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.textField,
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -146,7 +146,7 @@ fun RegisterScreen(
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.textField,
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -183,7 +183,7 @@ fun RegisterScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.button,
         ) {
             if (uiState.isLoading) {
                 CircularProgressIndicator(
@@ -207,7 +207,7 @@ fun RegisterScreen(
                 .fillMaxWidth()
                 .height(52.dp),
             enabled = !uiState.googleSignInLoading && !uiState.isLoading,
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.button,
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),

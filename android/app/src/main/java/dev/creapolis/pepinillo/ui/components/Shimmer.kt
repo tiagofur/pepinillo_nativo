@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 
 @Composable
@@ -64,7 +65,7 @@ fun ShimmerBox(
     modifier: Modifier = Modifier,
     width: Dp? = null,
     height: Dp = 16.dp,
-    shape: RoundedCornerShape = RoundedCornerShape(8.dp),
+    shape: Shape = PepinilloShapeTokens.badge,
 ) {
     val brush = shimmerBrush()
     Box(
@@ -102,7 +103,7 @@ fun TaskSkeletonItem(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxWidth(0.6f)
                     .height(16.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(PepinilloShapeTokens.badge)
                     .background(brush),
             )
             Spacer(modifier = Modifier.height(6.dp))
@@ -111,7 +112,7 @@ fun TaskSkeletonItem(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .fillMaxWidth(0.4f)
                     .height(12.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(brush),
             )
         }
@@ -147,7 +148,7 @@ fun DashboardSkeleton(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .weight(1f)
                         .height(96.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(PepinilloShapeTokens.card)
                         .background(brush),
                 )
             }
@@ -160,7 +161,7 @@ fun DashboardSkeleton(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(120.dp)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(MaterialTheme.shapes.large)
                 .background(brush),
         )
 
@@ -176,7 +177,7 @@ fun DashboardSkeleton(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .weight(1f)
                         .height(80.dp)
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(PepinilloShapeTokens.card)
                         .background(brush),
                 )
             }

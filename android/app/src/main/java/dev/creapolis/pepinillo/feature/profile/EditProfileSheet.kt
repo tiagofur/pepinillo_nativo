@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +88,7 @@ fun EditProfileSheet(
                 Box(
                     modifier = Modifier
                         .padding(top = 8.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(PepinilloShapeTokens.badge)
                         .clickable { photoPickerLauncher.launch("image/*") }
                         .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
                         .padding(horizontal = 12.dp, vertical = 6.dp),
@@ -109,7 +109,7 @@ fun EditProfileSheet(
                 label = { Text(stringResource(R.string.profile_label_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.textField,
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -119,7 +119,7 @@ fun EditProfileSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.button,
                 enabled = name.isNotBlank() && !uiState.isUploading,
             ) {
                 if (uiState.isUploading) {

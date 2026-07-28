@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.HelpOutline
@@ -47,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
 fun MoreScreen(
@@ -88,7 +88,7 @@ fun MoreScreen(
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
+            shape = PepinilloShapeTokens.card,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
@@ -125,7 +125,7 @@ fun MoreScreen(
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
+            shape = PepinilloShapeTokens.card,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
@@ -160,7 +160,7 @@ fun MoreScreen(
 
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
+            shape = PepinilloShapeTokens.card,
             color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         ) {
             Column(modifier = Modifier.padding(8.dp)) {
@@ -195,7 +195,7 @@ fun MoreScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onNavigateToPaywall() },
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Row(
@@ -267,7 +267,7 @@ private fun ActionCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(PepinilloShapeTokens.button)
             .clickable(onClick = onClick)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -275,7 +275,7 @@ private fun ActionCard(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(PepinilloShapeTokens.badge)
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
             contentAlignment = Alignment.Center,
         ) {
