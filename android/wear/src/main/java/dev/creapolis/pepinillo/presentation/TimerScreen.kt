@@ -711,6 +711,7 @@ private fun formatMinutes(totalMinutes: Int): String {
 
 @Composable
 private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
+    val context = LocalContext.current
     val voiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
@@ -734,7 +735,7 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
         onClick = {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a focus mode")
+                putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.voice_prompt_mode))
             }
             voiceLauncher.launch(intent)
         },

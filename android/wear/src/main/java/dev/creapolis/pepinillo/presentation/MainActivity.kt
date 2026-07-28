@@ -108,7 +108,9 @@ private fun WearApp(viewModel: WearViewModel, isAmbient: Boolean = false) {
     val lastSyncAtMillis by viewModel.lastSyncAtMillis.collectAsStateWithLifecycle()
 
     val pagerState = rememberPagerState(initialPage = 1, pageCount = { TOTAL_PAGES })
+    val context = androidx.compose.ui.platform.LocalContext.current
     val syncStatus = WearSyncStatusFormatter.format(
+        context = context,
         lastSyncAtMillis = lastSyncAtMillis,
         isConnected = timerState.isConnected,
     )
