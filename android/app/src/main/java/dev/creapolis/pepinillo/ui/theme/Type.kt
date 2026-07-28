@@ -17,8 +17,25 @@ val provider = GoogleFont.Provider(
 
 val MontserratFont = GoogleFont("Montserrat")
 
+/**
+ * Brand type family — Montserrat across the whole M3 type scale.
+ *
+ * Each weight the app actually uses is registered explicitly so `FontWeight` resolves to the
+ * intended cut instead of falling back to the regular face (#516). Before this fix the family
+ * declared only a single `Font(...)`, so `Light`/`Medium`/`SemiBold`/`Bold` on the display,
+ * title, hero timer numeral and label styles were silently ignored. Weights not used anywhere
+ * in the app (Thin, ExtraLight, ExtraBold, Black) are deliberately omitted to keep the
+ * downloadable-fonts request small.
+ *
+ * System fallback is automatic: if Google Fonts is unavailable (no Play Services, offline at
+ * first launch), Compose substitutes `FontFamily.Default`, so a11y/localization are unaffected.
+ */
 val MontserratFontFamily = FontFamily(
-    Font(googleFont = MontserratFont, fontProvider = provider)
+    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.Light),
+    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.Normal),
+    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.SemiBold),
+    Font(googleFont = MontserratFont, fontProvider = provider, weight = FontWeight.Bold),
 )
 
 val Typography = Typography(
@@ -86,42 +103,42 @@ val Typography = Typography(
         letterSpacing = 0.1.sp,
     ),
     bodyLarge = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = MontserratFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.5.sp,
     ),
     bodyMedium = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = MontserratFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.25.sp,
     ),
     bodySmall = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = MontserratFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.4.sp,
     ),
     labelLarge = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = MontserratFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp,
     ),
     labelMedium = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = MontserratFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.5.sp,
     ),
     labelSmall = TextStyle(
-        fontFamily = FontFamily.Default,
+        fontFamily = MontserratFontFamily,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 16.sp,
