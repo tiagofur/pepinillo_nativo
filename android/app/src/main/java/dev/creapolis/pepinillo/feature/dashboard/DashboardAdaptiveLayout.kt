@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass.Companion.EXPANDED
+import androidx.window.core.layout.WindowWidthSizeClass.Companion.MEDIUM
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.calendar.CalendarScreen
 import kotlinx.coroutines.launch
@@ -36,8 +37,11 @@ fun DashboardAdaptiveLayout(
     onStartFocusClick: () -> Unit,
     onNavigateToAIReport: () -> Unit,
 ) {
+    // Two-pane on MEDIUM (foldables, landscape tablets 600–839dp) and EXPANDED (≥840dp) (#523).
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    val isExpanded = windowSizeClass.windowWidthSizeClass == EXPANDED
+    val isExpanded = windowSizeClass.windowWidthSizeClass.let {
+        it == MEDIUM || it == EXPANDED
+    }
 
     if (isExpanded) {
         val navigator = rememberListDetailPaneScaffoldNavigator<DashboardDetail>()
