@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -39,6 +38,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
 fun ForgotPasswordScreen(
@@ -134,7 +134,7 @@ private fun EnterEmailStep(
         ),
         keyboardActions = KeyboardActions(onDone = { onSendCode() }),
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = PepinilloShapeTokens.textField,
     )
 
     if (uiState.errorMessageRes != null) {
@@ -154,7 +154,7 @@ private fun EnterEmailStep(
             .fillMaxWidth()
             .height(52.dp),
         enabled = !uiState.isLoading,
-        shape = RoundedCornerShape(12.dp),
+        shape = PepinilloShapeTokens.button,
     ) {
         if (uiState.isLoading) {
             CircularProgressIndicator(
@@ -206,7 +206,7 @@ private fun EnterCodeStep(
             imeAction = ImeAction.Next,
         ),
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = PepinilloShapeTokens.textField,
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -230,7 +230,7 @@ private fun EnterCodeStep(
             }
         },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = PepinilloShapeTokens.textField,
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -255,7 +255,7 @@ private fun EnterCodeStep(
             }
         },
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = PepinilloShapeTokens.textField,
     )
 
     if (uiState.errorMessageRes != null) {
@@ -275,7 +275,7 @@ private fun EnterCodeStep(
             .fillMaxWidth()
             .height(52.dp),
         enabled = !uiState.isLoading,
-        shape = RoundedCornerShape(12.dp),
+        shape = PepinilloShapeTokens.button,
     ) {
         if (uiState.isLoading) {
             CircularProgressIndicator(

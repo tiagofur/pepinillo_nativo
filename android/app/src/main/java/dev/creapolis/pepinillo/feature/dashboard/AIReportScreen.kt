@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -50,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.network.ReportInsight
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -125,7 +125,7 @@ fun AIReportScreen(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(PepinilloShapeTokens.card)
                         .background(bgColor)
                         .clickable { viewModel.setPeriod(period) }
                         .padding(vertical = 10.dp),
@@ -214,7 +214,7 @@ private fun ErrorState(error: String, onRetry: () -> Unit) {
             Spacer(modifier = Modifier.height(20.dp))
             OutlinedButton(
                 onClick = onRetry,
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
             ) {
                 Icon(
                     Icons.Rounded.Refresh,
@@ -312,7 +312,7 @@ private fun HighlightCard(text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
             .padding(16.dp),
         verticalAlignment = Alignment.Top,
@@ -337,11 +337,11 @@ private fun InsightCategorySection(category: String, insights: List<ReportInsigh
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.medium)
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
             )
             .padding(16.dp),
     ) {
@@ -377,7 +377,7 @@ private fun RecommendationItem(index: Int, text: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
             .padding(16.dp),
         verticalAlignment = Alignment.Top,

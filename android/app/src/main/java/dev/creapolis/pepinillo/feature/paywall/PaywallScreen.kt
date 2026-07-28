@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AccessTime
@@ -66,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.PepinilloProducts
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
 fun PaywallScreen(
@@ -275,7 +275,7 @@ fun PaywallScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp),
-            shape = RoundedCornerShape(12.dp),
+            shape = PepinilloShapeTokens.button,
             enabled = uiState.selectedProductId != null && !uiState.isPurchasing,
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -401,8 +401,8 @@ private fun TierCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
+            .border(1.dp, accentColor.copy(alpha = 0.3f), PepinilloShapeTokens.card)
             .background(accentColor.copy(alpha = 0.04f))
             .padding(16.dp),
     ) {
@@ -431,7 +431,7 @@ private fun TierCard(
                     fontWeight = FontWeight.Bold,
                     color = badgeFg,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(PepinilloShapeTokens.badge)
                         .background(badgeBg)
                         .padding(horizontal = 8.dp, vertical = 3.dp),
                 )
@@ -468,7 +468,7 @@ private fun TierFeatureRow(
         Box(
             modifier = Modifier
                 .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(PepinilloShapeTokens.badge)
                 .background(accentColor.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center,
         ) {
@@ -504,7 +504,7 @@ private fun TierFeatureRow(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(PepinilloShapeTokens.badge)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(horizontal = 6.dp, vertical = 2.dp),
             )
@@ -532,11 +532,11 @@ private fun ProductCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(PepinilloShapeTokens.button)
             .border(
                 width = if (isSelected) 2.dp else 1.dp,
                 color = borderColor,
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.button,
             )
             .clickable(onClick = onClick)
             .padding(16.dp),
@@ -569,7 +569,7 @@ private fun ProductCard(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(PepinilloShapeTokens.badge)
                                 .background(MaterialTheme.colorScheme.primary)
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
                         )

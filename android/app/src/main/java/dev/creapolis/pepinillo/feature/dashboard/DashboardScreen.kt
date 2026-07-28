@@ -74,6 +74,7 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.components.DashboardSkeleton
 import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
 import dev.creapolis.pepinillo.ui.theme.DomainColors
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -463,7 +464,7 @@ private fun PeriodPicker(
             Row(
                 modifier = Modifier
                     .weight(1f)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(PepinilloShapeTokens.card)
                     .background(bgColor)
                     .clickable { onSelect(period) }
                     .padding(vertical = 10.dp),
@@ -499,7 +500,7 @@ private fun SummaryCard(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -536,7 +537,7 @@ private fun PatternCard(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -592,7 +593,7 @@ private fun StreakHeroCard(
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(streakContainerColor.copy(alpha = 0.7f))
             .padding(horizontal = 20.dp, vertical = 16.dp),
     ) {
@@ -715,12 +716,12 @@ private fun AchievementCard(achievement: Achievement) {
     Column(
         modifier = Modifier
             .width(100.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .border(
                 width = 1.dp,
                 color = if (achievement.isUnlocked) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                 else MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
             )
             .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -773,11 +774,11 @@ private fun DashboardCard(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
             )
             .padding(20.dp),
     ) {
@@ -817,7 +818,7 @@ private fun EmptyDashboardState(
         Spacer(modifier = Modifier.height(20.dp))
         androidx.compose.material3.OutlinedButton(
             onClick = onStartFocusClick,
-            shape = RoundedCornerShape(20.dp),
+            shape = PepinilloShapeTokens.card,
         ) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
@@ -842,12 +843,12 @@ private fun ReflectionCard(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
             )
             .clickable(onClick = onClick)
             // Merge children into a single a11y node announced as a button: title + subtitle.
@@ -862,7 +863,7 @@ private fun ReflectionCard(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(PepinilloShapeTokens.button)
                 .background(tintColor.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center,
         ) {

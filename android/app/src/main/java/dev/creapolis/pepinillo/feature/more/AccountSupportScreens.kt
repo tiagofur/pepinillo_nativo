@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.BuildConfig
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 const val PRIVACY_URL = "https://creapolis.dev/privacy-policy/"
 const val TERMS_URL = "https://creapolis.dev/terms-of-use/"
@@ -125,7 +125,7 @@ fun AboutScreen(
         ) {
             Surface(
                 modifier = Modifier.size(80.dp),
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -211,7 +211,7 @@ fun ExportScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(PepinilloShapeTokens.card)
                     .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -239,7 +239,7 @@ fun ExportScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Button(
                     onClick = onNavigateToPaywall,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = PepinilloShapeTokens.button,
                 ) {
                     Text(stringResource(R.string.paywall_btn_get_plus))
                 }
@@ -278,10 +278,10 @@ private fun ActionCard(
     icon: ImageVector,
     onClick: () -> Unit,
 ) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+        Surface(
+            onClick = onClick,
+            shape = PepinilloShapeTokens.card,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(
@@ -291,7 +291,7 @@ private fun ActionCard(
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(PepinilloShapeTokens.badge)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center,
             ) {

@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -86,6 +85,7 @@ import dev.creapolis.pepinillo.feature.tasks.model.TaskPriority
 import dev.creapolis.pepinillo.ui.haptics.PepinilloHaptics
 import dev.creapolis.pepinillo.ui.theme.DomainColors
 import dev.creapolis.pepinillo.ui.theme.priorityColor
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -183,7 +183,7 @@ fun TaskDetailScreen(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
             ),
-            shape = RoundedCornerShape(20.dp),
+            shape = PepinilloShapeTokens.card,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
         ) {
             Row(
@@ -283,7 +283,7 @@ fun TaskDetailScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
                 ),
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -358,7 +358,7 @@ fun TaskDetailScreen(
                                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                             ),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = PepinilloShapeTokens.textField,
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = {
                                 if (newSubtaskTitle.isNotBlank()) {
@@ -408,7 +408,7 @@ fun TaskDetailScreen(
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
             ),
-            shape = RoundedCornerShape(20.dp),
+            shape = PepinilloShapeTokens.card,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -569,7 +569,7 @@ fun TaskDetailScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
                 ),
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -788,7 +788,7 @@ fun TaskDetailScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
                 ),
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             ) {
                 val currentRecurrence = RecurrenceOption.fromRrule(task.recurrenceRule)
@@ -923,7 +923,7 @@ fun TaskDetailScreen(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
                 ),
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
             ) {
                 OutlinedTextField(
@@ -937,7 +937,7 @@ fun TaskDetailScreen(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent
                     ),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = MaterialTheme.shapes.medium
                 )
             }
         }
@@ -958,7 +958,7 @@ fun TaskDetailScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.28f)
                     ),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = PepinilloShapeTokens.card,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -993,7 +993,7 @@ fun TaskDetailScreen(
             Button(
                 onClick = { onStartFocusTask(task.id) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
                 enabled = !task.isCompleted
             ) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
@@ -1004,7 +1004,7 @@ fun TaskDetailScreen(
             OutlinedButton(
                 onClick = { onNavigateToAnalytics(task.id) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.medium,
             ) {
                 Icon(Icons.Filled.BarChart, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))

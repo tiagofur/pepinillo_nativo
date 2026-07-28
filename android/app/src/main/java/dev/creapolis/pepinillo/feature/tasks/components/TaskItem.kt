@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import dev.creapolis.pepinillo.ui.theme.isAppInDarkTheme
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import java.util.Calendar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +26,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.AccessTime
@@ -166,9 +166,9 @@ fun TaskItem(
             .border(
                 width = 1.dp,
                 color = rowBorderColor,
-                shape = RoundedCornerShape(16.dp)
+                shape = MaterialTheme.shapes.medium
             )
-            .clip(RoundedCornerShape(16.dp))
+            .clip(MaterialTheme.shapes.medium)
             .background(MaterialTheme.colorScheme.surface)
             .background(rowBackground)
             .clickable(onClick = onClick),
@@ -413,7 +413,7 @@ private fun MetadataBadge(
 ) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(PepinilloShapeTokens.pill)
             .background(color.copy(alpha = 0.10f))
             .padding(horizontal = 6.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,

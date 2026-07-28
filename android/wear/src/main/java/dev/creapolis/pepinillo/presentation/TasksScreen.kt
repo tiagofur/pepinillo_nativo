@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -147,7 +146,7 @@ fun TasksScreen(
                         onClick = { },
                         modifier = Modifier.fillMaxWidth(),
                         colors = buttonColors,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = WearShapeTokens.button,
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -739,7 +738,7 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(40.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = WearShapeTokens.card,
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer,
             contentColor = MaterialTheme.colorScheme.primary,
@@ -777,7 +776,7 @@ private fun ModeButton(
             }
         },
         modifier = modifier.height(40.dp),
-        shape = RoundedCornerShape(20.dp),
+        shape = WearShapeTokens.card,
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isLocked) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f) else color.copy(alpha = 0.15f),
             contentColor = if (isLocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f) else color,

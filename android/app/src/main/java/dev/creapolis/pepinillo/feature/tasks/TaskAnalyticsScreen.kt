@@ -50,6 +50,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.repository.TaskAnalytics
 import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -356,7 +357,7 @@ fun TaskAnalyticsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(PepinilloShapeTokens.card)
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -390,7 +391,7 @@ fun TaskAnalyticsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(PepinilloShapeTokens.card)
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -434,7 +435,7 @@ private fun AnalyticsSummaryCard(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -471,7 +472,7 @@ private fun AnalyticsPatternCard(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -514,7 +515,7 @@ private fun AnalyticsCard(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
     ) {
         content()

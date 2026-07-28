@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
@@ -41,6 +40,7 @@ import dev.creapolis.pepinillo.feature.dashboard.components.FocusChart
 import dev.creapolis.pepinillo.feature.dashboard.model.Trend
 import dev.creapolis.pepinillo.feature.dashboard.model.WeeklyReportData
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -272,7 +272,7 @@ private fun TrendCard(
 
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -312,11 +312,11 @@ private fun SheetCard(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(20.dp),
+                shape = PepinilloShapeTokens.card,
             )
             .padding(16.dp),
     ) {
@@ -361,7 +361,7 @@ private fun ReviewHeadline(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(PepinilloShapeTokens.card)
             .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f))
             .padding(16.dp),
     ) {

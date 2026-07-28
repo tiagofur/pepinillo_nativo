@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.creapolis.pepinillo.R
+import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 private data class RatingOption(
     val id: Int,
@@ -100,12 +100,12 @@ fun SessionJournalSheet(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(PepinilloShapeTokens.button)
                             .then(
                                 if (isSelected) {
                                     Modifier
                                         .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-                                        .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                                        .border(2.dp, MaterialTheme.colorScheme.primary, PepinilloShapeTokens.button)
                                 } else {
                                     Modifier
                                 },
@@ -148,7 +148,7 @@ fun SessionJournalSheet(
                 placeholder = { Text(stringResource(R.string.journal_placeholder)) },
                 minLines = 3,
                 maxLines = 6,
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.textField,
             )
             Text(
                 text = "${journalNote.length}/500",
@@ -173,7 +173,7 @@ fun SessionJournalSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = PepinilloShapeTokens.button,
             ) {
                 Text(
                     text = stringResource(R.string.journal_save),
