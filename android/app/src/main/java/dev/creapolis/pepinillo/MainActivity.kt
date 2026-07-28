@@ -27,8 +27,6 @@ import javax.inject.Inject
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -99,6 +97,7 @@ import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.navigation.TopLevelDestination
 import dev.creapolis.pepinillo.ui.components.LocalNavAnimatedVisibilityScope
 import dev.creapolis.pepinillo.ui.components.LocalSharedTransitionScope
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeController
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
@@ -697,8 +696,8 @@ fun PepinilloApp(
 private fun OfflineBanner(isOnline: Boolean) {
     AnimatedVisibility(
         visible = !isOnline,
-        enter = slideInVertically { -it } + fadeIn(),
-        exit = slideOutVertically { -it } + fadeOut(),
+        enter = slideInVertically { -it } + MotionScheme.fadeEnter(NavigationTransitions.DURATION_TOP_LEVEL),
+        exit = slideOutVertically { -it } + MotionScheme.fadeExit(NavigationTransitions.DURATION_TOP_LEVEL),
     ) {
         Row(
             modifier = Modifier

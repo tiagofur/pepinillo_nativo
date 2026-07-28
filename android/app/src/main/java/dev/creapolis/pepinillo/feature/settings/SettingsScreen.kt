@@ -2,7 +2,6 @@ package dev.creapolis.pepinillo.feature.settings
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -93,6 +92,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.feature.focus.FocusMode
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.theme.AppTheme
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.ThemeMode
@@ -971,7 +971,7 @@ private fun OptionPill(
         } else {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         },
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "optionPillBg",
     )
     val textColor by animateColorAsState(
@@ -980,7 +980,7 @@ private fun OptionPill(
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "optionPillText",
     )
 
@@ -1007,10 +1007,12 @@ private fun ThemeCard(
 ) {
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) theme.pomodoroColor else MaterialTheme.colorScheme.outlineVariant,
+        animationSpec = MotionScheme.standardSpring(),
         label = "themeBorder",
     )
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) theme.pomodoroColor.copy(alpha = 0.08f) else Color.Transparent,
+        animationSpec = MotionScheme.standardSpring(),
         label = "themeBg",
     )
 

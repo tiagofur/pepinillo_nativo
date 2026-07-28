@@ -5,10 +5,6 @@ import dev.creapolis.pepinillo.ui.theme.DomainColors
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -88,12 +84,12 @@ import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.FeatureGate
 import dev.creapolis.pepinillo.feature.tasks.components.TaskItem
-import dev.creapolis.pepinillo.navigation.NavigationTransitions
 import dev.creapolis.pepinillo.ui.components.LocalSnackbarController
 import dev.creapolis.pepinillo.ui.components.TasksListSkeleton
 import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -352,18 +348,7 @@ fun TasksScreen(
                 LaunchedEffect(Unit) { contentVisible = true }
                 AnimatedVisibility(
                     visible = contentVisible,
-                    enter = if (reduceMotion) {
-                        fadeIn(androidx.compose.animation.core.tween(0))
-                    } else {
-                        fadeIn(androidx.compose.animation.core.tween(NavigationTransitions.DURATION_MODAL)) +
-                            scaleIn(
-                                initialScale = 0.93f,
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessMedium,
-                                ),
-                            )
-                    },
+                    enter = MotionScheme.expressiveSheetEnter(reduceMotion),
                 ) {
                     TaskDetailScreen(
                         onBack = { selectedTaskId = null },
@@ -554,17 +539,17 @@ private fun FilterPill(
         } else {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         },
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "filterPillBg",
     )
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurfaceVariant,
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "filterPillContent",
     )
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) accentColor.copy(alpha = 0.45f) else Color.Transparent,
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "filterPillBorder",
     )
 

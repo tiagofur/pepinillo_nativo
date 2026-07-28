@@ -1,7 +1,6 @@
 package dev.creapolis.pepinillo.feature.dashboard
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -74,6 +73,7 @@ import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.ui.components.DashboardSkeleton
 import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
 import dev.creapolis.pepinillo.ui.theme.DomainColors
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 
@@ -449,7 +449,7 @@ private fun PeriodPicker(
                     isLocked -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                     else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 },
-                animationSpec = spring(),
+                animationSpec = MotionScheme.standardSpring(),
                 label = "periodBg",
             )
             val textColor by animateColorAsState(
@@ -458,7 +458,7 @@ private fun PeriodPicker(
                     isLocked -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 },
-                animationSpec = spring(),
+                animationSpec = MotionScheme.standardSpring(),
                 label = "periodText",
             )
             Row(

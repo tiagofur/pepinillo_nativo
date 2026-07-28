@@ -2,7 +2,6 @@ package dev.creapolis.pepinillo.feature.paywall
 
 import android.app.Activity
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.billing.PepinilloProducts
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @Composable
@@ -525,7 +525,7 @@ private fun ProductCard(
     val borderColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary
         else MaterialTheme.colorScheme.outlineVariant,
-        animationSpec = spring(),
+        animationSpec = MotionScheme.standardSpring(),
         label = "productBorder",
     )
 
