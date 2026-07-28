@@ -564,4 +564,61 @@ class FocusViewModelTest {
         runCurrent()
         verify(exactly = 2) { FocusTimerService.start(context) }
     }
+
+    // ───────────── Soundscape lifecycle: fade policy on WaitingForNext (#525) ─────────────
+    //
+    // The lifecycle collector calls soundscapeManager.fadeOut() on WaitingForNext when the timer
+    // was previously Running/Paused (wasRunningOrPaused guard). fadeOut() is a safe no-op when
+    // nothing is playing (SoundscapeManager checks mediaPlayer ?: return), so these tests verify
+    // the branch logic without needing a real soundscape to be playing.
+    //
+    // We use setStatusForTesting(Running) instead of engine.start() to avoid launching the real
+    // timer loop (which spins on the UnconfinedTestDispatcher and never completes).
+
+    @Test
+    fun `soundscape fades out when timer reaches WaitingForNext after running`() = runTest {
+        // Running → sets wasRunningOrPaused = true on the collector's next emission.
+        engine.setStatusForTesting(TimerStatus.Running)
+        runCurrent()
+
+        // Transition to WaitingForNext (phase complete, auto-start off) → must fade out (#525).
+        engine.setStatusForTesting(TimerStatus.WaitingForNext)
+        runCurrent()
+
+        verify(exactly = 1) { soundscapeManager.fadeOut() }
+    }
+
+    @Test
+    fun `soundscape continues playing during pause`() = runTest {
+        engine.setStatusForTesting(TimerStatus.Running)
+        runCurrent()
+
+        // Paused → soundscape must keep playing (no fadeOut, no stop).
+        engine.setStatusForTesting(TimerStatus.Paused)
+        runCurrent()
+
+        verify(exactly = 0) { soundscapeManager.fadeOut() }
+        verify(exactly = 0) { soundscapeManager.stop() }
+    }
+
+    @Test
+    fun `soundscape fades out when timer transitions to Idle`() = runTest {
+        engine.setStatusForTesting(TimerStatus.Running)
+        runCurrent()
+
+        engine.setStatusForTesting(TimerStatus.Idle)
+        runCurrent()
+
+        verify(exactly = 1) { soundscapeManager.fadeOut() }
+    }
+
+    @Test
+    fun `soundscape does not fade when transitioning to WaitingForNext without prior activity`() = runTest {
+        // Cold start directly into WaitingForNext (e.g. restored state) with no Running history
+        // → wasRunningOrPaused is false, so no fadeOut should fire.
+        engine.setStatusForTesting(TimerStatus.WaitingForNext)
+        runCurrent()
+
+        verify(exactly = 0) { soundscapeManager.fadeOut() }
+    }
 }

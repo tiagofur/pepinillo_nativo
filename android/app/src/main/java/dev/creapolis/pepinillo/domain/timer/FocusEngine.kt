@@ -667,6 +667,18 @@ class FocusEngine @Inject constructor(
         mode == FocusMode.Blocks -> prefs.timeBlockMinutes * 60 * 1000L
         else -> 0L
     }
+
+    /**
+     * Test-only hook: forces the engine status without driving the full timer loop, so lifecycle
+     * collectors (e.g. the soundscape fade policy in FocusViewModel, #525) can be exercised against
+     * `WaitingForNext` / `Idle` without waiting for a 25-minute Pomodoro to elapse. Preserves the
+     * current mode/phase/metrics so downstream `copy` logic stays consistent.
+     */
+    @androidx.annotation.VisibleForTesting
+    fun setStatusForTesting(status: TimerStatus) {
+        timerJob?.cancel()
+        _state.update { it.copy(status = status) }
+    }
 }
 
 /**
