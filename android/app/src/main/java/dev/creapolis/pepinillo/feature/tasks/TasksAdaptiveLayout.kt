@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass.Companion.EXPANDED
+import androidx.window.core.layout.WindowWidthSizeClass.Companion.MEDIUM
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailScreen
 import dev.creapolis.pepinillo.feature.tasks.detail.TaskDetailViewModel
@@ -37,8 +38,14 @@ fun TasksAdaptiveLayout(
     onNavigateToPaywall: () -> Unit,
     onStartFocusTask: () -> Unit,
 ) {
+    // Two-pane on MEDIUM (foldables, landscape tablets 600–839dp) and EXPANDED (≥840dp).
+    // Previously only EXPANDED was gated, leaving MEDIUM single-pane (#523). The
+    // ListDetailPaneScaffold directive adapts its split policy automatically: at MEDIUM it
+    // shows the list full-width with the detail as an animated overlay, at EXPANDED it splits.
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
-    val isExpanded = windowSizeClass.windowWidthSizeClass == EXPANDED
+    val isExpanded = windowSizeClass.windowWidthSizeClass.let {
+        it == MEDIUM || it == EXPANDED
+    }
 
     if (isExpanded) {
         val navigator = rememberListDetailPaneScaffoldNavigator<String>()
