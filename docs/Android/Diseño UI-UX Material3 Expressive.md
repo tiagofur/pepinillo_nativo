@@ -39,8 +39,8 @@ updated: 2026-05-28
 | `BackHandler` en app | Ninguno — Predictive Back funciona con ajustes mínimos |
 | `CircularTimerRing` | Canvas custom en `feature/focus/components/CircularTimerRing.kt` |
 | `TaskDetail` | `ModalBottomSheet` dentro de `TasksScreen.kt` — sin navegación separada |
-| Tipografía | `FontFamily.Default` en `Type.kt` — sin Roboto Flex todavía |
-| Shapes | `PepinilloShapes` en `Shape.kt` — bien centralizado, sin deuda |
+| Tipografía | Montserrat (downloadable Google Fonts) en toda la escala M3 — `Type.kt` con 5 weights (Light→Bold); Wear mirror en `WearType.kt` (#516) |
+| Shapes | `PepinilloShapes` (M3 slots) + `PepinilloShapeTokens` (roles semánticos card/button/textField/badge/pill) en `Shape.kt`; wear mirror en `WearShape.kt` (#511) |
 | Temas custom | `AppTheme.kt`: MaterialYou, Classic, Forest, Ocean, Sunset |
 | Colores base | `Color.kt`: palette M3 generado desde seed `#4CAF50` |
 

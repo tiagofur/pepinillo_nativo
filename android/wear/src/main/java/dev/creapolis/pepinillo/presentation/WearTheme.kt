@@ -83,6 +83,7 @@ object WearModeColors {
 fun WearTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = PepinilloWearColorScheme,
+        typography = WearTypography,
         content = content,
     )
 }

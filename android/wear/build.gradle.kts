@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.androidx.wear.compose.foundation)
     implementation(libs.androidx.wear.compose.material3)
     implementation(libs.androidx.wear.compose.navigation)
+    implementation(libs.googlefonts)
 
     implementation(libs.play.services.wearable)
     implementation(libs.kotlinx.coroutines.play.services)
