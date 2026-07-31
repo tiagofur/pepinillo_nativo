@@ -49,18 +49,33 @@ struct MacAppView: View {
     }
 
     private var mainAppContent: some View {
-        NavigationSplitView {
-            List(selection: selectedTabBinding) {
-                ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
-                    Label(tab.title, systemImage: tab.systemImage)
-                        .tag(tab)
+        GeometryReader { geo in
+            if geo.size.width < 768 {
+                VStack(spacing: 0) {
+                    CompactTopTabBar(
+                        selectedTab: store.selectedTab,
+                        onSelectTab: { tab in store.send(.tabSelected(tab)) }
+                    )
+                    selectedContent
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                .background(Color.pepinilloSystemBackground)
+            } else {
+                NavigationSplitView {
+                    List(selection: selectedTabBinding) {
+                        ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
+                            Label(tab.title, systemImage: tab.systemImage)
+                                .tag(tab)
+                        }
+                    }
+                    .navigationTitle("Pepinillo")
+                    .frame(minWidth: 180)
+                } detail: {
+                    selectedContent
+                        .frame(minWidth: 720, minHeight: 560)
+                }
+                .tint(activeTheme.color(for: .pomodoro))
             }
-            .navigationTitle("Pepinillo")
-            .frame(minWidth: 180)
-        } detail: {
-            selectedContent
-                .frame(minWidth: 720, minHeight: 560)
         }
     }
 

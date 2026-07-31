@@ -16,6 +16,8 @@ import ComposableArchitecture
 struct AppView: View {
     @Bindable var store: StoreOf<AppFeature>
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
     private var activeTheme: AppTheme {
         AppTheme.named(store.settings.themeName)
     }
@@ -194,6 +196,26 @@ struct AppView: View {
 
     @available(iOS 18.0, *)
     private var adaptableTabView: some View {
+        GeometryReader { geo in
+            let isNarrowOrPortrait = geo.size.width < 768 || geo.size.width <= geo.size.height
+            if isNarrowOrPortrait && sizeClass == .regular {
+                VStack(spacing: 0) {
+                    CompactTopTabBar(
+                        selectedTab: store.selectedTab,
+                        onSelectTab: { tab in store.send(.tabSelected(tab)) }
+                    )
+                    tabContent(for: store.selectedTab)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .background(Color.pepinilloSystemBackground)
+            } else {
+                standardTabView
+            }
+        }
+    }
+
+    @available(iOS 18.0, *)
+    private var standardTabView: some View {
         TabView(selection: Binding(
             get: { store.selectedTab },
             set: { store.send(.tabSelected($0)) }
@@ -203,16 +225,7 @@ struct AppView: View {
                 systemImage: AppFeature.Tab.focus.systemImage,
                 value: AppFeature.Tab.focus
             ) {
-                NavigationStack {
-                    FocusView(
-                        store: store.scope(state: \.focus, action: \.focus),
-                        streakDays: store.analytics.currentStreakDays,
-                        sessionsToday: store.analytics.sessionsCompleted,
-                        totalFocusMinutesToday: store.analytics.totalFocusMinutes
-                    )
-                    .withAmbientBackground()
-                }
-                .tabContentAccent()
+                tabContent(for: .focus)
             }
 
             Tab(
@@ -220,9 +233,7 @@ struct AppView: View {
                 systemImage: AppFeature.Tab.plan.systemImage,
                 value: AppFeature.Tab.plan
             ) {
-                PlanSplitView(store: store.scope(state: \.tasks, action: \.tasks))
-                    .systemContentBackground(grouped: true)
-                    .tabContentAccent()
+                tabContent(for: .plan)
             }
 
             Tab(
@@ -230,11 +241,7 @@ struct AppView: View {
                 systemImage: AppFeature.Tab.dashboard.systemImage,
                 value: AppFeature.Tab.dashboard
             ) {
-                NavigationStack {
-                    DashboardView(store: store.scope(state: \.analytics, action: \.analytics))
-                }
-                .systemContentBackground(grouped: true)
-                .tabContentAccent()
+                tabContent(for: .dashboard)
             }
 
             Tab(
@@ -242,19 +249,12 @@ struct AppView: View {
                 systemImage: AppFeature.Tab.account.systemImage,
                 value: AppFeature.Tab.account
             ) {
-                AccountView(store: store)
-                    .systemContentBackground(grouped: true)
-                    .tabContentAccent()
+                tabContent(for: .account)
             }
         }
         .tabViewStyle(.sidebarAdaptable)
         .conditionalTabBarMinimize()
-        // Monochromatic tab bar — the selected tab icon uses .primary (black in
-        // light mode, white in dark) instead of AccentColor. Color lives in the
-        // content (timer ring, charts, chips) and in primary CTAs, not in the
-        // navigation chrome. See HIG "Tab bars": prefer monochromatic appearance
-        // when the content layer is already colorful.
-        .tint(.primary)
+        .tint(sizeClass == .regular ? activeTheme.color(for: .pomodoro) : .primary)
         .animation(.snappy(duration: 0.25), value: store.selectedTab)
         .focusedValue(\.appStore, store)
     }
@@ -353,5 +353,51 @@ private struct OfflineBanner: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(String(localized: "Offline. Changes will sync when you reconnect."))
+    }
+}
+
+// MARK: - Compact Top Floating Pill Tab Bar (iPad portrait / narrow macOS)
+
+struct CompactTopTabBar: View {
+    let selectedTab: AppFeature.Tab
+    let onSelectTab: (AppFeature.Tab) -> Void
+    @Environment(\.appTheme) private var theme
+    @Namespace private var topTabNS
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(AppFeature.Tab.allCases, id: \.self) { tab in
+                let isSelected = selectedTab == tab
+                let accentColor = theme.color(for: .pomodoro)
+
+                Button {
+                    onSelectTab(tab)
+                    HapticManager.selection()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: tab.systemImage)
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(tab.title)
+                            .font(.subheadline.weight(.medium))
+                    }
+                    .foregroundStyle(isSelected ? .white : .primary.opacity(0.72))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background {
+                        if isSelected {
+                            Capsule()
+                                .fill(accentColor)
+                                .matchedGeometryEffect(id: "compactTabPill", in: topTabNS)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .pepinilloGlass(cornerRadius: 24)
+        .padding(.top, 8)
+        .padding(.bottom, 6)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 }
