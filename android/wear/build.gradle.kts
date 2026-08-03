@@ -15,6 +15,11 @@ if (keystorePropertiesFile.exists()) {
 val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
     .all { key -> keystoreProperties[key]?.toString()?.isNotBlank() == true }
 
+configurations.all {
+    exclude(group = "com.google.android.gms", module = "play-services-ads-identifier")
+    exclude(group = "com.google.android.gms", module = "play-services-ads")
+}
+
 extensions.configure<ApplicationExtension> {
     namespace = "dev.creapolis.pepinillo"
     compileSdk = 37
@@ -22,9 +27,9 @@ extensions.configure<ApplicationExtension> {
     defaultConfig {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 26
-        targetSdk = 37
-        versionCode = 10021
-        versionName = "3.0.0"
+        targetSdk = 35
+        versionCode = 10027
+        versionName = "3.0.6"
     }
 
     if (hasReleaseSigning) {
@@ -70,6 +75,8 @@ kotlin {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
@@ -95,6 +102,7 @@ dependencies {
     implementation(libs.androidx.protolayout.expression)
 
     testImplementation(libs.junit)
+    testImplementation(libs.mockk)
     // org.json is bundled in the Android runtime; provide a real impl for JVM unit tests
     // so WearDataStore.parseTasksJson (org.json.JSONArray) can be exercised in tests.
     testImplementation(libs.org.json)

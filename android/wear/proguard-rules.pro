@@ -25,3 +25,6 @@
 # ── ProtoLayout ──
 -keep class androidx.wear.protolayout.** { *; }
 -dontwarn androidx.wear.protolayout.**
+
+# ── Disable Ad ID (Firebase/Google Play Services) ──
+-dontwarn com.google.android.gms.ads.identifier.**
