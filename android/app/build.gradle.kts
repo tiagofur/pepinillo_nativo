@@ -47,6 +47,11 @@ if (keystorePropertiesFile.exists()) {
 val hasReleaseSigning = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
     .all { key -> keystoreProperties[key]?.toString()?.isNotBlank() == true }
 
+configurations.all {
+    exclude(group = "com.google.android.gms", module = "play-services-ads-identifier")
+    exclude(group = "com.google.android.gms", module = "play-services-ads")
+}
+
 extensions.configure<ApplicationExtension> {
     namespace = "dev.creapolis.pepinillo"
     compileSdk = 37
@@ -54,9 +59,9 @@ extensions.configure<ApplicationExtension> {
     defaultConfig {
         applicationId = "dev.creapolis.pepinillo"
         minSdk = 29
-        targetSdk = 37
-        versionCode = 20
-        versionName = "3.0.0"
+        targetSdk = 35
+        versionCode = 27
+        versionName = "3.0.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

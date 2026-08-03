@@ -71,7 +71,14 @@ venv/
 # === Claude Code ===
 .claude/
 android/key.properties
-.gitignore
-.gitignore
 android/pepinillo.jks
 backend/api.exe
+
+# === Scratch & Temporary Build Artifacts ===
+scratch/
+.artifacts/
+android/.artifacts/
+.zcode/
+.kilo/
+.atl/
+

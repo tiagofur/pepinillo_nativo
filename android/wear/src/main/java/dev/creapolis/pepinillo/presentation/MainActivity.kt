@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.foundation.pager.HorizontalPager
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var ambientObserver: AmbientLifecycleObserver
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         ambientObserver = AmbientLifecycleObserver(this, ambientCallback)
         lifecycle.addObserver(ambientObserver)
