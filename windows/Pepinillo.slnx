@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Pepinillo.Core.Tests/Pepinillo.Core.Tests.csproj" />
+  <Project Path="Pepinillo.Core/Pepinillo.Core.csproj" />
+  <Project Path="Pepinillo.WinUI/Pepinillo.WinUI.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>

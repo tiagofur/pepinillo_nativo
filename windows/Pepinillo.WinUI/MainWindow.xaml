@@ -1,0 +1,25 @@
+<Window
+    x:Class="Pepinillo.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Pepinillo - Deep Work OS">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <NavigationView x:Name="NavView" 
+                        PaneDisplayMode="Left"
+                        IsSettingsVisible="True"
+                        Header="Enfoque">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="Focus Engine" Icon="Timer" Tag="FocusPage" />
+                <NavigationViewItem Content="Plan &amp; Tareas" Icon="List" Tag="TasksPage" />
+                <NavigationViewItem Content="Estadísticas" Icon="Chart" Tag="AnalyticsPage" />
+                <NavigationViewItem Content="Sonidos de Fondo" Icon="Audio" Tag="SoundscapesPage" />
+            </NavigationView.MenuItems>
+
+            <Frame x:Name="ContentFrame" Margin="24" />
+        </NavigationView>
+    </Grid>
+</Window>

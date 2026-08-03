@@ -1,0 +1,55 @@
+<Page
+    x:Class="Pepinillo.WinUI.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Margin="32">
+        <StackPanel Spacing="24" MaxWidth="700" HorizontalAlignment="Left">
+            <TextBlock Text="Configuración y Personalización" Style="{ThemeResource TitleTextBlockStyle}" FontWeight="Bold"/>
+
+            <!-- Timer Settings Card -->
+            <Card Header="Duración de Temporizadores">
+                <StackPanel Spacing="16" Margin="16">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Duración Pomodoro (minutos)" VerticalAlignment="Center"/>
+                        <NumberBox Grid.Column="1" Value="{x:Bind ViewModel.Settings.PomodoroFocusMinutes, Mode=TwoWay}" SmallChange="5" Minimum="5" Maximum="120" Width="120"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Descanso Corto (minutos)" VerticalAlignment="Center"/>
+                        <NumberBox Grid.Column="1" Value="{x:Bind ViewModel.Settings.ShortBreakMinutes, Mode=TwoWay}" SmallChange="1" Minimum="1" Maximum="30" Width="120"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Descanso Largo (minutos)" VerticalAlignment="Center"/>
+                        <NumberBox Grid.Column="1" Value="{x:Bind ViewModel.Settings.LongBreakMinutes, Mode=TwoWay}" SmallChange="5" Minimum="5" Maximum="60" Width="120"/>
+                    </Grid>
+                </StackPanel>
+            </Card>
+
+            <!-- Visual Themes Card -->
+            <Card Header="Tema Visual y Apariencia">
+                <StackPanel Spacing="16" Margin="16">
+                    <RadioButtons Header="Selecciona un tema:" SelectedIndex="0">
+                        <RadioButton Content="Sistema (Windows Auto)" Tag="System"/>
+                        <RadioButton Content="Oscuro Elegante (Dark)" Tag="Dark"/>
+                        <RadioButton Content="Bosque (Forest)" Tag="Forest"/>
+                        <RadioButton Content="Océano (Ocean)" Tag="Ocean"/>
+                        <RadioButton Content="OLED Negro Absoluto" Tag="OLEDBlack"/>
+                    </RadioButtons>
+                    <ToggleSwitch Header="Efecto de profundidad Mica / Acrílico de Windows" IsOn="{x:Bind ViewModel.Settings.UseMicaBackdrop, Mode=TwoWay}"/>
+                </StackPanel>
+            </Card>
+
+            <!-- Behavior & Windows Integration -->
+            <Card Header="Integración con Windows">
+                <StackPanel Spacing="16" Margin="16">
+                    <ToggleSwitch Header="Sincronizar con Modo Enfoque / No Molestar de Windows 11" IsOn="{x:Bind ViewModel.Settings.EnableWindowsDoNotDisturbSync, Mode=TwoWay}"/>
+                    <ToggleSwitch Header="Minimizar al System Tray al cerrar la ventana" IsOn="{x:Bind ViewModel.Settings.MinimizeToSystemTrayOnClose, Mode=TwoWay}"/>
+                    <ToggleSwitch Header="Notificaciones Toast interactivas" IsOn="{x:Bind ViewModel.Settings.EnableToastNotifications, Mode=TwoWay}"/>
+                </StackPanel>
+            </Card>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

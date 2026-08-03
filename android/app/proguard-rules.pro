@@ -97,3 +97,6 @@
 
 # ── RevenueCat ──
 -keep class com.revenuecat.purchases.** { *; }
+
+# ── Disable Ad ID (Firebase/Google Play Services) ──
+-dontwarn com.google.android.gms.ads.identifier.**
