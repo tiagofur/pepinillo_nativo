@@ -8,29 +8,42 @@
 
     <ScrollViewer Margin="32">
         <StackPanel Spacing="24" MaxWidth="700" HorizontalAlignment="Left">
-            <TextBlock Text="Configuración y Personalización" Style="{ThemeResource TitleTextBlockStyle}" FontWeight="Bold"/>
+            <TextBlock Text="Configuración y Personalización"
+                       Style="{ThemeResource TitleTextBlockStyle}" FontWeight="Bold"/>
 
-            <!-- Timer Settings Card -->
-            <Card Header="Duración de Temporizadores">
-                <StackPanel Spacing="16" Margin="16">
+            <!-- Timer Settings -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Duración de Temporizadores"
+                               Style="{ThemeResource SubtitleTextBlockStyle}" FontWeight="SemiBold"/>
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="Duración Pomodoro (minutos)" VerticalAlignment="Center"/>
-                        <NumberBox Grid.Column="1" Value="{x:Bind ViewModel.Settings.PomodoroFocusMinutes, Mode=TwoWay}" SmallChange="5" Minimum="5" Maximum="120" Width="120"/>
+                        <NumberBox Grid.Column="1"
+                                   Value="{x:Bind ViewModel.Settings.PomodoroFocusMinutes, Mode=TwoWay}"
+                                   SmallChange="5" Minimum="5" Maximum="120" Width="120"/>
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="Descanso Corto (minutos)" VerticalAlignment="Center"/>
-                        <NumberBox Grid.Column="1" Value="{x:Bind ViewModel.Settings.ShortBreakMinutes, Mode=TwoWay}" SmallChange="1" Minimum="1" Maximum="30" Width="120"/>
+                        <NumberBox Grid.Column="1"
+                                   Value="{x:Bind ViewModel.Settings.ShortBreakMinutes, Mode=TwoWay}"
+                                   SmallChange="1" Minimum="1" Maximum="30" Width="120"/>
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="Descanso Largo (minutos)" VerticalAlignment="Center"/>
-                        <NumberBox Grid.Column="1" Value="{x:Bind ViewModel.Settings.LongBreakMinutes, Mode=TwoWay}" SmallChange="5" Minimum="5" Maximum="60" Width="120"/>
+                        <NumberBox Grid.Column="1"
+                                   Value="{x:Bind ViewModel.Settings.LongBreakMinutes, Mode=TwoWay}"
+                                   SmallChange="5" Minimum="5" Maximum="60" Width="120"/>
                     </Grid>
                 </StackPanel>
-            </Card>
+            </Border>
 
-            <!-- Visual Themes Card -->
-            <Card Header="Tema Visual y Apariencia">
-                <StackPanel Spacing="16" Margin="16">
+            <!-- Visual Themes -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Tema Visual y Apariencia"
+                               Style="{ThemeResource SubtitleTextBlockStyle}" FontWeight="SemiBold"/>
                     <RadioButtons Header="Selecciona un tema:" SelectedIndex="0">
                         <RadioButton Content="Sistema (Windows Auto)" Tag="System"/>
                         <RadioButton Content="Oscuro Elegante (Dark)" Tag="Dark"/>
@@ -38,18 +51,25 @@
                         <RadioButton Content="Océano (Ocean)" Tag="Ocean"/>
                         <RadioButton Content="OLED Negro Absoluto" Tag="OLEDBlack"/>
                     </RadioButtons>
-                    <ToggleSwitch Header="Efecto de profundidad Mica / Acrílico de Windows" IsOn="{x:Bind ViewModel.Settings.UseMicaBackdrop, Mode=TwoWay}"/>
+                    <ToggleSwitch Header="Efecto de profundidad Mica / Acrílico de Windows"
+                                  IsOn="{x:Bind ViewModel.Settings.UseMicaBackdrop, Mode=TwoWay}"/>
                 </StackPanel>
-            </Card>
+            </Border>
 
-            <!-- Behavior & Windows Integration -->
-            <Card Header="Integración con Windows">
-                <StackPanel Spacing="16" Margin="16">
-                    <ToggleSwitch Header="Sincronizar con Modo Enfoque / No Molestar de Windows 11" IsOn="{x:Bind ViewModel.Settings.EnableWindowsDoNotDisturbSync, Mode=TwoWay}"/>
-                    <ToggleSwitch Header="Minimizar al System Tray al cerrar la ventana" IsOn="{x:Bind ViewModel.Settings.MinimizeToSystemTrayOnClose, Mode=TwoWay}"/>
-                    <ToggleSwitch Header="Notificaciones Toast interactivas" IsOn="{x:Bind ViewModel.Settings.EnableToastNotifications, Mode=TwoWay}"/>
+            <!-- Windows Integration -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Integración con Windows"
+                               Style="{ThemeResource SubtitleTextBlockStyle}" FontWeight="SemiBold"/>
+                    <ToggleSwitch Header="Sincronizar con Modo Enfoque / No Molestar de Windows 11"
+                                  IsOn="{x:Bind ViewModel.Settings.EnableWindowsDoNotDisturbSync, Mode=TwoWay}"/>
+                    <ToggleSwitch Header="Minimizar al System Tray al cerrar la ventana"
+                                  IsOn="{x:Bind ViewModel.Settings.MinimizeToSystemTrayOnClose, Mode=TwoWay}"/>
+                    <ToggleSwitch Header="Notificaciones Toast interactivas"
+                                  IsOn="{x:Bind ViewModel.Settings.EnableToastNotifications, Mode=TwoWay}"/>
                 </StackPanel>
-            </Card>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </Page>
