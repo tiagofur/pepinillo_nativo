@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-    Declares the wear-side capability the phone listens for. When a nearby watch node
-    advertises `pepinillo_wear`, PhoneWearListenerService on the phone discovers it.
--->
-<wearable-app xmlns:android="http://schemas.android.com/apk/res/android">
-    <capability android:name="pepinillo_wear" />
-</wearable-app>
