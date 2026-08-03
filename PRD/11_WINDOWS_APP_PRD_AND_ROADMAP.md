@@ -1,11 +1,13 @@
 # Pepinillo — Technical Architecture & PRD: Native Windows Application
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-08-03  
-**Status:** Proposed  
+**Status:** Planning complete — ready for P0 implementation  
 **Author:** Tiago David + AI Pairing Assistant  
 **Target Platform:** Windows 10 (19041+) & Windows 11 (x64 / ARM64) via Microsoft Store  
 **Framework:** C# / WinUI 3 (Windows App SDK 1.6+)  
+**Execution plan:** [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md) (P0–P3 work units, parity matrix, Store checklist)  
+**Live status:** [09_CURRENT_STATUS.md](09_CURRENT_STATUS.md) (Windows platform row)
 
 ---
 
@@ -164,3 +166,16 @@ Pepinillo Windows enforces the exact same 3-tier commercial model defined in [04
 - Create MSIX packaging scripts & store certification compliance checks.
 - Set up Microsoft Partner Center app submission listing, screenshots, and metadata.
 - Launch Beta via Windows App Installer / Test Track.
+
+---
+
+## 7. Implementation Status & Next Step (2026-08-03)
+
+| Item | State |
+| ---- | ----- |
+| Solution scaffold (`windows/`) | Present — Core + WinUI + tests + CI build |
+| Phase 1 completion | ~15–25% (engine/tasks skeleton; no DI, no Focus page, incomplete wiring) |
+| Microsoft Store readiness | Not ready (placeholder identity, missing Assets, no pack/sign) |
+| Detailed execution | See **[12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)** |
+
+**Next engineering step:** execute **P0** (DI → navigation → SQLite lifecycle → FocusPage + engine cycles → settings persist → tasks UX → theme → smoke).
