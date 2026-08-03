@@ -599,11 +599,12 @@ class StartAction : ActionCallback {
         val state = getAppWidgetState<Preferences>(context, PreferencesGlanceStateDefinition, glanceId)
         val modeName = state[FocusTimerWidgetKeys.SELECTED_MODE] ?: FocusMode.Pomodoro.name
 
-        val serviceIntent = Intent(context, FocusTimerService::class.java).apply {
-            action = FocusTimerService.ACTION_START_MODE
-            putExtra(FocusTimerService.EXTRA_MODE, modeName)
-        }
-        androidx.core.content.ContextCompat.startForegroundService(context, serviceIntent)
+        context.startService(
+            Intent(context, FocusTimerService::class.java).apply {
+                action = FocusTimerService.ACTION_START_MODE
+                putExtra(FocusTimerService.EXTRA_MODE, modeName)
+            },
+        )
     }
 }
 
@@ -613,8 +614,9 @@ class PauseResumeAction : ActionCallback {
         val isRunning = state[FocusTimerWidgetKeys.STATUS] == TimerStatus.Running.name
         val action = if (isRunning) FocusTimerService.ACTION_PAUSE else FocusTimerService.ACTION_RESUME
 
-        val serviceIntent = Intent(context, FocusTimerService::class.java).apply { this.action = action }
-        androidx.core.content.ContextCompat.startForegroundService(context, serviceIntent)
+        context.startService(
+            Intent(context, FocusTimerService::class.java).apply { this.action = action },
+        )
     }
 }
 
@@ -623,7 +625,11 @@ class StopAction : ActionCallback {
         val stopIntent = Intent(context, FocusTimerService::class.java).apply {
             action = FocusTimerService.ACTION_STOP
         }
-        androidx.core.content.ContextCompat.startForegroundService(context, stopIntent)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(stopIntent)
+        } else {
+            context.startService(stopIntent)
+        }
 
         val currentPrefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId)
         val mode = safeEnumValueOf(currentPrefs[FocusTimerWidgetKeys.MODE], FocusMode.Pomodoro)
@@ -654,16 +660,13 @@ class FocusTimerWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
         CoroutineScope(Dispatchers.IO).launch {
-            val glanceIds = GlanceAppWidgetManager(context).getGlanceIds(FocusTimerWidget::class.java)
-            glanceIds.forEach { glanceId ->
-                updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { prefs ->
-                    prefs.toMutablePreferences().apply {
-                        this[FocusTimerWidgetKeys.MODE] = FocusMode.Pomodoro.name
-                        this[FocusTimerWidgetKeys.DISPLAY] = FocusMode.Pomodoro.defaultDisplayTime
-                        this[FocusTimerWidgetKeys.PHASE] = context.getString(FocusMode.Pomodoro.labelRes)
-                        this[FocusTimerWidgetKeys.STATUS] = TimerStatus.Idle.name
-                        this[FocusTimerWidgetKeys.PROGRESS] = 1f
-                    }
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, GlanceAppWidgetManager(context).getGlanceIds(FocusTimerWidget::class.java).firstOrNull() ?: return@launch) { prefs ->
+                prefs.toMutablePreferences().apply {
+                    this[FocusTimerWidgetKeys.MODE] = FocusMode.Pomodoro.name
+                    this[FocusTimerWidgetKeys.DISPLAY] = FocusMode.Pomodoro.defaultDisplayTime
+                    this[FocusTimerWidgetKeys.PHASE] = context.getString(FocusMode.Pomodoro.labelRes)
+                    this[FocusTimerWidgetKeys.STATUS] = TimerStatus.Idle.name
+                    this[FocusTimerWidgetKeys.PROGRESS] = 1f
                 }
             }
             FocusTimerWidget().updateAll(context)

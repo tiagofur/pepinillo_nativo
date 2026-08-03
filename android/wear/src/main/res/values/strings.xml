@@ -78,38 +78,4 @@
     <string name="tile_focus_label">Focus</string>
     <string name="tile_tasks_label">Tasks</string>
     <string name="complication_focus_timer_label">Focus Timer</string>
-
-    <!-- Voice prompt (#508) -->
-    <string name="voice_prompt_mode">Say a focus mode</string>
-
-    <!-- Notification channel (#508) -->
-    <string name="notif_channel_focus_name">Focus Timer</string>
-    <string name="notif_channel_focus_desc">Displays the active focus timer countdown</string>
-
-    <!-- Sync status formatter (#508) -->
-    <string name="sync_waiting">Waiting for first sync</string>
-    <string name="sync_no_connection">No connection · last %1$s</string>
-    <string name="sync_stale">Sync delayed · %1$s</string>
-    <string name="sync_ok">Sync %1$s</string>
-
-    <!-- Diagnostics screen (#508) -->
-    <string name="diag_title">Diagnostics</string>
-    <string name="diag_no_sync">No sync recorded</string>
-    <string name="diag_connection">Connection: %1$s</string>
-    <string name="diag_connection_active">Active</string>
-    <string name="diag_connection_down">Down</string>
-    <string name="diag_peers">Data Layer peers: %1$d</string>
-    <string name="diag_nodes">Nodes: %1$s</string>
-    <string name="diag_timer">Timer: %1$s · %2$s</string>
-    <string name="diag_mode_phase">Mode/Phase: %1$s · %2$s</string>
-    <string name="diag_offline_queue">Offline queue: %1$d</string>
-    <string name="diag_sync_events">Sync events: %1$d</string>
-    <string name="diag_sync_failures">Sync failures: %1$d</string>
-    <string name="diag_flush_attempts">Flush attempts: %1$d</string>
-    <string name="diag_flush_failures">Flush failures: %1$d</string>
-    <string name="diag_last_error">Last error: %1$s</string>
-    <string name="diag_active_tasks">Active tasks: %1$d</string>
-    <string name="diag_stats_today">%1$d ses / %2$d min</string>
-    <string name="diag_streak">Streak: %1$d · Completed: %2$d</string>
-    <string name="diag_checklist">Quick checklist:\n1) Turn off phone BT/WiFi\n2) Run a command on watch\n3) Reconnect\n4) Verify queue=0</string>
 </resources>

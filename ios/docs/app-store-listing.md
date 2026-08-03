@@ -90,11 +90,6 @@ Pepinillo is free with Pomodoro and Stopwatch modes included. Unlock more with t
 • **Everywhere/AI+** — Monthly or annual subscription. Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features.
 • No ads. No tracking. Your data stays on your device.
 
-TERMS & PRIVACY
-
-Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Privacy Policy: https://creapolis.dev/privacy-policy/
-
 Start focusing better today. Your best work is waiting.
 ```
 
@@ -183,11 +178,6 @@ Pepinillo es gratis con los modos Pomodoro y Cronómetro incluidos. Desbloquea m
 • **Pepinillo+** — Compra única. Premium local completo: Tiempo Fluido, Bloque de Tiempo, paisajes sonoros premium, analíticas avanzadas, Informes Semanales con IA, protección de rachas, todos los widgets y compañero Apple Watch completo.
 • **Everywhere/AI+** — Suscripción mensual o anual. Todo lo de Pepinillo+ más sincronización backend multiplataforma y funciones avanzadas de IA en la nube.
 • Sin anuncios. Sin rastreo. Tus datos se quedan en tu dispositivo.
-
-TÉRMINOS Y PRIVACIDAD
-
-Términos de Uso (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
-Política de Privacidad: https://creapolis.dev/privacy-policy/
 
 Empieza a enfocarte mejor hoy. Tu mejor trabajo te está esperando.
 ```

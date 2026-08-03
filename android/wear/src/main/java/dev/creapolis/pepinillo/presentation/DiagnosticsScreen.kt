@@ -12,13 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
-import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.WearDiagnosticsState
 import dev.creapolis.pepinillo.data.WearStatsState
 import dev.creapolis.pepinillo.data.WearTask
@@ -41,14 +39,6 @@ fun DiagnosticsScreen(
 
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
-    val diagTitle = stringResource(R.string.diag_title)
-    val diagNoSync = stringResource(R.string.diag_no_sync)
-    val connectionState = if (timerState.isConnected) {
-        stringResource(R.string.diag_connection_active)
-    } else {
-        stringResource(R.string.diag_connection_down)
-    }
-
     ScalingLazyColumn(
         state = listState,
         modifier = Modifier
@@ -60,46 +50,46 @@ fun DiagnosticsScreen(
             .focusRequester(focusRequester)
             .focusable(),
     ) {
-        item { Text(diagTitle) }
+        item { Text("Diagnostico") }
         item {
             Text(
-                text = syncStatusLabel ?: diagNoSync,
+                text = syncStatusLabel ?: "Sin sync registrada",
                 style = MaterialTheme.typography.labelSmall,
                 color = if (isSyncStale) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
             )
         }
-        item { Text(stringResource(R.string.diag_connection, connectionState)) }
-        item { Text(stringResource(R.string.diag_peers, diagnostics.connectedNodeCount)) }
+        item { Text("Conexion: ${if (timerState.isConnected) "Activa" else "Caida"}") }
+        item { Text("Peers Data Layer: ${diagnostics.connectedNodeCount}") }
         diagnostics.connectedNodeNames.takeIf { it.isNotEmpty() }?.let { names ->
             item {
                 Text(
-                    text = stringResource(R.string.diag_nodes, names.joinToString()),
+                    text = "Nodos: ${names.joinToString()}",
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
         }
-        item { Text(stringResource(R.string.diag_timer, timerState.status, timerState.displayTime)) }
-        item { Text(stringResource(R.string.diag_mode_phase, timerState.mode, timerState.phaseLabel)) }
-        item { Text(stringResource(R.string.diag_offline_queue, pendingCommandCount)) }
-        item { Text(stringResource(R.string.diag_sync_events, diagnostics.syncEvents)) }
-        item { Text(stringResource(R.string.diag_sync_failures, diagnostics.syncFailures)) }
-        item { Text(stringResource(R.string.diag_flush_attempts, diagnostics.flushAttempts)) }
-        item { Text(stringResource(R.string.diag_flush_failures, diagnostics.flushFailures)) }
+        item { Text("Timer: ${timerState.status} · ${timerState.displayTime}") }
+        item { Text("Modo/Fase: ${timerState.mode} · ${timerState.phaseLabel}") }
+        item { Text("Cola offline: $pendingCommandCount") }
+        item { Text("Sync events: ${diagnostics.syncEvents}") }
+        item { Text("Sync failures: ${diagnostics.syncFailures}") }
+        item { Text("Flush attempts: ${diagnostics.flushAttempts}") }
+        item { Text("Flush failures: ${diagnostics.flushFailures}") }
         diagnostics.lastError?.takeIf { it.isNotBlank() }?.let { error ->
             item {
                 Text(
-                    text = stringResource(R.string.diag_last_error, error),
+                    text = "Ultimo error: $error",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                 )
             }
         }
-        item { Text(stringResource(R.string.diag_active_tasks, tasks.size)) }
-        item { Text(stringResource(R.string.diag_stats_today, stats.sessions, stats.totalMinutes)) }
-        item { Text(stringResource(R.string.diag_streak, stats.streak, stats.completedTasks)) }
+        item { Text("Tareas activas: ${tasks.size}") }
+        item { Text("Stats hoy: ${stats.sessions} ses / ${stats.totalMinutes} min") }
+        item { Text("Racha: ${stats.streak} · Completadas: ${stats.completedTasks}") }
         item {
             Text(
-                stringResource(R.string.diag_checklist),
+                "Checklist rapido:\n1) Corta BT/WiFi telefono\n2) Lanza comando en reloj\n3) Re-conecta\n4) Verifica cola=0",
                 style = MaterialTheme.typography.labelSmall,
                 modifier = Modifier.padding(vertical = 4.dp),
             )

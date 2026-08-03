@@ -53,16 +53,6 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.scrollBy
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.rotary.onRotaryScrollEvent
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
-import androidx.wear.compose.foundation.lazy.rememberScalingLazyListState
-import androidx.wear.compose.material3.ListHeader
-import kotlinx.coroutines.launch
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ChildButton
@@ -597,31 +587,17 @@ private fun IdleLayout(
     isPro: Boolean = false,
     onStartMode: (String) -> Unit,
 ) {
-    val listState = rememberScalingLazyListState()
-    val focusRequester = remember { FocusRequester() }
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
-    }
-
-    ScalingLazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .onRotaryScrollEvent { event ->
-                coroutineScope.launch {
-                    listState.scrollBy(event.verticalScrollPixels)
-                }
-                true
-            }
-            .focusRequester(focusRequester)
-            .focusable(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
-        // Today's stats (compact row)
-        if (stats.totalMinutes > 0 || stats.sessions > 0 || stats.streak > 0) {
-            item {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        ) {
+            // Today's stats (compact row)
+            if (stats.totalMinutes > 0 || stats.sessions > 0 || stats.streak > 0) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -648,12 +624,11 @@ private fun IdleLayout(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(4.dp))
             }
-        }
 
-        // Linked task
-        linkedTaskName?.let { name ->
-            item {
+            // Linked task
+            linkedTaskName?.let { name ->
                 Text(
                     text = "🔗 $name",
                     style = MaterialTheme.typography.labelSmall,
@@ -663,28 +638,25 @@ private fun IdleLayout(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 8.dp),
                 )
+                Spacer(modifier = Modifier.height(4.dp))
             }
-        }
 
-        item {
-            ListHeader {
-                Text(
-                    text = stringResource(R.string.start),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
+            Text(
+                text = stringResource(R.string.start),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
 
-        item {
+            Spacer(modifier = Modifier.height(6.dp))
+
             VoiceStartChip(isPro = isPro, onStartMode = onStartMode)
-        }
 
-        item {
+            Spacer(modifier = Modifier.height(6.dp))
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 ModeButton(
                     label = stringResource(R.string.mode_pomodoro),
@@ -700,14 +672,12 @@ private fun IdleLayout(
                     modifier = Modifier.weight(1f),
                 )
             }
-        }
 
-        item {
+            Spacer(modifier = Modifier.height(6.dp))
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 ModeButton(
                     label = stringResource(R.string.mode_blocks),
@@ -738,7 +708,6 @@ private fun formatMinutes(totalMinutes: Int): String {
 
 @Composable
 private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
-    val context = LocalContext.current
     val voiceLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) { result ->
@@ -762,7 +731,7 @@ private fun VoiceStartChip(isPro: Boolean, onStartMode: (String) -> Unit) {
         onClick = {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
-                putExtra(RecognizerIntent.EXTRA_PROMPT, context.getString(R.string.voice_prompt_mode))
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Say a focus mode")
             }
             voiceLauncher.launch(intent)
         },

@@ -159,16 +159,16 @@ struct WatchDashboardView: View {
             // Legend
             HStack(spacing: 6) {
                 if store.pomodoroMinutes > 0 {
-                    ModeLegendItem(systemImage: FocusMode.pomodoro.systemImage, minutes: store.pomodoroMinutes, color: pomodoroAccent)
+                    ModeLegendItem(emoji: "🍅", minutes: store.pomodoroMinutes, color: pomodoroAccent)
                 }
                 if store.flowtimeMinutes > 0 {
-                    ModeLegendItem(systemImage: FocusMode.flowtime.systemImage, minutes: store.flowtimeMinutes, color: flowtimeAccent)
+                    ModeLegendItem(emoji: "🌊", minutes: store.flowtimeMinutes, color: flowtimeAccent)
                 }
                 if store.timeBlockMinutes > 0 {
-                    ModeLegendItem(systemImage: FocusMode.timeBlock.systemImage, minutes: store.timeBlockMinutes, color: timeBlockAccent)
+                    ModeLegendItem(emoji: "📦", minutes: store.timeBlockMinutes, color: timeBlockAccent)
                 }
                 if store.stopwatchMinutes > 0 {
-                    ModeLegendItem(systemImage: FocusMode.stopwatch.systemImage, minutes: store.stopwatchMinutes, color: stopwatchAccent)
+                    ModeLegendItem(emoji: "⏱️", minutes: store.stopwatchMinutes, color: stopwatchAccent)
                 }
             }
             .padding(.horizontal, 4)
@@ -232,20 +232,19 @@ private struct DashboardStatCard: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
-        .pepinilloGlass(cornerRadius: 12, tint: color, tintOpacity: 0.10)
+        .pepinilloGlass(cornerRadius: 10)
     }
 }
 
 private struct ModeLegendItem: View {
-    let systemImage: String
+    let emoji: String
     let minutes: Int
     let color: Color
 
     var body: some View {
         HStack(spacing: 2) {
-            Image(systemName: systemImage)
+            Text(emoji)
                 .font(.system(size: 8))
-                .foregroundStyle(color)
             Text("\(minutes)m")
                 .font(.system(size: 9, weight: .medium))
                 .foregroundStyle(.secondary)

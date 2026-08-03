@@ -76,38 +76,4 @@
     <string name="tile_focus_label">Foco</string>
     <string name="tile_tasks_label">Tarefas</string>
     <string name="complication_focus_timer_label">Temporizador de foco</string>
-
-    <!-- Voice prompt (#508) -->
-    <string name="voice_prompt_mode">Diga um modo de foco</string>
-
-    <!-- Notification channel (#508) -->
-    <string name="notif_channel_focus_name">Temporizador de foco</string>
-    <string name="notif_channel_focus_desc">Exibe a contagem regressiva do temporizador de foco</string>
-
-    <!-- Sync status formatter (#508) -->
-    <string name="sync_waiting">Aguardando primeira sincronização</string>
-    <string name="sync_no_connection">Sem conexão · última %1$s</string>
-    <string name="sync_stale">Sincronização atrasada · %1$s</string>
-    <string name="sync_ok">Sincronização %1$s</string>
-
-    <!-- Diagnostics screen (#508) -->
-    <string name="diag_title">Diagnóstico</string>
-    <string name="diag_no_sync">Sem sincronização registrada</string>
-    <string name="diag_connection">Conexão: %1$s</string>
-    <string name="diag_connection_active">Ativa</string>
-    <string name="diag_connection_down">Interrompida</string>
-    <string name="diag_peers">Peers Data Layer: %1$d</string>
-    <string name="diag_nodes">Nós: %1$s</string>
-    <string name="diag_timer">Timer: %1$s · %2$s</string>
-    <string name="diag_mode_phase">Modo/Fase: %1$s · %2$s</string>
-    <string name="diag_offline_queue">Fila offline: %1$d</string>
-    <string name="diag_sync_events">Eventos de sync: %1$d</string>
-    <string name="diag_sync_failures">Falhas de sync: %1$d</string>
-    <string name="diag_flush_attempts">Tentativas de flush: %1$d</string>
-    <string name="diag_flush_failures">Falhas de flush: %1$d</string>
-    <string name="diag_last_error">Último erro: %1$s</string>
-    <string name="diag_active_tasks">Tarefas ativas: %1$d</string>
-    <string name="diag_stats_today">%1$d ses / %2$d min</string>
-    <string name="diag_streak">Sequência: %1$d · Concluídas: %2$d</string>
-    <string name="diag_checklist">Checklist rápido:\n1) Desligue BT/WiFi do telefone\n2) Execute um comando no relógio\n3) Reconecte\n4) Verifique fila=0</string>
 </resources>

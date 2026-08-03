@@ -8,14 +8,6 @@
 
 import Foundation
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
-
-#if canImport(AppKit)
-import AppKit
-import PDFKit
-#endif
 
 // MARK: - Export Payload
 
@@ -30,32 +22,6 @@ struct ExportPayload: Sendable {
 // MARK: - ExportService
 
 enum ExportService {
-
-    // Shared date formatter for human-readable dates in headers/footers
-    static let headerDateFormatter: DateFormatter = {
-        let df = DateFormatter()
-        df.dateStyle = .medium
-        df.timeStyle = .short
-        return df
-    }()
-
-    /// Título estándar del reporte
-    static func reportTitle() -> String {
-        return "Pepinillo — Reporte de Exportación"
-    }
-
-    /// Subtítulo con la fecha de generación (en español)
-    static func reportSubtitle(generatedAt: Date) -> String {
-        let generated = headerDateFormatter.string(from: generatedAt)
-        return "Generado: \(generated)"
-    }
-
-    /// Línea de resumen para portada (tareas y sesiones)
-    static func reportSummaryLine(tasksCount: Int, sessionsCount: Int) -> String {
-        let tareas = tasksCount == 1 ? "1 tarea" : "\(tasksCount) tareas"
-        let sesiones = sessionsCount == 1 ? "1 sesión" : "\(sessionsCount) sesiones"
-        return "Resumen: \(tareas) · \(sesiones)"
-    }
 
     // MARK: - Temporary Directory
 
@@ -204,86 +170,37 @@ enum ExportService {
         payload: ExportPayload,
         directory: URL
     ) async throws -> URL {
-#if canImport(UIKit)
         let url = directory.appendingPathComponent("pepinillo_report.pdf")
-        let contentView = ExportReportView(payload: payload)
-            .frame(width: 612)
-        let renderer = ImageRenderer(content: contentView)
-        renderer.scale = 2.0
+        let renderer = ImageRenderer(
+            content: ExportReportView(payload: payload)
+                .frame(width: 612)   // US Letter width in points at 72 dpi
+        )
+        renderer.scale = 2.0  // Retina quality
         guard let uiImage = renderer.uiImage else {
             throw ExportError.pdfRenderFailed
         }
 
-        // PDF page setup
+        // Use UIGraphicsPDFRenderer to create a proper multi-page PDF
+        // Each page is a US Letter page (612 × 792 pt)
         let pageWidth: CGFloat = 612
         let pageHeight: CGFloat = 792
         let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
         let margin: CGFloat = 36
-        let contentWidth = pageWidth - margin * 2
-        let usableHeight = pageHeight - margin * 2
 
-        // Document metadata
-        let format = UIGraphicsPDFRendererFormat()
-        let docInfo: [String: Any] = [
-            kCGPDFContextTitle as String: reportTitle(),
-            kCGPDFContextAuthor as String: "Pepinillo",
-            kCGPDFContextSubject as String: "Exported report"
-        ]
-        format.documentInfo = docInfo
-
-        let pdfRenderer = UIGraphicsPDFRenderer(bounds: pageRect, format: format)
+        let pdfRenderer = UIGraphicsPDFRenderer(bounds: pageRect)
         let data = pdfRenderer.pdfData { ctx in
-            // Cover page
-            ctx.beginPage()
-            // Draw cover title and subtitle centered
-            let title = reportTitle() as NSString
-            let subtitle = reportSubtitle(generatedAt: payload.generatedAt) as NSString
-            let titleAttrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: 24),
-                .foregroundColor: UIColor.label
-            ]
-            let subtitleAttrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 14),
-                .foregroundColor: UIColor.secondaryLabel
-            ]
-            let titleSize = title.size(withAttributes: titleAttrs)
-            let subtitleSize = subtitle.size(withAttributes: subtitleAttrs)
-            let centerX = pageRect.midX
-            title.draw(at: CGPoint(x: centerX - titleSize.width/2, y: pageRect.midY - titleSize.height), withAttributes: titleAttrs)
-            subtitle.draw(at: CGPoint(x: centerX - subtitleSize.width/2, y: pageRect.midY + 12), withAttributes: subtitleAttrs)
-
-            let summary = reportSummaryLine(tasksCount: payload.tasks.count, sessionsCount: payload.sessions.count) as NSString
-            let summaryAttrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 13),
-                .foregroundColor: UIColor.secondaryLabel
-            ]
-            let summarySize = summary.size(withAttributes: summaryAttrs)
-            summary.draw(at: CGPoint(x: centerX - summarySize.width/2, y: pageRect.midY + 36), withAttributes: summaryAttrs)
-
-            // Render body pages from image slices
             let imageSize = uiImage.size
+            // How many pt tall is the rendered image (at the page's width)?
             let scaleFactor = (pageWidth - margin * 2) / imageSize.width
             let imageHeightInPDF = imageSize.height * scaleFactor
+            let contentWidth = pageWidth - margin * 2
+            let usableHeight = pageHeight - margin * 2
 
             var yOffset: CGFloat = 0
-            var pageNumber = 2 // cover is page 1
+            var pageNumber = 0
 
             while yOffset < imageHeightInPDF {
                 ctx.beginPage()
-
-                // Header
-                let headerTitle = reportTitle() as NSString
-                let headerSubtitle = reportSubtitle(generatedAt: payload.generatedAt) as NSString
-                let headerTitleAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.boldSystemFont(ofSize: 12),
-                    .foregroundColor: UIColor.secondaryLabel
-                ]
-                let headerSubtitleAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 10),
-                    .foregroundColor: UIColor.tertiaryLabel
-                ]
-                headerTitle.draw(at: CGPoint(x: margin, y: margin - 20), withAttributes: headerTitleAttrs)
-                headerSubtitle.draw(at: CGPoint(x: margin, y: margin - 6), withAttributes: headerSubtitleAttrs)
 
                 // Clip to the visible slice of the rendered image
                 let sourceY = yOffset / scaleFactor
@@ -301,15 +218,6 @@ enum ExportService {
                     sliceImage.draw(in: CGRect(x: margin, y: margin, width: contentWidth, height: destHeight))
                 }
 
-                // Footer with page number
-                let footer = "Página \(pageNumber)" as NSString
-                let footerAttrs: [NSAttributedString.Key: Any] = [
-                    .font: UIFont.systemFont(ofSize: 10),
-                    .foregroundColor: UIColor.tertiaryLabel
-                ]
-                let footerSize = footer.size(withAttributes: footerAttrs)
-                footer.draw(at: CGPoint(x: pageRect.maxX - margin - footerSize.width, y: pageRect.maxY - margin - footerSize.height), withAttributes: footerAttrs)
-
                 yOffset += usableHeight
                 pageNumber += 1
             }
@@ -317,123 +225,6 @@ enum ExportService {
 
         try data.write(to: url)
         return url
-#elseif canImport(AppKit)
-        let url = directory.appendingPathComponent("pepinillo_report.pdf")
-        let contentView = ExportReportView(payload: payload)
-            .frame(width: 612)
-        let renderer = ImageRenderer(content: contentView)
-        renderer.scale = 2.0
-
-        guard let nsImage = renderer.nsImage else {
-            throw ExportError.pdfRenderFailed
-        }
-
-        // Page setup
-        let pageWidth: CGFloat = 612
-        let pageHeight: CGFloat = 792
-        let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
-        let margin: CGFloat = 36
-        let contentWidth = pageWidth - margin * 2
-        let usableHeight = pageHeight - margin * 2
-
-        // Compute scaling
-        let imageSize = nsImage.size
-        let scaleFactor = (pageWidth - margin * 2) / imageSize.width
-        let imageHeightInPDF = imageSize.height * scaleFactor
-
-        // PDF metadata
-        let consumer = CGDataConsumer(url: url as CFURL)
-        guard let consumer = consumer else { throw ExportError.pdfRenderFailed }
-        var mediaBox = CGRect(origin: .zero, size: CGSize(width: pageWidth, height: pageHeight))
-        let info: [CFString: Any] = [
-            kCGPDFContextTitle: reportTitle(),
-            kCGPDFContextAuthor: "Pepinillo",
-            kCGPDFContextSubject: "Exported report"
-        ]
-        guard let ctx = CGContext(consumer: consumer, mediaBox: &mediaBox, info as CFDictionary) else {
-            throw ExportError.pdfRenderFailed
-        }
-
-        // Cover page
-        ctx.beginPDFPage([kCGPDFContextMediaBox: pageRect] as CFDictionary)
-        // Flip for text drawing
-        ctx.saveGState()
-        ctx.translateBy(x: 0, y: pageHeight)
-        ctx.scaleBy(x: 1, y: -1)
-        let title = reportTitle()
-        let subtitle = reportSubtitle(generatedAt: payload.generatedAt)
-        let titleAttrs = [NSAttributedString.Key.font: NSFont.boldSystemFont(ofSize: 24)]
-        let subtitleAttrs = [NSAttributedString.Key.font: NSFont.systemFont(ofSize: 14), NSAttributedString.Key.foregroundColor: NSColor.secondaryLabelColor]
-        let titleStr = NSAttributedString(string: title, attributes: titleAttrs)
-        let subtitleStr = NSAttributedString(string: subtitle, attributes: subtitleAttrs)
-        let titleSize = titleStr.size()
-        let subtitleSize = subtitleStr.size()
-        let centerX = pageRect.midX
-        titleStr.draw(at: CGPoint(x: centerX - titleSize.width/2, y: pageRect.midY - titleSize.height))
-        subtitleStr.draw(at: CGPoint(x: centerX - subtitleSize.width/2, y: pageRect.midY + 12))
-
-        let summaryStr = NSAttributedString(
-            string: reportSummaryLine(tasksCount: payload.tasks.count, sessionsCount: payload.sessions.count),
-            attributes: [.font: NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.secondaryLabelColor]
-        )
-        let summarySize = summaryStr.size()
-        summaryStr.draw(at: CGPoint(x: centerX - summarySize.width/2, y: pageRect.midY + 36))
-
-        ctx.restoreGState()
-        ctx.endPDFPage()
-
-        // Body pages
-        var yOffset: CGFloat = 0
-        var pageNumber = 2 // cover is page 1
-        while yOffset < imageHeightInPDF {
-            ctx.beginPDFPage([kCGPDFContextMediaBox: pageRect] as CFDictionary)
-
-            // Flip for drawing
-            ctx.saveGState()
-            ctx.translateBy(x: 0, y: pageHeight)
-            ctx.scaleBy(x: 1, y: -1)
-
-            // Header
-            let headerTitle = NSAttributedString(string: reportTitle(), attributes: [.font: NSFont.boldSystemFont(ofSize: 12), .foregroundColor: NSColor.secondaryLabelColor])
-            let headerSubtitle = NSAttributedString(string: reportSubtitle(generatedAt: payload.generatedAt), attributes: [.font: NSFont.systemFont(ofSize: 10), .foregroundColor: NSColor.tertiaryLabelColor])
-            headerTitle.draw(at: CGPoint(x: margin, y: margin - 20))
-            headerSubtitle.draw(at: CGPoint(x: margin, y: margin - 6))
-
-            // Slice
-            let sourceY = yOffset / scaleFactor
-            let sourceHeight = min(usableHeight / scaleFactor, imageSize.height - sourceY)
-            let sourceRect = CGRect(x: 0, y: sourceY, width: imageSize.width, height: sourceHeight)
-
-            if let cgRef = nsImage.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                let cropRect = CGRect(x: sourceRect.origin.x,
-                                      y: sourceRect.origin.y,
-                                      width: sourceRect.width,
-                                      height: sourceRect.height)
-                if let cgImage = cgRef.cropping(to: cropRect) {
-                    let destHeight = sourceRect.height * scaleFactor
-                    let destRect = CGRect(x: margin, y: margin, width: contentWidth, height: destHeight)
-                    ctx.draw(cgImage, in: destRect)
-                }
-            }
-
-            // Footer
-            let footer = NSAttributedString(string: "Página \(pageNumber)", attributes: [.font: NSFont.systemFont(ofSize: 10), .foregroundColor: NSColor.tertiaryLabelColor])
-            let footerSize = footer.size()
-            footer.draw(at: CGPoint(x: pageRect.maxX - margin - footerSize.width, y: pageRect.maxY - margin - footerSize.height))
-
-            ctx.restoreGState()
-            ctx.endPDFPage()
-
-            yOffset += usableHeight
-            pageNumber += 1
-        }
-
-        ctx.closePDF()
-        return url
-#else
-        // PDF generation is not supported on this platform
-        throw ExportError.pdfRenderFailed
-#endif
     }
 }
 
@@ -462,4 +253,3 @@ enum ExportError: LocalizedError {
         }
     }
 }
-

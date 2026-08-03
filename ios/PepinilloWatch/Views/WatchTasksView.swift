@@ -128,9 +128,8 @@ private struct WatchTaskRow: View {
                         // Pomodoro progress
                         if task.estimatedPomodoros > 0 {
                             HStack(spacing: 2) {
-                                Image(systemName: "timer")
+                                Text("🍅")
                                     .font(.system(size: 8))
-                                    .foregroundStyle(ModeColors.pomodoro)
                                 Text("\(task.completedPomodoros)/\(task.estimatedPomodoros)")
                                     .font(.system(size: 9, weight: .medium))
                                     .foregroundStyle(.secondary)
@@ -150,12 +149,12 @@ private struct WatchTaskRow: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 8)
-            .pepinilloGlass(
-                cornerRadius: 12,
-                tint: isLinked ? ModeColors.pomodoro : nil,
-                tintOpacity: isLinked ? 0.16 : 0.06
+            .background(
+                isLinked
+                    ? AnyShapeStyle(ModeColors.pomodoro.opacity(0.12))
+                    : AnyShapeStyle(Color.clear)
             )
-            .padding(.vertical, 2)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
         .onLongPressGesture {

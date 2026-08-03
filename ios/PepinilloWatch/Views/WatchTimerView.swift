@@ -36,10 +36,8 @@ struct WatchTimerView: View {
             Spacer(minLength: 0)
 
             // Indicate the pending phase with the mode icon
-            Image(systemName: store.selectedMode.systemImage)
-                .font(.system(size: 26))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(modeColor)
+            Text(store.selectedMode.icon)
+                .font(.system(size: 28))
 
             // phaseLabel here is the pending next phase name (set on .waitingForNextPhase) — tells the user what's next
             Text(store.phaseLabel)
@@ -98,23 +96,18 @@ struct WatchTimerView: View {
                 Circle()
                     .stroke(modeColor.opacity(0.2), lineWidth: 8)
 
-                if let rawProgress = store.progress {
-                    // For countdown modes (Pomodoro, Time-Block), ring starts FULL (1.0) and DRAINS to 0.0,
-                    // matching iOS FocusView timerRingProgress (1 - completed).
-                    let ringProgress = store.countsDown ? max(0, min(1.0, 1.0 - rawProgress)) : max(0, min(1.0, rawProgress))
+                if let progress = store.progress {
                     Circle()
-                        .trim(from: 0, to: CGFloat(ringProgress))
+                        .trim(from: 0, to: CGFloat(progress))
                         .stroke(modeColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                         .rotationEffect(.degrees(-90))
-                        .animation(reduceMotion ? nil : .linear(duration: 0.1), value: ringProgress)
+                        .animation(reduceMotion ? nil : .linear(duration: 0.1), value: progress)
                 }
 
                 VStack(spacing: 2) {
-                    // Mode SF Symbol
-                    Image(systemName: store.selectedMode.systemImage)
-                        .font(.system(size: 14))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(modeColor)
+                    // Mode emoji
+                    Text(store.selectedMode.icon)
+                        .font(.system(size: 16))
 
                     // Local countdown when the phone is unreachable (#245).
                     if store.countsDown,
@@ -205,9 +198,9 @@ struct WatchTimerView: View {
                     } label: {
                         Image(systemName: "forward.fill")
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.9))
+                            .foregroundStyle(.white.opacity(0.8))
                             .frame(width: 36, height: 36)
-                            .pepinilloGlass(cornerRadius: 18)
+                            .background(.ultraThinMaterial, in: Circle())
                     }
                     .buttonStyle(.plain)
                 }
@@ -388,35 +381,33 @@ private struct WatchModeChip: View {
         Button(action: onTap) {
             VStack(spacing: 2) {
                 ZStack(alignment: .topTrailing) {
-                    Image(systemName: mode.systemImage)
-                        .font(.system(size: 16))
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(isSelected ? modeColor : .secondary)
+                    Text(mode.icon)
+                        .font(.body)
                         .opacity(isLocked ? 0.45 : 1)
                     if isLocked {
                         Image(systemName: "lock.fill")
-                            .font(.system(size: 7, weight: .bold))
+                            .font(.system(size: 7))
                             .foregroundStyle(.secondary)
-                            .offset(x: 5, y: -2)
+                            .offset(x: 4, y: -2)
                     }
                 }
                 Text(mode.shortName)
                     .font(.system(size: 9))
                     .fontWeight(isSelected ? .semibold : .regular)
-                    .foregroundStyle(isSelected ? modeColor : .secondary)
                     .opacity(isLocked ? 0.45 : 1)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .pepinilloGlass(
-                cornerRadius: 10,
-                tint: isSelected ? modeColor : nil,
-                tintOpacity: isSelected ? (isLocked ? 0.12 : 0.28) : 0.08
+            .background(
+                isSelected
+                    ? AnyShapeStyle(modeColor.opacity(isLocked ? 0.12 : 0.25))
+                    : AnyShapeStyle(.ultraThinMaterial)
             )
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .overlay(
                 isSelected
-                    ? RoundedRectangle(cornerRadius: 10)
-                        .stroke(modeColor.opacity(isLocked ? 0.2 : 0.6), lineWidth: 1.2)
+                    ? RoundedRectangle(cornerRadius: 8)
+                        .stroke(modeColor.opacity(isLocked ? 0.2 : 0.5), lineWidth: 1)
                     : nil
             )
         }
@@ -440,7 +431,7 @@ struct WatchStatPill: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .pepinilloGlass(cornerRadius: 14)
+        .background(.ultraThinMaterial, in: Capsule())
     }
 }
 

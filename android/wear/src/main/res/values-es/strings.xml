@@ -76,38 +76,4 @@
     <string name="tile_focus_label">Enfoque</string>
     <string name="tile_tasks_label">Tareas</string>
     <string name="complication_focus_timer_label">Temporizador de enfoque</string>
-
-    <!-- Voice prompt (#508) -->
-    <string name="voice_prompt_mode">Di un modo de enfoque</string>
-
-    <!-- Notification channel (#508) -->
-    <string name="notif_channel_focus_name">Temporizador de enfoque</string>
-    <string name="notif_channel_focus_desc">Muestra la cuenta regresiva del temporizador de enfoque</string>
-
-    <!-- Sync status formatter (#508) -->
-    <string name="sync_waiting">Esperando primera sincronización</string>
-    <string name="sync_no_connection">Sin conexión · última %1$s</string>
-    <string name="sync_stale">Sincronización atrasada · %1$s</string>
-    <string name="sync_ok">Sincronización %1$s</string>
-
-    <!-- Diagnostics screen (#508) -->
-    <string name="diag_title">Diagnóstico</string>
-    <string name="diag_no_sync">Sin sincronización registrada</string>
-    <string name="diag_connection">Conexión: %1$s</string>
-    <string name="diag_connection_active">Activa</string>
-    <string name="diag_connection_down">Caída</string>
-    <string name="diag_peers">Peers Data Layer: %1$d</string>
-    <string name="diag_nodes">Nodos: %1$s</string>
-    <string name="diag_timer">Timer: %1$s · %2$s</string>
-    <string name="diag_mode_phase">Modo/Fase: %1$s · %2$s</string>
-    <string name="diag_offline_queue">Cola offline: %1$d</string>
-    <string name="diag_sync_events">Eventos de sync: %1$d</string>
-    <string name="diag_sync_failures">Fallos de sync: %1$d</string>
-    <string name="diag_flush_attempts">Intentos de flush: %1$d</string>
-    <string name="diag_flush_failures">Fallos de flush: %1$d</string>
-    <string name="diag_last_error">Último error: %1$s</string>
-    <string name="diag_active_tasks">Tareas activas: %1$d</string>
-    <string name="diag_stats_today">%1$d ses / %2$d min</string>
-    <string name="diag_streak">Racha: %1$d · Completadas: %2$d</string>
-    <string name="diag_checklist">Checklist rápido:\n1) Corta BT/WiFi del teléfono\n2) Lanza un comando en el reloj\n3) Re-conecta\n4) Verifica cola=0</string>
 </resources>

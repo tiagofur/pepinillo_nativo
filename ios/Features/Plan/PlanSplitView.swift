@@ -25,10 +25,10 @@ struct PlanSplitView: View {
     var body: some View {
         if sizeClass == .regular {
             GeometryReader { geo in
-                if geo.size.width >= 720 {
-                    twoColumnContent(geo: geo)
+                if geo.size.width > geo.size.height {
+                    landscapeContent
                 } else {
-                    iPhoneContent
+                    portraitContent
                 }
             }
         } else {
@@ -36,11 +36,10 @@ struct PlanSplitView: View {
         }
     }
 
-    // MARK: - Two Column Content (iPad landscape / wide macOS: pills top + HStack(list | detail))
+    // MARK: - iPad Landscape: pills top + HStack(list 40% | detail 60%)
 
     @ViewBuilder
-    private func twoColumnContent(geo: GeometryProxy) -> some View {
-        let listWidth = min(max(geo.size.width * 0.38, 340), 460)
+    private var landscapeContent: some View {
         VStack(spacing: 0) {
             PlanFilterPills(
                 selection: Binding(
@@ -61,7 +60,46 @@ struct PlanSplitView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(planBackground)
                 }
-                .frame(width: listWidth)
+                .frame(minWidth: 360, maxWidth: 520)
+
+                Divider()
+
+                NavigationStack {
+                    detailPane
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(planBackground)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .background(planBackground)
+    }
+
+    // MARK: - iPad Portrait: 2-column HStack (pills top, list | detail bottom)
+
+    @ViewBuilder
+    private var portraitContent: some View {
+        VStack(spacing: 0) {
+            PlanFilterPills(
+                selection: Binding(
+                    get: { store.selectedPlanFilter },
+                    set: { store.send(.planFilterSelected($0)) }
+                )
+            )
+            Divider()
+            HStack(spacing: 0) {
+                NavigationStack {
+                    PlanTaskList(
+                        store: store,
+                        filter: store.selectedPlanFilter,
+                        showsTitle: false
+                    )
+                    .navigationTitle(String(localized: "Plan"))
+                    .navigationBarTitleDisplayMode(.inline)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(planBackground)
+                }
+                .frame(maxWidth: .infinity)
 
                 Divider()
 
