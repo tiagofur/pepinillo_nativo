@@ -2,7 +2,7 @@
 
 **Version:** 1.1  
 **Date:** 2026-08-03  
-**Status:** Planning complete — ready for P0 implementation  
+**Status:** P0 local MVP shell coded — WinUI smoke pending; next P1  
 **Author:** Tiago David + AI Pairing Assistant  
 **Target Platform:** Windows 10 (19041+) & Windows 11 (x64 / ARM64) via Microsoft Store  
 **Framework:** C# / WinUI 3 (Windows App SDK 1.6+)  
@@ -174,8 +174,8 @@ Pepinillo Windows enforces the exact same 3-tier commercial model defined in [04
 | Item | State |
 | ---- | ----- |
 | Solution scaffold (`windows/`) | Present — Core + WinUI + tests + CI build |
-| Phase 1 completion | ~15–25% (engine/tasks skeleton; no DI, no Focus page, incomplete wiring) |
+| Phase 1 / P0 | **Coded:** DI, nav, FocusPage, Pomodoro/Stopwatch cycles, session + settings persist, tasks UX, theme |
 | Microsoft Store readiness | Not ready (placeholder identity, missing Assets, no pack/sign) |
 | Detailed execution | See **[12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)** |
 
-**Next engineering step:** execute **P0** (DI → navigation → SQLite lifecycle → FocusPage + engine cycles → settings persist → tasks UX → theme → smoke).
+**Next engineering step:** smoke on Windows (§4.3 checklist), then **P1** (tray, mini-timer, hotkeys, toasts, Focus Assist).

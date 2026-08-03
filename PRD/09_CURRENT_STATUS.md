@@ -16,7 +16,7 @@
 | watchOS         | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included      | Requires Xcode setup |
 | Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
 | Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |
-| Windows (desktop) | Scaffolding / early Phase 1 (~15–25%); **not MVP**, **not Store-ready** | ~50–55 C#/XAML | ~1.9K | CI: `.github/workflows/windows-build.yml` (Core tests + x64/ARM64 build; no MSIX pack) |
+| Windows (desktop) | **P0 local MVP shell coded** (DI, nav, Focus, tasks, settings, theme); WinUI smoke pending on Windows; **not Store-ready** | ~60+ C#/XAML | ~3K+ | CI: Core tests 16/16; x64/ARM64 build; no MSIX pack |
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
 
 **Windows tracking docs:** product PRD [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · execution plan [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
@@ -334,36 +334,38 @@
 
 ---
 
-## 3b. Windows — Scaffolding (2026-08-03)
+## 3b. Windows — P0 Local MVP Shell (2026-08-03)
 
 **Stack:** C# / WinUI 3 / Windows App SDK 1.6 / .NET 9 / EF Core SQLite / MSIX tooling  
 **Path:** `windows/` (`Pepinillo.Core`, `Pepinillo.WinUI`, `Pepinillo.Core.Tests`)  
 **Docs:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
 
-### Present (partial)
+### Present (P0 coded)
 
-- Focus engine basics (`FocusEngineService` + `FocusViewModel`) — incomplete phase machine
-- Task domain + `TaskService` (Today/Upcoming/Inbox) + `TasksPage` shell
-- Analytics / Settings UI shells; MiniTimer Compact Overlay window (not productized)
-- Backend HTTP client skeleton; Store product constants; commerce stub
-- CI build + Core unit tests (no MSIX pack/sign)
+- **DI composition root** (`App` + `AddPepinilloCore`)
+- **NavigationView → Frame:** Focus, Tasks, Analytics, Soundscapes (placeholder), Settings
+- **SQLite** under local app data (`EnsureCreated`); `UserSettings` row + sessions + tasks
+- **FocusPage** + engine: Pomodoro work→break, Stopwatch, pause/resume/skip, session persist, optional task link
+- **Tasks:** Today/Upcoming/Inbox/All filters, add/complete/delete, subtasks, empty state
+- **Settings** persistence + Light/Dark/System theme apply
+- Analytics page bound to session aggregates (basic)
+- Core unit tests: **16/16** green
+- Backend HTTP / Store commerce stubs remain (not P0)
 
-### Missing (blocks MVP / Store)
+### Missing (blocks full product / Store)
 
-- DI composition root + Frame navigation from `NavigationView`
-- `FocusPage` (hero surface)
-- Session persistence / full Pomodoro cycle / settings save
-- System tray, hotkeys, toasts, Focus Assist, real soundscapes
-- Real `Windows.Services.Store` + paywall
-- Package Assets, Partner Center identity, store listing
+- **Manual WinUI smoke on a Windows machine** (not verified on macOS host)
+- System tray, hotkeys, toasts, Focus Assist, productized mini-timer (**P1**)
+- Soundscapes audio, full analytics charts, auth/sync, real Store IAP (**P2**)
+- Package Assets, Partner Center identity, MSIX pack/sign (**P3**)
 
 ### Pending Windows (priority bands)
 
 | Band | Goal | Status |
 | ---- | ---- | ------ |
-| **P0** | Runnable local MVP (DI, nav, Focus, tasks, settings, theme) | **Next** — plan ready |
-| **P1** | Tray, mini-timer, hotkeys, toasts, Focus Assist | Planned |
-| **P2** | Analytics, soundscapes, auth/sync, IAP path, i18n | Planned |
+| **P0** | Runnable local MVP (DI, nav, Focus, tasks, settings, theme) | **Coded** — smoke on Windows pending |
+| **P1** | Tray, mini-timer, hotkeys, toasts, Focus Assist | **Next** |
+| **P2** | Analytics depth, soundscapes, auth/sync, IAP path, i18n | Planned |
 | **P3** | MSIX, Partner Center, certification, beta | Planned |
 
 **Pricing note:** PRD 11 Windows prices ($9.99 / $2.99·$19.99) differ from global mobile ($19.99 / $4.99·$34.99). Resolve before Partner Center SKUs (decision D1 in execution plan).

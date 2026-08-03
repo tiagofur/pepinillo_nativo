@@ -8,56 +8,67 @@
 
     <ScrollViewer Margin="32">
         <StackPanel Spacing="24" MaxWidth="800" HorizontalAlignment="Left">
-            <TextBlock Text="Dashboard &amp; Analíticas de Enfoque"
-                       Style="{ThemeResource TitleTextBlockStyle}" FontWeight="Bold"/>
+            <TextBlock Text="Analytics"
+                       Style="{ThemeResource TitleTextBlockStyle}"
+                       FontWeight="Bold"/>
+            <TextBlock Text="Local session totals. Charts and AI reports expand in P2."
+                       Style="{ThemeResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
 
-            <!-- Metric Cards Row -->
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
                 <Border Grid.Column="0"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="8" Padding="20">
+                        CornerRadius="8"
+                        Padding="20">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Enfoque Hoy"
+                        <TextBlock Text="Focus today"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="TodayFocusText"
-                                   FontSize="28" FontWeight="Bold"/>
+                                   FontSize="28"
+                                   FontWeight="Bold"/>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="1"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="8" Padding="20">
+                        CornerRadius="8"
+                        Padding="20">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Enfoque Semanal"
+                        <TextBlock Text="Recent total (approx.)"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="WeeklyFocusText"
-                                   FontSize="28" FontWeight="Bold"/>
+                                   FontSize="28"
+                                   FontWeight="Bold"/>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="2"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="8" Padding="20">
+                        CornerRadius="8"
+                        Padding="20">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Racha Actual"
+                        <TextBlock Text="Streak"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="StreakText"
-                                   FontSize="28" FontWeight="Bold" Foreground="OrangeRed"/>
+                                   FontSize="28"
+                                   FontWeight="Bold"
+                                   Foreground="OrangeRed"/>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <!-- AI Insight Report -->
             <Border Background="{ThemeResource SystemAccentColor}"
-                    CornerRadius="8" Padding="20">
+                    CornerRadius="8"
+                    Padding="20">
                 <StackPanel Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE945;" Foreground="Gold"/>
-                        <TextBlock Text="Reporte IA Pepinillo+"
-                                   FontWeight="Bold" Foreground="White"
+                        <TextBlock Text="Insights"
+                                   FontWeight="Bold"
+                                   Foreground="White"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"/>
                     </StackPanel>
                     <TextBlock x:Name="AiReportText"

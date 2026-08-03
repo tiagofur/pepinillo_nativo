@@ -21,6 +21,7 @@ public class TaskService : ITaskService
     {
         return await _dbContext.TaskItems
             .Include(t => t.SubTasks)
+            .Where(t => t.ParentTaskId == null)
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync();
     }
@@ -30,7 +31,10 @@ public class TaskService : ITaskService
         var today = DateTime.UtcNow.Date;
         return await _dbContext.TaskItems
             .Include(t => t.SubTasks)
-            .Where(t => t.DueDate.HasValue && t.DueDate.Value.Date <= today && !t.IsCompleted)
+            .Where(t => t.ParentTaskId == null
+                        && t.DueDate.HasValue
+                        && t.DueDate.Value.Date <= today
+                        && !t.IsCompleted)
             .OrderBy(t => t.DueDate)
             .ToListAsync();
     }
@@ -40,7 +44,10 @@ public class TaskService : ITaskService
         var tomorrow = DateTime.UtcNow.Date.AddDays(1);
         return await _dbContext.TaskItems
             .Include(t => t.SubTasks)
-            .Where(t => t.DueDate.HasValue && t.DueDate.Value.Date >= tomorrow && !t.IsCompleted)
+            .Where(t => t.ParentTaskId == null
+                        && t.DueDate.HasValue
+                        && t.DueDate.Value.Date >= tomorrow
+                        && !t.IsCompleted)
             .OrderBy(t => t.DueDate)
             .ToListAsync();
     }

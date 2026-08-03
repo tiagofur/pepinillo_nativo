@@ -1,8 +1,8 @@
 # Pepinillo Windows — Execution Plan
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-08-03  
-**Status:** Ready for P0  
+**Status:** P0 coded — WinUI smoke pending on Windows; next is P1  
 **Branch:** `feat/windows-native-app`  
 **Canonical product PRD:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md)  
 **Parity source of truth (mobile):** [02_FEATURES.md](02_FEATURES.md)  
@@ -42,12 +42,12 @@ Ship a **native Windows** app (WinUI 3 / C# / Microsoft Store) with **functional
 
 | Level | Status |
 | ----- | ------ |
-| Scaffolding | **Yes** |
-| MVP usable (local focus + tasks) | **No** |
+| Scaffolding | **Yes** (superseded by P0 shell) |
+| MVP usable (local focus + tasks) | **Coded** — Core verified; WinUI manual smoke pending on Windows |
 | Feature parity with mobile | **No** |
 | Microsoft Store ready | **No** |
 
-**Honest phase mapping to PRD 11:** ~15–25% of Phase 1; thin UI drafts of Phase 2; Phase 3–6 mostly stubs or absent.
+**Phase mapping to PRD 11 (post-P0 code):** Phase 1 largely complete in code; Phase 2 tasks UX partial; Phase 3–6 mostly stubs or absent.
 
 ### Stack (confirmed in repo)
 
@@ -148,13 +148,13 @@ Estimated remaining effort (order of magnitude, after existing skeleton): **~280
 
 ### 4.4 P0 Definition of Done
 
-- [ ] All P0.1–P0.8 complete  
-- [ ] Core unit tests pass in CI (`windows-build.yml`)  
-- [ ] No unhandled exceptions on smoke checklist  
-- [ ] `09_CURRENT_STATUS.md` Windows section updated to **MVP skeleton / local usable**  
-- [ ] Conventional commit(s) on `feat/windows-native-app`  
+- [x] All P0.1–P0.8 complete (code)  
+- [x] Core unit tests pass locally (**16/16**; CI via `windows-build.yml`)  
+- [ ] No unhandled exceptions on smoke checklist (**requires Windows machine**)  
+- [x] `09_CURRENT_STATUS.md` Windows section updated  
+- [x] Conventional commit(s) on `feat/windows-native-app`  
 
-**After P0 DoD → start P1.**
+**After Windows smoke passes → start P1.**
 
 ---
 
@@ -311,8 +311,8 @@ Until D1 is decided, implement commerce **behind interfaces** and keep product I
 
 ## 12. Next action
 
-1. **Approve this plan** (or request adjustments).  
-2. **Start P0.1** — DI composition root.  
+1. **On Windows:** build WinUI, run smoke checklist §4.3.  
+2. **Start P1** after smoke (tray, mini-timer, hotkeys, toasts, Focus Assist).  
 3. Do not open Partner Center SKUs until **D1** pricing is confirmed.
 
 ---
@@ -331,3 +331,4 @@ Until D1 is decided, implement commerce **behind interfaces** and keep product I
 | Date | Change |
 | ---- | ------ |
 | 2026-08-03 | v1.0 — Initial execution plan from code/docs audit; P0 ready |
+| 2026-08-03 | v1.1 — P0 implemented in code; Core tests 16/16; WinUI smoke pending |

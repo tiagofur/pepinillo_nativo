@@ -7,6 +7,7 @@ public class PepinilloDbContext : DbContext
 {
     public DbSet<FocusSession> FocusSessions => Set<FocusSession>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
+    public DbSet<UserSettings> UserSettings => Set<UserSettings>();
 
     public PepinilloDbContext(DbContextOptions<PepinilloDbContext> options) : base(options)
     {
@@ -30,6 +31,12 @@ public class PepinilloDbContext : DbContext
                   .WithOne()
                   .HasForeignKey(e => e.ParentTaskId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<UserSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SelectedTheme).HasMaxLength(64);
         });
     }
 }

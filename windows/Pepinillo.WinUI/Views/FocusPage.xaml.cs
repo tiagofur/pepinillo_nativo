@@ -1,0 +1,42 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Pepinillo.Core.Models;
+using Pepinillo.Core.ViewModels;
+
+namespace Pepinillo.WinUI.Views;
+
+public sealed partial class FocusPage : Page
+{
+    public FocusViewModel ViewModel { get; }
+
+    public FocusPage()
+    {
+        ViewModel = App.Services.GetRequiredService<FocusViewModel>();
+        InitializeComponent();
+        Loaded += FocusPage_Loaded;
+    }
+
+    private async void FocusPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.InitializeAsync();
+    }
+
+    private void Pomodoro_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.SelectModeCommand.Execute(FocusMode.Pomodoro);
+
+    private void Stopwatch_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.SelectModeCommand.Execute(FocusMode.Stopwatch);
+
+    private void Flowtime_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.SelectModeCommand.Execute(FocusMode.Flowtime);
+
+    private void TimeBlock_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.SelectModeCommand.Execute(FocusMode.TimeBlocking);
+
+    private void TaskCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (TaskCombo.SelectedItem is TaskItem task)
+            ViewModel.LinkTaskCommand.Execute(task);
+    }
+}

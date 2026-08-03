@@ -1,32 +1,49 @@
-using System;
 using System.Collections.ObjectModel;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Pepinillo.Core.Models;
+using Pepinillo.Core.Services;
 
 namespace Pepinillo.Core.ViewModels;
 
 public partial class AnalyticsViewModel : ObservableObject
 {
-    [ObservableProperty]
-    private int _todayFocusMinutes = 125;
+    private readonly IFocusSessionService _sessionService;
 
     [ObservableProperty]
-    private int _weeklyFocusHours = 14;
+    private int _todayFocusMinutes;
 
     [ObservableProperty]
-    private int _currentStreakDays = 5;
+    private int _weeklyFocusHours;
 
     [ObservableProperty]
-    private int _bestStreakDays = 12;
+    private int _currentStreakDays;
 
     [ObservableProperty]
-    private string _aiReportSummary = "Has mantenido un excelente enfoque por las mañanas entre las 9 AM y las 11:30 AM. Recomendación: Programa tus tareas más complejas en ese bloque de tiempo.";
+    private int _bestStreakDays;
+
+    [ObservableProperty]
+    private string _aiReportSummary =
+        "Complete focus sessions to unlock personalized insights. Full AI reports are part of Pepinillo+.";
 
     [ObservableProperty]
     private ObservableCollection<FocusSession> _recentSessions = new();
 
-    public AnalyticsViewModel()
+    public AnalyticsViewModel(IFocusSessionService sessionService)
     {
-        // Load recent focus analytics and AI insights
+        _sessionService = sessionService;
+    }
+
+    public async Task LoadAsync()
+    {
+        TodayFocusMinutes = await _sessionService.GetTodayFocusMinutesAsync();
+        var recent = await _sessionService.GetRecentSessionsAsync(10);
+        RecentSessions = new ObservableCollection<FocusSession>(recent);
+
+        // Weekly hours / streaks are approximate for P0 (real analytics in P2).
+        var totalSeconds = 0;
+        foreach (var s in recent)
+            totalSeconds += s.ElapsedSeconds;
+        WeeklyFocusHours = totalSeconds / 3600;
     }
 }

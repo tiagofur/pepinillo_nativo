@@ -5,37 +5,40 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="Pepinillo - Deep Work OS">
+    Title="Pepinillo — Deep Work OS">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <NavigationView x:Name="NavView"
                         PaneDisplayMode="Left"
                         IsSettingsVisible="True"
-                        Header="Enfoque">
+                        IsBackButtonVisible="Collapsed"
+                        Header="Focus"
+                        Loaded="NavView_Loaded"
+                        ItemInvoked="NavView_ItemInvoked">
             <NavigationView.MenuItems>
-                <NavigationViewItem Content="Focus Engine" Tag="FocusPage">
+                <NavigationViewItem Content="Focus" Tag="Focus" IsSelected="True">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE916;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Plan &amp; Tareas" Tag="TasksPage">
+                <NavigationViewItem Content="Tasks" Tag="Tasks">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE9D5;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Estadísticas" Tag="AnalyticsPage">
+                <NavigationViewItem Content="Analytics" Tag="Analytics">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE9F9;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Sonidos de Fondo" Tag="SoundscapesPage">
+                <NavigationViewItem Content="Soundscapes" Tag="Soundscapes">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8D6;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <Frame x:Name="ContentFrame" Margin="24" />
+            <Frame x:Name="ContentFrame" Margin="0" />
         </NavigationView>
     </Grid>
 </Window>
