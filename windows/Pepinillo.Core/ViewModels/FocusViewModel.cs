@@ -20,6 +20,7 @@ public partial class FocusViewModel : ObservableObject
     private readonly IEntitlementService? _entitlements;
     private readonly ISyncService? _syncService;
     private readonly ILocalizationService? _localizer;
+    private readonly ISoundscapeSessionCoordinator? _soundscapeCoordinator;
     private UserSettings _cachedSettings = new();
     private SessionState _previousState = SessionState.Idle;
     private bool _focusAssistActive;
@@ -105,6 +106,10 @@ public partial class FocusViewModel : ObservableObject
     /// <summary>Raised when a premium focus mode is requested on free tier.</summary>
     public event EventHandler<string>? PremiumFeatureRequested;
 
+    /// <summary>Optional chip text e.g. "Soundscape: Rain" when auto-play is enabled.</summary>
+    [ObservableProperty]
+    private string _soundscapeChipLabel = string.Empty;
+
     public FocusViewModel(
         IFocusEngineService focusEngine,
         ISettingsService settingsService,
@@ -114,7 +119,8 @@ public partial class FocusViewModel : ObservableObject
         IFocusAssistService focusAssistService,
         ISyncService? syncService = null,
         ILocalizationService? localizer = null,
-        IEntitlementService? entitlements = null)
+        IEntitlementService? entitlements = null,
+        ISoundscapeSessionCoordinator? soundscapeCoordinator = null)
     {
         _focusEngine = focusEngine;
         _settingsService = settingsService;
@@ -125,6 +131,7 @@ public partial class FocusViewModel : ObservableObject
         _syncService = syncService;
         _localizer = localizer;
         _entitlements = entitlements;
+        _soundscapeCoordinator = soundscapeCoordinator;
 
         _focusEngine.StateChanged += OnEngineStateChanged;
         _focusEngine.Tick += OnEngineTick;
@@ -149,6 +156,7 @@ public partial class FocusViewModel : ObservableObject
         }
 
         await LoadAvailableTasksAsync();
+        await RefreshSoundscapeChipAsync();
         UpdateCommandFlags();
     }
 
@@ -160,6 +168,7 @@ public partial class FocusViewModel : ObservableObject
         _cachedSettings = await _settingsService.GetSettingsAsync();
         ApplySettingsToEngine(_cachedSettings);
         ApplyLanguage(_cachedSettings.PreferredLanguage);
+        await RefreshSoundscapeChipAsync();
     }
 
     private void ApplyLanguage(string language)
@@ -366,10 +375,53 @@ public partial class FocusViewModel : ObservableObject
 
         HandleFocusAssist(newState);
         HandleBreakNotifications(previous, newState);
+        HandleSoundscape(previous, newState);
 
         _previousState = newState;
         UpdateCommandFlags();
         UpdateTimerDisplay();
+    }
+
+    private async void HandleSoundscape(SessionState previous, SessionState newState)
+    {
+        if (_soundscapeCoordinator == null)
+            return;
+
+        try
+        {
+            var isOnBreak = _focusEngine.IsOnBreak || newState == SessionState.Break;
+            await _soundscapeCoordinator.OnSessionStateChangedAsync(previous, newState, isOnBreak);
+            await RefreshSoundscapeChipAsync();
+        }
+        catch
+        {
+            // Never break focus UX for audio failures.
+        }
+    }
+
+    private async Task RefreshSoundscapeChipAsync()
+    {
+        if (_soundscapeCoordinator == null)
+        {
+            SoundscapeChipLabel = string.Empty;
+            return;
+        }
+
+        try
+        {
+            if (!_cachedSettings.EnableSoundscapes)
+            {
+                SoundscapeChipLabel = string.Empty;
+                return;
+            }
+
+            var name = await _soundscapeCoordinator.GetPreferredTrackDisplayNameAsync();
+            SoundscapeChipLabel = string.IsNullOrEmpty(name) ? string.Empty : $"Soundscape: {name}";
+        }
+        catch
+        {
+            SoundscapeChipLabel = string.Empty;
+        }
     }
 
     private string LocalizedState(SessionState state)

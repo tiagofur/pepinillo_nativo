@@ -204,7 +204,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Weekly / Monthly Review | Done | **Done (W4 #578):** Monday-start UTC week + calendar month vs previous; free teaser → paywall; premium hours/sessions/top mode/trend | Done | W4 |
 | Achievements (6) | Done | **Done (W4 #578):** FREE local badges from FocusSessions (First Session, Weekly Streak, Pomodoro Master, Deep Diver, Century Club, Early Bird UTC&lt;7); horizontal list on Analytics | Done | W4 |
 | Streaks + protection | Done | Streaks only | +1 skip/week paid | W6 |
-| Soundscapes player + assets | iOS strong | Player only | Full + auto-play + fade | W3 |
+| Soundscapes player + assets | iOS strong | **Done (W3 #577):** catalog free×4 + premium×3; placeholder loop mp3s; MediaPlayer fade in/out; `SoundscapeSessionCoordinator` auto-play on work / **pause** on break / stop on end; Settings `EnableSoundscapes` + `AutoPlaySoundscapeOnFocus` + preferred track; premium gate. **Replace placeholders with licensed audio before Store public** | Full + auto-play + fade | W3 |
 | Themes 4 named | Done | **Improved (W2):** System/Light/Dark free + Forest/Ocean/Sunset gated via `CanUseTheme`; DesignTokens + Mica; OLEDBlack aliases Dark | Full + gate | W2 |
 | Onboarding | Done | Missing | Done | W7 |
 | EN/ES/PT | Done | Partial | Full .resw | W8 |

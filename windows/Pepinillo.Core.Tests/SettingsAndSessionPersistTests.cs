@@ -212,6 +212,30 @@ public class SettingsAndSessionPersistTests
         Assert.Contains(tracks, t => t.Name == "Rain");
         Assert.Contains(tracks, t => t.Name == "Deep Space");
         Assert.Contains(tracks, t => t.IsPremium);
+        Assert.Equal(4, tracks.Count(t => !t.IsPremium));
+        Assert.Equal(3, tracks.Count(t => t.IsPremium));
+    }
+
+    [Fact]
+    public async Task Settings_SoundscapeAutoPlayFields_RoundTrip()
+    {
+        await using var db = CreateDb();
+        var service = new SettingsService(db);
+
+        var settings = await service.GetSettingsAsync();
+        Assert.True(settings.EnableSoundscapes);
+        Assert.True(settings.AutoPlaySoundscapeOnFocus);
+        Assert.Equal("rain", settings.PreferredSoundscapeId);
+
+        settings.AutoPlaySoundscapeOnFocus = false;
+        settings.PreferredSoundscapeId = "cafe";
+        settings.SoundscapesMasterVolume = 0.42;
+        await service.SaveSettingsAsync(settings);
+
+        var reload = await db.UserSettings.AsNoTracking().FirstAsync();
+        Assert.False(reload.AutoPlaySoundscapeOnFocus);
+        Assert.Equal("cafe", reload.PreferredSoundscapeId);
+        Assert.Equal(0.42, reload.SoundscapesMasterVolume);
     }
 
     private sealed class NoOpBackend : IBackendApiClient

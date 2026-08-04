@@ -60,6 +60,8 @@ public class SettingsService : ISettingsService
             existing.TickingVolume = settings.TickingVolume;
             existing.EnableSoundscapes = settings.EnableSoundscapes;
             existing.SoundscapesMasterVolume = settings.SoundscapesMasterVolume;
+            existing.AutoPlaySoundscapeOnFocus = settings.AutoPlaySoundscapeOnFocus;
+            existing.PreferredSoundscapeId = settings.PreferredSoundscapeId;
             existing.SelectedTheme = settings.SelectedTheme;
             existing.UseMicaBackdrop = settings.UseMicaBackdrop;
             existing.CompactMiniTimerAlwaysOnTop = settings.CompactMiniTimerAlwaysOnTop;

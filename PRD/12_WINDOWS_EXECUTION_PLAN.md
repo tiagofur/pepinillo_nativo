@@ -190,7 +190,7 @@ Estimated remaining effort (order of magnitude, after existing skeleton): **~280
 | **P2.2** | Session journaling UI | `JournalNote` + `EnergyRating` on `FocusSession`; post-session panel on FocusPage | **Coded** |
 | **P2.3** | Tasks depth | Priority 0–3, energy deep/shallow/admin, EstimatedPomodoros, FREQ=DAILY/WEEKLY | **Coded** |
 | **P2.4** | Analytics real data | SQLite aggregates, 7-day hours, current/best streak (UTC), mode ProgressBars | **Coded** |
-| **P2.5** | Soundscapes | EN catalog; `WindowsMediaPlayerService` loop; premium gate → Paywall; graceful missing assets | **Coded** (assets optional) |
+| **P2.5** | Soundscapes | EN catalog; MediaPlayer loop + fade; session auto-play coordinator; placeholder mp3 assets; premium gate | **Done (W3 #577)** — replace placeholders for Store |
 | **P2.6** | Auth UI + secure token store | `IAuthTokenStore` + PasswordVault; Account page login/register/logout | **Coded** |
 | **P2.7** | Sync worker | `SyncService` push unsynced sessions + pull subscription; local-first | **Coded** |
 | **P2.8** | StoreContext IAP | `WindowsStoreCommerceService` + backend merge + free fallback | **Coded** (sandbox/Partner Center pending) |

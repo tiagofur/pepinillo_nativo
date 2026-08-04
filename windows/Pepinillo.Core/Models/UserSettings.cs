@@ -30,6 +30,10 @@ public class UserSettings
     public double TickingVolume { get; set; } = 0.5;
     public bool EnableSoundscapes { get; set; } = true;
     public double SoundscapesMasterVolume { get; set; } = 0.7;
+    /// <summary>When true, preferred soundscape auto-plays when a focus work phase starts.</summary>
+    public bool AutoPlaySoundscapeOnFocus { get; set; } = true;
+    /// <summary>Catalog track id used for auto-play and last manual selection (default rain).</summary>
+    public string? PreferredSoundscapeId { get; set; } = "rain";
 
     // Visual
     /// <summary>System, Dark, Light, Forest, Ocean, Sunset, OLEDBlack</summary>

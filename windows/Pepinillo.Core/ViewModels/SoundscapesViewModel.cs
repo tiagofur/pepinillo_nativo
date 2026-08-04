@@ -75,7 +75,7 @@ public partial class SoundscapesViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void PlayTrack(SoundscapeTrack? track)
+    private async Task PlayTrackAsync(SoundscapeTrack? track)
     {
         if (track == null) return;
 
@@ -89,7 +89,7 @@ public partial class SoundscapesViewModel : ObservableObject
 
         try
         {
-            _audio.PlayTrack(track.Id, track.Volume * MasterVolume);
+            await _audio.PlayAsync(track.Id, MasterVolume, loop: true);
             if (!string.IsNullOrEmpty(_audio.LastStatusMessage))
             {
                 StatusMessage = _audio.LastStatusMessage;
@@ -98,6 +98,12 @@ public partial class SoundscapesViewModel : ObservableObject
             {
                 StatusMessage = $"Playing {track.Name}";
             }
+
+            // Last selected free/premium play becomes preferred for session auto-play.
+            var settings = await _settings.GetSettingsAsync();
+            settings.PreferredSoundscapeId = track.Id;
+            settings.SoundscapesMasterVolume = MasterVolume;
+            await _settings.SaveSettingsAsync(settings);
 
             RefreshPlayingFlags();
         }
@@ -108,18 +114,18 @@ public partial class SoundscapesViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void StopTrack(SoundscapeTrack? track)
+    private async Task StopTrackAsync(SoundscapeTrack? track)
     {
         if (track == null) return;
-        _audio.StopTrack(track.Id);
+        await _audio.StopAsync(fade: true);
         StatusMessage = "Stopped";
         RefreshPlayingFlags();
     }
 
     [RelayCommand]
-    private void StopAll()
+    private async Task StopAllAsync()
     {
-        _audio.StopAll();
+        await _audio.StopAsync(fade: true);
         StatusMessage = "All stopped";
         RefreshPlayingFlags();
     }
@@ -127,9 +133,7 @@ public partial class SoundscapesViewModel : ObservableObject
     partial void OnMasterVolumeChanged(double value)
     {
         _audio.SetMasterVolume(value);
-        var playing = Tracks.FirstOrDefault(t => t.IsPlaying);
-        if (playing != null)
-            _audio.SetTrackVolume(playing.Id, playing.Volume * value);
+        _ = _audio.SetVolumeAsync(value);
     }
 
     public async Task PersistVolumeAsync()

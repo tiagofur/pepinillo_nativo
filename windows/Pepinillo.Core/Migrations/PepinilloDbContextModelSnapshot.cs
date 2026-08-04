@@ -125,6 +125,9 @@ namespace Pepinillo.Core.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("AutoPlaySoundscapeOnFocus")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("AutoStartBreaks")
                         .HasColumnType("INTEGER");
 
@@ -175,6 +178,10 @@ namespace Pepinillo.Core.Migrations
                     b.Property<string>("PreferredLanguage")
                         .IsRequired()
                         .HasMaxLength(16)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PreferredSoundscapeId")
+                        .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("SelectedTheme")
