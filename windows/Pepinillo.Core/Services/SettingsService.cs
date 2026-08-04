@@ -71,6 +71,8 @@ public class SettingsService : ISettingsService
             existing.PreferredLanguage = settings.PreferredLanguage;
             existing.DeviceId = settings.DeviceId;
             existing.LastSyncAtUtc = settings.LastSyncAtUtc;
+            existing.StreakProtectionWeekStartUtc = settings.StreakProtectionWeekStartUtc;
+            existing.StreakProtectionUsesThisWeek = settings.StreakProtectionUsesThisWeek;
             _cache = existing;
         }
         else

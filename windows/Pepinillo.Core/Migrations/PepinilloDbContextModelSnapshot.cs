@@ -206,6 +206,12 @@ namespace Pepinillo.Core.Migrations
                     b.Property<double>("SoundscapesMasterVolume")
                         .HasColumnType("REAL");
 
+                    b.Property<int>("StreakProtectionUsesThisWeek")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StreakProtectionWeekStartUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<double>("TickingVolume")
                         .HasColumnType("REAL");
 

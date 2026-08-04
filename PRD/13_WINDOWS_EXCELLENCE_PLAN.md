@@ -203,7 +203,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Subtasks / recurrence gates | Done | Done | Done | — |
 | Weekly / Monthly Review | Done | **Done (W4 #578):** Monday-start UTC week + calendar month vs previous; free teaser → paywall; premium hours/sessions/top mode/trend | Done | W4 |
 | Achievements (6) | Done | **Done (W4 #578):** FREE local badges from FocusSessions (First Session, Weekly Streak, Pomodoro Master, Deep Diver, Century Club, Early Bird UTC&lt;7); horizontal list on Analytics | Done | W4 |
-| Streaks + protection | Done | Streaks only | +1 skip/week paid | W6 |
+| Streaks + protection | Done | **Done (W6 #580):** current streak auto-bridges **1 missing UTC day per ISO week** for Pepinillo+/Everywhere (`IStreakProtectionService` + `UserSettings.StreakProtection*`); free no bridge; Analytics caption “available / used this week / upgrade” | +1 skip/week paid | W6 |
 | Soundscapes player + assets | iOS strong | **Done (W3 #577):** catalog free×4 + premium×3; placeholder loop mp3s; MediaPlayer fade in/out; `SoundscapeSessionCoordinator` auto-play on work / **pause** on break / stop on end; Settings `EnableSoundscapes` + `AutoPlaySoundscapeOnFocus` + preferred track; premium gate. **Replace placeholders with licensed audio before Store public** | Full + auto-play + fade | W3 |
 | Themes 4 named | Done | **Improved (W2):** System/Light/Dark free + Forest/Ocean/Sunset gated via `CanUseTheme`; DesignTokens + Mica; OLEDBlack aliases Dark | Full + gate | W2 |
 | Onboarding | Done | Missing | Done | W7 |
@@ -211,7 +211,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Auth email/password | Done | **Done (W10 #584):** nested tokens + refresh; Account UX (offline vs signed-in, email validation, register auto-sign-in when tokens returned, busy disable, LastSyncAt + LastError); free/local copy honest | Full | W10 |
 | Everywhere sync | Done | **Sessions depth (W10 #584):** POST `/sync/sessions` wrapped body + mode map (pomodoro/flowtime/timeblock/stopwatch); GET `/sync/full` session pull + LWW upsert; `X-Device-ID`; 403 → Everywhere required; subscription pull. **Residual:** bidirectional task/settings sync | Full session/tasks/settings | W10 |
 | Paywall + restore | Done | **Done (W11 #585):** D1 prices + Pepinillo+ one-time badge; `CommerceResult` + `LastError`; restore purchases; Store+backend tier merge (Everywhere &gt; Plus &gt; Free); honest cancel/network/identity messages; `InitializeWithWindow` for purchase dialogs; post-purchase `IEntitlementService.ApplyStatus` so gates unlock without restart; manage-in-Store link. **Residual:** live sandbox purchase proof on Windows + Partner Center SKUs (#568); no MS Store receipt verify on backend yet | Perfect copy + restore | W11 |
-| Export CSV/PDF | Partial/Done | Missing | Done | W6 |
+| Export CSV/PDF | Partial/Done | **Done (W6 #580):** `IExportService` CSV (UTF-8 BOM) + minimal PDF 1.4 text writer (no NuGet); `CanExport` premium gate; Analytics Export CSV/PDF → FileSavePicker (`InitializeWithWindow`); free → Paywall | Done | W6 |
 | Phase notifications | Done | **Done (W9 #583):** AppNotification buttons Pause/Resume/Stop/Skip + `NotificationInvoked` → FocusViewModel | + polish | W9 |
 | Live Activity | Done | N/A → tray/mini | Excellent tray/mini | W9/W14 |
 | Focus Assist / DND | Mobile APIs | **Honest best-effort (W9 #583):** intent tracking + `FocusAssistStatus`; no fake “DND on”; optional Settings link `ms-settings:quiethours` | Best-effort real | W9 |

@@ -224,6 +224,48 @@
                 </StackPanel>
             </Border>
 
+            <!-- Export + streak protection (Pepinillo+) -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE8C8;"
+                                  Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
+                        <TextBlock Text="Export"
+                                   FontWeight="SemiBold"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                        <Border Background="{StaticResource PepinilloPremiumBadgeBrush}"
+                                CornerRadius="4"
+                                Padding="6,2"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="Pepinillo+"
+                                       FontSize="11"
+                                       Foreground="White"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock Text="Download focus history as CSV or PDF. Available with Pepinillo+ or Everywhere."
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="ExportCsvButton"
+                                Content="Export CSV"
+                                Click="ExportCsv_Click"/>
+                        <Button x:Name="ExportPdfButton"
+                                Content="Export PDF"
+                                Click="ExportPdf_Click"/>
+                    </StackPanel>
+                    <TextBlock x:Name="ExportStatusText"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                    <TextBlock x:Name="StreakProtectionText"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
             <TextBlock Text="Mode breakdown (7 days)"
                        Style="{ThemeResource SubtitleTextBlockStyle}"
                        FontWeight="SemiBold"/>

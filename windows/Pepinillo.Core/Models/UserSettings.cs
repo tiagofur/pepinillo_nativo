@@ -56,4 +56,13 @@ public class UserSettings
 
     /// <summary>UTC timestamp of last successful cloud session sync (for lastSyncAt).</summary>
     public DateTime? LastSyncAtUtc { get; set; }
+
+    /// <summary>
+    /// ISO week Monday (UTC) for which <see cref="StreakProtectionUsesThisWeek"/> applies.
+    /// Pepinillo+ / Everywhere: 1 streak skip per week.
+    /// </summary>
+    public DateTime? StreakProtectionWeekStartUtc { get; set; }
+
+    /// <summary>Number of streak-protection skips consumed in the current ISO week (max 1).</summary>
+    public int StreakProtectionUsesThisWeek { get; set; }
 }

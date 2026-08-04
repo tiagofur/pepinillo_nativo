@@ -32,6 +32,9 @@ public interface IEntitlementService
     /// </summary>
     bool CanUseTheme(string themeName);
 
+    /// <summary>CSV / PDF productivity export — Pepinillo+ or Everywhere only.</summary>
+    bool CanExport { get; }
+
     /// <summary>Refreshes cache from <see cref="IStoreCommerceService"/>.</summary>
     Task RefreshAsync();
 
