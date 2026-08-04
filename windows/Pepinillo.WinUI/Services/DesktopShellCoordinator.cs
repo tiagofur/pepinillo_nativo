@@ -8,7 +8,7 @@ using WinRT.Interop;
 namespace Pepinillo.WinUI.Services;
 
 /// <summary>
-/// Wires tray, global hotkeys, and minimize-to-tray close behavior after MainWindow exists.
+/// Wires tray, global hotkeys, Jump List host, and minimize-to-tray close behavior after MainWindow exists.
 /// </summary>
 public sealed class DesktopShellCoordinator : IDisposable
 {
@@ -16,6 +16,7 @@ public sealed class DesktopShellCoordinator : IDisposable
     private readonly IGlobalHotkeyService _globalHotkeyService;
     private readonly ISettingsService _settingsService;
     private readonly IMiniTimerController _miniTimerController;
+    private readonly JumpListService _jumpListService;
 
     private Window? _mainWindow;
     private AppWindow? _appWindow;
@@ -25,13 +26,18 @@ public sealed class DesktopShellCoordinator : IDisposable
         ITrayIconService trayIconService,
         IGlobalHotkeyService globalHotkeyService,
         ISettingsService settingsService,
-        IMiniTimerController miniTimerController)
+        IMiniTimerController miniTimerController,
+        JumpListService jumpListService)
     {
         _trayIconService = trayIconService;
         _globalHotkeyService = globalHotkeyService;
         _settingsService = settingsService;
         _miniTimerController = miniTimerController;
+        _jumpListService = jumpListService;
     }
+
+    /// <summary>Jump List activation host (cold/warm launch arguments).</summary>
+    public JumpListService JumpList => _jumpListService;
 
     public void Attach(Window mainWindow)
     {
@@ -46,6 +52,7 @@ public sealed class DesktopShellCoordinator : IDisposable
 
         _trayIconService.Initialize(mainWindow);
         _globalHotkeyService.Initialize(mainWindow);
+        _jumpListService.Attach(mainWindow);
     }
 
     private async void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)

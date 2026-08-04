@@ -94,7 +94,54 @@ public partial class App : Application
         // Ensure toast service is constructed so NotificationInvoked is wired.
         _ = Services.GetRequiredService<INotificationService>();
 
+        // Taskbar Jump List (Start Pomodoro / Tasks / Pause / Mini). Failures are non-fatal.
+        try
+        {
+            await JumpListService.TryRegisterAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Jump List setup: {ex.Message}");
+        }
+
         _mainWindow.Activate();
+
+        // Cold-start Jump List / protocol arguments (and any AppInstance activation args).
+        try
+        {
+            var launchArgs = ResolveLaunchArguments(args);
+            if (!string.IsNullOrWhiteSpace(launchArgs))
+                _shell.JumpList.HandleArguments(launchArgs);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Jump List activation: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Prefer classic launch args; fall back to AppLifecycle activation when available.
+    /// </summary>
+    private static string? ResolveLaunchArguments(LaunchActivatedEventArgs args)
+    {
+        if (!string.IsNullOrWhiteSpace(args.Arguments))
+            return args.Arguments;
+
+        try
+        {
+            var activated = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
+            if (activated?.Data is Windows.ApplicationModel.Activation.ILaunchActivatedEventArgs launch
+                && !string.IsNullOrWhiteSpace(launch.Arguments))
+            {
+                return launch.Arguments;
+            }
+        }
+        catch
+        {
+            // AppLifecycle not available or wrong activation kind.
+        }
+
+        return null;
     }
 
     private static IServiceProvider ConfigureServices()
@@ -117,6 +164,7 @@ public partial class App : Application
         services.AddSingleton<IMiniTimerController, MiniTimerController>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IGlobalHotkeyService, GlobalHotkeyService>();
+        services.AddSingleton<JumpListService>();
         services.AddSingleton<DesktopShellCoordinator>();
 
         return services.BuildServiceProvider();

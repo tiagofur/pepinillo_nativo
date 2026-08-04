@@ -65,6 +65,10 @@ public class SettingsService : ISettingsService
             existing.SelectedTheme = settings.SelectedTheme;
             existing.UseMicaBackdrop = settings.UseMicaBackdrop;
             existing.CompactMiniTimerAlwaysOnTop = settings.CompactMiniTimerAlwaysOnTop;
+            existing.MiniTimerX = settings.MiniTimerX;
+            existing.MiniTimerY = settings.MiniTimerY;
+            existing.MiniTimerWidth = settings.MiniTimerWidth;
+            existing.MiniTimerHeight = settings.MiniTimerHeight;
             existing.PlayPauseHotkey = settings.PlayPauseHotkey;
             existing.SkipHotkey = settings.SkipHotkey;
             existing.MiniTimerHotkey = settings.MiniTimerHotkey;

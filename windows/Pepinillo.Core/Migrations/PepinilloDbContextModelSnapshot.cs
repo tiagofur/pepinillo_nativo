@@ -210,6 +210,18 @@ namespace Pepinillo.Core.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("MiniTimerHeight")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MiniTimerWidth")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MiniTimerX")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("MiniTimerY")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("MinimizeToSystemTrayOnClose")
                         .HasColumnType("INTEGER");
 
