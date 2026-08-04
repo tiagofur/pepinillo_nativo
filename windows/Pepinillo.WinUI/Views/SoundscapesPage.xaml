@@ -22,7 +22,7 @@
                 <Slider Minimum="0" Maximum="1" StepFrequency="0.05"
                         Value="{x:Bind ViewModel.MasterVolume, Mode=TwoWay}"
                         ValueChanged="Volume_ValueChanged"/>
-                <Button Content="Stop all" Command="{x:Bind ViewModel.StopAllCommand}" HorizontalAlignment="Left"/>
+                <Button Content="{x:Bind ViewModel.StopLabel, Mode=OneWay}" Command="{x:Bind ViewModel.StopAllCommand}" HorizontalAlignment="Left"/>
             </StackPanel>
 
             <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"

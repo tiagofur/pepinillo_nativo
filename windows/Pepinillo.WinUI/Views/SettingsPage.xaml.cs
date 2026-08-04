@@ -39,6 +39,18 @@ public sealed partial class SettingsPage : Page
 
         try
         {
+            App.Services.GetRequiredService<ILocalizationService>()
+                .SetLanguage(settings.PreferredLanguage);
+            if (App.MainWindowInstance is MainWindow main)
+                main.ApplyNavigationLabels();
+        }
+        catch
+        {
+            // ignore
+        }
+
+        try
+        {
             var focus = App.Services.GetRequiredService<FocusViewModel>();
             _ = focus.RefreshSettingsAsync();
         }

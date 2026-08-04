@@ -8,10 +8,10 @@
 
     <ScrollViewer Margin="32">
         <StackPanel Spacing="20" MaxWidth="520" HorizontalAlignment="Left">
-            <TextBlock Text="Account"
+            <TextBlock Text="{x:Bind ViewModel.TitleLabel, Mode=OneWay}"
                        Style="{ThemeResource TitleTextBlockStyle}"
                        FontWeight="Bold"/>
-            <TextBlock Text="Sign in to sync sessions with Everywhere. Local focus data always works offline — free/local users stay local-first."
+            <TextBlock Text="{x:Bind ViewModel.SubtitleLabel, Mode=OneWay}"
                        Style="{ThemeResource BodyTextBlockStyle}"
                        TextWrapping="Wrap"
                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
@@ -24,41 +24,41 @@
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
 
-                    <TextBox Header="Email"
+                    <TextBox Header="{x:Bind ViewModel.EmailLabel, Mode=OneWay}"
                              Text="{x:Bind ViewModel.Email, Mode=TwoWay}"
                              PlaceholderText="you@example.com"
                              IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
                     <PasswordBox x:Name="PasswordBox"
-                                 Header="Password"
-                                 PlaceholderText="Password"
+                                 Header="{x:Bind ViewModel.PasswordLabel, Mode=OneWay}"
+                                 PlaceholderText="{x:Bind ViewModel.PasswordLabel, Mode=OneWay}"
                                  PasswordChanged="PasswordBox_PasswordChanged"
                                  IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
-                    <TextBox Header="Display name (register)"
+                    <TextBox Header="{x:Bind ViewModel.DisplayNameLabel, Mode=OneWay}"
                              Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay}"
                              PlaceholderText="Optional"
                              IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
 
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Sign in"
+                        <Button Content="{x:Bind ViewModel.LoginLabel, Mode=OneWay}"
                                 Style="{ThemeResource AccentButtonStyle}"
                                 Command="{x:Bind ViewModel.LoginCommand}"
                                 IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
-                        <Button Content="Create account"
+                        <Button Content="{x:Bind ViewModel.RegisterLabel, Mode=OneWay}"
                                 Command="{x:Bind ViewModel.RegisterCommand}"
                                 IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
-                        <Button Content="Sign out"
+                        <Button Content="{x:Bind ViewModel.LogoutLabel, Mode=OneWay}"
                                 Command="{x:Bind ViewModel.LogoutCommand}"
                                 IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
                     </StackPanel>
 
-                    <Button Content="Sync now"
+                    <Button Content="{x:Bind ViewModel.SyncNowLabel, Mode=OneWay}"
                             Command="{x:Bind ViewModel.SyncNowCommand}"
                             HorizontalAlignment="Left"
                             IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
 
                     <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}">
-                        <Run Text="Last sync: "/>
+                        <Run Text="{x:Bind ViewModel.LastSyncPrefix, Mode=OneWay}"/>
                         <Run Text="{x:Bind ViewModel.LastSyncDisplay, Mode=OneWay}"/>
                     </TextBlock>
 
@@ -74,7 +74,7 @@
                                TextWrapping="Wrap"
                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"/>
 
-                    <TextBlock Text="Cloud sync needs Everywhere. Local data always works."
+                    <TextBlock Text="{x:Bind ViewModel.CloudSyncHint, Mode=OneWay}"
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                TextWrapping="Wrap"
                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"

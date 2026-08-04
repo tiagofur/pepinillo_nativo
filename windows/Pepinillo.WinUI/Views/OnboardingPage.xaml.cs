@@ -14,6 +14,11 @@ public sealed partial class OnboardingPage : Page
         ViewModel = App.Services.GetRequiredService<OnboardingViewModel>();
         InitializeComponent();
         ViewModel.Completed += OnOnboardingCompleted;
+        Loaded += async (_, _) =>
+        {
+            ViewModel.ResetWizard();
+            await ViewModel.ApplyLanguageFromSettingsAsync();
+        };
         Unloaded += (_, _) => ViewModel.Completed -= OnOnboardingCompleted;
     }
 

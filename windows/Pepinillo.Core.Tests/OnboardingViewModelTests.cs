@@ -24,8 +24,10 @@ public class OnboardingViewModelTests
         }
     }
 
-    private static OnboardingViewModel CreateVm(FakeSettingsService? settings = null) =>
-        new(settings ?? new FakeSettingsService());
+    private static OnboardingViewModel CreateVm(
+        FakeSettingsService? settings = null,
+        ILocalizationService? localizer = null) =>
+        new(settings ?? new FakeSettingsService(), localizer);
 
     [Fact]
     public void StartsAtStepZero_CannotGoBack()
@@ -155,5 +157,29 @@ public class OnboardingViewModelTests
         Assert.Equal(0, vm.CurrentStep);
         Assert.Equal(FocusMode.Pomodoro, vm.SelectedDefaultMode);
         Assert.False(vm.CanGoBack);
+    }
+
+    [Fact]
+    public async Task StepTitles_ChangeWithPreferredLanguage()
+    {
+        var settings = new FakeSettingsService
+        {
+            Settings = new UserSettings { PreferredLanguage = "es" }
+        };
+        var loc = new LocalizationService();
+        var vm = CreateVm(settings, loc);
+
+        await vm.ApplyLanguageFromSettingsAsync();
+
+        Assert.Equal("Bienvenido a Pepinillo", vm.StepTitle);
+        Assert.Equal("Siguiente", vm.PrimaryButtonLabel);
+        Assert.Equal("Omitir", vm.SkipLabel);
+
+        settings.Settings.PreferredLanguage = "pt";
+        await vm.ApplyLanguageFromSettingsAsync();
+
+        Assert.Equal("Bem-vindo ao Pepinillo", vm.StepTitle);
+        Assert.Equal("Próximo", vm.PrimaryButtonLabel);
+        Assert.Equal("Pular", vm.SkipLabel);
     }
 }

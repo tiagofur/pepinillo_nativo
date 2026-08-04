@@ -9,10 +9,10 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{StaticResource PepinilloPageMargin}">
         <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,24">
-            <TextBlock Text="Tasks"
+            <TextBlock Text="{x:Bind ViewModel.TitleLabel, Mode=OneWay}"
                        Style="{ThemeResource TitleTextBlockStyle}"
                        FontWeight="Bold"/>
-            <TextBlock Text="Plan work into focus-sized tasks. Data is stored offline on this device."
+            <TextBlock Text="{x:Bind ViewModel.SubtitleLabel, Mode=OneWay}"
                        Style="{ThemeResource BodyTextBlockStyle}"
                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
             <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
@@ -23,12 +23,12 @@
         <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,16">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                 <TextBox Grid.Column="0"
-                         PlaceholderText="Add a new task..."
+                         PlaceholderText="{x:Bind ViewModel.AddPlaceholder, Mode=OneWay}"
                          Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay}"
-                         Header="Title"/>
+                         Header="{x:Bind ViewModel.TitleFieldLabel, Mode=OneWay}"/>
                 <NumberBox Grid.Column="1"
                            Width="140"
-                           Header="Est. (min)"
+                           Header="{x:Bind ViewModel.EstimateLabel, Mode=OneWay}"
                            Value="{x:Bind ViewModel.NewTaskEstimateMinutes, Mode=TwoWay}"
                            SpinButtonPlacementMode="Compact"
                            SmallChange="5"
@@ -36,24 +36,24 @@
                            Minimum="5"
                            Maximum="240"/>
                 <Button Grid.Column="2"
-                        Content="Add task"
+                        Content="{x:Bind ViewModel.AddTaskLabel, Mode=OneWay}"
                         Style="{ThemeResource AccentButtonStyle}"
                         VerticalAlignment="Bottom"
                         Command="{x:Bind ViewModel.CreateTaskCommand}"/>
             </Grid>
             <StackPanel Orientation="Horizontal" Spacing="12">
-                <NumberBox Header="Priority (0–3)"
+                <NumberBox Header="{x:Bind ViewModel.PriorityLabel, Mode=OneWay}"
                            Width="140"
                            Value="{x:Bind ViewModel.NewTaskPriority, Mode=TwoWay}"
                            Minimum="0"
                            Maximum="3"
                            SmallChange="1"
                            SpinButtonPlacementMode="Compact"/>
-                <ComboBox Header="Energy"
+                <ComboBox Header="{x:Bind ViewModel.EnergyLabel, Mode=OneWay}"
                           Width="140"
                           ItemsSource="{x:Bind ViewModel.EnergyOptions}"
                           SelectedItem="{x:Bind ViewModel.NewTaskEnergy, Mode=TwoWay}"/>
-                <ComboBox Header="Recurrence"
+                <ComboBox Header="{x:Bind ViewModel.RecurrenceLabel, Mode=OneWay}"
                           Width="160"
                           ItemsSource="{x:Bind ViewModel.RecurrenceOptions}"
                           SelectedItem="{x:Bind ViewModel.NewTaskRecurrence, Mode=TwoWay}"/>
@@ -64,10 +64,10 @@
                x:Name="FilterPivot"
                Margin="0,0,0,8"
                SelectionChanged="FilterPivot_SelectionChanged">
-            <PivotItem Header="Today" Tag="Today"/>
-            <PivotItem Header="Upcoming" Tag="Upcoming"/>
-            <PivotItem Header="Inbox" Tag="Inbox"/>
-            <PivotItem Header="All" Tag="All"/>
+            <PivotItem x:Name="FilterTodayItem" Header="Today" Tag="Today"/>
+            <PivotItem x:Name="FilterUpcomingItem" Header="Upcoming" Tag="Upcoming"/>
+            <PivotItem x:Name="FilterInboxItem" Header="Inbox" Tag="Inbox"/>
+            <PivotItem x:Name="FilterAllItem" Header="All" Tag="All"/>
         </Pivot>
 
         <Grid Grid.Row="3">
@@ -177,7 +177,7 @@
         </Grid>
 
         <ContentDialog x:Name="SubtaskDialog"
-                       Title="Add subtask"
+                       Title="{x:Bind ViewModel.AddSubtaskLabel, Mode=OneWay}"
                        PrimaryButtonText="Add"
                        CloseButtonText="Cancel"
                        DefaultButton="Primary"

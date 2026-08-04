@@ -34,6 +34,12 @@ public partial class SoundscapesViewModel : ObservableObject
     private string _volumeLabel = "Master volume";
 
     [ObservableProperty]
+    private string _playLabel = "Play";
+
+    [ObservableProperty]
+    private string _stopLabel = "Stop";
+
+    [ObservableProperty]
     private bool _hasPremium;
 
     public SoundscapesViewModel(
@@ -71,6 +77,8 @@ public partial class SoundscapesViewModel : ObservableObject
             _localizer.SetLanguage(settings.PreferredLanguage);
             TitleLabel = _localizer.GetString("Soundscapes.Title");
             VolumeLabel = _localizer.GetString("Soundscapes.MasterVolume");
+            PlayLabel = _localizer.GetString("Soundscapes.Play");
+            StopLabel = _localizer.GetString("Soundscapes.Stop");
         }
     }
 
@@ -96,7 +104,8 @@ public partial class SoundscapesViewModel : ObservableObject
             }
             else
             {
-                StatusMessage = $"Playing {track.Name}";
+                var template = _localizer?.GetString("Soundscapes.Playing") ?? "Playing {0}";
+                StatusMessage = string.Format(template, track.Name);
             }
 
             // Last selected free/premium play becomes preferred for session auto-play.
@@ -109,7 +118,8 @@ public partial class SoundscapesViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Playback error: {ex.Message}";
+            var template = _localizer?.GetString("Soundscapes.PlaybackError") ?? "Playback error: {0}";
+            StatusMessage = string.Format(template, ex.Message);
         }
     }
 
@@ -118,7 +128,7 @@ public partial class SoundscapesViewModel : ObservableObject
     {
         if (track == null) return;
         await _audio.StopAsync(fade: true);
-        StatusMessage = "Stopped";
+        StatusMessage = _localizer?.GetString("Soundscapes.Stopped") ?? "Stopped";
         RefreshPlayingFlags();
     }
 
@@ -126,7 +136,7 @@ public partial class SoundscapesViewModel : ObservableObject
     private async Task StopAllAsync()
     {
         await _audio.StopAsync(fade: true);
-        StatusMessage = "All stopped";
+        StatusMessage = _localizer?.GetString("Soundscapes.AllStopped") ?? "All stopped";
         RefreshPlayingFlags();
     }
 

@@ -59,6 +59,15 @@ public partial class SettingsViewModel : ObservableObject
     private string _longBreakLabel = "Long break (minutes)";
 
     [ObservableProperty]
+    private string _longBreakIntervalLabel = "Long break every N pomodoros";
+
+    [ObservableProperty]
+    private string _flowtimeTargetLabel = "Flowtime target (minutes)";
+
+    [ObservableProperty]
+    private string _timeBlockLabel = "Time block (minutes)";
+
+    [ObservableProperty]
     private string _autoStartBreaksLabel = "Auto-start breaks";
 
     [ObservableProperty]
@@ -74,6 +83,10 @@ public partial class SettingsViewModel : ObservableObject
     private string _languageLabel = "Language";
 
     [ObservableProperty]
+    private string _languageAppliesNote =
+        "Language applies to screens when reopened.";
+
+    [ObservableProperty]
     private string _privacyLabel = "Privacy policy";
 
     [ObservableProperty]
@@ -81,6 +94,72 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _upgradeLabel = "Upgrade";
+
+    [ObservableProperty]
+    private string _upgradePlusLabel = "Upgrade to Pepinillo+";
+
+    [ObservableProperty]
+    private string _micaLabel = "Mica / acrylic backdrop (when supported)";
+
+    [ObservableProperty]
+    private string _soundscapesSectionLabel = "Soundscapes";
+
+    [ObservableProperty]
+    private string _enableSoundscapesLabel = "Enable soundscapes";
+
+    [ObservableProperty]
+    private string _autoPlaySoundscapeLabel =
+        "Auto-play preferred soundscape when focus starts";
+
+    [ObservableProperty]
+    private string _soundscapesHintLabel =
+        "Master volume and track selection live on the Soundscapes page. Preferred track updates when you press Play.";
+
+    [ObservableProperty]
+    private string _windowsIntegrationLabel = "Windows integration";
+
+    [ObservableProperty]
+    private string _focusAssistLabel = "Sync with Focus Assist / Do Not Disturb";
+
+    [ObservableProperty]
+    private string _openFocusAssistLabel = "Open Focus Assist settings";
+
+    [ObservableProperty]
+    private string _minimizeToTrayLabel = "Minimize to system tray on close";
+
+    [ObservableProperty]
+    private string _toastsLabel = "Toast notifications";
+
+    [ObservableProperty]
+    private string _startupLabel = "Launch Pepinillo when Windows starts";
+
+    [ObservableProperty]
+    private string _hotkeysLabel = "Global hotkeys";
+
+    [ObservableProperty]
+    private string _playPauseHotkeyLabel = "Play / Pause";
+
+    [ObservableProperty]
+    private string _skipHotkeyLabel = "Skip break";
+
+    [ObservableProperty]
+    private string _miniTimerHotkeyLabel = "Mini timer";
+
+    [ObservableProperty]
+    private string _resetHotkeysLabel = "Reset hotkeys to defaults";
+
+    [ObservableProperty]
+    private string _helpLabel = "Help";
+
+    [ObservableProperty]
+    private string _onboardingReplayLabel =
+        "Replay the first-run welcome guide (modes, tray, hotkeys, mini timer).";
+
+    [ObservableProperty]
+    private string _onboardingReplayButtonLabel = "Show welcome guide";
+
+    [ObservableProperty]
+    private string _legalLabel = "Legal";
 
     /// <summary>
     /// Non-empty when the last theme pick was blocked by free-tier limits.
@@ -139,7 +218,7 @@ public partial class SettingsViewModel : ObservableObject
             StatusMessage = string.Empty;
             PaywallFeatureHint = string.Empty;
             FocusAssistStatus = _focusAssist?.FocusAssistStatus
-                ?? "Focus Assist: status unavailable";
+                ?? T("Settings.FocusAssistUnavailable", "Focus Assist: status unavailable");
         }
         finally
         {
@@ -171,7 +250,7 @@ public partial class SettingsViewModel : ObservableObject
             await _settingsService.SaveSettingsAsync(Settings);
             _localizer?.SetLanguage(Settings.PreferredLanguage);
             ApplyLocalizedLabels();
-            StatusMessage = _localizer?.GetString("Settings.Saved") ?? "Settings saved";
+            StatusMessage = T("Settings.Saved", "Settings saved");
             PaywallFeatureHint = string.Empty;
             FocusAssistStatus = _focusAssist?.FocusAssistStatus
                 ?? FocusAssistStatus;
@@ -179,7 +258,9 @@ public partial class SettingsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Save failed: {ex.Message}";
+            StatusMessage = string.Format(
+                T("Settings.SaveFailed", "Save failed: {0}"),
+                ex.Message);
         }
         finally
         {
@@ -194,7 +275,8 @@ public partial class SettingsViewModel : ObservableObject
         Settings.SkipHotkey = HotkeyChordParser.DefaultSkip;
         Settings.MiniTimerHotkey = HotkeyChordParser.DefaultMiniTimer;
         OnPropertyChanged(nameof(Settings));
-        StatusMessage = "Hotkeys reset to defaults (save to apply).";
+        StatusMessage = T("Settings.HotkeysReset",
+            "Hotkeys reset to defaults (save to apply).");
     }
 
     /// <summary>
@@ -208,12 +290,14 @@ public partial class SettingsViewModel : ObservableObject
         {
             Settings.HasCompletedOnboarding = false;
             await _settingsService.SaveSettingsAsync(Settings);
-            StatusMessage = "Opening welcome guide…";
+            StatusMessage = T("Settings.OpeningOnboarding", "Opening welcome guide…");
             OnboardingReplayRequested?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Could not reset onboarding: {ex.Message}";
+            StatusMessage = string.Format(
+                T("Settings.SaveFailed", "Save failed: {0}"),
+                ex.Message);
         }
         finally
         {
@@ -230,19 +314,22 @@ public partial class SettingsViewModel : ObservableObject
 
         if (!HotkeyChordParser.TryParse(Settings.PlayPauseHotkey, out var play))
         {
-            error = "Play/Pause hotkey is invalid. Use e.g. Win+Shift+P.";
+            error = T("Settings.HotkeyInvalidPlay",
+                "Play/Pause hotkey is invalid. Use e.g. Win+Shift+P.");
             return false;
         }
 
         if (!HotkeyChordParser.TryParse(Settings.SkipHotkey, out var skip))
         {
-            error = "Skip hotkey is invalid. Use e.g. Win+Shift+S.";
+            error = T("Settings.HotkeyInvalidSkip",
+                "Skip hotkey is invalid. Use e.g. Win+Shift+S.");
             return false;
         }
 
         if (!HotkeyChordParser.TryParse(Settings.MiniTimerHotkey, out var mini))
         {
-            error = "Mini timer hotkey is invalid. Use e.g. Win+Shift+M.";
+            error = T("Settings.HotkeyInvalidMini",
+                "Mini timer hotkey is invalid. Use e.g. Win+Shift+M.");
             return false;
         }
 
@@ -255,7 +342,8 @@ public partial class SettingsViewModel : ObservableObject
             || string.Equals(Settings.PlayPauseHotkey, Settings.MiniTimerHotkey, StringComparison.OrdinalIgnoreCase)
             || string.Equals(Settings.SkipHotkey, Settings.MiniTimerHotkey, StringComparison.OrdinalIgnoreCase))
         {
-            error = "Hotkeys must be unique across Play/Pause, Skip, and Mini timer.";
+            error = T("Settings.HotkeysMustBeUnique",
+                "Hotkeys must be unique across Play/Pause, Skip, and Mini timer.");
             return false;
         }
 
@@ -313,7 +401,8 @@ public partial class SettingsViewModel : ObservableObject
 
     private void BlockPremiumTheme(string themeName)
     {
-        StatusMessage = "Upgrade to Pepinillo+ for premium themes.";
+        StatusMessage = T("Settings.PremiumThemesUpgrade",
+            "Upgrade to Pepinillo+ for premium themes.");
         PaywallFeatureHint = themeName;
         PremiumFeatureRequested?.Invoke(this, themeName);
     }
@@ -326,15 +415,44 @@ public partial class SettingsViewModel : ObservableObject
         PomodoroFocusLabel = _localizer.GetString("Settings.PomodoroFocus");
         ShortBreakLabel = _localizer.GetString("Settings.ShortBreak");
         LongBreakLabel = _localizer.GetString("Settings.LongBreak");
+        LongBreakIntervalLabel = _localizer.GetString("Settings.LongBreakInterval");
+        FlowtimeTargetLabel = _localizer.GetString("Settings.FlowtimeTarget");
+        TimeBlockLabel = _localizer.GetString("Settings.TimeBlock");
         AutoStartBreaksLabel = _localizer.GetString("Settings.AutoStartBreaks");
         AutoStartFocusLabel = _localizer.GetString("Settings.AutoStartFocus");
         AppearanceLabel = _localizer.GetString("Settings.Appearance");
         SaveLabel = _localizer.GetString("Settings.Save");
         LanguageLabel = _localizer.GetString("Settings.Language");
+        LanguageAppliesNote = _localizer.GetString("Settings.LanguageAppliesNote");
         PrivacyLabel = _localizer.GetString("Settings.Privacy");
         TermsLabel = _localizer.GetString("Settings.Terms");
         UpgradeLabel = _localizer.GetString("Settings.Upgrade");
+        UpgradePlusLabel = _localizer.GetString("Settings.UpgradePlus");
+        MicaLabel = _localizer.GetString("Settings.Mica");
+        SoundscapesSectionLabel = _localizer.GetString("Settings.SoundscapesSection");
+        EnableSoundscapesLabel = _localizer.GetString("Settings.EnableSoundscapes");
+        AutoPlaySoundscapeLabel = _localizer.GetString("Settings.AutoPlaySoundscape");
+        SoundscapesHintLabel = _localizer.GetString("Settings.SoundscapesHint");
+        WindowsIntegrationLabel = _localizer.GetString("Settings.WindowsIntegration");
+        FocusAssistLabel = _localizer.GetString("Settings.FocusAssist");
+        OpenFocusAssistLabel = _localizer.GetString("Settings.OpenFocusAssist");
+        MinimizeToTrayLabel = _localizer.GetString("Settings.MinimizeToTray");
+        ToastsLabel = _localizer.GetString("Settings.Toasts");
+        StartupLabel = _localizer.GetString("Settings.Startup");
+        HotkeysLabel = _localizer.GetString("Settings.Hotkeys");
+        HotkeyHint = _localizer.GetString("Settings.HotkeyHint");
+        PlayPauseHotkeyLabel = _localizer.GetString("Settings.PlayPauseHotkey");
+        SkipHotkeyLabel = _localizer.GetString("Settings.SkipHotkey");
+        MiniTimerHotkeyLabel = _localizer.GetString("Settings.MiniTimerHotkey");
+        ResetHotkeysLabel = _localizer.GetString("Settings.ResetHotkeys");
+        HelpLabel = _localizer.GetString("Settings.Help");
+        OnboardingReplayLabel = _localizer.GetString("Settings.OnboardingReplay");
+        OnboardingReplayButtonLabel = _localizer.GetString("Settings.OnboardingReplayButton");
+        LegalLabel = _localizer.GetString("Settings.Legal");
     }
+
+    private string T(string key, string fallback) =>
+        _localizer?.GetString(key) ?? fallback;
 
     private static int LanguageToIndex(string lang) => lang switch
     {

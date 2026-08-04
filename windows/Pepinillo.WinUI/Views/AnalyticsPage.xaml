@@ -9,10 +9,10 @@
 
     <ScrollViewer Margin="{StaticResource PepinilloPageMargin}">
         <StackPanel Spacing="{StaticResource PepinilloSectionSpacing}" MaxWidth="800" HorizontalAlignment="Left">
-            <TextBlock Text="Analytics"
+            <TextBlock Text="{x:Bind ViewModel.TitleLabel, Mode=OneWay}"
                        Style="{ThemeResource TitleTextBlockStyle}"
                        FontWeight="Bold"/>
-            <TextBlock Text="Local session totals from SQLite (UTC). Charts use simple ProgressBars."
+            <TextBlock Text="{x:Bind ViewModel.SubtitleLabel, Mode=OneWay}"
                        Style="{ThemeResource BodyTextBlockStyle}"
                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
             <TextBlock Text="{x:Bind ViewModel.EmptyStateMessage, Mode=OneWay}"
@@ -26,7 +26,7 @@
                         CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                         Padding="{StaticResource PepinilloCardPaddingCompact}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Focus today"
+                        <TextBlock Text="{x:Bind ViewModel.FocusTodayLabel, Mode=OneWay}"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="TodayFocusText"
@@ -40,7 +40,7 @@
                         CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                         Padding="{StaticResource PepinilloCardPaddingCompact}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="7-day focus"
+                        <TextBlock Text="{x:Bind ViewModel.SevenDayLabel, Mode=OneWay}"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="WeeklyFocusText"
@@ -54,7 +54,7 @@
                         CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                         Padding="{StaticResource PepinilloCardPaddingCompact}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Current streak"
+                        <TextBlock Text="{x:Bind ViewModel.CurrentStreakLabel, Mode=OneWay}"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="StreakText"
@@ -69,7 +69,7 @@
                         CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                         Padding="{StaticResource PepinilloCardPaddingCompact}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Best streak"
+                        <TextBlock Text="{x:Bind ViewModel.BestStreakLabel, Mode=OneWay}"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="BestStreakText"
@@ -80,7 +80,7 @@
             </Grid>
 
             <!-- Achievements (FREE) — horizontal scroll -->
-            <TextBlock Text="Achievements"
+            <TextBlock Text="{x:Bind ViewModel.AchievementsLabel, Mode=OneWay}"
                        Style="{ThemeResource SubtitleTextBlockStyle}"
                        FontWeight="SemiBold"/>
             <ScrollViewer HorizontalScrollBarVisibility="Auto"
@@ -141,7 +141,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE787;"
                                   Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
-                        <TextBlock Text="Weekly Review"
+                        <TextBlock Text="{x:Bind ViewModel.WeeklyReviewLabel, Mode=OneWay}"
                                    FontWeight="SemiBold"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"/>
                         <Border x:Name="WeeklyPremiumBadge"
@@ -178,7 +178,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE787;"
                                   Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
-                        <TextBlock Text="Monthly Review"
+                        <TextBlock Text="{x:Bind ViewModel.MonthlyReviewLabel, Mode=OneWay}"
                                    FontWeight="SemiBold"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"/>
                         <Border x:Name="MonthlyPremiumBadge"
@@ -232,7 +232,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE8C8;"
                                   Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
-                        <TextBlock Text="Export"
+                        <TextBlock Text="{x:Bind ViewModel.ExportLabel, Mode=OneWay}"
                                    FontWeight="SemiBold"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"/>
                         <Border Background="{StaticResource PepinilloPremiumBadgeBrush}"
@@ -250,10 +250,10 @@
                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button x:Name="ExportCsvButton"
-                                Content="Export CSV"
+                                Content="{x:Bind ViewModel.ExportCsvLabel, Mode=OneWay}"
                                 Click="ExportCsv_Click"/>
                         <Button x:Name="ExportPdfButton"
-                                Content="Export PDF"
+                                Content="{x:Bind ViewModel.ExportPdfLabel, Mode=OneWay}"
                                 Click="ExportPdf_Click"/>
                     </StackPanel>
                     <TextBlock x:Name="ExportStatusText"
