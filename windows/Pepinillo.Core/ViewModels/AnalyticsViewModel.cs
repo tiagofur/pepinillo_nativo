@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Pepinillo.Core.Models;
 using Pepinillo.Core.Services;
 
@@ -11,6 +12,10 @@ public partial class AnalyticsViewModel : ObservableObject
 {
     private readonly IFocusSessionService _sessionService;
     private readonly IEntitlementService? _entitlements;
+    private readonly IReflectService? _reflectService;
+
+    /// <summary>Raised when free user requests Weekly/Monthly Review (shell navigates to paywall).</summary>
+    public event EventHandler<string>? PremiumFeatureRequested;
 
     [ObservableProperty]
     private int _todayFocusMinutes;
@@ -45,14 +50,31 @@ public partial class AnalyticsViewModel : ObservableObject
     private ObservableCollection<ModeBreakdownItem> _modeBreakdown = new();
 
     [ObservableProperty]
+    private ObservableCollection<AchievementProgress> _achievements = new();
+
+    [ObservableProperty]
+    private PeriodReviewSummary? _weeklyReview;
+
+    [ObservableProperty]
+    private PeriodReviewSummary? _monthlyReview;
+
+    [ObservableProperty]
+    private bool _canViewPeriodReviews;
+
+    [ObservableProperty]
+    private bool _showReviewPaywallTeaser;
+
+    [ObservableProperty]
     private int _historyWindowDays = EntitlementService.FreeAnalyticsHistoryDays;
 
     public AnalyticsViewModel(
         IFocusSessionService sessionService,
-        IEntitlementService? entitlements = null)
+        IEntitlementService? entitlements = null,
+        IReflectService? reflectService = null)
     {
         _sessionService = sessionService;
         _entitlements = entitlements;
+        _reflectService = reflectService;
     }
 
     public async Task LoadAsync()
@@ -62,6 +84,8 @@ public partial class AnalyticsViewModel : ObservableObject
 
         // Free: clamp analytics history to 7 days; Plus: unrestricted recent + wider window.
         var isPremium = _entitlements?.IsPremium == true;
+        CanViewPeriodReviews = isPremium;
+        ShowReviewPaywallTeaser = !isPremium;
         HistoryWindowDays = isPremium ? 30 : EntitlementService.FreeAnalyticsHistoryDays;
         var rangeStart = today.AddDays(-(HistoryWindowDays - 1));
 
@@ -87,11 +111,33 @@ public partial class AnalyticsViewModel : ObservableObject
 
         RecentSessions = new ObservableCollection<FocusSession>(recent);
 
+        // Achievements are FREE — always load when Reflect service is available.
+        if (_reflectService != null)
+        {
+            var achievements = await _reflectService.GetAchievementsAsync(utcNow);
+            Achievements = new ObservableCollection<AchievementProgress>(achievements);
+
+            WeeklyReview = await _reflectService.GetWeeklyReviewAsync(utcNow, includeDetails: isPremium);
+            MonthlyReview = await _reflectService.GetMonthlyReviewAsync(utcNow, includeDetails: isPremium);
+        }
+        else
+        {
+            Achievements = new ObservableCollection<AchievementProgress>();
+            WeeklyReview = null;
+            MonthlyReview = null;
+        }
+
         HasSessionData = TodayFocusMinutes > 0 || SevenDayFocusHours > 0 || RecentSessions.Count > 0;
         EmptyStateMessage = HasSessionData
             ? string.Empty
             : "No focus history yet. Finish a Pomodoro or Stopwatch session — stats and streaks will show up here.";
         AiReportSummary = BuildInsightSummary();
+    }
+
+    [RelayCommand]
+    private void OpenReviewPaywall()
+    {
+        PremiumFeatureRequested?.Invoke(this, "period_review");
     }
 
     private string BuildInsightSummary()

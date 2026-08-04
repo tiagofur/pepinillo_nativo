@@ -201,8 +201,8 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Journal + energy | Done | Done | Done + polish | W2 |
 | Tasks CRUD + filters | Done | Done | Done + keyboard excellence | W12 |
 | Subtasks / recurrence gates | Done | Done | Done | — |
-| Weekly / Monthly Review | Done | Missing | Done | W4 |
-| Achievements (6) | Done | Missing | Done | W4 |
+| Weekly / Monthly Review | Done | **Done (W4 #578):** Monday-start UTC week + calendar month vs previous; free teaser → paywall; premium hours/sessions/top mode/trend | Done | W4 |
+| Achievements (6) | Done | **Done (W4 #578):** FREE local badges from FocusSessions (First Session, Weekly Streak, Pomodoro Master, Deep Diver, Century Club, Early Bird UTC&lt;7); horizontal list on Analytics | Done | W4 |
 | Streaks + protection | Done | Streaks only | +1 skip/week paid | W6 |
 | Soundscapes player + assets | iOS strong | Player only | Full + auto-play + fade | W3 |
 | Themes 4 named | Done | **Improved (W2):** System/Light/Dark free + Forest/Ocean/Sunset gated via `CanUseTheme`; DesignTokens + Mica; OLEDBlack aliases Dark | Full + gate | W2 |
