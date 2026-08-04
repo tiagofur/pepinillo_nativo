@@ -32,6 +32,9 @@ public partial class PaywallViewModel : ObservableObject
     [ObservableProperty]
     private string _priceDisclaimer = ProductCatalog.PriceDisclaimer;
 
+    [ObservableProperty]
+    private string _pepinilloPlusPurchaseType = ProductCatalog.PepinilloPlusPurchaseType;
+
     public PaywallViewModel(IStoreCommerceService commerce)
     {
         _commerce = commerce;

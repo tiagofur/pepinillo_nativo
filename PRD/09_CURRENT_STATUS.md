@@ -339,7 +339,8 @@
 **Stack:** C# / WinUI 3 / Windows App SDK 1.6 / .NET 9 / EF Core SQLite / MSIX tooling  
 **Path:** `windows/` (`Pepinillo.Core`, `Pepinillo.WinUI`, `Pepinillo.Core.Tests`)  
 **Store docs:** `windows/store/` · **Pack:** `windows/scripts/pack-msix.ps1`  
-**Docs:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
+**Docs:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)  
+**Excellence (perfect parity + desktop craft):** [13_WINDOWS_EXCELLENCE_PLAN.md](13_WINDOWS_EXCELLENCE_PLAN.md) · epic [#573](https://github.com/tiagofur/pepinillo_nativo/issues/573) · children #574–#589 · Store [#568](https://github.com/tiagofur/pepinillo_nativo/issues/568)
 
 ### Present (P0 + P1 + P2 coded + P3 packaging)
 
@@ -349,7 +350,8 @@
 - **FocusPage** + engine: Pomodoro work→break, Stopwatch, **Flowtime** (soft target), **Time Block** (no auto-break), pause/resume/skip, session persist, optional task link, **post-session journal**
 - **Tasks:** Today/Upcoming/Inbox/All; priority/energy/recurrence/pomodoro estimates; subtasks
 - **Settings** + theme + language preference + Privacy/Terms links + Upgrade CTA
-- **Analytics:** today minutes, 7-day hours, current/best streak (UTC), mode breakdown bars, recent sessions
+- **Design system (W2 partial→improved):** `Resources/DesignTokens.xaml` (card radius, page margin, mode color brushes); theme picker System/Light/Dark (free) + Forest/Ocean/Sunset (premium via `IEntitlementService.CanUseTheme`); OLEDBlack aliases Dark; `ThemeHelper` applies ElementTheme + accent tokens + Mica when `UseMicaBackdrop`; Focus mode chips colored; Tasks/Analytics empty copy polish; Paywall “not a subscription” badge + tokens
+- **Analytics:** today minutes, 7-day hours, current/best streak (UTC), mode breakdown bars, recent sessions + empty-state message
 - **Soundscapes:** EN catalog + MediaPlayer service; premium gate; missing-asset graceful status
 - **Auth:** PasswordVault token store, Account login/register/logout
 - **Sync:** local-first push of `IsSynced=false` sessions + subscription pull
@@ -357,18 +359,22 @@
 - **Localization:** `LocalizationService` EN/ES/PT for Settings + Focus primary labels
 - **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort
 - **P3 packaging:** Store/tile/splash logos; `Directory.Build.props` version; MSIX pack + dev-cert scripts; CI pack artifact; listing/IAP/cert/runbook docs under `windows/store/`
-- Core unit tests: **32/32** green
+- Core unit tests: **69/69** green (includes theme entitlement gating)
 - Manifest: `internetClient` + `runFullTrust` (documented)
 
 ### Missing (blocks full product / live Store)
 
-- **Manual WinUI smoke on a Windows machine** (not verified on macOS host)
-- Real looping mp3 assets under `Assets/Soundscapes/`
-- Real Store screenshots (placeholders only)
-- Partner Center: name reservation, production publisher CN, age rating, package upload, flights
-- Live IAP products in Partner Center (D1 prices set; create SKUs next)
-- Full .resw localization coverage, onboarding, CSV export, AI reports (Everywhere)
-- Hotkey rebind UI, toast action buttons, real Focus Sessions OS integration (when public API stabilizes)
+Tracked in excellence epic **#573** / [PRD/13](13_WINDOWS_EXCELLENCE_PLAN.md):
+
+- **Manual WinUI smoke on a Windows machine** → **#575** (not verified on macOS host)
+- Real looping mp3 assets under `Assets/Soundscapes/` → **#577**
+- Real Store screenshots + Partner Center + live IAP → **#568**
+- Reflect: Weekly/Monthly Review + achievements → **#578**
+- Full .resw localization, onboarding, CSV export → **#582**, **#581**, **#580**
+- Hotkey rebind, toast actions, Focus Assist real, startup → **#583**
+- Design system residual (full Fluent depth, live theme previews, selected-chip state) → **#576** follow-ups
+- Auth/sync depth, paywall excellence → **#584**, **#585**
+- A11y gate → **#589**
 
 ### Pending Windows (priority bands)
 

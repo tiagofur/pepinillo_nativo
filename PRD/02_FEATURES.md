@@ -6,7 +6,7 @@
 **Author:** Tiago David + Claude Code  
 **Status:** Active
 
-**Windows product & delivery:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md). Desktop substitutes for Live Activity / widgets / watch are defined there; full per-feature Windows columns will land as P0+ ships.
+**Windows product & delivery:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md) · **excellence backlog** [13_WINDOWS_EXCELLENCE_PLAN.md](13_WINDOWS_EXCELLENCE_PLAN.md) (epic [#573](https://github.com/tiagofur/pepinillo_nativo/issues/573)). Desktop substitutes for Live Activity / widgets / watch are defined there; implement remaining parity via W0–W16 issues.
 
 ---
 

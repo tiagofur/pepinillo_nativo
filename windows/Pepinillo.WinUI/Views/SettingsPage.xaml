@@ -6,15 +6,15 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Margin="32">
-        <StackPanel Spacing="24" MaxWidth="700" HorizontalAlignment="Left">
+    <ScrollViewer Margin="{StaticResource PepinilloPageMargin}">
+        <StackPanel Spacing="{StaticResource PepinilloSectionSpacing}" MaxWidth="700" HorizontalAlignment="Left">
             <TextBlock Text="{x:Bind ViewModel.TitleLabel, Mode=OneWay}"
                        Style="{ThemeResource TitleTextBlockStyle}"
                        FontWeight="Bold"/>
 
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="8"
-                    Padding="20">
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{x:Bind ViewModel.TimerDurationsLabel, Mode=OneWay}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
@@ -81,8 +81,8 @@
             </Border>
 
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="8"
-                    Padding="20">
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="{x:Bind ViewModel.AppearanceLabel, Mode=OneWay}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
@@ -90,12 +90,61 @@
                     <RadioButtons Header="Theme"
                                   SelectedIndex="{x:Bind ViewModel.SelectedThemeIndex, Mode=TwoWay}">
                         <RadioButton Content="System"/>
-                        <RadioButton Content="Dark"/>
                         <RadioButton Content="Light"/>
-                        <RadioButton Content="Forest (dark)"/>
-                        <RadioButton Content="Ocean (dark)"/>
-                        <RadioButton Content="OLED black"/>
+                        <RadioButton Content="Dark"/>
+                        <RadioButton>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Forest" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PepinilloPremiumBadgeBrush}"
+                                        CornerRadius="4"
+                                        Padding="6,2"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="Premium"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="Black"/>
+                                </Border>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Ocean" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PepinilloPremiumBadgeBrush}"
+                                        CornerRadius="4"
+                                        Padding="6,2"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="Premium"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="Black"/>
+                                </Border>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="Sunset" VerticalAlignment="Center"/>
+                                <Border Background="{StaticResource PepinilloPremiumBadgeBrush}"
+                                        CornerRadius="4"
+                                        Padding="6,2"
+                                        VerticalAlignment="Center">
+                                    <TextBlock Text="Premium"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               Foreground="Black"/>
+                                </Border>
+                            </StackPanel>
+                        </RadioButton>
                     </RadioButtons>
+                    <TextBlock Text="{x:Bind ViewModel.PaywallFeatureHint, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{StaticResource PepinilloPaywallHintBrush}"/>
+                    <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{StaticResource PepinilloPaywallHintBrush}"/>
+                    <Button Content="Upgrade to Pepinillo+"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Click="Upgrade_Click"
+                            HorizontalAlignment="Left"/>
                     <RadioButtons Header="{x:Bind ViewModel.LanguageLabel, Mode=OneWay}"
                                   SelectedIndex="{x:Bind ViewModel.SelectedLanguageIndex, Mode=TwoWay}">
                         <RadioButton Content="English"/>
@@ -108,8 +157,8 @@
             </Border>
 
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="8"
-                    Padding="20">
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
                 <StackPanel Spacing="16">
                     <TextBlock Text="Windows integration"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
@@ -124,8 +173,8 @@
             </Border>
 
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="8"
-                    Padding="20">
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
                 <StackPanel Spacing="12">
                     <TextBlock Text="Legal"
                                Style="{ThemeResource SubtitleTextBlockStyle}"

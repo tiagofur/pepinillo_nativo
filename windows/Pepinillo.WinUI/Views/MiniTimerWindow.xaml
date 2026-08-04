@@ -16,9 +16,10 @@
         <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
             <TextBlock x:Name="TimerText"
                        Text="25:00"
-                       FontSize="28"
+                       FontSize="{StaticResource PepinilloMiniTimerFontSize}"
                        FontWeight="Bold"
-                       FontFamily="Consolas"/>
+                       FontFamily="Segoe UI Variable Display"
+                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
             <TextBlock x:Name="StatusText"
                        Text="Ready"
                        FontSize="11"

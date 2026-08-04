@@ -72,7 +72,10 @@ public partial class App : Application
 
         _mainWindow = new MainWindow();
         MainWindowInstance = _mainWindow;
-        ThemeHelper.ApplyTheme(settings.SelectedTheme, _mainWindow);
+        ThemeHelper.ApplyTheme(
+            settings.SelectedTheme,
+            _mainWindow,
+            useMica: settings.UseMicaBackdrop);
 
         _shell = Services.GetRequiredService<DesktopShellCoordinator>();
         _shell.Attach(_mainWindow);
