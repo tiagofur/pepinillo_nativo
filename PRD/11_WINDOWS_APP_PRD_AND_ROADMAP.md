@@ -1,8 +1,8 @@
 # Pepinillo — Technical Architecture & PRD: Native Windows Application
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 2026-08-03  
-**Status:** P0–P2 coded — WinUI smoke pending on Windows; next P3 Store ship  
+**Status:** P0–P3 in-repo (packaging + Store docs) — WinUI smoke + Partner Center submission remaining; D1 pricing open  
 **Author:** Tiago David + AI Pairing Assistant  
 **Target Platform:** Windows 10 (19041+) & Windows 11 (x64 / ARM64) via Microsoft Store  
 **Framework:** C# / WinUI 3 (Windows App SDK 1.6+)  
@@ -173,11 +173,12 @@ Pepinillo Windows enforces the exact same 3-tier commercial model defined in [04
 
 | Item | State |
 | ---- | ----- |
-| Solution scaffold (`windows/`) | Present — Core + WinUI + tests + CI build |
+| Solution scaffold (`windows/`) | Present — Core + WinUI + tests + CI build/pack |
 | Phase 1 / P0 | **Coded:** DI, nav, FocusPage, Pomodoro/Stopwatch cycles, session + settings persist, tasks UX, theme |
 | Phase 3 / P1 | **Coded:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort |
 | Phase 4–5 / P2 | **Coded:** Flowtime/TimeBlock, journaling, tasks depth, analytics, soundscapes player, auth/token store, sync, StoreContext + paywall, EN/ES/PT foundation, privacy/terms |
-| Microsoft Store readiness | Not ready (placeholder identity, missing Store logos, no pack/sign) |
+| Phase 6 / P3 packaging | **In-repo ready:** Store logos/splash, identity + version props, pack scripts, CI MSIX job, listing/IAP/cert/runbook under `windows/store/` |
+| Microsoft Store readiness | **Packaging ready; submission manual** — dev publisher CN; Partner Center reserve/cert/IAP/screenshots remaining |
 | Detailed execution | See **[12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)** |
 
-**Next engineering step:** smoke on Windows (P0–P2 paths), add real soundscape assets, resolve D1 pricing, then **P3** (MSIX/Store listing/cert).
+**Next engineering step:** smoke on Windows (P0–P3 cert checklist), real soundscape mp3s + Store screenshots, resolve **D1** pricing, then Partner Center Internal flight (`windows/store/RELEASE_RUNBOOK.md`).

@@ -3,3 +3,9 @@ obj/
 .vs/
 *.user
 *.suo
+artifacts/
+AppPackages/
+BundleArtifacts/
+certs/
+*.pfx
+*.p12

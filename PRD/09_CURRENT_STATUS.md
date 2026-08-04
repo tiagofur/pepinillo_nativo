@@ -16,7 +16,7 @@
 | watchOS         | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included      | Requires Xcode setup |
 | Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
 | Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |
-| Windows (desktop) | **P0–P2 coded** (shell + desktop power + parity/auth/sync/commerce path); WinUI smoke pending on Windows; **not Store-ready** | ~100+ C#/XAML | ~6K+ | CI: Core tests 32/32; x64/ARM64 build; no MSIX pack |
+| Windows (desktop) | **P0–P3 packaging ready** (shell + desktop power + parity/auth/sync/commerce + Store assets/docs/MSIX CI); WinUI smoke + Partner Center submission remaining | ~100+ C#/XAML | ~6K+ | CI: Core tests 32/32; x64/ARM64 build; MSIX pack job |
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
 
 **Windows tracking docs:** product PRD [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · execution plan [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
@@ -334,13 +334,14 @@
 
 ---
 
-## 3b. Windows — P0–P2 (2026-08-04)
+## 3b. Windows — P0–P3 packaging (2026-08-03)
 
 **Stack:** C# / WinUI 3 / Windows App SDK 1.6 / .NET 9 / EF Core SQLite / MSIX tooling  
 **Path:** `windows/` (`Pepinillo.Core`, `Pepinillo.WinUI`, `Pepinillo.Core.Tests`)  
+**Store docs:** `windows/store/` · **Pack:** `windows/scripts/pack-msix.ps1`  
 **Docs:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
 
-### Present (P0 + P1 + P2 coded)
+### Present (P0 + P1 + P2 coded + P3 packaging)
 
 - **DI composition root** (`App` + `AddPepinilloCore` + WinUI desktop/service overrides)
 - **NavigationView → Frame:** Focus, Tasks, Analytics, Soundscapes, Account, Upgrade/Paywall, Settings
@@ -355,14 +356,17 @@
 - **Commerce:** `WindowsStoreCommerceService` (StoreContext) + free/backend fallback; Paywall placeholders (D1)
 - **Localization:** `LocalizationService` EN/ES/PT for Settings + Focus primary labels
 - **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort
+- **P3 packaging:** Store/tile/splash logos; `Directory.Build.props` version; MSIX pack + dev-cert scripts; CI pack artifact; listing/IAP/cert/runbook docs under `windows/store/`
 - Core unit tests: **32/32** green
-- Manifest: `internetClient` + `runFullTrust`
+- Manifest: `internetClient` + `runFullTrust` (documented)
 
-### Missing (blocks full product / Store)
+### Missing (blocks full product / live Store)
 
 - **Manual WinUI smoke on a Windows machine** (not verified on macOS host)
 - Real looping mp3 assets under `Assets/Soundscapes/`
-- Package logos, Partner Center identity, MSIX pack/sign, IAP products live (**P3**)
+- Real Store screenshots (placeholders only)
+- Partner Center: name reservation, production publisher CN, age rating, package upload, flights
+- Live IAP products (**after D1** pricing decision)
 - Full .resw localization coverage, onboarding, CSV export, AI reports (Everywhere)
 - Hotkey rebind UI, toast action buttons, real Focus Sessions OS integration (when public API stabilizes)
 
@@ -373,7 +377,7 @@
 | **P0** | Runnable local MVP (DI, nav, Focus, tasks, settings, theme) | **Coded** — smoke on Windows pending |
 | **P1** | Tray, mini-timer, hotkeys, toasts, Focus Assist | **Coded** — smoke on Windows pending |
 | **P2** | Analytics depth, soundscapes, auth/sync, IAP path, i18n | **Coded** — assets + sandbox pending |
-| **P3** | MSIX, Partner Center, certification, beta | **Next** |
+| **P3** | MSIX, Partner Center, certification, beta | **In-repo packaging ready** — Partner Center + smoke remaining |
 
 **Pricing note:** PRD 11 Windows prices ($9.99 / $2.99·$19.99) differ from global mobile ($19.99 / $4.99·$34.99). Resolve before Partner Center SKUs (decision D1 in execution plan).
 
@@ -515,9 +519,9 @@
 | Architecture | MVVM (`CommunityToolkit.Mvvm`) | DI wired (`AddPepinilloCore` + WinUI overrides) |
 | Persistence | EF Core SQLite | Local-first target |
 | Desktop | H.NotifyIcon, Compact Overlay, hotkeys, toasts | **P1 coded** (Focus Assist best-effort) |
-| Commerce | `Windows.Services.Store` | Constants + stub only |
-| Packaging | MSIX | Placeholder publisher; Assets missing |
-| CI | GitHub Actions `windows-build.yml` | Build + tests; no pack |
+| Commerce | `Windows.Services.Store` | StoreContext path + free/backend fallback; D1 prices open |
+| Packaging | MSIX | Logos present; dev publisher `CN=PepinilloDev`; pack scripts |
+| CI | GitHub Actions `windows-build.yml` | Build + tests + MSIX pack artifact |
 
 ### iOS
 
@@ -777,9 +781,10 @@ Critical bug: all phone→watch updates (session state, stats, dashboard, tasks)
 
 ### Windows (desktop — new platform)
 
-- P0 shell + P1 desktop power features **coded**; manual WinUI smoke still required on Windows
-- Not Microsoft Store ready (identity, assets, IAP, listing)
-- Feature parity with iOS/Android phone continues in P2+; track in [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
+- P0–P2 product path **coded**; P3 packaging/docs/CI **in-repo ready**
+- Manual WinUI smoke still required on Windows
+- Microsoft Store submission still manual (Partner Center identity, live IAP after D1, real screenshots, flights)
+- Track remaining work in [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
 
 ### Both Platforms (mobile)
 

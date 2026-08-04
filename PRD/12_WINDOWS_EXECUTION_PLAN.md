@@ -1,8 +1,8 @@
 # Pepinillo Windows — Execution Plan
 
-**Version:** 1.3  
-**Date:** 2026-08-04  
-**Status:** P2 coded (parity depth + auth/sync/commerce path); WinUI manual smoke pending on Windows; next is P3 Store polish  
+**Version:** 1.4  
+**Date:** 2026-08-03  
+**Status:** P0–P3 in-repo ready (packaging assets, MSIX scripts/CI, Store docs); WinUI smoke + Partner Center submission still manual; D1 pricing open before live IAP  
 
 **Branch:** `feat/windows-native-app`  
 **Canonical product PRD:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md)  
@@ -65,8 +65,8 @@ windows/
 | UI | WinUI 3, Windows App SDK 1.6, Fluent / NavigationView |
 | Pattern | MVVM (`CommunityToolkit.Mvvm`) — **DI not wired** |
 | Data | EF Core SQLite (`FocusSessions`, `TaskItems`) |
-| Packaging | `EnableMsixTooling`; identity placeholder |
-| CI | `.github/workflows/windows-build.yml` (build + Core tests; **no pack/sign**) |
+| Packaging | `EnableMsixTooling`; logos present; identity `Pepinillo.DeepWork` / dev publisher `CN=PepinilloDev` |
+| CI | `.github/workflows/windows-build.yml` (build + Core tests + MSIX pack job / artifact) |
 | Approx size | ~50–55 source files, ~1.9k lines (early skeleton) |
 
 ### What works today (partial)
@@ -85,9 +85,9 @@ windows/
 ### Critical blockers for “runnable product”
 
 1. ~~No DI / navigation / Focus page~~ — **done (P0)**  
-2. **Assets/** still incomplete for Store logos (MSIX pack may fail)  
-3. Package identity `CN=PepinilloDev` not Partner Center–aligned  
-4. Soundscapes audio / auth / real Store IAP still stubs (**P2**)  
+2. ~~Store logos missing~~ — **done (P3.1)**  
+3. Package identity still **dev** (`CN=PepinilloDev`) — Partner Center CN pending  
+4. Real soundscape mp3s + live Store IAP SKUs still pending (**D1** / assets)  
 5. WinUI **manual smoke on Windows** still pending  
 
 
@@ -210,29 +210,33 @@ Estimated remaining effort (order of magnitude, after existing skeleton): **~280
 
 ## 7. P3 — Microsoft Store ship
 
-| ID | Work unit | Notes |
-| -- | --------- | ----- |
-| **P3.1** | Visual assets | Logos, splash, Store screenshots (light/dark), age-appropriate |
-| **P3.2** | Package identity | Reserved name in Partner Center; real publisher cert; version scheme |
-| **P3.3** | Capabilities | `internetClient`, background/toast as required; minimal privilege |
-| **P3.4** | MSIX pack + sign | CI artifact; optional Partner Center upload |
-| **P3.5** | Listing metadata | Description, keywords, support URL, privacy URL, categories |
-| **P3.6** | IAP in Partner Center | `pepinillo_plus_windows`, `everywhere_plus_monthly`, `everywhere_plus_annual` (names from PRD 11 — confirm before create) |
-| **P3.7** | Certification pass | Startup, accessibility basics, crash-free paths, offline free tier |
-| **P3.8** | Beta track | Package flight / internal testers → public |
+| ID | Work unit | Notes | Status |
+| -- | --------- | ----- | ------ |
+| **P3.1** | Visual assets | Logos, splash under `Pepinillo.WinUI/Assets/`; screenshot placeholders + guidance in `windows/store/screenshots/` | **Done (in-repo)** — replace screenshot placeholders with real captures before public |
+| **P3.2** | Package identity | Name `Pepinillo.DeepWork`; version `1.0.0.0`; Publisher `CN=PepinilloDev` **dev only** (commented); PublisherDisplayName **Creapolis**; version centralization in `Directory.Build.props` | **Done (dev identity)** — Partner Center publisher CN still manual |
+| **P3.3** | Capabilities | `internetClient` + `runFullTrust` only; fullTrust justified (tray, hotkeys, WinUI desktop) in manifest comments + cert checklist | **Done (in-repo)** |
+| **P3.4** | MSIX pack + sign | `windows/scripts/pack-msix.ps1`, `create-dev-cert.ps1`; CI pack job + artifact upload | **Done (in-repo)** — real pack needs Windows agent; Store sign via Partner Center |
+| **P3.5** | Listing metadata | `windows/store/STORE_LISTING.md` (EN + optional ES/PT) | **Done (copy)** — paste into Partner Center |
+| **P3.6** | IAP in Partner Center | IDs + D1 note + steps in `windows/store/PARTNER_CENTER_IAP.md` | **Doc ready** — create products only after **D1** |
+| **P3.7** | Certification pass | `windows/store/CERTIFICATION_CHECKLIST.md` | **Checklist ready** — execute on Windows hardware |
+| **P3.8** | Beta track | Internal → private → public in `windows/store/RELEASE_RUNBOOK.md` | **Runbook ready** — flights require Partner Center |
 
 **P3 DoD:** App installable from Microsoft Store (or private flight) on x64 + ARM64; purchases resolve entitlements with backend when account linked.
+
+**P3 in-repo DoD (2026-08-03):** assets present; package identity + MSIX tooling/scripts/CI; Store listing/IAP/cert/runbook docs. Remaining is account-bound Partner Center work + Windows smoke + D1.
 
 ### Store packaging checklist (living)
 
 - [ ] Partner Center app reserved  
-- [ ] Publisher certificate not `CN=PepinilloDev`  
-- [ ] Assets folder complete per `Package.appxmanifest`  
-- [ ] Privacy policy URL on listing + in app  
-- [ ] Age rating questionnaire  
-- [ ] IAP products created and linked  
-- [ ] CI packs MSIX for `win-x64` and `win-arm64`  
+- [ ] Publisher certificate not `CN=PepinilloDev` (production CN from Partner Center)  
+- [x] Assets folder complete per `Package.appxmanifest`  
+- [x] Privacy policy URL on listing doc + in app  
+- [ ] Age rating questionnaire (Partner Center)  
+- [ ] IAP products created and linked (**after D1**)  
+- [x] CI workflow packs/uploads MSIX for `win-x64` (+ arm64 best-effort)  
 - [ ] Manual cert dry-run on clean Windows 11 VM  
+- [ ] Real Store screenshots (replace placeholders)  
+- [ ] First Internal flight submitted  
 
 ---
 
@@ -327,10 +331,12 @@ Until D1 is decided, implement commerce **behind interfaces** and keep product I
 
 ## 12. Next action
 
-1. **On Windows:** build WinUI, run P0/P1 smoke + P2 Account/Soundscapes/Paywall/Analytics paths.  
+1. **On Windows:** build WinUI, run P0–P2 smoke + execute `CERTIFICATION_CHECKLIST.md`.  
 2. Drop real looping mp3s into `Pepinillo.WinUI/Assets/Soundscapes/`.  
-3. **Start P3** Store ship (assets, identity, MSIX sign, listing) after D1 pricing.  
-4. Do not open Partner Center SKUs until **D1** pricing is confirmed.
+3. Capture real Store screenshots (replace `windows/store/screenshots/*-placeholder.png`).  
+4. Resolve **D1** pricing, then create Partner Center IAPs per `PARTNER_CENTER_IAP.md`.  
+5. Reserve app name / associate publisher CN; upload MSIX from CI or `pack-msix.ps1` to an **Internal** flight (`RELEASE_RUNBOOK.md`).  
+6. Do not open public Store or live SKUs until D1 + certification pass.
 
 ---
 
@@ -350,3 +356,5 @@ Until D1 is decided, implement commerce **behind interfaces** and keep product I
 | 2026-08-03 | v1.0 — Initial execution plan from code/docs audit; P0 ready |
 | 2026-08-03 | v1.1 — P0 implemented in code; Core tests 16/16; WinUI smoke pending |
 | 2026-08-04 | v1.2 — P1 coded (tray, mini-timer, hotkeys, toasts, Focus Assist best-effort); Core 16/16 |
+| 2026-08-04 | v1.3 — P2 coded (parity depth, auth/sync/commerce path); Core 32/32 |
+| 2026-08-03 | v1.4 — P3 in-repo: Store assets, identity/version props, pack scripts + CI, listing/IAP/cert/runbook docs |

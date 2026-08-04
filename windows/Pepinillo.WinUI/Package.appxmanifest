@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pepinillo MSIX package identity.
+
+  Version scheme: Major.Minor.Build.Revision (four-part, required by MSIX).
+  - Major / Minor: product releases
+  - Build: CI or Partner Center package number
+  - Revision: hotfix / flight increment (often 0 for Store uploads)
+
+  PRODUCTION / PARTNER CENTER:
+  - Identity Name must match the reserved app name in Partner Center
+    (currently Pepinillo.DeepWork — confirm when reserving).
+  - Publisher MUST be replaced with the CN from the Partner Center
+    uploaded signing certificate (e.g. CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX).
+    CN=PepinilloDev is for LOCAL / DEV sideload only and will NOT pass Store certification.
+  - PublisherDisplayName should match the Partner Center publisher display name (Creapolis).
+-->
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
@@ -12,13 +28,14 @@
 
   <Properties>
     <DisplayName>Pepinillo - Deep Work OS</DisplayName>
-    <PublisherDisplayName>Pepinillo</PublisherDisplayName>
+    <PublisherDisplayName>Creapolis</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
-    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+    <!-- Product target: Windows 10 19041+ / Windows 11 (x64 & ARM64). -->
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
   </Dependencies>
 
   <Resources>
@@ -32,16 +49,27 @@
       <uap:VisualElements
         DisplayName="Pepinillo"
         Description="The Calm Native Operating System for Deep Work"
-        BackgroundColor="transparent"
+        BackgroundColor="#0F3D2E"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
-        <uap:SplashScreen Image="Assets\SplashScreen.png" />
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Wide310x150Logo.png"
+          Square71x71Logo="Assets\Square71x71Logo.png"
+          Square310x310Logo="Assets\Square310x310Logo.png" />
+        <uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#0F3D2E" />
       </uap:VisualElements>
       <!-- Toast display via Windows App SDK AppNotificationManager (no COM activator needed for display-only). -->
     </Application>
   </Applications>
 
+  <!--
+    Capabilities (minimal privilege):
+    - internetClient: backend auth/sync and optional Store catalog refresh.
+    - runFullTrust (restricted): required for WinUI 3 desktop / Windows App SDK full-trust
+      process model used by system tray (H.NotifyIcon), global hotkeys (RegisterHotKey),
+      Compact Overlay mini-timer, and native desktop shell integration.
+      Do NOT remove without redesigning tray/hotkeys as pure UWP-constrained APIs.
+  -->
   <Capabilities>
     <Capability Name="internetClient" />
     <rescap:Capability Name="runFullTrust" />
