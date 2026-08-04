@@ -52,7 +52,7 @@ public class ReflectService : IReflectService
         var earlyBirdCount = await completedQuery
             .CountAsync(s => s.StartedAt.Hour < EarlyBirdUtcHourExclusive);
 
-        var (currentStreak, bestStreak) = await _sessions.GetStreaksAsync(today);
+        var (currentStreak, bestStreak, _) = await _sessions.GetStreaksAsync(today);
         var streakForBadge = Math.Max(currentStreak, bestStreak);
 
         return new List<AchievementProgress>
@@ -161,7 +161,7 @@ public class ReflectService : IReflectService
         bool includeDetails,
         string lockedTeaser)
     {
-        var (currentStreak, _) = await _sessions.GetStreaksAsync(utcToday);
+        var (currentStreak, _, _) = await _sessions.GetStreaksAsync(utcToday);
 
         if (!includeDetails)
         {

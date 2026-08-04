@@ -28,7 +28,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAuthTokenStore, MemoryAuthTokenStore>();
         services.AddSingleton<IFocusEngineService, FocusEngineService>();
         services.AddSingleton<ISettingsService, SettingsService>();
-        services.AddSingleton<IFocusSessionService, FocusSessionService>();
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IFocusAssistService, FocusAssistService>();
         services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
@@ -38,6 +37,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IBackendApiClient, BackendApiClient>();
         services.AddSingleton<IStoreCommerceService, StoreCommerceService>();
         services.AddSingleton<IEntitlementService, EntitlementService>();
+        services.AddSingleton<IStreakProtectionService, StreakProtectionService>();
+        services.AddSingleton<IExportService, ExportService>();
+        // FocusSessionService after streak protection so constructor injection resolves.
+        services.AddSingleton<IFocusSessionService, FocusSessionService>();
         services.AddSingleton<ITaskService, TaskService>();
         services.AddSingleton<ISyncService, SyncService>();
         services.AddSingleton<IReflectService, ReflectService>();

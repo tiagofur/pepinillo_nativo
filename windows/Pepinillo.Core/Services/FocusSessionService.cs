@@ -11,10 +11,14 @@ namespace Pepinillo.Core.Services;
 public class FocusSessionService : IFocusSessionService
 {
     private readonly PepinilloDbContext _dbContext;
+    private readonly IStreakProtectionService? _streakProtection;
 
-    public FocusSessionService(PepinilloDbContext dbContext)
+    public FocusSessionService(
+        PepinilloDbContext dbContext,
+        IStreakProtectionService? streakProtection = null)
     {
         _dbContext = dbContext;
+        _streakProtection = streakProtection;
     }
 
     public async Task SaveSessionAsync(FocusSession session)
@@ -96,9 +100,10 @@ public class FocusSessionService : IFocusSessionService
             .SumAsync(s => (int?)s.ElapsedSeconds) ?? 0;
     }
 
-    public async Task<(int CurrentStreak, int BestStreak)> GetStreaksAsync(DateTime? utcToday = null)
+    public async Task<(int CurrentStreak, int BestStreak, bool ProtectionApplied)> GetStreaksAsync(DateTime? utcToday = null)
     {
-        var today = (utcToday ?? DateTime.UtcNow).Date;
+        // Normalize to UTC calendar dates so HashSet Contains is Kind-safe.
+        var today = DateTime.SpecifyKind((utcToday ?? DateTime.UtcNow).Date, DateTimeKind.Utc);
 
         // Days with any completed focus > 0 seconds (UTC calendar days).
         var daySeconds = await _dbContext.FocusSessions
@@ -109,13 +114,14 @@ public class FocusSessionService : IFocusSessionService
 
         var activeDays = daySeconds
             .Where(d => d.Seconds > 0)
-            .Select(d => d.Day)
+            .Select(d => DateTime.SpecifyKind(d.Day.Date, DateTimeKind.Utc))
             .OrderBy(d => d)
             .ToHashSet();
 
         if (activeDays.Count == 0)
-            return (0, 0);
+            return (0, 0, false);
 
+        // Best streak: raw consecutive active days (no protection).
         var best = 0;
         var run = 0;
         DateTime? prev = null;
@@ -130,25 +136,65 @@ public class FocusSessionService : IFocusSessionService
         }
 
         // Current streak: consecutive days ending today or yesterday (UTC).
+        // Premium: at most one single-day gap per ISO week may be auto-bridged (streak protection).
+        // Documented product rule: auto-consume on first gap of the week for premium users.
+        var earliestFocus = activeDays.Min();
         var current = 0;
+        var protectionApplied = false;
+        var bridgesByWeek = new Dictionary<DateTime, int>();
         var cursor = today;
+
         if (!activeDays.Contains(today))
         {
-            // Allow streak to remain if last focus was yesterday (day not finished).
-            if (activeDays.Contains(today.AddDays(-1)))
-                cursor = today.AddDays(-1);
-            else
-                return (0, best);
+            // Today is neutral if empty — anchor at yesterday (do not consume protection for today).
+            cursor = today.AddDays(-1);
         }
 
-        while (activeDays.Contains(cursor))
+        // Walk backward up to ~2 years.
+        for (var step = 0; step < 730; step++)
         {
-            current++;
-            cursor = cursor.AddDays(-1);
+            if (cursor < earliestFocus)
+                break;
+
+            if (activeDays.Contains(cursor))
+            {
+                current++;
+                cursor = cursor.AddDays(-1);
+                continue;
+            }
+
+            // Missing day: optional premium bridge (one gap per ISO week).
+            if (_streakProtection != null && cursor < today)
+            {
+                var weekStart = _streakProtection.GetIsoWeekStartUtc(cursor);
+                var usedInWeek = bridgesByWeek.GetValueOrDefault(weekStart);
+                if (usedInWeek < StreakProtectionService.MaxSkipsPerWeek
+                    && HasAnyActiveBefore(activeDays, cursor)
+                    && await _streakProtection.CanBridgeGapThisWeekAsync(cursor, today).ConfigureAwait(false))
+                {
+                    var bridged = await _streakProtection
+                        .EnsureBridgedAndConsumeAsync(cursor, today)
+                        .ConfigureAwait(false);
+                    if (bridged)
+                    {
+                        // Protected miss preserves streak continuity (counts as a streak day).
+                        current++;
+                        protectionApplied = true;
+                        bridgesByWeek[weekStart] = usedInWeek + 1;
+                        cursor = cursor.AddDays(-1);
+                        continue;
+                    }
+                }
+            }
+
+            break;
         }
 
-        return (current, best);
+        return (current, best, protectionApplied);
     }
+
+    private static bool HasAnyActiveBefore(HashSet<DateTime> activeDays, DateTime day) =>
+        activeDays.Any(d => d < day);
 
     public async Task<List<ModeBreakdownItem>> GetModeBreakdownAsync(DateTime utcStartInclusive, DateTime utcEndExclusive)
     {

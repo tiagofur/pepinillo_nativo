@@ -41,6 +41,8 @@ public class EntitlementService : IEntitlementService
     public bool CanUseTheme(string themeName) =>
         IsPremium || AppThemeCatalog.IsFreeTheme(themeName);
 
+    public bool CanExport => IsPremium;
+
     public async Task RefreshAsync()
     {
         _overrideStatus = null;

@@ -13,7 +13,11 @@ public interface IFocusSessionService
     Task<List<FocusSession>> GetSessionsInRangeAsync(DateTime utcStartInclusive, DateTime utcEndExclusive);
     Task<int> GetTodayFocusMinutesAsync(DateTime? utcNow = null);
     Task<int> GetTotalFocusSecondsAsync(DateTime utcStartInclusive, DateTime utcEndExclusive);
-    Task<(int CurrentStreak, int BestStreak)> GetStreaksAsync(DateTime? utcToday = null);
+    /// <summary>
+    /// Current streak (with optional premium one-day bridge per ISO week) and best raw consecutive streak.
+    /// ProtectionApplied is true when a gap was auto-bridged this call.
+    /// </summary>
+    Task<(int CurrentStreak, int BestStreak, bool ProtectionApplied)> GetStreaksAsync(DateTime? utcToday = null);
     Task<List<ModeBreakdownItem>> GetModeBreakdownAsync(DateTime utcStartInclusive, DateTime utcEndExclusive);
     Task<List<FocusSession>> GetUnsyncedCompletedSessionsAsync();
     Task MarkSessionsSyncedAsync(IEnumerable<Guid> sessionIds);

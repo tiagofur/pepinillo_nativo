@@ -196,8 +196,8 @@ public class FocusViewModelTests
         public Task<int> GetTotalFocusSecondsAsync(DateTime utcStartInclusive, DateTime utcEndExclusive) =>
             Task.FromResult(0);
 
-        public Task<(int CurrentStreak, int BestStreak)> GetStreaksAsync(DateTime? utcToday = null) =>
-            Task.FromResult((0, 0));
+        public Task<(int CurrentStreak, int BestStreak, bool ProtectionApplied)> GetStreaksAsync(DateTime? utcToday = null) =>
+            Task.FromResult((0, 0, false));
 
         public Task<List<ModeBreakdownItem>> GetModeBreakdownAsync(DateTime utcStartInclusive, DateTime utcEndExclusive) =>
             Task.FromResult(new List<ModeBreakdownItem>());

@@ -139,9 +139,10 @@ public class SettingsAndSessionPersistTests
             });
         }
 
-        var (current, best) = await service.GetStreaksAsync(today);
+        var (current, best, protection) = await service.GetStreaksAsync(today);
         Assert.Equal(3, current);
         Assert.Equal(3, best);
+        Assert.False(protection);
     }
 
     [Fact]
