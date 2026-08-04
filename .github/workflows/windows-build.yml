@@ -35,14 +35,20 @@ jobs:
       shell: pwsh
       run: |
         $ErrorActionPreference = "Continue"
-        dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-x64 --no-restore -v:n
+        # Rebuild avoids stale intermediatexaml / skipped CoreCompile that break MarkupCompilePass2
+        dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-x64 --no-restore -v:n -t:Rebuild
         $code = $LASTEXITCODE
         if ($code -ne 0) {
-          Write-Host "=== XAML compiler diagnostics (output.json / *.err) ==="
-          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Include output.json,*.err,*.log -ErrorAction SilentlyContinue |
+          Write-Host "=== XAML compiler diagnostics (tail of output.json) ==="
+          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Filter output.json -ErrorAction SilentlyContinue |
             ForEach-Object {
               Write-Host "----- $($_.FullName) -----"
-              Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -First 200
+              Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -Last 80
+            }
+          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Include *.err -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              Write-Host "----- $($_.FullName) -----"
+              Get-Content $_.FullName -ErrorAction SilentlyContinue
             }
         }
         exit $code
@@ -51,14 +57,14 @@ jobs:
       shell: pwsh
       run: |
         $ErrorActionPreference = "Continue"
-        dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-arm64 --no-restore -v:n
+        dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-arm64 --no-restore -v:n -t:Rebuild
         $code = $LASTEXITCODE
         if ($code -ne 0) {
-          Write-Host "=== XAML compiler diagnostics (output.json / *.err) ==="
-          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Include output.json,*.err,*.log -ErrorAction SilentlyContinue |
+          Write-Host "=== XAML compiler diagnostics (tail of output.json) ==="
+          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Filter output.json -ErrorAction SilentlyContinue |
             ForEach-Object {
               Write-Host "----- $($_.FullName) -----"
-              Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -First 200
+              Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -Last 80
             }
         }
         exit $code

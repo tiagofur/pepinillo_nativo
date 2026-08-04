@@ -8,8 +8,6 @@
             <ResourceDictionary.MergedDictionaries>
                 <controls:XamlControlsResources />
             </ResourceDictionary.MergedDictionaries>
-            <!-- Explicit xmlns: bool→Visibility is not implicit for x:Bind. -->
-            <controls:BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

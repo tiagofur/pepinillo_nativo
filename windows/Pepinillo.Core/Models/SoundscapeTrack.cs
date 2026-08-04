@@ -9,4 +9,7 @@ public class SoundscapeTrack
     public double Volume { get; set; } = 0.5;
     public bool IsPlaying { get; set; }
     public bool IsPremium { get; set; }
+
+    /// <summary>Empty when free — avoids Visibility converters in WinUI x:Bind.</summary>
+    public string PremiumLabel => IsPremium ? "Premium" : string.Empty;
 }

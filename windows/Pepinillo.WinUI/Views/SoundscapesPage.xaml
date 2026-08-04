@@ -45,10 +45,9 @@
                                     <TextBlock Text="{x:Bind AudioFileName}"
                                                Style="{ThemeResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                                    <TextBlock Text="Premium"
+                                    <TextBlock Text="{x:Bind PremiumLabel}"
                                                Foreground="Goldenrod"
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Visibility="{x:Bind IsPremium, Converter={StaticResource BoolToVisibilityConverter}}"/>
+                                               Style="{ThemeResource CaptionTextBlockStyle}"/>
                                 </StackPanel>
                                 <Button Grid.Column="1" Content="Play" Click="Play_Click" Tag="{x:Bind}"/>
                                 <Button Grid.Column="2" Content="Stop" Click="Stop_Click" Tag="{x:Bind}"/>

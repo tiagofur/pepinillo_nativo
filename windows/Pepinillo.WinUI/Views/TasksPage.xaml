@@ -84,21 +84,12 @@
                                            Style="{ThemeResource BodyTextBlockStyle}"
                                            TextWrapping="Wrap"/>
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <Border Background="{ThemeResource SystemAccentColor}"
-                                            CornerRadius="4"
-                                            Padding="6,2"
-                                            Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibilityConverter}}">
-                                        <TextBlock Text="{x:Bind PriorityLabel}"
-                                                   Foreground="White"
-                                                   FontSize="11"/>
-                                    </Border>
-                                    <Border Background="{ThemeResource CardStrokeColorDefaultBrush}"
-                                            CornerRadius="4"
-                                            Padding="6,2"
-                                            Visibility="{x:Bind HasEnergy, Converter={StaticResource BoolToVisibilityConverter}}">
-                                        <TextBlock Text="{x:Bind EnergyLabel}"
-                                                   FontSize="11"/>
-                                    </Border>
+                                    <TextBlock Text="{x:Bind PriorityLabel}"
+                                               FontSize="11"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource SystemAccentColor}"/>
+                                    <TextBlock Text="{x:Bind EnergyLabel}"
+                                               FontSize="11"/>
                                     <TextBlock Text="{x:Bind RecurrenceRule}"
                                                FontSize="11"
                                                Opacity="0.7"/>
@@ -156,12 +147,9 @@
             <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         Spacing="8"
-                        Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                        Opacity="0.85">
                 <FontIcon Glyph="&#xE9D5;" FontSize="40" Opacity="0.5"/>
-                <TextBlock Text="No tasks here yet"
-                           Style="{ThemeResource SubtitleTextBlockStyle}"
-                           HorizontalAlignment="Center"/>
-                <TextBlock Text="Add a task above, or switch filters."
+                <TextBlock Text="Tip: empty lists show no rows above. Add a task or switch filters."
                            Style="{ThemeResource CaptionTextBlockStyle}"
                            HorizontalAlignment="Center"
                            Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>

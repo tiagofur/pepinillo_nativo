@@ -116,16 +116,18 @@
                 </StackPanel>
             </Border>
 
-            <!-- Post-session journal -->
+            <!-- Post-session journal (panel always in tree; status text indicates when empty) -->
             <Border Grid.Row="5"
+                    x:Name="JournalPanel"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="8"
-                    Padding="16"
-                    Visibility="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                    Padding="16">
                 <StackPanel Spacing="12">
                     <TextBlock Text="{x:Bind ViewModel.JournalTitleLabel, Mode=OneWay}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Bind ViewModel.LastCompletedMessage, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"/>
                     <TextBox Header="What went well / notes"
                              Text="{x:Bind ViewModel.JournalNoteDraft, Mode=TwoWay}"
                              AcceptsReturn="True"
@@ -142,9 +144,11 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="Save journal"
                                 Style="{ThemeResource AccentButtonStyle}"
-                                Command="{x:Bind ViewModel.SaveJournalCommand}"/>
+                                Command="{x:Bind ViewModel.SaveJournalCommand}"
+                                IsEnabled="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay}"/>
                         <Button Content="Dismiss"
-                                Command="{x:Bind ViewModel.DismissJournalCommand}"/>
+                                Command="{x:Bind ViewModel.DismissJournalCommand}"
+                                IsEnabled="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay}"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
