@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Pepinillo.Core.Data;
@@ -30,25 +33,168 @@ public class CommerceAndSyncTests
     }
 
     [Fact]
-    public async Task BackendApiClient_PersistsToken_OnLogin_WhenServerReturnsToken()
+    public async Task BackendApiClient_Login_ParsesNestedTokens()
     {
-        // Without a real server, login fails — token store stays empty.
+        var handler = new StubHttpHandler((request, _) =>
+        {
+            Assert.Equal(HttpMethod.Post, request.Method);
+            Assert.Contains("/auth/login", request.RequestUri!.ToString());
+            var json = """
+                {
+                  "user": { "id": "u1", "email": "a@b.com" },
+                  "tokens": {
+                    "accessToken": "access-xyz",
+                    "refreshToken": "refresh-xyz",
+                    "expiresIn": 3600
+                  }
+                }
+                """;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        });
+
         var store = new MemoryAuthTokenStore();
-        var client = new BackendApiClient(new HttpClient(), store);
+        var client = new BackendApiClient(new HttpClient(handler), store);
+
         var ok = await client.LoginAsync("a@b.com", "secret");
-        Assert.False(ok);
-        Assert.Null(await store.GetTokenAsync());
-        Assert.False(client.IsAuthenticated);
+
+        Assert.True(ok);
+        Assert.True(client.IsAuthenticated);
+        Assert.Equal("access-xyz", client.AuthToken);
+        Assert.Equal("access-xyz", await store.GetAccessTokenAsync());
+        Assert.Equal("refresh-xyz", await store.GetRefreshTokenAsync());
     }
 
     [Fact]
-    public async Task MemoryAuthTokenStore_RoundTrip()
+    public async Task BackendApiClient_Login_AcceptsLegacyRootToken()
+    {
+        var handler = new StubHttpHandler((_, _) =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """{"token":"legacy-access"}""",
+                    Encoding.UTF8,
+                    "application/json")
+            });
+
+        var store = new MemoryAuthTokenStore();
+        var client = new BackendApiClient(new HttpClient(handler), store);
+
+        Assert.True(await client.LoginAsync("a@b.com", "secret"));
+        Assert.Equal("legacy-access", client.AuthToken);
+        Assert.Equal("legacy-access", await store.GetAccessTokenAsync());
+    }
+
+    [Fact]
+    public async Task BackendApiClient_Refresh_UsesRefreshTokenBody()
+    {
+        var calls = 0;
+        var handler = new StubHttpHandler((request, _) =>
+        {
+            calls++;
+            Assert.Contains("/auth/refresh", request.RequestUri!.ToString());
+            var body = request.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+            Assert.Contains("refresh-old", body);
+
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    """{"tokens":{"accessToken":"access-new","refreshToken":"refresh-new","expiresIn":3600}}""",
+                    Encoding.UTF8,
+                    "application/json")
+            };
+        });
+
+        var store = new MemoryAuthTokenStore();
+        await store.SetTokensAsync("access-old", "refresh-old");
+        var client = new BackendApiClient(new HttpClient(handler), store);
+        await client.InitializeAsync();
+
+        var ok = await client.RefreshAsync();
+
+        Assert.True(ok);
+        Assert.Equal(1, calls);
+        Assert.Equal("access-new", client.AuthToken);
+        Assert.Equal("access-new", await store.GetAccessTokenAsync());
+        Assert.Equal("refresh-new", await store.GetRefreshTokenAsync());
+    }
+
+    [Fact]
+    public async Task BackendApiClient_SyncSessions_RetriesOnceAfter401Refresh()
+    {
+        var syncCalls = 0;
+        var handler = new StubHttpHandler((request, _) =>
+        {
+            var path = request.RequestUri!.AbsolutePath;
+            if (path.EndsWith("/auth/refresh", StringComparison.Ordinal))
+            {
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """{"tokens":{"accessToken":"access-2","refreshToken":"refresh-2","expiresIn":3600}}""",
+                        Encoding.UTF8,
+                        "application/json")
+                };
+            }
+
+            if (path.Contains("/sync/sessions", StringComparison.Ordinal))
+            {
+                syncCalls++;
+                if (syncCalls == 1)
+                    return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("{}", Encoding.UTF8, "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var store = new MemoryAuthTokenStore();
+        await store.SetTokensAsync("access-1", "refresh-1");
+        var client = new BackendApiClient(new HttpClient(handler), store);
+        await client.InitializeAsync();
+
+        var ok = await client.SyncSessionsAsync(new[]
+        {
+            new FocusSession { Mode = FocusMode.Pomodoro, ElapsedSeconds = 60, IsCompleted = true }
+        });
+
+        Assert.True(ok);
+        Assert.Equal(2, syncCalls);
+        Assert.Equal("access-2", client.AuthToken);
+    }
+
+    [Fact]
+    public async Task BackendApiClient_Logout_ClearsBothTokens()
     {
         var store = new MemoryAuthTokenStore();
-        await store.SetTokenAsync("abc123");
-        Assert.Equal("abc123", await store.GetTokenAsync());
+        await store.SetTokensAsync("a", "r");
+        var client = new BackendApiClient(new HttpClient(new StubHttpHandler((_, _) =>
+            new HttpResponseMessage(HttpStatusCode.OK))), store);
+        await client.InitializeAsync();
+        Assert.True(client.IsAuthenticated);
+
+        await client.LogoutAsync();
+
+        Assert.False(client.IsAuthenticated);
+        Assert.Null(await store.GetAccessTokenAsync());
+        Assert.Null(await store.GetRefreshTokenAsync());
+    }
+
+    [Fact]
+    public async Task MemoryAuthTokenStore_RoundTripBothTokens()
+    {
+        var store = new MemoryAuthTokenStore();
+        await store.SetTokensAsync("abc123", "ref456");
+        Assert.Equal("abc123", await store.GetAccessTokenAsync());
+        Assert.Equal("ref456", await store.GetRefreshTokenAsync());
         await store.ClearAsync();
-        Assert.Null(await store.GetTokenAsync());
+        Assert.Null(await store.GetAccessTokenAsync());
+        Assert.Null(await store.GetRefreshTokenAsync());
     }
 
     [Fact]
@@ -106,12 +252,58 @@ public class CommerceAndSyncTests
         Assert.Single(unsynced);
     }
 
+    [Fact]
+    public void EntitlementService_Free_BlocksPremiumModesAndLimitsTasks()
+    {
+        var entitlements = new EntitlementService(new StoreCommerceService(new FakeBackend()));
+        Assert.False(entitlements.IsPremium);
+        Assert.True(entitlements.CanUseFocusMode(FocusMode.Pomodoro));
+        Assert.True(entitlements.CanUseFocusMode(FocusMode.Stopwatch));
+        Assert.False(entitlements.CanUseFocusMode(FocusMode.Flowtime));
+        Assert.False(entitlements.CanUseFocusMode(FocusMode.TimeBlocking));
+        Assert.True(entitlements.CanCreateIncompleteRootTask(2));
+        Assert.False(entitlements.CanCreateIncompleteRootTask(3));
+        Assert.False(entitlements.CanCreateSubtask);
+        Assert.False(entitlements.CanUseRecurrence);
+        Assert.Equal(7, entitlements.MaxAnalyticsHistoryDays);
+    }
+
+    [Fact]
+    public void EntitlementService_Plus_UnlocksPremiumFeatures()
+    {
+        var entitlements = new EntitlementService(new StoreCommerceService(new FakeBackend()));
+        entitlements.ApplyStatus(new SubscriptionStatus { Tier = EntitlementTier.PepinilloPlus });
+
+        Assert.True(entitlements.IsPremium);
+        Assert.True(entitlements.CanUseFocusMode(FocusMode.Flowtime));
+        Assert.True(entitlements.CanUseFocusMode(FocusMode.TimeBlocking));
+        Assert.True(entitlements.CanCreateIncompleteRootTask(100));
+        Assert.True(entitlements.CanCreateSubtask);
+        Assert.True(entitlements.CanUseRecurrence);
+        Assert.Equal(int.MaxValue, entitlements.MaxAnalyticsHistoryDays);
+    }
+
     private static PepinilloDbContext CreateDb()
     {
         var options = new DbContextOptionsBuilder<PepinilloDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
             .Options;
         return new PepinilloDbContext(options);
+    }
+
+    private sealed class StubHttpHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> _handler;
+
+        public StubHttpHandler(Func<HttpRequestMessage, CancellationToken, HttpResponseMessage> handler)
+        {
+            _handler = handler;
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(_handler(request, cancellationToken));
     }
 
     private sealed class FakeBackend : IBackendApiClient
@@ -123,6 +315,8 @@ public class CommerceAndSyncTests
         public Task InitializeAsync() => Task.CompletedTask;
         public Task<bool> LoginAsync(string email, string password) => Task.FromResult(false);
         public Task<bool> RegisterAsync(string email, string password, string name) => Task.FromResult(false);
+        public Task<bool> RefreshAsync() => Task.FromResult(false);
+
         public Task LogoutAsync()
         {
             IsAuthenticated = false;

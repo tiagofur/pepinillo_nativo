@@ -7,19 +7,24 @@ namespace Pepinillo.Core.Services;
 /// </summary>
 public class MemoryAuthTokenStore : IAuthTokenStore
 {
-    private string? _token;
+    private string? _accessToken;
+    private string? _refreshToken;
 
-    public Task<string?> GetTokenAsync() => Task.FromResult(_token);
+    public Task<string?> GetAccessTokenAsync() => Task.FromResult(_accessToken);
 
-    public Task SetTokenAsync(string? token)
+    public Task<string?> GetRefreshTokenAsync() => Task.FromResult(_refreshToken);
+
+    public Task SetTokensAsync(string? accessToken, string? refreshToken)
     {
-        _token = token;
+        _accessToken = accessToken;
+        _refreshToken = refreshToken;
         return Task.CompletedTask;
     }
 
     public Task ClearAsync()
     {
-        _token = null;
+        _accessToken = null;
+        _refreshToken = null;
         return Task.CompletedTask;
     }
 }

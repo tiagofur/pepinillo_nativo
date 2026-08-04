@@ -167,7 +167,9 @@ public class SettingsAndSessionPersistTests
     public async Task TaskService_CreateSubtask_ShouldLinkParent()
     {
         await using var db = CreateDb();
-        var service = new TaskService(db);
+        var entitlements = new EntitlementService(new StoreCommerceService(new NoOpBackend()));
+        entitlements.ApplyStatus(new SubscriptionStatus { Tier = EntitlementTier.PepinilloPlus });
+        var service = new TaskService(db, entitlements);
 
         var parent = await service.CreateTaskAsync("Parent", estimatedMinutes: 30);
         var child = await service.CreateTaskAsync("Child", parentTaskId: parent.Id);
@@ -197,5 +199,22 @@ public class SettingsAndSessionPersistTests
         Assert.Contains(tracks, t => t.Name == "Rain");
         Assert.Contains(tracks, t => t.Name == "Deep Space");
         Assert.Contains(tracks, t => t.IsPremium);
+    }
+
+    private sealed class NoOpBackend : IBackendApiClient
+    {
+        public bool IsAuthenticated => false;
+        public string? AuthToken => null;
+        public System.Threading.Tasks.Task InitializeAsync() => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task<bool> LoginAsync(string email, string password) =>
+            System.Threading.Tasks.Task.FromResult(false);
+        public System.Threading.Tasks.Task<bool> RegisterAsync(string email, string password, string name) =>
+            System.Threading.Tasks.Task.FromResult(false);
+        public System.Threading.Tasks.Task<bool> RefreshAsync() => System.Threading.Tasks.Task.FromResult(false);
+        public System.Threading.Tasks.Task LogoutAsync() => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task<bool> SyncSessionsAsync(System.Collections.Generic.IEnumerable<FocusSession> sessions) =>
+            System.Threading.Tasks.Task.FromResult(false);
+        public System.Threading.Tasks.Task<SubscriptionStatus> GetSubscriptionStatusAsync() =>
+            System.Threading.Tasks.Task.FromResult(new SubscriptionStatus { Tier = EntitlementTier.Free });
     }
 }

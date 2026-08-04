@@ -6,36 +6,50 @@ using Windows.Security.Credentials;
 namespace Pepinillo.WinUI.Services;
 
 /// <summary>
-/// Secure token store via Windows PasswordVault (falls back to no-op clear on failure).
+/// Secure token store via Windows PasswordVault (access + refresh).
 /// </summary>
 public class PasswordVaultTokenStore : IAuthTokenStore
 {
-    private const string ResourceName = "Pepinillo.AuthToken";
+    private const string AccessResource = "Pepinillo.AuthAccessToken";
+    private const string RefreshResource = "Pepinillo.AuthRefreshToken";
     private const string UserName = "session";
 
-    public Task<string?> GetTokenAsync()
+    public Task<string?> GetAccessTokenAsync() => Task.FromResult(Retrieve(AccessResource));
+
+    public Task<string?> GetRefreshTokenAsync() => Task.FromResult(Retrieve(RefreshResource));
+
+    public Task SetTokensAsync(string? accessToken, string? refreshToken)
+    {
+        Store(AccessResource, accessToken);
+        Store(RefreshResource, refreshToken);
+        return Task.CompletedTask;
+    }
+
+    public Task ClearAsync() => SetTokensAsync(null, null);
+
+    private static string? Retrieve(string resource)
     {
         try
         {
             var vault = new PasswordVault();
-            var credential = vault.Retrieve(ResourceName, UserName);
+            var credential = vault.Retrieve(resource, UserName);
             credential.RetrievePassword();
-            return Task.FromResult<string?>(string.IsNullOrEmpty(credential.Password) ? null : credential.Password);
+            return string.IsNullOrEmpty(credential.Password) ? null : credential.Password;
         }
         catch
         {
-            return Task.FromResult<string?>(null);
+            return null;
         }
     }
 
-    public Task SetTokenAsync(string? token)
+    private static void Store(string resource, string? token)
     {
         try
         {
             var vault = new PasswordVault();
             try
             {
-                var existing = vault.Retrieve(ResourceName, UserName);
+                var existing = vault.Retrieve(resource, UserName);
                 vault.Remove(existing);
             }
             catch
@@ -44,15 +58,11 @@ public class PasswordVaultTokenStore : IAuthTokenStore
             }
 
             if (!string.IsNullOrEmpty(token))
-                vault.Add(new PasswordCredential(ResourceName, UserName, token));
+                vault.Add(new PasswordCredential(resource, UserName, token));
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"PasswordVaultTokenStore.SetToken failed: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"PasswordVaultTokenStore.Store({resource}) failed: {ex.Message}");
         }
-
-        return Task.CompletedTask;
     }
-
-    public Task ClearAsync() => SetTokenAsync(null);
 }
