@@ -25,6 +25,9 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>Raised when a premium theme is selected on free tier (shell navigates to paywall).</summary>
     public event EventHandler<string>? PremiumFeatureRequested;
 
+    /// <summary>Raised after the user asks to replay first-run onboarding (shell navigates).</summary>
+    public event EventHandler? OnboardingReplayRequested;
+
     [ObservableProperty]
     private UserSettings _settings = new();
 
@@ -192,6 +195,30 @@ public partial class SettingsViewModel : ObservableObject
         Settings.MiniTimerHotkey = HotkeyChordParser.DefaultMiniTimer;
         OnPropertyChanged(nameof(Settings));
         StatusMessage = "Hotkeys reset to defaults (save to apply).";
+    }
+
+    /// <summary>
+    /// Clears the onboarding completion flag and asks the shell to show the welcome guide again.
+    /// </summary>
+    [RelayCommand]
+    private async Task ReplayOnboardingAsync()
+    {
+        IsBusy = true;
+        try
+        {
+            Settings.HasCompletedOnboarding = false;
+            await _settingsService.SaveSettingsAsync(Settings);
+            StatusMessage = "Opening welcome guide…";
+            OnboardingReplayRequested?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not reset onboarding: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     /// <summary>

@@ -119,7 +119,7 @@ Code gate owner: `windows/Pepinillo.Core/Services/EntitlementService.cs`.
 | **W4** | Reflect parity (Weekly/Monthly + achievements) | **[#578](https://github.com/tiagofur/pepinillo_nativo/issues/578)** | P0 | — |
 | **W5** | Mode Intelligence | **[#579](https://github.com/tiagofur/pepinillo_nativo/issues/579)** | P1 | W4 data helpful |
 | **W6** | Export CSV/PDF + streak protection | **[#580](https://github.com/tiagofur/pepinillo_nativo/issues/580)** | P1 | Entitlements |
-| **W7** | First-run onboarding | **[#581](https://github.com/tiagofur/pepinillo_nativo/issues/581)** | P1 | W2 |
+| **W7** | First-run onboarding | **[#581](https://github.com/tiagofur/pepinillo_nativo/issues/581)** — **coded** on `feat/windows-w7-onboarding` (WinUI smoke pending) | P1 | W2 |
 | **W8** | Full EN/ES/PT localization | **[#582](https://github.com/tiagofur/pepinillo_nativo/issues/582)** | P1 | — |
 | **W9** | Desktop power v2 (Focus Assist, toast actions, startup, hotkey rebind) | **[#583](https://github.com/tiagofur/pepinillo_nativo/issues/583)** — **coded** on `feat/windows-w9-desktop-power` (smoke pending) | P0 | W1 |
 | **W10** | Auth + Everywhere sync depth | **[#584](https://github.com/tiagofur/pepinillo_nativo/issues/584)** | P0 | API |
@@ -206,7 +206,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Streaks + protection | Done | **Done (W6 #580):** current streak auto-bridges **1 missing UTC day per ISO week** for Pepinillo+/Everywhere (`IStreakProtectionService` + `UserSettings.StreakProtection*`); free no bridge; Analytics caption “available / used this week / upgrade” | +1 skip/week paid | W6 |
 | Soundscapes player + assets | iOS strong | **Done (W3 #577):** catalog free×4 + premium×3; placeholder loop mp3s; MediaPlayer fade in/out; `SoundscapeSessionCoordinator` auto-play on work / **pause** on break / stop on end; Settings `EnableSoundscapes` + `AutoPlaySoundscapeOnFocus` + preferred track; premium gate. **Replace placeholders with licensed audio before Store public** | Full + auto-play + fade | W3 |
 | Themes 4 named | Done | **Improved (W2):** System/Light/Dark free + Forest/Ocean/Sunset gated via `CanUseTheme`; DesignTokens + Mica; OLEDBlack aliases Dark | Full + gate | W2 |
-| Onboarding | Done | Missing | Done | W7 |
+| Onboarding | Done | **Done (W7 #581):** first-run 5-step flow (Welcome → Modes → Desktop power → Account teaser → Done); Skip/Finish persist `UserSettings.HasCompletedOnboarding`; optional default mode → `PreferredFocusMode`; tray/hotkeys/mini copy; NavView pane hidden during onboarding; Settings “Show welcome guide” replay; DesignTokens card + mode chips | Done | W7 |
 | EN/ES/PT | Done | Partial | Full .resw | W8 |
 | Auth email/password | Done | **Done (W10 #584):** nested tokens + refresh; Account UX (offline vs signed-in, email validation, register auto-sign-in when tokens returned, busy disable, LastSyncAt + LastError); free/local copy honest | Full | W10 |
 | Everywhere sync | Done | **Sessions depth (W10 #584):** POST `/sync/sessions` wrapped body + mode map (pomodoro/flowtime/timeblock/stopwatch); GET `/sync/full` session pull + LWW upsert; `X-Device-ID`; 403 → Everywhere required; subscription pull. **Residual:** bidirectional task/settings sync | Full session/tasks/settings | W10 |

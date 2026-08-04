@@ -268,7 +268,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Planned (band)**
 | Compact Overlay | N/A mobile | **Coded** | **P1** |
 | Global hotkeys | N/A mobile | **Coded** | **P1** |
 | Focus Assist / DND | Mobile APIs | **Coded** (best-effort no-op) | **P1** |
-| Onboarding | Done | Missing | **P3** optional |
+| Onboarding | Done | **Done (W7 #581)** first-run + skip + replay | **P1** done |
 | Localization EN/ES/PT | Done | Partial (`LocalizationService`) | **P2** |
 | CSV export | Partial | Missing | **P3** (Pepinillo+) |
 | Offline-first local DB | Done | **Done** | **P0** |

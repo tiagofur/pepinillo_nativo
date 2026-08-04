@@ -1,5 +1,8 @@
+using System;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Pepinillo.Core.Services;
 using Pepinillo.WinUI.Views;
 
 namespace Pepinillo.WinUI;
@@ -12,31 +15,78 @@ public sealed partial class MainWindow : Window
         Title = "Pepinillo — Deep Work OS";
     }
 
-    private void NavView_Loaded(object sender, RoutedEventArgs e)
+    private async void NavView_Loaded(object sender, RoutedEventArgs e)
     {
-        NavigateTo("Focus");
+        var showOnboarding = false;
+        try
+        {
+            var settings = await App.Services.GetRequiredService<ISettingsService>().GetSettingsAsync();
+            showOnboarding = !settings.HasCompletedOnboarding;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Onboarding gate failed: {ex.Message}");
+        }
+
+        if (showOnboarding)
+            EnterOnboardingMode();
+        else
+            ExitOnboardingMode();
+
+        NavigateToTag(showOnboarding ? "Onboarding" : "Focus");
     }
 
     private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
     {
         if (args.IsSettingsInvoked)
         {
-            NavigateTo("Settings");
+            NavigateToTag("Settings");
             NavView.Header = "Settings";
             return;
         }
 
         if (args.InvokedItemContainer is NavigationViewItem item && item.Tag is string tag)
         {
-            NavigateTo(tag);
+            NavigateToTag(tag);
             NavView.Header = item.Content?.ToString() ?? tag;
         }
     }
 
-    private void NavigateTo(string tag)
+    /// <summary>
+    /// Hides the navigation pane during first-run onboarding.
+    /// </summary>
+    public void EnterOnboardingMode()
+    {
+        NavView.IsPaneVisible = false;
+        NavView.IsSettingsVisible = false;
+        NavView.Header = "Welcome";
+    }
+
+    /// <summary>
+    /// Restores the normal shell after onboarding completes or is skipped.
+    /// </summary>
+    public void ExitOnboardingMode()
+    {
+        NavView.IsPaneVisible = true;
+        NavView.IsSettingsVisible = true;
+        if (string.IsNullOrWhiteSpace(NavView.Header?.ToString())
+            || string.Equals(NavView.Header?.ToString(), "Welcome", StringComparison.Ordinal))
+        {
+            NavView.Header = "Focus";
+        }
+    }
+
+    /// <summary>
+    /// Public navigation entry used by pages (onboarding complete, settings replay, paywall, etc.).
+    /// </summary>
+    public void NavigateToTag(string tag)
     {
         switch (tag)
         {
+            case "Onboarding":
+                ContentFrame.Navigate(typeof(OnboardingPage));
+                NavView.Header = "Welcome";
+                break;
             case "Focus":
                 ContentFrame.Navigate(typeof(FocusPage));
                 break;

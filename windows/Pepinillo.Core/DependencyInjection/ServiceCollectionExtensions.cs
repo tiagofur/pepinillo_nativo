@@ -52,6 +52,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<SoundscapesViewModel>();
         services.AddTransient<AuthViewModel>();
         services.AddTransient<PaywallViewModel>();
+        services.AddTransient<OnboardingViewModel>();
 
         return services;
     }

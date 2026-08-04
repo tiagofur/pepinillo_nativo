@@ -1,0 +1,150 @@
+<Page
+    x:Class="Pepinillo.WinUI.Views.OnboardingPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    AutomationProperties.Name="First-run onboarding"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid Padding="{StaticResource PepinilloPageMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Progress + skip -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <TextBlock Text="{x:Bind ViewModel.StepProgressLabel, Mode=OneWay}"
+                       Style="{ThemeResource CaptionTextBlockStyle}"
+                       VerticalAlignment="Center"
+                       AutomationProperties.Name="{x:Bind ViewModel.StepProgressLabel, Mode=OneWay}"/>
+            <Button Content="{x:Bind ViewModel.SkipLabel, Mode=OneWay}"
+                    HorizontalAlignment="Right"
+                    Style="{ThemeResource SubtleButtonStyle}"
+                    Command="{x:Bind ViewModel.SkipCommand}"
+                    AutomationProperties.Name="Skip onboarding"
+                    TabIndex="0"/>
+        </Grid>
+
+        <!-- Centered card -->
+        <Border Grid.Row="1"
+                MaxWidth="720"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                Padding="32"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1">
+            <StackPanel Spacing="20">
+                <TextBlock Text="{x:Bind ViewModel.StepTitle, Mode=OneWay}"
+                           Style="{ThemeResource TitleTextBlockStyle}"
+                           FontWeight="Bold"
+                           TextWrapping="WrapWholeWords"
+                           AutomationProperties.HeadingLevel="Level1"/>
+                <TextBlock Text="{x:Bind ViewModel.StepBody, Mode=OneWay}"
+                           Style="{ThemeResource BodyTextBlockStyle}"
+                           TextWrapping="WrapWholeWords"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+                <!-- Modes step: chips -->
+                <StackPanel Spacing="{StaticResource PepinilloChipSpacing}"
+                            Visibility="{x:Bind ViewModel.IsModesStep, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Pomodoro"
+                                Command="{x:Bind ViewModel.SelectModeCommand}"
+                                CommandParameter="Pomodoro"
+                                Background="{StaticResource FocusModePomodoroSubtleBrush}"
+                                BorderBrush="{StaticResource FocusModePomodoroBrush}"
+                                BorderThickness="2"
+                                CornerRadius="{StaticResource PepinilloChipCornerRadius}"
+                                AutomationProperties.Name="Select Pomodoro mode"
+                                TabIndex="1"/>
+                        <Button Content="Stopwatch"
+                                Command="{x:Bind ViewModel.SelectModeCommand}"
+                                CommandParameter="Stopwatch"
+                                Background="{StaticResource FocusModeStopwatchSubtleBrush}"
+                                BorderBrush="{StaticResource FocusModeStopwatchBrush}"
+                                BorderThickness="2"
+                                CornerRadius="{StaticResource PepinilloChipCornerRadius}"
+                                AutomationProperties.Name="Select Stopwatch mode"
+                                TabIndex="2"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Flowtime · Plus"
+                                Command="{x:Bind ViewModel.SelectModeCommand}"
+                                CommandParameter="Flowtime"
+                                Background="{StaticResource FocusModeFlowtimeSubtleBrush}"
+                                BorderBrush="{StaticResource FocusModeFlowtimeBrush}"
+                                BorderThickness="2"
+                                CornerRadius="{StaticResource PepinilloChipCornerRadius}"
+                                AutomationProperties.Name="Select Flowtime mode, Pepinillo Plus"
+                                TabIndex="3"/>
+                        <Button Content="Time Block · Plus"
+                                Command="{x:Bind ViewModel.SelectModeCommand}"
+                                CommandParameter="TimeBlocking"
+                                Background="{StaticResource FocusModeTimeBlockSubtleBrush}"
+                                BorderBrush="{StaticResource FocusModeTimeBlockBrush}"
+                                BorderThickness="2"
+                                CornerRadius="{StaticResource PepinilloChipCornerRadius}"
+                                AutomationProperties.Name="Select Time Blocking mode, Pepinillo Plus"
+                                TabIndex="4"/>
+                    </StackPanel>
+                    <TextBlock Text="Selected default is saved for Focus. Paid modes still require Pepinillo+ when you start a session."
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               TextWrapping="WrapWholeWords"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+
+                <!-- Desktop power details -->
+                <StackPanel Spacing="12"
+                            Visibility="{x:Bind ViewModel.IsDesktopStep, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind ViewModel.DesktopTrayLine, Mode=OneWay}"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="WrapWholeWords"/>
+                    <TextBlock Text="{x:Bind ViewModel.DesktopHotkeysLine, Mode=OneWay}"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="WrapWholeWords"/>
+                    <TextBlock Text="{x:Bind ViewModel.DesktopMiniLine, Mode=OneWay}"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="WrapWholeWords"/>
+                </StackPanel>
+
+                <!-- Account teaser -->
+                <TextBlock Text="{x:Bind ViewModel.AccountTeaserLine, Mode=OneWay}"
+                           Visibility="{x:Bind ViewModel.IsAccountStep, Mode=OneWay}"
+                           Style="{ThemeResource BodyTextBlockStyle}"
+                           TextWrapping="WrapWholeWords"/>
+
+                <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                           TextWrapping="WrapWholeWords"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Footer actions -->
+        <Grid Grid.Row="2" Margin="0,24,0,0" MaxWidth="720" HorizontalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0"
+                    Content="{x:Bind ViewModel.BackLabel, Mode=OneWay}"
+                    Command="{x:Bind ViewModel.BackCommand}"
+                    IsEnabled="{x:Bind ViewModel.CanGoBack, Mode=OneWay}"
+                    AutomationProperties.Name="Back to previous onboarding step"
+                    TabIndex="8"/>
+            <Button Grid.Column="2"
+                    Content="{x:Bind ViewModel.PrimaryButtonLabel, Mode=OneWay}"
+                    Style="{ThemeResource AccentButtonStyle}"
+                    Command="{x:Bind ViewModel.NextCommand}"
+                    AutomationProperties.Name="Next or finish onboarding"
+                    TabIndex="9"/>
+        </Grid>
+    </Grid>
+</Page>

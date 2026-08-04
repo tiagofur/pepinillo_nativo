@@ -73,6 +73,8 @@ public class SettingsService : ISettingsService
             existing.LastSyncAtUtc = settings.LastSyncAtUtc;
             existing.StreakProtectionWeekStartUtc = settings.StreakProtectionWeekStartUtc;
             existing.StreakProtectionUsesThisWeek = settings.StreakProtectionUsesThisWeek;
+            existing.HasCompletedOnboarding = settings.HasCompletedOnboarding;
+            existing.PreferredFocusMode = settings.PreferredFocusMode;
             _cache = existing;
         }
         else

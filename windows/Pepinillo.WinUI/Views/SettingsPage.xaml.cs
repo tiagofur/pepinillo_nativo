@@ -20,11 +20,13 @@ public sealed partial class SettingsPage : Page
         InitializeComponent();
         ViewModel.SettingsSaved += OnSettingsSaved;
         ViewModel.PremiumFeatureRequested += OnPremiumFeatureRequested;
+        ViewModel.OnboardingReplayRequested += OnOnboardingReplayRequested;
         Loaded += async (_, _) => await ViewModel.LoadAsync();
         Unloaded += (_, _) =>
         {
             ViewModel.SettingsSaved -= OnSettingsSaved;
             ViewModel.PremiumFeatureRequested -= OnPremiumFeatureRequested;
+            ViewModel.OnboardingReplayRequested -= OnOnboardingReplayRequested;
         };
     }
 
@@ -113,5 +115,18 @@ public sealed partial class SettingsPage : Page
     private void Upgrade_Click(object sender, RoutedEventArgs e)
     {
         Frame?.Navigate(typeof(PaywallPage));
+    }
+
+    private void OnOnboardingReplayRequested(object? sender, EventArgs e)
+    {
+        if (App.MainWindowInstance is MainWindow main)
+        {
+            main.EnterOnboardingMode();
+            main.NavigateToTag("Onboarding");
+        }
+        else
+        {
+            Frame?.Navigate(typeof(OnboardingPage));
+        }
     }
 }
