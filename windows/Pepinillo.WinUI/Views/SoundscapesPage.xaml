@@ -21,15 +21,24 @@
                 <TextBlock Text="{x:Bind ViewModel.VolumeLabel, Mode=OneWay}"/>
                 <Slider Minimum="0" Maximum="1" StepFrequency="0.05"
                         Value="{x:Bind ViewModel.MasterVolume, Mode=TwoWay}"
-                        ValueChanged="Volume_ValueChanged"/>
-                <Button Content="{x:Bind ViewModel.StopLabel, Mode=OneWay}" Command="{x:Bind ViewModel.StopAllCommand}" HorizontalAlignment="Left"/>
+                        ValueChanged="Volume_ValueChanged"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Master volume"
+                        AutomationProperties.HelpText="Soundscape master volume"/>
+                <Button Content="{x:Bind ViewModel.StopLabel, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.StopAllCommand}"
+                        HorizontalAlignment="Left"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Stop all soundscapes"/>
             </StackPanel>
 
             <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
                        Style="{ThemeResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                       AutomationProperties.LiveSetting="Polite"/>
 
-            <ItemsControl ItemsSource="{x:Bind ViewModel.Tracks, Mode=OneWay}">
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Tracks, Mode=OneWay}"
+                          AutomationProperties.Name="Soundscape track list">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:SoundscapeTrack">
                         <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -38,7 +47,9 @@
                                 Margin="0,0,0,8">
                             <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold"/>
+                                    <TextBlock Text="{x:Bind Name}"
+                                               FontWeight="SemiBold"
+                                               Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
                                     <TextBlock Text="{x:Bind Category}"
                                                Style="{ThemeResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
@@ -46,11 +57,23 @@
                                                Style="{ThemeResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                                     <TextBlock Text="{x:Bind PremiumLabel}"
-                                               Foreground="Goldenrod"
+                                               Foreground="{StaticResource PepinilloPremiumBadgeBrush}"
                                                Style="{ThemeResource CaptionTextBlockStyle}"/>
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="Play" Click="Play_Click" Tag="{x:Bind}"/>
-                                <Button Grid.Column="2" Content="Stop" Click="Stop_Click" Tag="{x:Bind}"/>
+                                <Button Grid.Column="1"
+                                        Content="Play"
+                                        Click="Play_Click"
+                                        Tag="{x:Bind}"
+                                        IsTabStop="True"
+                                        AutomationProperties.Name="Play soundscape track"
+                                        AutomationProperties.HelpText="{x:Bind Name}"/>
+                                <Button Grid.Column="2"
+                                        Content="Stop"
+                                        Click="Stop_Click"
+                                        Tag="{x:Bind}"
+                                        IsTabStop="True"
+                                        AutomationProperties.Name="Stop soundscape track"
+                                        AutomationProperties.HelpText="{x:Bind Name}"/>
                             </Grid>
                         </Border>
                     </DataTemplate>

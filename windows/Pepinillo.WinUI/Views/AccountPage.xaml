@@ -18,7 +18,8 @@
 
             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="8"
-                    Padding="20">
+                    Padding="20"
+                    AutomationProperties.Name="Account credentials">
                 <StackPanel Spacing="12">
                     <TextBlock Text="{x:Bind ViewModel.AccountModeLabel, Mode=OneWay}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
@@ -27,34 +28,48 @@
                     <TextBox Header="{x:Bind ViewModel.EmailLabel, Mode=OneWay}"
                              Text="{x:Bind ViewModel.Email, Mode=TwoWay}"
                              PlaceholderText="you@example.com"
-                             IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
+                             IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
+                             IsTabStop="True"
+                             AutomationProperties.Name="Account email"/>
                     <PasswordBox x:Name="PasswordBox"
                                  Header="{x:Bind ViewModel.PasswordLabel, Mode=OneWay}"
                                  PlaceholderText="{x:Bind ViewModel.PasswordLabel, Mode=OneWay}"
                                  PasswordChanged="PasswordBox_PasswordChanged"
-                                 IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
+                                 IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
+                                 IsTabStop="True"
+                                 AutomationProperties.Name="Account password"/>
                     <TextBox Header="{x:Bind ViewModel.DisplayNameLabel, Mode=OneWay}"
                              Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay}"
                              PlaceholderText="Optional"
-                             IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
+                             IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
+                             IsTabStop="True"
+                             AutomationProperties.Name="Display name"/>
 
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="{x:Bind ViewModel.LoginLabel, Mode=OneWay}"
                                 Style="{ThemeResource AccentButtonStyle}"
                                 Command="{x:Bind ViewModel.LoginCommand}"
-                                IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
+                                IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
+                                IsTabStop="True"
+                                AutomationProperties.Name="Sign in"/>
                         <Button Content="{x:Bind ViewModel.RegisterLabel, Mode=OneWay}"
                                 Command="{x:Bind ViewModel.RegisterCommand}"
-                                IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
+                                IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
+                                IsTabStop="True"
+                                AutomationProperties.Name="Register account"/>
                         <Button Content="{x:Bind ViewModel.LogoutLabel, Mode=OneWay}"
                                 Command="{x:Bind ViewModel.LogoutCommand}"
-                                IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
+                                IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
+                                IsTabStop="True"
+                                AutomationProperties.Name="Sign out"/>
                     </StackPanel>
 
                     <Button Content="{x:Bind ViewModel.SyncNowLabel, Mode=OneWay}"
                             Command="{x:Bind ViewModel.SyncNowCommand}"
                             HorizontalAlignment="Left"
-                            IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"/>
+                            IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
+                            IsTabStop="True"
+                            AutomationProperties.Name="Sync now"/>
 
                     <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}">
@@ -64,7 +79,8 @@
 
                     <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
                                Style="{ThemeResource BodyTextBlockStyle}"
-                               TextWrapping="Wrap"/>
+                               TextWrapping="Wrap"
+                               AutomationProperties.LiveSetting="Polite"/>
                     <TextBlock Text="{x:Bind ViewModel.SyncStatus, Mode=OneWay}"
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                TextWrapping="Wrap"

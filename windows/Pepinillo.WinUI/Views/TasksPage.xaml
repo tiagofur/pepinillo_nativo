@@ -7,6 +7,10 @@
     xmlns:models="using:Pepinillo.Core.Models"
     mc:Ignorable="d">
 
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Modifiers="Control" Key="N" Invoked="NewTaskAccelerator_Invoked"/>
+    </Page.KeyboardAccelerators>
+
     <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{StaticResource PepinilloPageMargin}">
         <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,24">
             <TextBlock Text="{x:Bind ViewModel.TitleLabel, Mode=OneWay}"
@@ -22,10 +26,14 @@
 
         <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,16">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                <TextBox Grid.Column="0"
+                <TextBox x:Name="NewTaskTitleBox"
+                         Grid.Column="0"
                          PlaceholderText="{x:Bind ViewModel.AddPlaceholder, Mode=OneWay}"
                          Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay}"
-                         Header="{x:Bind ViewModel.TitleFieldLabel, Mode=OneWay}"/>
+                         Header="{x:Bind ViewModel.TitleFieldLabel, Mode=OneWay}"
+                         IsTabStop="True"
+                         AutomationProperties.Name="New task title"
+                         AutomationProperties.HelpText="Keyboard: Ctrl+N focuses this field"/>
                 <NumberBox Grid.Column="1"
                            Width="140"
                            Header="{x:Bind ViewModel.EstimateLabel, Mode=OneWay}"
@@ -34,12 +42,16 @@
                            SmallChange="5"
                            LargeChange="15"
                            Minimum="5"
-                           Maximum="240"/>
+                           Maximum="240"
+                           IsTabStop="True"
+                           AutomationProperties.Name="Estimated minutes for new task"/>
                 <Button Grid.Column="2"
                         Content="{x:Bind ViewModel.AddTaskLabel, Mode=OneWay}"
                         Style="{ThemeResource AccentButtonStyle}"
                         VerticalAlignment="Bottom"
-                        Command="{x:Bind ViewModel.CreateTaskCommand}"/>
+                        Command="{x:Bind ViewModel.CreateTaskCommand}"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Add task"/>
             </Grid>
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <NumberBox Header="{x:Bind ViewModel.PriorityLabel, Mode=OneWay}"
@@ -48,31 +60,51 @@
                            Minimum="0"
                            Maximum="3"
                            SmallChange="1"
-                           SpinButtonPlacementMode="Compact"/>
+                           SpinButtonPlacementMode="Compact"
+                           IsTabStop="True"
+                           AutomationProperties.Name="New task priority"/>
                 <ComboBox Header="{x:Bind ViewModel.EnergyLabel, Mode=OneWay}"
                           Width="140"
                           ItemsSource="{x:Bind ViewModel.EnergyOptions}"
-                          SelectedItem="{x:Bind ViewModel.NewTaskEnergy, Mode=TwoWay}"/>
+                          SelectedItem="{x:Bind ViewModel.NewTaskEnergy, Mode=TwoWay}"
+                          IsTabStop="True"
+                          AutomationProperties.Name="New task energy"/>
                 <ComboBox Header="{x:Bind ViewModel.RecurrenceLabel, Mode=OneWay}"
                           Width="160"
                           ItemsSource="{x:Bind ViewModel.RecurrenceOptions}"
-                          SelectedItem="{x:Bind ViewModel.NewTaskRecurrence, Mode=TwoWay}"/>
+                          SelectedItem="{x:Bind ViewModel.NewTaskRecurrence, Mode=TwoWay}"
+                          IsTabStop="True"
+                          AutomationProperties.Name="New task recurrence"/>
             </StackPanel>
         </StackPanel>
 
         <Pivot Grid.Row="2"
                x:Name="FilterPivot"
                Margin="0,0,0,8"
-               SelectionChanged="FilterPivot_SelectionChanged">
-            <PivotItem x:Name="FilterTodayItem" Header="Today" Tag="Today"/>
-            <PivotItem x:Name="FilterUpcomingItem" Header="Upcoming" Tag="Upcoming"/>
-            <PivotItem x:Name="FilterInboxItem" Header="Inbox" Tag="Inbox"/>
-            <PivotItem x:Name="FilterAllItem" Header="All" Tag="All"/>
+               SelectionChanged="FilterPivot_SelectionChanged"
+               AutomationProperties.Name="Task filters">
+            <PivotItem x:Name="FilterTodayItem"
+                       Header="Today"
+                       Tag="Today"
+                       AutomationProperties.Name="Filter tasks Today"/>
+            <PivotItem x:Name="FilterUpcomingItem"
+                       Header="Upcoming"
+                       Tag="Upcoming"
+                       AutomationProperties.Name="Filter tasks Upcoming"/>
+            <PivotItem x:Name="FilterInboxItem"
+                       Header="Inbox"
+                       Tag="Inbox"
+                       AutomationProperties.Name="Filter tasks Inbox"/>
+            <PivotItem x:Name="FilterAllItem"
+                       Header="All"
+                       Tag="All"
+                       AutomationProperties.Name="Filter tasks All"/>
         </Pivot>
 
         <Grid Grid.Row="3">
             <ListView ItemsSource="{x:Bind ViewModel.Tasks, Mode=OneWay}"
-                      SelectionMode="None">
+                      SelectionMode="None"
+                      AutomationProperties.Name="Task list">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:TaskItem">
                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8" Padding="12,8">
@@ -80,7 +112,10 @@
                                       IsChecked="{x:Bind IsCompleted, Mode=OneWay}"
                                       MinWidth="32"
                                       Click="TaskCheck_Click"
-                                      Tag="{x:Bind}"/>
+                                      Tag="{x:Bind}"
+                                      IsTabStop="True"
+                                      AutomationProperties.Name="Complete task"
+                                      AutomationProperties.HelpText="{x:Bind Title}"/>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
                                 <TextBlock Text="{x:Bind Title}"
                                            FontWeight="SemiBold"
@@ -92,10 +127,12 @@
                                                FontWeight="SemiBold"
                                                Foreground="{ThemeResource SystemAccentColor}"/>
                                     <TextBlock Text="{x:Bind EnergyLabel}"
-                                               FontSize="11"/>
+                                               FontSize="11"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                     <TextBlock Text="{x:Bind RecurrenceRule}"
                                                FontSize="11"
-                                               Opacity="0.7"/>
+                                               Opacity="0.7"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                 </StackPanel>
                                 <ItemsControl ItemsSource="{x:Bind SubTasks}">
                                     <ItemsControl.ItemTemplate>
@@ -104,7 +141,10 @@
                                                 <CheckBox IsChecked="{x:Bind IsCompleted, Mode=OneWay}"
                                                           MinWidth="28"
                                                           Click="SubtaskCheck_Click"
-                                                          Tag="{x:Bind}"/>
+                                                          Tag="{x:Bind}"
+                                                          IsTabStop="True"
+                                                          AutomationProperties.Name="Complete subtask"
+                                                          AutomationProperties.HelpText="{x:Bind Title}"/>
                                                 <TextBlock Text="{x:Bind Title}"
                                                            VerticalAlignment="Center"
                                                            Style="{ThemeResource CaptionTextBlockStyle}"/>
@@ -117,9 +157,10 @@
                                     Background="{ThemeResource SystemAccentColor}"
                                     CornerRadius="4"
                                     Padding="8,4"
-                                    VerticalAlignment="Center">
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.Name="Estimated minutes badge">
                                 <TextBlock Text="{x:Bind EstimatedMinutes}"
-                                           Foreground="White"
+                                           Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
                                            FontSize="12"
                                            FontWeight="SemiBold"/>
                             </Border>
@@ -127,19 +168,24 @@
                                        Text="{x:Bind EstimatedPomodoros}"
                                        VerticalAlignment="Center"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                       ToolTipService.ToolTip="Estimated pomodoros"/>
+                                       ToolTipService.ToolTip="Estimated pomodoros"
+                                       AutomationProperties.Name="Estimated pomodoros"/>
                             <Button Grid.Column="4"
                                     Content="+"
                                     ToolTipService.ToolTip="Add subtask"
                                     Click="AddSubtask_Click"
                                     Tag="{x:Bind}"
-                                    VerticalAlignment="Center"/>
+                                    VerticalAlignment="Center"
+                                    IsTabStop="True"
+                                    AutomationProperties.Name="Add subtask"/>
                             <Button Grid.Column="5"
                                     Style="{ThemeResource SubtleButtonStyle}"
                                     Click="DeleteTask_Click"
                                     Tag="{x:Bind}"
                                     VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Delete">
+                                    ToolTipService.ToolTip="Delete"
+                                    IsTabStop="True"
+                                    AutomationProperties.Name="Delete task">
                                 <FontIcon Glyph="&#xE74D;" FontSize="14"/>
                             </Button>
                         </Grid>
@@ -152,7 +198,8 @@
                         Spacing="12"
                         MaxWidth="360"
                         IsHitTestVisible="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
-                        Opacity="{x:Bind ViewModel.EmptyPanelOpacity, Mode=OneWay}">
+                        Opacity="{x:Bind ViewModel.EmptyPanelOpacity, Mode=OneWay}"
+                        AutomationProperties.Name="Empty task list">
                 <FontIcon Glyph="&#xE9D5;"
                           FontSize="48"
                           Opacity="0.55"
@@ -172,7 +219,9 @@
                         Style="{ThemeResource AccentButtonStyle}"
                         HorizontalAlignment="Center"
                         Command="{x:Bind ViewModel.CreateTaskCommand}"
-                        ToolTipService.ToolTip="Uses the title field above — type a name first"/>
+                        ToolTipService.ToolTip="Uses the title field above — type a name first"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Add your first task"/>
             </StackPanel>
         </Grid>
 
@@ -184,7 +233,8 @@
                        PrimaryButtonClick="SubtaskDialog_PrimaryButtonClick">
             <TextBox x:Name="SubtaskTitleBox"
                      PlaceholderText="Subtask title"
-                     Header="Title"/>
+                     Header="Title"
+                     AutomationProperties.Name="Subtask title"/>
         </ContentDialog>
     </Grid>
 </Page>

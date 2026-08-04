@@ -50,12 +50,19 @@ Use before submitting a package flight or public release. Mark items only after 
 - [ ] Global hotkeys do not hard-crash if registration fails; conflicts documented or rebindable when settings exist
 - [ ] Uninstall / exit removes tray icon
 
-## 7. Accessibility basics
+## 7. Accessibility basics (W15 / #589)
 
-- [ ] Keyboard: Tab order reaches primary controls on Focus and Tasks
-- [ ] High contrast / text scale 125%: UI remains usable (no critical clipped CTAs)
-- [ ] Meaningful names on primary buttons (Start / Pause / Complete)
-- [ ] Color is not the only indicator of session state (text/icons also)
+Full Narrator + keyboard + scale smoke steps: [A11Y_SMOKE.md](./A11Y_SMOKE.md). Mark only after real Windows hardware.
+
+- [ ] Keyboard: Tab order reaches primary controls on Focus, Tasks, and Paywall (XAML visual order)
+- [ ] Focus accelerators: `Ctrl+Enter` start/resume, `Ctrl+Space` pause when available (Escape not swallowed)
+- [ ] Tasks accelerator: `Ctrl+N` focuses new task title field
+- [ ] High contrast theme: cards/timer use ThemeResource text; CTAs remain usable
+- [ ] Text scale 200% (or strong OS scaling): no critical clipped Start / Save / Buy CTAs
+- [ ] Meaningful `AutomationProperties.Name` on primary controls (Focus modes/Start/Pause/Stop/Skip/journal, Tasks filters/add/complete/delete, Paywall buy/subscribe/restore/manage, Settings toggles/hotkeys/Save, Analytics export/upgrade, Account auth/sync, Soundscapes play/stop/volume, Mini timer elapsed)
+- [ ] Session timer: `AutomationProperties.LiveSetting=Polite` (occasional announcements OK)
+- [ ] Color is not the only indicator of session state (status text + icons also)
+- [ ] Settings caption documents accelerators: “Focus: Ctrl+Enter start/resume · Ctrl+Space pause when available. Tasks: Ctrl+N focus add field.”
 
 ## 8. Performance & battery
 

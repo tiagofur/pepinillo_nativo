@@ -176,6 +176,11 @@ public partial class SettingsViewModel : ObservableObject
     private string _hotkeyHint =
         "If a hotkey does nothing, another app may own the chord (e.g. PowerToys).";
 
+    /// <summary>In-app page accelerators (Focus/Tasks) documented for keyboard-first users.</summary>
+    [ObservableProperty]
+    private string _keyboardAcceleratorsCaption =
+        "Focus: Ctrl+Enter start/resume · Ctrl+Space pause when available. Tasks: Ctrl+N focus add field.";
+
     public string[] LanguageOptions { get; } = { "en", "es", "pt" };
 
     /// <summary>Theme picker options (System, Light, Dark, Forest, Ocean, Sunset).</summary>
@@ -441,6 +446,7 @@ public partial class SettingsViewModel : ObservableObject
         StartupLabel = _localizer.GetString("Settings.Startup");
         HotkeysLabel = _localizer.GetString("Settings.Hotkeys");
         HotkeyHint = _localizer.GetString("Settings.HotkeyHint");
+        KeyboardAcceleratorsCaption = _localizer.GetString("Settings.KeyboardAcceleratorsCaption");
         PlayPauseHotkeyLabel = _localizer.GetString("Settings.PlayPauseHotkey");
         SkipHotkeyLabel = _localizer.GetString("Settings.SkipHotkey");
         MiniTimerHotkeyLabel = _localizer.GetString("Settings.MiniTimerHotkey");

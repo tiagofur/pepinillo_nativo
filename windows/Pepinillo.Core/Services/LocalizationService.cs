@@ -66,6 +66,7 @@ public class LocalizationService : ILocalizationService
         ("Settings.Startup", "Launch Pepinillo when Windows starts", "Iniciar Pepinillo al arrancar Windows", "Iniciar o Pepinillo com o Windows"),
         ("Settings.Hotkeys", "Global hotkeys", "Atajos globales", "Atalhos globais"),
         ("Settings.HotkeyHint", "If a hotkey does nothing, another app may own the chord (e.g. PowerToys).", "Si un atajo no responde, otra app puede usarlo (p. ej. PowerToys).", "Se um atalho não funcionar, outro app pode estar usando-o (ex.: PowerToys)."),
+        ("Settings.KeyboardAcceleratorsCaption", "Focus: Ctrl+Enter start/resume · Ctrl+Space pause when available. Tasks: Ctrl+N focus add field.", "Enfoque: Ctrl+Enter iniciar/reanudar · Ctrl+Espacio pausar si está disponible. Tareas: Ctrl+N enfocar campo de alta.", "Foco: Ctrl+Enter iniciar/retomar · Ctrl+Espaço pausar quando disponível. Tarefas: Ctrl+N focar campo de nova tarefa."),
         ("Settings.PlayPauseHotkey", "Play / Pause", "Reproducir / Pausar", "Reproduzir / Pausar"),
         ("Settings.SkipHotkey", "Skip break", "Saltar descanso", "Pular pausa"),
         ("Settings.MiniTimerHotkey", "Mini timer", "Mini temporizador", "Mini temporizador"),

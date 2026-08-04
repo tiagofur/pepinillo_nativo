@@ -34,7 +34,8 @@
                         CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                         Padding="{StaticResource PepinilloCardPadding}"
                         BorderBrush="{StaticResource PepinilloThemeAccentBrush}"
-                        BorderThickness="2">
+                        BorderThickness="2"
+                        AutomationProperties.Name="Pepinillo Plus offer">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Pepinillo+"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"
@@ -46,7 +47,7 @@
                             <TextBlock Text="{x:Bind ViewModel.PepinilloPlusPurchaseType, Mode=OneWay}"
                                        FontSize="11"
                                        FontWeight="SemiBold"
-                                       Foreground="Black"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                                        TextWrapping="Wrap"/>
                         </Border>
                         <TextBlock Text="{x:Bind ViewModel.PepinilloPlusPrice, Mode=OneWay}"
@@ -59,14 +60,17 @@
                         <Button Content="{x:Bind ViewModel.BuyPlusLabel, Mode=OneWay}"
                                 Style="{ThemeResource AccentButtonStyle}"
                                 IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
-                                Command="{x:Bind ViewModel.PurchasePepinilloPlusCommand}"/>
+                                Command="{x:Bind ViewModel.PurchasePepinilloPlusCommand}"
+                                IsTabStop="True"
+                                AutomationProperties.Name="Buy Pepinillo Plus"/>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="1"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                         CornerRadius="{StaticResource PepinilloCardCornerRadius}"
-                        Padding="{StaticResource PepinilloCardPadding}">
+                        Padding="{StaticResource PepinilloCardPadding}"
+                        AutomationProperties.Name="Everywhere subscription offer">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Everywhere / AI+"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"
@@ -76,10 +80,12 @@
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <TextBlock Text="{x:Bind ViewModel.EverywhereMonthlyPrice, Mode=OneWay}"
                                        FontSize="22"
-                                       FontWeight="Bold"/>
+                                       FontWeight="Bold"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
                             <TextBlock Text="{x:Bind ViewModel.EverywhereAnnualPrice, Mode=OneWay}"
                                        FontSize="22"
-                                       FontWeight="Bold"/>
+                                       FontWeight="Bold"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
                         </StackPanel>
                         <TextBlock Text="{x:Bind ViewModel.EverywhereFeaturesLabel, Mode=OneWay}"
                                    TextWrapping="Wrap"
@@ -88,10 +94,14 @@
                             <Button Content="{x:Bind ViewModel.SubscribeMonthlyLabel, Mode=OneWay}"
                                     Style="{ThemeResource AccentButtonStyle}"
                                     IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
-                                    Command="{x:Bind ViewModel.SubscribeMonthlyCommand}"/>
+                                    Command="{x:Bind ViewModel.SubscribeMonthlyCommand}"
+                                    IsTabStop="True"
+                                    AutomationProperties.Name="Subscribe monthly Everywhere"/>
                             <Button Content="{x:Bind ViewModel.SubscribeAnnualLabel, Mode=OneWay}"
                                     IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
-                                    Command="{x:Bind ViewModel.SubscribeAnnualCommand}"/>
+                                    Command="{x:Bind ViewModel.SubscribeAnnualCommand}"
+                                    IsTabStop="True"
+                                    AutomationProperties.Name="Subscribe annual Everywhere"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -100,18 +110,24 @@
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button Content="{x:Bind ViewModel.RestoreLabel, Mode=OneWay}"
                         IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
-                        Command="{x:Bind ViewModel.RestorePurchasesCommand}"/>
+                        Command="{x:Bind ViewModel.RestorePurchasesCommand}"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Restore purchases"/>
                 <HyperlinkButton Content="{x:Bind ViewModel.ManageStoreLabel, Mode=OneWay}"
-                                 NavigateUri="ms-windows-store://account"/>
+                                 NavigateUri="ms-windows-store://account"
+                                 IsTabStop="True"
+                                 AutomationProperties.Name="Manage subscriptions in Microsoft Store"/>
             </StackPanel>
 
             <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
                        Style="{ThemeResource BodyTextBlockStyle}"
-                       TextWrapping="Wrap"/>
+                       TextWrapping="Wrap"
+                       AutomationProperties.LiveSetting="Polite"/>
             <ProgressRing IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
                           Width="28"
                           Height="28"
-                          HorizontalAlignment="Left"/>
+                          HorizontalAlignment="Left"
+                          AutomationProperties.Name="Purchase in progress"/>
         </StackPanel>
     </ScrollViewer>
 </Page>

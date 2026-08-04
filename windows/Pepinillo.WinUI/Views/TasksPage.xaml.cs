@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Pepinillo.Core.Models;
 using Pepinillo.Core.ViewModels;
 
@@ -31,6 +32,13 @@ public sealed partial class TasksPage : Page
                 ApplyFilterHeaders();
             }
         };
+    }
+
+    /// <summary>Ctrl+N — move keyboard focus to the new task title field.</summary>
+    private void NewTaskAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        NewTaskTitleBox.Focus(FocusState.Programmatic);
+        args.Handled = true;
     }
 
     private void ApplyFilterHeaders()
