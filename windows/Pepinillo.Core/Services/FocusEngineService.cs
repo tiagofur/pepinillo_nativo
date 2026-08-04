@@ -5,8 +5,13 @@ using Pepinillo.Core.Models;
 namespace Pepinillo.Core.Services;
 
 /// <summary>
-/// Local focus timer engine. Pomodoro work/break cycles, Stopwatch, Flowtime soft target,
-/// and Time Blocking fixed duration (no auto-break).
+/// Local focus timer engine.
+/// <list type="bullet">
+/// <item>Pomodoro: work → break; Stop mid-work saves partial session.</item>
+/// <item>Stopwatch: count-up; Stop completes session.</item>
+/// <item>Flowtime: soft target — timer keeps running past target; Stop completes.</item>
+/// <item>Time Blocking: hard target — completes at duration (no auto-break).</item>
+/// </list>
 /// Session persistence is the caller's responsibility via <see cref="SessionCompleted"/>.
 /// </summary>
 public class FocusEngineService : IFocusEngineService, IDisposable
@@ -174,12 +179,16 @@ public class FocusEngineService : IFocusEngineService, IDisposable
     {
         _timer.Stop();
 
-        // Hybrid complete: Stopwatch always; Flowtime/TimeBlocking when user stops with progress.
+        // User Stop with progress: save work for all timed modes (incl. partial Pomodoro).
+        // Cancel (mode switch / reconfigure) discards without SessionCompleted.
         if (!cancel
             && !_inBreak
             && ElapsedSeconds > 0
             && CurrentSession != null
-            && CurrentMode is FocusMode.Stopwatch or FocusMode.Flowtime or FocusMode.TimeBlocking)
+            && CurrentMode is FocusMode.Stopwatch
+                or FocusMode.Flowtime
+                or FocusMode.TimeBlocking
+                or FocusMode.Pomodoro)
         {
             CompleteCurrentWorkSession(fireCompleted: true, markEngineCompleted: false);
             ElapsedSeconds = 0;
@@ -202,7 +211,12 @@ public class FocusEngineService : IFocusEngineService, IDisposable
         ElapsedSeconds++;
         Tick?.Invoke(this, ElapsedSeconds);
 
+        // Pure count-up: never auto-complete.
         if (CurrentMode == FocusMode.Stopwatch)
+            return;
+
+        // Soft target: keep running past goal; user stops when done (Flowtime).
+        if (CurrentMode == FocusMode.Flowtime)
             return;
 
         if (ElapsedSeconds < TargetDurationSeconds)

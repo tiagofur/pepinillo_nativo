@@ -116,7 +116,7 @@ public class FocusEngineTests
     }
 
     [Fact]
-    public void Flowtime_TargetHit_ShouldComplete_WithoutBreak()
+    public void Flowtime_PastSoftTarget_ShouldKeepRunning_UntilStop()
     {
         using var engine = new FocusEngineService();
         engine.ApplyBreakSettings(5, 10, 4, autoStartBreaks: true, autoStartFocus: true);
@@ -127,15 +127,21 @@ public class FocusEngineTests
         engine.ConfigureSession(FocusMode.Flowtime, durationSeconds: 1);
         engine.Start();
 
-        var deadline = DateTime.UtcNow.AddSeconds(3);
-        while (engine.CurrentState != SessionState.Completed && DateTime.UtcNow < deadline)
+        var deadline = DateTime.UtcNow.AddSeconds(4);
+        while (engine.ElapsedSeconds < 2 && DateTime.UtcNow < deadline)
             Thread.Sleep(50);
 
-        Assert.Equal(SessionState.Completed, engine.CurrentState);
-        Assert.False(engine.IsOnBreak);
+        // Soft target: still running past 1s goal.
+        Assert.Equal(SessionState.Running, engine.CurrentState);
+        Assert.True(engine.ElapsedSeconds >= 2);
+        Assert.Null(completed);
+
+        engine.Stop();
         Assert.NotNull(completed);
         Assert.True(completed!.IsCompleted);
+        Assert.True(completed.ElapsedSeconds >= 2);
         Assert.Equal(FocusMode.Flowtime, completed.Mode);
+        Assert.Equal(SessionState.Idle, engine.CurrentState);
     }
 
     [Fact]
@@ -198,5 +204,49 @@ public class FocusEngineTests
         engine.Stop();
         Assert.NotNull(completed);
         Assert.True(completed!.IsCompleted);
+    }
+
+    [Fact]
+    public void Pomodoro_StopMidWork_ShouldCompletePartialSession()
+    {
+        using var engine = new FocusEngineService();
+        FocusSession? completed = null;
+        engine.SessionCompleted += (_, s) => completed = s;
+
+        engine.ConfigureSession(FocusMode.Pomodoro, durationSeconds: 600);
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.ElapsedSeconds < 1 && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        engine.Stop();
+
+        Assert.Equal(SessionState.Idle, engine.CurrentState);
+        Assert.NotNull(completed);
+        Assert.True(completed!.IsCompleted);
+        Assert.True(completed.ElapsedSeconds >= 1);
+        Assert.Equal(FocusMode.Pomodoro, completed.Mode);
+        Assert.False(engine.IsOnBreak);
+    }
+
+    [Fact]
+    public void Pomodoro_Reconfigure_ShouldNotCompletePartialSession()
+    {
+        using var engine = new FocusEngineService();
+        FocusSession? completed = null;
+        engine.SessionCompleted += (_, s) => completed = s;
+
+        engine.ConfigureSession(FocusMode.Pomodoro, durationSeconds: 600);
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.ElapsedSeconds < 1 && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        // Mode switch cancels without saving.
+        engine.ConfigureSession(FocusMode.Stopwatch, 0);
+        Assert.Null(completed);
+        Assert.Equal(SessionState.Idle, engine.CurrentState);
     }
 }
