@@ -11,10 +11,12 @@ namespace Pepinillo.Core.Services;
 public class TaskService : ITaskService
 {
     private readonly PepinilloDbContext _dbContext;
+    private readonly IEntitlementService _entitlements;
 
-    public TaskService(PepinilloDbContext dbContext)
+    public TaskService(PepinilloDbContext dbContext, IEntitlementService entitlements)
     {
         _dbContext = dbContext;
+        _entitlements = entitlements;
     }
 
     public async Task<List<TaskItem>> GetAllTasksAsync()
@@ -83,6 +85,8 @@ public class TaskService : ITaskService
         var normalizedRecurrence = NormalizeRecurrence(recurrenceRule);
         var clampedPriority = Math.Clamp(priority, 0, 3);
 
+        EnforceCreateEntitlements(parentTaskId, normalizedRecurrence);
+
         var pomodoros = estimatedPomodoros > 0
             ? estimatedPomodoros
             : Math.Max(1, (int)Math.Ceiling(estimatedMinutes / 25.0));
@@ -106,6 +110,28 @@ public class TaskService : ITaskService
         _dbContext.TaskItems.Add(task);
         await _dbContext.SaveChangesAsync();
         return task;
+    }
+
+    private void EnforceCreateEntitlements(Guid? parentTaskId, string? normalizedRecurrence)
+    {
+        if (parentTaskId.HasValue && !_entitlements.CanCreateSubtask)
+            throw new InvalidOperationException("Subtasks require Pepinillo+ or Everywhere.");
+
+        if (!string.IsNullOrEmpty(normalizedRecurrence) && !_entitlements.CanUseRecurrence)
+            throw new InvalidOperationException("Recurring tasks require Pepinillo+ or Everywhere.");
+
+        if (parentTaskId.HasValue)
+            return; // subtask quota is independent of root limit
+
+        if (_entitlements.IsPremium)
+            return;
+
+        var incompleteRoots = _dbContext.TaskItems.Count(t =>
+            t.ParentTaskId == null && !t.IsCompleted);
+
+        if (!_entitlements.CanCreateIncompleteRootTask(incompleteRoots))
+            throw new InvalidOperationException(
+                $"Free plan allows at most {EntitlementService.FreeMaxIncompleteRootTasks} incomplete tasks. Upgrade to Pepinillo+ for unlimited tasks.");
     }
 
     public async Task<TaskItem?> UpdateTaskAsync(TaskItem task)

@@ -43,6 +43,15 @@ public partial class TasksViewModel : ObservableObject
     private bool _isEmpty = true;
 
     [ObservableProperty]
+    private string _emptyHint = "Tip: empty lists show no rows above. Add a task or switch filters.";
+
+    [ObservableProperty]
+    private double _emptyPanelOpacity = 0.85;
+
+    [ObservableProperty]
+    private string _statusMessage = string.Empty;
+
+    [ObservableProperty]
     private string _newSubtaskTitle = string.Empty;
 
     [ObservableProperty]
@@ -55,6 +64,14 @@ public partial class TasksViewModel : ObservableObject
     public TasksViewModel(ITaskService taskService)
     {
         _taskService = taskService;
+    }
+
+    partial void OnIsEmptyChanged(bool value)
+    {
+        EmptyHint = value
+            ? "Tip: empty lists show no rows above. Add a task or switch filters."
+            : string.Empty;
+        EmptyPanelOpacity = value ? 0.85 : 0;
     }
 
     [RelayCommand]
@@ -94,14 +111,23 @@ public partial class TasksViewModel : ObservableObject
             _ => NewTaskDueDate?.UtcDateTime
         };
 
-        await _taskService.CreateTaskAsync(
-            title: NewTaskTitle,
-            estimatedMinutes: NewTaskEstimateMinutes,
-            dueDate: dueDate,
-            priority: NewTaskPriority,
-            energyLevel: NewTaskEnergy,
-            recurrenceRule: NewTaskRecurrence);
+        try
+        {
+            await _taskService.CreateTaskAsync(
+                title: NewTaskTitle,
+                estimatedMinutes: NewTaskEstimateMinutes,
+                dueDate: dueDate,
+                priority: NewTaskPriority,
+                energyLevel: NewTaskEnergy,
+                recurrenceRule: NewTaskRecurrence);
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+            return;
+        }
 
+        StatusMessage = string.Empty;
         NewTaskTitle = string.Empty;
         NewTaskPriority = 0;
         NewTaskEnergy = string.Empty;
@@ -141,11 +167,20 @@ public partial class TasksViewModel : ObservableObject
         if (parent == null || string.IsNullOrWhiteSpace(NewSubtaskTitle))
             return;
 
-        await _taskService.CreateTaskAsync(
-            title: NewSubtaskTitle,
-            estimatedMinutes: 15,
-            parentTaskId: parent.Id);
+        try
+        {
+            await _taskService.CreateTaskAsync(
+                title: NewSubtaskTitle,
+                estimatedMinutes: 15,
+                parentTaskId: parent.Id);
+        }
+        catch (InvalidOperationException ex)
+        {
+            StatusMessage = ex.Message;
+            return;
+        }
 
+        StatusMessage = string.Empty;
         NewSubtaskTitle = string.Empty;
         SubtaskParent = null;
         await LoadTasksAsync();

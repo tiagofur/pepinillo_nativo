@@ -10,7 +10,10 @@ namespace Pepinillo.Core.Tests;
 
 public class FocusViewModelTests
 {
-    private static FocusViewModel CreateVm(IFocusEngineService? engine = null, FakeSessionService? sessions = null)
+    private static FocusViewModel CreateVm(
+        IFocusEngineService? engine = null,
+        FakeSessionService? sessions = null,
+        IEntitlementService? entitlements = null)
     {
         engine ??= new FocusEngineService();
         sessions ??= new FakeSessionService();
@@ -20,7 +23,22 @@ public class FocusViewModelTests
             sessions,
             new FakeTaskService(),
             new FakeNotificationService(),
-            new FakeFocusAssistService());
+            new FakeFocusAssistService(),
+            entitlements: entitlements);
+    }
+
+    private static IEntitlementService FreeEntitlements()
+    {
+        var e = new EntitlementService(new StoreCommerceService(new NoAuthBackend()));
+        e.ApplyStatus(new SubscriptionStatus { Tier = EntitlementTier.Free });
+        return e;
+    }
+
+    private static IEntitlementService PlusEntitlements()
+    {
+        var e = new EntitlementService(new StoreCommerceService(new NoAuthBackend()));
+        e.ApplyStatus(new SubscriptionStatus { Tier = EntitlementTier.PepinilloPlus });
+        return e;
     }
 
     [Fact]
@@ -35,10 +53,10 @@ public class FocusViewModelTests
     }
 
     [Fact]
-    public void SelectMode_Flowtime_ShouldUpdateFormattedTime()
+    public void SelectMode_Flowtime_OnPlus_ShouldUpdateFormattedTime()
     {
         using var engine = new FocusEngineService();
-        var vm = CreateVm(engine);
+        var vm = CreateVm(engine, entitlements: PlusEntitlements());
 
         vm.SelectModeCommand.Execute(FocusMode.Flowtime);
 
@@ -46,13 +64,59 @@ public class FocusViewModelTests
         // Idle Flowtime shows remaining soft target (count-up only while running).
         Assert.Equal("30:00", vm.FormattedTime);
         Assert.Equal(1800, engine.TargetDurationSeconds);
+        Assert.Equal(string.Empty, vm.PaywallFeatureHint);
     }
 
     [Fact]
-    public void SelectMode_TimeBlocking_ShouldUseSixtyMinutesDefault()
+    public void Free_BlocksFlowtimeSelection()
     {
         using var engine = new FocusEngineService();
-        var vm = CreateVm(engine);
+        var vm = CreateVm(engine, entitlements: FreeEntitlements());
+        string? requested = null;
+        vm.PremiumFeatureRequested += (_, feature) => requested = feature;
+
+        vm.SelectModeCommand.Execute(FocusMode.Flowtime);
+
+        Assert.Equal(FocusMode.Pomodoro, vm.SelectedMode);
+        Assert.Equal("Flowtime", vm.PaywallFeatureHint);
+        Assert.Equal("Flowtime", requested);
+        Assert.Contains("Pepinillo+", vm.StatusLabel);
+    }
+
+    [Fact]
+    public void Free_BlocksTimeBlockingStart()
+    {
+        using var engine = new FocusEngineService();
+        var vm = CreateVm(engine, entitlements: FreeEntitlements());
+
+        // Force selected mode without SelectMode (edge case).
+        vm.GetType().GetProperty(nameof(FocusViewModel.SelectedMode))!
+            .SetValue(vm, FocusMode.TimeBlocking);
+
+        vm.StartSessionCommand.Execute(null);
+
+        Assert.Equal(SessionState.Idle, engine.CurrentState);
+        Assert.Equal("Time Blocking", vm.PaywallFeatureHint);
+    }
+
+    [Fact]
+    public void Plus_AllowsFlowtime()
+    {
+        using var engine = new FocusEngineService();
+        var vm = CreateVm(engine, entitlements: PlusEntitlements());
+
+        vm.SelectModeCommand.Execute(FocusMode.Flowtime);
+        vm.StartSessionCommand.Execute(null);
+
+        Assert.Equal(FocusMode.Flowtime, vm.SelectedMode);
+        Assert.Equal(SessionState.Running, engine.CurrentState);
+    }
+
+    [Fact]
+    public void SelectMode_TimeBlocking_OnPlus_ShouldUseSixtyMinutesDefault()
+    {
+        using var engine = new FocusEngineService();
+        var vm = CreateVm(engine, entitlements: PlusEntitlements());
 
         vm.SelectModeCommand.Execute(FocusMode.TimeBlocking);
 
@@ -169,5 +233,19 @@ public class FocusViewModelTests
     {
         public void BeginFocusSession() { }
         public void EndFocusSession() { }
+    }
+
+    private sealed class NoAuthBackend : IBackendApiClient
+    {
+        public bool IsAuthenticated => false;
+        public string? AuthToken => null;
+        public Task InitializeAsync() => Task.CompletedTask;
+        public Task<bool> LoginAsync(string email, string password) => Task.FromResult(false);
+        public Task<bool> RegisterAsync(string email, string password, string name) => Task.FromResult(false);
+        public Task<bool> RefreshAsync() => Task.FromResult(false);
+        public Task LogoutAsync() => Task.CompletedTask;
+        public Task<bool> SyncSessionsAsync(IEnumerable<FocusSession> sessions) => Task.FromResult(false);
+        public Task<SubscriptionStatus> GetSubscriptionStatusAsync() =>
+            Task.FromResult(new SubscriptionStatus { Tier = EntitlementTier.Free });
     }
 }

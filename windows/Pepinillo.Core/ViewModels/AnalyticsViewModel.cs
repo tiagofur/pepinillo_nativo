@@ -10,6 +10,7 @@ namespace Pepinillo.Core.ViewModels;
 public partial class AnalyticsViewModel : ObservableObject
 {
     private readonly IFocusSessionService _sessionService;
+    private readonly IEntitlementService? _entitlements;
 
     [ObservableProperty]
     private int _todayFocusMinutes;
@@ -36,30 +37,47 @@ public partial class AnalyticsViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<ModeBreakdownItem> _modeBreakdown = new();
 
-    public AnalyticsViewModel(IFocusSessionService sessionService)
+    [ObservableProperty]
+    private int _historyWindowDays = EntitlementService.FreeAnalyticsHistoryDays;
+
+    public AnalyticsViewModel(
+        IFocusSessionService sessionService,
+        IEntitlementService? entitlements = null)
     {
         _sessionService = sessionService;
+        _entitlements = entitlements;
     }
 
     public async Task LoadAsync()
     {
         var utcNow = DateTime.UtcNow;
         var today = utcNow.Date;
-        var weekStart = today.AddDays(-6);
+
+        // Free: clamp analytics history to 7 days; Plus: unrestricted recent + wider window.
+        var isPremium = _entitlements?.IsPremium == true;
+        HistoryWindowDays = isPremium ? 30 : EntitlementService.FreeAnalyticsHistoryDays;
+        var rangeStart = today.AddDays(-(HistoryWindowDays - 1));
 
         TodayFocusMinutes = await _sessionService.GetTodayFocusMinutesAsync(utcNow);
-        var sevenDaySeconds = await _sessionService.GetTotalFocusSecondsAsync(weekStart, today.AddDays(1));
-        SevenDayFocusHours = Math.Round(sevenDaySeconds / 3600.0, 1);
+        var rangeSeconds = await _sessionService.GetTotalFocusSecondsAsync(rangeStart, today.AddDays(1));
+        SevenDayFocusHours = Math.Round(rangeSeconds / 3600.0, 1);
         WeeklyFocusHours = (int)Math.Floor(SevenDayFocusHours);
 
         var (current, best) = await _sessionService.GetStreaksAsync(today);
         CurrentStreakDays = current;
         BestStreakDays = best;
 
-        var breakdown = await _sessionService.GetModeBreakdownAsync(weekStart, today.AddDays(1));
+        var breakdown = await _sessionService.GetModeBreakdownAsync(rangeStart, today.AddDays(1));
         ModeBreakdown = new ObservableCollection<ModeBreakdownItem>(breakdown);
 
-        var recent = await _sessionService.GetRecentSessionsAsync(15);
+        var recentLimit = isPremium ? 50 : 15;
+        var recent = await _sessionService.GetRecentSessionsAsync(recentLimit);
+        if (!isPremium)
+        {
+            var freeCutoff = today.AddDays(-(EntitlementService.FreeAnalyticsHistoryDays - 1));
+            recent = recent.FindAll(s => s.StartedAt.Date >= freeCutoff);
+        }
+
         RecentSessions = new ObservableCollection<FocusSession>(recent);
 
         AiReportSummary = BuildInsightSummary();
@@ -70,7 +88,8 @@ public partial class AnalyticsViewModel : ObservableObject
         if (TodayFocusMinutes <= 0 && SevenDayFocusHours <= 0)
             return "Complete focus sessions to unlock personalized insights. Full AI reports are part of Everywhere/AI+.";
 
-        return $"Last 7 days: {SevenDayFocusHours:0.#}h focus · Streak {CurrentStreakDays}d (best {BestStreakDays}d). " +
+        var window = HistoryWindowDays;
+        return $"Last {window} days: {SevenDayFocusHours:0.#}h focus · Streak {CurrentStreakDays}d (best {BestStreakDays}d). " +
                "AI narrative reports unlock with Everywhere/AI+.";
     }
 }

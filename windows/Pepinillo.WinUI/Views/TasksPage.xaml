@@ -15,6 +15,9 @@
             <TextBlock Text="Plan work into focus-sized tasks. Data is stored offline on this device."
                        Style="{ThemeResource BodyTextBlockStyle}"
                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+            <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                       Style="{ThemeResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
         </StackPanel>
 
         <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,16">
@@ -147,9 +150,10 @@
             <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center"
                         Spacing="8"
-                        Opacity="0.85">
+                        IsHitTestVisible="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
+                        Opacity="{x:Bind ViewModel.EmptyPanelOpacity, Mode=OneWay}">
                 <FontIcon Glyph="&#xE9D5;" FontSize="40" Opacity="0.5"/>
-                <TextBlock Text="Tip: empty lists show no rows above. Add a task or switch filters."
+                <TextBlock Text="{x:Bind ViewModel.EmptyHint, Mode=OneWay}"
                            Style="{ThemeResource CaptionTextBlockStyle}"
                            HorizontalAlignment="Center"
                            Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>

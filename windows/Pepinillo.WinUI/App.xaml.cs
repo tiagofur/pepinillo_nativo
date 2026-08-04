@@ -46,6 +46,17 @@ public partial class App : Application
             // Offline / token restore failures must not block launch.
         }
 
+        try
+        {
+            // Resolve Store / backend entitlements so free-tier gates match purchase state.
+            var entitlements = Services.GetRequiredService<IEntitlementService>();
+            await entitlements.RefreshAsync();
+        }
+        catch
+        {
+            // Stay on Free default if commerce is unavailable.
+        }
+
         var settingsService = Services.GetRequiredService<ISettingsService>();
         var settings = await settingsService.GetSettingsAsync();
 

@@ -17,11 +17,25 @@ public sealed partial class FocusPage : Page
         ViewModel = App.Services.GetRequiredService<FocusViewModel>();
         InitializeComponent();
         Loaded += FocusPage_Loaded;
+        Unloaded += FocusPage_Unloaded;
+        ViewModel.PremiumFeatureRequested += OnPremiumFeatureRequested;
     }
 
     private async void FocusPage_Loaded(object sender, RoutedEventArgs e)
     {
         await ViewModel.InitializeAsync();
+    }
+
+    private void FocusPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        ViewModel.PremiumFeatureRequested -= OnPremiumFeatureRequested;
+    }
+
+    private void OnPremiumFeatureRequested(object? sender, string feature)
+    {
+        // Navigate shell Frame to paywall when free tier hits a premium mode.
+        if (Frame != null)
+            Frame.Navigate(typeof(PaywallPage));
     }
 
     private void Pomodoro_Click(object sender, RoutedEventArgs e) =>

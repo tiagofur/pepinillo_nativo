@@ -27,7 +27,6 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IAuthTokenStore, MemoryAuthTokenStore>();
         services.AddSingleton<IFocusEngineService, FocusEngineService>();
-        services.AddSingleton<ITaskService, TaskService>();
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IFocusSessionService, FocusSessionService>();
         services.AddSingleton<INotificationService, NotificationService>();
@@ -37,6 +36,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(_ => new System.Net.Http.HttpClient());
         services.AddSingleton<IBackendApiClient, BackendApiClient>();
         services.AddSingleton<IStoreCommerceService, StoreCommerceService>();
+        services.AddSingleton<IEntitlementService, EntitlementService>();
+        services.AddSingleton<ITaskService, TaskService>();
         services.AddSingleton<ISyncService, SyncService>();
 
         services.AddSingleton<FocusViewModel>();

@@ -17,6 +17,7 @@ public partial class FocusViewModel : ObservableObject
     private readonly ITaskService _taskService;
     private readonly INotificationService _notificationService;
     private readonly IFocusAssistService _focusAssistService;
+    private readonly IEntitlementService? _entitlements;
     private readonly ISyncService? _syncService;
     private readonly ILocalizationService? _localizer;
     private UserSettings _cachedSettings = new();
@@ -95,6 +96,15 @@ public partial class FocusViewModel : ObservableObject
     [ObservableProperty]
     private string _journalTitleLabel = "Session reflection";
 
+    /// <summary>
+    /// Non-empty when the last SelectMode/Start was blocked by free-tier limits (paywall hint).
+    /// </summary>
+    [ObservableProperty]
+    private string _paywallFeatureHint = string.Empty;
+
+    /// <summary>Raised when a premium focus mode is requested on free tier.</summary>
+    public event EventHandler<string>? PremiumFeatureRequested;
+
     public FocusViewModel(
         IFocusEngineService focusEngine,
         ISettingsService settingsService,
@@ -103,7 +113,8 @@ public partial class FocusViewModel : ObservableObject
         INotificationService notificationService,
         IFocusAssistService focusAssistService,
         ISyncService? syncService = null,
-        ILocalizationService? localizer = null)
+        ILocalizationService? localizer = null,
+        IEntitlementService? entitlements = null)
     {
         _focusEngine = focusEngine;
         _settingsService = settingsService;
@@ -113,6 +124,7 @@ public partial class FocusViewModel : ObservableObject
         _focusAssistService = focusAssistService;
         _syncService = syncService;
         _localizer = localizer;
+        _entitlements = entitlements;
 
         _focusEngine.StateChanged += OnEngineStateChanged;
         _focusEngine.Tick += OnEngineTick;
@@ -194,7 +206,11 @@ public partial class FocusViewModel : ObservableObject
     [RelayCommand]
     private void StartSession()
     {
+        if (!EnsureModeAllowed(SelectedMode))
+            return;
+
         ApplySettingsToEngine(_cachedSettings);
+        PaywallFeatureHint = string.Empty;
 
         if (CurrentState is SessionState.Idle or SessionState.Completed)
         {
@@ -256,12 +272,37 @@ public partial class FocusViewModel : ObservableObject
         if (CurrentState is not (SessionState.Idle or SessionState.Completed))
             return;
 
+        if (!EnsureModeAllowed(mode))
+            return;
+
+        PaywallFeatureHint = string.Empty;
         SelectedMode = mode;
         ApplySettingsToEngine(_cachedSettings);
         var duration = ResolveDurationSeconds(mode, _cachedSettings);
         _focusEngine.ConfigureSession(mode, duration, LinkedTaskId);
         UpdateTimerDisplay();
         UpdateCommandFlags();
+    }
+
+    /// <summary>
+    /// Blocks Flowtime / TimeBlocking on free tier; sets status + paywall hint.
+    /// </summary>
+    private bool EnsureModeAllowed(FocusMode mode)
+    {
+        if (_entitlements == null || _entitlements.CanUseFocusMode(mode))
+            return true;
+
+        var feature = mode switch
+        {
+            FocusMode.Flowtime => "Flowtime",
+            FocusMode.TimeBlocking => "Time Blocking",
+            _ => mode.ToString()
+        };
+
+        StatusLabel = $"{feature} requires Pepinillo+ or Everywhere.";
+        PaywallFeatureHint = feature;
+        PremiumFeatureRequested?.Invoke(this, feature);
+        return false;
     }
 
     [RelayCommand]

@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Pepinillo.Core.Data;
+using Pepinillo.Core.Models;
 using Pepinillo.Core.Services;
 using Xunit;
 
@@ -9,7 +10,7 @@ namespace Pepinillo.Core.Tests;
 
 public class TaskServiceTests
 {
-    private PepinilloDbContext CreateInMemoryDbContext()
+    private static PepinilloDbContext CreateInMemoryDbContext()
     {
         var options = new DbContextOptionsBuilder<PepinilloDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
@@ -18,11 +19,25 @@ public class TaskServiceTests
         return new PepinilloDbContext(options);
     }
 
+    private static IEntitlementService FreeEntitlements()
+    {
+        var e = new EntitlementService(new StoreCommerceService(new NoAuthBackend()));
+        e.ApplyStatus(new SubscriptionStatus { Tier = EntitlementTier.Free });
+        return e;
+    }
+
+    private static IEntitlementService PlusEntitlements()
+    {
+        var e = new EntitlementService(new StoreCommerceService(new NoAuthBackend()));
+        e.ApplyStatus(new SubscriptionStatus { Tier = EntitlementTier.PepinilloPlus });
+        return e;
+    }
+
     [Fact]
     public async Task CreateTask_ShouldAddTaskToDatabase()
     {
         using var dbContext = CreateInMemoryDbContext();
-        var service = new TaskService(dbContext);
+        var service = new TaskService(dbContext, FreeEntitlements());
 
         var task = await service.CreateTaskAsync("Escribir documentación", estimatedMinutes: 45);
 
@@ -34,10 +49,10 @@ public class TaskServiceTests
     }
 
     [Fact]
-    public async Task CreateTask_WithPriorityEnergyRecurrence_ShouldPersist()
+    public async Task CreateTask_WithPriorityEnergyRecurrence_OnPlus_ShouldPersist()
     {
         using var dbContext = CreateInMemoryDbContext();
-        var service = new TaskService(dbContext);
+        var service = new TaskService(dbContext, PlusEntitlements());
 
         var task = await service.CreateTaskAsync(
             "Deep refactor",
@@ -58,10 +73,54 @@ public class TaskServiceTests
     }
 
     [Fact]
+    public async Task Free_BlocksFourthIncompleteRootTask()
+    {
+        using var dbContext = CreateInMemoryDbContext();
+        var service = new TaskService(dbContext, FreeEntitlements());
+
+        await service.CreateTaskAsync("t1");
+        await service.CreateTaskAsync("t2");
+        await service.CreateTaskAsync("t3");
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateTaskAsync("t4"));
+
+        Assert.Contains("3", ex.Message);
+    }
+
+    [Fact]
+    public async Task Free_BlocksSubtaskAndRecurrence()
+    {
+        using var dbContext = CreateInMemoryDbContext();
+        var service = new TaskService(dbContext, FreeEntitlements());
+        var parent = await service.CreateTaskAsync("parent");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateTaskAsync("child", parentTaskId: parent.Id));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CreateTaskAsync("recur", recurrenceRule: "DAILY"));
+    }
+
+    [Fact]
+    public async Task Plus_AllowsUnlimitedRootsAndSubtasks()
+    {
+        using var dbContext = CreateInMemoryDbContext();
+        var service = new TaskService(dbContext, PlusEntitlements());
+
+        for (var i = 0; i < 5; i++)
+            await service.CreateTaskAsync($"t{i}");
+
+        var parent = await service.CreateTaskAsync("parent");
+        var child = await service.CreateTaskAsync("child", parentTaskId: parent.Id);
+        Assert.Equal(parent.Id, child.ParentTaskId);
+    }
+
+    [Fact]
     public async Task ToggleTaskCompletion_ShouldSwitchState()
     {
         using var dbContext = CreateInMemoryDbContext();
-        var service = new TaskService(dbContext);
+        var service = new TaskService(dbContext, FreeEntitlements());
 
         var task = await service.CreateTaskAsync("Refactorizar motor de tiempos");
         Assert.False(task.IsCompleted);
@@ -77,7 +136,7 @@ public class TaskServiceTests
     public async Task GetTodayTasks_ShouldReturnOnlyTodayTasks()
     {
         using var dbContext = CreateInMemoryDbContext();
-        var service = new TaskService(dbContext);
+        var service = new TaskService(dbContext, FreeEntitlements());
 
         await service.CreateTaskAsync("Tarea de Hoy", dueDate: DateTime.UtcNow.Date);
         await service.CreateTaskAsync("Tarea de Mañana", dueDate: DateTime.UtcNow.Date.AddDays(1));
@@ -86,5 +145,20 @@ public class TaskServiceTests
 
         Assert.Single(todayTasks);
         Assert.Equal("Tarea de Hoy", todayTasks[0].Title);
+    }
+
+    private sealed class NoAuthBackend : IBackendApiClient
+    {
+        public bool IsAuthenticated => false;
+        public string? AuthToken => null;
+        public Task InitializeAsync() => Task.CompletedTask;
+        public Task<bool> LoginAsync(string email, string password) => Task.FromResult(false);
+        public Task<bool> RegisterAsync(string email, string password, string name) => Task.FromResult(false);
+        public Task<bool> RefreshAsync() => Task.FromResult(false);
+        public Task LogoutAsync() => Task.CompletedTask;
+        public Task<bool> SyncSessionsAsync(System.Collections.Generic.IEnumerable<FocusSession> sessions) =>
+            Task.FromResult(false);
+        public Task<SubscriptionStatus> GetSubscriptionStatusAsync() =>
+            Task.FromResult(new SubscriptionStatus { Tier = EntitlementTier.Free });
     }
 }
