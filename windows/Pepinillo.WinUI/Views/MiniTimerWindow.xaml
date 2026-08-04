@@ -19,17 +19,21 @@
                        FontSize="{StaticResource PepinilloMiniTimerFontSize}"
                        FontWeight="Bold"
                        FontFamily="Segoe UI Variable Display"
-                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                       AutomationProperties.Name="Mini timer elapsed"
+                       AutomationProperties.LiveSetting="Polite"/>
             <TextBlock x:Name="StatusText"
                        Text="Ready"
                        FontSize="11"
-                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                       AutomationProperties.Name="Mini timer status"/>
             <TextBlock x:Name="TaskText"
                        Text="Free focus"
                        FontSize="11"
                        TextTrimming="CharacterEllipsis"
                        MaxWidth="160"
-                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                       AutomationProperties.Name="Mini timer linked task"/>
         </StackPanel>
 
         <StackPanel Grid.Column="1"
@@ -42,7 +46,9 @@
                     ToolTipService.ToolTip="Start / Pause"
                     Width="36"
                     Height="36"
-                    Padding="0">
+                    Padding="0"
+                    IsTabStop="True"
+                    AutomationProperties.Name="Start or pause from mini timer">
                 <FontIcon x:Name="PlayPauseIcon" Glyph="&#xE768;" FontSize="14"/>
             </Button>
             <Button x:Name="StopButton"
@@ -50,7 +56,9 @@
                     ToolTipService.ToolTip="Stop"
                     Width="36"
                     Height="36"
-                    Padding="0">
+                    Padding="0"
+                    IsTabStop="True"
+                    AutomationProperties.Name="Stop from mini timer">
                 <FontIcon Glyph="&#xE71A;" FontSize="14"/>
             </Button>
         </StackPanel>

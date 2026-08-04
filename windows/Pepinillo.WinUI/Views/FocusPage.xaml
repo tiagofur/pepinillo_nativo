@@ -7,6 +7,11 @@
     xmlns:models="using:Pepinillo.Core.Models"
     mc:Ignorable="d">
 
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Modifiers="Control" Key="Enter" Invoked="StartAccelerator_Invoked"/>
+        <KeyboardAccelerator Modifiers="Control" Key="Space" Invoked="PauseAccelerator_Invoked"/>
+    </Page.KeyboardAccelerators>
+
     <ScrollViewer>
         <Grid Padding="{StaticResource PepinilloPageMargin}" MaxWidth="720" HorizontalAlignment="Center">
             <Grid.RowDefinitions>
@@ -48,28 +53,40 @@
                         Background="{StaticResource FocusModePomodoroSubtleBrush}"
                         CornerRadius="{StaticResource PepinilloChipCornerRadius}"
                         BorderThickness="2"
-                        Padding="12,8"/>
+                        Padding="12,8"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Select Pomodoro mode"
+                        AutomationProperties.HelpText="Classic timed focus with breaks"/>
                 <Button Content="Stopwatch"
                         Click="Stopwatch_Click"
                         BorderBrush="{StaticResource FocusModeStopwatchBrush}"
                         Background="{StaticResource FocusModeStopwatchSubtleBrush}"
                         CornerRadius="{StaticResource PepinilloChipCornerRadius}"
                         BorderThickness="2"
-                        Padding="12,8"/>
+                        Padding="12,8"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Select Stopwatch mode"
+                        AutomationProperties.HelpText="Count-up free focus"/>
                 <Button Content="Flowtime"
                         Click="Flowtime_Click"
                         BorderBrush="{StaticResource FocusModeFlowtimeBrush}"
                         Background="{StaticResource FocusModeFlowtimeSubtleBrush}"
                         CornerRadius="{StaticResource PepinilloChipCornerRadius}"
                         BorderThickness="2"
-                        Padding="12,8"/>
+                        Padding="12,8"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Select Flowtime mode"
+                        AutomationProperties.HelpText="Soft target flow session"/>
                 <Button Content="Time Block"
                         Click="TimeBlock_Click"
                         BorderBrush="{StaticResource FocusModeTimeBlockBrush}"
                         Background="{StaticResource FocusModeTimeBlockSubtleBrush}"
                         CornerRadius="{StaticResource PepinilloChipCornerRadius}"
                         BorderThickness="2"
-                        Padding="12,8"/>
+                        Padding="12,8"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Select Time Block mode"
+                        AutomationProperties.HelpText="Fixed block without auto-break"/>
             </StackPanel>
 
             <!-- Mode Intelligence: paid suggestion banner -->
@@ -104,12 +121,14 @@
                             Command="{x:Bind ViewModel.ApplySuggestionCommand}"
                             MinWidth="80"
                             VerticalAlignment="Center"
+                            IsTabStop="True"
                             AutomationProperties.Name="Apply mode suggestion"/>
                     <Button Grid.Column="3"
                             Content="Dismiss"
                             Command="{x:Bind ViewModel.DismissSuggestionCommand}"
                             MinWidth="80"
                             VerticalAlignment="Center"
+                            IsTabStop="True"
                             AutomationProperties.Name="Dismiss mode suggestion"/>
                 </Grid>
             </Border>
@@ -146,6 +165,7 @@
                             Command="{x:Bind ViewModel.UpgradeModeIntelligenceCommand}"
                             MinWidth="96"
                             VerticalAlignment="Center"
+                            IsTabStop="True"
                             AutomationProperties.Name="Upgrade for Mode Intelligence"/>
                 </Grid>
             </Border>
@@ -156,19 +176,23 @@
                     Padding="32"
                     Margin="0,0,0,24"
                     HorizontalAlignment="Center"
-                    MinWidth="320">
+                    MinWidth="320"
+                    AutomationProperties.Name="Focus timer card">
                 <StackPanel Spacing="16" HorizontalAlignment="Center">
                     <TextBlock Text="{x:Bind ViewModel.FormattedTime, Mode=OneWay}"
                                FontSize="{StaticResource PepinilloTimerFontSize}"
                                FontWeight="Bold"
                                HorizontalAlignment="Center"
                                FontFamily="Segoe UI Variable Display"
-                               Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                               Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                               AutomationProperties.Name="Session timer"
+                               AutomationProperties.LiveSetting="Polite"/>
                     <ProgressBar Value="{x:Bind ViewModel.ProgressRatio, Mode=OneWay}"
                                  Maximum="1"
                                  Height="8"
                                  Width="240"
-                                 Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
+                                 Foreground="{StaticResource PepinilloThemeAccentBrush}"
+                                 AutomationProperties.Name="Session progress"/>
                     <TextBlock Text="{x:Bind ViewModel.LastCompletedMessage, Mode=OneWay}"
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                HorizontalAlignment="Center"
@@ -181,26 +205,41 @@
                         Spacing="12"
                         HorizontalAlignment="Center"
                         Margin="0,0,0,24">
-                <Button Content="{x:Bind ViewModel.StartLabel, Mode=OneWay}"
+                <Button x:Name="StartButton"
+                        Content="{x:Bind ViewModel.StartLabel, Mode=OneWay}"
                         Style="{ThemeResource AccentButtonStyle}"
                         Command="{x:Bind ViewModel.StartSessionCommand}"
                         IsEnabled="{x:Bind ViewModel.CanStart, Mode=OneWay}"
-                        MinWidth="140"/>
-                <Button Content="{x:Bind ViewModel.PauseLabel, Mode=OneWay}"
+                        MinWidth="140"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Start or resume focus session"
+                        AutomationProperties.HelpText="Keyboard: Ctrl+Enter"/>
+                <Button x:Name="PauseButton"
+                        Content="{x:Bind ViewModel.PauseLabel, Mode=OneWay}"
                         Command="{x:Bind ViewModel.PauseSessionCommand}"
                         IsEnabled="{x:Bind ViewModel.CanPause, Mode=OneWay}"
-                        MinWidth="100"/>
+                        MinWidth="100"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Pause focus session"
+                        AutomationProperties.HelpText="Keyboard: Ctrl+Space"/>
                 <Button Content="{x:Bind ViewModel.StopLabel, Mode=OneWay}"
                         Command="{x:Bind ViewModel.StopSessionCommand}"
-                        MinWidth="100"/>
+                        MinWidth="100"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Stop focus session"/>
                 <Button Content="{x:Bind ViewModel.SkipLabel, Mode=OneWay}"
                         Command="{x:Bind ViewModel.SkipBreakCommand}"
                         IsEnabled="{x:Bind ViewModel.CanSkip, Mode=OneWay}"
-                        MinWidth="100"/>
+                        MinWidth="100"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Skip break"/>
                 <Button Content="Mini timer"
                         Click="MiniTimer_Click"
                         ToolTipService.ToolTip="Toggle compact mini timer (Win+Shift+M)"
-                        MinWidth="100"/>
+                        MinWidth="100"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Toggle mini timer window"
+                        AutomationProperties.HelpText="Also Win+Shift+M global hotkey"/>
             </StackPanel>
 
             <Border Grid.Row="5"
@@ -217,7 +256,10 @@
                                   HorizontalAlignment="Stretch"
                                   PlaceholderText="Free focus"
                                   ItemsSource="{x:Bind ViewModel.AvailableTasks, Mode=OneWay}"
-                                  SelectionChanged="TaskCombo_SelectionChanged">
+                                  SelectionChanged="TaskCombo_SelectionChanged"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Link focus session to task"
+                                  AutomationProperties.HelpText="Optional task linked to this session">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:TaskItem">
                                     <TextBlock Text="{x:Bind Title}"/>
@@ -226,7 +268,9 @@
                         </ComboBox>
                         <Button Grid.Column="1"
                                 Content="Clear"
-                                Command="{x:Bind ViewModel.ClearLinkedTaskCommand}"/>
+                                Command="{x:Bind ViewModel.ClearLinkedTaskCommand}"
+                                IsTabStop="True"
+                                AutomationProperties.Name="Clear linked task"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -236,7 +280,8 @@
                     x:Name="JournalPanel"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="{StaticResource PepinilloCardCornerRadius}"
-                    Padding="{StaticResource PepinilloCardPaddingCompact}">
+                    Padding="{StaticResource PepinilloCardPaddingCompact}"
+                    AutomationProperties.Name="Post-session journal">
                 <StackPanel Spacing="12">
                     <TextBlock Text="{x:Bind ViewModel.JournalTitleLabel, Mode=OneWay}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
@@ -247,7 +292,9 @@
                              Text="{x:Bind ViewModel.JournalNoteDraft, Mode=TwoWay}"
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
-                             MinHeight="80"/>
+                             MinHeight="80"
+                             IsTabStop="True"
+                             AutomationProperties.Name="Session journal notes"/>
                     <NumberBox Header="Energy rating (1-5, optional)"
                                Value="{x:Bind ViewModel.JournalEnergyRating, Mode=TwoWay}"
                                Minimum="0"
@@ -255,15 +302,21 @@
                                SmallChange="1"
                                SpinButtonPlacementMode="Compact"
                                Width="160"
-                               HorizontalAlignment="Left"/>
+                               HorizontalAlignment="Left"
+                               IsTabStop="True"
+                               AutomationProperties.Name="Session energy rating 1 to 5"/>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="Save journal"
                                 Style="{ThemeResource AccentButtonStyle}"
                                 Command="{x:Bind ViewModel.SaveJournalCommand}"
-                                IsEnabled="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay}"/>
+                                IsEnabled="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay}"
+                                IsTabStop="True"
+                                AutomationProperties.Name="Save session journal"/>
                         <Button Content="Dismiss"
                                 Command="{x:Bind ViewModel.DismissJournalCommand}"
-                                IsEnabled="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay}"/>
+                                IsEnabled="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay}"
+                                IsTabStop="True"
+                                AutomationProperties.Name="Dismiss session journal"/>
                     </StackPanel>
                 </StackPanel>
             </Border>

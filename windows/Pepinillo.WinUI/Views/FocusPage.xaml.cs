@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Pepinillo.Core.Models;
 using Pepinillo.Core.ViewModels;
 using Pepinillo.WinUI.Services;
@@ -59,5 +60,21 @@ public sealed partial class FocusPage : Page
     {
         if (TaskCombo.SelectedItem is TaskItem task)
             ViewModel.LinkTaskCommand.Execute(task);
+    }
+
+    /// <summary>Ctrl+Enter — start/resume when available (does not swallow Escape).</summary>
+    private void StartAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (ViewModel.CanStart && ViewModel.StartSessionCommand.CanExecute(null))
+            ViewModel.StartSessionCommand.Execute(null);
+        args.Handled = true;
+    }
+
+    /// <summary>Ctrl+Space — pause when a session is pausable.</summary>
+    private void PauseAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (ViewModel.CanPause && ViewModel.PauseSessionCommand.CanExecute(null))
+            ViewModel.PauseSessionCommand.Execute(null);
+        args.Handled = true;
     }
 }

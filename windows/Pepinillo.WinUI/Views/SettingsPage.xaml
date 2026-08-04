@@ -74,9 +74,13 @@
                                    Width="120"/>
                     </Grid>
                     <ToggleSwitch Header="{x:Bind ViewModel.AutoStartBreaksLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.AutoStartBreaks, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.AutoStartBreaks, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Auto-start breaks"/>
                     <ToggleSwitch Header="{x:Bind ViewModel.AutoStartFocusLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.AutoStartFocusSessions, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.AutoStartFocusSessions, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Auto-start next focus after break"/>
                 </StackPanel>
             </Border>
 
@@ -144,19 +148,24 @@
                     <Button Content="{x:Bind ViewModel.UpgradePlusLabel, Mode=OneWay}"
                             Style="{ThemeResource AccentButtonStyle}"
                             Click="Upgrade_Click"
-                            HorizontalAlignment="Left"/>
+                            HorizontalAlignment="Left"
+                            IsTabStop="True"
+                            AutomationProperties.Name="Upgrade to Pepinillo Plus"/>
                     <RadioButtons Header="{x:Bind ViewModel.LanguageLabel, Mode=OneWay}"
-                                  SelectedIndex="{x:Bind ViewModel.SelectedLanguageIndex, Mode=TwoWay}">
-                        <RadioButton Content="English"/>
-                        <RadioButton Content="Español"/>
-                        <RadioButton Content="Português"/>
+                                  SelectedIndex="{x:Bind ViewModel.SelectedLanguageIndex, Mode=TwoWay}"
+                                  AutomationProperties.Name="Language">
+                        <RadioButton Content="English" AutomationProperties.Name="Language English"/>
+                        <RadioButton Content="Español" AutomationProperties.Name="Language Spanish"/>
+                        <RadioButton Content="Português" AutomationProperties.Name="Language Portuguese"/>
                     </RadioButtons>
                     <TextBlock Text="{x:Bind ViewModel.LanguageAppliesNote, Mode=OneWay}"
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="WrapWholeWords"/>
                     <ToggleSwitch Header="{x:Bind ViewModel.MicaLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.UseMicaBackdrop, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.UseMicaBackdrop, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Mica acrylic backdrop"/>
                 </StackPanel>
             </Border>
 
@@ -168,9 +177,13 @@
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
                     <ToggleSwitch Header="{x:Bind ViewModel.EnableSoundscapesLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.EnableSoundscapes, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.EnableSoundscapes, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Enable soundscapes"/>
                     <ToggleSwitch Header="{x:Bind ViewModel.AutoPlaySoundscapeLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.AutoPlaySoundscapeOnFocus, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.AutoPlaySoundscapeOnFocus, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Auto-play preferred soundscape when focus starts"/>
                     <TextBlock Text="{x:Bind ViewModel.SoundscapesHintLabel, Mode=OneWay}"
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -186,19 +199,29 @@
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
                     <ToggleSwitch Header="{x:Bind ViewModel.FocusAssistLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.EnableWindowsDoNotDisturbSync, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.EnableWindowsDoNotDisturbSync, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Sync with Focus Assist"/>
                     <TextBlock Text="{x:Bind ViewModel.FocusAssistStatus, Mode=OneWay}"
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="WrapWholeWords"/>
                     <HyperlinkButton Content="{x:Bind ViewModel.OpenFocusAssistLabel, Mode=OneWay}"
-                                     NavigateUri="ms-settings:quiethours"/>
+                                     NavigateUri="ms-settings:quiethours"
+                                     IsTabStop="True"
+                                     AutomationProperties.Name="Open Focus Assist settings"/>
                     <ToggleSwitch Header="{x:Bind ViewModel.MinimizeToTrayLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.MinimizeToSystemTrayOnClose, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.MinimizeToSystemTrayOnClose, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Minimize to system tray on close"/>
                     <ToggleSwitch Header="{x:Bind ViewModel.ToastsLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.EnableToastNotifications, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.EnableToastNotifications, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Toast notifications"/>
                     <ToggleSwitch Header="{x:Bind ViewModel.StartupLabel, Mode=OneWay}"
-                                  IsOn="{x:Bind ViewModel.Settings.LaunchAtWindowsStartup, Mode=TwoWay}"/>
+                                  IsOn="{x:Bind ViewModel.Settings.LaunchAtWindowsStartup, Mode=TwoWay}"
+                                  IsTabStop="True"
+                                  AutomationProperties.Name="Launch Pepinillo when Windows starts"/>
                 </StackPanel>
             </Border>
 
@@ -213,18 +236,31 @@
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="WrapWholeWords"/>
+                    <TextBlock Text="{x:Bind ViewModel.KeyboardAcceleratorsCaption, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="WrapWholeWords"
+                               AutomationProperties.Name="In-app keyboard accelerators"/>
                     <TextBox Header="{x:Bind ViewModel.PlayPauseHotkeyLabel, Mode=OneWay}"
                              Text="{x:Bind ViewModel.Settings.PlayPauseHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             PlaceholderText="Win+Shift+P"/>
+                             PlaceholderText="Win+Shift+P"
+                             IsTabStop="True"
+                             AutomationProperties.Name="Play pause global hotkey"/>
                     <TextBox Header="{x:Bind ViewModel.SkipHotkeyLabel, Mode=OneWay}"
                              Text="{x:Bind ViewModel.Settings.SkipHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             PlaceholderText="Win+Shift+S"/>
+                             PlaceholderText="Win+Shift+S"
+                             IsTabStop="True"
+                             AutomationProperties.Name="Skip break global hotkey"/>
                     <TextBox Header="{x:Bind ViewModel.MiniTimerHotkeyLabel, Mode=OneWay}"
                              Text="{x:Bind ViewModel.Settings.MiniTimerHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             PlaceholderText="Win+Shift+M"/>
+                             PlaceholderText="Win+Shift+M"
+                             IsTabStop="True"
+                             AutomationProperties.Name="Mini timer global hotkey"/>
                     <Button Content="{x:Bind ViewModel.ResetHotkeysLabel, Mode=OneWay}"
                             Command="{x:Bind ViewModel.ResetHotkeysCommand}"
-                            HorizontalAlignment="Left"/>
+                            HorizontalAlignment="Left"
+                            IsTabStop="True"
+                            AutomationProperties.Name="Reset hotkeys to defaults"/>
                 </StackPanel>
             </Border>
 
@@ -254,23 +290,32 @@
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
                     <HyperlinkButton Content="{x:Bind ViewModel.PrivacyLabel, Mode=OneWay}"
-                                     Click="Privacy_Click"/>
+                                     Click="Privacy_Click"
+                                     IsTabStop="True"
+                                     AutomationProperties.Name="Privacy policy"/>
                     <HyperlinkButton Content="{x:Bind ViewModel.TermsLabel, Mode=OneWay}"
-                                     Click="Terms_Click"/>
+                                     Click="Terms_Click"
+                                     IsTabStop="True"
+                                     AutomationProperties.Name="Terms of use"/>
                     <Button Content="{x:Bind ViewModel.UpgradeLabel, Mode=OneWay}"
                             Style="{ThemeResource AccentButtonStyle}"
                             Click="Upgrade_Click"
-                            HorizontalAlignment="Left"/>
+                            HorizontalAlignment="Left"
+                            IsTabStop="True"
+                            AutomationProperties.Name="Upgrade plan"/>
                 </StackPanel>
             </Border>
 
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button Content="{x:Bind ViewModel.SaveLabel, Mode=OneWay}"
                         Style="{ThemeResource AccentButtonStyle}"
-                        Command="{x:Bind ViewModel.SaveSettingsCommand}"/>
+                        Command="{x:Bind ViewModel.SaveSettingsCommand}"
+                        IsTabStop="True"
+                        AutomationProperties.Name="Save settings"/>
                 <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
                            VerticalAlignment="Center"
-                           Style="{ThemeResource CaptionTextBlockStyle}"/>
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           AutomationProperties.LiveSetting="Polite"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

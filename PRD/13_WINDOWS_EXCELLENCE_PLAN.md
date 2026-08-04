@@ -127,7 +127,7 @@ Code gate owner: `windows/Pepinillo.Core/Services/EntitlementService.cs`.
 | **W12** | Tasks/Plan excellence | **[#586](https://github.com/tiagofur/pepinillo_nativo/issues/586)** | P1 | W2 |
 | **W13** | Calendar time-block grid (desktop advantage) | **[#587](https://github.com/tiagofur/pepinillo_nativo/issues/587)** | P2 | W12 |
 | **W14** | Multi-monitor + shell excellence | **[#588](https://github.com/tiagofur/pepinillo_nativo/issues/588)** | P2 | W9 |
-| **W15** | Accessibility + keyboard-first | **[#589](https://github.com/tiagofur/pepinillo_nativo/issues/589)** | P1 | W2 |
+| **W15** | Accessibility + keyboard-first | **[#589](https://github.com/tiagofur/pepinillo_nativo/issues/589)** — **coded** on `feat/windows-w15-a11y` (Narrator smoke on Windows pending; see `windows/store/A11Y_SMOKE.md`) | P1 | W2 |
 | **W16** | Microsoft Store launch (ops) | **[#568](https://github.com/tiagofur/pepinillo_nativo/issues/568)** | P0 | W1 smoke |
 
 ### Recommended implementation order (agents)
@@ -219,7 +219,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Hotkey rebind | N/A | **Done (W9 #583):** Settings TextBoxes + validate via `HotkeyChordParser` + reset defaults + `RefreshFromSettings` | Done | W9 |
 | Calendar grid | Partial | Missing | Desktop advantage | W13 |
 | Multi-monitor mini | N/A | Missing | Stretch excellence | W14 |
-| A11y / keyboard | Varies | Partial | Excellent | W15 |
+| A11y / keyboard | Varies | **Partial→Done (W15 #589):** `AutomationProperties.Name` on Focus/Tasks/Paywall/Settings/Analytics/Account/Soundscapes/Mini/Main nav; Focus timer `LiveSetting=Polite`; page accelerators Ctrl+Enter start, Ctrl+Space pause, Ctrl+N new task; Settings caption; ThemeResource text on cards; `A11yNames` + Core test; smoke checklist `windows/store/A11Y_SMOKE.md` + cert §7. **Residual:** Narrator/HC/200% smoke on real Windows | Excellent | W15 |
 | Store ship | Live | Not submitted | Internal→Public | #568 |
 | Watch / Health / Widgets phone | Done | N/A | N/A | — |
 
@@ -237,7 +237,7 @@ Use as acceptance for design-system work:
 - [x] Paywall: “Not a subscription” for Pepinillo+ crystal clear (04 monétization) — W11 #585
 - [ ] Mini timer: minimal chrome, high contrast elapsed time
 - [ ] Motion: subtle, 150–250ms, no gratuitous bounce
-- [ ] High contrast + text scale smoke documented
+- [x] High contrast + text scale smoke documented — W15: `windows/store/A11Y_SMOKE.md` + `CERTIFICATION_CHECKLIST.md` §7
 
 ---
 
@@ -252,7 +252,7 @@ Use as acceptance for design-system work:
 | G5 Audio | Free 4 tracks play; premium gated; session auto-play optional setting works |
 | G6 Commerce | Sandbox purchase + restore + backend Everywhere grant |
 | G7 Store | #568 Internal flight installable |
-| G8 A11y | Narrator pass on Focus + Tasks + Paywall |
+| G8 A11y | Narrator pass on Focus + Tasks + Paywall — **checklist coded (W15 #589):** names + keyboard + `A11Y_SMOKE.md`; mark G8 only after smoke on Windows |
 
 ---
 
@@ -278,6 +278,7 @@ Use as acceptance for design-system work:
 
 | Date | Change |
 | ---- | ------ |
+| 2026-08-04 | W15 #589 coded — AutomationProperties + keyboard accelerators + A11Y_SMOKE; §7/G8 partial→checklist ready |
 | 2026-08-04 | v1.0 — Excellence plan from parity audit; backlog W0–W16 + epic **#573** (children #574–#589, Store #568) |
 
 ---
