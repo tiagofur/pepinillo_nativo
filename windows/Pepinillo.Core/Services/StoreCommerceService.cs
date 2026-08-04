@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Pepinillo.Core.Models;
 
@@ -17,6 +18,8 @@ public class StoreCommerceService : IStoreCommerceService
 
     public SubscriptionStatus? CachedStatus { get; private set; }
 
+    public string? LastError { get; protected set; }
+
     public StoreCommerceService(IBackendApiClient backendClient)
     {
         _backendClient = backendClient;
@@ -24,46 +27,110 @@ public class StoreCommerceService : IStoreCommerceService
 
     public virtual async Task<SubscriptionStatus> CheckStoreEntitlementsAsync()
     {
-        // Check cross-device entitlement via Go Backend first if logged in
-        if (_backendClient.IsAuthenticated)
-        {
-            try
-            {
-                var backendStatus = await _backendClient.GetSubscriptionStatusAsync();
-                if (backendStatus.IsActive)
-                {
-                    CachedStatus = backendStatus;
-                    return backendStatus;
-                }
-            }
-            catch
-            {
-                // fall through to free / cache
-            }
-        }
+        LastError = null;
+        var backend = await TryGetBackendStatusAsync();
+        // Core default store surface: free (no StoreContext on non-Windows / tests).
+        var store = CreateFreeStatus();
+        var merged = MergeStatuses(backend, store);
+        CacheStatus(merged);
+        return merged;
+    }
 
-        // Core default: free (no StoreContext on non-Windows / tests).
-        var free = new SubscriptionStatus
+    /// <summary>
+    /// Core restore re-runs entitlement check (backend + free). WinUI overrides with license re-scan.
+    /// </summary>
+    public virtual async Task<SubscriptionStatus> RestorePurchasesAsync()
+    {
+        LastError = null;
+        try
         {
-            Tier = EntitlementTier.Free,
-            SourceStore = "MicrosoftStore"
-        };
-        CachedStatus = free;
-        return free;
+            return await CheckStoreEntitlementsAsync();
+        }
+        catch (Exception ex)
+        {
+            LastError = $"Restore failed: {ex.Message}";
+            var free = CreateFreeStatus();
+            CacheStatus(free);
+            return free;
+        }
     }
 
     /// <summary>Allows WinUI StoreContext layer to update the shared cache.</summary>
     protected void CacheStatus(SubscriptionStatus status) => CachedStatus = status;
 
-    public virtual Task<bool> PurchasePepinilloPlusAsync()
+    /// <summary>
+    /// Prefers highest tier: Everywhere &gt; Pepinillo+ &gt; Free.
+    /// When equal tier, prefers the first non-null with a richer source label.
+    /// </summary>
+    public static SubscriptionStatus MergeStatuses(SubscriptionStatus? primary, SubscriptionStatus? secondary)
     {
-        // Overridden by WindowsStoreCommerceService; Core returns false (no purchase surface).
-        return Task.FromResult(false);
+        if (primary == null && secondary == null)
+            return CreateFreeStatus();
+        if (primary == null)
+            return secondary!;
+        if (secondary == null)
+            return primary;
+
+        var primaryRank = TierRank(primary.Tier);
+        var secondaryRank = TierRank(secondary.Tier);
+        if (primaryRank > secondaryRank)
+            return primary;
+        if (secondaryRank > primaryRank)
+            return secondary;
+
+        // Same rank: prefer active expiration-aware entry, else primary.
+        if (!primary.IsActive && secondary.IsActive)
+            return secondary;
+        return primary;
     }
 
-    public virtual Task<bool> SubscribeEverywherePlusAsync(bool annual = false)
+    public static int TierRank(EntitlementTier tier) =>
+        tier switch
+        {
+            EntitlementTier.EverywherePlus => 2,
+            EntitlementTier.PepinilloPlus => 1,
+            _ => 0
+        };
+
+    protected async Task<SubscriptionStatus?> TryGetBackendStatusAsync()
     {
-        return Task.FromResult(false);
+        if (!_backendClient.IsAuthenticated)
+            return null;
+
+        try
+        {
+            var backendStatus = await _backendClient.GetSubscriptionStatusAsync();
+            if (!backendStatus.IsActive && !string.IsNullOrWhiteSpace(_backendClient.LastError))
+                LastError = _backendClient.LastError;
+            // Normalize source when backend omits it.
+            if (string.IsNullOrWhiteSpace(backendStatus.SourceStore))
+                backendStatus.SourceStore = "Backend";
+            return backendStatus;
+        }
+        catch (Exception ex)
+        {
+            LastError = $"Backend subscription check failed: {ex.Message}";
+            return null;
+        }
+    }
+
+    protected static SubscriptionStatus CreateFreeStatus() =>
+        new()
+        {
+            Tier = EntitlementTier.Free,
+            SourceStore = "MicrosoftStore"
+        };
+
+    public virtual Task<CommerceResult> PurchasePepinilloPlusAsync()
+    {
+        LastError = "Store purchases require the Microsoft Store install.";
+        return Task.FromResult(CommerceResult.Fail(LastError));
+    }
+
+    public virtual Task<CommerceResult> SubscribeEverywherePlusAsync(bool annual = false)
+    {
+        LastError = "Store subscriptions require the Microsoft Store install.";
+        return Task.FromResult(CommerceResult.Fail(LastError));
     }
 
     public bool HasPremiumEntitlement()

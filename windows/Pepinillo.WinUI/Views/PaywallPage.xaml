@@ -7,7 +7,7 @@
     mc:Ignorable="d">
 
     <ScrollViewer Margin="{StaticResource PepinilloPageMargin}">
-        <StackPanel Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
+        <StackPanel Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
             <TextBlock Text="Upgrade Pepinillo"
                        Style="{ThemeResource TitleTextBlockStyle}"
                        FontWeight="Bold"/>
@@ -22,6 +22,11 @@
             <TextBlock Text="{x:Bind ViewModel.CurrentTierLabel, Mode=OneWay}"
                        Style="{ThemeResource BodyTextBlockStyle}"
                        FontWeight="SemiBold"/>
+
+            <TextBlock Text="Free includes Pomodoro, Stopwatch, 3 active tasks, and 7-day analytics. Upgrade for Flowtime, Time Blocking, unlimited tasks, premium themes, soundscapes, and cloud sync."
+                       Style="{ThemeResource BodyTextBlockStyle}"
+                       TextWrapping="Wrap"
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
                 <Border Grid.Column="0"
@@ -53,6 +58,7 @@
                                    Style="{ThemeResource BodyTextBlockStyle}"/>
                         <Button Content="Buy Pepinillo+"
                                 Style="{ThemeResource AccentButtonStyle}"
+                                IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
                                 Command="{x:Bind ViewModel.PurchasePepinilloPlusCommand}"/>
                     </StackPanel>
                 </Border>
@@ -81,17 +87,31 @@
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <Button Content="Subscribe monthly"
                                     Style="{ThemeResource AccentButtonStyle}"
+                                    IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
                                     Command="{x:Bind ViewModel.SubscribeMonthlyCommand}"/>
                             <Button Content="Subscribe annual"
+                                    IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
                                     Command="{x:Bind ViewModel.SubscribeAnnualCommand}"/>
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
 
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button Content="Restore purchases"
+                        IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.RestorePurchasesCommand}"/>
+                <HyperlinkButton Content="Manage purchases in Microsoft Store"
+                                 NavigateUri="ms-windows-store://account"/>
+            </StackPanel>
+
             <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
                        Style="{ThemeResource BodyTextBlockStyle}"
                        TextWrapping="Wrap"/>
+            <ProgressRing IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
+                          Width="28"
+                          Height="28"
+                          HorizontalAlignment="Left"/>
         </StackPanel>
     </ScrollViewer>
 </Page>
