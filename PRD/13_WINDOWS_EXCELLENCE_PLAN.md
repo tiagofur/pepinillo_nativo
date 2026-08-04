@@ -124,7 +124,7 @@ Code gate owner: `windows/Pepinillo.Core/Services/EntitlementService.cs`.
 | **W9** | Desktop power v2 (Focus Assist, toast actions, startup, hotkey rebind) | **[#583](https://github.com/tiagofur/pepinillo_nativo/issues/583)** — **coded** on `feat/windows-w9-desktop-power` (smoke pending) | P0 | W1 |
 | **W10** | Auth + Everywhere sync depth | **[#584](https://github.com/tiagofur/pepinillo_nativo/issues/584)** | P0 | API |
 | **W11** | Paywall + commerce excellence | **[#585](https://github.com/tiagofur/pepinillo_nativo/issues/585)** — **coded** on `feat/windows-w11-commerce` (sandbox/Partner Center SKUs still #568) | P0 | #568 SKUs |
-| **W12** | Tasks/Plan excellence | **[#586](https://github.com/tiagofur/pepinillo_nativo/issues/586)** | P1 | W2 |
+| **W12** | Tasks/Plan excellence | **[#586](https://github.com/tiagofur/pepinillo_nativo/issues/586)** — **coded** on `feat/windows-w12-tasks-excellence` (WinUI smoke on Windows pending) | P1 | W2 |
 | **W13** | Calendar time-block grid (desktop advantage) | **[#587](https://github.com/tiagofur/pepinillo_nativo/issues/587)** | P2 | W12 |
 | **W14** | Multi-monitor + shell excellence | **[#588](https://github.com/tiagofur/pepinillo_nativo/issues/588)** | P2 | W9 |
 | **W15** | Accessibility + keyboard-first | **[#589](https://github.com/tiagofur/pepinillo_nativo/issues/589)** — **coded** on `feat/windows-w15-a11y` (Narrator smoke on Windows pending; see `windows/store/A11Y_SMOKE.md`) | P1 | W2 |
@@ -199,7 +199,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Flowtime soft / Time Block | Done | Done | Done + polish | W2 |
 | Mode Intelligence | iOS done / Android partial | **Done (W5 #579):** local `ModeIntelligenceService` (task min 3 / energy min 5 / global 30d time-of-day); Focus banner Apply/Dismiss; free locked teaser → paywall; Pepinillo+ apply configures idle engine | Done (local) | W5 |
 | Journal + energy | Done | Done | Done + polish | W2 |
-| Tasks CRUD + filters | Done | Done | Done + keyboard excellence | W12 |
+| Tasks CRUD + filters | Done | **Done (W12 #586):** Enter/Ctrl+N rapid create; filter empty states + CTA; free-limit → StatusMessage + Paywall; priority/energy/estimate chips; denser rows; EN/ES/PT hints | Done + keyboard excellence | W12 |
 | Subtasks / recurrence gates | Done | Done | Done | — |
 | Weekly / Monthly Review | Done | **Done (W4 #578):** Monday-start UTC week + calendar month vs previous; free teaser → paywall; premium hours/sessions/top mode/trend | Done | W4 |
 | Achievements (6) | Done | **Done (W4 #578):** FREE local badges from FocusSessions (First Session, Weekly Streak, Pomodoro Master, Deep Diver, Century Club, Early Bird UTC&lt;7); horizontal list on Analytics | Done | W4 |
@@ -232,7 +232,7 @@ Use as acceptance for design-system work:
 - [ ] Token file (colors, type, spacing, radius, elevation) shared by all pages
 - [ ] NavigationView + content density tuned for 1280×720 and 1920×1080
 - [ ] Focus page: large timer readable at a glance; mode chips; clear primary CTA
-- [ ] Tasks: scannable rows, priority/energy affordances, empty states with one action
+- [x] Tasks: scannable rows, priority/energy affordances, empty states with one action — W12 #586
 - [ ] Analytics: streak hero, charts readable in dark/light
 - [x] Paywall: “Not a subscription” for Pepinillo+ crystal clear (04 monétization) — W11 #585
 - [ ] Mini timer: minimal chrome, high contrast elapsed time
@@ -278,6 +278,7 @@ Use as acceptance for design-system work:
 
 | Date | Change |
 | ---- | ------ |
+| 2026-08-04 | W12 #586 coded — Tasks keyboard excellence, empty CTAs, free-limit paywall, density chips; §7 Tasks row Done |
 | 2026-08-04 | W15 #589 coded — AutomationProperties + keyboard accelerators + A11Y_SMOKE; §7/G8 partial→checklist ready |
 | 2026-08-04 | v1.0 — Excellence plan from parity audit; backlog W0–W16 + epic **#573** (children #574–#589, Store #568) |
 

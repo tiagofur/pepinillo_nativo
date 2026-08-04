@@ -74,4 +74,10 @@ public class TaskItem
     public string EnergyLabel => string.IsNullOrWhiteSpace(EnergyLevel)
         ? string.Empty
         : char.ToUpperInvariant(EnergyLevel[0]) + EnergyLevel[1..].ToLowerInvariant();
+
+    /// <summary>Compact estimate chip text (e.g. "25m").</summary>
+    public string EstimateChipLabel => EstimatedMinutes > 0 ? $"{EstimatedMinutes}m" : string.Empty;
+
+    /// <summary>True when estimate chip should show.</summary>
+    public bool HasEstimate => EstimatedMinutes > 0;
 }
