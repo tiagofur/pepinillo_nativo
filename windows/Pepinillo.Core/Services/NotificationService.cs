@@ -1,21 +1,27 @@
-using System;
-
 namespace Pepinillo.Core.Services;
 
+/// <summary>
+/// Default no-op notification service. WinUI host replaces with AppNotification implementation.
+/// </summary>
 public class NotificationService : INotificationService
 {
     public void ShowSessionCompletedToast(string sessionName, int durationMinutes)
     {
-        // Dispatches native Windows AppNotification / Toast with interactive buttons
+        // Replaced by WinUI ToastNotificationService on desktop.
+    }
+
+    public void ShowBreakStartedToast(bool isLongBreak)
+    {
+        // Replaced by WinUI ToastNotificationService on desktop.
     }
 
     public void ShowBreakCompletedToast()
     {
-        // Dispatches native Windows Toast: "Break finished! Ready for deep work?"
+        // Replaced by WinUI ToastNotificationService on desktop.
     }
 
     public void ShowStreakMilestoneToast(int streakDays)
     {
-        // Dispatches Toast for streak milestones
+        // Replaced by WinUI ToastNotificationService on desktop.
     }
 }

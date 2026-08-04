@@ -1,37 +1,45 @@
 namespace Pepinillo.Core.Models;
 
 /// <summary>
-/// Comprehensive application and user settings for Pepinillo Windows.
+/// Application and user preferences. Stored as a single SQLite row (Id = 1).
+/// Schema note: EnsureCreated does not migrate existing DBs — delete pepinillo.db after column adds.
 /// </summary>
 public class UserSettings
 {
-    // Timer Durations (in minutes)
+    public int Id { get; set; } = 1;
+
+    // Timer durations (minutes)
     public int PomodoroFocusMinutes { get; set; } = 25;
     public int ShortBreakMinutes { get; set; } = 5;
     public int LongBreakMinutes { get; set; } = 15;
     public int LongBreakInterval { get; set; } = 4;
     public int FlowtimeTargetMinutes { get; set; } = 30;
+    public int TimeBlockingMinutes { get; set; } = 60;
 
-    // Automation & Behavior
-    public bool AutoStartBreaks { get; set; } = false;
-    public bool AutoStartFocusSessions { get; set; } = false;
+    // Automation & behavior
+    public bool AutoStartBreaks { get; set; }
+    public bool AutoStartFocusSessions { get; set; }
     public bool EnableWindowsDoNotDisturbSync { get; set; } = true;
     public bool MinimizeToSystemTrayOnClose { get; set; } = true;
 
-    // Notifications & Audio
+    // Notifications & audio
     public bool EnableToastNotifications { get; set; } = true;
-    public bool EnableTickingSound { get; set; } = false;
+    public bool EnableTickingSound { get; set; }
     public double TickingVolume { get; set; } = 0.5;
     public bool EnableSoundscapes { get; set; } = true;
     public double SoundscapesMasterVolume { get; set; } = 0.7;
 
-    // Visual Customization & Themes
-    public string SelectedTheme { get; set; } = "System"; // System, Dark, Light, Forest, Ocean, Sunset, OLEDBlack
+    // Visual
+    /// <summary>System, Dark, Light, Forest, Ocean, Sunset, OLEDBlack</summary>
+    public string SelectedTheme { get; set; } = "System";
     public bool UseMicaBackdrop { get; set; } = true;
     public bool CompactMiniTimerAlwaysOnTop { get; set; } = true;
 
-    // Hotkeys
+    // Global hotkeys (defaults; rebind UI deferred — strings still persist)
     public string PlayPauseHotkey { get; set; } = "Win+Shift+P";
     public string SkipHotkey { get; set; } = "Win+Shift+S";
     public string MiniTimerHotkey { get; set; } = "Win+Shift+M";
+
+    /// <summary>UI language preference: en, es, pt (BCP-47 short tags).</summary>
+    public string PreferredLanguage { get; set; } = "en";
 }

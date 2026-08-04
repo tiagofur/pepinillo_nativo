@@ -1,5 +1,5 @@
 using System;
-using System.Threading.Tasks;
+using System.Threading;
 using Pepinillo.Core.Models;
 using Pepinillo.Core.Services;
 using Xunit;
@@ -44,5 +44,159 @@ public class FocusEngineTests
 
         engine.Stop();
         Assert.Equal(SessionState.Idle, engine.CurrentState);
+    }
+
+    [Fact]
+    public void Pomodoro_WorkComplete_ShouldEnterBreak_AndFireSessionCompleted()
+    {
+        using var engine = new FocusEngineService();
+        engine.ApplyBreakSettings(
+            shortBreakSeconds: 5,
+            longBreakSeconds: 10,
+            longBreakInterval: 4,
+            autoStartBreaks: false,
+            autoStartFocus: false);
+
+        FocusSession? completed = null;
+        engine.SessionCompleted += (_, s) => completed = s;
+
+        engine.ConfigureSession(FocusMode.Pomodoro, durationSeconds: 1, taskId: Guid.NewGuid());
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.CurrentState != SessionState.Break && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        Assert.Equal(SessionState.Break, engine.CurrentState);
+        Assert.True(engine.IsOnBreak);
+        Assert.NotNull(completed);
+        Assert.True(completed!.IsCompleted);
+        Assert.Equal(1, completed.ElapsedSeconds);
+        Assert.NotNull(completed.TaskItemId);
+    }
+
+    [Fact]
+    public void SkipBreak_ShouldReturnToIdle()
+    {
+        using var engine = new FocusEngineService();
+        engine.ApplyBreakSettings(5, 10, 4, autoStartBreaks: true, autoStartFocus: false);
+        engine.ConfigureSession(FocusMode.Pomodoro, 1);
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.CurrentState != SessionState.Break && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        engine.SkipBreak();
+        Assert.Equal(SessionState.Idle, engine.CurrentState);
+        Assert.False(engine.IsOnBreak);
+    }
+
+    [Fact]
+    public void Stopwatch_Stop_ShouldCompleteSession()
+    {
+        using var engine = new FocusEngineService();
+        FocusSession? completed = null;
+        engine.SessionCompleted += (_, s) => completed = s;
+
+        engine.ConfigureSession(FocusMode.Stopwatch, 0);
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.ElapsedSeconds < 1 && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        Assert.True(engine.ElapsedSeconds >= 1);
+        engine.Stop();
+
+        Assert.Equal(SessionState.Idle, engine.CurrentState);
+        Assert.NotNull(completed);
+        Assert.True(completed!.IsCompleted);
+        Assert.True(completed.ElapsedSeconds >= 1);
+    }
+
+    [Fact]
+    public void Flowtime_TargetHit_ShouldComplete_WithoutBreak()
+    {
+        using var engine = new FocusEngineService();
+        engine.ApplyBreakSettings(5, 10, 4, autoStartBreaks: true, autoStartFocus: true);
+
+        FocusSession? completed = null;
+        engine.SessionCompleted += (_, s) => completed = s;
+
+        engine.ConfigureSession(FocusMode.Flowtime, durationSeconds: 1);
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.CurrentState != SessionState.Completed && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        Assert.Equal(SessionState.Completed, engine.CurrentState);
+        Assert.False(engine.IsOnBreak);
+        Assert.NotNull(completed);
+        Assert.True(completed!.IsCompleted);
+        Assert.Equal(FocusMode.Flowtime, completed.Mode);
+    }
+
+    [Fact]
+    public void Flowtime_EarlyStop_ShouldCompleteSession()
+    {
+        using var engine = new FocusEngineService();
+        FocusSession? completed = null;
+        engine.SessionCompleted += (_, s) => completed = s;
+
+        engine.ConfigureSession(FocusMode.Flowtime, durationSeconds: 600);
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.ElapsedSeconds < 1 && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        engine.Stop();
+        Assert.NotNull(completed);
+        Assert.True(completed!.IsCompleted);
+        Assert.True(completed.ElapsedSeconds >= 1);
+        Assert.Equal(SessionState.Idle, engine.CurrentState);
+    }
+
+    [Fact]
+    public void TimeBlocking_TargetHit_ShouldComplete_WithoutBreak()
+    {
+        using var engine = new FocusEngineService();
+        engine.ApplyBreakSettings(5, 10, 4, autoStartBreaks: true, autoStartFocus: true);
+
+        FocusSession? completed = null;
+        engine.SessionCompleted += (_, s) => completed = s;
+
+        engine.ConfigureSession(FocusMode.TimeBlocking, durationSeconds: 1);
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.CurrentState != SessionState.Completed && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        Assert.Equal(SessionState.Completed, engine.CurrentState);
+        Assert.False(engine.IsOnBreak);
+        Assert.NotNull(completed);
+        Assert.Equal(FocusMode.TimeBlocking, completed!.Mode);
+    }
+
+    [Fact]
+    public void TimeBlocking_EarlyStop_ShouldCompleteSession()
+    {
+        using var engine = new FocusEngineService();
+        FocusSession? completed = null;
+        engine.SessionCompleted += (_, s) => completed = s;
+
+        engine.ConfigureSession(FocusMode.TimeBlocking, durationSeconds: 3600);
+        engine.Start();
+
+        var deadline = DateTime.UtcNow.AddSeconds(3);
+        while (engine.ElapsedSeconds < 1 && DateTime.UtcNow < deadline)
+            Thread.Sleep(50);
+
+        engine.Stop();
+        Assert.NotNull(completed);
+        Assert.True(completed!.IsCompleted);
     }
 }

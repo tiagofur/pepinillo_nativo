@@ -4,60 +4,86 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Pepinillo.Core.Models"
     mc:Ignorable="d">
 
     <ScrollViewer Margin="32">
         <StackPanel Spacing="24" MaxWidth="800" HorizontalAlignment="Left">
-            <TextBlock Text="Dashboard &amp; Analíticas de Enfoque"
-                       Style="{ThemeResource TitleTextBlockStyle}" FontWeight="Bold"/>
+            <TextBlock Text="Analytics"
+                       Style="{ThemeResource TitleTextBlockStyle}"
+                       FontWeight="Bold"/>
+            <TextBlock Text="Local session totals from SQLite (UTC). Charts use simple ProgressBars."
+                       Style="{ThemeResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
 
-            <!-- Metric Cards Row -->
-            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
                 <Border Grid.Column="0"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="8" Padding="20">
+                        CornerRadius="8"
+                        Padding="16">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Enfoque Hoy"
+                        <TextBlock Text="Focus today"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="TodayFocusText"
-                                   FontSize="28" FontWeight="Bold"/>
+                                   FontSize="24"
+                                   FontWeight="Bold"/>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="1"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="8" Padding="20">
+                        CornerRadius="8"
+                        Padding="16">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Enfoque Semanal"
+                        <TextBlock Text="7-day focus"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="WeeklyFocusText"
-                                   FontSize="28" FontWeight="Bold"/>
+                                   FontSize="24"
+                                   FontWeight="Bold"/>
                     </StackPanel>
                 </Border>
 
                 <Border Grid.Column="2"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="8" Padding="20">
+                        CornerRadius="8"
+                        Padding="16">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Racha Actual"
+                        <TextBlock Text="Current streak"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                         <TextBlock x:Name="StreakText"
-                                   FontSize="28" FontWeight="Bold" Foreground="OrangeRed"/>
+                                   FontSize="24"
+                                   FontWeight="Bold"
+                                   Foreground="OrangeRed"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="3"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        CornerRadius="8"
+                        Padding="16">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Best streak"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                        <TextBlock x:Name="BestStreakText"
+                                   FontSize="24"
+                                   FontWeight="Bold"/>
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <!-- AI Insight Report -->
             <Border Background="{ThemeResource SystemAccentColor}"
-                    CornerRadius="8" Padding="20">
+                    CornerRadius="8"
+                    Padding="20">
                 <StackPanel Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE945;" Foreground="Gold"/>
-                        <TextBlock Text="Reporte IA Pepinillo+"
-                                   FontWeight="Bold" Foreground="White"
+                        <TextBlock Text="Insights"
+                                   FontWeight="Bold"
+                                   Foreground="White"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"/>
                     </StackPanel>
                     <TextBlock x:Name="AiReportText"
@@ -66,6 +92,45 @@
                                TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
+
+            <TextBlock Text="Mode breakdown (7 days)"
+                       Style="{ThemeResource SubtitleTextBlockStyle}"
+                       FontWeight="SemiBold"/>
+            <ItemsControl x:Name="ModeList" ItemsSource="{x:Bind ViewModel.ModeBreakdown, Mode=OneWay}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:ModeBreakdownItem">
+                        <Grid ColumnDefinitions="120,*,80" ColumnSpacing="12" Margin="0,0,0,8">
+                            <TextBlock Grid.Column="0" Text="{x:Bind ModeName}" VerticalAlignment="Center"/>
+                            <ProgressBar Grid.Column="1"
+                                         Minimum="0"
+                                         Maximum="1"
+                                         Value="{x:Bind FractionOfMax}"
+                                         Height="10"
+                                         VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2"
+                                       Text="{x:Bind TotalMinutes}"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="Recent sessions"
+                       Style="{ThemeResource SubtitleTextBlockStyle}"
+                       FontWeight="SemiBold"/>
+            <ListView ItemsSource="{x:Bind ViewModel.RecentSessions, Mode=OneWay}"
+                      SelectionMode="None"
+                      MaxHeight="320">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:FocusSession">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Padding="4">
+                            <TextBlock Grid.Column="0" Text="{x:Bind Mode}"/>
+                            <TextBlock Grid.Column="1" Text="{x:Bind ElapsedSeconds}"/>
+                            <TextBlock Grid.Column="2" Text="{x:Bind StartedAt}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
         </StackPanel>
     </ScrollViewer>
 </Page>

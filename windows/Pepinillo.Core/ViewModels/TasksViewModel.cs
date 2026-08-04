@@ -22,13 +22,35 @@ public partial class TasksViewModel : ObservableObject
     private int _newTaskEstimateMinutes = 25;
 
     [ObservableProperty]
-    private DateTimeOffset? _newTaskDueDate = DateTimeOffset.Now;
+    private int _newTaskPriority;
 
     [ObservableProperty]
-    private string _selectedFilter = "Today"; // Today, Upcoming, Inbox, All
+    private string _newTaskEnergy = string.Empty;
+
+    [ObservableProperty]
+    private string _newTaskRecurrence = "None";
+
+    [ObservableProperty]
+    private DateTimeOffset? _newTaskDueDate;
+
+    [ObservableProperty]
+    private string _selectedFilter = "Today";
 
     [ObservableProperty]
     private bool _isLoading;
+
+    [ObservableProperty]
+    private bool _isEmpty = true;
+
+    [ObservableProperty]
+    private string _newSubtaskTitle = string.Empty;
+
+    [ObservableProperty]
+    private TaskItem? _subtaskParent;
+
+    public string[] EnergyOptions { get; } = { "", "deep", "shallow", "admin" };
+    public string[] RecurrenceOptions { get; } = { "None", "FREQ=DAILY", "FREQ=WEEKLY" };
+    public int[] PriorityOptions { get; } = { 0, 1, 2, 3 };
 
     public TasksViewModel(ITaskService taskService)
     {
@@ -50,6 +72,7 @@ public partial class TasksViewModel : ObservableObject
             };
 
             Tasks = new ObservableCollection<TaskItem>(taskList);
+            IsEmpty = Tasks.Count == 0;
         }
         finally
         {
@@ -63,19 +86,31 @@ public partial class TasksViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(NewTaskTitle))
             return;
 
-        DateTime? dueDate = NewTaskDueDate?.DateTime;
-        var createdTask = await _taskService.CreateTaskAsync(
+        DateTime? dueDate = SelectedFilter switch
+        {
+            "Today" => DateTime.UtcNow.Date,
+            "Upcoming" => NewTaskDueDate?.UtcDateTime.Date ?? DateTime.UtcNow.Date.AddDays(1),
+            "Inbox" => null,
+            _ => NewTaskDueDate?.UtcDateTime
+        };
+
+        await _taskService.CreateTaskAsync(
             title: NewTaskTitle,
             estimatedMinutes: NewTaskEstimateMinutes,
-            dueDate: dueDate
-        );
+            dueDate: dueDate,
+            priority: NewTaskPriority,
+            energyLevel: NewTaskEnergy,
+            recurrenceRule: NewTaskRecurrence);
 
         NewTaskTitle = string.Empty;
+        NewTaskPriority = 0;
+        NewTaskEnergy = string.Empty;
+        NewTaskRecurrence = "None";
         await LoadTasksAsync();
     }
 
     [RelayCommand]
-    public async Task ToggleTaskAsync(TaskItem task)
+    public async Task ToggleTaskAsync(TaskItem? task)
     {
         if (task == null) return;
         await _taskService.ToggleTaskCompletionAsync(task.Id);
@@ -83,7 +118,7 @@ public partial class TasksViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public async Task DeleteTaskAsync(TaskItem task)
+    public async Task DeleteTaskAsync(TaskItem? task)
     {
         if (task == null) return;
         await _taskService.DeleteTaskAsync(task.Id);
@@ -93,7 +128,41 @@ public partial class TasksViewModel : ObservableObject
     [RelayCommand]
     public async Task FilterTasksAsync(string filter)
     {
+        if (string.IsNullOrWhiteSpace(filter))
+            return;
+
         SelectedFilter = filter;
+        await LoadTasksAsync();
+    }
+
+    [RelayCommand]
+    public async Task CreateSubtaskAsync(TaskItem? parent)
+    {
+        if (parent == null || string.IsNullOrWhiteSpace(NewSubtaskTitle))
+            return;
+
+        await _taskService.CreateTaskAsync(
+            title: NewSubtaskTitle,
+            estimatedMinutes: 15,
+            parentTaskId: parent.Id);
+
+        NewSubtaskTitle = string.Empty;
+        SubtaskParent = null;
+        await LoadTasksAsync();
+    }
+
+    [RelayCommand]
+    public void BeginAddSubtask(TaskItem? parent)
+    {
+        SubtaskParent = parent;
+        NewSubtaskTitle = string.Empty;
+    }
+
+    [RelayCommand]
+    public async Task ToggleSubtaskAsync(TaskItem? subtask)
+    {
+        if (subtask == null) return;
+        await _taskService.ToggleTaskCompletionAsync(subtask.Id);
         await LoadTasksAsync();
     }
 }

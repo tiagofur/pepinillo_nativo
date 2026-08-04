@@ -1,0 +1,157 @@
+<Page
+    x:Class="Pepinillo.WinUI.Views.FocusPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Pepinillo.Core.Models"
+    mc:Ignorable="d">
+
+    <ScrollViewer>
+        <Grid Padding="32" MaxWidth="720" HorizontalAlignment="Center">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,16">
+                <TextBlock Text="{x:Bind ViewModel.TitleLabel, Mode=OneWay}"
+                           Style="{ThemeResource TitleTextBlockStyle}"
+                           FontWeight="Bold"/>
+                <TextBlock Text="{x:Bind ViewModel.StatusLabel, Mode=OneWay}"
+                           Style="{ThemeResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                <TextBlock Text="{x:Bind ViewModel.ActiveTaskTitle, Mode=OneWay}"
+                           Style="{ThemeResource CaptionTextBlockStyle}"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,24">
+                <Button Content="Pomodoro" Click="Pomodoro_Click"/>
+                <Button Content="Stopwatch" Click="Stopwatch_Click"/>
+                <Button Content="Flowtime" Click="Flowtime_Click"/>
+                <Button Content="Time Block" Click="TimeBlock_Click"/>
+            </StackPanel>
+
+            <Border Grid.Row="2"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="16"
+                    Padding="32"
+                    Margin="0,0,0,24"
+                    HorizontalAlignment="Center"
+                    MinWidth="320">
+                <StackPanel Spacing="16" HorizontalAlignment="Center">
+                    <TextBlock Text="{x:Bind ViewModel.FormattedTime, Mode=OneWay}"
+                               FontSize="64"
+                               FontWeight="Bold"
+                               HorizontalAlignment="Center"
+                               FontFamily="Segoe UI Variable Display"/>
+                    <ProgressBar Value="{x:Bind ViewModel.ProgressRatio, Mode=OneWay}"
+                                 Maximum="1"
+                                 Height="8"
+                                 Width="240"/>
+                    <TextBlock Text="{x:Bind ViewModel.LastCompletedMessage, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               HorizontalAlignment="Center"
+                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Row="3"
+                        Orientation="Horizontal"
+                        Spacing="12"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,24">
+                <Button Content="{x:Bind ViewModel.StartLabel, Mode=OneWay}"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        Command="{x:Bind ViewModel.StartSessionCommand}"
+                        IsEnabled="{x:Bind ViewModel.CanStart, Mode=OneWay}"
+                        MinWidth="140"/>
+                <Button Content="{x:Bind ViewModel.PauseLabel, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.PauseSessionCommand}"
+                        IsEnabled="{x:Bind ViewModel.CanPause, Mode=OneWay}"
+                        MinWidth="100"/>
+                <Button Content="{x:Bind ViewModel.StopLabel, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.StopSessionCommand}"
+                        MinWidth="100"/>
+                <Button Content="{x:Bind ViewModel.SkipLabel, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.SkipBreakCommand}"
+                        IsEnabled="{x:Bind ViewModel.CanSkip, Mode=OneWay}"
+                        MinWidth="100"/>
+                <Button Content="Mini timer"
+                        Click="MiniTimer_Click"
+                        ToolTipService.ToolTip="Toggle compact mini timer (Win+Shift+M)"
+                        MinWidth="100"/>
+            </StackPanel>
+
+            <Border Grid.Row="4"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="16"
+                    Margin="0,0,0,16">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="{x:Bind ViewModel.LinkTaskLabel, Mode=OneWay}"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <ComboBox x:Name="TaskCombo"
+                                  Grid.Column="0"
+                                  HorizontalAlignment="Stretch"
+                                  PlaceholderText="Free focus"
+                                  ItemsSource="{x:Bind ViewModel.AvailableTasks, Mode=OneWay}"
+                                  SelectionChanged="TaskCombo_SelectionChanged">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:TaskItem">
+                                    <TextBlock Text="{x:Bind Title}"/>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <Button Grid.Column="1"
+                                Content="Clear"
+                                Command="{x:Bind ViewModel.ClearLinkedTaskCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Post-session journal (panel always in tree; status text indicates when empty) -->
+            <Border Grid.Row="5"
+                    x:Name="JournalPanel"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="16">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="{x:Bind ViewModel.JournalTitleLabel, Mode=OneWay}"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Bind ViewModel.LastCompletedMessage, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"/>
+                    <TextBox Header="What went well / notes"
+                             Text="{x:Bind ViewModel.JournalNoteDraft, Mode=TwoWay}"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             MinHeight="80"/>
+                    <NumberBox Header="Energy rating (1-5, optional)"
+                               Value="{x:Bind ViewModel.JournalEnergyRating, Mode=TwoWay}"
+                               Minimum="0"
+                               Maximum="5"
+                               SmallChange="1"
+                               SpinButtonPlacementMode="Compact"
+                               Width="160"
+                               HorizontalAlignment="Left"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Save journal"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Command="{x:Bind ViewModel.SaveJournalCommand}"
+                                IsEnabled="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay}"/>
+                        <Button Content="Dismiss"
+                                Command="{x:Bind ViewModel.DismissJournalCommand}"
+                                IsEnabled="{x:Bind ViewModel.ShowJournalPanel, Mode=OneWay}"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

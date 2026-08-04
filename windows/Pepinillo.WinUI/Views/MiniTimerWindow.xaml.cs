@@ -1,51 +1,115 @@
+using System.ComponentModel;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Pepinillo.Core.Models;
 using Pepinillo.Core.ViewModels;
 
 namespace Pepinillo.WinUI.Views;
 
+/// <summary>
+/// Compact Overlay (or small floating) mini timer synchronized with <see cref="FocusViewModel"/>.
+/// </summary>
 public sealed partial class MiniTimerWindow : Window
 {
     private readonly FocusViewModel _viewModel;
 
-    public MiniTimerWindow(FocusViewModel viewModel)
+    public MiniTimerWindow(FocusViewModel viewModel, bool alwaysOnTop = true)
     {
         _viewModel = viewModel;
-        this.InitializeComponent();
+        InitializeComponent();
+        Title = "Pepinillo Mini";
 
-        // Enable Compact Overlay (Always-on-top mini window)
-        var appWindow = this.AppWindow;
-        if (appWindow != null)
+        ConfigurePresenter(alwaysOnTop);
+        SyncAll();
+
+        _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        Closed += OnClosed;
+    }
+
+    private void ConfigurePresenter(bool alwaysOnTop)
+    {
+        var appWindow = AppWindow;
+        if (appWindow == null)
+            return;
+
+        if (alwaysOnTop && AppWindowTitleBar.IsCustomizationSupported())
         {
-            appWindow.SetPresenter(AppWindowPresenterKind.CompactOverlay);
-            appWindow.Resize(new Windows.Graphics.SizeInt32(280, 100));
+            // Compact Overlay is the productized always-on-top mini surface.
+            if (appWindow.Presenter is not CompactOverlayPresenter)
+                appWindow.SetPresenter(AppWindowPresenterKind.CompactOverlay);
+        }
+        else
+        {
+            appWindow.SetPresenter(AppWindowPresenterKind.Overlapped);
+            if (appWindow.Presenter is OverlappedPresenter overlapped)
+            {
+                overlapped.IsAlwaysOnTop = alwaysOnTop;
+                overlapped.IsResizable = false;
+                overlapped.IsMaximizable = false;
+                overlapped.IsMinimizable = false;
+            }
         }
 
-        _viewModel.PropertyChanged += (s, e) =>
+        appWindow.Resize(new Windows.Graphics.SizeInt32(320, 120));
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // PropertyChanged may arrive from timer thread — marshal to UI.
+        DispatcherQueue.TryEnqueue(() =>
         {
-            if (e.PropertyName == nameof(FocusViewModel.FormattedTime))
+            switch (e.PropertyName)
             {
-                TimerText.Text = _viewModel.FormattedTime;
+                case nameof(FocusViewModel.FormattedTime):
+                    TimerText.Text = _viewModel.FormattedTime;
+                    break;
+                case nameof(FocusViewModel.StatusLabel):
+                case nameof(FocusViewModel.CurrentState):
+                case nameof(FocusViewModel.CanPause):
+                    StatusText.Text = _viewModel.StatusLabel;
+                    UpdatePlayPauseGlyph();
+                    break;
+                case nameof(FocusViewModel.ActiveTaskTitle):
+                    TaskText.Text = _viewModel.ActiveTaskTitle;
+                    break;
+                case null:
+                    SyncAll();
+                    break;
             }
-        };
+        });
+    }
+
+    private void SyncAll()
+    {
+        TimerText.Text = _viewModel.FormattedTime;
+        StatusText.Text = _viewModel.StatusLabel;
+        TaskText.Text = _viewModel.ActiveTaskTitle;
+        UpdatePlayPauseGlyph();
+    }
+
+    private void UpdatePlayPauseGlyph()
+    {
+        // Pause glyph when running/break; Play otherwise.
+        var isRunning = _viewModel.CurrentState is SessionState.Running or SessionState.Break;
+        PlayPauseIcon.Glyph = isRunning ? "\uE769" : "\uE768";
     }
 
     private void OnPlayPauseClick(object sender, RoutedEventArgs e)
     {
-        if (_viewModel.CurrentState == Pepinillo.Core.Models.SessionState.Running)
-        {
-            _viewModel.PauseSessionCommand.Execute(null);
-            PlayPauseButton.Content = "▶";
-        }
-        else
-        {
-            _viewModel.StartSessionCommand.Execute(null);
-            PlayPauseButton.Content = "⏸";
-        }
+        _viewModel.TogglePlayPause();
+        UpdatePlayPauseGlyph();
     }
 
     private void OnStopClick(object sender, RoutedEventArgs e)
     {
         _viewModel.StopSessionCommand.Execute(null);
+        UpdatePlayPauseGlyph();
+    }
+
+    private void OnClosed(object sender, WindowEventArgs args)
+    {
+        _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        Closed -= OnClosed;
     }
 }

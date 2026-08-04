@@ -2,14 +2,15 @@ name: Pepinillo Windows CI Build & Test
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, feat/windows-native-app ]
     paths:
       - 'windows/**'
       - '.github/workflows/windows-build.yml'
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, feat/windows-native-app ]
     paths:
       - 'windows/**'
+      - '.github/workflows/windows-build.yml'
 
 jobs:
   build-and-test:
@@ -28,10 +29,83 @@ jobs:
       run: dotnet restore windows/Pepinillo.slnx
 
     - name: Run Core Unit Tests
-      run: dotnet test windows/Pepinillo.Core.Tests/Pepinillo.Core.Tests.csproj --configuration Release
+      run: dotnet test windows/Pepinillo.Core.Tests/Pepinillo.Core.Tests.csproj --configuration Release --nologo
 
     - name: Build WinUI 3 App (x64)
-      run: dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-x64 --no-restore
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Continue"
+        # Rebuild avoids stale intermediatexaml / skipped CoreCompile that break MarkupCompilePass2
+        dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-x64 --no-restore -v:n -t:Rebuild
+        $code = $LASTEXITCODE
+        if ($code -ne 0) {
+          Write-Host "=== XAML compiler diagnostics (tail of output.json) ==="
+          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Filter output.json -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              Write-Host "----- $($_.FullName) -----"
+              Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -Last 80
+            }
+          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Include *.err -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              Write-Host "----- $($_.FullName) -----"
+              Get-Content $_.FullName -ErrorAction SilentlyContinue
+            }
+        }
+        exit $code
 
     - name: Build WinUI 3 App (ARM64)
-      run: dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-arm64 --no-restore
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Continue"
+        dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-arm64 --no-restore -v:n -t:Rebuild
+        $code = $LASTEXITCODE
+        if ($code -ne 0) {
+          Write-Host "=== XAML compiler diagnostics (tail of output.json) ==="
+          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Filter output.json -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              Write-Host "----- $($_.FullName) -----"
+              Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -Last 80
+            }
+        }
+        exit $code
+
+  pack-msix:
+    name: Pack MSIX (x64)
+    runs-on: windows-latest
+    needs: build-and-test
+    # Pack can be environment-sensitive; continue workflow visibility even if pack fails
+    # so Core test regressions remain the hard gate. Prefer fixing pack when red.
+    continue-on-error: true
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Pack MSIX win-x64
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Stop"
+        ./windows/scripts/pack-msix.ps1 -Configuration Release -Runtime win-x64 -OutputDir "$env:GITHUB_WORKSPACE/windows/artifacts/msix/win-x64"
+
+    - name: Pack MSIX win-arm64
+      shell: pwsh
+      continue-on-error: true
+      run: |
+        $ErrorActionPreference = "Stop"
+        ./windows/scripts/pack-msix.ps1 -Configuration Release -Runtime win-arm64 -OutputDir "$env:GITHUB_WORKSPACE/windows/artifacts/msix/win-arm64"
+
+    - name: Upload MSIX artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pepinillo-windows-msix
+        path: |
+          windows/artifacts/msix/**
+          windows/Pepinillo.WinUI/AppPackages/**
+        if-no-files-found: warn
+        retention-days: 14

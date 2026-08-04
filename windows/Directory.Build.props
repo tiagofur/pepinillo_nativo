@@ -1,0 +1,19 @@
+<Project>
+  <!--
+    Central package identity / version for Pepinillo Windows.
+    Package.appxmanifest Identity Version should stay in sync with ApplicationDisplayVersion
+    (MSIX uses four-part Major.Minor.Build.Revision).
+  -->
+  <PropertyGroup>
+    <PepinilloVersion>1.0.0</PepinilloVersion>
+    <PepinilloPackageVersion>1.0.0.0</PepinilloPackageVersion>
+    <Company>Creapolis</Company>
+    <Product>Pepinillo - Deep Work OS</Product>
+    <Authors>Creapolis</Authors>
+    <Copyright>Copyright © Creapolis</Copyright>
+    <Version>$(PepinilloVersion)</Version>
+    <AssemblyVersion>$(PepinilloPackageVersion)</AssemblyVersion>
+    <FileVersion>$(PepinilloPackageVersion)</FileVersion>
+    <InformationalVersion>$(PepinilloVersion)</InformationalVersion>
+  </PropertyGroup>
+</Project>

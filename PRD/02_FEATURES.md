@@ -1,10 +1,12 @@
 # Pepinillo — Unified Features Document
 
-**Version:** 1.4  
-**Last Updated:** 2026-06-12  
-**Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS  
+**Version:** 1.5  
+**Last Updated:** 2026-08-03  
+**Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS, Windows (desktop — in progress)  
 **Author:** Tiago David + Claude Code  
 **Status:** Active
+
+**Windows product & delivery:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md). Desktop substitutes for Live Activity / widgets / watch are defined there; full per-feature Windows columns will land as P0+ ships.
 
 ---
 
@@ -12,11 +14,12 @@
 
 | Label         | Meaning                                        |
 | ------------- | ---------------------------------------------- |
-| **[All]**     | Supported on all platforms                     |
+| **[All]**     | Supported on all platforms (phone + watch; Windows tracks via execution plan until parity tables expand) |
 | **[iOS]**     | Exclusive to iOS (iPhone, iPad, Mac)           |
 | **[Android]** | Exclusive to Android (Phone, Tablet, Foldable) |
 | **[watchOS]** | Exclusive to Apple Watch                       |
 | **[Wear OS]** | Exclusive to Wear OS                           |
+| **[Windows]** | Exclusive or desktop-specific to Windows (tray, Compact Overlay, global hotkeys, Focus Assist, Microsoft Store IAP) |
 
 ### Commercial Labels
 
