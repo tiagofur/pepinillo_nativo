@@ -71,6 +71,7 @@ public sealed partial class MainWindow : Window
                 {
                     "Focus" => localizer.GetString("Nav.Focus"),
                     "Tasks" => localizer.GetString("Nav.Tasks"),
+                    "Calendar" => localizer.GetString("Nav.Calendar"),
                     "Analytics" => localizer.GetString("Nav.Analytics"),
                     "Soundscapes" => localizer.GetString("Nav.Soundscapes"),
                     "Account" => localizer.GetString("Nav.Account"),
@@ -136,6 +137,10 @@ public sealed partial class MainWindow : Window
             case "Tasks":
                 ContentFrame.Navigate(typeof(TasksPage));
                 NavView.Header = L("Nav.Tasks", "Tasks");
+                break;
+            case "Calendar":
+                ContentFrame.Navigate(typeof(CalendarPage));
+                NavView.Header = L("Nav.Calendar", "Calendar");
                 break;
             case "Analytics":
                 ContentFrame.Navigate(typeof(AnalyticsPage));

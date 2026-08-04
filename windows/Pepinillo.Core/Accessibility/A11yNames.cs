@@ -82,12 +82,24 @@ public static class A11yNames
     public const string SoundscapesPlayTrack = "Play soundscape track";
     public const string SoundscapesStopTrack = "Stop soundscape track";
 
+    // ── Calendar / day planner ─────────────────────────────────────────────
+    public const string CalendarPrevDay = "Previous day";
+    public const string CalendarNextDay = "Next day";
+    public const string CalendarToday = "Go to today";
+    public const string CalendarSelectedDay = "Selected day";
+    public const string CalendarLinkTask = "Link task optional";
+    public const string CalendarHourSlots = "Hour slots";
+    public const string CalendarPlannedBlocks = "Planned time blocks";
+    public const string CalendarStartBlock = "Start time block";
+    public const string CalendarDeleteBlock = "Delete time block";
+
     // ── Mini timer / shell ─────────────────────────────────────────────────
     public const string MiniTimerElapsed = "Mini timer elapsed";
     public const string MiniTimerPlayPause = "Start or pause from mini timer";
     public const string MiniTimerStop = "Stop from mini timer";
     public const string NavFocus = "Navigate to Focus";
     public const string NavTasks = "Navigate to Tasks";
+    public const string NavCalendar = "Navigate to Calendar";
     public const string NavAnalytics = "Navigate to Analytics";
     public const string NavSoundscapes = "Navigate to Soundscapes";
     public const string NavAccount = "Navigate to Account";

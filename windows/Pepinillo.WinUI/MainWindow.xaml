@@ -29,6 +29,12 @@
                         <FontIcon Glyph="&#xE9D5;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem Content="Calendar" Tag="Calendar"
+                                    AutomationProperties.Name="Navigate to Calendar">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE787;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem Content="Analytics" Tag="Analytics"
                                     AutomationProperties.Name="Navigate to Analytics">
                     <NavigationViewItem.Icon>
