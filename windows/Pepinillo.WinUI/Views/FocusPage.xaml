@@ -31,6 +31,10 @@
                 <TextBlock Text="{x:Bind ViewModel.PaywallFeatureHint, Mode=OneWay}"
                            Style="{ThemeResource CaptionTextBlockStyle}"
                            Foreground="{StaticResource PepinilloPaywallHintBrush}"/>
+                <TextBlock Text="{x:Bind ViewModel.SoundscapeChipLabel, Mode=OneWay}"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Margin="0,4,0,0"/>
             </StackPanel>
 
             <StackPanel Grid.Row="1"

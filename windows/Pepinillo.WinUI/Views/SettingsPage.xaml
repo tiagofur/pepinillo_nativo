@@ -160,6 +160,24 @@
                     CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                     Padding="{StaticResource PepinilloCardPadding}">
                 <StackPanel Spacing="16">
+                    <TextBlock Text="Soundscapes"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                               FontWeight="SemiBold"/>
+                    <ToggleSwitch Header="Enable soundscapes"
+                                  IsOn="{x:Bind ViewModel.Settings.EnableSoundscapes, Mode=TwoWay}"/>
+                    <ToggleSwitch Header="Auto-play preferred soundscape when focus starts"
+                                  IsOn="{x:Bind ViewModel.Settings.AutoPlaySoundscapeOnFocus, Mode=TwoWay}"/>
+                    <TextBlock Text="Master volume and track selection live on the Soundscapes page. Preferred track updates when you press Play."
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="WrapWholeWords"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
+                <StackPanel Spacing="16">
                     <TextBlock Text="Windows integration"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>

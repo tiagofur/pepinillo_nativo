@@ -28,16 +28,16 @@ public sealed partial class SoundscapesPage : Page
         };
     }
 
-    private void Play_Click(object sender, RoutedEventArgs e)
+    private async void Play_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { Tag: SoundscapeTrack track })
-            ViewModel.PlayTrackCommand.Execute(track);
+            await ViewModel.PlayTrackCommand.ExecuteAsync(track);
     }
 
-    private void Stop_Click(object sender, RoutedEventArgs e)
+    private async void Stop_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { Tag: SoundscapeTrack track })
-            ViewModel.StopTrackCommand.Execute(track);
+            await ViewModel.StopTrackCommand.ExecuteAsync(track);
     }
 
     private void Volume_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
