@@ -123,7 +123,7 @@ public partial class App : Application
     private static async System.Threading.Tasks.Task EnsureDatabaseAsync()
     {
         var db = Services.GetRequiredService<PepinilloDbContext>();
-        // EnsureCreated does not migrate existing DBs — delete pepinillo.db after schema changes.
-        await db.Database.EnsureCreatedAsync();
+        // Apply pending EF Core migrations (creates DB + upgrades schema on Store updates).
+        await db.Database.MigrateAsync();
     }
 }
