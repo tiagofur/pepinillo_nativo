@@ -4,12 +4,15 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Pepinillo.Core.Data;
 using Pepinillo.Core.Models;
+using Pepinillo.Core.Models.Sync;
 using Pepinillo.Core.Services;
+using Pepinillo.Core.ViewModels;
 using Xunit;
 
 namespace Pepinillo.Core.Tests;
@@ -158,14 +161,151 @@ public class CommerceAndSyncTests
         var client = new BackendApiClient(new HttpClient(handler), store);
         await client.InitializeAsync();
 
-        var ok = await client.SyncSessionsAsync(new[]
+        var result = await client.SyncSessionsAsync(new[]
         {
             new FocusSession { Mode = FocusMode.Pomodoro, ElapsedSeconds = 60, IsCompleted = true }
         });
 
-        Assert.True(ok);
+        Assert.True(result.Success);
         Assert.Equal(2, syncCalls);
         Assert.Equal("access-2", client.AuthToken);
+    }
+
+    [Fact]
+    public async Task BackendApiClient_SyncSessions_PostsWrappedBodyWithMappedMode()
+    {
+        string? body = null;
+        string? deviceHeader = null;
+        var handler = new StubHttpHandler((request, _) =>
+        {
+            if (request.RequestUri!.AbsolutePath.Contains("/sync/sessions", StringComparison.Ordinal))
+            {
+                body = request.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+                if (request.Headers.TryGetValues("X-Device-ID", out var values))
+                    deviceHeader = values.FirstOrDefault();
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(
+                        """{"sessions":[],"serverTimestamp":"2026-08-04T00:00:00Z"}""",
+                        Encoding.UTF8,
+                        "application/json")
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var store = new MemoryAuthTokenStore();
+        await store.SetTokensAsync("access-1", "refresh-1");
+        var client = new BackendApiClient(new HttpClient(handler), store);
+        await client.InitializeAsync();
+
+        var sessionId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var result = await client.SyncSessionsAsync(new[]
+        {
+            new FocusSession
+            {
+                Id = sessionId,
+                Mode = FocusMode.TimeBlocking,
+                TargetDurationSeconds = 3600,
+                ElapsedSeconds = 1200,
+                IsCompleted = true,
+                StartedAt = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+                CompletedAt = new DateTime(2026, 1, 1, 12, 20, 0, DateTimeKind.Utc),
+                JournalNote = "note",
+                EnergyRating = 4
+            }
+        }, lastSyncAt: new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+
+        Assert.True(result.Success);
+        Assert.False(string.IsNullOrWhiteSpace(deviceHeader));
+        Assert.NotNull(body);
+        using var doc = JsonDocument.Parse(body!);
+        var root = doc.RootElement;
+        Assert.True(root.TryGetProperty("sessions", out var sessions));
+        Assert.Equal(JsonValueKind.Array, sessions.ValueKind);
+        Assert.Equal(1, sessions.GetArrayLength());
+        var s0 = sessions[0];
+        Assert.Equal(sessionId.ToString(), s0.GetProperty("id").GetString());
+        Assert.Equal("timeblock", s0.GetProperty("mode").GetString());
+        Assert.Equal("focus", s0.GetProperty("phase").GetString());
+        Assert.Equal(3600, s0.GetProperty("durationSeconds").GetInt32());
+        Assert.Equal(1200, s0.GetProperty("elapsedSeconds").GetInt32());
+        Assert.True(s0.GetProperty("wasCompleted").GetBoolean());
+        Assert.Equal(4, s0.GetProperty("satisfactionRating").GetInt32());
+        Assert.True(root.TryGetProperty("lastSyncAt", out _));
+        // Must not be a raw top-level array
+        Assert.NotEqual(JsonValueKind.Array, root.ValueKind);
+    }
+
+    [Fact]
+    public async Task BackendApiClient_SyncSessions_403_RequiresEverywhere()
+    {
+        var handler = new StubHttpHandler((_, _) =>
+            new HttpResponseMessage(HttpStatusCode.Forbidden)
+            {
+                Content = new StringContent("""{"error":"subscription_required"}""", Encoding.UTF8, "application/json")
+            });
+
+        var store = new MemoryAuthTokenStore();
+        await store.SetTokensAsync("a", "r");
+        var client = new BackendApiClient(new HttpClient(handler), store);
+        await client.InitializeAsync();
+
+        var result = await client.SyncSessionsAsync(new[]
+        {
+            new FocusSession { Mode = FocusMode.Pomodoro, ElapsedSeconds = 10, IsCompleted = true }
+        });
+
+        Assert.False(result.Success);
+        Assert.True(result.RequiresEverywhere);
+        Assert.Contains("Everywhere", result.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task BackendApiClient_PullSessions_ParsesFullSyncPage()
+    {
+        var handler = new StubHttpHandler((request, _) =>
+        {
+            Assert.Contains("/sync/full", request.RequestUri!.ToString(), StringComparison.Ordinal);
+            var json = """
+                {
+                  "sessions": {
+                    "items": [
+                      {
+                        "id": "22222222-2222-2222-2222-222222222222",
+                        "startedAt": "2026-02-01T10:00:00Z",
+                        "endedAt": "2026-02-01T10:25:00Z",
+                        "mode": "flowtime",
+                        "phase": "focus",
+                        "durationSeconds": 1500,
+                        "elapsedSeconds": 1500,
+                        "wasCompleted": true,
+                        "journalNote": "remote",
+                        "satisfactionRating": 5
+                      }
+                    ],
+                    "nextCursor": "",
+                    "hasMore": false
+                  },
+                  "serverTimestamp": "2026-02-01T12:00:00Z"
+                }
+                """;
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var store = new MemoryAuthTokenStore();
+        await store.SetTokensAsync("a", "r");
+        var client = new BackendApiClient(new HttpClient(handler), store);
+        await client.InitializeAsync();
+
+        var pull = await client.PullSessionsAsync(100);
+        Assert.True(pull.Success);
+        Assert.Single(pull.Sessions);
+        Assert.Equal("flowtime", pull.Sessions[0].Mode);
     }
 
     [Fact]
@@ -202,6 +342,7 @@ public class CommerceAndSyncTests
     {
         await using var db = CreateDb();
         var sessions = new FocusSessionService(db);
+        var settings = new SettingsService(db);
         var session = new FocusSession
         {
             Mode = FocusMode.Pomodoro,
@@ -214,7 +355,7 @@ public class CommerceAndSyncTests
 
         var backend = new FakeBackend { IsAuthenticated = true, SyncSessionsResult = true };
         var commerce = new StoreCommerceService(backend);
-        var sync = new SyncService(backend, sessions, commerce);
+        var sync = new SyncService(backend, sessions, commerce, settings);
 
         var result = await sync.SyncNowAsync();
 
@@ -224,6 +365,9 @@ public class CommerceAndSyncTests
         var reloaded = await db.FocusSessions.FindAsync(session.Id);
         Assert.NotNull(reloaded);
         Assert.True(reloaded!.IsSynced);
+
+        var savedSettings = await settings.GetSettingsAsync();
+        Assert.NotNull(savedSettings.LastSyncAtUtc);
     }
 
     [Fact]
@@ -231,6 +375,7 @@ public class CommerceAndSyncTests
     {
         await using var db = CreateDb();
         var sessions = new FocusSessionService(db);
+        var settings = new SettingsService(db);
         await sessions.SaveSessionAsync(new FocusSession
         {
             Mode = FocusMode.Stopwatch,
@@ -242,14 +387,139 @@ public class CommerceAndSyncTests
 
         var backend = new FakeBackend { IsAuthenticated = false };
         var commerce = new StoreCommerceService(backend);
-        var sync = new SyncService(backend, sessions, commerce);
+        var sync = new SyncService(backend, sessions, commerce, settings);
 
         var result = await sync.SyncNowAsync();
         Assert.False(result.Success);
         Assert.False(result.WasAuthenticated);
+        Assert.Contains("Everywhere", result.Message, StringComparison.OrdinalIgnoreCase);
 
         var unsynced = await sessions.GetUnsyncedCompletedSessionsAsync();
         Assert.Single(unsynced);
+    }
+
+    [Fact]
+    public async Task SyncService_PullsAndUpsertsRemoteSessions()
+    {
+        await using var db = CreateDb();
+        var sessions = new FocusSessionService(db);
+        var settings = new SettingsService(db);
+        var remoteId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+
+        var backend = new FakeBackend
+        {
+            IsAuthenticated = true,
+            SyncSessionsResult = true,
+            PullSessions =
+            {
+                new ServerFocusSessionDto
+                {
+                    Id = remoteId.ToString(),
+                    Mode = "stopwatch",
+                    Phase = "focus",
+                    StartedAt = new DateTime(2026, 3, 1, 8, 0, 0, DateTimeKind.Utc),
+                    EndedAt = new DateTime(2026, 3, 1, 8, 10, 0, DateTimeKind.Utc),
+                    DurationSeconds = 0,
+                    ElapsedSeconds = 600,
+                    WasCompleted = true,
+                    JournalNote = "from cloud"
+                }
+            }
+        };
+        var commerce = new StoreCommerceService(backend);
+        var sync = new SyncService(backend, sessions, commerce, settings);
+
+        var result = await sync.SyncNowAsync();
+
+        Assert.True(result.Success);
+        Assert.True(result.SessionsPulled >= 1);
+        var local = await db.FocusSessions.FindAsync(remoteId);
+        Assert.NotNull(local);
+        Assert.Equal(FocusMode.Stopwatch, local!.Mode);
+        Assert.Equal(600, local.ElapsedSeconds);
+        Assert.True(local.IsSynced);
+        Assert.Equal("from cloud", local.JournalNote);
+    }
+
+    [Fact]
+    public async Task FocusSessionService_UpsertFromRemote_KeepsLocalWhenElapsedGreater()
+    {
+        await using var db = CreateDb();
+        var sessions = new FocusSessionService(db);
+        var id = Guid.NewGuid();
+        await sessions.SaveSessionAsync(new FocusSession
+        {
+            Id = id,
+            Mode = FocusMode.Pomodoro,
+            ElapsedSeconds = 2000,
+            IsCompleted = true,
+            IsSynced = true,
+            JournalNote = "local journal",
+            StartedAt = DateTime.UtcNow.AddHours(-1)
+        });
+
+        var updated = await sessions.UpsertFromRemoteAsync(new FocusSession
+        {
+            Id = id,
+            Mode = FocusMode.Flowtime,
+            ElapsedSeconds = 500,
+            IsCompleted = true,
+            JournalNote = "remote journal",
+            StartedAt = DateTime.UtcNow.AddHours(-1)
+        });
+
+        Assert.False(updated);
+        var local = await db.FocusSessions.FindAsync(id);
+        Assert.Equal(2000, local!.ElapsedSeconds);
+        Assert.Equal(FocusMode.Pomodoro, local.Mode);
+        Assert.Equal("local journal", local.JournalNote);
+    }
+
+    [Fact]
+    public async Task AuthViewModel_Register_AutoSignsIn_WhenTokensPresent()
+    {
+        await using var db = CreateDb();
+        var settings = new SettingsService(db);
+        var backend = new FakeBackend
+        {
+            RegisterSetsAuthenticated = true,
+            SyncSessionsResult = true
+        };
+        var commerce = new StoreCommerceService(backend);
+        var sessions = new FocusSessionService(db);
+        var sync = new SyncService(backend, sessions, commerce, settings);
+        var vm = new AuthViewModel(backend, sync, settings)
+        {
+            Email = "user@example.com",
+            Password = "secret",
+            DisplayName = "User"
+        };
+
+        await vm.RegisterCommand.ExecuteAsync(null);
+
+        Assert.True(vm.IsAuthenticated);
+        Assert.Contains("Signed in", vm.AccountModeLabel, StringComparison.OrdinalIgnoreCase);
+        // Auto-sync after register may replace the "signed in" toast with sync result.
+        Assert.False(string.IsNullOrWhiteSpace(vm.StatusMessage));
+    }
+
+    [Fact]
+    public async Task AuthViewModel_Login_RejectsInvalidEmail()
+    {
+        await using var db = CreateDb();
+        var settings = new SettingsService(db);
+        var backend = new FakeBackend();
+        var sync = new SyncService(backend, new FocusSessionService(db), new StoreCommerceService(backend), settings);
+        var vm = new AuthViewModel(backend, sync, settings)
+        {
+            Email = "not-an-email",
+            Password = "secret"
+        };
+
+        await vm.LoginCommand.ExecuteAsync(null);
+
+        Assert.False(vm.IsAuthenticated);
+        Assert.Contains("valid email", vm.StatusMessage, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -326,10 +596,31 @@ public class CommerceAndSyncTests
         public bool IsAuthenticated { get; set; }
         public string? AuthToken { get; private set; }
         public bool SyncSessionsResult { get; set; }
+        public bool RegisterSetsAuthenticated { get; set; }
+        public int? LastStatusCode { get; private set; }
+        public string? LastError { get; private set; }
+        public List<ServerFocusSessionDto> PullSessions { get; } = new();
 
         public Task InitializeAsync() => Task.CompletedTask;
-        public Task<bool> LoginAsync(string email, string password) => Task.FromResult(false);
-        public Task<bool> RegisterAsync(string email, string password, string name) => Task.FromResult(false);
+
+        public Task<bool> LoginAsync(string email, string password)
+        {
+            IsAuthenticated = true;
+            AuthToken = "token";
+            return Task.FromResult(true);
+        }
+
+        public Task<bool> RegisterAsync(string email, string password, string name)
+        {
+            if (RegisterSetsAuthenticated)
+            {
+                IsAuthenticated = true;
+                AuthToken = "token";
+            }
+
+            return Task.FromResult(true);
+        }
+
         public Task<bool> RefreshAsync() => Task.FromResult(false);
 
         public Task LogoutAsync()
@@ -339,8 +630,26 @@ public class CommerceAndSyncTests
             return Task.CompletedTask;
         }
 
-        public Task<bool> SyncSessionsAsync(IEnumerable<FocusSession> sessions) =>
-            Task.FromResult(SyncSessionsResult && sessions.Any());
+        public Task<SessionSyncClientResult> SyncSessionsAsync(
+            IEnumerable<FocusSession> sessions,
+            DateTime? lastSyncAt = null)
+        {
+            var list = sessions.ToList();
+            // Empty push is fine; non-empty requires SyncSessionsResult.
+            var ok = list.Count == 0 || SyncSessionsResult;
+            return Task.FromResult(new SessionSyncClientResult
+            {
+                Success = ok,
+                Sessions = Array.Empty<ServerFocusSessionDto>()
+            });
+        }
+
+        public Task<FullSyncClientResult> PullSessionsAsync(int limit = 100, string? sessionCursor = null) =>
+            Task.FromResult(new FullSyncClientResult
+            {
+                Success = true,
+                Sessions = PullSessions
+            });
 
         public Task<SubscriptionStatus> GetSubscriptionStatusAsync() =>
             Task.FromResult(new SubscriptionStatus { Tier = EntitlementTier.Free });

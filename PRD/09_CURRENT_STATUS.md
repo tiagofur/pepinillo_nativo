@@ -353,14 +353,14 @@
 - **Design system (W2 partial→improved):** `Resources/DesignTokens.xaml` (card radius, page margin, mode color brushes); theme picker System/Light/Dark (free) + Forest/Ocean/Sunset (premium via `IEntitlementService.CanUseTheme`); OLEDBlack aliases Dark; `ThemeHelper` applies ElementTheme + accent tokens + Mica when `UseMicaBackdrop`; Focus mode chips colored; Tasks/Analytics empty copy polish; Paywall “not a subscription” badge + tokens
 - **Analytics / Reflect (W4 #578):** today minutes, 7-day hours (free), current/best streak (UTC), mode breakdown bars, recent sessions + empty-state; **6 FREE achievements** (horizontal progress cards from local sessions; Early Bird = StartedAt hour &lt; 07:00 UTC); **Weekly Review** (Mon–Sun UTC vs previous week) + **Monthly Review** (calendar month UTC) with hours/sessions/top mode/trend — premium details, free locked teaser → Paywall
 - **Soundscapes (W3 #577):** EN catalog (4 free + 3 premium); packaged placeholder loop mp3s under `Assets/Soundscapes/`; `WindowsMediaPlayerService` loop + ~500ms fade; premium gate → Paywall; missing-asset status (no crash); `SoundscapeSessionCoordinator` auto-play on focus work / pause on break / stop on session end; Settings `EnableSoundscapes` + `AutoPlaySoundscapeOnFocus`; preferred track id; Focus chip “Soundscape: …”
-- **Auth:** PasswordVault token store, Account login/register/logout
-- **Sync:** local-first push of `IsSynced=false` sessions + subscription pull
+- **Auth (W10 #584):** PasswordVault token store; Account login/register/logout; nested token parse + refresh; register auto-sign-in when tokens present; email validation; offline vs signed-in labels; busy-disable; LastSyncAt + LastError surfaces; free/local copy: “Cloud sync needs Everywhere. Local data always works.”
+- **Sync (W10 #584):** local-first push of unsynced sessions via **wrapped** `SessionSyncRequest` (not raw array) with `FocusModeSyncMapper` + server DTO mapping; pull sessions from POST response and `GET /sync/full`; SQLite upsert LWW by elapsed; `X-Device-ID` + `LastSyncAtUtc` on UserSettings; 403 → Everywhere subscription message; subscription status pull. **Residual:** bidirectional task/settings sync
 - **Commerce:** `WindowsStoreCommerceService` (StoreContext) + free/backend fallback; Paywall uses D1 prices
 - **Localization:** `LocalizationService` EN/ES/PT for Settings + Focus primary labels
 - **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist honest status
 - **P1 desktop power v2 (W9 #583):** toast action buttons (Pause/Resume/Stop/Skip) + `NotificationInvoked`; `LaunchAtWindowsStartup` (StartupTask / HKCU Run); hotkey rebind UI + `HotkeyChordParser` + `RefreshFromSettings`; Focus Assist intent + diagnostic status (never fake OS DND)
 - **P3 packaging:** Store/tile/splash logos; `Directory.Build.props` version; MSIX pack + dev-cert scripts; CI pack artifact; listing/IAP/cert/runbook docs under `windows/store/`
-- Core unit tests: green (includes theme entitlement + Reflect W4 + W9 hotkey parser / LaunchAtWindowsStartup)
+- Core unit tests: green (includes theme entitlement + Reflect W4 + W9 + W10 auth/sync mapper, wrapped body, push/pull, register auto-login)
 - Manifest: `internetClient` + `runFullTrust` + `windows.startupTask` (PepinilloStartup)
 
 ### Missing (blocks full product / live Store)
@@ -374,7 +374,8 @@ Tracked in excellence epic **#573** / [PRD/13](13_WINDOWS_EXCELLENCE_PLAN.md):
 - Full .resw localization, onboarding, CSV export → **#582**, **#581**, **#580**
 - Hotkey rebind, toast actions, Focus Assist real, startup → **#583** (**coded** on `feat/windows-w9-desktop-power`; WinUI smoke pending; OS Focus Assist still cannot be toggled by third-party apps)
 - Design system residual (full Fluent depth, live theme previews, selected-chip state) → **#576** follow-ups
-- Auth/sync depth, paywall excellence → **#584**, **#585**
+- Auth/sync session depth → **#584** (**coded** on `feat/windows-w10-auth-sync`; residual task/settings bi-sync; smoke on Windows pending)
+- Paywall excellence → **#585**
 - A11y gate → **#589**
 
 ### Pending Windows (priority bands)

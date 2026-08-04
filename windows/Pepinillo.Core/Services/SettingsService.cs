@@ -69,6 +69,8 @@ public class SettingsService : ISettingsService
             existing.SkipHotkey = settings.SkipHotkey;
             existing.MiniTimerHotkey = settings.MiniTimerHotkey;
             existing.PreferredLanguage = settings.PreferredLanguage;
+            existing.DeviceId = settings.DeviceId;
+            existing.LastSyncAtUtc = settings.LastSyncAtUtc;
             _cache = existing;
         }
         else

@@ -46,6 +46,7 @@ public class PepinilloDbContext : DbContext
             entity.Property(e => e.SelectedTheme).HasMaxLength(64);
             entity.Property(e => e.PreferredLanguage).HasMaxLength(16);
             entity.Property(e => e.PreferredSoundscapeId).HasMaxLength(64);
+            entity.Property(e => e.DeviceId).HasMaxLength(64);
         });
     }
 }

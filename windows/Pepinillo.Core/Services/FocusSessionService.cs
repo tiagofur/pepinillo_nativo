@@ -195,4 +195,49 @@ public class FocusSessionService : IFocusSessionService
 
         await _dbContext.SaveChangesAsync();
     }
+
+    public async Task<bool> UpsertFromRemoteAsync(FocusSession remote)
+    {
+        if (remote.Id == Guid.Empty)
+            remote.Id = Guid.NewGuid();
+
+        var existing = await _dbContext.FocusSessions.FindAsync(remote.Id);
+        if (existing == null)
+        {
+            remote.IsSynced = true;
+            _dbContext.FocusSessions.Add(remote);
+            await _dbContext.SaveChangesAsync();
+            return true;
+        }
+
+        // LWW by elapsed: keep richer local session (protects longer local focus / journal-rich local).
+        if (existing.ElapsedSeconds > remote.ElapsedSeconds)
+        {
+            existing.IsSynced = true;
+            await _dbContext.SaveChangesAsync();
+            return false;
+        }
+
+        // Prefer remote when elapsed is greater-or-equal (remote wins ties / updates).
+        existing.Mode = remote.Mode;
+        existing.TargetDurationSeconds = remote.TargetDurationSeconds;
+        existing.ElapsedSeconds = remote.ElapsedSeconds;
+        existing.StartedAt = remote.StartedAt;
+        existing.CompletedAt = remote.CompletedAt;
+        existing.IsCompleted = remote.IsCompleted;
+        existing.IsSynced = true;
+
+        // Only overwrite journal/energy when remote has content, or local has none.
+        if (!string.IsNullOrWhiteSpace(remote.JournalNote)
+            || string.IsNullOrWhiteSpace(existing.JournalNote))
+        {
+            existing.JournalNote = remote.JournalNote;
+        }
+
+        if (remote.EnergyRating is >= 1 and <= 5 || existing.EnergyRating is null)
+            existing.EnergyRating = remote.EnergyRating;
+
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
 }

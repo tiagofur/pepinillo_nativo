@@ -17,4 +17,10 @@ public interface IFocusSessionService
     Task<List<ModeBreakdownItem>> GetModeBreakdownAsync(DateTime utcStartInclusive, DateTime utcEndExclusive);
     Task<List<FocusSession>> GetUnsyncedCompletedSessionsAsync();
     Task MarkSessionsSyncedAsync(IEnumerable<Guid> sessionIds);
+
+    /// <summary>
+    /// Upserts a remote session. LWW: keep local if same id and local elapsed is greater; otherwise take remote.
+    /// </summary>
+    /// <returns>True when a row was inserted or local fields were updated from remote.</returns>
+    Task<bool> UpsertFromRemoteAsync(FocusSession remote);
 }
