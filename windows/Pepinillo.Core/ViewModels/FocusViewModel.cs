@@ -16,7 +16,10 @@ public partial class FocusViewModel : ObservableObject
     private readonly IFocusSessionService _sessionService;
     private readonly ITaskService _taskService;
     private readonly INotificationService _notificationService;
+    private readonly IFocusAssistService _focusAssistService;
     private UserSettings _cachedSettings = new();
+    private SessionState _previousState = SessionState.Idle;
+    private bool _focusAssistActive;
 
     [ObservableProperty]
     private SessionState _currentState = SessionState.Idle;
@@ -62,13 +65,15 @@ public partial class FocusViewModel : ObservableObject
         ISettingsService settingsService,
         IFocusSessionService sessionService,
         ITaskService taskService,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IFocusAssistService focusAssistService)
     {
         _focusEngine = focusEngine;
         _settingsService = settingsService;
         _sessionService = sessionService;
         _taskService = taskService;
         _notificationService = notificationService;
+        _focusAssistService = focusAssistService;
 
         _focusEngine.StateChanged += OnEngineStateChanged;
         _focusEngine.Tick += OnEngineTick;
@@ -92,6 +97,15 @@ public partial class FocusViewModel : ObservableObject
 
         await LoadAvailableTasksAsync();
         UpdateCommandFlags();
+    }
+
+    /// <summary>
+    /// Reloads settings cache (e.g. after Settings page save) without resetting the engine mid-session.
+    /// </summary>
+    public async Task RefreshSettingsAsync()
+    {
+        _cachedSettings = await _settingsService.GetSettingsAsync();
+        ApplySettingsToEngine(_cachedSettings);
     }
 
     private void ApplySettingsToEngine(UserSettings settings)
@@ -153,6 +167,26 @@ public partial class FocusViewModel : ObservableObject
         UpdateCommandFlags();
     }
 
+    /// <summary>
+    /// Toggles play/pause for tray and global hotkey callers.
+    /// </summary>
+    public void TogglePlayPause()
+    {
+        if (CurrentState is SessionState.Running or SessionState.Break)
+            PauseSession();
+        else
+            StartSession();
+    }
+
+    /// <summary>
+    /// Skips the current break when applicable (hotkey / tray).
+    /// </summary>
+    public void SkipOrAdvance()
+    {
+        if (CanSkip)
+            SkipBreak();
+    }
+
     [RelayCommand]
     private void SelectMode(FocusMode mode)
     {
@@ -195,6 +229,7 @@ public partial class FocusViewModel : ObservableObject
 
     private void OnEngineStateChanged(object? sender, SessionState newState)
     {
+        var previous = _previousState;
         CurrentState = newState;
         IsOnBreak = _focusEngine.IsOnBreak || newState == SessionState.Break;
         StatusLabel = newState switch
@@ -206,8 +241,70 @@ public partial class FocusViewModel : ObservableObject
             SessionState.Completed => "Completed",
             _ => newState.ToString()
         };
+
+        HandleFocusAssist(newState);
+        HandleBreakNotifications(previous, newState);
+
+        _previousState = newState;
         UpdateCommandFlags();
         UpdateTimerDisplay();
+    }
+
+    private void HandleFocusAssist(SessionState newState)
+    {
+        if (!_cachedSettings.EnableWindowsDoNotDisturbSync)
+        {
+            if (_focusAssistActive)
+            {
+                _focusAssistService.EndFocusSession();
+                _focusAssistActive = false;
+            }
+            return;
+        }
+
+        // Enable only while actively focusing (not break / idle / completed).
+        if (newState == SessionState.Running && !_focusEngine.IsOnBreak)
+        {
+            if (!_focusAssistActive)
+            {
+                _focusAssistService.BeginFocusSession();
+                _focusAssistActive = true;
+            }
+            return;
+        }
+
+        if (newState is SessionState.Idle or SessionState.Completed
+            || (newState == SessionState.Break)
+            || (newState == SessionState.Paused && _focusEngine.IsOnBreak))
+        {
+            // Keep assist during work-pause; clear on break / stop / complete.
+            if (newState is SessionState.Idle or SessionState.Completed or SessionState.Break)
+            {
+                if (_focusAssistActive)
+                {
+                    _focusAssistService.EndFocusSession();
+                    _focusAssistActive = false;
+                }
+            }
+        }
+    }
+
+    private void HandleBreakNotifications(SessionState previous, SessionState newState)
+    {
+        if (newState == SessionState.Break && previous != SessionState.Break && previous != SessionState.Paused)
+        {
+            var isLong = _focusEngine.CompletedFocusCount > 0
+                && _cachedSettings.LongBreakInterval > 0
+                && _focusEngine.CompletedFocusCount % _cachedSettings.LongBreakInterval == 0;
+            _notificationService.ShowBreakStartedToast(isLong);
+        }
+
+        // Natural break end or skip: Break → Idle/Running (not Pause).
+        if (previous == SessionState.Break
+            && newState is SessionState.Idle or SessionState.Running)
+        {
+            _notificationService.ShowBreakCompletedToast();
+        }
     }
 
     private void OnEngineTick(object? sender, int elapsed) => UpdateTimerDisplay();

@@ -2,7 +2,7 @@
 
 **Version:** 1.1  
 **Date:** 2026-08-03  
-**Status:** P0 local MVP shell coded — WinUI smoke pending; next P1  
+**Status:** P0+P1 coded — WinUI smoke pending on Windows; next P2  
 **Author:** Tiago David + AI Pairing Assistant  
 **Target Platform:** Windows 10 (19041+) & Windows 11 (x64 / ARM64) via Microsoft Store  
 **Framework:** C# / WinUI 3 (Windows App SDK 1.6+)  
@@ -175,7 +175,8 @@ Pepinillo Windows enforces the exact same 3-tier commercial model defined in [04
 | ---- | ----- |
 | Solution scaffold (`windows/`) | Present — Core + WinUI + tests + CI build |
 | Phase 1 / P0 | **Coded:** DI, nav, FocusPage, Pomodoro/Stopwatch cycles, session + settings persist, tasks UX, theme |
-| Microsoft Store readiness | Not ready (placeholder identity, missing Assets, no pack/sign) |
+| Phase 3 / P1 | **Coded:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort |
+| Microsoft Store readiness | Not ready (placeholder identity, missing Store logos, no pack/sign) |
 | Detailed execution | See **[12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)** |
 
-**Next engineering step:** smoke on Windows (§4.3 checklist), then **P1** (tray, mini-timer, hotkeys, toasts, Focus Assist).
+**Next engineering step:** smoke on Windows (P0 §4.3 + P1 tray/mini/hotkeys/toasts), then **P2** (analytics depth, soundscapes, auth/sync, Store IAP path).

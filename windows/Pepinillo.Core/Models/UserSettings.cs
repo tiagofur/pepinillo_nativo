@@ -33,7 +33,7 @@ public class UserSettings
     public bool UseMicaBackdrop { get; set; } = true;
     public bool CompactMiniTimerAlwaysOnTop { get; set; } = true;
 
-    // Hotkeys (intent only in P0)
+    // Global hotkeys (defaults; rebind UI deferred — strings still persist)
     public string PlayPauseHotkey { get; set; } = "Win+Shift+P";
     public string SkipHotkey { get; set; } = "Win+Shift+S";
     public string MiniTimerHotkey { get; set; } = "Win+Shift+M";

@@ -30,6 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ISettingsService, SettingsService>();
         services.AddSingleton<IFocusSessionService, FocusSessionService>();
         services.AddSingleton<INotificationService, NotificationService>();
+        services.AddSingleton<IFocusAssistService, FocusAssistService>();
         services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
         services.AddSingleton(_ => new System.Net.Http.HttpClient());
         services.AddSingleton<IBackendApiClient, BackendApiClient>();

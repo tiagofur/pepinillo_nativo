@@ -61,14 +61,16 @@ public class SettingsAndSessionPersistTests
         var service = new FocusSessionService(db);
         var taskId = Guid.NewGuid();
 
+        // Anchor StartedAt to "today" UTC so the assertion is stable across midnight.
+        var started = DateTime.UtcNow.Date.AddHours(10);
         var session = new FocusSession
         {
             Mode = FocusMode.Pomodoro,
             TargetDurationSeconds = 1500,
             ElapsedSeconds = 1500,
             TaskItemId = taskId,
-            StartedAt = DateTime.UtcNow.AddMinutes(-25),
-            CompletedAt = DateTime.UtcNow,
+            StartedAt = started,
+            CompletedAt = started.AddMinutes(25),
             IsCompleted = true
         };
 

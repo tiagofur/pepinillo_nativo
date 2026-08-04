@@ -18,7 +18,8 @@ public class FocusViewModelTests
             new FakeSettingsService(),
             new FakeSessionService(),
             new FakeTaskService(),
-            new FakeNotificationService());
+            new FakeNotificationService(),
+            new FakeFocusAssistService());
     }
 
     [Fact]
@@ -88,7 +89,14 @@ public class FocusViewModelTests
     private sealed class FakeNotificationService : INotificationService
     {
         public void ShowSessionCompletedToast(string sessionName, int durationMinutes) { }
+        public void ShowBreakStartedToast(bool isLongBreak) { }
         public void ShowBreakCompletedToast() { }
         public void ShowStreakMilestoneToast(int streakDays) { }
+    }
+
+    private sealed class FakeFocusAssistService : IFocusAssistService
+    {
+        public void BeginFocusSession() { }
+        public void EndFocusSession() { }
     }
 }

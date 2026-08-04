@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Pepinillo.Core.Data;
 using Pepinillo.Core.DependencyInjection;
 using Pepinillo.Core.Services;
+using Pepinillo.WinUI.Services;
 using Windows.Storage;
 
 namespace Pepinillo.WinUI;
@@ -13,6 +14,7 @@ namespace Pepinillo.WinUI;
 public partial class App : Application
 {
     private Window? _mainWindow;
+    private DesktopShellCoordinator? _shell;
 
     /// <summary>Application-wide composition root.</summary>
     public static IServiceProvider Services { get; private set; } = null!;
@@ -23,6 +25,12 @@ public partial class App : Application
     {
         InitializeComponent();
         Services = ConfigureServices();
+        UnhandledException += (_, e) =>
+        {
+            // Keep process alive for tray scenarios; log is enough for P1.
+            System.Diagnostics.Debug.WriteLine($"Unhandled: {e.Exception}");
+            e.Handled = true;
+        };
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -35,6 +43,11 @@ public partial class App : Application
         _mainWindow = new MainWindow();
         MainWindowInstance = _mainWindow;
         ThemeHelper.ApplyTheme(settings.SelectedTheme, _mainWindow);
+
+        // Tray + global hotkeys require an HWND — attach after window construction.
+        _shell = Services.GetRequiredService<DesktopShellCoordinator>();
+        _shell.Attach(_mainWindow);
+
         _mainWindow.Activate();
     }
 
@@ -47,6 +60,15 @@ public partial class App : Application
             Directory.CreateDirectory(directory);
 
         services.AddPepinilloCore(dbPath);
+
+        // WinUI desktop power features — replace Core stubs (last registration wins).
+        services.AddSingleton<INotificationService, ToastNotificationService>();
+        services.AddSingleton<IFocusAssistService, WindowsFocusAssistService>();
+        services.AddSingleton<IMiniTimerController, MiniTimerController>();
+        services.AddSingleton<ITrayIconService, TrayIconService>();
+        services.AddSingleton<IGlobalHotkeyService, GlobalHotkeyService>();
+        services.AddSingleton<DesktopShellCoordinator>();
+
         return services.BuildServiceProvider();
     }
 

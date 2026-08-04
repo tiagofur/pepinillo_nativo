@@ -1,8 +1,9 @@
 # Pepinillo Windows — Execution Plan
 
-**Version:** 1.1  
-**Date:** 2026-08-03  
-**Status:** P0 coded — WinUI smoke pending on Windows; next is P1  
+**Version:** 1.2  
+**Date:** 2026-08-04  
+**Status:** P1 coded — tray/mini/hotkeys/toasts/Focus Assist; WinUI manual smoke pending on Windows; next is P2  
+
 **Branch:** `feat/windows-native-app`  
 **Canonical product PRD:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md)  
 **Parity source of truth (mobile):** [02_FEATURES.md](02_FEATURES.md)  
@@ -74,20 +75,21 @@ windows/
 - `FocusViewModel` — exists, **no Focus page**
 - `TaskService` + `TasksPage` shell — CRUD/list filters incomplete in UI
 - Analytics / Settings shells — mostly static or no-op save
-- `MiniTimerWindow` Compact Overlay — not launched from product flow
+- `MiniTimerWindow` Compact Overlay — productized (Focus / tray / hotkey)
+- System tray (`H.NotifyIcon`), global hotkeys, AppNotification toasts
+- Focus Assist best-effort service (graceful no-op when OS API unavailable)
 - `BackendApiClient` skeleton → `https://api.pepinillo.app/v1`
 - Commerce constants + free-default tests; purchase APIs stubbed
 - Unit tests for engine / tasks / free commerce default
 
 ### Critical blockers for “runnable product”
 
-1. No **DI host** — pages that need services cannot resolve the graph  
-2. No **Frame navigation** from `NavigationView`  
-3. No **`FocusPage`** (hero surface missing)  
-4. Focus engine incomplete (breaks, auto-start, session → DB)  
-5. **Assets/** missing (MSIX pack will fail)  
-6. Package identity `CN=PepinilloDev` not Partner Center–aligned  
-7. Store / tray / toasts / audio / hotkeys / Focus Assist = stubs or unused refs  
+1. ~~No DI / navigation / Focus page~~ — **done (P0)**  
+2. **Assets/** still incomplete for Store logos (MSIX pack may fail)  
+3. Package identity `CN=PepinilloDev` not Partner Center–aligned  
+4. Soundscapes audio / auth / real Store IAP still stubs (**P2**)  
+5. WinUI **manual smoke on Windows** still pending  
+
 
 ---
 
@@ -160,15 +162,23 @@ Estimated remaining effort (order of magnitude, after existing skeleton): **~280
 
 ## 5. P1 — Desktop power features
 
-| ID | Work unit | Notes |
-| -- | --------- | ----- |
-| **P1.1** | System tray (`H.NotifyIcon`) | Icon, context menu: Start/Pause, Show, Exit; minimize-to-tray |
-| **P1.2** | Productize MiniTimer | Launch from Focus; sync state with engine; Compact Overlay |
-| **P1.3** | Global hotkeys | `Win+Shift+P/S/M` (document conflicts; allow rebind later) |
-| **P1.4** | Toast notifications | Phase complete / break start; action buttons if supported |
-| **P1.5** | Focus Assist / Focus Sessions | Wire existing settings toggle to OS API where available (Win11+) |
+| ID | Work unit | Notes | Status |
+| -- | --------- | ----- | ------ |
+| **P1.1** | System tray (`H.NotifyIcon`) | Context menu Start/Pause, Skip, Show, Mini timer, Exit; minimize-to-tray when setting on | **Coded** |
+| **P1.2** | Productize MiniTimer | Focus page + tray + hotkey; Compact Overlay; sync time/status/task; AlwaysOnTop setting | **Coded** |
+| **P1.3** | Global hotkeys | Defaults `Win+Shift+P/S/M` via RegisterHotKey; conflicts documented; rebind UI deferred | **Coded** |
+| **P1.4** | Toast notifications | AppNotification phase complete / break start/end; gated on `EnableToastNotifications` | **Coded** |
+| **P1.5** | Focus Assist / Focus Sessions | `IFocusAssistService` + WinUI best-effort; silent no-op when OS API unavailable | **Coded** (best-effort) |
 
 **P1 DoD:** User can leave timer in tray + floating mini window while coding; hotkeys work when app is backgrounded (within OS limits).
+
+- [x] Tray + close-to-tray + Exit path coded  
+- [x] Mini timer open/close + state sync coded  
+- [x] Global hotkeys registered (process-level; conflict-tolerant)  
+- [x] Toasts implement `INotificationService` (gated)  
+- [x] Focus Assist wiring + graceful no-op  
+- [ ] Manual verification on Windows 10/11 machine  
+
 
 ---
 
@@ -237,17 +247,17 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Planned (band)**
 | AI reports | Partial/Done | Missing | **P2** (Everywhere) |
 | Themes | Done | Partial | **P0** basic · **P2** named themes |
 | Soundscapes | Done | Missing | **P2** |
-| Phase notifications | Done | Missing | **P1** |
-| Live Activity / ongoing | Done | N/A → tray + mini | **P1** |
+| Phase notifications | Done | **Coded** (toasts) | **P1** |
+| Live Activity / ongoing | Done | N/A → tray + mini **Coded** | **P1** |
 | Widgets | Done | N/A / later | P3+ optional |
 | Watch / Wear | Done | **N/A** | — |
 | Health | Partial | **N/A** | — |
 | Backend auth + sync | Done | Partial skeleton | **P2** |
 | Billing / paywall | Done | Stub | **P2–P3** |
-| System tray | N/A mobile | Missing | **P1** |
-| Compact Overlay | N/A mobile | Partial | **P1** |
-| Global hotkeys | N/A mobile | Missing | **P1** |
-| Focus Assist / DND | Mobile APIs | Missing | **P1** |
+| System tray | N/A mobile | **Coded** | **P1** |
+| Compact Overlay | N/A mobile | **Coded** | **P1** |
+| Global hotkeys | N/A mobile | **Coded** | **P1** |
+| Focus Assist / DND | Mobile APIs | **Coded** (best-effort no-op) | **P1** |
 | Onboarding | Done | Missing | **P2** |
 | Localization EN/ES/PT | Done | Partial hardcode | **P2** |
 | CSV export | Partial | Missing | **P2** (Pepinillo+) |
@@ -311,8 +321,8 @@ Until D1 is decided, implement commerce **behind interfaces** and keep product I
 
 ## 12. Next action
 
-1. **On Windows:** build WinUI, run smoke checklist §4.3.  
-2. **Start P1** after smoke (tray, mini-timer, hotkeys, toasts, Focus Assist).  
+1. **On Windows:** build WinUI, run P0 smoke §4.3 + P1 tray/mini/hotkey/toast checks.  
+2. **Start P2** (analytics depth, soundscapes audio, auth/sync path, IAP sandbox).  
 3. Do not open Partner Center SKUs until **D1** pricing is confirmed.
 
 ---
@@ -332,3 +342,4 @@ Until D1 is decided, implement commerce **behind interfaces** and keep product I
 | ---- | ------ |
 | 2026-08-03 | v1.0 — Initial execution plan from code/docs audit; P0 ready |
 | 2026-08-03 | v1.1 — P0 implemented in code; Core tests 16/16; WinUI smoke pending |
+| 2026-08-04 | v1.2 — P1 coded (tray, mini-timer, hotkeys, toasts, Focus Assist best-effort); Core 16/16 |

@@ -38,6 +38,7 @@
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
+      <!-- Toast display via Windows App SDK AppNotificationManager (no COM activator needed for display-only). -->
     </Application>
   </Applications>
 

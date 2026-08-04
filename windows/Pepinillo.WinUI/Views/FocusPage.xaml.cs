@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Pepinillo.Core.Models;
 using Pepinillo.Core.ViewModels;
+using Pepinillo.WinUI.Services;
 
 namespace Pepinillo.WinUI.Views;
 
@@ -33,6 +34,11 @@ public sealed partial class FocusPage : Page
 
     private void TimeBlock_Click(object sender, RoutedEventArgs e) =>
         ViewModel.SelectModeCommand.Execute(FocusMode.TimeBlocking);
+
+    private void MiniTimer_Click(object sender, RoutedEventArgs e)
+    {
+        App.Services.GetRequiredService<IMiniTimerController>().Toggle();
+    }
 
     private void TaskCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

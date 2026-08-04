@@ -84,6 +84,10 @@
                         Command="{x:Bind ViewModel.SkipBreakCommand}"
                         IsEnabled="{x:Bind ViewModel.CanSkip, Mode=OneWay}"
                         MinWidth="100"/>
+                <Button Content="Mini timer"
+                        Click="MiniTimer_Click"
+                        ToolTipService.ToolTip="Toggle compact mini timer (Win+Shift+M)"
+                        MinWidth="100"/>
             </StackPanel>
 
             <!-- Optional task link -->
