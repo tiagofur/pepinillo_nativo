@@ -7,6 +7,7 @@
 **Target Platform:** Windows 10 (19041+) & Windows 11 (x64 / ARM64) via Microsoft Store  
 **Framework:** C# / WinUI 3 (Windows App SDK 1.6+)  
 **Execution plan:** [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md) (P0–P3 work units, parity matrix, Store checklist)  
+**Excellence backlog (perfect product):** [13_WINDOWS_EXCELLENCE_PLAN.md](13_WINDOWS_EXCELLENCE_PLAN.md) · epic [#573](https://github.com/tiagofur/pepinillo_nativo/issues/573)  
 **Live status:** [09_CURRENT_STATUS.md](09_CURRENT_STATUS.md) (Windows platform row)
 
 ---
