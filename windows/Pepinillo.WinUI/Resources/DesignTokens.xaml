@@ -40,6 +40,12 @@
     <SolidColorBrush x:Key="PepinilloStreakBrush" Color="#FF6D00"/>
     <SolidColorBrush x:Key="PepinilloOledSurfaceBrush" Color="#000000"/>
 
+    <!-- Mode Intelligence banner (W5) -->
+    <Color x:Key="ModeIntelligenceAccentColor">#C9A227</Color>
+    <SolidColorBrush x:Key="ModeIntelligenceAccentBrush" Color="{StaticResource ModeIntelligenceAccentColor}"/>
+    <SolidColorBrush x:Key="ModeIntelligenceBannerBrush" Color="#1AC9A227"/>
+    <SolidColorBrush x:Key="ModeIntelligenceLockedBrush" Color="#26C9A227"/>
+
     <Color x:Key="ThemeForestAccentColor">#2E7D32</Color>
     <Color x:Key="ThemeOceanAccentColor">#0277BD</Color>
     <Color x:Key="ThemeSunsetAccentColor">#EF6C00</Color>

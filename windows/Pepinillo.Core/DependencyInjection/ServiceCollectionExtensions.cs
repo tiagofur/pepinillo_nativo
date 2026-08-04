@@ -44,6 +44,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<ITaskService, TaskService>();
         services.AddSingleton<ISyncService, SyncService>();
         services.AddSingleton<IReflectService, ReflectService>();
+        services.AddSingleton<IModeIntelligenceService, ModeIntelligenceService>();
 
         services.AddSingleton<FocusViewModel>();
         services.AddTransient<TasksViewModel>();
