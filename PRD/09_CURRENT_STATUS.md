@@ -353,7 +353,7 @@
 - **Soundscapes:** EN catalog + MediaPlayer service; premium gate; missing-asset graceful status
 - **Auth:** PasswordVault token store, Account login/register/logout
 - **Sync:** local-first push of `IsSynced=false` sessions + subscription pull
-- **Commerce:** `WindowsStoreCommerceService` (StoreContext) + free/backend fallback; Paywall placeholders (D1)
+- **Commerce:** `WindowsStoreCommerceService` (StoreContext) + free/backend fallback; Paywall uses D1 prices
 - **Localization:** `LocalizationService` EN/ES/PT for Settings + Focus primary labels
 - **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort
 - **P3 packaging:** Store/tile/splash logos; `Directory.Build.props` version; MSIX pack + dev-cert scripts; CI pack artifact; listing/IAP/cert/runbook docs under `windows/store/`
@@ -366,7 +366,7 @@
 - Real looping mp3 assets under `Assets/Soundscapes/`
 - Real Store screenshots (placeholders only)
 - Partner Center: name reservation, production publisher CN, age rating, package upload, flights
-- Live IAP products (**after D1** pricing decision)
+- Live IAP products in Partner Center (D1 prices set; create SKUs next)
 - Full .resw localization coverage, onboarding, CSV export, AI reports (Everywhere)
 - Hotkey rebind UI, toast action buttons, real Focus Sessions OS integration (when public API stabilizes)
 
@@ -379,7 +379,7 @@
 | **P2** | Analytics depth, soundscapes, auth/sync, IAP path, i18n | **Coded** — assets + sandbox pending |
 | **P3** | MSIX, Partner Center, certification, beta | **In-repo packaging ready** — Partner Center + smoke remaining |
 
-**Pricing note:** PRD 11 Windows prices ($9.99 / $2.99·$19.99) differ from global mobile ($19.99 / $4.99·$34.99). Resolve before Partner Center SKUs (decision D1 in execution plan).
+**Pricing (D1 resolved):** Pepinillo+ Windows **$9.99** durable (platform-scoped); Everywhere **$4.99/mo · $34.99/yr** (match global mobile). Launch path: [`windows/store/LAUNCH_CHECKLIST.md`](../windows/store/LAUNCH_CHECKLIST.md) · issue [#568](https://github.com/tiagofur/pepinillo_nativo/issues/568).
 
 ---
 
@@ -519,7 +519,7 @@
 | Architecture | MVVM (`CommunityToolkit.Mvvm`) | DI wired (`AddPepinilloCore` + WinUI overrides) |
 | Persistence | EF Core SQLite | Local-first target |
 | Desktop | H.NotifyIcon, Compact Overlay, hotkeys, toasts | **P1 coded** (Focus Assist best-effort) |
-| Commerce | `Windows.Services.Store` | StoreContext path + free/backend fallback; D1 prices open |
+| Commerce | `Windows.Services.Store` | StoreContext path + free/backend fallback; D1 prices resolved |
 | Packaging | MSIX | Logos present; dev publisher `CN=PepinilloDev`; pack scripts |
 | CI | GitHub Actions `windows-build.yml` | Build + tests + MSIX pack artifact |
 
@@ -783,7 +783,7 @@ Critical bug: all phone→watch updates (session state, stats, dashboard, tasks)
 
 - P0–P2 product path **coded**; P3 packaging/docs/CI **in-repo ready**
 - Manual WinUI smoke still required on Windows
-- Microsoft Store submission still manual (Partner Center identity, live IAP after D1, real screenshots, flights)
+- Microsoft Store submission still manual (Partner Center identity, live IAP, real screenshots, flights) — track #568
 - Track remaining work in [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
 
 ### Both Platforms (mobile)
