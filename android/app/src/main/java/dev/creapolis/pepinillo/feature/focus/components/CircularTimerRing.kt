@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloTheme
 import dev.creapolis.pepinillo.ui.theme.isReduceMotionEnabled
 
@@ -61,7 +62,7 @@ fun CircularTimerRing(
             initialValue = 0.3f,
             targetValue = 0.7f,
             animationSpec = infiniteRepeatable(
-                animation = tween(1800, easing = FastOutSlowInEasing),
+                animation = tween(MotionScheme.DURATION_RING_PULSE, easing = FastOutSlowInEasing),
                 repeatMode = RepeatMode.Reverse
             ),
             label = "pulseAlpha"

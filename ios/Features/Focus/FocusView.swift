@@ -300,7 +300,7 @@ struct FocusView: View {
                     .padding(.horizontal, 24)
             }
             .frame(maxWidth: timerMaxSize, maxHeight: timerMaxSize)
-            .conditionalAnimation(.smooth(duration: 0.5), value: store.phase)
+            .conditionalAnimation(.smooth(duration: 0.5), value: effectivePhase)
 
             Text(store.phaseLabel)
                 .font(.system(.subheadline, design: .rounded))
@@ -625,12 +625,16 @@ struct FocusView: View {
         store.activeMode ?? store.selectedMode
     }
 
+    private var effectivePhase: FocusPhase {
+        store.isWaitingForNextPhase ? (store.pendingNextPhase ?? store.phase) : store.phase
+    }
+
     private var modeColor: Color {
-        theme.color(for: currentMode, phase: store.phase)
+        theme.color(for: currentMode, phase: effectivePhase)
     }
 
     private var modeGradient: AngularGradient {
-        theme.ringGradient(for: currentMode, phase: store.phase)
+        theme.ringGradient(for: currentMode, phase: effectivePhase)
     }
 
     #if os(iOS)
@@ -947,12 +951,16 @@ struct TimerCircleView: View {
         store.activeMode ?? store.selectedMode
     }
 
+    private var effectivePhase: FocusPhase {
+        store.isWaitingForNextPhase ? (store.pendingNextPhase ?? store.phase) : store.phase
+    }
+
     private var modeColor: Color {
-        theme.color(for: currentMode, phase: store.phase)
+        theme.color(for: currentMode, phase: effectivePhase)
     }
 
     private var modeGradient: AngularGradient {
-        theme.ringGradient(for: currentMode, phase: store.phase)
+        theme.ringGradient(for: currentMode, phase: effectivePhase)
     }
 
     private var timerRingProgress: Double? {
@@ -1067,7 +1075,7 @@ private struct TimerCenterContent: View {
                 .onChange(of: store.isRunning) { _, running in
                     breatheScale = running ? 1.06 : 1.0
                 }
-                .id(store.phase)
+                .id(store.isWaitingForNextPhase ? (store.pendingNextPhase ?? store.phase) : store.phase)
                 .transition(reduceMotion ? .opacity : .asymmetric(
                     insertion: .scale(scale: 0.7).combined(with: .opacity),
                     removal: .scale(scale: 1.3).combined(with: .opacity)

@@ -1,7 +1,6 @@
 package dev.creapolis.pepinillo.feature.dashboard
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.core.network.ReportInsight
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -113,13 +113,13 @@ fun AIReportScreen(
                 val bgColor by animateColorAsState(
                     targetValue = if (isSelected) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    animationSpec = spring(),
+                    animationSpec = MotionScheme.standardSpring(),
                     label = "periodBg",
                 )
                 val textColor by animateColorAsState(
                     targetValue = if (isSelected) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurfaceVariant,
-                    animationSpec = spring(),
+                    animationSpec = MotionScheme.standardSpring(),
                     label = "periodText",
                 )
                 Box(

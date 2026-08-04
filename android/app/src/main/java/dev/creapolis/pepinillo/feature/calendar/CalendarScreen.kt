@@ -1,8 +1,6 @@
 package dev.creapolis.pepinillo.feature.calendar
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,6 +47,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import dev.creapolis.pepinillo.R
 import dev.creapolis.pepinillo.data.repository.SessionRepository
 import dev.creapolis.pepinillo.ui.components.rememberSharedBoundsModifier
+import dev.creapolis.pepinillo.ui.theme.MotionScheme
 import dev.creapolis.pepinillo.ui.theme.PepinilloShapeTokens
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -227,8 +226,8 @@ fun CalendarScreen(
         // ── DAY DETAIL ──
         AnimatedVisibility(
             visible = dayDetail != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = MotionScheme.fadeEnter(),
+            exit = MotionScheme.fadeExit(),
         ) {
             dayDetail?.let { detail ->
                 Spacer(modifier = Modifier.height(24.dp))
