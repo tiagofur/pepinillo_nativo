@@ -20,17 +20,16 @@ Source of truth in code:
 
 ---
 
-## Placeholder prices (PRD 11) — **D1 OPEN**
+## Prices — **D1 RESOLVED** (see LAUNCH_CHECKLIST.md)
 
-| Product | Placeholder price (PRD 11 Windows) | Global mobile (for comparison) |
-| ------- | ---------------------------------- | ------------------------------ |
-| Pepinillo+ durable | **$9.99** | $19.99 (mobile Pepinillo+) |
-| Everywhere monthly | **$2.99/mo** | $4.99/mo |
-| Everywhere annual | **$19.99/yr** | $34.99/yr |
+| Product | Store price (default market) | Global mobile | Notes |
+| ------- | ---------------------------- | ------------- | ----- |
+| Pepinillo+ durable (Windows) | **$9.99** | $19.99 | Platform-scoped Windows unlock; intentional lower entry |
+| Everywhere monthly | **$4.99/mo** | $4.99/mo | **Must match mobile** — cross-device entitlement |
+| Everywhere annual | **$34.99/yr** | $34.99/yr | **Must match mobile** — prevents Windows arbitrage |
 
-> **D1 — product decision required before creating live SKUs.**  
-> Do not publish Store prices until product confirms Windows pricing vs global mobile alignment (or intentional regional strategy).  
-> In-app strings already show placeholders + disclaimer via `ProductCatalog.PriceDisclaimer`.
+> **D1 rationale:** Selling Everywhere cheaper only on Windows would let users unlock iOS/Android cheaper via PC. Pepinillo+ durable can differ because it unlocks Windows-local features.  
+> Partner Center market overrides (LATAM, etc.) still allowed. Code UI: `ProductCatalog`.
 
 ---
 

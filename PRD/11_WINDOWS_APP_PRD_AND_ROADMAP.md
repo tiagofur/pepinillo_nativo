@@ -2,7 +2,7 @@
 
 **Version:** 1.2  
 **Date:** 2026-08-03  
-**Status:** P0–P3 in-repo (packaging + Store docs) — WinUI smoke + Partner Center submission remaining; D1 pricing open  
+**Status:** P0–P3 in-repo — D1 pricing resolved; WinUI smoke + Partner Center submission remaining  
 **Author:** Tiago David + AI Pairing Assistant  
 **Target Platform:** Windows 10 (19041+) & Windows 11 (x64 / ARM64) via Microsoft Store  
 **Framework:** C# / WinUI 3 (Windows App SDK 1.6+)  
@@ -96,8 +96,8 @@ Pepinillo Windows enforces the exact same 3-tier commercial model defined in [04
 | Tier | Format | Pricing (USD) | Included Features on Windows |
 | :--- | :--- | :--- | :--- |
 | **Free** | Freemium Core | $0 | Pomodoro & Stopwatch modes, max 3 active tasks, 7-day history, 4 basic soundscapes. |
-| **Pepinillo+** | One-time purchase (Lifetime) | **$9.99** *(Pay once, own forever)* | All local Windows features: Flowtime + Time Block modes, unlimited tasks/subtasks, compact floating window, system tray popup, global hotkeys, CSV export, all premium themes & soundscapes. |
-| **Everywhere / AI+** | Subscription | **$2.99 / mo** or **$19.99 / yr** | All Pepinillo+ features + Go backend cross-device sync (iOS, Android, Windows, Web), cloud AI reports, predictive insights, monthly AI credits. |
+| **Pepinillo+** | One-time purchase (Windows durable) | **$9.99** *(Pay once, own forever on Windows)* | All local Windows features: Flowtime + Time Block modes, unlimited tasks/subtasks, compact floating window, system tray popup, global hotkeys, CSV export, all premium themes & soundscapes. Platform-scoped (can differ from mobile $19.99). |
+| **Everywhere / AI+** | Subscription | **$4.99 / mo** or **$34.99 / yr** | All Pepinillo+ features + Go backend cross-device sync (iOS, Android, Windows, Web), cloud AI reports, predictive insights, monthly AI credits. **Matches global mobile** to prevent cross-store arbitrage (D1). |
 
 ### Microsoft Store Commerce Integration:
 1. **Pepinillo+:** Configured in Partner Center as a **Durable In-App Purchase** (`pepinillo_plus_windows`).
@@ -181,4 +181,4 @@ Pepinillo Windows enforces the exact same 3-tier commercial model defined in [04
 | Microsoft Store readiness | **Packaging ready; submission manual** — dev publisher CN; Partner Center reserve/cert/IAP/screenshots remaining |
 | Detailed execution | See **[12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)** |
 
-**Next engineering step:** smoke on Windows (P0–P3 cert checklist), real soundscape mp3s + Store screenshots, resolve **D1** pricing, then Partner Center Internal flight (`windows/store/RELEASE_RUNBOOK.md`).
+**Next engineering step:** follow `windows/store/LAUNCH_CHECKLIST.md` — Windows smoke + cert dry-run, real screenshots, Partner Center Internal flight.

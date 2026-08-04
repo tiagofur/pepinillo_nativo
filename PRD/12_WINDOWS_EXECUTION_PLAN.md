@@ -279,7 +279,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Planned (band)**
 
 | # | Decision | Options / note | Owner |
 | - | -------- | -------------- | ----- |
-| D1 | **Windows price alignment** | PRD 11: + $9.99 / Everywhere $2.99·$19.99 vs global mobile $19.99 / $4.99·$34.99 (LATAM closer to PRD 11). **Must pick Store prices before Partner Center SKUs.** | Product |
+| D1 | **Windows price alignment** | **Resolved:** Pepinillo+ Windows **$9.99** durable (platform-scoped); Everywhere **$4.99/mo · $34.99/yr** (match global mobile to avoid arbitrage). See `windows/store/LAUNCH_CHECKLIST.md`. | Product |
 | D2 | **SKU IDs** | Confirm `pepinillo_plus_windows` vs shared entitlement `pepinillo_plus` via backend only | Product + Backend |
 | D3 | **Auth providers on Windows** | Email/password first; Microsoft account OAuth later? | Product |
 | D4 | **Windows Widgets** | In 1.0 or post-GA | Product |
