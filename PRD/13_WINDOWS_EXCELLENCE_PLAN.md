@@ -123,7 +123,7 @@ Code gate owner: `windows/Pepinillo.Core/Services/EntitlementService.cs`.
 | **W8** | Full EN/ES/PT localization | **[#582](https://github.com/tiagofur/pepinillo_nativo/issues/582)** | P1 | — |
 | **W9** | Desktop power v2 (Focus Assist, toast actions, startup, hotkey rebind) | **[#583](https://github.com/tiagofur/pepinillo_nativo/issues/583)** — **coded** on `feat/windows-w9-desktop-power` (smoke pending) | P0 | W1 |
 | **W10** | Auth + Everywhere sync depth | **[#584](https://github.com/tiagofur/pepinillo_nativo/issues/584)** | P0 | API |
-| **W11** | Paywall + commerce excellence | **[#585](https://github.com/tiagofur/pepinillo_nativo/issues/585)** | P0 | #568 SKUs |
+| **W11** | Paywall + commerce excellence | **[#585](https://github.com/tiagofur/pepinillo_nativo/issues/585)** — **coded** on `feat/windows-w11-commerce` (sandbox/Partner Center SKUs still #568) | P0 | #568 SKUs |
 | **W12** | Tasks/Plan excellence | **[#586](https://github.com/tiagofur/pepinillo_nativo/issues/586)** | P1 | W2 |
 | **W13** | Calendar time-block grid (desktop advantage) | **[#587](https://github.com/tiagofur/pepinillo_nativo/issues/587)** | P2 | W12 |
 | **W14** | Multi-monitor + shell excellence | **[#588](https://github.com/tiagofur/pepinillo_nativo/issues/588)** | P2 | W9 |
@@ -210,7 +210,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | EN/ES/PT | Done | Partial | Full .resw | W8 |
 | Auth email/password | Done | **Done (W10 #584):** nested tokens + refresh; Account UX (offline vs signed-in, email validation, register auto-sign-in when tokens returned, busy disable, LastSyncAt + LastError); free/local copy honest | Full | W10 |
 | Everywhere sync | Done | **Sessions depth (W10 #584):** POST `/sync/sessions` wrapped body + mode map (pomodoro/flowtime/timeblock/stopwatch); GET `/sync/full` session pull + LWW upsert; `X-Device-ID`; 403 → Everywhere required; subscription pull. **Residual:** bidirectional task/settings sync | Full session/tasks/settings | W10 |
-| Paywall + restore | Done | Partial | Perfect copy + restore | W11 |
+| Paywall + restore | Done | **Done (W11 #585):** D1 prices + Pepinillo+ one-time badge; `CommerceResult` + `LastError`; restore purchases; Store+backend tier merge (Everywhere &gt; Plus &gt; Free); honest cancel/network/identity messages; `InitializeWithWindow` for purchase dialogs; post-purchase `IEntitlementService.ApplyStatus` so gates unlock without restart; manage-in-Store link. **Residual:** live sandbox purchase proof on Windows + Partner Center SKUs (#568); no MS Store receipt verify on backend yet | Perfect copy + restore | W11 |
 | Export CSV/PDF | Partial/Done | Missing | Done | W6 |
 | Phase notifications | Done | **Done (W9 #583):** AppNotification buttons Pause/Resume/Stop/Skip + `NotificationInvoked` → FocusViewModel | + polish | W9 |
 | Live Activity | Done | N/A → tray/mini | Excellent tray/mini | W9/W14 |
@@ -234,7 +234,7 @@ Use as acceptance for design-system work:
 - [ ] Focus page: large timer readable at a glance; mode chips; clear primary CTA
 - [ ] Tasks: scannable rows, priority/energy affordances, empty states with one action
 - [ ] Analytics: streak hero, charts readable in dark/light
-- [ ] Paywall: “Not a subscription” for Pepinillo+ crystal clear (04 monétization)
+- [x] Paywall: “Not a subscription” for Pepinillo+ crystal clear (04 monétization) — W11 #585
 - [ ] Mini timer: minimal chrome, high contrast elapsed time
 - [ ] Motion: subtle, 150–250ms, no gratuitous bounce
 - [ ] High contrast + text scale smoke documented

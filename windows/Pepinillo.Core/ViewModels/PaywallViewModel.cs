@@ -10,9 +10,10 @@ namespace Pepinillo.Core.ViewModels;
 public partial class PaywallViewModel : ObservableObject
 {
     private readonly IStoreCommerceService _commerce;
+    private readonly IEntitlementService? _entitlements;
 
     [ObservableProperty]
-    private string _currentTierLabel = "Free";
+    private string _currentTierLabel = "Current tier: Free";
 
     [ObservableProperty]
     private string _statusMessage = string.Empty;
@@ -35,35 +36,114 @@ public partial class PaywallViewModel : ObservableObject
     [ObservableProperty]
     private string _pepinilloPlusPurchaseType = ProductCatalog.PepinilloPlusPurchaseType;
 
-    public PaywallViewModel(IStoreCommerceService commerce)
+    [ObservableProperty]
+    private bool _isFreeTier = true;
+
+    /// <summary>Inverse of <see cref="IsBusy"/> for XAML IsEnabled bindings.</summary>
+    public bool CanInteract => !IsBusy;
+
+    public PaywallViewModel(
+        IStoreCommerceService commerce,
+        IEntitlementService? entitlements = null)
     {
         _commerce = commerce;
+        _entitlements = entitlements;
     }
+
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanInteract));
+        NotifyCommerceCommandsCanExecuteChanged();
+    }
+
+    private bool CanRunCommerce() => !IsBusy;
 
     public async Task LoadAsync()
     {
         try
         {
             var status = await _commerce.CheckStoreEntitlementsAsync();
-            CurrentTierLabel = "Current tier: " + status.Tier;
+            ApplyTierToUi(status);
+            NotifyEntitlements(status);
         }
         catch
         {
             CurrentTierLabel = "Current tier: Free";
+            IsFreeTier = true;
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanRunCommerce))]
     private async Task PurchasePepinilloPlusAsync()
+    {
+        await RunCommerceAsync(() => _commerce.PurchasePepinilloPlusAsync());
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunCommerce))]
+    private async Task SubscribeMonthlyAsync()
+    {
+        await RunCommerceAsync(() => _commerce.SubscribeEverywherePlusAsync(annual: false));
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunCommerce))]
+    private async Task SubscribeAnnualAsync()
+    {
+        await RunCommerceAsync(() => _commerce.SubscribeEverywherePlusAsync(annual: true));
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRunCommerce))]
+    private async Task RestorePurchasesAsync()
     {
         IsBusy = true;
         try
         {
-            var ok = await _commerce.PurchasePepinilloPlusAsync();
-            StatusMessage = ok
-                ? "Purchase flow completed (or simulated)."
-                : "Purchase unavailable (no Store identity or cancelled).";
-            await LoadAsync();
+            var status = await _commerce.RestorePurchasesAsync();
+            ApplyTierToUi(status);
+            NotifyEntitlements(status);
+
+            if (status.IsActive)
+            {
+                StatusMessage = "Purchases restored. Your plan is active.";
+            }
+            else if (!string.IsNullOrWhiteSpace(_commerce.LastError))
+            {
+                StatusMessage = _commerce.LastError!;
+            }
+            else
+            {
+                StatusMessage = "No active purchases found. You're on Free — upgrade anytime.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Restore error: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task RunCommerceAsync(Func<Task<CommerceResult>> action)
+    {
+        IsBusy = true;
+        try
+        {
+            var result = await action();
+            StatusMessage = result.Message;
+
+            if (result.Status != null)
+            {
+                ApplyTierToUi(result.Status);
+                NotifyEntitlements(result.Status);
+            }
+            else
+            {
+                var status = await _commerce.CheckStoreEntitlementsAsync();
+                ApplyTierToUi(status);
+                if (result.Success)
+                    NotifyEntitlements(status);
+            }
         }
         catch (Exception ex)
         {
@@ -75,36 +155,33 @@ public partial class PaywallViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task SubscribeMonthlyAsync()
+    private void ApplyTierToUi(SubscriptionStatus status)
     {
-        await SubscribeAsync(annual: false);
+        var source = string.IsNullOrWhiteSpace(status.SourceStore)
+            ? "local"
+            : status.SourceStore;
+        CurrentTierLabel = $"Current tier: {FormatTier(status.Tier)} · source: {source}";
+        IsFreeTier = status.Tier == EntitlementTier.Free;
     }
 
-    [RelayCommand]
-    private async Task SubscribeAnnualAsync()
+    private void NotifyEntitlements(SubscriptionStatus status)
     {
-        await SubscribeAsync(annual: true);
+        _entitlements?.ApplyStatus(status);
     }
 
-    private async Task SubscribeAsync(bool annual)
+    private void NotifyCommerceCommandsCanExecuteChanged()
     {
-        IsBusy = true;
-        try
-        {
-            var ok = await _commerce.SubscribeEverywherePlusAsync(annual);
-            StatusMessage = ok
-                ? "Subscription flow completed (or simulated)."
-                : "Subscription unavailable (no Store identity or cancelled).";
-            await LoadAsync();
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Subscription error: {ex.Message}";
-        }
-        finally
-        {
-            IsBusy = false;
-        }
+        PurchasePepinilloPlusCommand.NotifyCanExecuteChanged();
+        SubscribeMonthlyCommand.NotifyCanExecuteChanged();
+        SubscribeAnnualCommand.NotifyCanExecuteChanged();
+        RestorePurchasesCommand.NotifyCanExecuteChanged();
     }
+
+    private static string FormatTier(EntitlementTier tier) =>
+        tier switch
+        {
+            EntitlementTier.PepinilloPlus => "Pepinillo+",
+            EntitlementTier.EverywherePlus => "Everywhere / AI+",
+            _ => "Free"
+        };
 }

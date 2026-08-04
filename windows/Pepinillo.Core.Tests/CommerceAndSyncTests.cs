@@ -36,6 +36,113 @@ public class CommerceAndSyncTests
     }
 
     [Fact]
+    public async Task RestorePurchases_ReRunsEntitlementCheck_DefaultsFree()
+    {
+        var commerce = new StoreCommerceService(new FakeBackend());
+
+        var status = await commerce.RestorePurchasesAsync();
+
+        Assert.Equal(EntitlementTier.Free, status.Tier);
+        Assert.False(status.IsActive);
+        Assert.Same(status, commerce.CachedStatus);
+        Assert.Null(commerce.LastError);
+    }
+
+    [Fact]
+    public async Task RestorePurchases_UsesBackendActiveTier_WhenAuthenticated()
+    {
+        var backend = new FakeBackend
+        {
+            IsAuthenticated = true,
+            Subscription = new SubscriptionStatus
+            {
+                Tier = EntitlementTier.EverywherePlus,
+                SourceStore = "Backend"
+            }
+        };
+        var commerce = new StoreCommerceService(backend);
+
+        var status = await commerce.RestorePurchasesAsync();
+
+        Assert.Equal(EntitlementTier.EverywherePlus, status.Tier);
+        Assert.True(commerce.HasPremiumEntitlement());
+        Assert.Equal("Backend", status.SourceStore);
+    }
+
+    [Fact]
+    public void MergeStatuses_PrefersEverywhereOverPlusOverFree()
+    {
+        var free = new SubscriptionStatus { Tier = EntitlementTier.Free, SourceStore = "A" };
+        var plus = new SubscriptionStatus { Tier = EntitlementTier.PepinilloPlus, SourceStore = "Store" };
+        var everywhere = new SubscriptionStatus { Tier = EntitlementTier.EverywherePlus, SourceStore = "Backend" };
+
+        Assert.Equal(EntitlementTier.EverywherePlus, StoreCommerceService.MergeStatuses(plus, everywhere).Tier);
+        Assert.Equal(EntitlementTier.EverywherePlus, StoreCommerceService.MergeStatuses(everywhere, plus).Tier);
+        Assert.Equal(EntitlementTier.PepinilloPlus, StoreCommerceService.MergeStatuses(free, plus).Tier);
+        Assert.Equal(EntitlementTier.EverywherePlus, StoreCommerceService.MergeStatuses(free, everywhere).Tier);
+        Assert.Equal(EntitlementTier.Free, StoreCommerceService.MergeStatuses(null, null).Tier);
+    }
+
+    [Fact]
+    public async Task CorePurchase_ReturnsHonestFailure_WithoutSimulatedCopy()
+    {
+        var commerce = new StoreCommerceService(new FakeBackend());
+
+        var result = await commerce.PurchasePepinilloPlusAsync();
+
+        Assert.False(result.Success);
+        Assert.NotNull(commerce.LastError);
+        Assert.Contains("Microsoft Store", result.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("simulated", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task PaywallViewModel_Restore_UpdatesTierAndEntitlements()
+    {
+        var commerce = new FakeCommerce
+        {
+            RestoreStatus = new SubscriptionStatus
+            {
+                Tier = EntitlementTier.PepinilloPlus,
+                SourceStore = "MicrosoftStore"
+            }
+        };
+        var entitlements = new EntitlementService(commerce);
+        var vm = new PaywallViewModel(commerce, entitlements);
+
+        await vm.RestorePurchasesCommand.ExecuteAsync(null);
+
+        Assert.Contains("Pepinillo+", vm.CurrentTierLabel, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("MicrosoftStore", vm.CurrentTierLabel, StringComparison.OrdinalIgnoreCase);
+        Assert.True(entitlements.IsPremium);
+        Assert.Contains("restored", vm.StatusMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("simulated", vm.StatusMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task PaywallViewModel_Purchase_SurfacesCommerceResult_AndAppliesEntitlements()
+    {
+        var plus = new SubscriptionStatus
+        {
+            Tier = EntitlementTier.PepinilloPlus,
+            SourceStore = "MicrosoftStore"
+        };
+        var commerce = new FakeCommerce
+        {
+            PurchaseResult = CommerceResult.Ok("Purchase successful.", plus)
+        };
+        var entitlements = new EntitlementService(commerce);
+        var vm = new PaywallViewModel(commerce, entitlements);
+
+        await vm.PurchasePepinilloPlusCommand.ExecuteAsync(null);
+
+        Assert.Equal("Purchase successful.", vm.StatusMessage);
+        Assert.DoesNotContain("simulated", vm.StatusMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.True(entitlements.IsPremium);
+        Assert.Contains("Pepinillo+", vm.CurrentTierLabel, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task BackendApiClient_Login_ParsesNestedTokens()
     {
         var handler = new StubHttpHandler((request, _) =>
@@ -600,6 +707,7 @@ public class CommerceAndSyncTests
         public int? LastStatusCode { get; private set; }
         public string? LastError { get; private set; }
         public List<ServerFocusSessionDto> PullSessions { get; } = new();
+        public SubscriptionStatus Subscription { get; set; } = new() { Tier = EntitlementTier.Free };
 
         public Task InitializeAsync() => Task.CompletedTask;
 
@@ -652,6 +760,51 @@ public class CommerceAndSyncTests
             });
 
         public Task<SubscriptionStatus> GetSubscriptionStatusAsync() =>
-            Task.FromResult(new SubscriptionStatus { Tier = EntitlementTier.Free });
+            Task.FromResult(Subscription);
+    }
+
+    private sealed class FakeCommerce : IStoreCommerceService
+    {
+        public SubscriptionStatus? CachedStatus { get; private set; }
+        public string? LastError { get; set; }
+        public SubscriptionStatus RestoreStatus { get; set; } = new() { Tier = EntitlementTier.Free };
+        public CommerceResult PurchaseResult { get; set; } =
+            CommerceResult.Fail("Store purchases require the Microsoft Store install.");
+        public CommerceResult SubscribeResult { get; set; } =
+            CommerceResult.Fail("Store subscriptions require the Microsoft Store install.");
+
+        public Task<SubscriptionStatus> CheckStoreEntitlementsAsync()
+        {
+            CachedStatus ??= new SubscriptionStatus { Tier = EntitlementTier.Free, SourceStore = "MicrosoftStore" };
+            return Task.FromResult(CachedStatus);
+        }
+
+        public Task<SubscriptionStatus> RestorePurchasesAsync()
+        {
+            CachedStatus = RestoreStatus;
+            return Task.FromResult(RestoreStatus);
+        }
+
+        public Task<CommerceResult> PurchasePepinilloPlusAsync()
+        {
+            if (PurchaseResult.Status != null)
+                CachedStatus = PurchaseResult.Status;
+            LastError = PurchaseResult.Success ? null : PurchaseResult.Message;
+            return Task.FromResult(PurchaseResult);
+        }
+
+        public Task<CommerceResult> SubscribeEverywherePlusAsync(bool annual = false)
+        {
+            if (SubscribeResult.Status != null)
+                CachedStatus = SubscribeResult.Status;
+            LastError = SubscribeResult.Success ? null : SubscribeResult.Message;
+            return Task.FromResult(SubscribeResult);
+        }
+
+        public bool HasPremiumEntitlement()
+        {
+            var tier = CachedStatus?.Tier ?? EntitlementTier.Free;
+            return tier is EntitlementTier.PepinilloPlus or EntitlementTier.EverywherePlus;
+        }
     }
 }

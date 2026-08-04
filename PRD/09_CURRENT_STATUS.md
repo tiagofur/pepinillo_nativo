@@ -355,7 +355,7 @@
 - **Soundscapes (W3 #577):** EN catalog (4 free + 3 premium); packaged placeholder loop mp3s under `Assets/Soundscapes/`; `WindowsMediaPlayerService` loop + ~500ms fade; premium gate → Paywall; missing-asset status (no crash); `SoundscapeSessionCoordinator` auto-play on focus work / pause on break / stop on session end; Settings `EnableSoundscapes` + `AutoPlaySoundscapeOnFocus`; preferred track id; Focus chip “Soundscape: …”
 - **Auth (W10 #584):** PasswordVault token store; Account login/register/logout; nested token parse + refresh; register auto-sign-in when tokens present; email validation; offline vs signed-in labels; busy-disable; LastSyncAt + LastError surfaces; free/local copy: “Cloud sync needs Everywhere. Local data always works.”
 - **Sync (W10 #584):** local-first push of unsynced sessions via **wrapped** `SessionSyncRequest` (not raw array) with `FocusModeSyncMapper` + server DTO mapping; pull sessions from POST response and `GET /sync/full`; SQLite upsert LWW by elapsed; `X-Device-ID` + `LastSyncAtUtc` on UserSettings; 403 → Everywhere subscription message; subscription status pull. **Residual:** bidirectional task/settings sync
-- **Commerce:** `WindowsStoreCommerceService` (StoreContext) + free/backend fallback; Paywall uses D1 prices
+- **Commerce / Paywall (W11 #585):** `IStoreCommerceService` + `CommerceResult`/`LastError`/`RestorePurchasesAsync`; Core free default + backend merge; `WindowsStoreCommerceService` StoreContext license scan + `RequestPurchaseAsync` with `InitializeWithWindow`, honest cancel/network/identity messages; tier merge prefers Everywhere &gt; Pepinillo+ &gt; Free; Paywall restore CTA, busy disable, tier·source label, manage-in-Store link, Pepinillo+ one-time badge; post-purchase `IEntitlementService.ApplyStatus` refreshes gates. **Residual:** Partner Center SKUs / sandbox proof (#568); Windows receipt verify not on backend
 - **Localization:** `LocalizationService` EN/ES/PT for Settings + Focus primary labels
 - **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist honest status
 - **P1 desktop power v2 (W9 #583):** toast action buttons (Pause/Resume/Stop/Skip) + `NotificationInvoked`; `LaunchAtWindowsStartup` (StartupTask / HKCU Run); hotkey rebind UI + `HotkeyChordParser` + `RefreshFromSettings`; Focus Assist intent + diagnostic status (never fake OS DND)
@@ -375,7 +375,7 @@ Tracked in excellence epic **#573** / [PRD/13](13_WINDOWS_EXCELLENCE_PLAN.md):
 - Hotkey rebind, toast actions, Focus Assist real, startup → **#583** (**coded** on `feat/windows-w9-desktop-power`; WinUI smoke pending; OS Focus Assist still cannot be toggled by third-party apps)
 - Design system residual (full Fluent depth, live theme previews, selected-chip state) → **#576** follow-ups
 - Auth/sync session depth → **#584** (**coded** on `feat/windows-w10-auth-sync`; residual task/settings bi-sync; smoke on Windows pending)
-- Paywall excellence → **#585**
+- Paywall excellence → **#585** (**coded** on `feat/windows-w11-commerce`; sandbox/SKUs residual #568)
 - A11y gate → **#589**
 
 ### Pending Windows (priority bands)
