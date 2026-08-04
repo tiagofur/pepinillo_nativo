@@ -4,8 +4,8 @@ using Pepinillo.Core.Models;
 namespace Pepinillo.Core.Data;
 
 /// <summary>
-/// Local SQLite store. EnsureCreated is used at launch — it does NOT migrate existing databases.
-/// After schema changes (new columns), delete pepinillo.db from LocalFolder (or app data) so EnsureCreated can recreate.
+/// Local SQLite store. Startup applies EF Core migrations via <c>Database.MigrateAsync()</c>.
+/// Add new migrations with: <c>dotnet ef migrations add Name -p Pepinillo.Core -s Pepinillo.Core</c>
 /// </summary>
 public class PepinilloDbContext : DbContext
 {

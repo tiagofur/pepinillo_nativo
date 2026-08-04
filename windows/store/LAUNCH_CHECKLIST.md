@@ -65,7 +65,7 @@ Or download **pepinillo-windows-msix** from GitHub Actions on this branch.
 - [ ] Account login/register fails gracefully offline
 - [ ] Paywall opens; free tier works offline
 - [ ] Privacy / Terms links open browser
-- [ ] **Schema:** if upgrading old DB, delete `%LocalAppData%\...\pepinillo.db` once
+- [ ] **Schema:** app applies EF migrations on launch (`Database.MigrateAsync`). First install creates DB; schema upgrades no longer require manual delete (post-migrations PR).
 
 ### B3 Certification dry-run
 

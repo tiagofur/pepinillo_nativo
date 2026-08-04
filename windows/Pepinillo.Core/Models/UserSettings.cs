@@ -2,7 +2,7 @@ namespace Pepinillo.Core.Models;
 
 /// <summary>
 /// Application and user preferences. Stored as a single SQLite row (Id = 1).
-/// Schema note: EnsureCreated does not migrate existing DBs — delete pepinillo.db after column adds.
+/// Schema note: column changes require a new EF migration under Pepinillo.Core/Migrations.
 /// </summary>
 public class UserSettings
 {
