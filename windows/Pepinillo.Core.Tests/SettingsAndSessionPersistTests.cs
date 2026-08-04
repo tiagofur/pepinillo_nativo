@@ -46,6 +46,8 @@ public class SettingsAndSessionPersistTests
         settings.SelectedTheme = "Dark";
         settings.PreferredLanguage = "es";
         settings.TimeBlockingMinutes = 90;
+        settings.LaunchAtWindowsStartup = true;
+        settings.PlayPauseHotkey = "Ctrl+Alt+P";
         await service.SaveSettingsAsync(settings);
 
         var reload = await db.UserSettings.AsNoTracking().FirstAsync();
@@ -54,6 +56,17 @@ public class SettingsAndSessionPersistTests
         Assert.Equal("Dark", reload.SelectedTheme);
         Assert.Equal("es", reload.PreferredLanguage);
         Assert.Equal(90, reload.TimeBlockingMinutes);
+        Assert.True(reload.LaunchAtWindowsStartup);
+        Assert.Equal("Ctrl+Alt+P", reload.PlayPauseHotkey);
+    }
+
+    [Fact]
+    public async Task Settings_LaunchAtWindowsStartup_DefaultsFalse()
+    {
+        await using var db = CreateDb();
+        var service = new SettingsService(db);
+        var settings = await service.GetSettingsAsync();
+        Assert.False(settings.LaunchAtWindowsStartup);
     }
 
     [Fact]

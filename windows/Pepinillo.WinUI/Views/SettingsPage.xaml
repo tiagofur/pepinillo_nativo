@@ -165,10 +165,44 @@
                                FontWeight="SemiBold"/>
                     <ToggleSwitch Header="Sync with Focus Assist / Do Not Disturb"
                                   IsOn="{x:Bind ViewModel.Settings.EnableWindowsDoNotDisturbSync, Mode=TwoWay}"/>
+                    <TextBlock Text="{x:Bind ViewModel.FocusAssistStatus, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="WrapWholeWords"/>
+                    <HyperlinkButton Content="Open Focus Assist settings"
+                                     NavigateUri="ms-settings:quiethours"/>
                     <ToggleSwitch Header="Minimize to system tray on close"
                                   IsOn="{x:Bind ViewModel.Settings.MinimizeToSystemTrayOnClose, Mode=TwoWay}"/>
                     <ToggleSwitch Header="Toast notifications"
                                   IsOn="{x:Bind ViewModel.Settings.EnableToastNotifications, Mode=TwoWay}"/>
+                    <ToggleSwitch Header="Launch Pepinillo when Windows starts"
+                                  IsOn="{x:Bind ViewModel.Settings.LaunchAtWindowsStartup, Mode=TwoWay}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Global hotkeys"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="{x:Bind ViewModel.HotkeyHint, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="WrapWholeWords"/>
+                    <TextBox Header="Play / Pause"
+                             Text="{x:Bind ViewModel.Settings.PlayPauseHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Win+Shift+P"/>
+                    <TextBox Header="Skip break"
+                             Text="{x:Bind ViewModel.Settings.SkipHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Win+Shift+S"/>
+                    <TextBox Header="Mini timer"
+                             Text="{x:Bind ViewModel.Settings.MiniTimerHotkey, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Win+Shift+M"/>
+                    <Button Content="Reset hotkeys to defaults"
+                            Command="{x:Bind ViewModel.ResetHotkeysCommand}"
+                            HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>
 

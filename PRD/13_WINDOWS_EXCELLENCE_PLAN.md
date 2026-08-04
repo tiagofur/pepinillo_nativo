@@ -29,7 +29,7 @@ P0–P2 + packaging kit exist under `windows/`:
 | Band | Content | Status |
 | ---- | ------- | ------ |
 | P0 | DI, nav, Focus (Pomodoro/Stopwatch), Tasks, Settings, SQLite | Coded |
-| P1 | Tray, mini-timer, hotkeys, toasts, Focus Assist stub | Coded |
+| P1 | Tray, mini-timer, hotkeys, toasts, Focus Assist honest status | Coded (W9 actions/rebind/startup) |
 | P2 | Flowtime/TimeBlock, journal, analytics, soundscapes player, auth, sync, StoreContext, paywall, partial i18n | Coded |
 | P3 packaging | Logos, MSIX scripts/CI, store docs | In-repo ready |
 | Post-merge | Auth gates (#570), EF migrations (#571), Flowtime soft + partial Pomodoro (#572) | Merged |
@@ -121,7 +121,7 @@ Code gate owner: `windows/Pepinillo.Core/Services/EntitlementService.cs`.
 | **W6** | Export CSV/PDF + streak protection | **[#580](https://github.com/tiagofur/pepinillo_nativo/issues/580)** | P1 | Entitlements |
 | **W7** | First-run onboarding | **[#581](https://github.com/tiagofur/pepinillo_nativo/issues/581)** | P1 | W2 |
 | **W8** | Full EN/ES/PT localization | **[#582](https://github.com/tiagofur/pepinillo_nativo/issues/582)** | P1 | — |
-| **W9** | Desktop power v2 (Focus Assist, toast actions, startup, hotkey rebind) | **[#583](https://github.com/tiagofur/pepinillo_nativo/issues/583)** | P0 | W1 |
+| **W9** | Desktop power v2 (Focus Assist, toast actions, startup, hotkey rebind) | **[#583](https://github.com/tiagofur/pepinillo_nativo/issues/583)** — **coded** on `feat/windows-w9-desktop-power` (smoke pending) | P0 | W1 |
 | **W10** | Auth + Everywhere sync depth | **[#584](https://github.com/tiagofur/pepinillo_nativo/issues/584)** | P0 | API |
 | **W11** | Paywall + commerce excellence | **[#585](https://github.com/tiagofur/pepinillo_nativo/issues/585)** | P0 | #568 SKUs |
 | **W12** | Tasks/Plan excellence | **[#586](https://github.com/tiagofur/pepinillo_nativo/issues/586)** | P1 | W2 |
@@ -212,11 +212,11 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Everywhere sync | Done | Partial | Full session/tasks/settings | W10 |
 | Paywall + restore | Done | Partial | Perfect copy + restore | W11 |
 | Export CSV/PDF | Partial/Done | Missing | Done | W6 |
-| Phase notifications | Done | Toasts | + actions | W9 |
+| Phase notifications | Done | **Done (W9 #583):** AppNotification buttons Pause/Resume/Stop/Skip + `NotificationInvoked` → FocusViewModel | + polish | W9 |
 | Live Activity | Done | N/A → tray/mini | Excellent tray/mini | W9/W14 |
-| Focus Assist / DND | Mobile APIs | Stub | Best-effort real | W9 |
-| Startup with OS | N/A phone | Missing | Done | W9 |
-| Hotkey rebind | N/A | Missing | Done | W9 |
+| Focus Assist / DND | Mobile APIs | **Honest best-effort (W9 #583):** intent tracking + `FocusAssistStatus`; no fake “DND on”; optional Settings link `ms-settings:quiethours` | Best-effort real | W9 |
+| Startup with OS | N/A phone | **Done (W9 #583):** `LaunchAtWindowsStartup` + StartupTask (MSIX) / HKCU Run fallback (unpackaged) | Done | W9 |
+| Hotkey rebind | N/A | **Done (W9 #583):** Settings TextBoxes + validate via `HotkeyChordParser` + reset defaults + `RefreshFromSettings` | Done | W9 |
 | Calendar grid | Partial | Missing | Desktop advantage | W13 |
 | Multi-monitor mini | N/A | Missing | Stretch excellence | W14 |
 | A11y / keyboard | Varies | Partial | Excellent | W15 |

@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pepinillo.Core.Models;
 using Pepinillo.Core.Services;
+using Pepinillo.Core.Utilities;
 
 namespace Pepinillo.Core.ViewModels;
 
@@ -13,6 +14,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
     private readonly ILocalizationService? _localizer;
     private readonly IEntitlementService? _entitlements;
+    private readonly IFocusAssistService? _focusAssist;
     private bool _suppressThemeIndexChange;
 
     /// <summary>
@@ -83,6 +85,15 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _paywallFeatureHint = string.Empty;
 
+    /// <summary>Honest Focus Assist / DND diagnostic from the platform service.</summary>
+    [ObservableProperty]
+    private string _focusAssistStatus = string.Empty;
+
+    /// <summary>Validation / OS note under hotkey editors.</summary>
+    [ObservableProperty]
+    private string _hotkeyHint =
+        "If a hotkey does nothing, another app may own the chord (e.g. PowerToys).";
+
     public string[] LanguageOptions { get; } = { "en", "es", "pt" };
 
     /// <summary>Theme picker options (System, Light, Dark, Forest, Ocean, Sunset).</summary>
@@ -91,11 +102,13 @@ public partial class SettingsViewModel : ObservableObject
     public SettingsViewModel(
         ISettingsService settingsService,
         ILocalizationService? localizer = null,
-        IEntitlementService? entitlements = null)
+        IEntitlementService? entitlements = null,
+        IFocusAssistService? focusAssist = null)
     {
         _settingsService = settingsService;
         _localizer = localizer;
         _entitlements = entitlements;
+        _focusAssist = focusAssist;
     }
 
     public async Task LoadAsync()
@@ -122,6 +135,8 @@ public partial class SettingsViewModel : ObservableObject
             ApplyLocalizedLabels();
             StatusMessage = string.Empty;
             PaywallFeatureHint = string.Empty;
+            FocusAssistStatus = _focusAssist?.FocusAssistStatus
+                ?? "Focus Assist: status unavailable";
         }
         finally
         {
@@ -142,6 +157,12 @@ public partial class SettingsViewModel : ObservableObject
                 return;
             }
 
+            if (!TryNormalizeHotkeys(out var hotkeyError))
+            {
+                StatusMessage = hotkeyError;
+                return;
+            }
+
             Settings.SelectedTheme = theme;
             Settings.PreferredLanguage = IndexToLanguage(SelectedLanguageIndex);
             await _settingsService.SaveSettingsAsync(Settings);
@@ -149,6 +170,8 @@ public partial class SettingsViewModel : ObservableObject
             ApplyLocalizedLabels();
             StatusMessage = _localizer?.GetString("Settings.Saved") ?? "Settings saved";
             PaywallFeatureHint = string.Empty;
+            FocusAssistStatus = _focusAssist?.FocusAssistStatus
+                ?? FocusAssistStatus;
             SettingsSaved?.Invoke(this, Settings);
         }
         catch (Exception ex)
@@ -159,6 +182,57 @@ public partial class SettingsViewModel : ObservableObject
         {
             IsBusy = false;
         }
+    }
+
+    [RelayCommand]
+    private void ResetHotkeys()
+    {
+        Settings.PlayPauseHotkey = HotkeyChordParser.DefaultPlayPause;
+        Settings.SkipHotkey = HotkeyChordParser.DefaultSkip;
+        Settings.MiniTimerHotkey = HotkeyChordParser.DefaultMiniTimer;
+        OnPropertyChanged(nameof(Settings));
+        StatusMessage = "Hotkeys reset to defaults (save to apply).";
+    }
+
+    /// <summary>
+    /// Validates and normalizes hotkey strings. Returns false with a message on invalid input.
+    /// </summary>
+    private bool TryNormalizeHotkeys(out string error)
+    {
+        error = string.Empty;
+
+        if (!HotkeyChordParser.TryParse(Settings.PlayPauseHotkey, out var play))
+        {
+            error = "Play/Pause hotkey is invalid. Use e.g. Win+Shift+P.";
+            return false;
+        }
+
+        if (!HotkeyChordParser.TryParse(Settings.SkipHotkey, out var skip))
+        {
+            error = "Skip hotkey is invalid. Use e.g. Win+Shift+S.";
+            return false;
+        }
+
+        if (!HotkeyChordParser.TryParse(Settings.MiniTimerHotkey, out var mini))
+        {
+            error = "Mini timer hotkey is invalid. Use e.g. Win+Shift+M.";
+            return false;
+        }
+
+        Settings.PlayPauseHotkey = play.Format();
+        Settings.SkipHotkey = skip.Format();
+        Settings.MiniTimerHotkey = mini.Format();
+
+        // Soft collision check (same chord on two slots).
+        if (string.Equals(Settings.PlayPauseHotkey, Settings.SkipHotkey, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Settings.PlayPauseHotkey, Settings.MiniTimerHotkey, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Settings.SkipHotkey, Settings.MiniTimerHotkey, StringComparison.OrdinalIgnoreCase))
+        {
+            error = "Hotkeys must be unique across Play/Pause, Skip, and Mini timer.";
+            return false;
+        }
+
+        return true;
     }
 
     [RelayCommand]

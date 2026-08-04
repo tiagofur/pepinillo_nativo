@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Pepinillo.Core.Services;
+using Pepinillo.Core.Utilities;
 using Pepinillo.Core.ViewModels;
 using WinRT.Interop;
 
@@ -134,58 +135,23 @@ public sealed class GlobalHotkeyService : IGlobalHotkeyService
     }
 
     /// <summary>
-    /// Parses simple chords like "Win+Shift+P". Falls back to <paramref name="fallback"/> on failure.
-    /// Rebind UI is deferred; fixed defaults remain valid.
+    /// Maps a settings chord string to Win32 modifiers + VK via <see cref="HotkeyChordParser"/>.
+    /// Falls back to <paramref name="fallback"/> on failure.
     /// </summary>
     internal static (uint modifiers, uint vk) ParseHotkeyOrDefault(
         string? text,
         (uint modifiers, uint vk) fallback)
     {
-        if (string.IsNullOrWhiteSpace(text))
+        if (!HotkeyChordParser.TryParse(text, out var chord))
             return fallback;
 
         uint mods = NativeMethods.MOD_NOREPEAT;
-        uint vk = 0;
-        var parts = text.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (chord.Win) mods |= NativeMethods.MOD_WIN;
+        if (chord.Shift) mods |= NativeMethods.MOD_SHIFT;
+        if (chord.Ctrl) mods |= NativeMethods.MOD_CONTROL;
+        if (chord.Alt) mods |= NativeMethods.MOD_ALT;
 
-        foreach (var part in parts)
-        {
-            switch (part.ToLowerInvariant())
-            {
-                case "win":
-                case "windows":
-                case "meta":
-                    mods |= NativeMethods.MOD_WIN;
-                    break;
-                case "shift":
-                    mods |= NativeMethods.MOD_SHIFT;
-                    break;
-                case "ctrl":
-                case "control":
-                    mods |= NativeMethods.MOD_CONTROL;
-                    break;
-                case "alt":
-                    mods |= NativeMethods.MOD_ALT;
-                    break;
-                default:
-                    if (part.Length == 1)
-                    {
-                        var ch = char.ToUpperInvariant(part[0]);
-                        if (ch is >= 'A' and <= 'Z' or >= '0' and <= '9')
-                            vk = ch;
-                    }
-                    break;
-            }
-        }
-
-        if (vk == 0)
-            return fallback;
-
-        // Require at least one non-repeat modifier beyond NOREPEAT.
-        if ((mods & ~NativeMethods.MOD_NOREPEAT) == 0)
-            return fallback;
-
-        return (mods, vk);
+        return (mods, chord.Key);
     }
 
     private void UnregisterAll()
