@@ -71,6 +71,41 @@ public class SettingsAndSessionPersistTests
     }
 
     [Fact]
+    public async Task Settings_MiniTimerBounds_DefaultNull_AndRoundTrip()
+    {
+        await using var db = CreateDb();
+        var service = new SettingsService(db);
+
+        var settings = await service.GetSettingsAsync();
+        Assert.Null(settings.MiniTimerX);
+        Assert.Null(settings.MiniTimerY);
+        Assert.Null(settings.MiniTimerWidth);
+        Assert.Null(settings.MiniTimerHeight);
+
+        settings.MiniTimerX = 1200;
+        settings.MiniTimerY = 80;
+        settings.MiniTimerWidth = 320;
+        settings.MiniTimerHeight = 120;
+        await service.SaveSettingsAsync(settings);
+
+        var reload = await db.UserSettings.AsNoTracking().FirstAsync();
+        Assert.Equal(1200, reload.MiniTimerX);
+        Assert.Equal(80, reload.MiniTimerY);
+        Assert.Equal(320, reload.MiniTimerWidth);
+        Assert.Equal(120, reload.MiniTimerHeight);
+
+        // Second save through cache path (same instance reference).
+        var again = await service.GetSettingsAsync();
+        again.MiniTimerX = -100;
+        again.MiniTimerY = 40;
+        await service.SaveSettingsAsync(again);
+
+        var reload2 = await db.UserSettings.AsNoTracking().FirstAsync();
+        Assert.Equal(-100, reload2.MiniTimerX);
+        Assert.Equal(40, reload2.MiniTimerY);
+    }
+
+    [Fact]
     public async Task FocusSession_Save_ShouldPersistCompletedSession()
     {
         await using var db = CreateDb();

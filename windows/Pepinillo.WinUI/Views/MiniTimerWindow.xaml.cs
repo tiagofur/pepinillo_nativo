@@ -3,12 +3,14 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Pepinillo.Core.Models;
+using Pepinillo.Core.Utilities;
 using Pepinillo.Core.ViewModels;
 
 namespace Pepinillo.WinUI.Views;
 
 /// <summary>
 /// Compact Overlay (or small floating) mini timer synchronized with <see cref="FocusViewModel"/>.
+/// Placement restore/save is owned by <c>MiniTimerController</c> (W14 multi-monitor).
 /// </summary>
 public sealed partial class MiniTimerWindow : Window
 {
@@ -51,7 +53,17 @@ public sealed partial class MiniTimerWindow : Window
             }
         }
 
-        appWindow.Resize(new Windows.Graphics.SizeInt32(320, 120));
+        // Default size; controller may override with persisted bounds.
+        try
+        {
+            appWindow.Resize(new Windows.Graphics.SizeInt32(
+                MiniTimerPlacement.DefaultWidth,
+                MiniTimerPlacement.DefaultHeight));
+        }
+        catch
+        {
+            // Never crash on presenter/size setup.
+        }
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

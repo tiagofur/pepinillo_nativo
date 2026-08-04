@@ -145,7 +145,9 @@ public sealed class TrayIconService : ITrayIconService
     {
         if (e.PropertyName is nameof(FocusViewModel.FormattedTime)
             or nameof(FocusViewModel.StatusLabel)
-            or nameof(FocusViewModel.CurrentState))
+            or nameof(FocusViewModel.ActiveTaskTitle)
+            or nameof(FocusViewModel.CurrentState)
+            or null)
         {
             RunOnUi(UpdateTooltip);
         }
@@ -156,8 +158,38 @@ public sealed class TrayIconService : ITrayIconService
         if (_trayIcon == null)
             return;
 
-        _trayIcon.ToolTipText =
-            $"Pepinillo · {_focusViewModel.StatusLabel} · {_focusViewModel.FormattedTime}";
+        try
+        {
+            _trayIcon.ToolTipText = BuildTooltipText(
+                _focusViewModel.StatusLabel,
+                _focusViewModel.FormattedTime,
+                _focusViewModel.ActiveTaskTitle);
+        }
+        catch
+        {
+            // Tooltip updates must never throw from property-change handlers.
+        }
+    }
+
+    /// <summary>
+    /// Builds a tray tooltip: status · mm:ss · task (truncated for OS limits).
+    /// </summary>
+    internal static string BuildTooltipText(string? status, string? formattedTime, string? taskTitle)
+    {
+        var statusPart = string.IsNullOrWhiteSpace(status) ? "Pepinillo" : status.Trim();
+        var timePart = string.IsNullOrWhiteSpace(formattedTime) ? "--:--" : formattedTime.Trim();
+        var taskPart = string.IsNullOrWhiteSpace(taskTitle) ? null : taskTitle.Trim();
+
+        var text = taskPart == null
+            ? $"{statusPart} · {timePart}"
+            : $"{statusPart} · {timePart} · {taskPart}";
+
+        // Windows tray tooltip practical limit is ~127 characters.
+        const int maxLen = 120;
+        if (text.Length <= maxLen)
+            return text;
+
+        return text[..(maxLen - 1)] + "…";
     }
 
     private static GeneratedIconSource CreateGeneratedIcon()

@@ -41,6 +41,18 @@ public class UserSettings
     public bool UseMicaBackdrop { get; set; } = true;
     public bool CompactMiniTimerAlwaysOnTop { get; set; } = true;
 
+    /// <summary>Last mini-timer window X (device-independent pixels). Null = use system default.</summary>
+    public int? MiniTimerX { get; set; }
+
+    /// <summary>Last mini-timer window Y (device-independent pixels). Null = use system default.</summary>
+    public int? MiniTimerY { get; set; }
+
+    /// <summary>Last mini-timer width. Null = default 320.</summary>
+    public int? MiniTimerWidth { get; set; }
+
+    /// <summary>Last mini-timer height. Null = default 120.</summary>
+    public int? MiniTimerHeight { get; set; }
+
     // Global hotkeys (rebindable in Settings; see HotkeyChordParser)
     public string PlayPauseHotkey { get; set; } = "Win+Shift+P";
     public string SkipHotkey { get; set; } = "Win+Shift+S";

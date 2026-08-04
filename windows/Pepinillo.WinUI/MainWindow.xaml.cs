@@ -36,6 +36,16 @@ public sealed partial class MainWindow : Window
             ExitOnboardingMode();
 
         NavigateToTag(showOnboarding ? "Onboarding" : "Focus");
+
+        // Flush cold-start Jump List args after the onboarding/Focus gate (W14).
+        try
+        {
+            App.Services.GetRequiredService<Services.JumpListService>().NotifyShellReady();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Jump List shell-ready: {ex.Message}");
+        }
     }
 
     private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
