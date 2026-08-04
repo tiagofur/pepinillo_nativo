@@ -1,3 +1,4 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -14,6 +15,9 @@ public partial class AnalyticsViewModel : ObservableObject
     private int _todayFocusMinutes;
 
     [ObservableProperty]
+    private double _sevenDayFocusHours;
+
+    [ObservableProperty]
     private int _weeklyFocusHours;
 
     [ObservableProperty]
@@ -24,10 +28,13 @@ public partial class AnalyticsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _aiReportSummary =
-        "Complete focus sessions to unlock personalized insights. Full AI reports are part of Pepinillo+.";
+        "Complete focus sessions to unlock personalized insights. Full AI reports are part of Everywhere/AI+.";
 
     [ObservableProperty]
     private ObservableCollection<FocusSession> _recentSessions = new();
+
+    [ObservableProperty]
+    private ObservableCollection<ModeBreakdownItem> _modeBreakdown = new();
 
     public AnalyticsViewModel(IFocusSessionService sessionService)
     {
@@ -36,14 +43,34 @@ public partial class AnalyticsViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
-        TodayFocusMinutes = await _sessionService.GetTodayFocusMinutesAsync();
-        var recent = await _sessionService.GetRecentSessionsAsync(10);
+        var utcNow = DateTime.UtcNow;
+        var today = utcNow.Date;
+        var weekStart = today.AddDays(-6);
+
+        TodayFocusMinutes = await _sessionService.GetTodayFocusMinutesAsync(utcNow);
+        var sevenDaySeconds = await _sessionService.GetTotalFocusSecondsAsync(weekStart, today.AddDays(1));
+        SevenDayFocusHours = Math.Round(sevenDaySeconds / 3600.0, 1);
+        WeeklyFocusHours = (int)Math.Floor(SevenDayFocusHours);
+
+        var (current, best) = await _sessionService.GetStreaksAsync(today);
+        CurrentStreakDays = current;
+        BestStreakDays = best;
+
+        var breakdown = await _sessionService.GetModeBreakdownAsync(weekStart, today.AddDays(1));
+        ModeBreakdown = new ObservableCollection<ModeBreakdownItem>(breakdown);
+
+        var recent = await _sessionService.GetRecentSessionsAsync(15);
         RecentSessions = new ObservableCollection<FocusSession>(recent);
 
-        // Weekly hours / streaks are approximate for P0 (real analytics in P2).
-        var totalSeconds = 0;
-        foreach (var s in recent)
-            totalSeconds += s.ElapsedSeconds;
-        WeeklyFocusHours = totalSeconds / 3600;
+        AiReportSummary = BuildInsightSummary();
+    }
+
+    private string BuildInsightSummary()
+    {
+        if (TodayFocusMinutes <= 0 && SevenDayFocusHours <= 0)
+            return "Complete focus sessions to unlock personalized insights. Full AI reports are part of Everywhere/AI+.";
+
+        return $"Last 7 days: {SevenDayFocusHours:0.#}h focus · Streak {CurrentStreakDays}d (best {BestStreakDays}d). " +
+               "AI narrative reports unlock with Everywhere/AI+.";
     }
 }

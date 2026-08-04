@@ -10,6 +10,7 @@ namespace Pepinillo.Core.ViewModels;
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly ISettingsService _settingsService;
+    private readonly ILocalizationService? _localizer;
 
     /// <summary>
     /// Raised after settings are saved so the shell can apply theme / OS intent flags.
@@ -28,9 +29,54 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private int _selectedThemeIndex;
 
-    public SettingsViewModel(ISettingsService settingsService)
+    [ObservableProperty]
+    private int _selectedLanguageIndex;
+
+    [ObservableProperty]
+    private string _titleLabel = "Settings";
+
+    [ObservableProperty]
+    private string _timerDurationsLabel = "Timer durations";
+
+    [ObservableProperty]
+    private string _pomodoroFocusLabel = "Pomodoro focus (minutes)";
+
+    [ObservableProperty]
+    private string _shortBreakLabel = "Short break (minutes)";
+
+    [ObservableProperty]
+    private string _longBreakLabel = "Long break (minutes)";
+
+    [ObservableProperty]
+    private string _autoStartBreaksLabel = "Auto-start breaks";
+
+    [ObservableProperty]
+    private string _autoStartFocusLabel = "Auto-start next focus after break";
+
+    [ObservableProperty]
+    private string _appearanceLabel = "Appearance";
+
+    [ObservableProperty]
+    private string _saveLabel = "Save settings";
+
+    [ObservableProperty]
+    private string _languageLabel = "Language";
+
+    [ObservableProperty]
+    private string _privacyLabel = "Privacy policy";
+
+    [ObservableProperty]
+    private string _termsLabel = "Terms of use";
+
+    [ObservableProperty]
+    private string _upgradeLabel = "Upgrade";
+
+    public string[] LanguageOptions { get; } = { "en", "es", "pt" };
+
+    public SettingsViewModel(ISettingsService settingsService, ILocalizationService? localizer = null)
     {
         _settingsService = settingsService;
+        _localizer = localizer;
     }
 
     public async Task LoadAsync()
@@ -40,6 +86,9 @@ public partial class SettingsViewModel : ObservableObject
         {
             Settings = await _settingsService.GetSettingsAsync();
             SelectedThemeIndex = ThemeToIndex(Settings.SelectedTheme);
+            SelectedLanguageIndex = LanguageToIndex(Settings.PreferredLanguage);
+            _localizer?.SetLanguage(Settings.PreferredLanguage);
+            ApplyLocalizedLabels();
             StatusMessage = string.Empty;
         }
         finally
@@ -55,8 +104,11 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             Settings.SelectedTheme = IndexToTheme(SelectedThemeIndex);
+            Settings.PreferredLanguage = IndexToLanguage(SelectedLanguageIndex);
             await _settingsService.SaveSettingsAsync(Settings);
-            StatusMessage = "Settings saved";
+            _localizer?.SetLanguage(Settings.PreferredLanguage);
+            ApplyLocalizedLabels();
+            StatusMessage = _localizer?.GetString("Settings.Saved") ?? "Settings saved";
             SettingsSaved?.Invoke(this, Settings);
         }
         catch (Exception ex)
@@ -86,6 +138,29 @@ public partial class SettingsViewModel : ObservableObject
         Settings.SelectedTheme = IndexToTheme(value);
     }
 
+    partial void OnSelectedLanguageIndexChanged(int value)
+    {
+        Settings.PreferredLanguage = IndexToLanguage(value);
+    }
+
+    private void ApplyLocalizedLabels()
+    {
+        if (_localizer == null) return;
+        TitleLabel = _localizer.GetString("Settings.Title");
+        TimerDurationsLabel = _localizer.GetString("Settings.TimerDurations");
+        PomodoroFocusLabel = _localizer.GetString("Settings.PomodoroFocus");
+        ShortBreakLabel = _localizer.GetString("Settings.ShortBreak");
+        LongBreakLabel = _localizer.GetString("Settings.LongBreak");
+        AutoStartBreaksLabel = _localizer.GetString("Settings.AutoStartBreaks");
+        AutoStartFocusLabel = _localizer.GetString("Settings.AutoStartFocus");
+        AppearanceLabel = _localizer.GetString("Settings.Appearance");
+        SaveLabel = _localizer.GetString("Settings.Save");
+        LanguageLabel = _localizer.GetString("Settings.Language");
+        PrivacyLabel = _localizer.GetString("Settings.Privacy");
+        TermsLabel = _localizer.GetString("Settings.Terms");
+        UpgradeLabel = _localizer.GetString("Settings.Upgrade");
+    }
+
     private static int ThemeToIndex(string theme) => theme switch
     {
         "Dark" => 1,
@@ -104,5 +179,19 @@ public partial class SettingsViewModel : ObservableObject
         4 => "Ocean",
         5 => "OLEDBlack",
         _ => "System"
+    };
+
+    private static int LanguageToIndex(string lang) => lang switch
+    {
+        "es" => 1,
+        "pt" => 2,
+        _ => 0
+    };
+
+    private static string IndexToLanguage(int index) => index switch
+    {
+        1 => "es",
+        2 => "pt",
+        _ => "en"
     };
 }

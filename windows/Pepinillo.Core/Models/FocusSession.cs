@@ -12,7 +12,7 @@ public class FocusSession
     public FocusMode Mode { get; set; } = FocusMode.Pomodoro;
 
     /// <summary>
-    /// Target target duration in seconds for timed modes.
+    /// Target duration in seconds for timed modes.
     /// </summary>
     public int TargetDurationSeconds { get; set; } = 1500; // 25 min default
 
@@ -33,4 +33,14 @@ public class FocusSession
     public bool IsCompleted { get; set; }
 
     public bool IsSynced { get; set; }
+
+    /// <summary>
+    /// Optional post-session journal note (reflection).
+    /// </summary>
+    public string? JournalNote { get; set; }
+
+    /// <summary>
+    /// Optional energy/feeling rating after the session (1–5).
+    /// </summary>
+    public int? EnergyRating { get; set; }
 }

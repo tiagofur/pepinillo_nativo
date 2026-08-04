@@ -2,7 +2,7 @@
 
 **Version:** 1.1  
 **Date:** 2026-08-03  
-**Status:** P0+P1 coded — WinUI smoke pending on Windows; next P2  
+**Status:** P0–P2 coded — WinUI smoke pending on Windows; next P3 Store ship  
 **Author:** Tiago David + AI Pairing Assistant  
 **Target Platform:** Windows 10 (19041+) & Windows 11 (x64 / ARM64) via Microsoft Store  
 **Framework:** C# / WinUI 3 (Windows App SDK 1.6+)  
@@ -176,7 +176,8 @@ Pepinillo Windows enforces the exact same 3-tier commercial model defined in [04
 | Solution scaffold (`windows/`) | Present — Core + WinUI + tests + CI build |
 | Phase 1 / P0 | **Coded:** DI, nav, FocusPage, Pomodoro/Stopwatch cycles, session + settings persist, tasks UX, theme |
 | Phase 3 / P1 | **Coded:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort |
+| Phase 4–5 / P2 | **Coded:** Flowtime/TimeBlock, journaling, tasks depth, analytics, soundscapes player, auth/token store, sync, StoreContext + paywall, EN/ES/PT foundation, privacy/terms |
 | Microsoft Store readiness | Not ready (placeholder identity, missing Store logos, no pack/sign) |
 | Detailed execution | See **[12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)** |
 
-**Next engineering step:** smoke on Windows (P0 §4.3 + P1 tray/mini/hotkeys/toasts), then **P2** (analytics depth, soundscapes, auth/sync, Store IAP path).
+**Next engineering step:** smoke on Windows (P0–P2 paths), add real soundscape assets, resolve D1 pricing, then **P3** (MSIX/Store listing/cert).

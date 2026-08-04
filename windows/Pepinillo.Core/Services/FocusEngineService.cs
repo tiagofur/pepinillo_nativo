@@ -5,7 +5,8 @@ using Pepinillo.Core.Models;
 namespace Pepinillo.Core.Services;
 
 /// <summary>
-/// Local focus timer engine. Handles Pomodoro work/break cycles and stopwatch.
+/// Local focus timer engine. Pomodoro work/break cycles, Stopwatch, Flowtime soft target,
+/// and Time Blocking fixed duration (no auto-break).
 /// Session persistence is the caller's responsibility via <see cref="SessionCompleted"/>.
 /// </summary>
 public class FocusEngineService : IFocusEngineService, IDisposable
@@ -157,6 +158,7 @@ public class FocusEngineService : IFocusEngineService, IDisposable
         ElapsedSeconds = 0;
         PrepareNextWorkSession();
 
+        // Auto-start next focus only for Pomodoro cycle.
         if (_autoStartFocus && CurrentMode == FocusMode.Pomodoro)
         {
             CurrentState = SessionState.Running;
@@ -172,17 +174,20 @@ public class FocusEngineService : IFocusEngineService, IDisposable
     {
         _timer.Stop();
 
-        // Stopwatch stop with progress counts as a completed session.
+        // Hybrid complete: Stopwatch always; Flowtime/TimeBlocking when user stops with progress.
         if (!cancel
-            && CurrentMode == FocusMode.Stopwatch
+            && !_inBreak
             && ElapsedSeconds > 0
             && CurrentSession != null
-            && !_inBreak)
+            && CurrentMode is FocusMode.Stopwatch or FocusMode.Flowtime or FocusMode.TimeBlocking)
         {
-            CurrentSession.ElapsedSeconds = ElapsedSeconds;
-            CurrentSession.CompletedAt = DateTime.UtcNow;
-            CurrentSession.IsCompleted = true;
-            SessionCompleted?.Invoke(this, CurrentSession);
+            CompleteCurrentWorkSession(fireCompleted: true, markEngineCompleted: false);
+            ElapsedSeconds = 0;
+            _inBreak = false;
+            CurrentSession = null;
+            TargetDurationSeconds = _workDurationSeconds;
+            CurrentState = SessionState.Idle;
+            return;
         }
 
         ElapsedSeconds = 0;
@@ -213,25 +218,33 @@ public class FocusEngineService : IFocusEngineService, IDisposable
 
     private void CompleteWorkPhase()
     {
-        if (CurrentSession != null)
-        {
-            CurrentSession.ElapsedSeconds = ElapsedSeconds;
-            CurrentSession.CompletedAt = DateTime.UtcNow;
-            CurrentSession.IsCompleted = true;
-            SessionCompleted?.Invoke(this, CurrentSession);
-        }
-
+        CompleteCurrentWorkSession(fireCompleted: true, markEngineCompleted: true);
         CompletedFocusCount++;
 
+        // Only Pomodoro enters an automatic break cycle.
         if (CurrentMode == FocusMode.Pomodoro)
         {
             EnterBreakPhase();
             return;
         }
 
+        // Flowtime / TimeBlocking: session done, no auto-break.
         CurrentSession = null;
         ElapsedSeconds = 0;
         CurrentState = SessionState.Completed;
+    }
+
+    private void CompleteCurrentWorkSession(bool fireCompleted, bool markEngineCompleted)
+    {
+        if (CurrentSession == null)
+            return;
+
+        CurrentSession.ElapsedSeconds = ElapsedSeconds;
+        CurrentSession.CompletedAt = DateTime.UtcNow;
+        CurrentSession.IsCompleted = true;
+        if (fireCompleted)
+            SessionCompleted?.Invoke(this, CurrentSession);
+        _ = markEngineCompleted;
     }
 
     private void EnterBreakPhase()

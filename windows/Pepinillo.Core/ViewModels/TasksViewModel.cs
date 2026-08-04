@@ -22,6 +22,15 @@ public partial class TasksViewModel : ObservableObject
     private int _newTaskEstimateMinutes = 25;
 
     [ObservableProperty]
+    private int _newTaskPriority;
+
+    [ObservableProperty]
+    private string _newTaskEnergy = string.Empty;
+
+    [ObservableProperty]
+    private string _newTaskRecurrence = "None";
+
+    [ObservableProperty]
     private DateTimeOffset? _newTaskDueDate;
 
     [ObservableProperty]
@@ -38,6 +47,10 @@ public partial class TasksViewModel : ObservableObject
 
     [ObservableProperty]
     private TaskItem? _subtaskParent;
+
+    public string[] EnergyOptions { get; } = { "", "deep", "shallow", "admin" };
+    public string[] RecurrenceOptions { get; } = { "None", "FREQ=DAILY", "FREQ=WEEKLY" };
+    public int[] PriorityOptions { get; } = { 0, 1, 2, 3 };
 
     public TasksViewModel(ITaskService taskService)
     {
@@ -58,7 +71,6 @@ public partial class TasksViewModel : ObservableObject
                 _ => await _taskService.GetAllTasksAsync()
             };
 
-            // Inbox/Today should show root tasks; still include subtasks navigation.
             Tasks = new ObservableCollection<TaskItem>(taskList);
             IsEmpty = Tasks.Count == 0;
         }
@@ -85,9 +97,15 @@ public partial class TasksViewModel : ObservableObject
         await _taskService.CreateTaskAsync(
             title: NewTaskTitle,
             estimatedMinutes: NewTaskEstimateMinutes,
-            dueDate: dueDate);
+            dueDate: dueDate,
+            priority: NewTaskPriority,
+            energyLevel: NewTaskEnergy,
+            recurrenceRule: NewTaskRecurrence);
 
         NewTaskTitle = string.Empty;
+        NewTaskPriority = 0;
+        NewTaskEnergy = string.Empty;
+        NewTaskRecurrence = "None";
         await LoadTasksAsync();
     }
 

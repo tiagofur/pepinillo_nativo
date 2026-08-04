@@ -1,0 +1,59 @@
+<Page
+    x:Class="Pepinillo.WinUI.Views.AccountPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Margin="32">
+        <StackPanel Spacing="20" MaxWidth="520" HorizontalAlignment="Left">
+            <TextBlock Text="Account"
+                       Style="{ThemeResource TitleTextBlockStyle}"
+                       FontWeight="Bold"/>
+            <TextBlock Text="Sign in to sync sessions and subscription status. Local focus data always works offline."
+                       Style="{ThemeResource BodyTextBlockStyle}"
+                       TextWrapping="Wrap"
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBox Header="Email"
+                             Text="{x:Bind ViewModel.Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="you@example.com"
+                             InputScope="EmailNameOrAddress"/>
+                    <PasswordBox x:Name="PasswordBox"
+                                 Header="Password"
+                                 PlaceholderText="Password"
+                                 PasswordChanged="PasswordBox_PasswordChanged"/>
+                    <TextBox Header="Display name (register)"
+                             Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             PlaceholderText="Optional"/>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Sign in"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Command="{x:Bind ViewModel.LoginCommand}"/>
+                        <Button Content="Create account"
+                                Command="{x:Bind ViewModel.RegisterCommand}"/>
+                        <Button Content="Sign out"
+                                Command="{x:Bind ViewModel.LogoutCommand}"/>
+                    </StackPanel>
+
+                    <Button Content="Sync now"
+                            Command="{x:Bind ViewModel.SyncNowCommand}"
+                            HorizontalAlignment="Left"/>
+
+                    <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"/>
+                    <TextBlock Text="{x:Bind ViewModel.SyncStatus, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

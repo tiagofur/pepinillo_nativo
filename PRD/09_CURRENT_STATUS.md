@@ -16,7 +16,7 @@
 | watchOS         | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included      | Requires Xcode setup |
 | Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
 | Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |
-| Windows (desktop) | **P0+P1 coded** (shell + tray, mini-timer, hotkeys, toasts, Focus Assist best-effort); WinUI smoke pending on Windows; **not Store-ready** | ~80+ C#/XAML | ~4K+ | CI: Core tests 16/16; x64/ARM64 build; no MSIX pack |
+| Windows (desktop) | **P0–P2 coded** (shell + desktop power + parity/auth/sync/commerce path); WinUI smoke pending on Windows; **not Store-ready** | ~100+ C#/XAML | ~6K+ | CI: Core tests 32/32; x64/ARM64 build; no MSIX pack |
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
 
 **Windows tracking docs:** product PRD [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · execution plan [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
@@ -334,34 +334,36 @@
 
 ---
 
-## 3b. Windows — P0 Shell + P1 Desktop Power (2026-08-04)
+## 3b. Windows — P0–P2 (2026-08-04)
 
 **Stack:** C# / WinUI 3 / Windows App SDK 1.6 / .NET 9 / EF Core SQLite / MSIX tooling  
 **Path:** `windows/` (`Pepinillo.Core`, `Pepinillo.WinUI`, `Pepinillo.Core.Tests`)  
 **Docs:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
 
-### Present (P0 + P1 coded)
+### Present (P0 + P1 + P2 coded)
 
-- **DI composition root** (`App` + `AddPepinilloCore` + WinUI desktop service overrides)
-- **NavigationView → Frame:** Focus, Tasks, Analytics, Soundscapes (placeholder), Settings
-- **SQLite** under local app data (`EnsureCreated`); `UserSettings` row + sessions + tasks
-- **FocusPage** + engine: Pomodoro work→break, Stopwatch, pause/resume/skip, session persist, optional task link
-- **Tasks:** Today/Upcoming/Inbox/All filters, add/complete/delete, subtasks, empty state
-- **Settings** persistence + Light/Dark/System theme apply
-- Analytics page bound to session aggregates (basic)
-- **P1.1 System tray** (`H.NotifyIcon`): Start/Pause, Skip, Show window, Mini timer, Exit; minimize-to-tray on close
-- **P1.2 Mini timer** Compact Overlay; open from Focus / tray / `Win+Shift+M`; syncs time/status/task
-- **P1.3 Global hotkeys** `Win+Shift+P/S/M` (RegisterHotKey; conflict-tolerant)
-- **P1.4 Toasts** `ToastNotificationService` → AppNotification; session complete / break start/end; gated
-- **P1.5 Focus Assist** `IFocusAssistService` wired on Running/stop; best-effort silent no-op (no stable public OS toggle)
-- Core unit tests: **16/16** green
-- Backend HTTP / Store commerce stubs remain (P2)
+- **DI composition root** (`App` + `AddPepinilloCore` + WinUI desktop/service overrides)
+- **NavigationView → Frame:** Focus, Tasks, Analytics, Soundscapes, Account, Upgrade/Paywall, Settings
+- **SQLite** under local app data (`EnsureCreated`); wipe `pepinillo.db` after schema changes
+- **FocusPage** + engine: Pomodoro work→break, Stopwatch, **Flowtime** (soft target), **Time Block** (no auto-break), pause/resume/skip, session persist, optional task link, **post-session journal**
+- **Tasks:** Today/Upcoming/Inbox/All; priority/energy/recurrence/pomodoro estimates; subtasks
+- **Settings** + theme + language preference + Privacy/Terms links + Upgrade CTA
+- **Analytics:** today minutes, 7-day hours, current/best streak (UTC), mode breakdown bars, recent sessions
+- **Soundscapes:** EN catalog + MediaPlayer service; premium gate; missing-asset graceful status
+- **Auth:** PasswordVault token store, Account login/register/logout
+- **Sync:** local-first push of `IsSynced=false` sessions + subscription pull
+- **Commerce:** `WindowsStoreCommerceService` (StoreContext) + free/backend fallback; Paywall placeholders (D1)
+- **Localization:** `LocalizationService` EN/ES/PT for Settings + Focus primary labels
+- **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort
+- Core unit tests: **32/32** green
+- Manifest: `internetClient` + `runFullTrust`
 
 ### Missing (blocks full product / Store)
 
 - **Manual WinUI smoke on a Windows machine** (not verified on macOS host)
-- Soundscapes audio, full analytics charts, auth/sync, real Store IAP (**P2**)
-- Package Assets, Partner Center identity, MSIX pack/sign (**P3**)
+- Real looping mp3 assets under `Assets/Soundscapes/`
+- Package logos, Partner Center identity, MSIX pack/sign, IAP products live (**P3**)
+- Full .resw localization coverage, onboarding, CSV export, AI reports (Everywhere)
 - Hotkey rebind UI, toast action buttons, real Focus Sessions OS integration (when public API stabilizes)
 
 ### Pending Windows (priority bands)
@@ -370,8 +372,8 @@
 | ---- | ---- | ------ |
 | **P0** | Runnable local MVP (DI, nav, Focus, tasks, settings, theme) | **Coded** — smoke on Windows pending |
 | **P1** | Tray, mini-timer, hotkeys, toasts, Focus Assist | **Coded** — smoke on Windows pending |
-| **P2** | Analytics depth, soundscapes, auth/sync, IAP path, i18n | **Next** |
-| **P3** | MSIX, Partner Center, certification, beta | Planned |
+| **P2** | Analytics depth, soundscapes, auth/sync, IAP path, i18n | **Coded** — assets + sandbox pending |
+| **P3** | MSIX, Partner Center, certification, beta | **Next** |
 
 **Pricing note:** PRD 11 Windows prices ($9.99 / $2.99·$19.99) differ from global mobile ($19.99 / $4.99·$34.99). Resolve before Partner Center SKUs (decision D1 in execution plan).
 

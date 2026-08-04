@@ -49,6 +49,12 @@ public sealed partial class MainWindow : Window
             case "Soundscapes":
                 ContentFrame.Navigate(typeof(SoundscapesPage));
                 break;
+            case "Account":
+                ContentFrame.Navigate(typeof(AccountPage));
+                break;
+            case "Paywall":
+                ContentFrame.Navigate(typeof(PaywallPage));
+                break;
             case "Settings":
                 ContentFrame.Navigate(typeof(SettingsPage));
                 break;

@@ -17,26 +17,45 @@
                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
         </StackPanel>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12" Margin="0,0,0,16">
-            <TextBox Grid.Column="0"
-                     PlaceholderText="Add a new task..."
-                     Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     Header="Title"/>
-            <NumberBox Grid.Column="1"
-                       Width="140"
-                       Header="Est. (min)"
-                       Value="{x:Bind ViewModel.NewTaskEstimateMinutes, Mode=TwoWay}"
-                       SpinButtonPlacementMode="Compact"
-                       SmallChange="5"
-                       LargeChange="15"
-                       Minimum="5"
-                       Maximum="240"/>
-            <Button Grid.Column="2"
-                    Content="Add task"
-                    Style="{ThemeResource AccentButtonStyle}"
-                    VerticalAlignment="Bottom"
-                    Command="{x:Bind ViewModel.CreateTaskCommand}"/>
-        </Grid>
+        <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,16">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                <TextBox Grid.Column="0"
+                         PlaceholderText="Add a new task..."
+                         Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Header="Title"/>
+                <NumberBox Grid.Column="1"
+                           Width="140"
+                           Header="Est. (min)"
+                           Value="{x:Bind ViewModel.NewTaskEstimateMinutes, Mode=TwoWay}"
+                           SpinButtonPlacementMode="Compact"
+                           SmallChange="5"
+                           LargeChange="15"
+                           Minimum="5"
+                           Maximum="240"/>
+                <Button Grid.Column="2"
+                        Content="Add task"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        VerticalAlignment="Bottom"
+                        Command="{x:Bind ViewModel.CreateTaskCommand}"/>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <NumberBox Header="Priority (0–3)"
+                           Width="140"
+                           Value="{x:Bind ViewModel.NewTaskPriority, Mode=TwoWay}"
+                           Minimum="0"
+                           Maximum="3"
+                           SmallChange="1"
+                           SpinButtonPlacementMode="Compact"/>
+                <ComboBox Header="Energy"
+                          Width="140"
+                          ItemsSource="{x:Bind ViewModel.EnergyOptions}"
+                          SelectedItem="{x:Bind ViewModel.NewTaskEnergy, Mode=TwoWay}"/>
+                <ComboBox Header="Recurrence"
+                          Width="160"
+                          ItemsSource="{x:Bind ViewModel.RecurrenceOptions}"
+                          SelectedItem="{x:Bind ViewModel.NewTaskRecurrence, Mode=TwoWay}"/>
+            </StackPanel>
+        </StackPanel>
 
         <Pivot Grid.Row="2"
                x:Name="FilterPivot"
@@ -53,7 +72,7 @@
                       SelectionMode="None">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:TaskItem">
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12" Padding="12,8">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8" Padding="12,8">
                             <CheckBox Grid.Column="0"
                                       IsChecked="{x:Bind IsCompleted, Mode=OneWay}"
                                       MinWidth="32"
@@ -64,6 +83,25 @@
                                            FontWeight="SemiBold"
                                            Style="{ThemeResource BodyTextBlockStyle}"
                                            TextWrapping="Wrap"/>
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Border Background="{ThemeResource SystemAccentColor}"
+                                            CornerRadius="4"
+                                            Padding="6,2"
+                                            Visibility="{x:Bind Priority}">
+                                        <TextBlock Text="{x:Bind PriorityLabel}"
+                                                   Foreground="White"
+                                                   FontSize="11"/>
+                                    </Border>
+                                    <Border Background="{ThemeResource CardStrokeColorDefaultBrush}"
+                                            CornerRadius="4"
+                                            Padding="6,2">
+                                        <TextBlock Text="{x:Bind EnergyLabel}"
+                                                   FontSize="11"/>
+                                    </Border>
+                                    <TextBlock Text="{x:Bind RecurrenceRule}"
+                                               FontSize="11"
+                                               Opacity="0.7"/>
+                                </StackPanel>
                                 <ItemsControl ItemsSource="{x:Bind SubTasks}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="models:TaskItem">
@@ -90,13 +128,18 @@
                                            FontSize="12"
                                            FontWeight="SemiBold"/>
                             </Border>
-                            <Button Grid.Column="3"
+                            <TextBlock Grid.Column="3"
+                                       Text="{x:Bind EstimatedPomodoros}"
+                                       VerticalAlignment="Center"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       ToolTipService.ToolTip="Estimated pomodoros"/>
+                            <Button Grid.Column="4"
                                     Content="+"
                                     ToolTipService.ToolTip="Add subtask"
                                     Click="AddSubtask_Click"
                                     Tag="{x:Bind}"
                                     VerticalAlignment="Center"/>
-                            <Button Grid.Column="4"
+                            <Button Grid.Column="5"
                                     Style="{ThemeResource SubtleButtonStyle}"
                                     Click="DeleteTask_Click"
                                     Tag="{x:Bind}"
@@ -124,7 +167,6 @@
             </StackPanel>
         </Grid>
 
-        <!-- Subtask composer flyout host -->
         <ContentDialog x:Name="SubtaskDialog"
                        Title="Add subtask"
                        PrimaryButtonText="Add"

@@ -17,6 +17,8 @@ public partial class FocusViewModel : ObservableObject
     private readonly ITaskService _taskService;
     private readonly INotificationService _notificationService;
     private readonly IFocusAssistService _focusAssistService;
+    private readonly ISyncService? _syncService;
+    private readonly ILocalizationService? _localizer;
     private UserSettings _cachedSettings = new();
     private SessionState _previousState = SessionState.Idle;
     private bool _focusAssistActive;
@@ -60,13 +62,48 @@ public partial class FocusViewModel : ObservableObject
     [ObservableProperty]
     private string _lastCompletedMessage = string.Empty;
 
+    [ObservableProperty]
+    private FocusSession? _pendingJournalSession;
+
+    [ObservableProperty]
+    private string _journalNoteDraft = string.Empty;
+
+    [ObservableProperty]
+    private int _journalEnergyRating;
+
+    [ObservableProperty]
+    private bool _showJournalPanel;
+
+    [ObservableProperty]
+    private string _titleLabel = "Focus Engine";
+
+    [ObservableProperty]
+    private string _startLabel = "Start / Resume";
+
+    [ObservableProperty]
+    private string _pauseLabel = "Pause";
+
+    [ObservableProperty]
+    private string _stopLabel = "Stop";
+
+    [ObservableProperty]
+    private string _skipLabel = "Skip break";
+
+    [ObservableProperty]
+    private string _linkTaskLabel = "Link a task (optional)";
+
+    [ObservableProperty]
+    private string _journalTitleLabel = "Session reflection";
+
     public FocusViewModel(
         IFocusEngineService focusEngine,
         ISettingsService settingsService,
         IFocusSessionService sessionService,
         ITaskService taskService,
         INotificationService notificationService,
-        IFocusAssistService focusAssistService)
+        IFocusAssistService focusAssistService,
+        ISyncService? syncService = null,
+        ILocalizationService? localizer = null)
     {
         _focusEngine = focusEngine;
         _settingsService = settingsService;
@@ -74,11 +111,14 @@ public partial class FocusViewModel : ObservableObject
         _taskService = taskService;
         _notificationService = notificationService;
         _focusAssistService = focusAssistService;
+        _syncService = syncService;
+        _localizer = localizer;
 
         _focusEngine.StateChanged += OnEngineStateChanged;
         _focusEngine.Tick += OnEngineTick;
         _focusEngine.SessionCompleted += OnEngineSessionCompleted;
 
+        ApplyLocalizedLabels();
         UpdateTimerDisplay();
         UpdateCommandFlags();
     }
@@ -87,6 +127,7 @@ public partial class FocusViewModel : ObservableObject
     {
         _cachedSettings = await _settingsService.GetSettingsAsync();
         ApplySettingsToEngine(_cachedSettings);
+        ApplyLanguage(_cachedSettings.PreferredLanguage);
 
         if (_focusEngine.CurrentState == SessionState.Idle && !_focusEngine.IsOnBreak)
         {
@@ -106,6 +147,28 @@ public partial class FocusViewModel : ObservableObject
     {
         _cachedSettings = await _settingsService.GetSettingsAsync();
         ApplySettingsToEngine(_cachedSettings);
+        ApplyLanguage(_cachedSettings.PreferredLanguage);
+    }
+
+    private void ApplyLanguage(string language)
+    {
+        if (_localizer == null) return;
+        _localizer.SetLanguage(language);
+        ApplyLocalizedLabels();
+    }
+
+    private void ApplyLocalizedLabels()
+    {
+        if (_localizer == null) return;
+        TitleLabel = _localizer.GetString("Focus.Title");
+        StartLabel = _localizer.GetString("Focus.Start");
+        PauseLabel = _localizer.GetString("Focus.Pause");
+        StopLabel = _localizer.GetString("Focus.Stop");
+        SkipLabel = _localizer.GetString("Focus.SkipBreak");
+        LinkTaskLabel = _localizer.GetString("Focus.LinkTask");
+        JournalTitleLabel = _localizer.GetString("Focus.JournalTitle");
+        if (CurrentState == SessionState.Idle)
+            StatusLabel = _localizer.GetString("Focus.Ready");
     }
 
     private void ApplySettingsToEngine(UserSettings settings)
@@ -123,7 +186,7 @@ public partial class FocusViewModel : ObservableObject
     {
         FocusMode.Pomodoro => settings.PomodoroFocusMinutes * 60,
         FocusMode.Flowtime => settings.FlowtimeTargetMinutes * 60,
-        FocusMode.TimeBlocking => 3600,
+        FocusMode.TimeBlocking => Math.Max(60, settings.TimeBlockingMinutes * 60),
         FocusMode.Stopwatch => 0,
         _ => settings.PomodoroFocusMinutes * 60
     };
@@ -220,6 +283,32 @@ public partial class FocusViewModel : ObservableObject
         LinkTask(null);
     }
 
+    [RelayCommand]
+    private async Task SaveJournalAsync()
+    {
+        if (PendingJournalSession == null)
+            return;
+
+        var rating = JournalEnergyRating is >= 1 and <= 5 ? JournalEnergyRating : (int?)null;
+        await _sessionService.UpdateJournalAsync(
+            PendingJournalSession.Id,
+            string.IsNullOrWhiteSpace(JournalNoteDraft) ? null : JournalNoteDraft.Trim(),
+            rating);
+
+        PendingJournalSession.JournalNote = JournalNoteDraft;
+        PendingJournalSession.EnergyRating = rating;
+        DismissJournal();
+    }
+
+    [RelayCommand]
+    private void DismissJournal()
+    {
+        PendingJournalSession = null;
+        JournalNoteDraft = string.Empty;
+        JournalEnergyRating = 0;
+        ShowJournalPanel = false;
+    }
+
     private async Task LoadAvailableTasksAsync()
     {
         var tasks = await _taskService.GetAllTasksAsync();
@@ -232,15 +321,7 @@ public partial class FocusViewModel : ObservableObject
         var previous = _previousState;
         CurrentState = newState;
         IsOnBreak = _focusEngine.IsOnBreak || newState == SessionState.Break;
-        StatusLabel = newState switch
-        {
-            SessionState.Idle => "Ready",
-            SessionState.Running => "Focusing",
-            SessionState.Paused => "Paused",
-            SessionState.Break => "On break",
-            SessionState.Completed => "Completed",
-            _ => newState.ToString()
-        };
+        StatusLabel = LocalizedState(newState);
 
         HandleFocusAssist(newState);
         HandleBreakNotifications(previous, newState);
@@ -248,6 +329,32 @@ public partial class FocusViewModel : ObservableObject
         _previousState = newState;
         UpdateCommandFlags();
         UpdateTimerDisplay();
+    }
+
+    private string LocalizedState(SessionState state)
+    {
+        if (_localizer == null)
+        {
+            return state switch
+            {
+                SessionState.Idle => "Ready",
+                SessionState.Running => "Focusing",
+                SessionState.Paused => "Paused",
+                SessionState.Break => "On break",
+                SessionState.Completed => "Completed",
+                _ => state.ToString()
+            };
+        }
+
+        return state switch
+        {
+            SessionState.Idle => _localizer.GetString("Focus.Ready"),
+            SessionState.Running => _localizer.GetString("Focus.Focusing"),
+            SessionState.Paused => _localizer.GetString("Focus.Paused"),
+            SessionState.Break => _localizer.GetString("Focus.OnBreak"),
+            SessionState.Completed => _localizer.GetString("Focus.Completed"),
+            _ => state.ToString()
+        };
     }
 
     private void HandleFocusAssist(SessionState newState)
@@ -262,7 +369,6 @@ public partial class FocusViewModel : ObservableObject
             return;
         }
 
-        // Enable only while actively focusing (not break / idle / completed).
         if (newState == SessionState.Running && !_focusEngine.IsOnBreak)
         {
             if (!_focusAssistActive)
@@ -274,10 +380,9 @@ public partial class FocusViewModel : ObservableObject
         }
 
         if (newState is SessionState.Idle or SessionState.Completed
-            || (newState == SessionState.Break)
+            || newState == SessionState.Break
             || (newState == SessionState.Paused && _focusEngine.IsOnBreak))
         {
-            // Keep assist during work-pause; clear on break / stop / complete.
             if (newState is SessionState.Idle or SessionState.Completed or SessionState.Break)
             {
                 if (_focusAssistActive)
@@ -299,7 +404,6 @@ public partial class FocusViewModel : ObservableObject
             _notificationService.ShowBreakStartedToast(isLong);
         }
 
-        // Natural break end or skip: Break → Idle/Running (not Pause).
         if (previous == SessionState.Break
             && newState is SessionState.Idle or SessionState.Running)
         {
@@ -317,6 +421,19 @@ public partial class FocusViewModel : ObservableObject
             var minutes = Math.Max(1, session.ElapsedSeconds / 60);
             LastCompletedMessage = $"Saved {minutes} min {session.Mode} session";
             _notificationService.ShowSessionCompletedToast(session.Mode.ToString(), minutes);
+
+            // Surface journaling after successful save.
+            PendingJournalSession = session;
+            JournalNoteDraft = session.JournalNote ?? string.Empty;
+            JournalEnergyRating = session.EnergyRating ?? 0;
+            ShowJournalPanel = true;
+
+            // Best-effort local-first sync (no crash on failure).
+            if (_syncService != null)
+            {
+                try { await _syncService.SyncNowAsync(); }
+                catch { /* local-first */ }
+            }
         }
         catch
         {
@@ -329,9 +446,15 @@ public partial class FocusViewModel : ObservableObject
 
     private void UpdateTimerDisplay()
     {
-        int secondsToDisplay = SelectedMode == FocusMode.Stopwatch && !_focusEngine.IsOnBreak
-            ? _focusEngine.ElapsedSeconds
-            : _focusEngine.RemainingSeconds;
+        // Stopwatch count-up; Flowtime can show count-up toward soft target when running.
+        int secondsToDisplay;
+        if (SelectedMode == FocusMode.Stopwatch && !_focusEngine.IsOnBreak)
+            secondsToDisplay = _focusEngine.ElapsedSeconds;
+        else if (SelectedMode == FocusMode.Flowtime && !_focusEngine.IsOnBreak
+                 && _focusEngine.CurrentState is SessionState.Running or SessionState.Paused)
+            secondsToDisplay = _focusEngine.ElapsedSeconds; // count-up toward soft target
+        else
+            secondsToDisplay = _focusEngine.RemainingSeconds;
 
         FormattedTime = FormatTime(secondsToDisplay);
 

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Pepinillo.Core.Data;
@@ -29,6 +30,8 @@ public class SettingsAndSessionPersistTests
         Assert.Equal(1, settings.Id);
         Assert.Equal(25, settings.PomodoroFocusMinutes);
         Assert.Equal("System", settings.SelectedTheme);
+        Assert.Equal(60, settings.TimeBlockingMinutes);
+        Assert.Equal("en", settings.PreferredLanguage);
     }
 
     [Fact]
@@ -41,17 +44,16 @@ public class SettingsAndSessionPersistTests
         settings.PomodoroFocusMinutes = 40;
         settings.AutoStartBreaks = true;
         settings.SelectedTheme = "Dark";
+        settings.PreferredLanguage = "es";
+        settings.TimeBlockingMinutes = 90;
         await service.SaveSettingsAsync(settings);
 
-        // New service instance (fresh cache) on same DB
-        var service2 = new SettingsService(db);
-        // Clear by using same db tracked entity - force reload via new context
-        await using var db2 = CreateDb();
-        // Seed from first db is isolated - use same db without cache:
         var reload = await db.UserSettings.AsNoTracking().FirstAsync();
         Assert.Equal(40, reload.PomodoroFocusMinutes);
         Assert.True(reload.AutoStartBreaks);
         Assert.Equal("Dark", reload.SelectedTheme);
+        Assert.Equal("es", reload.PreferredLanguage);
+        Assert.Equal(90, reload.TimeBlockingMinutes);
     }
 
     [Fact]
@@ -61,7 +63,6 @@ public class SettingsAndSessionPersistTests
         var service = new FocusSessionService(db);
         var taskId = Guid.NewGuid();
 
-        // Anchor StartedAt to "today" UTC so the assertion is stable across midnight.
         var started = DateTime.UtcNow.Date.AddHours(10);
         var session = new FocusSession
         {
@@ -81,8 +82,85 @@ public class SettingsAndSessionPersistTests
         Assert.Equal(taskId, recent[0].TaskItemId);
         Assert.True(recent[0].IsCompleted);
 
-        var minutes = await service.GetTodayFocusMinutesAsync();
+        var minutes = await service.GetTodayFocusMinutesAsync(started);
         Assert.Equal(25, minutes);
+    }
+
+    [Fact]
+    public async Task FocusSession_JournalFields_ShouldPersist()
+    {
+        await using var db = CreateDb();
+        var service = new FocusSessionService(db);
+        var session = new FocusSession
+        {
+            Mode = FocusMode.Flowtime,
+            ElapsedSeconds = 900,
+            IsCompleted = true,
+            StartedAt = DateTime.UtcNow.Date.AddHours(8)
+        };
+        await service.SaveSessionAsync(session);
+        await service.UpdateJournalAsync(session.Id, "Felt focused", 5);
+
+        var loaded = await db.FocusSessions.FindAsync(session.Id);
+        Assert.Equal("Felt focused", loaded!.JournalNote);
+        Assert.Equal(5, loaded.EnergyRating);
+        Assert.False(loaded.IsSynced);
+    }
+
+    [Fact]
+    public async Task Analytics_Streaks_ShouldCountConsecutiveUtcDays()
+    {
+        await using var db = CreateDb();
+        var service = new FocusSessionService(db);
+        var today = new DateTime(2026, 8, 3, 0, 0, 0, DateTimeKind.Utc);
+
+        // Day -2, -1, today
+        for (var i = 2; i >= 0; i--)
+        {
+            await service.SaveSessionAsync(new FocusSession
+            {
+                Mode = FocusMode.Pomodoro,
+                ElapsedSeconds = 600,
+                IsCompleted = true,
+                StartedAt = today.AddDays(-i).AddHours(12)
+            });
+        }
+
+        var (current, best) = await service.GetStreaksAsync(today);
+        Assert.Equal(3, current);
+        Assert.Equal(3, best);
+    }
+
+    [Fact]
+    public async Task Analytics_ModeBreakdown_AndRangeQueries()
+    {
+        await using var db = CreateDb();
+        var service = new FocusSessionService(db);
+        var day = new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        await service.SaveSessionAsync(new FocusSession
+        {
+            Mode = FocusMode.Pomodoro,
+            ElapsedSeconds = 1500,
+            IsCompleted = true,
+            StartedAt = day.AddHours(9)
+        });
+        await service.SaveSessionAsync(new FocusSession
+        {
+            Mode = FocusMode.Flowtime,
+            ElapsedSeconds = 3000,
+            IsCompleted = true,
+            StartedAt = day.AddHours(14)
+        });
+
+        var total = await service.GetTotalFocusSecondsAsync(day, day.AddDays(1));
+        Assert.Equal(4500, total);
+
+        var breakdown = await service.GetModeBreakdownAsync(day, day.AddDays(1));
+        Assert.Equal(2, breakdown.Count);
+        Assert.Equal(FocusMode.Flowtime, breakdown[0].Mode);
+        Assert.Equal(3000, breakdown[0].TotalSeconds);
+        Assert.True(breakdown[0].FractionOfMax >= breakdown[1].FractionOfMax);
     }
 
     [Fact]
@@ -97,5 +175,27 @@ public class SettingsAndSessionPersistTests
         var all = await service.GetAllTasksAsync();
         var loadedParent = Assert.Single(all, t => t.Id == parent.Id);
         Assert.Contains(loadedParent.SubTasks, s => s.Id == child.Id);
+    }
+
+    [Fact]
+    public void LocalizationService_ReturnsSpanishForEs()
+    {
+        var loc = new LocalizationService();
+        loc.SetLanguage("es");
+        Assert.Equal("Configuración", loc.GetString("Settings.Title"));
+        loc.SetLanguage("pt");
+        Assert.Equal("Configurações", loc.GetString("Settings.Title"));
+        loc.SetLanguage("en");
+        Assert.Equal("Settings", loc.GetString("Settings.Title"));
+    }
+
+    [Fact]
+    public void SoundscapeCatalog_UsesEnglishNames()
+    {
+        var audio = new AudioPlayerService();
+        var tracks = audio.GetAvailableSoundscapes();
+        Assert.Contains(tracks, t => t.Name == "Rain");
+        Assert.Contains(tracks, t => t.Name == "Deep Space");
+        Assert.Contains(tracks, t => t.IsPremium);
     }
 }

@@ -8,7 +8,7 @@
 
     <ScrollViewer Margin="32">
         <StackPanel Spacing="24" MaxWidth="700" HorizontalAlignment="Left">
-            <TextBlock Text="Settings"
+            <TextBlock Text="{x:Bind ViewModel.TitleLabel, Mode=OneWay}"
                        Style="{ThemeResource TitleTextBlockStyle}"
                        FontWeight="Bold"/>
 
@@ -16,11 +16,11 @@
                     CornerRadius="8"
                     Padding="20">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="Timer durations"
+                    <TextBlock Text="{x:Bind ViewModel.TimerDurationsLabel, Mode=OneWay}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="Pomodoro focus (minutes)" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Bind ViewModel.PomodoroFocusLabel, Mode=OneWay}" VerticalAlignment="Center"/>
                         <NumberBox Grid.Column="1"
                                    Value="{x:Bind ViewModel.Settings.PomodoroFocusMinutes, Mode=TwoWay}"
                                    SmallChange="5"
@@ -29,7 +29,7 @@
                                    Width="120"/>
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="Short break (minutes)" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Bind ViewModel.ShortBreakLabel, Mode=OneWay}" VerticalAlignment="Center"/>
                         <NumberBox Grid.Column="1"
                                    Value="{x:Bind ViewModel.Settings.ShortBreakMinutes, Mode=TwoWay}"
                                    SmallChange="1"
@@ -38,7 +38,7 @@
                                    Width="120"/>
                     </Grid>
                     <Grid ColumnDefinitions="*,Auto">
-                        <TextBlock Text="Long break (minutes)" VerticalAlignment="Center"/>
+                        <TextBlock Text="{x:Bind ViewModel.LongBreakLabel, Mode=OneWay}" VerticalAlignment="Center"/>
                         <NumberBox Grid.Column="1"
                                    Value="{x:Bind ViewModel.Settings.LongBreakMinutes, Mode=TwoWay}"
                                    SmallChange="5"
@@ -55,9 +55,27 @@
                                    Maximum="10"
                                    Width="120"/>
                     </Grid>
-                    <ToggleSwitch Header="Auto-start breaks"
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Flowtime target (minutes)" VerticalAlignment="Center"/>
+                        <NumberBox Grid.Column="1"
+                                   Value="{x:Bind ViewModel.Settings.FlowtimeTargetMinutes, Mode=TwoWay}"
+                                   SmallChange="5"
+                                   Minimum="10"
+                                   Maximum="180"
+                                   Width="120"/>
+                    </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="Time block (minutes)" VerticalAlignment="Center"/>
+                        <NumberBox Grid.Column="1"
+                                   Value="{x:Bind ViewModel.Settings.TimeBlockingMinutes, Mode=TwoWay}"
+                                   SmallChange="15"
+                                   Minimum="15"
+                                   Maximum="240"
+                                   Width="120"/>
+                    </Grid>
+                    <ToggleSwitch Header="{x:Bind ViewModel.AutoStartBreaksLabel, Mode=OneWay}"
                                   IsOn="{x:Bind ViewModel.Settings.AutoStartBreaks, Mode=TwoWay}"/>
-                    <ToggleSwitch Header="Auto-start next focus after break"
+                    <ToggleSwitch Header="{x:Bind ViewModel.AutoStartFocusLabel, Mode=OneWay}"
                                   IsOn="{x:Bind ViewModel.Settings.AutoStartFocusSessions, Mode=TwoWay}"/>
                 </StackPanel>
             </Border>
@@ -66,7 +84,7 @@
                     CornerRadius="8"
                     Padding="20">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="Appearance"
+                    <TextBlock Text="{x:Bind ViewModel.AppearanceLabel, Mode=OneWay}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
                     <RadioButtons Header="Theme"
@@ -78,6 +96,12 @@
                         <RadioButton Content="Ocean (dark)"/>
                         <RadioButton Content="OLED black"/>
                     </RadioButtons>
+                    <RadioButtons Header="{x:Bind ViewModel.LanguageLabel, Mode=OneWay}"
+                                  SelectedIndex="{x:Bind ViewModel.SelectedLanguageIndex, Mode=TwoWay}">
+                        <RadioButton Content="English"/>
+                        <RadioButton Content="Español"/>
+                        <RadioButton Content="Português"/>
+                    </RadioButtons>
                     <ToggleSwitch Header="Mica / acrylic backdrop (when supported)"
                                   IsOn="{x:Bind ViewModel.Settings.UseMicaBackdrop, Mode=TwoWay}"/>
                 </StackPanel>
@@ -87,12 +111,9 @@
                     CornerRadius="8"
                     Padding="20">
                 <StackPanel Spacing="16">
-                    <TextBlock Text="Windows integration (intent flags)"
+                    <TextBlock Text="Windows integration"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
-                    <TextBlock Text="OS hooks ship in P1; preferences are stored now."
-                               Style="{ThemeResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                     <ToggleSwitch Header="Sync with Focus Assist / Do Not Disturb"
                                   IsOn="{x:Bind ViewModel.Settings.EnableWindowsDoNotDisturbSync, Mode=TwoWay}"/>
                     <ToggleSwitch Header="Minimize to system tray on close"
@@ -102,8 +123,26 @@
                 </StackPanel>
             </Border>
 
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="8"
+                    Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Legal"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                               FontWeight="SemiBold"/>
+                    <HyperlinkButton Content="{x:Bind ViewModel.PrivacyLabel, Mode=OneWay}"
+                                     Click="Privacy_Click"/>
+                    <HyperlinkButton Content="{x:Bind ViewModel.TermsLabel, Mode=OneWay}"
+                                     Click="Terms_Click"/>
+                    <Button Content="{x:Bind ViewModel.UpgradeLabel, Mode=OneWay}"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Click="Upgrade_Click"
+                            HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+
             <StackPanel Orientation="Horizontal" Spacing="12">
-                <Button Content="Save settings"
+                <Button Content="{x:Bind ViewModel.SaveLabel, Mode=OneWay}"
                         Style="{ThemeResource AccentButtonStyle}"
                         Command="{x:Bind ViewModel.SaveSettingsCommand}"/>
                 <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"

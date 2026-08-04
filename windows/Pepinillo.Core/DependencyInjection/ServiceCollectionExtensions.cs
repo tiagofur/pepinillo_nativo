@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
             contextLifetime: ServiceLifetime.Singleton,
             optionsLifetime: ServiceLifetime.Singleton);
 
+        services.AddSingleton<IAuthTokenStore, MemoryAuthTokenStore>();
         services.AddSingleton<IFocusEngineService, FocusEngineService>();
         services.AddSingleton<ITaskService, TaskService>();
         services.AddSingleton<ISettingsService, SettingsService>();
@@ -32,14 +33,19 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INotificationService, NotificationService>();
         services.AddSingleton<IFocusAssistService, FocusAssistService>();
         services.AddSingleton<IAudioPlayerService, AudioPlayerService>();
+        services.AddSingleton<ILocalizationService, LocalizationService>();
         services.AddSingleton(_ => new System.Net.Http.HttpClient());
         services.AddSingleton<IBackendApiClient, BackendApiClient>();
         services.AddSingleton<IStoreCommerceService, StoreCommerceService>();
+        services.AddSingleton<ISyncService, SyncService>();
 
         services.AddSingleton<FocusViewModel>();
         services.AddTransient<TasksViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddTransient<AnalyticsViewModel>();
+        services.AddTransient<SoundscapesViewModel>();
+        services.AddTransient<AuthViewModel>();
+        services.AddTransient<PaywallViewModel>();
 
         return services;
     }

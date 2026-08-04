@@ -49,6 +49,7 @@ public class SettingsService : ISettingsService
             existing.LongBreakMinutes = settings.LongBreakMinutes;
             existing.LongBreakInterval = settings.LongBreakInterval;
             existing.FlowtimeTargetMinutes = settings.FlowtimeTargetMinutes;
+            existing.TimeBlockingMinutes = settings.TimeBlockingMinutes;
             existing.AutoStartBreaks = settings.AutoStartBreaks;
             existing.AutoStartFocusSessions = settings.AutoStartFocusSessions;
             existing.EnableWindowsDoNotDisturbSync = settings.EnableWindowsDoNotDisturbSync;
@@ -64,6 +65,7 @@ public class SettingsService : ISettingsService
             existing.PlayPauseHotkey = settings.PlayPauseHotkey;
             existing.SkipHotkey = settings.SkipHotkey;
             existing.MiniTimerHotkey = settings.MiniTimerHotkey;
+            existing.PreferredLanguage = settings.PreferredLanguage;
             _cache = existing;
         }
         else

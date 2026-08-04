@@ -12,15 +12,30 @@ namespace Pepinillo.Core.Services;
 public class BackendApiClient : IBackendApiClient
 {
     private readonly HttpClient _httpClient;
+    private readonly IAuthTokenStore _tokenStore;
     private const string BaseUrl = "https://api.pepinillo.app/v1";
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(AuthToken);
     public string? AuthToken { get; private set; }
 
-    public BackendApiClient(HttpClient httpClient)
+    public BackendApiClient(HttpClient httpClient, IAuthTokenStore tokenStore)
     {
         _httpClient = httpClient;
+        _tokenStore = tokenStore;
         _httpClient.BaseAddress = new Uri(BaseUrl);
+    }
+
+    public async Task InitializeAsync()
+    {
+        try
+        {
+            var token = await _tokenStore.GetTokenAsync();
+            ApplyToken(token);
+        }
+        catch
+        {
+            ApplyToken(null);
+        }
     }
 
     public async Task<bool> LoginAsync(string email, string password)
@@ -34,9 +49,10 @@ public class BackendApiClient : IBackendApiClient
             var result = await response.Content.ReadFromJsonAsync<JsonElement>();
             if (result.TryGetProperty("token", out var tokenProp))
             {
-                AuthToken = tokenProp.GetString();
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", AuthToken);
-                return true;
+                var token = tokenProp.GetString();
+                ApplyToken(token);
+                await _tokenStore.SetTokenAsync(token);
+                return !string.IsNullOrEmpty(token);
             }
             return false;
         }
@@ -60,11 +76,17 @@ public class BackendApiClient : IBackendApiClient
         }
     }
 
-    public Task LogoutAsync()
+    public async Task LogoutAsync()
     {
-        AuthToken = null;
-        _httpClient.DefaultRequestHeaders.Authorization = null;
-        return Task.CompletedTask;
+        ApplyToken(null);
+        try
+        {
+            await _tokenStore.ClearAsync();
+        }
+        catch
+        {
+            // ignore store failures on logout
+        }
     }
 
     public async Task<bool> SyncSessionsAsync(IEnumerable<FocusSession> sessions)
@@ -100,5 +122,14 @@ public class BackendApiClient : IBackendApiClient
         }
 
         return new SubscriptionStatus { Tier = EntitlementTier.Free };
+    }
+
+    private void ApplyToken(string? token)
+    {
+        AuthToken = token;
+        if (string.IsNullOrEmpty(token))
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+        else
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 }

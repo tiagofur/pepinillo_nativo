@@ -27,7 +27,6 @@ public partial class App : Application
         Services = ConfigureServices();
         UnhandledException += (_, e) =>
         {
-            // Keep process alive for tray scenarios; log is enough for P1.
             System.Diagnostics.Debug.WriteLine($"Unhandled: {e.Exception}");
             e.Handled = true;
         };
@@ -37,14 +36,33 @@ public partial class App : Application
     {
         await EnsureDatabaseAsync();
 
+        try
+        {
+            var backend = Services.GetRequiredService<IBackendApiClient>();
+            await backend.InitializeAsync();
+        }
+        catch
+        {
+            // Offline / token restore failures must not block launch.
+        }
+
         var settingsService = Services.GetRequiredService<ISettingsService>();
         var settings = await settingsService.GetSettingsAsync();
+
+        try
+        {
+            var localizer = Services.GetRequiredService<ILocalizationService>();
+            localizer.SetLanguage(settings.PreferredLanguage);
+        }
+        catch
+        {
+            // ignore
+        }
 
         _mainWindow = new MainWindow();
         MainWindowInstance = _mainWindow;
         ThemeHelper.ApplyTheme(settings.SelectedTheme, _mainWindow);
 
-        // Tray + global hotkeys require an HWND — attach after window construction.
         _shell = Services.GetRequiredService<DesktopShellCoordinator>();
         _shell.Attach(_mainWindow);
 
@@ -61,9 +79,12 @@ public partial class App : Application
 
         services.AddPepinilloCore(dbPath);
 
-        // WinUI desktop power features — replace Core stubs (last registration wins).
+        // WinUI platform overrides (last registration wins for same interface).
         services.AddSingleton<INotificationService, ToastNotificationService>();
         services.AddSingleton<IFocusAssistService, WindowsFocusAssistService>();
+        services.AddSingleton<IAuthTokenStore, PasswordVaultTokenStore>();
+        services.AddSingleton<IAudioPlayerService, WindowsMediaPlayerService>();
+        services.AddSingleton<IStoreCommerceService, WindowsStoreCommerceService>();
         services.AddSingleton<IMiniTimerController, MiniTimerController>();
         services.AddSingleton<ITrayIconService, TrayIconService>();
         services.AddSingleton<IGlobalHotkeyService, GlobalHotkeyService>();
@@ -91,7 +112,7 @@ public partial class App : Application
     private static async System.Threading.Tasks.Task EnsureDatabaseAsync()
     {
         var db = Services.GetRequiredService<PepinilloDbContext>();
-        // P0: EnsureCreated for local MVP. Switch to EF migrations before production Store ship.
+        // EnsureCreated does not migrate existing DBs — delete pepinillo.db after schema changes.
         await db.Database.EnsureCreatedAsync();
     }
 }

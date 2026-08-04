@@ -23,8 +23,9 @@ public sealed partial class AnalyticsPage : Page
     private void RefreshMetrics()
     {
         TodayFocusText.Text = $"{ViewModel.TodayFocusMinutes} min";
-        WeeklyFocusText.Text = $"{ViewModel.WeeklyFocusHours} hrs";
-        StreakText.Text = $"{ViewModel.CurrentStreakDays} days";
+        WeeklyFocusText.Text = $"{ViewModel.SevenDayFocusHours:0.#} h";
+        StreakText.Text = $"{ViewModel.CurrentStreakDays} d";
+        BestStreakText.Text = $"{ViewModel.BestStreakDays} d";
         AiReportText.Text = ViewModel.AiReportSummary;
     }
 }

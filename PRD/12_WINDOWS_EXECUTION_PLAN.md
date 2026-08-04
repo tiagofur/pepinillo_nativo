@@ -1,8 +1,8 @@
 # Pepinillo Windows — Execution Plan
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Date:** 2026-08-04  
-**Status:** P1 coded — tray/mini/hotkeys/toasts/Focus Assist; WinUI manual smoke pending on Windows; next is P2  
+**Status:** P2 coded (parity depth + auth/sync/commerce path); WinUI manual smoke pending on Windows; next is P3 Store polish  
 
 **Branch:** `feat/windows-native-app`  
 **Canonical product PRD:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md)  
@@ -184,21 +184,27 @@ Estimated remaining effort (order of magnitude, after existing skeleton): **~280
 
 ## 6. P2 — Parity depth, backend, commerce path
 
-| ID | Work unit | Parity notes |
-| -- | --------- | ------------ |
-| **P2.1** | Full focus modes | Flowtime + Time Block complete behavior + auto-start gates |
-| **P2.2** | Session journaling UI | Post-session reflection entry (parity with mobile) |
-| **P2.3** | Tasks depth | Priority, energy, recurrence (RRULE or simplified), pomodoro estimates |
-| **P2.4** | Analytics real data | Aggregate from SQLite; charts (OxyPlot or WinUI charts); streaks |
-| **P2.5** | Soundscapes | MediaPlayer, loop catalog, volume, premium gating hooks |
-| **P2.6** | Auth UI + secure token store | Login/register/email verify gate aligned with Go backend |
-| **P2.7** | Sync worker | Local-first; background reconcile with `backend/` APIs |
-| **P2.8** | StoreContext IAP | Durable + subscription SKUs; entitlement cache; offline free tier |
-| **P2.9** | Paywall UI | Two-tier Pepinillo+ / Everywhere/AI+ (copy aligned with mobile v3.1 intent) |
-| **P2.10** | Localization | EN / ES / PT resource dictionaries |
-| **P2.11** | Privacy & Terms surfaces | In-app links to https://creapolis.dev/privacy-policy/ and terms |
+| ID | Work unit | Parity notes | Status |
+| -- | --------- | ------------ | ------ |
+| **P2.1** | Full focus modes | Flowtime soft target (count-up + complete on target/stop); Time Block fixed duration, no auto-break; Pomodoro keeps break cycle | **Coded** |
+| **P2.2** | Session journaling UI | `JournalNote` + `EnergyRating` on `FocusSession`; post-session panel on FocusPage | **Coded** |
+| **P2.3** | Tasks depth | Priority 0–3, energy deep/shallow/admin, EstimatedPomodoros, FREQ=DAILY/WEEKLY | **Coded** |
+| **P2.4** | Analytics real data | SQLite aggregates, 7-day hours, current/best streak (UTC), mode ProgressBars | **Coded** |
+| **P2.5** | Soundscapes | EN catalog; `WindowsMediaPlayerService` loop; premium gate → Paywall; graceful missing assets | **Coded** (assets optional) |
+| **P2.6** | Auth UI + secure token store | `IAuthTokenStore` + PasswordVault; Account page login/register/logout | **Coded** |
+| **P2.7** | Sync worker | `SyncService` push unsynced sessions + pull subscription; local-first | **Coded** |
+| **P2.8** | StoreContext IAP | `WindowsStoreCommerceService` + backend merge + free fallback | **Coded** (sandbox/Partner Center pending) |
+| **P2.9** | Paywall UI | Pepinillo+ / Everywhere CTAs; PRD 11 placeholder prices (D1 open) | **Coded** |
+| **P2.10** | Localization | `LocalizationService` EN/ES/PT for Settings + Focus primary labels | **Coded** (partial coverage) |
+| **P2.11** | Privacy & Terms surfaces | Settings hyperlinks → creapolis.dev privacy + terms | **Coded** |
 
 **P2 DoD:** Feature parity matrix (section 8) has no **Missing** for P0/P1 mobile must-haves that are in Windows scope; commerce works in sandbox.
+
+- [x] P2.1–P2.11 coded in Core + WinUI surfaces  
+- [x] Core tests green (**32/32**)  
+- [ ] Manual WinUI smoke on Windows machine  
+- [ ] Real mp3 assets under `Assets/Soundscapes/`  
+- [ ] Partner Center SKUs + sandbox purchase (P3 / D1)
 
 ---
 
@@ -236,32 +242,32 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Planned (band)**
 
 | Feature area | Mobile | Windows now | Target band |
 | ------------ | ------ | ----------- | ----------- |
-| Pomodoro / Stopwatch | Done | Partial | **P0** |
-| Flowtime / Time Block | Done | Partial | **P2** |
-| Auto-start work/break | Done | Missing | **P0** (flags) / **P2** (full) |
-| Session journaling | Done | Missing | **P2** |
-| Task CRUD + lists | Done | Partial | **P0** |
-| Subtasks / priority / energy / recurring | Done | Partial | **P0** subtasks · **P2** rest |
-| Link task ↔ session | Done | Partial | **P0** |
-| Dashboard analytics | Done | Partial (fake) | **P2** |
-| AI reports | Partial/Done | Missing | **P2** (Everywhere) |
-| Themes | Done | Partial | **P0** basic · **P2** named themes |
-| Soundscapes | Done | Missing | **P2** |
+| Pomodoro / Stopwatch | Done | **Done** | **P0** |
+| Flowtime / Time Block | Done | **Done** | **P2** |
+| Auto-start work/break | Done | **Done** (Pomodoro cycle) | **P0/P2** |
+| Session journaling | Done | **Done** | **P2** |
+| Task CRUD + lists | Done | **Done** | **P0** |
+| Subtasks / priority / energy / recurring | Done | **Done** (simplified RRULE) | **P0/P2** |
+| Link task ↔ session | Done | **Done** | **P0** |
+| Dashboard analytics | Done | **Done** (local; ProgressBars) | **P2** |
+| AI reports | Partial/Done | Partial (placeholder insight) | **P2+** Everywhere |
+| Themes | Done | Partial | **P0** basic · named themes OK |
+| Soundscapes | Done | **Coded** (player; assets optional) | **P2** |
 | Phase notifications | Done | **Coded** (toasts) | **P1** |
 | Live Activity / ongoing | Done | N/A → tray + mini **Coded** | **P1** |
 | Widgets | Done | N/A / later | P3+ optional |
 | Watch / Wear | Done | **N/A** | — |
 | Health | Partial | **N/A** | — |
-| Backend auth + sync | Done | Partial skeleton | **P2** |
-| Billing / paywall | Done | Stub | **P2–P3** |
+| Backend auth + sync | Done | **Coded** (local-first) | **P2** |
+| Billing / paywall | Done | **Coded** (StoreContext + fallback) | **P2–P3** |
 | System tray | N/A mobile | **Coded** | **P1** |
 | Compact Overlay | N/A mobile | **Coded** | **P1** |
 | Global hotkeys | N/A mobile | **Coded** | **P1** |
 | Focus Assist / DND | Mobile APIs | **Coded** (best-effort no-op) | **P1** |
-| Onboarding | Done | Missing | **P2** |
-| Localization EN/ES/PT | Done | Partial hardcode | **P2** |
-| CSV export | Partial | Missing | **P2** (Pepinillo+) |
-| Offline-first local DB | Done | Partial | **P0** |
+| Onboarding | Done | Missing | **P3** optional |
+| Localization EN/ES/PT | Done | Partial (`LocalizationService`) | **P2** |
+| CSV export | Partial | Missing | **P3** (Pepinillo+) |
+| Offline-first local DB | Done | **Done** | **P0** |
 
 ---
 
@@ -321,9 +327,10 @@ Until D1 is decided, implement commerce **behind interfaces** and keep product I
 
 ## 12. Next action
 
-1. **On Windows:** build WinUI, run P0 smoke §4.3 + P1 tray/mini/hotkey/toast checks.  
-2. **Start P2** (analytics depth, soundscapes audio, auth/sync path, IAP sandbox).  
-3. Do not open Partner Center SKUs until **D1** pricing is confirmed.
+1. **On Windows:** build WinUI, run P0/P1 smoke + P2 Account/Soundscapes/Paywall/Analytics paths.  
+2. Drop real looping mp3s into `Pepinillo.WinUI/Assets/Soundscapes/`.  
+3. **Start P3** Store ship (assets, identity, MSIX sign, listing) after D1 pricing.  
+4. Do not open Partner Center SKUs until **D1** pricing is confirmed.
 
 ---
 

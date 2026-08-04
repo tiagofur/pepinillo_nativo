@@ -22,7 +22,8 @@ public class TaskService : ITaskService
         return await _dbContext.TaskItems
             .Include(t => t.SubTasks)
             .Where(t => t.ParentTaskId == null)
-            .OrderByDescending(t => t.CreatedAt)
+            .OrderByDescending(t => t.Priority)
+            .ThenByDescending(t => t.CreatedAt)
             .ToListAsync();
     }
 
@@ -35,7 +36,8 @@ public class TaskService : ITaskService
                         && t.DueDate.HasValue
                         && t.DueDate.Value.Date <= today
                         && !t.IsCompleted)
-            .OrderBy(t => t.DueDate)
+            .OrderByDescending(t => t.Priority)
+            .ThenBy(t => t.DueDate)
             .ToListAsync();
     }
 
@@ -48,7 +50,8 @@ public class TaskService : ITaskService
                         && t.DueDate.HasValue
                         && t.DueDate.Value.Date >= tomorrow
                         && !t.IsCompleted)
-            .OrderBy(t => t.DueDate)
+            .OrderByDescending(t => t.Priority)
+            .ThenBy(t => t.DueDate)
             .ToListAsync();
     }
 
@@ -57,14 +60,32 @@ public class TaskService : ITaskService
         return await _dbContext.TaskItems
             .Include(t => t.SubTasks)
             .Where(t => !t.DueDate.HasValue && !t.IsCompleted && !t.ParentTaskId.HasValue)
-            .OrderByDescending(t => t.CreatedAt)
+            .OrderByDescending(t => t.Priority)
+            .ThenByDescending(t => t.CreatedAt)
             .ToListAsync();
     }
 
-    public async Task<TaskItem> CreateTaskAsync(string title, string? description = null, int estimatedMinutes = 25, DateTime? dueDate = null, Guid? parentTaskId = null)
+    public async Task<TaskItem> CreateTaskAsync(
+        string title,
+        string? description = null,
+        int estimatedMinutes = 25,
+        DateTime? dueDate = null,
+        Guid? parentTaskId = null,
+        int priority = 0,
+        string energyLevel = "",
+        string? recurrenceRule = null,
+        int estimatedPomodoros = 0)
     {
         if (string.IsNullOrWhiteSpace(title))
             throw new ArgumentException("Title cannot be empty", nameof(title));
+
+        var normalizedEnergy = NormalizeEnergy(energyLevel);
+        var normalizedRecurrence = NormalizeRecurrence(recurrenceRule);
+        var clampedPriority = Math.Clamp(priority, 0, 3);
+
+        var pomodoros = estimatedPomodoros > 0
+            ? estimatedPomodoros
+            : Math.Max(1, (int)Math.Ceiling(estimatedMinutes / 25.0));
 
         var task = new TaskItem
         {
@@ -72,6 +93,10 @@ public class TaskService : ITaskService
             Title = title.Trim(),
             Description = description,
             EstimatedMinutes = estimatedMinutes,
+            EstimatedPomodoros = pomodoros,
+            Priority = clampedPriority,
+            EnergyLevel = normalizedEnergy,
+            RecurrenceRule = normalizedRecurrence,
             DueDate = dueDate,
             ParentTaskId = parentTaskId,
             CreatedAt = DateTime.UtcNow,
@@ -91,6 +116,11 @@ public class TaskService : ITaskService
         existing.Title = task.Title;
         existing.Description = task.Description;
         existing.EstimatedMinutes = task.EstimatedMinutes;
+        existing.EstimatedPomodoros = task.EstimatedPomodoros;
+        existing.CompletedPomodoros = task.CompletedPomodoros;
+        existing.Priority = Math.Clamp(task.Priority, 0, 3);
+        existing.EnergyLevel = NormalizeEnergy(task.EnergyLevel);
+        existing.RecurrenceRule = NormalizeRecurrence(task.RecurrenceRule);
         existing.DueDate = task.DueDate;
         existing.IsCompleted = task.IsCompleted;
 
@@ -116,5 +146,28 @@ public class TaskService : ITaskService
             _dbContext.TaskItems.Remove(task);
             await _dbContext.SaveChangesAsync();
         }
+    }
+
+    private static string NormalizeEnergy(string? energy)
+    {
+        if (string.IsNullOrWhiteSpace(energy))
+            return string.Empty;
+
+        var e = energy.Trim().ToLowerInvariant();
+        return e is "deep" or "shallow" or "admin" ? e : string.Empty;
+    }
+
+    private static string? NormalizeRecurrence(string? rule)
+    {
+        if (string.IsNullOrWhiteSpace(rule) || rule.Equals("None", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        var r = rule.Trim().ToUpperInvariant();
+        return r switch
+        {
+            "DAILY" or "FREQ=DAILY" => "FREQ=DAILY",
+            "WEEKLY" or "FREQ=WEEKLY" => "FREQ=WEEKLY",
+            _ => rule.Trim()
+        };
     }
 }

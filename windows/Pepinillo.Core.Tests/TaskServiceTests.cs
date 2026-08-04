@@ -30,6 +30,31 @@ public class TaskServiceTests
         Assert.Equal("Escribir documentación", task.Title);
         Assert.Equal(45, task.EstimatedMinutes);
         Assert.False(task.IsCompleted);
+        Assert.True(task.EstimatedPomodoros >= 1);
+    }
+
+    [Fact]
+    public async Task CreateTask_WithPriorityEnergyRecurrence_ShouldPersist()
+    {
+        using var dbContext = CreateInMemoryDbContext();
+        var service = new TaskService(dbContext);
+
+        var task = await service.CreateTaskAsync(
+            "Deep refactor",
+            estimatedMinutes: 50,
+            priority: 3,
+            energyLevel: "deep",
+            recurrenceRule: "DAILY");
+
+        Assert.Equal(3, task.Priority);
+        Assert.Equal("deep", task.EnergyLevel);
+        Assert.Equal("FREQ=DAILY", task.RecurrenceRule);
+        Assert.Equal(2, task.EstimatedPomodoros); // ceil(50/25)
+
+        var loaded = await dbContext.TaskItems.FindAsync(task.Id);
+        Assert.NotNull(loaded);
+        Assert.Equal("FREQ=DAILY", loaded!.RecurrenceRule);
+        Assert.Equal("deep", loaded.EnergyLevel);
     }
 
     [Fact]
