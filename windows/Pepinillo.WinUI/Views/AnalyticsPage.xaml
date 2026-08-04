@@ -79,6 +79,133 @@
                 </Border>
             </Grid>
 
+            <!-- Achievements (FREE) — horizontal scroll -->
+            <TextBlock Text="Achievements"
+                       Style="{ThemeResource SubtitleTextBlockStyle}"
+                       FontWeight="SemiBold"/>
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled"
+                          HorizontalScrollMode="Enabled"
+                          VerticalScrollMode="Disabled">
+                <ItemsControl x:Name="AchievementsList"
+                              ItemsSource="{x:Bind ViewModel.Achievements, Mode=OneWay}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="12"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:AchievementProgress">
+                            <Border Width="180"
+                                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                                    Padding="{StaticResource PepinilloCardPaddingCompact}">
+                                <StackPanel Spacing="6">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Grid.Column="0"
+                                                   Text="{x:Bind Title}"
+                                                   FontWeight="SemiBold"
+                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{x:Bind StatusGlyph}"
+                                                   FontSize="14"
+                                                   VerticalAlignment="Top"/>
+                                    </Grid>
+                                    <TextBlock Text="{x:Bind Description}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               TextWrapping="Wrap"
+                                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <ProgressBar Minimum="0"
+                                                 Maximum="1"
+                                                 Value="{x:Bind ProgressRatio}"
+                                                 Height="8"/>
+                                    <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}">
+                                        <Run Text="{x:Bind ProgressCurrent}"/>
+                                        <Run Text="/"/>
+                                        <Run Text="{x:Bind ProgressTarget}"/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- Weekly Review (premium details / free teaser) -->
+            <Border x:Name="WeeklyReviewCard"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE787;"
+                                  Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
+                        <TextBlock Text="Weekly Review"
+                                   FontWeight="SemiBold"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                        <Border x:Name="WeeklyPremiumBadge"
+                                Background="{StaticResource PepinilloPremiumBadgeBrush}"
+                                CornerRadius="4"
+                                Padding="6,2"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="Pepinillo+"
+                                       FontSize="11"
+                                       Foreground="White"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock x:Name="WeeklyReviewDetailText"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"/>
+                    <TextBlock x:Name="WeeklyReviewTeaserText"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource PepinilloPaywallHintBrush}"
+                               Visibility="Collapsed"/>
+                    <Button x:Name="WeeklyUpgradeButton"
+                            Content="Upgrade for Weekly Review"
+                            Click="ReviewPaywall_Click"
+                            Visibility="Collapsed"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Monthly Review (premium details / free teaser) -->
+            <Border x:Name="MonthlyReviewCard"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE787;"
+                                  Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
+                        <TextBlock Text="Monthly Review"
+                                   FontWeight="SemiBold"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                        <Border x:Name="MonthlyPremiumBadge"
+                                Background="{StaticResource PepinilloPremiumBadgeBrush}"
+                                CornerRadius="4"
+                                Padding="6,2"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="Pepinillo+"
+                                       FontSize="11"
+                                       Foreground="White"/>
+                        </Border>
+                    </StackPanel>
+                    <TextBlock x:Name="MonthlyReviewDetailText"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"/>
+                    <TextBlock x:Name="MonthlyReviewTeaserText"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource PepinilloPaywallHintBrush}"
+                               Visibility="Collapsed"/>
+                    <Button x:Name="MonthlyUpgradeButton"
+                            Content="Upgrade for Monthly Review"
+                            Click="ReviewPaywall_Click"
+                            Visibility="Collapsed"/>
+                </StackPanel>
+            </Border>
+
             <Border Background="{StaticResource PepinilloThemeAccentBrush}"
                     CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                     Padding="{StaticResource PepinilloCardPadding}">

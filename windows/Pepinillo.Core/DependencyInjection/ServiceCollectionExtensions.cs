@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IEntitlementService, EntitlementService>();
         services.AddSingleton<ITaskService, TaskService>();
         services.AddSingleton<ISyncService, SyncService>();
+        services.AddSingleton<IReflectService, ReflectService>();
 
         services.AddSingleton<FocusViewModel>();
         services.AddTransient<TasksViewModel>();

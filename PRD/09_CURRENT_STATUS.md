@@ -351,7 +351,7 @@
 - **Tasks:** Today/Upcoming/Inbox/All; priority/energy/recurrence/pomodoro estimates; subtasks
 - **Settings** + theme + language preference + Privacy/Terms links + Upgrade CTA
 - **Design system (W2 partial→improved):** `Resources/DesignTokens.xaml` (card radius, page margin, mode color brushes); theme picker System/Light/Dark (free) + Forest/Ocean/Sunset (premium via `IEntitlementService.CanUseTheme`); OLEDBlack aliases Dark; `ThemeHelper` applies ElementTheme + accent tokens + Mica when `UseMicaBackdrop`; Focus mode chips colored; Tasks/Analytics empty copy polish; Paywall “not a subscription” badge + tokens
-- **Analytics:** today minutes, 7-day hours, current/best streak (UTC), mode breakdown bars, recent sessions + empty-state message
+- **Analytics / Reflect (W4 #578):** today minutes, 7-day hours (free), current/best streak (UTC), mode breakdown bars, recent sessions + empty-state; **6 FREE achievements** (horizontal progress cards from local sessions; Early Bird = StartedAt hour &lt; 07:00 UTC); **Weekly Review** (Mon–Sun UTC vs previous week) + **Monthly Review** (calendar month UTC) with hours/sessions/top mode/trend — premium details, free locked teaser → Paywall
 - **Soundscapes:** EN catalog + MediaPlayer service; premium gate; missing-asset graceful status
 - **Auth:** PasswordVault token store, Account login/register/logout
 - **Sync:** local-first push of `IsSynced=false` sessions + subscription pull
@@ -359,7 +359,7 @@
 - **Localization:** `LocalizationService` EN/ES/PT for Settings + Focus primary labels
 - **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort
 - **P3 packaging:** Store/tile/splash logos; `Directory.Build.props` version; MSIX pack + dev-cert scripts; CI pack artifact; listing/IAP/cert/runbook docs under `windows/store/`
-- Core unit tests: **69/69** green (includes theme entitlement gating)
+- Core unit tests: **86/86** green (includes theme entitlement + Reflect W4 achievements/reviews)
 - Manifest: `internetClient` + `runFullTrust` (documented)
 
 ### Missing (blocks full product / live Store)
@@ -369,7 +369,7 @@ Tracked in excellence epic **#573** / [PRD/13](13_WINDOWS_EXCELLENCE_PLAN.md):
 - **Manual WinUI smoke on a Windows machine** → **#575** (not verified on macOS host)
 - Real looping mp3 assets under `Assets/Soundscapes/` → **#577**
 - Real Store screenshots + Partner Center + live IAP → **#568**
-- Reflect: Weekly/Monthly Review + achievements → **#578**
+- Reflect: Weekly/Monthly Review + achievements → **#578** (**coded** on `feat/windows-w4-reflect`; smoke on Windows pending)
 - Full .resw localization, onboarding, CSV export → **#582**, **#581**, **#580**
 - Hotkey rebind, toast actions, Focus Assist real, startup → **#583**
 - Design system residual (full Fluent depth, live theme previews, selected-chip state) → **#576** follow-ups
