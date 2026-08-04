@@ -151,14 +151,22 @@ public class TaskServiceTests
     {
         public bool IsAuthenticated => false;
         public string? AuthToken => null;
+        public int? LastStatusCode => null;
+        public string? LastError => null;
         public Task InitializeAsync() => Task.CompletedTask;
         public Task<bool> LoginAsync(string email, string password) => Task.FromResult(false);
         public Task<bool> RegisterAsync(string email, string password, string name) => Task.FromResult(false);
         public Task<bool> RefreshAsync() => Task.FromResult(false);
         public Task LogoutAsync() => Task.CompletedTask;
-        public Task<bool> SyncSessionsAsync(System.Collections.Generic.IEnumerable<FocusSession> sessions) =>
-            Task.FromResult(false);
+        public Task<Pepinillo.Core.Models.Sync.SessionSyncClientResult> SyncSessionsAsync(
+            System.Collections.Generic.IEnumerable<FocusSession> sessions,
+            System.DateTime? lastSyncAt = null) =>
+            Task.FromResult(new Pepinillo.Core.Models.Sync.SessionSyncClientResult { Success = false });
+        public Task<Pepinillo.Core.Models.Sync.FullSyncClientResult> PullSessionsAsync(
+            int limit = 100, string? sessionCursor = null) =>
+            Task.FromResult(new Pepinillo.Core.Models.Sync.FullSyncClientResult { Success = false });
         public Task<SubscriptionStatus> GetSubscriptionStatusAsync() =>
             Task.FromResult(new SubscriptionStatus { Tier = EntitlementTier.Free });
+
     }
 }

@@ -48,4 +48,12 @@ public class UserSettings
 
     /// <summary>UI language preference: en, es, pt (BCP-47 short tags).</summary>
     public string PreferredLanguage { get; set; } = "en";
+
+    /// <summary>
+    /// Stable per-install device id sent as <c>X-Device-ID</c> on authenticated API calls.
+    /// </summary>
+    public string? DeviceId { get; set; }
+
+    /// <summary>UTC timestamp of last successful cloud session sync (for lastSyncAt).</summary>
+    public DateTime? LastSyncAtUtc { get; set; }
 }

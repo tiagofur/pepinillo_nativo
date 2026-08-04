@@ -208,8 +208,8 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Themes 4 named | Done | **Improved (W2):** System/Light/Dark free + Forest/Ocean/Sunset gated via `CanUseTheme`; DesignTokens + Mica; OLEDBlack aliases Dark | Full + gate | W2 |
 | Onboarding | Done | Missing | Done | W7 |
 | EN/ES/PT | Done | Partial | Full .resw | W8 |
-| Auth email/password | Done | Done | + verify UX, merge | W10 |
-| Everywhere sync | Done | Partial | Full session/tasks/settings | W10 |
+| Auth email/password | Done | **Done (W10 #584):** nested tokens + refresh; Account UX (offline vs signed-in, email validation, register auto-sign-in when tokens returned, busy disable, LastSyncAt + LastError); free/local copy honest | Full | W10 |
+| Everywhere sync | Done | **Sessions depth (W10 #584):** POST `/sync/sessions` wrapped body + mode map (pomodoro/flowtime/timeblock/stopwatch); GET `/sync/full` session pull + LWW upsert; `X-Device-ID`; 403 → Everywhere required; subscription pull. **Residual:** bidirectional task/settings sync | Full session/tasks/settings | W10 |
 | Paywall + restore | Done | Partial | Perfect copy + restore | W11 |
 | Export CSV/PDF | Partial/Done | Missing | Done | W6 |
 | Phase notifications | Done | **Done (W9 #583):** AppNotification buttons Pause/Resume/Stop/Skip + `NotificationInvoked` → FocusViewModel | + polish | W9 |

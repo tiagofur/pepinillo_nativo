@@ -137,6 +137,10 @@ namespace Pepinillo.Core.Migrations
                     b.Property<bool>("CompactMiniTimerAlwaysOnTop")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("EnableSoundscapes")
                         .HasColumnType("INTEGER");
 
@@ -154,6 +158,9 @@ namespace Pepinillo.Core.Migrations
 
                     b.Property<bool>("LaunchAtWindowsStartup")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastSyncAtUtc")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("LongBreakInterval")
                         .HasColumnType("INTEGER");

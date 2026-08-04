@@ -242,6 +242,8 @@ public class SettingsAndSessionPersistTests
     {
         public bool IsAuthenticated => false;
         public string? AuthToken => null;
+        public int? LastStatusCode => null;
+        public string? LastError => null;
         public System.Threading.Tasks.Task InitializeAsync() => System.Threading.Tasks.Task.CompletedTask;
         public System.Threading.Tasks.Task<bool> LoginAsync(string email, string password) =>
             System.Threading.Tasks.Task.FromResult(false);
@@ -249,8 +251,13 @@ public class SettingsAndSessionPersistTests
             System.Threading.Tasks.Task.FromResult(false);
         public System.Threading.Tasks.Task<bool> RefreshAsync() => System.Threading.Tasks.Task.FromResult(false);
         public System.Threading.Tasks.Task LogoutAsync() => System.Threading.Tasks.Task.CompletedTask;
-        public System.Threading.Tasks.Task<bool> SyncSessionsAsync(System.Collections.Generic.IEnumerable<FocusSession> sessions) =>
-            System.Threading.Tasks.Task.FromResult(false);
+        public System.Threading.Tasks.Task<Pepinillo.Core.Models.Sync.SessionSyncClientResult> SyncSessionsAsync(
+            System.Collections.Generic.IEnumerable<FocusSession> sessions,
+            System.DateTime? lastSyncAt = null) =>
+            System.Threading.Tasks.Task.FromResult(new Pepinillo.Core.Models.Sync.SessionSyncClientResult { Success = false });
+        public System.Threading.Tasks.Task<Pepinillo.Core.Models.Sync.FullSyncClientResult> PullSessionsAsync(
+            int limit = 100, string? sessionCursor = null) =>
+            System.Threading.Tasks.Task.FromResult(new Pepinillo.Core.Models.Sync.FullSyncClientResult { Success = false });
         public System.Threading.Tasks.Task<SubscriptionStatus> GetSubscriptionStatusAsync() =>
             System.Threading.Tasks.Task.FromResult(new SubscriptionStatus { Tier = EntitlementTier.Free });
     }
