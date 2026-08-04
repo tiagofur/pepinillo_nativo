@@ -228,6 +228,24 @@
                     CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                     Padding="{StaticResource PepinilloCardPadding}">
                 <StackPanel Spacing="12">
+                    <TextBlock Text="Help"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                               FontWeight="SemiBold"/>
+                    <TextBlock Text="Replay the first-run welcome guide (modes, tray, hotkeys, mini timer)."
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="WrapWholeWords"/>
+                    <Button Content="Show welcome guide"
+                            Command="{x:Bind ViewModel.ReplayOnboardingCommand}"
+                            HorizontalAlignment="Left"
+                            AutomationProperties.Name="Show welcome guide"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPadding}">
+                <StackPanel Spacing="12">
                     <TextBlock Text="Legal"
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>

@@ -65,4 +65,15 @@ public class UserSettings
 
     /// <summary>Number of streak-protection skips consumed in the current ISO week (max 1).</summary>
     public int StreakProtectionUsesThisWeek { get; set; }
+
+    /// <summary>
+    /// When false, first-run onboarding is shown once at launch. Skip/Finish set this true.
+    /// </summary>
+    public bool HasCompletedOnboarding { get; set; }
+
+    /// <summary>
+    /// Preferred focus mode name (FocusMode enum: Pomodoro, Stopwatch, Flowtime, TimeBlocking).
+    /// Chosen during onboarding; applied on Focus when idle and entitled.
+    /// </summary>
+    public string PreferredFocusMode { get; set; } = "Pomodoro";
 }

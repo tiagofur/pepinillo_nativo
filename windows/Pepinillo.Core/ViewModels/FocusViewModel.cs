@@ -147,6 +147,7 @@ public partial class FocusViewModel : ObservableObject
         _cachedSettings = await _settingsService.GetSettingsAsync();
         ApplySettingsToEngine(_cachedSettings);
         ApplyLanguage(_cachedSettings.PreferredLanguage);
+        TryApplyPreferredFocusMode(_cachedSettings);
 
         if (_focusEngine.CurrentState == SessionState.Idle && !_focusEngine.IsOnBreak)
         {
@@ -158,6 +159,23 @@ public partial class FocusViewModel : ObservableObject
         await LoadAvailableTasksAsync();
         await RefreshSoundscapeChipAsync();
         UpdateCommandFlags();
+    }
+
+    /// <summary>
+    /// Applies onboarding / settings preferred mode when idle and the tier allows it.
+    /// </summary>
+    private void TryApplyPreferredFocusMode(UserSettings settings)
+    {
+        if (_focusEngine.CurrentState != SessionState.Idle || _focusEngine.IsOnBreak)
+            return;
+
+        if (!Enum.TryParse<FocusMode>(settings.PreferredFocusMode, ignoreCase: true, out var preferred))
+            return;
+
+        if (_entitlements != null && !_entitlements.CanUseFocusMode(preferred))
+            preferred = FocusMode.Pomodoro;
+
+        SelectedMode = preferred;
     }
 
     /// <summary>

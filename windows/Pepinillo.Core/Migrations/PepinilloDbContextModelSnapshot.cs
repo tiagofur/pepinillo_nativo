@@ -156,6 +156,9 @@ namespace Pepinillo.Core.Migrations
                     b.Property<int>("FlowtimeTargetMinutes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("HasCompletedOnboarding")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("LaunchAtWindowsStartup")
                         .HasColumnType("INTEGER");
 
@@ -181,6 +184,11 @@ namespace Pepinillo.Core.Migrations
 
                     b.Property<int>("PomodoroFocusMinutes")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("PreferredFocusMode")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PreferredLanguage")
                         .IsRequired()

@@ -239,6 +239,36 @@ public class SettingsAndSessionPersistTests
         Assert.Equal(0.42, reload.SoundscapesMasterVolume);
     }
 
+    [Fact]
+    public async Task Settings_OnboardingFields_DefaultAndRoundTrip()
+    {
+        await using var db = CreateDb();
+        var service = new SettingsService(db);
+
+        var settings = await service.GetSettingsAsync();
+        Assert.False(settings.HasCompletedOnboarding);
+        Assert.Equal("Pomodoro", settings.PreferredFocusMode);
+
+        settings.HasCompletedOnboarding = true;
+        settings.PreferredFocusMode = "Stopwatch";
+        await service.SaveSettingsAsync(settings);
+
+        // New service instance without cache to force DB read
+        var service2 = new SettingsService(db);
+        // Note: SettingsService caches per instance; use AsNoTracking for DB truth
+        var reload = await db.UserSettings.AsNoTracking().FirstAsync();
+        Assert.True(reload.HasCompletedOnboarding);
+        Assert.Equal("Stopwatch", reload.PreferredFocusMode);
+
+        // Round-trip through a fresh SettingsService on same context may still see tracked entity;
+        // clear change tracker and use a new context-backed service.
+        db.ChangeTracker.Clear();
+        var service3 = new SettingsService(db);
+        var again = await service3.GetSettingsAsync();
+        Assert.True(again.HasCompletedOnboarding);
+        Assert.Equal("Stopwatch", again.PreferredFocusMode);
+    }
+
     private sealed class NoOpBackend : IBackendApiClient
     {
         public bool IsAuthenticated => false;
