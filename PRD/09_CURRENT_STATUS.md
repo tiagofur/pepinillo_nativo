@@ -16,7 +16,7 @@
 | watchOS         | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included      | Requires Xcode setup |
 | Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
 | Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |
-| Windows (desktop) | **P0–P3 packaging ready** (shell + desktop power + parity/auth/sync/commerce + Store assets/docs/MSIX CI); WinUI smoke + Partner Center submission remaining | ~100+ C#/XAML | ~6K+ | CI: Core tests 32/32; x64/ARM64 build; MSIX pack job |
+| Windows (desktop) | **Excellence W0–W15 code merged** (parity depth + desktop craft + Store kit); **ops left:** WinUI smoke (#575) + Partner Center (#568) | ~100+ C#/XAML | ~6K+ | CI: Core tests + x64/ARM64 build + MSIX pack |
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
 
 **Windows tracking docs:** product PRD [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · execution plan [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
@@ -340,7 +340,7 @@
 **Path:** `windows/` (`Pepinillo.Core`, `Pepinillo.WinUI`, `Pepinillo.Core.Tests`)  
 **Store docs:** `windows/store/` · **Pack:** `windows/scripts/pack-msix.ps1`  
 **Docs:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)  
-**Excellence (perfect parity + desktop craft):** [13_WINDOWS_EXCELLENCE_PLAN.md](13_WINDOWS_EXCELLENCE_PLAN.md) · epic [#573](https://github.com/tiagofur/pepinillo_nativo/issues/573) · children #574–#589 · Store [#568](https://github.com/tiagofur/pepinillo_nativo/issues/568)
+**Excellence (perfect parity + desktop craft):** [13_WINDOWS_EXCELLENCE_PLAN.md](13_WINDOWS_EXCELLENCE_PLAN.md) · epic [#573](https://github.com/tiagofur/pepinillo_nativo/issues/573) · **W0–W15 code merged** (through #604) · remaining ops: smoke [#575](https://github.com/tiagofur/pepinillo_nativo/issues/575) · Store [#568](https://github.com/tiagofur/pepinillo_nativo/issues/568)
 
 ### Present (P0 + P1 + P2 coded + P3 packaging)
 
@@ -371,32 +371,22 @@
 
 ### Missing (blocks full product / live Store)
 
-Tracked in excellence epic **#573** / [PRD/13](13_WINDOWS_EXCELLENCE_PLAN.md):
+**Excellence feature code (W0–W15) is merged.** Only ops remain for launch certainty:
 
-- **Manual WinUI smoke on a Windows machine** → **#575** (not verified on macOS host)
-- Licensed/real soundscape masters (placeholders ship for W3 #577; replace before Store public)
-- Real Store screenshots + Partner Center + live IAP → **#568**
-- Reflect: Weekly/Monthly Review + achievements → **#578** (**coded** on `feat/windows-w4-reflect`; smoke on Windows pending)
-- Full in-memory localization EN/ES/PT → **#582** (**coded** on `feat/windows-w8-i18n`; optional .resw later; WinUI smoke pending)
-- Onboarding first-run → **#581** (**coded** on `feat/windows-w7-onboarding`; WinUI smoke pending)
-- CSV/PDF export + streak protection → **#580** (**coded** on `feat/windows-w6-export-streak`; WinUI FileSavePicker smoke pending)
-- Hotkey rebind, toast actions, Focus Assist real, startup → **#583** (**coded** on `feat/windows-w9-desktop-power`; WinUI smoke pending; OS Focus Assist still cannot be toggled by third-party apps)
-- Design system residual (full Fluent depth, live theme previews, selected-chip state) → **#576** follow-ups
-- Auth/sync session depth → **#584** (**coded** on `feat/windows-w10-auth-sync`; residual task/settings bi-sync; smoke on Windows pending)
-- Paywall excellence → **#585** (**coded** on `feat/windows-w11-commerce`; sandbox/SKUs residual #568)
-- A11y gate → **#589** (**coded** on `feat/windows-w15-a11y`; Narrator/HC/200% smoke on Windows pending)
-- Tasks/Plan excellence → **#586** (**coded** on `feat/windows-w12-tasks-excellence`; WinUI smoke on Windows pending; no drag-reorder without SortOrder)
-- Calendar time-block grid → **#587** (**coded** on `feat/windows-w13-calendar-grid`; no external calendar sync; WinUI smoke on Windows pending)
-- Multi-monitor + shell excellence → **#588** (**coded** on `feat/windows-w14-shell-excellence`; multi-monitor WinUI smoke pending; Jump List warm-start single-instance optional)
+| Blocker | Issue | Action |
+| ------- | ----- | ------ |
+| **WinUI hardware smoke** | **#575** | Run `windows/store/LAUNCH_CHECKLIST.md` Phase B + `A11Y_SMOKE.md` on Windows 10/11 |
+| **Store / Partner Center** | **#568** | Screenshots, production publisher CN, IAP SKUs (D1), Internal flight |
+| **Licensed soundscape audio** | (post-#577) | Replace placeholder mp3s under `Assets/Soundscapes/` before public Store |
+| **Optional residuals** | — | Task bi-sync; `.resw`; SortOrder reorder; external calendar; single-instance Jump List; Fluent depth polish |
 
 ### Pending Windows (priority bands)
 
 | Band | Goal | Status |
 | ---- | ---- | ------ |
-| **P0** | Runnable local MVP (DI, nav, Focus, tasks, settings, theme) | **Coded** — smoke on Windows pending |
-| **P1** | Tray, mini-timer, hotkeys, toasts, Focus Assist | **Coded (W9 v2)** — smoke on Windows pending |
-| **P2** | Analytics depth, soundscapes, auth/sync, IAP path, i18n | **Coded** — assets + sandbox pending |
-| **P3** | MSIX, Partner Center, certification, beta | **In-repo packaging ready** — Partner Center + smoke remaining |
+| **P0–P2 + excellence W0–W15** | Full product surface (focus, tasks, calendar, reflect, audio, auth/sync, commerce, a11y, i18n, shell) | **Merged to main** |
+| **#575** | Hardware WinUI smoke + quality bar | **Open** — run on Windows 10/11 |
+| **#568 / P3** | Partner Center, IAP sandbox, Internal flight | **Open** — Store ops |
 
 **Pricing (D1 resolved):** Pepinillo+ Windows **$9.99** durable (platform-scoped); Everywhere **$4.99/mo · $34.99/yr** (match global mobile). Launch path: [`windows/store/LAUNCH_CHECKLIST.md`](../windows/store/LAUNCH_CHECKLIST.md) · issue [#568](https://github.com/tiagofur/pepinillo_nativo/issues/568).
 

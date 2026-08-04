@@ -1,11 +1,11 @@
 # Pepinillo Windows — Excellence Plan (Perfect Product)
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-08-04  
-**Status:** Active backlog — plan + GitHub issues  
+**Status:** **Code complete (W0–W15 merged)** — remaining is hardware smoke + Store ops  
 **Audience:** Humans and AI agents implementing Windows  
 **Depends on:** [11](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12](12_WINDOWS_EXECUTION_PLAN.md) · [02](02_FEATURES.md) · [04](04_MONETIZATION.md) · [09](09_CURRENT_STATUS.md)  
-**Launch ops:** [windows/store/LAUNCH_CHECKLIST.md](../windows/store/LAUNCH_CHECKLIST.md) · issue **#568**
+**Launch ops:** [windows/store/LAUNCH_CHECKLIST.md](../windows/store/LAUNCH_CHECKLIST.md) · issue **#568** · smoke **#575**
 
 ---
 
@@ -34,7 +34,7 @@ P0–P2 + packaging kit exist under `windows/`:
 | P3 packaging | Logos, MSIX scripts/CI, store docs | In-repo ready |
 | Post-merge | Auth gates (#570), EF migrations (#571), Flowtime soft + partial Pomodoro (#572) | Merged |
 
-**Remaining is excellence + parity depth + Store proof**, not greenfield.
+**Excellence feature code (W0–W15) is merged to main.** Remaining for launch certainty: **#575** WinUI hardware smoke and **#568** Partner Center / Store flight (not greenfield features).
 
 ---
 
@@ -126,7 +126,7 @@ Code gate owner: `windows/Pepinillo.Core/Services/EntitlementService.cs`.
 | **W11** | Paywall + commerce excellence | **[#585](https://github.com/tiagofur/pepinillo_nativo/issues/585)** — **coded** on `feat/windows-w11-commerce` (sandbox/Partner Center SKUs still #568) | P0 | #568 SKUs |
 | **W12** | Tasks/Plan excellence | **[#586](https://github.com/tiagofur/pepinillo_nativo/issues/586)** — **coded** on `feat/windows-w12-tasks-excellence` (WinUI smoke on Windows pending) | P1 | W2 |
 | **W13** | Calendar time-block grid (desktop advantage) | **[#587](https://github.com/tiagofur/pepinillo_nativo/issues/587)** — **coded** on `feat/windows-w13-calendar-grid` (WinUI smoke on Windows pending) | P2 | W12 |
-| **W14** | Multi-monitor + shell excellence | **[#588](https://github.com/tiagofur/pepinillo_nativo/issues/588)** — **coded** on `feat/windows-w14-shell-excellence` (WinUI multi-monitor smoke pending) | P2 | W9 |
+| **W14** | Multi-monitor + shell excellence | **[#588](https://github.com/tiagofur/pepinillo_nativo/issues/588)** — **merged** (#604); multi-monitor WinUI smoke → #575 | P2 | W9 |
 | **W15** | Accessibility + keyboard-first | **[#589](https://github.com/tiagofur/pepinillo_nativo/issues/589)** — **coded** on `feat/windows-w15-a11y` (Narrator smoke on Windows pending; see `windows/store/A11Y_SMOKE.md`) | P1 | W2 |
 | **W16** | Microsoft Store launch (ops) | **[#568](https://github.com/tiagofur/pepinillo_nativo/issues/568)** | P0 | W1 smoke |
 
@@ -278,6 +278,8 @@ Use as acceptance for design-system work:
 
 | Date | Change |
 | ---- | ------ |
+| 2026-08-04 | **v1.1 — Code complete:** W0–W15 merged (through #604 W14). Open: **#575** smoke, **#568** Store |
+| 2026-08-04 | W14 #588 merged — mini-timer bounds, Jump List, tray tooltip; multi-monitor smoke → #575 |
 | 2026-08-04 | W13 #587 coded — Calendar day planner + PlannedTimeBlock + Time Blocking start; §7 Calendar grid Done |
 | 2026-08-04 | W12 #586 coded — Tasks keyboard excellence, empty CTAs, free-limit paywall, density chips; §7 Tasks row Done |
 | 2026-08-04 | W15 #589 coded — AutomationProperties + keyboard accelerators + A11Y_SMOKE; §7/G8 partial→checklist ready |
@@ -288,7 +290,8 @@ Use as acceptance for design-system work:
 ## 12. Quick path for a new agent
 
 1. Read this file §1–4 and §6.
-2. Open epic **[#573](https://github.com/tiagofur/pepinillo_nativo/issues/573)**; pick the highest-priority open child with no unfinished dependency (start with **#575** smoke if not done).
-3. Implement only that issue’s scope.
-4. Tests + PR linking `Fixes #N`.
-5. Update §7 / `09` in the same PR when behavior changes.
+2. Feature workstreams W0–W15 are **merged**. Next actions are ops, not new features:
+   - **[#575](https://github.com/tiagofur/pepinillo_nativo/issues/575)** — run `windows/store/LAUNCH_CHECKLIST.md` Phase B + `A11Y_SMOKE.md` on Windows 10/11.
+   - **[#568](https://github.com/tiagofur/pepinillo_nativo/issues/568)** — Partner Center Internal flight (SKUs, screenshots, cert).
+3. Only open new feature issues for true gaps found in smoke.
+4. Update §7 / `09` when smoke results land.
