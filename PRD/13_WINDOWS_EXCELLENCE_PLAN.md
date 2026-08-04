@@ -117,7 +117,7 @@ Code gate owner: `windows/Pepinillo.Core/Services/EntitlementService.cs`.
 | **W2** | Fluent design system + visual excellence | **[#576](https://github.com/tiagofur/pepinillo_nativo/issues/576)** | **P0** | W1 preferred |
 | **W3** | Soundscapes complete (assets + session audio) | **[#577](https://github.com/tiagofur/pepinillo_nativo/issues/577)** | P0 | W2 tokens optional |
 | **W4** | Reflect parity (Weekly/Monthly + achievements) | **[#578](https://github.com/tiagofur/pepinillo_nativo/issues/578)** | P0 | — |
-| **W5** | Mode Intelligence | **[#579](https://github.com/tiagofur/pepinillo_nativo/issues/579)** | P1 | W4 data helpful |
+| **W5** | Mode Intelligence | **[#579](https://github.com/tiagofur/pepinillo_nativo/issues/579)** — **coded** on `feat/windows-w5-mode-intelligence` (WinUI smoke pending) | P1 | W4 data helpful |
 | **W6** | Export CSV/PDF + streak protection | **[#580](https://github.com/tiagofur/pepinillo_nativo/issues/580)** | P1 | Entitlements |
 | **W7** | First-run onboarding | **[#581](https://github.com/tiagofur/pepinillo_nativo/issues/581)** — **coded** on `feat/windows-w7-onboarding` (WinUI smoke pending) | P1 | W2 |
 | **W8** | Full EN/ES/PT localization | **[#582](https://github.com/tiagofur/pepinillo_nativo/issues/582)** | P1 | — |
@@ -197,7 +197,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | ------- | ------------ | ----------- | -------------- | ---------- |
 | Pomodoro / Stopwatch | Done | Done | Done | — |
 | Flowtime soft / Time Block | Done | Done | Done + polish | W2 |
-| Mode Intelligence | iOS done / Android partial | Missing | Done (local) | W5 |
+| Mode Intelligence | iOS done / Android partial | **Done (W5 #579):** local `ModeIntelligenceService` (task min 3 / energy min 5 / global 30d time-of-day); Focus banner Apply/Dismiss; free locked teaser → paywall; Pepinillo+ apply configures idle engine | Done (local) | W5 |
 | Journal + energy | Done | Done | Done + polish | W2 |
 | Tasks CRUD + filters | Done | Done | Done + keyboard excellence | W12 |
 | Subtasks / recurrence gates | Done | Done | Done | — |

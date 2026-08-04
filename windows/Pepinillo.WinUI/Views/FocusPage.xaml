@@ -17,6 +17,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <StackPanel Grid.Row="0" Spacing="4" Margin="0,0,0,16">
@@ -40,7 +41,7 @@
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         Spacing="{StaticResource PepinilloChipSpacing}"
-                        Margin="0,0,0,24">
+                        Margin="0,0,0,12">
                 <Button Content="Pomodoro"
                         Click="Pomodoro_Click"
                         BorderBrush="{StaticResource FocusModePomodoroBrush}"
@@ -71,7 +72,85 @@
                         Padding="12,8"/>
             </StackPanel>
 
+            <!-- Mode Intelligence: paid suggestion banner -->
             <Border Grid.Row="2"
+                    Visibility="{x:Bind ViewModel.ShowModeSuggestion, Mode=OneWay}"
+                    Background="{StaticResource ModeIntelligenceBannerBrush}"
+                    BorderBrush="{StaticResource ModeIntelligenceAccentBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPaddingCompact}"
+                    Margin="0,0,0,16"
+                    AutomationProperties.Name="Mode Intelligence suggestion">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="12">
+                    <FontIcon Grid.Column="0"
+                              Glyph="&#xE945;"
+                              FontSize="18"
+                              Foreground="{StaticResource ModeIntelligenceAccentBrush}"
+                              VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock FontWeight="SemiBold"
+                                   Style="{ThemeResource BodyTextBlockStyle}">
+                            <Run Text="Try "/><Run Text="{x:Bind ViewModel.SuggestedModeLabel, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock Text="{x:Bind ViewModel.SuggestionReason, Mode=OneWay}"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                    <Button Grid.Column="2"
+                            Content="Apply"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Command="{x:Bind ViewModel.ApplySuggestionCommand}"
+                            MinWidth="80"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="Apply mode suggestion"/>
+                    <Button Grid.Column="3"
+                            Content="Dismiss"
+                            Command="{x:Bind ViewModel.DismissSuggestionCommand}"
+                            MinWidth="80"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="Dismiss mode suggestion"/>
+                </Grid>
+            </Border>
+
+            <!-- Mode Intelligence: free locked teaser → paywall -->
+            <Border Grid.Row="2"
+                    Visibility="{x:Bind ViewModel.ShowModeSuggestionLocked, Mode=OneWay}"
+                    Background="{StaticResource ModeIntelligenceLockedBrush}"
+                    BorderBrush="{StaticResource PepinilloPremiumBadgeBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPaddingCompact}"
+                    Margin="0,0,0,16"
+                    AutomationProperties.Name="Mode Intelligence upgrade teaser">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                    <FontIcon Grid.Column="0"
+                              Glyph="&#xE72E;"
+                              FontSize="18"
+                              Foreground="{StaticResource PepinilloPremiumBadgeBrush}"
+                              VerticalAlignment="Center"/>
+                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="Mode Intelligence"
+                                   FontWeight="SemiBold"
+                                   Style="{ThemeResource BodyTextBlockStyle}"
+                                   Foreground="{StaticResource PepinilloPremiumBadgeBrush}"/>
+                        <TextBlock Text="{x:Bind ViewModel.SuggestionReason, Mode=OneWay}"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                    <Button Grid.Column="2"
+                            Content="Upgrade"
+                            Style="{ThemeResource AccentButtonStyle}"
+                            Command="{x:Bind ViewModel.UpgradeModeIntelligenceCommand}"
+                            MinWidth="96"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="Upgrade for Mode Intelligence"/>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="3"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="{StaticResource PepinilloTimerCardCornerRadius}"
                     Padding="32"
@@ -97,7 +176,7 @@
                 </StackPanel>
             </Border>
 
-            <StackPanel Grid.Row="3"
+            <StackPanel Grid.Row="4"
                         Orientation="Horizontal"
                         Spacing="12"
                         HorizontalAlignment="Center"
@@ -124,7 +203,7 @@
                         MinWidth="100"/>
             </StackPanel>
 
-            <Border Grid.Row="4"
+            <Border Grid.Row="5"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="{StaticResource PepinilloCardCornerRadius}"
                     Padding="{StaticResource PepinilloCardPaddingCompact}"
@@ -153,7 +232,7 @@
             </Border>
 
             <!-- Post-session journal (panel always in tree; status text indicates when empty) -->
-            <Border Grid.Row="5"
+            <Border Grid.Row="6"
                     x:Name="JournalPanel"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="{StaticResource PepinilloCardCornerRadius}"

@@ -21,9 +21,12 @@ public partial class FocusViewModel : ObservableObject
     private readonly ISyncService? _syncService;
     private readonly ILocalizationService? _localizer;
     private readonly ISoundscapeSessionCoordinator? _soundscapeCoordinator;
+    private readonly IModeIntelligenceService? _modeIntelligence;
     private UserSettings _cachedSettings = new();
     private SessionState _previousState = SessionState.Idle;
     private bool _focusAssistActive;
+    private bool _modeSuggestionDismissed;
+    private ModeSuggestion? _pendingModeSuggestion;
 
     [ObservableProperty]
     private SessionState _currentState = SessionState.Idle;
@@ -110,6 +113,22 @@ public partial class FocusViewModel : ObservableObject
     [ObservableProperty]
     private string _soundscapeChipLabel = string.Empty;
 
+    /// <summary>Human-readable Mode Intelligence reason (or upgrade teaser on free).</summary>
+    [ObservableProperty]
+    private string _suggestionReason = string.Empty;
+
+    /// <summary>Suggested mode display name for the banner title.</summary>
+    [ObservableProperty]
+    private string _suggestedModeLabel = string.Empty;
+
+    /// <summary>Paid: show apply/dismiss Mode Intelligence banner.</summary>
+    [ObservableProperty]
+    private bool _showModeSuggestion;
+
+    /// <summary>Free: locked golden teaser → paywall.</summary>
+    [ObservableProperty]
+    private bool _showModeSuggestionLocked;
+
     public FocusViewModel(
         IFocusEngineService focusEngine,
         ISettingsService settingsService,
@@ -120,7 +139,8 @@ public partial class FocusViewModel : ObservableObject
         ISyncService? syncService = null,
         ILocalizationService? localizer = null,
         IEntitlementService? entitlements = null,
-        ISoundscapeSessionCoordinator? soundscapeCoordinator = null)
+        ISoundscapeSessionCoordinator? soundscapeCoordinator = null,
+        IModeIntelligenceService? modeIntelligence = null)
     {
         _focusEngine = focusEngine;
         _settingsService = settingsService;
@@ -132,6 +152,7 @@ public partial class FocusViewModel : ObservableObject
         _localizer = localizer;
         _entitlements = entitlements;
         _soundscapeCoordinator = soundscapeCoordinator;
+        _modeIntelligence = modeIntelligence;
 
         _focusEngine.StateChanged += OnEngineStateChanged;
         _focusEngine.Tick += OnEngineTick;
@@ -158,6 +179,7 @@ public partial class FocusViewModel : ObservableObject
 
         await LoadAvailableTasksAsync();
         await RefreshSoundscapeChipAsync();
+        await RefreshModeSuggestionAsync();
         UpdateCommandFlags();
     }
 
@@ -333,22 +355,77 @@ public partial class FocusViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void LinkTask(TaskItem? task)
+    private async Task LinkTask(TaskItem? task)
     {
         if (CurrentState is not (SessionState.Idle or SessionState.Completed))
             return;
 
         LinkedTaskId = task?.Id;
         ActiveTaskTitle = task?.Title ?? "Free focus (no task linked)";
+        _modeSuggestionDismissed = false;
 
         var duration = ResolveDurationSeconds(SelectedMode, _cachedSettings);
         _focusEngine.ConfigureSession(SelectedMode, duration, LinkedTaskId);
+        await RefreshModeSuggestionAsync();
     }
 
     [RelayCommand]
-    private void ClearLinkedTask()
+    private async Task ClearLinkedTask()
     {
-        LinkTask(null);
+        await LinkTask(null);
+    }
+
+    /// <summary>
+    /// Applies the suggested mode when idle (premium), or opens paywall when locked/free.
+    /// </summary>
+    [RelayCommand]
+    private void ApplySuggestion()
+    {
+        if (ShowModeSuggestionLocked || _pendingModeSuggestion?.IsLocked == true)
+        {
+            PaywallFeatureHint = "Mode Intelligence";
+            PremiumFeatureRequested?.Invoke(this, "Mode Intelligence");
+            return;
+        }
+
+        if (_pendingModeSuggestion == null)
+            return;
+
+        if (CurrentState is not (SessionState.Idle or SessionState.Completed))
+            return;
+
+        var mode = _pendingModeSuggestion.SuggestedMode;
+        if (!EnsureModeAllowed(mode))
+            return;
+
+        PaywallFeatureHint = string.Empty;
+        SelectedMode = mode;
+        ApplySettingsToEngine(_cachedSettings);
+        var duration = ResolveDurationSeconds(mode, _cachedSettings);
+        _focusEngine.ConfigureSession(mode, duration, LinkedTaskId);
+        UpdateTimerDisplay();
+        UpdateCommandFlags();
+
+        // Hide after apply; user already switched.
+        _modeSuggestionDismissed = true;
+        ClearModeSuggestionUi();
+    }
+
+    [RelayCommand]
+    private void DismissSuggestion()
+    {
+        _modeSuggestionDismissed = true;
+        ClearModeSuggestionUi();
+    }
+
+    /// <summary>
+    /// Free-tier locked banner CTA — always routes to paywall for Mode Intelligence.
+    /// </summary>
+    [RelayCommand]
+    private void UpgradeModeIntelligence()
+    {
+        PaywallFeatureHint = "Mode Intelligence";
+        PremiumFeatureRequested?.Invoke(this, "Mode Intelligence");
     }
 
     [RelayCommand]
@@ -398,6 +475,12 @@ public partial class FocusViewModel : ObservableObject
         _previousState = newState;
         UpdateCommandFlags();
         UpdateTimerDisplay();
+
+        // Refresh suggestions when returning to idle/completed; hide while running.
+        if (newState is SessionState.Idle or SessionState.Completed)
+            _ = RefreshModeSuggestionAsync();
+        else if (newState is SessionState.Running or SessionState.Break or SessionState.Paused)
+            ClearModeSuggestionUi();
     }
 
     private async void HandleSoundscape(SessionState previous, SessionState newState)
@@ -551,8 +634,117 @@ public partial class FocusViewModel : ObservableObject
             LastCompletedMessage = "Session finished (save failed)";
         }
 
+        // New history may unlock/change Mode Intelligence; allow a fresh banner.
+        _modeSuggestionDismissed = false;
+        await RefreshModeSuggestionAsync();
+
         UpdateTimerDisplay();
         UpdateCommandFlags();
+    }
+
+    /// <summary>
+    /// Recomputes Mode Intelligence from the last 30 days of local sessions.
+    /// </summary>
+    public async Task RefreshModeSuggestionAsync()
+    {
+        if (_modeIntelligence == null)
+        {
+            ClearModeSuggestionUi();
+            return;
+        }
+
+        if (_modeSuggestionDismissed)
+        {
+            ClearModeSuggestionUi();
+            return;
+        }
+
+        if (CurrentState is not (SessionState.Idle or SessionState.Completed))
+        {
+            ClearModeSuggestionUi();
+            return;
+        }
+
+        try
+        {
+            var utcNow = DateTime.UtcNow;
+            var rangeStart = utcNow.AddDays(-ModeIntelligenceService.GlobalLookbackDays);
+            var sessions = await _sessionService.GetSessionsInRangeAsync(rangeStart, utcNow.AddDays(1));
+
+            string? taskEnergy = null;
+            if (LinkedTaskId is Guid linkedId)
+            {
+                var linked = AvailableTasks.FirstOrDefault(t => t.Id == linkedId);
+                if (linked != null && !string.IsNullOrWhiteSpace(linked.EnergyLevel))
+                    taskEnergy = linked.EnergyLevel;
+            }
+
+            // Energy map across all tasks (open + completed) for energy-level aggregation.
+            IReadOnlyDictionary<Guid, string>? energyMap = null;
+            try
+            {
+                var allTasks = await _taskService.GetAllTasksAsync();
+                energyMap = allTasks
+                    .Where(t => !string.IsNullOrWhiteSpace(t.EnergyLevel))
+                    .GroupBy(t => t.Id)
+                    .ToDictionary(g => g.Key, g => g.First().EnergyLevel.Trim());
+
+                if (taskEnergy == null && LinkedTaskId is Guid id)
+                {
+                    var t = allTasks.FirstOrDefault(x => x.Id == id);
+                    if (t != null && !string.IsNullOrWhiteSpace(t.EnergyLevel))
+                        taskEnergy = t.EnergyLevel;
+                }
+            }
+            catch
+            {
+                energyMap = null;
+            }
+
+            var isPremium = _entitlements?.IsPremium == true;
+            var suggestion = _modeIntelligence.Suggest(
+                sessions,
+                LinkedTaskId,
+                taskEnergy,
+                utcNow,
+                isPremium,
+                energyMap);
+
+            if (suggestion == null)
+            {
+                ClearModeSuggestionUi();
+                return;
+            }
+
+            _pendingModeSuggestion = suggestion;
+            SuggestedModeLabel = ModeIntelligenceService.ModeDisplayName(suggestion.SuggestedMode);
+
+            if (suggestion.IsLocked || !isPremium)
+            {
+                ShowModeSuggestion = false;
+                ShowModeSuggestionLocked = true;
+                SuggestionReason = "Upgrade for Mode Intelligence";
+            }
+            else
+            {
+                ShowModeSuggestion = true;
+                ShowModeSuggestionLocked = false;
+                SuggestionReason = suggestion.Reason;
+            }
+        }
+        catch
+        {
+            ClearModeSuggestionUi();
+        }
+    }
+
+    private void ClearModeSuggestionUi()
+    {
+        ShowModeSuggestion = false;
+        ShowModeSuggestionLocked = false;
+        SuggestionReason = string.Empty;
+        SuggestedModeLabel = string.Empty;
+        _pendingModeSuggestion = null;
     }
 
     private void UpdateTimerDisplay()
