@@ -149,6 +149,9 @@ namespace Pepinillo.Core.Migrations
                     b.Property<int>("FlowtimeTargetMinutes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("LaunchAtWindowsStartup")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("LongBreakInterval")
                         .HasColumnType("INTEGER");
 

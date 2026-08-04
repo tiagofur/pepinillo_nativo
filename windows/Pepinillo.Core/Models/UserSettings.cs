@@ -21,6 +21,8 @@ public class UserSettings
     public bool AutoStartFocusSessions { get; set; }
     public bool EnableWindowsDoNotDisturbSync { get; set; } = true;
     public bool MinimizeToSystemTrayOnClose { get; set; } = true;
+    /// <summary>When true, register to launch Pepinillo at Windows sign-in (StartupTask or Run key).</summary>
+    public bool LaunchAtWindowsStartup { get; set; }
 
     // Notifications & audio
     public bool EnableToastNotifications { get; set; } = true;
@@ -35,7 +37,7 @@ public class UserSettings
     public bool UseMicaBackdrop { get; set; } = true;
     public bool CompactMiniTimerAlwaysOnTop { get; set; } = true;
 
-    // Global hotkeys (defaults; rebind UI deferred — strings still persist)
+    // Global hotkeys (rebindable in Settings; see HotkeyChordParser)
     public string PlayPauseHotkey { get; set; } = "Win+Shift+P";
     public string SkipHotkey { get; set; } = "Win+Shift+S";
     public string MiniTimerHotkey { get; set; } = "Win+Shift+M";

@@ -231,6 +231,7 @@ public class FocusViewModelTests
 
     private sealed class FakeFocusAssistService : IFocusAssistService
     {
+        public string FocusAssistStatus => "Focus Assist: test host";
         public void BeginFocusSession() { }
         public void EndFocusSession() { }
     }

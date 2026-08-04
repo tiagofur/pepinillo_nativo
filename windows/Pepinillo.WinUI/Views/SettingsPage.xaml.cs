@@ -3,7 +3,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Pepinillo.Core.Models;
+using Pepinillo.Core.Services;
 using Pepinillo.Core.ViewModels;
+using Pepinillo.WinUI.Services;
 using Windows.System;
 
 namespace Pepinillo.WinUI.Views;
@@ -26,7 +28,7 @@ public sealed partial class SettingsPage : Page
         };
     }
 
-    private void OnSettingsSaved(object? sender, UserSettings settings)
+    private async void OnSettingsSaved(object? sender, UserSettings settings)
     {
         ThemeHelper.ApplyTheme(
             settings.SelectedTheme,
@@ -37,6 +39,39 @@ public sealed partial class SettingsPage : Page
         {
             var focus = App.Services.GetRequiredService<FocusViewModel>();
             _ = focus.RefreshSettingsAsync();
+        }
+        catch
+        {
+            // ignore
+        }
+
+        try
+        {
+            var hotkeys = App.Services.GetRequiredService<IGlobalHotkeyService>();
+            hotkeys.RefreshFromSettings();
+        }
+        catch
+        {
+            // ignore
+        }
+
+        try
+        {
+            var startup = App.Services.GetRequiredService<IWindowsStartupService>();
+            await startup.ApplyAsync(settings.LaunchAtWindowsStartup);
+            ViewModel.StatusMessage = string.IsNullOrWhiteSpace(startup.LastStatus)
+                ? ViewModel.StatusMessage
+                : $"{ViewModel.StatusMessage} · {startup.LastStatus}";
+        }
+        catch
+        {
+            // ignore
+        }
+
+        try
+        {
+            var assist = App.Services.GetRequiredService<IFocusAssistService>();
+            ViewModel.FocusAssistStatus = assist.FocusAssistStatus;
         }
         catch
         {

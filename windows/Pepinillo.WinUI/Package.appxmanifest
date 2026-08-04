@@ -18,8 +18,9 @@
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap rescap">
+  IgnorableNamespaces="uap uap5 rescap">
 
   <Identity
     Name="Pepinillo.DeepWork"
@@ -58,7 +59,16 @@
           Square310x310Logo="Assets\Square310x310Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#0F3D2E" />
       </uap:VisualElements>
-      <!-- Toast display via Windows App SDK AppNotificationManager (no COM activator needed for display-only). -->
+      <!-- Toast display via Windows App SDK AppNotificationManager (in-process NotificationInvoked for actions). -->
+      <Extensions>
+        <!-- TaskId must match WindowsStartupService.StartupTaskId -->
+        <uap5:Extension Category="windows.startupTask">
+          <uap5:StartupTask
+            TaskId="PepinilloStartup"
+            Enabled="false"
+            DisplayName="Pepinillo" />
+        </uap5:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

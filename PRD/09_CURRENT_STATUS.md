@@ -357,10 +357,11 @@
 - **Sync:** local-first push of `IsSynced=false` sessions + subscription pull
 - **Commerce:** `WindowsStoreCommerceService` (StoreContext) + free/backend fallback; Paywall uses D1 prices
 - **Localization:** `LocalizationService` EN/ES/PT for Settings + Focus primary labels
-- **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist best-effort
+- **P1 desktop power:** tray, mini-timer, hotkeys, toasts, Focus Assist honest status
+- **P1 desktop power v2 (W9 #583):** toast action buttons (Pause/Resume/Stop/Skip) + `NotificationInvoked`; `LaunchAtWindowsStartup` (StartupTask / HKCU Run); hotkey rebind UI + `HotkeyChordParser` + `RefreshFromSettings`; Focus Assist intent + diagnostic status (never fake OS DND)
 - **P3 packaging:** Store/tile/splash logos; `Directory.Build.props` version; MSIX pack + dev-cert scripts; CI pack artifact; listing/IAP/cert/runbook docs under `windows/store/`
-- Core unit tests: **86/86** green (includes theme entitlement + Reflect W4 achievements/reviews)
-- Manifest: `internetClient` + `runFullTrust` (documented)
+- Core unit tests: green (includes theme entitlement + Reflect W4 + W9 hotkey parser / LaunchAtWindowsStartup)
+- Manifest: `internetClient` + `runFullTrust` + `windows.startupTask` (PepinilloStartup)
 
 ### Missing (blocks full product / live Store)
 
@@ -371,7 +372,7 @@ Tracked in excellence epic **#573** / [PRD/13](13_WINDOWS_EXCELLENCE_PLAN.md):
 - Real Store screenshots + Partner Center + live IAP → **#568**
 - Reflect: Weekly/Monthly Review + achievements → **#578** (**coded** on `feat/windows-w4-reflect`; smoke on Windows pending)
 - Full .resw localization, onboarding, CSV export → **#582**, **#581**, **#580**
-- Hotkey rebind, toast actions, Focus Assist real, startup → **#583**
+- Hotkey rebind, toast actions, Focus Assist real, startup → **#583** (**coded** on `feat/windows-w9-desktop-power`; WinUI smoke pending; OS Focus Assist still cannot be toggled by third-party apps)
 - Design system residual (full Fluent depth, live theme previews, selected-chip state) → **#576** follow-ups
 - Auth/sync depth, paywall excellence → **#584**, **#585**
 - A11y gate → **#589**
@@ -381,7 +382,7 @@ Tracked in excellence epic **#573** / [PRD/13](13_WINDOWS_EXCELLENCE_PLAN.md):
 | Band | Goal | Status |
 | ---- | ---- | ------ |
 | **P0** | Runnable local MVP (DI, nav, Focus, tasks, settings, theme) | **Coded** — smoke on Windows pending |
-| **P1** | Tray, mini-timer, hotkeys, toasts, Focus Assist | **Coded** — smoke on Windows pending |
+| **P1** | Tray, mini-timer, hotkeys, toasts, Focus Assist | **Coded (W9 v2)** — smoke on Windows pending |
 | **P2** | Analytics depth, soundscapes, auth/sync, IAP path, i18n | **Coded** — assets + sandbox pending |
 | **P3** | MSIX, Partner Center, certification, beta | **In-repo packaging ready** — Partner Center + smoke remaining |
 

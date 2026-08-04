@@ -54,6 +54,7 @@ public class SettingsService : ISettingsService
             existing.AutoStartFocusSessions = settings.AutoStartFocusSessions;
             existing.EnableWindowsDoNotDisturbSync = settings.EnableWindowsDoNotDisturbSync;
             existing.MinimizeToSystemTrayOnClose = settings.MinimizeToSystemTrayOnClose;
+            existing.LaunchAtWindowsStartup = settings.LaunchAtWindowsStartup;
             existing.EnableToastNotifications = settings.EnableToastNotifications;
             existing.EnableTickingSound = settings.EnableTickingSound;
             existing.TickingVolume = settings.TickingVolume;

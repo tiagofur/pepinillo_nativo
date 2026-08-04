@@ -70,6 +70,17 @@ public partial class App : Application
             // ignore
         }
 
+        // Re-apply startup registration if the user enabled it (idempotent).
+        try
+        {
+            var startup = Services.GetRequiredService<IWindowsStartupService>();
+            await startup.ApplyAsync(settings.LaunchAtWindowsStartup);
+        }
+        catch
+        {
+            // OS limitation must not block launch.
+        }
+
         _mainWindow = new MainWindow();
         MainWindowInstance = _mainWindow;
         ThemeHelper.ApplyTheme(
@@ -79,6 +90,9 @@ public partial class App : Application
 
         _shell = Services.GetRequiredService<DesktopShellCoordinator>();
         _shell.Attach(_mainWindow);
+
+        // Ensure toast service is constructed so NotificationInvoked is wired.
+        _ = Services.GetRequiredService<INotificationService>();
 
         _mainWindow.Activate();
     }
@@ -96,6 +110,7 @@ public partial class App : Application
         // WinUI platform overrides (last registration wins for same interface).
         services.AddSingleton<INotificationService, ToastNotificationService>();
         services.AddSingleton<IFocusAssistService, WindowsFocusAssistService>();
+        services.AddSingleton<IWindowsStartupService, WindowsStartupService>();
         services.AddSingleton<IAuthTokenStore, PasswordVaultTokenStore>();
         services.AddSingleton<IAudioPlayerService, WindowsMediaPlayerService>();
         services.AddSingleton<IStoreCommerceService, WindowsStoreCommerceService>();

@@ -5,13 +5,15 @@ namespace Pepinillo.Core.Services;
 /// </summary>
 public class FocusAssistService : IFocusAssistService
 {
+    public string FocusAssistStatus { get; private set; } = "Focus Assist: not available on this host";
+
     public void BeginFocusSession()
     {
-        // OS integration is provided by the WinUI host.
+        FocusAssistStatus = "Focus Assist: not available on this host";
     }
 
     public void EndFocusSession()
     {
-        // OS integration is provided by the WinUI host.
+        FocusAssistStatus = "Focus Assist: not available on this host";
     }
 }
