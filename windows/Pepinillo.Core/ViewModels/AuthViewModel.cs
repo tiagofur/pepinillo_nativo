@@ -11,6 +11,7 @@ public partial class AuthViewModel : ObservableObject
     private readonly IBackendApiClient _backend;
     private readonly ISyncService _sync;
     private readonly ISettingsService _settings;
+    private readonly ILocalizationService? _localizer;
 
     [ObservableProperty]
     private string _email = string.Empty;
@@ -46,15 +47,56 @@ public partial class AuthViewModel : ObservableObject
     [ObservableProperty]
     private string _accountModeLabel = "Local only — not signed in";
 
-    public AuthViewModel(IBackendApiClient backend, ISyncService sync, ISettingsService settings)
+    [ObservableProperty]
+    private string _titleLabel = "Account";
+
+    [ObservableProperty]
+    private string _subtitleLabel =
+        "Sign in to sync sessions with Everywhere. Local focus data always works offline — free/local users stay local-first.";
+
+    [ObservableProperty]
+    private string _emailLabel = "Email";
+
+    [ObservableProperty]
+    private string _passwordLabel = "Password";
+
+    [ObservableProperty]
+    private string _displayNameLabel = "Display name (register)";
+
+    [ObservableProperty]
+    private string _loginLabel = "Sign in";
+
+    [ObservableProperty]
+    private string _registerLabel = "Create account";
+
+    [ObservableProperty]
+    private string _logoutLabel = "Sign out";
+
+    [ObservableProperty]
+    private string _syncNowLabel = "Sync now";
+
+    [ObservableProperty]
+    private string _lastSyncPrefix = "Last sync: ";
+
+    [ObservableProperty]
+    private string _cloudSyncHint =
+        "Cloud sync needs Everywhere. Local data always works.";
+
+    public AuthViewModel(
+        IBackendApiClient backend,
+        ISyncService sync,
+        ISettingsService settings,
+        ILocalizationService? localizer = null)
     {
         _backend = backend;
         _sync = sync;
         _settings = settings;
+        _localizer = localizer;
     }
 
     public async Task InitializeAsync()
     {
+        await ApplyLanguageAsync();
         try
         {
             await _backend.InitializeAsync();
@@ -62,15 +104,19 @@ public partial class AuthViewModel : ObservableObject
             await RefreshLastSyncDisplayAsync();
             UpdateAccountModeLabel();
             StatusMessage = IsAuthenticated
-                ? "Signed in (token restored). Cloud sync needs Everywhere."
-                : "Not signed in — offline local mode. Cloud sync needs Everywhere. Local data always works.";
+                ? T("Account.SignedInTokenRestored",
+                    "Signed in (token restored). Cloud sync needs Everywhere.")
+                : T("Account.NotSignedInOffline",
+                    "Not signed in — offline local mode. Cloud sync needs Everywhere. Local data always works.");
             LastError = _backend.LastError ?? string.Empty;
         }
         catch (Exception ex)
         {
             IsAuthenticated = false;
             UpdateAccountModeLabel();
-            StatusMessage = $"Auth init failed: {ex.Message}";
+            StatusMessage = string.Format(
+                T("Account.AuthInitFailed", "Auth init failed: {0}"),
+                ex.Message);
             LastError = ex.Message;
         }
     }
@@ -89,8 +135,10 @@ public partial class AuthViewModel : ObservableObject
             LastError = _backend.LastError ?? string.Empty;
             UpdateAccountModeLabel();
             StatusMessage = ok
-                ? "Signed in successfully."
-                : (_backend.LastError ?? "Login failed (check credentials or network).");
+                ? T("Account.SignedInSuccess", "Signed in successfully.")
+                : (_backend.LastError
+                    ?? T("Account.LoginFailed",
+                        "Login failed (check credentials or network)."));
             if (ok)
             {
                 Password = string.Empty;
@@ -101,7 +149,9 @@ public partial class AuthViewModel : ObservableObject
         {
             IsAuthenticated = false;
             UpdateAccountModeLabel();
-            StatusMessage = $"Login error: {ex.Message}";
+            StatusMessage = string.Format(
+                T("Account.LoginError", "Login error: {0}"),
+                ex.Message);
             LastError = ex.Message;
         }
         finally
@@ -128,22 +178,26 @@ public partial class AuthViewModel : ObservableObject
             if (!ok)
             {
                 StatusMessage = _backend.LastError
-                    ?? "Registration failed (network or email already used).";
+                    ?? T("Account.RegistrationFailed",
+                        "Registration failed (network or email already used).");
             }
             else if (IsAuthenticated)
             {
-                StatusMessage = "Account created — signed in.";
+                StatusMessage = T("Account.AccountCreated", "Account created — signed in.");
                 Password = string.Empty;
                 await SyncNowAsync();
             }
             else
             {
-                StatusMessage = "Account created. Sign in to continue.";
+                StatusMessage = T("Account.AccountCreatedSignIn",
+                    "Account created. Sign in to continue.");
             }
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Registration error: {ex.Message}";
+            StatusMessage = string.Format(
+                T("Account.RegistrationError", "Registration error: {0}"),
+                ex.Message);
             LastError = ex.Message;
         }
         finally
@@ -161,13 +215,16 @@ public partial class AuthViewModel : ObservableObject
             await _backend.LogoutAsync();
             IsAuthenticated = false;
             UpdateAccountModeLabel();
-            StatusMessage = "Signed out. Local data always works offline.";
+            StatusMessage = T("Account.SignedOut",
+                "Signed out. Local data always works offline.");
             SyncStatus = string.Empty;
             LastError = string.Empty;
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Logout error: {ex.Message}";
+            StatusMessage = string.Format(
+                T("Account.LogoutError", "Logout error: {0}"),
+                ex.Message);
             LastError = ex.Message;
         }
         finally
@@ -194,7 +251,9 @@ public partial class AuthViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            SyncStatus = $"Sync failed: {ex.Message}";
+            SyncStatus = string.Format(
+                T("Account.SyncFailed", "Sync failed: {0}"),
+                ex.Message);
             StatusMessage = SyncStatus;
             LastError = ex.Message;
         }
@@ -208,13 +267,14 @@ public partial class AuthViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(Email) || !Email.Contains('@', StringComparison.Ordinal))
         {
-            StatusMessage = "Enter a valid email address.";
+            StatusMessage = T("Account.ValidEmail", "Enter a valid email address.");
             return false;
         }
 
         if (requirePassword && string.IsNullOrWhiteSpace(Password))
         {
-            StatusMessage = "Email and password are required.";
+            StatusMessage = T("Account.EmailPasswordRequired",
+                "Email and password are required.");
             return false;
         }
 
@@ -228,18 +288,51 @@ public partial class AuthViewModel : ObservableObject
             var settings = await _settings.GetSettingsAsync();
             LastSyncDisplay = settings.LastSyncAtUtc.HasValue
                 ? settings.LastSyncAtUtc.Value.ToLocalTime().ToString("g")
-                : "Never";
+                : T("Common.Never", "Never");
         }
         catch
         {
-            LastSyncDisplay = "Never";
+            LastSyncDisplay = T("Common.Never", "Never");
         }
     }
 
     private void UpdateAccountModeLabel()
     {
         AccountModeLabel = IsAuthenticated
-            ? "Signed in — cloud sync when Everywhere is active"
-            : "Local only — not signed in";
+            ? T("Account.SignedInMode",
+                "Signed in — cloud sync when Everywhere is active")
+            : T("Account.LocalOnly", "Local only — not signed in");
     }
+
+    private async Task ApplyLanguageAsync()
+    {
+        if (_localizer == null) return;
+
+        try
+        {
+            var settings = await _settings.GetSettingsAsync();
+            _localizer.SetLanguage(settings.PreferredLanguage);
+        }
+        catch
+        {
+            // keep current
+        }
+
+        TitleLabel = T("Account.Title", "Account");
+        SubtitleLabel = T("Account.Subtitle", SubtitleLabel);
+        EmailLabel = T("Account.Email", "Email");
+        PasswordLabel = T("Account.Password", "Password");
+        DisplayNameLabel = T("Account.DisplayName", "Display name (register)");
+        LoginLabel = T("Account.Login", "Sign in");
+        RegisterLabel = T("Account.Register", "Create account");
+        LogoutLabel = T("Account.Logout", "Sign out");
+        SyncNowLabel = T("Account.SyncNow", "Sync now");
+        LastSyncPrefix = T("Account.LastSync", "Last sync: ");
+        CloudSyncHint = T("Account.CloudSyncNeedsEverywhere",
+            "Cloud sync needs Everywhere. Local data always works.");
+        UpdateAccountModeLabel();
+    }
+
+    private string T(string key, string fallback) =>
+        _localizer?.GetString(key) ?? fallback;
 }

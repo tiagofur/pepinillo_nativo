@@ -15,6 +15,8 @@ public partial class AnalyticsViewModel : ObservableObject
     private readonly IReflectService? _reflectService;
     private readonly IExportService? _exportService;
     private readonly IStreakProtectionService? _streakProtection;
+    private readonly ILocalizationService? _localizer;
+    private readonly ISettingsService? _settings;
 
     /// <summary>Raised when free user requests a premium Analytics feature (shell navigates to paywall).</summary>
     public event EventHandler<string>? PremiumFeatureRequested;
@@ -87,22 +89,65 @@ public partial class AnalyticsViewModel : ObservableObject
     [ObservableProperty]
     private string _exportStatusMessage = string.Empty;
 
+    [ObservableProperty]
+    private string _titleLabel = "Analytics";
+
+    [ObservableProperty]
+    private string _subtitleLabel =
+        "Local session totals from SQLite (UTC). Charts use simple ProgressBars.";
+
+    [ObservableProperty]
+    private string _focusTodayLabel = "Focus today";
+
+    [ObservableProperty]
+    private string _sevenDayLabel = "7-day focus";
+
+    [ObservableProperty]
+    private string _currentStreakLabel = "Current streak";
+
+    [ObservableProperty]
+    private string _bestStreakLabel = "Best streak";
+
+    [ObservableProperty]
+    private string _achievementsLabel = "Achievements";
+
+    [ObservableProperty]
+    private string _exportLabel = "Export";
+
+    [ObservableProperty]
+    private string _exportCsvLabel = "Export CSV";
+
+    [ObservableProperty]
+    private string _exportPdfLabel = "Export PDF";
+
+    [ObservableProperty]
+    private string _weeklyReviewLabel = "Weekly Review";
+
+    [ObservableProperty]
+    private string _monthlyReviewLabel = "Monthly Review";
+
     public AnalyticsViewModel(
         IFocusSessionService sessionService,
         IEntitlementService? entitlements = null,
         IReflectService? reflectService = null,
         IExportService? exportService = null,
-        IStreakProtectionService? streakProtection = null)
+        IStreakProtectionService? streakProtection = null,
+        ILocalizationService? localizer = null,
+        ISettingsService? settings = null)
     {
         _sessionService = sessionService;
         _entitlements = entitlements;
         _reflectService = reflectService;
         _exportService = exportService;
         _streakProtection = streakProtection;
+        _localizer = localizer;
+        _settings = settings;
     }
 
     public async Task LoadAsync()
     {
+        await ApplyLanguageAsync();
+
         var utcNow = DateTime.UtcNow;
         var today = utcNow.Date;
 
@@ -127,15 +172,17 @@ public partial class AnalyticsViewModel : ObservableObject
         if (_streakProtection != null)
         {
             var status = await _streakProtection.GetStatusAsync(utcNow);
+            var appliedSuffix = T("Analytics.ProtectionApplied", " · Applied to current streak");
             StreakProtectionCaption = protectionApplied
-                ? status.Caption + " · Applied to current streak"
+                ? status.Caption + appliedSuffix
                 : status.Caption;
         }
         else
         {
             StreakProtectionCaption = isPremium
-                ? "Streak protection: available (1 / week)"
-                : "Upgrade for streak protection (1 skip / week)";
+                ? T("Analytics.StreakProtectionPremium", "Streak protection: available (1 / week)")
+                : T("Analytics.StreakProtectionUpgrade",
+                    "Upgrade for streak protection (1 skip / week)");
         }
 
         var breakdown = await _sessionService.GetModeBreakdownAsync(rangeStart, today.AddDays(1));
@@ -170,7 +217,8 @@ public partial class AnalyticsViewModel : ObservableObject
         HasSessionData = TodayFocusMinutes > 0 || SevenDayFocusHours > 0 || RecentSessions.Count > 0;
         EmptyStateMessage = HasSessionData
             ? string.Empty
-            : "No focus history yet. Finish a Pomodoro or Stopwatch session — stats and streaks will show up here.";
+            : T("Analytics.EmptyState",
+                "No focus history yet. Finish a Pomodoro or Stopwatch session — stats and streaks will show up here.");
         AiReportSummary = BuildInsightSummary();
         ExportStatusMessage = string.Empty;
     }
@@ -200,13 +248,13 @@ public partial class AnalyticsViewModel : ObservableObject
         if (_entitlements?.CanExport != true)
         {
             PremiumFeatureRequested?.Invoke(this, "export");
-            ExportStatusMessage = "Export is a Pepinillo+ feature.";
+            ExportStatusMessage = T("Analytics.ExportPremium", "Export is a Pepinillo+ feature.");
             return;
         }
 
         if (_exportService == null)
         {
-            ExportStatusMessage = "Export service is unavailable.";
+            ExportStatusMessage = T("Analytics.ExportUnavailable", "Export service is unavailable.");
             return;
         }
 
@@ -225,27 +273,75 @@ public partial class AnalyticsViewModel : ObservableObject
             var bytes = ExportService.GetCsvBytes(csv);
             ExportFileReady?.Invoke(this, ("csv", $"pepinillo-sessions-{stamp}.csv", bytes));
             ExportStatusMessage = sessions.Count == 0
-                ? "CSV ready (no sessions in range)."
-                : $"CSV ready ({sessions.Count} sessions).";
+                ? T("Analytics.ExportCsvEmpty", "CSV ready (no sessions in range).")
+                : string.Format(
+                    T("Analytics.ExportCsvReady", "CSV ready ({0} sessions)."),
+                    sessions.Count);
         }
         else
         {
             var bytes = _exportService.BuildSessionsPdfSimple(sessions);
             ExportFileReady?.Invoke(this, ("pdf", $"pepinillo-sessions-{stamp}.pdf", bytes));
             ExportStatusMessage = sessions.Count == 0
-                ? "PDF ready (no sessions in range)."
-                : $"PDF ready ({sessions.Count} sessions).";
+                ? T("Analytics.ExportPdfEmpty", "PDF ready (no sessions in range).")
+                : string.Format(
+                    T("Analytics.ExportPdfReady", "PDF ready ({0} sessions)."),
+                    sessions.Count);
         }
     }
 
     private string BuildInsightSummary()
     {
         if (!HasSessionData)
-            return "Your insights start after the first completed session. Full AI narrative reports unlock with Everywhere/AI+.";
+            return T("Analytics.InsightEmpty",
+                "Your insights start after the first completed session. Full AI narrative reports unlock with Everywhere/AI+.");
 
         var window = HistoryWindowDays;
-        var protect = StreakProtectionApplied ? " · protection applied" : string.Empty;
-        return $"Last {window} days: {SevenDayFocusHours:0.#}h focus · Streak {CurrentStreakDays}d (best {BestStreakDays}d){protect}. " +
-               "AI narrative reports unlock with Everywhere/AI+.";
+        var protect = StreakProtectionApplied
+            ? T("Analytics.ProtectionApplied", " · Applied to current streak")
+            : string.Empty;
+
+        return string.Format(
+            T("Analytics.InsightSummary",
+                "Last {0} days: {1}h focus · Streak {2}d (best {3}d){4}. AI narrative reports unlock with Everywhere/AI+."),
+            window,
+            SevenDayFocusHours.ToString("0.#"),
+            CurrentStreakDays,
+            BestStreakDays,
+            protect);
     }
+
+    private async Task ApplyLanguageAsync()
+    {
+        if (_localizer == null) return;
+
+        if (_settings != null)
+        {
+            try
+            {
+                var settings = await _settings.GetSettingsAsync();
+                _localizer.SetLanguage(settings.PreferredLanguage);
+            }
+            catch
+            {
+                // keep current
+            }
+        }
+
+        TitleLabel = T("Analytics.Title", "Analytics");
+        SubtitleLabel = T("Analytics.Subtitle", SubtitleLabel);
+        FocusTodayLabel = T("Analytics.FocusToday", "Focus today");
+        SevenDayLabel = T("Analytics.SevenDayFocus", "7-day focus");
+        CurrentStreakLabel = T("Analytics.CurrentStreak", "Current streak");
+        BestStreakLabel = T("Analytics.BestStreak", "Best streak");
+        AchievementsLabel = T("Analytics.Achievements", "Achievements");
+        ExportLabel = T("Analytics.Export", "Export");
+        ExportCsvLabel = T("Analytics.ExportCsv", "Export CSV");
+        ExportPdfLabel = T("Analytics.ExportPdf", "Export PDF");
+        WeeklyReviewLabel = T("Analytics.WeeklyReview", "Weekly Review");
+        MonthlyReviewLabel = T("Analytics.MonthlyReview", "Monthly Review");
+    }
+
+    private string T(string key, string fallback) =>
+        _localizer?.GetString(key) ?? fallback;
 }

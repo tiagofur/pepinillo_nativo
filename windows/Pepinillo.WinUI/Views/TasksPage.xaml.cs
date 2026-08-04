@@ -16,7 +16,29 @@ public sealed partial class TasksPage : Page
     {
         ViewModel = App.Services.GetRequiredService<TasksViewModel>();
         InitializeComponent();
-        Loaded += async (_, _) => await ViewModel.LoadTasksAsync();
+        Loaded += async (_, _) =>
+        {
+            await ViewModel.LoadTasksAsync();
+            ApplyFilterHeaders();
+        };
+        ViewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName is nameof(ViewModel.FilterTodayLabel)
+                or nameof(ViewModel.FilterUpcomingLabel)
+                or nameof(ViewModel.FilterInboxLabel)
+                or nameof(ViewModel.FilterAllLabel))
+            {
+                ApplyFilterHeaders();
+            }
+        };
+    }
+
+    private void ApplyFilterHeaders()
+    {
+        FilterTodayItem.Header = ViewModel.FilterTodayLabel;
+        FilterUpcomingItem.Header = ViewModel.FilterUpcomingLabel;
+        FilterInboxItem.Header = ViewModel.FilterInboxLabel;
+        FilterAllItem.Header = ViewModel.FilterAllLabel;
     }
 
     private async void FilterPivot_SelectionChanged(object sender, SelectionChangedEventArgs e)

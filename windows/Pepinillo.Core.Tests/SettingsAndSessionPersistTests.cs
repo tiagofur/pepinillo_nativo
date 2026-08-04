@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -203,6 +204,74 @@ public class SettingsAndSessionPersistTests
         Assert.Equal("Configurações", loc.GetString("Settings.Title"));
         loc.SetLanguage("en");
         Assert.Equal("Settings", loc.GetString("Settings.Title"));
+    }
+
+    [Fact]
+    public void LocalizationService_CatalogParity_EnKeysExistInEsAndPt()
+    {
+        var loc = new LocalizationService();
+        var en = loc.GetKeys("en");
+        var es = new HashSet<string>(loc.GetKeys("es"), StringComparer.OrdinalIgnoreCase);
+        var pt = new HashSet<string>(loc.GetKeys("pt"), StringComparer.OrdinalIgnoreCase);
+
+        Assert.NotEmpty(en);
+        foreach (var key in en)
+        {
+            Assert.True(es.Contains(key), $"Missing ES key: {key}");
+            Assert.True(pt.Contains(key), $"Missing PT key: {key}");
+        }
+
+        Assert.Equal(en.Count, es.Count);
+        Assert.Equal(en.Count, pt.Count);
+    }
+
+    [Fact]
+    public void LocalizationService_CriticalKeys_EsAndPtDifferFromKey()
+    {
+        var loc = new LocalizationService();
+        var critical = new[]
+        {
+            "Settings.Title",
+            "Focus.Title",
+            "Tasks.Title",
+            "Analytics.Title",
+            "Paywall.Title",
+            "Onboarding.GetStarted",
+            "Nav.Focus",
+            "Common.Cancel"
+        };
+
+        foreach (var key in critical)
+        {
+            loc.SetLanguage("es");
+            var es = loc.GetString(key);
+            Assert.False(string.Equals(es, key, StringComparison.Ordinal), $"ES returned key for {key}");
+            Assert.False(string.IsNullOrWhiteSpace(es));
+
+            loc.SetLanguage("pt");
+            var pt = loc.GetString(key);
+            Assert.False(string.Equals(pt, key, StringComparison.Ordinal), $"PT returned key for {key}");
+            Assert.False(string.IsNullOrWhiteSpace(pt));
+        }
+    }
+
+    [Fact]
+    public void LocalizationService_OnboardingTitles_ChangeWithLanguage()
+    {
+        var loc = new LocalizationService();
+        loc.SetLanguage("en");
+        var enTitle = loc.GetString("Onboarding.StepTitle0");
+        Assert.Equal("Welcome to Pepinillo", enTitle);
+
+        loc.SetLanguage("es");
+        var esTitle = loc.GetString("Onboarding.StepTitle0");
+        Assert.Equal("Bienvenido a Pepinillo", esTitle);
+        Assert.NotEqual(enTitle, esTitle);
+
+        loc.SetLanguage("pt");
+        var ptTitle = loc.GetString("Onboarding.StepTitle0");
+        Assert.Equal("Bem-vindo ao Pepinillo", ptTitle);
+        Assert.NotEqual(enTitle, ptTitle);
     }
 
     [Fact]

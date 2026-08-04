@@ -16,6 +16,7 @@ public partial class OnboardingViewModel : ObservableObject
     public const int StepCount = 5;
 
     private readonly ISettingsService _settingsService;
+    private readonly ILocalizationService? _localizer;
 
     /// <summary>Raised after Skip or Finish successfully saves completion.</summary>
     public event EventHandler? Completed;
@@ -51,8 +52,20 @@ public partial class OnboardingViewModel : ObservableObject
     public bool IsFirstStep => CurrentStep <= 0;
     public bool IsLastStep => CurrentStep >= StepCount - 1;
     public bool CanGoBack => CurrentStep > 0;
-    public string PrimaryButtonLabel => IsLastStep ? "Get started" : "Next";
-    public string StepProgressLabel => $"Step {Math.Clamp(CurrentStep, 0, StepCount - 1) + 1} of {StepCount}";
+
+    public string PrimaryButtonLabel => IsLastStep
+        ? T("Onboarding.GetStarted", "Get started")
+        : T("Onboarding.Next", "Next");
+
+    public string StepProgressLabel
+    {
+        get
+        {
+            var step = Math.Clamp(CurrentStep, 0, StepCount - 1) + 1;
+            var template = T("Onboarding.StepProgress", "Step {0} of {1}");
+            return string.Format(template, step, StepCount);
+        }
+    }
 
     public bool IsWelcomeStep => CurrentStep == 0;
     public bool IsModesStep => CurrentStep == 1;
@@ -67,34 +80,64 @@ public partial class OnboardingViewModel : ObservableObject
 
     public string StepTitle => CurrentStep switch
     {
-        0 => "Welcome to Pepinillo",
-        1 => "Four ways to focus",
-        2 => "Desktop power",
-        3 => "Optional account",
-        4 => "You're ready",
-        _ => "Welcome to Pepinillo"
+        0 => T("Onboarding.StepTitle0", "Welcome to Pepinillo"),
+        1 => T("Onboarding.StepTitle1", "Four ways to focus"),
+        2 => T("Onboarding.StepTitle2", "Desktop power"),
+        3 => T("Onboarding.StepTitle3", "Optional account"),
+        4 => T("Onboarding.StepTitle4", "You're ready"),
+        _ => T("Onboarding.StepTitle0", "Welcome to Pepinillo")
     };
 
     public string StepBody => CurrentStep switch
     {
-        0 => "Deep Work OS for Windows — timers, tasks, analytics, and ambient soundscapes. Built for long sessions at your desk.",
-        1 => "Pick a default mode. Pomodoro and Stopwatch are free. Flowtime and Time Blocking unlock with Pepinillo+.",
-        2 => "Close to the tray, use global hotkeys, and keep a mini timer on top while you work in other apps.",
-        3 => "Stay local forever, or sign in later for Everywhere cloud session sync. You can skip this for now.",
-        4 => "Start a session from Focus. Open Settings anytime to replay this guide or tune durations and hotkeys.",
+        0 => T("Onboarding.StepBody0",
+            "Deep Work OS for Windows — timers, tasks, analytics, and ambient soundscapes. Built for long sessions at your desk."),
+        1 => T("Onboarding.StepBody1",
+            "Pick a default mode. Pomodoro and Stopwatch are free. Flowtime and Time Blocking unlock with Pepinillo+."),
+        2 => T("Onboarding.StepBody2",
+            "Close to the tray, use global hotkeys, and keep a mini timer on top while you work in other apps."),
+        3 => T("Onboarding.StepBody3",
+            "Stay local forever, or sign in later for Everywhere cloud session sync. You can skip this for now."),
+        4 => T("Onboarding.StepBody4",
+            "Start a session from Focus. Open Settings anytime to replay this guide or tune durations and hotkeys."),
         _ => string.Empty
     };
 
-    public string DesktopTrayLine => "System tray — minimize or close keeps Pepinillo running in the background.";
-    public string DesktopHotkeysLine => "Hotkeys — Win+Shift+P play/pause · Win+Shift+S skip break · Win+Shift+M mini timer.";
-    public string DesktopMiniLine => "Mini timer — compact always-on-top overlay for multi-tasking.";
-    public string AccountTeaserLine => "Account is optional. Free and paid local features work offline without signing in.";
-    public string SkipLabel => "Skip";
-    public string BackLabel => "Back";
+    public string DesktopTrayLine => T("Onboarding.DesktopTray",
+        "System tray — minimize or close keeps Pepinillo running in the background.");
+    public string DesktopHotkeysLine => T("Onboarding.DesktopHotkeys",
+        "Hotkeys — Win+Shift+P play/pause · Win+Shift+S skip break · Win+Shift+M mini timer.");
+    public string DesktopMiniLine => T("Onboarding.DesktopMini",
+        "Mini timer — compact always-on-top overlay for multi-tasking.");
+    public string AccountTeaserLine => T("Onboarding.AccountTeaser",
+        "Account is optional. Free and paid local features work offline without signing in.");
+    public string SkipLabel => T("Onboarding.Skip", "Skip");
+    public string BackLabel => T("Onboarding.Back", "Back");
 
-    public OnboardingViewModel(ISettingsService settingsService)
+    public OnboardingViewModel(
+        ISettingsService settingsService,
+        ILocalizationService? localizer = null)
     {
         _settingsService = settingsService;
+        _localizer = localizer;
+    }
+
+    /// <summary>
+    /// Applies preferred language from settings so step titles/bodies recompute.
+    /// </summary>
+    public async Task ApplyLanguageFromSettingsAsync()
+    {
+        if (_localizer == null) return;
+        try
+        {
+            var settings = await _settingsService.GetSettingsAsync();
+            _localizer.SetLanguage(settings.PreferredLanguage);
+            NotifyLocalizedProperties();
+        }
+        catch
+        {
+            // keep defaults
+        }
     }
 
     [RelayCommand]
@@ -146,6 +189,7 @@ public partial class OnboardingViewModel : ObservableObject
         SelectedDefaultMode = FocusMode.Pomodoro;
         StatusMessage = string.Empty;
         BackCommand.NotifyCanExecuteChanged();
+        NotifyLocalizedProperties();
     }
 
     private async Task CompleteOnboardingAsync()
@@ -165,11 +209,29 @@ public partial class OnboardingViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Could not save onboarding: {ex.Message}";
+            var template = T("Onboarding.SaveFailed", "Could not save onboarding: {0}");
+            StatusMessage = string.Format(template, ex.Message);
         }
         finally
         {
             IsBusy = false;
         }
     }
+
+    private void NotifyLocalizedProperties()
+    {
+        OnPropertyChanged(nameof(StepTitle));
+        OnPropertyChanged(nameof(StepBody));
+        OnPropertyChanged(nameof(PrimaryButtonLabel));
+        OnPropertyChanged(nameof(StepProgressLabel));
+        OnPropertyChanged(nameof(DesktopTrayLine));
+        OnPropertyChanged(nameof(DesktopHotkeysLine));
+        OnPropertyChanged(nameof(DesktopMiniLine));
+        OnPropertyChanged(nameof(AccountTeaserLine));
+        OnPropertyChanged(nameof(SkipLabel));
+        OnPropertyChanged(nameof(BackLabel));
+    }
+
+    private string T(string key, string fallback) =>
+        _localizer?.GetString(key) ?? fallback;
 }

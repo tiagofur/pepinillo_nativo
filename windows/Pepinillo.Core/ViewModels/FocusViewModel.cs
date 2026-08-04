@@ -230,7 +230,25 @@ public partial class FocusViewModel : ObservableObject
         JournalTitleLabel = _localizer.GetString("Focus.JournalTitle");
         if (CurrentState == SessionState.Idle)
             StatusLabel = _localizer.GetString("Focus.Ready");
+        if (LinkedTaskId == null)
+            ActiveTaskTitle = FreeFocusLabel();
     }
+
+    private string FreeFocusLabel() =>
+        T("Focus.FreeFocus", "Free focus (no task linked)");
+
+    private string ModeDisplayName(FocusMode mode) => mode switch
+    {
+        FocusMode.Pomodoro => T("Focus.ModePomodoro", "Pomodoro"),
+        FocusMode.Stopwatch => T("Focus.ModeStopwatch", "Stopwatch"),
+        FocusMode.Flowtime => T("Focus.ModeFlowtime", "Flowtime"),
+        FocusMode.TimeBlocking => T("Focus.ModeTimeBlocking", "Time Blocking"),
+        _ => mode.ToString()
+    };
+
+    private string T(string key, string fallback) =>
+        _localizer?.GetString(key) ?? fallback;
+
 
     private void ApplySettingsToEngine(UserSettings settings)
     {
@@ -341,14 +359,11 @@ public partial class FocusViewModel : ObservableObject
         if (_entitlements == null || _entitlements.CanUseFocusMode(mode))
             return true;
 
-        var feature = mode switch
-        {
-            FocusMode.Flowtime => "Flowtime",
-            FocusMode.TimeBlocking => "Time Blocking",
-            _ => mode.ToString()
-        };
+        var feature = ModeDisplayName(mode);
 
-        StatusLabel = $"{feature} requires Pepinillo+ or Everywhere.";
+        StatusLabel = string.Format(
+            T("Focus.ModeRequiresUpgrade", "{0} requires Pepinillo+ or Everywhere."),
+            feature);
         PaywallFeatureHint = feature;
         PremiumFeatureRequested?.Invoke(this, feature);
         return false;
@@ -361,7 +376,7 @@ public partial class FocusViewModel : ObservableObject
             return;
 
         LinkedTaskId = task?.Id;
-        ActiveTaskTitle = task?.Title ?? "Free focus (no task linked)";
+        ActiveTaskTitle = task?.Title ?? FreeFocusLabel();
         _modeSuggestionDismissed = false;
 
         var duration = ResolveDurationSeconds(SelectedMode, _cachedSettings);
@@ -383,8 +398,9 @@ public partial class FocusViewModel : ObservableObject
     {
         if (ShowModeSuggestionLocked || _pendingModeSuggestion?.IsLocked == true)
         {
-            PaywallFeatureHint = "Mode Intelligence";
-            PremiumFeatureRequested?.Invoke(this, "Mode Intelligence");
+            var mi = T("Focus.ModeIntelligence", "Mode Intelligence");
+            PaywallFeatureHint = mi;
+            PremiumFeatureRequested?.Invoke(this, mi);
             return;
         }
 
@@ -424,8 +440,9 @@ public partial class FocusViewModel : ObservableObject
     [RelayCommand]
     private void UpgradeModeIntelligence()
     {
-        PaywallFeatureHint = "Mode Intelligence";
-        PremiumFeatureRequested?.Invoke(this, "Mode Intelligence");
+        var mi = T("Focus.ModeIntelligence", "Mode Intelligence");
+        PaywallFeatureHint = mi;
+        PremiumFeatureRequested?.Invoke(this, mi);
     }
 
     [RelayCommand]
@@ -517,7 +534,9 @@ public partial class FocusViewModel : ObservableObject
             }
 
             var name = await _soundscapeCoordinator.GetPreferredTrackDisplayNameAsync();
-            SoundscapeChipLabel = string.IsNullOrEmpty(name) ? string.Empty : $"Soundscape: {name}";
+            SoundscapeChipLabel = string.IsNullOrEmpty(name)
+                ? string.Empty
+                : string.Format(T("Focus.SoundscapeChip", "Soundscape: {0}"), name);
         }
         catch
         {
@@ -613,7 +632,10 @@ public partial class FocusViewModel : ObservableObject
         {
             await _sessionService.SaveSessionAsync(session);
             var minutes = Math.Max(1, session.ElapsedSeconds / 60);
-            LastCompletedMessage = $"Saved {minutes} min {session.Mode} session";
+            LastCompletedMessage = string.Format(
+                T("Focus.SessionSaved", "Saved {0} min {1} session"),
+                minutes,
+                ModeDisplayName(session.Mode));
             _notificationService.ShowSessionCompletedToast(session.Mode.ToString(), minutes);
 
             // Surface journaling after successful save.
@@ -631,7 +653,7 @@ public partial class FocusViewModel : ObservableObject
         }
         catch
         {
-            LastCompletedMessage = "Session finished (save failed)";
+            LastCompletedMessage = T("Focus.SessionSaveFailed", "Session finished (save failed)");
         }
 
         // New history may unlock/change Mode Intelligence; allow a fresh banner.
@@ -723,7 +745,7 @@ public partial class FocusViewModel : ObservableObject
             {
                 ShowModeSuggestion = false;
                 ShowModeSuggestionLocked = true;
-                SuggestionReason = "Upgrade for Mode Intelligence";
+                SuggestionReason = T("Focus.ModeIntelligenceUpgrade", "Upgrade for Mode Intelligence");
             }
             else
             {
