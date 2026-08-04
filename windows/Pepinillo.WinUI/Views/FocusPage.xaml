@@ -127,11 +127,11 @@
                                Style="{ThemeResource SubtitleTextBlockStyle}"
                                FontWeight="SemiBold"/>
                     <TextBox Header="What went well / notes"
-                             Text="{x:Bind ViewModel.JournalNoteDraft, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Text="{x:Bind ViewModel.JournalNoteDraft, Mode=TwoWay}"
                              AcceptsReturn="True"
                              TextWrapping="Wrap"
                              MinHeight="80"/>
-                    <NumberBox Header="Energy rating (1–5, optional)"
+                    <NumberBox Header="Energy rating (1-5, optional)"
                                Value="{x:Bind ViewModel.JournalEnergyRating, Mode=TwoWay}"
                                Minimum="0"
                                Maximum="5"

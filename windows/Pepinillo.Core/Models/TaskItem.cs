@@ -55,6 +55,12 @@ public class TaskItem
 
     public bool IsSynced { get; set; }
 
+    /// <summary>True when priority badge should show (WinUI Visibility cannot bind to int).</summary>
+    public bool HasPriority => Priority is >= 1 and <= 3;
+
+    /// <summary>True when energy badge should show.</summary>
+    public bool HasEnergy => !string.IsNullOrWhiteSpace(EnergyLevel);
+
     /// <summary>Display helper for priority badge.</summary>
     public string PriorityLabel => Priority switch
     {

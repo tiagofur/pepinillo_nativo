@@ -32,10 +32,36 @@ jobs:
       run: dotnet test windows/Pepinillo.Core.Tests/Pepinillo.Core.Tests.csproj --configuration Release --nologo
 
     - name: Build WinUI 3 App (x64)
-      run: dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-x64 --no-restore
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Continue"
+        dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-x64 --no-restore -v:n
+        $code = $LASTEXITCODE
+        if ($code -ne 0) {
+          Write-Host "=== XAML compiler diagnostics (output.json / *.err) ==="
+          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Include output.json,*.err,*.log -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              Write-Host "----- $($_.FullName) -----"
+              Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -First 200
+            }
+        }
+        exit $code
 
     - name: Build WinUI 3 App (ARM64)
-      run: dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-arm64 --no-restore
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Continue"
+        dotnet build windows/Pepinillo.WinUI/Pepinillo.WinUI.csproj --configuration Release -r win-arm64 --no-restore -v:n
+        $code = $LASTEXITCODE
+        if ($code -ne 0) {
+          Write-Host "=== XAML compiler diagnostics (output.json / *.err) ==="
+          Get-ChildItem -Path windows/Pepinillo.WinUI/obj -Recurse -Include output.json,*.err,*.log -ErrorAction SilentlyContinue |
+            ForEach-Object {
+              Write-Host "----- $($_.FullName) -----"
+              Get-Content $_.FullName -ErrorAction SilentlyContinue | Select-Object -First 200
+            }
+        }
+        exit $code
 
   pack-msix:
     name: Pack MSIX (x64)

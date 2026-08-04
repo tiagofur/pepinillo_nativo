@@ -15,10 +15,9 @@
                        Style="{ThemeResource CaptionTextBlockStyle}"
                        TextWrapping="Wrap"
                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-            <TextBlock>
-                <Run Text="Current tier: "/>
-                <Run Text="{x:Bind ViewModel.CurrentTierLabel, Mode=OneWay}" FontWeight="SemiBold"/>
-            </TextBlock>
+            <TextBlock Text="{x:Bind ViewModel.CurrentTierLabel, Mode=OneWay}"
+                       Style="{ThemeResource BodyTextBlockStyle}"
+                       FontWeight="SemiBold"/>
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
                 <Border Grid.Column="0"

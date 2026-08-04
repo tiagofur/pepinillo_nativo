@@ -21,15 +21,14 @@
                     Padding="20">
                 <StackPanel Spacing="12">
                     <TextBox Header="Email"
-                             Text="{x:Bind ViewModel.Email, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             PlaceholderText="you@example.com"
-                             InputScope="EmailNameOrAddress"/>
+                             Text="{x:Bind ViewModel.Email, Mode=TwoWay}"
+                             PlaceholderText="you@example.com"/>
                     <PasswordBox x:Name="PasswordBox"
                                  Header="Password"
                                  PlaceholderText="Password"
                                  PasswordChanged="PasswordBox_PasswordChanged"/>
                     <TextBox Header="Display name (register)"
-                             Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Text="{x:Bind ViewModel.DisplayName, Mode=TwoWay}"
                              PlaceholderText="Optional"/>
 
                     <StackPanel Orientation="Horizontal" Spacing="8">

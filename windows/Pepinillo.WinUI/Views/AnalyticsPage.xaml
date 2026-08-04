@@ -99,7 +99,7 @@
             <ItemsControl x:Name="ModeList" ItemsSource="{x:Bind ViewModel.ModeBreakdown, Mode=OneWay}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:ModeBreakdownItem">
-                        <Grid ColumnDefinitions="120,* ,80" ColumnSpacing="12" Margin="0,0,0,8">
+                        <Grid ColumnDefinitions="120,*,80" ColumnSpacing="12" Margin="0,0,0,8">
                             <TextBlock Grid.Column="0" Text="{x:Bind ModeName}" VerticalAlignment="Center"/>
                             <ProgressBar Grid.Column="1"
                                          Minimum="0"

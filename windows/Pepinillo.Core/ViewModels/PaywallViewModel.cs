@@ -42,11 +42,11 @@ public partial class PaywallViewModel : ObservableObject
         try
         {
             var status = await _commerce.CheckStoreEntitlementsAsync();
-            CurrentTierLabel = status.Tier.ToString();
+            CurrentTierLabel = "Current tier: " + status.Tier;
         }
         catch
         {
-            CurrentTierLabel = "Free";
+            CurrentTierLabel = "Current tier: Free";
         }
     }
 

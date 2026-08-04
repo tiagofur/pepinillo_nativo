@@ -21,7 +21,7 @@
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                 <TextBox Grid.Column="0"
                          PlaceholderText="Add a new task..."
-                         Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay}"
                          Header="Title"/>
                 <NumberBox Grid.Column="1"
                            Width="140"
@@ -87,14 +87,15 @@
                                     <Border Background="{ThemeResource SystemAccentColor}"
                                             CornerRadius="4"
                                             Padding="6,2"
-                                            Visibility="{x:Bind Priority}">
+                                            Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibilityConverter}}">
                                         <TextBlock Text="{x:Bind PriorityLabel}"
                                                    Foreground="White"
                                                    FontSize="11"/>
                                     </Border>
                                     <Border Background="{ThemeResource CardStrokeColorDefaultBrush}"
                                             CornerRadius="4"
-                                            Padding="6,2">
+                                            Padding="6,2"
+                                            Visibility="{x:Bind HasEnergy, Converter={StaticResource BoolToVisibilityConverter}}">
                                         <TextBlock Text="{x:Bind EnergyLabel}"
                                                    FontSize="11"/>
                                     </Border>

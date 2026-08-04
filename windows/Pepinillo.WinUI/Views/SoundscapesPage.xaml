@@ -39,16 +39,16 @@
                             <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
                                 <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
                                     <TextBlock Text="{x:Bind Name}" FontWeight="SemiBold"/>
-                                    <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}">
-                                        <Run Text="{x:Bind Category}"/>
-                                        <Run Text=" · "/>
-                                        <Run Text="{x:Bind AudioFileName}"/>
-                                    </TextBlock>
+                                    <TextBlock Text="{x:Bind Category}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                                    <TextBlock Text="{x:Bind AudioFileName}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
                                     <TextBlock Text="Premium"
                                                Foreground="Goldenrod"
                                                Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Visibility="{x:Bind IsPremium}"/>
+                                               Visibility="{x:Bind IsPremium, Converter={StaticResource BoolToVisibilityConverter}}"/>
                                 </StackPanel>
                                 <Button Grid.Column="1" Content="Play" Click="Play_Click" Tag="{x:Bind}"/>
                                 <Button Grid.Column="2" Content="Stop" Click="Stop_Click" Tag="{x:Bind}"/>
