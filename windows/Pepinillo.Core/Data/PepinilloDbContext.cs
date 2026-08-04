@@ -12,6 +12,7 @@ public class PepinilloDbContext : DbContext
     public DbSet<FocusSession> FocusSessions => Set<FocusSession>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<UserSettings> UserSettings => Set<UserSettings>();
+    public DbSet<PlannedTimeBlock> PlannedTimeBlocks => Set<PlannedTimeBlock>();
 
     public PepinilloDbContext(DbContextOptions<PepinilloDbContext> options) : base(options)
     {
@@ -48,6 +49,14 @@ public class PepinilloDbContext : DbContext
             entity.Property(e => e.PreferredSoundscapeId).HasMaxLength(64);
             entity.Property(e => e.DeviceId).HasMaxLength(64);
             entity.Property(e => e.PreferredFocusMode).HasMaxLength(32);
+        });
+
+        modelBuilder.Entity<PlannedTimeBlock>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(256);
+            entity.HasIndex(e => e.StartAtUtc);
+            entity.HasIndex(e => e.TaskItemId);
         });
     }
 }

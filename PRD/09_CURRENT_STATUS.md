@@ -345,10 +345,11 @@
 ### Present (P0 + P1 + P2 coded + P3 packaging)
 
 - **DI composition root** (`App` + `AddPepinilloCore` + WinUI desktop/service overrides)
-- **NavigationView → Frame:** Focus, Tasks, Analytics, Soundscapes, Account, Upgrade/Paywall, Settings
-- **SQLite** under local app data (`EnsureCreated`); wipe `pepinillo.db` after schema changes
-- **FocusPage** + engine: Pomodoro work→break, Stopwatch, **Flowtime** (soft target), **Time Block** (no auto-break), pause/resume/skip, session persist, optional task link, **post-session journal**
+- **NavigationView → Frame:** Focus, Tasks, **Calendar (W13)**, Analytics, Soundscapes, Account, Upgrade/Paywall, Settings
+- **SQLite** under local app data (`EnsureCreated`/migrations); wipe `pepinillo.db` after schema changes
+- **FocusPage** + engine: Pomodoro work→break, Stopwatch, **Flowtime** (soft target), **Time Block** (no auto-break), pause/resume/skip, session persist, optional task link, **post-session journal**; calendar can pre-configure Time Blocking via `TryConfigureTimeBlock` (preserved across Focus page load)
 - **Tasks (W12 #586):** Today/Upcoming/Inbox/All; priority/energy/recurrence/pomodoro estimates; subtasks; **keyboard excellence** (Ctrl+N focus title, Enter create, refocus for rapid entry; caption “Ctrl+N new · Enter add”); **per-filter empty states** (icon + localized hint + Accent “Add a task” CTA focusing composer); **free-tier gate UX** (StatusMessage upgrade copy + `PremiumFeatureRequested` → Paywall for limit/subtasks/recurrence); denser list rows with priority/energy/estimate caption chips; filter Pivot headers from localized ViewModel labels. **Residual:** no SortOrder/reorder (model has no field); Google Tasks import out of scope; WinUI smoke on Windows pending
+- **Calendar / day planner (W13 #587):** `PlannedTimeBlock` entity + EF migration; `ITimeBlockPlanService` create/list/delete (premium create via `CanUseFocusMode(TimeBlocking)`); `CalendarViewModel` + `CalendarPage` — local day header prev/next/today, hours 6–22 add buttons, planned block cards (Start → Focus Time Blocking configure + navigate, Delete), optional task link; free → Paywall; EN/ES/PT `Calendar.*` + `Nav.Calendar`; a11y names. **Residual:** no Outlook/Google calendar sync; no full drag/pixel grid overlay; WinUI smoke on Windows pending
 - **Settings** + theme + language preference + Privacy/Terms links + Upgrade CTA
 - **Design system (W2 partial→improved):** `Resources/DesignTokens.xaml` (card radius, page margin, mode color brushes); theme picker System/Light/Dark (free) + Forest/Ocean/Sunset (premium via `IEntitlementService.CanUseTheme`); OLEDBlack aliases Dark; `ThemeHelper` applies ElementTheme + accent tokens + Mica when `UseMicaBackdrop`; Focus mode chips colored; Tasks/Analytics empty copy polish; Paywall “not a subscription” badge + tokens
 - **Analytics / Reflect (W4 #578):** today minutes, 7-day hours (free), current/best streak (UTC), mode breakdown bars, recent sessions + empty-state; **6 FREE achievements** (horizontal progress cards from local sessions; Early Bird = StartedAt hour &lt; 07:00 UTC); **Weekly Review** (Mon–Sun UTC vs previous week) + **Monthly Review** (calendar month UTC) with hours/sessions/top mode/trend — premium details, free locked teaser → Paywall
@@ -384,6 +385,7 @@ Tracked in excellence epic **#573** / [PRD/13](13_WINDOWS_EXCELLENCE_PLAN.md):
 - Paywall excellence → **#585** (**coded** on `feat/windows-w11-commerce`; sandbox/SKUs residual #568)
 - A11y gate → **#589** (**coded** on `feat/windows-w15-a11y`; Narrator/HC/200% smoke on Windows pending)
 - Tasks/Plan excellence → **#586** (**coded** on `feat/windows-w12-tasks-excellence`; WinUI smoke on Windows pending; no drag-reorder without SortOrder)
+- Calendar time-block grid → **#587** (**coded** on `feat/windows-w13-calendar-grid`; no external calendar sync; WinUI smoke on Windows pending)
 
 ### Pending Windows (priority bands)
 

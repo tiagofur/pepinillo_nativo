@@ -27,6 +27,8 @@ public partial class FocusViewModel : ObservableObject
     private bool _focusAssistActive;
     private bool _modeSuggestionDismissed;
     private ModeSuggestion? _pendingModeSuggestion;
+    /// <summary>When true, next <see cref="InitializeAsync"/> keeps engine mode/duration (calendar Start).</summary>
+    private bool _preserveConfiguredSession;
 
     [ObservableProperty]
     private SessionState _currentState = SessionState.Idle;
@@ -168,19 +170,61 @@ public partial class FocusViewModel : ObservableObject
         _cachedSettings = await _settingsService.GetSettingsAsync();
         ApplySettingsToEngine(_cachedSettings);
         ApplyLanguage(_cachedSettings.PreferredLanguage);
-        TryApplyPreferredFocusMode(_cachedSettings);
 
-        if (_focusEngine.CurrentState == SessionState.Idle && !_focusEngine.IsOnBreak)
+        if (_preserveConfiguredSession)
         {
-            var duration = ResolveDurationSeconds(SelectedMode, _cachedSettings);
-            _focusEngine.ConfigureSession(SelectedMode, duration, LinkedTaskId);
+            // Calendar (or other external) already configured mode/duration/task — do not clobber.
+            SelectedMode = _focusEngine.CurrentMode;
+            LinkedTaskId = _focusEngine.LinkedTaskId;
+            if (LinkedTaskId == null)
+                ActiveTaskTitle = FreeFocusLabel();
             UpdateTimerDisplay();
+            _preserveConfiguredSession = false;
+        }
+        else
+        {
+            TryApplyPreferredFocusMode(_cachedSettings);
+
+            if (_focusEngine.CurrentState == SessionState.Idle && !_focusEngine.IsOnBreak)
+            {
+                var duration = ResolveDurationSeconds(SelectedMode, _cachedSettings);
+                _focusEngine.ConfigureSession(SelectedMode, duration, LinkedTaskId);
+                UpdateTimerDisplay();
+            }
         }
 
         await LoadAvailableTasksAsync();
         await RefreshSoundscapeChipAsync();
         await RefreshModeSuggestionAsync();
         UpdateCommandFlags();
+    }
+
+    /// <summary>
+    /// Configures Time Blocking from the day planner (W13). Does not auto-start — user presses Start on Focus.
+    /// Returns false when free-tier blocked or a non-idle session is running.
+    /// </summary>
+    public bool TryConfigureTimeBlock(int durationMinutes, Guid? taskId, string? taskTitle = null)
+    {
+        if (CurrentState is SessionState.Running or SessionState.Paused or SessionState.Break)
+            return false;
+
+        if (!EnsureModeAllowed(FocusMode.TimeBlocking))
+            return false;
+
+        PaywallFeatureHint = string.Empty;
+        SelectedMode = FocusMode.TimeBlocking;
+        LinkedTaskId = taskId;
+        ActiveTaskTitle = taskId == null
+            ? FreeFocusLabel()
+            : (string.IsNullOrWhiteSpace(taskTitle) ? FreeFocusLabel() : taskTitle.Trim());
+
+        ApplySettingsToEngine(_cachedSettings);
+        var durationSeconds = Math.Max(60, durationMinutes * 60);
+        _focusEngine.ConfigureSession(FocusMode.TimeBlocking, durationSeconds, taskId);
+        _preserveConfiguredSession = true;
+        UpdateTimerDisplay();
+        UpdateCommandFlags();
+        return true;
     }
 
     /// <summary>

@@ -125,7 +125,7 @@ Code gate owner: `windows/Pepinillo.Core/Services/EntitlementService.cs`.
 | **W10** | Auth + Everywhere sync depth | **[#584](https://github.com/tiagofur/pepinillo_nativo/issues/584)** | P0 | API |
 | **W11** | Paywall + commerce excellence | **[#585](https://github.com/tiagofur/pepinillo_nativo/issues/585)** — **coded** on `feat/windows-w11-commerce` (sandbox/Partner Center SKUs still #568) | P0 | #568 SKUs |
 | **W12** | Tasks/Plan excellence | **[#586](https://github.com/tiagofur/pepinillo_nativo/issues/586)** — **coded** on `feat/windows-w12-tasks-excellence` (WinUI smoke on Windows pending) | P1 | W2 |
-| **W13** | Calendar time-block grid (desktop advantage) | **[#587](https://github.com/tiagofur/pepinillo_nativo/issues/587)** | P2 | W12 |
+| **W13** | Calendar time-block grid (desktop advantage) | **[#587](https://github.com/tiagofur/pepinillo_nativo/issues/587)** — **coded** on `feat/windows-w13-calendar-grid` (WinUI smoke on Windows pending) | P2 | W12 |
 | **W14** | Multi-monitor + shell excellence | **[#588](https://github.com/tiagofur/pepinillo_nativo/issues/588)** | P2 | W9 |
 | **W15** | Accessibility + keyboard-first | **[#589](https://github.com/tiagofur/pepinillo_nativo/issues/589)** — **coded** on `feat/windows-w15-a11y` (Narrator smoke on Windows pending; see `windows/store/A11Y_SMOKE.md`) | P1 | W2 |
 | **W16** | Microsoft Store launch (ops) | **[#568](https://github.com/tiagofur/pepinillo_nativo/issues/568)** | P0 | W1 smoke |
@@ -217,7 +217,7 @@ Legend: **Done** · **Partial** · **Missing** · **N/A** · **Stretch**
 | Focus Assist / DND | Mobile APIs | **Honest best-effort (W9 #583):** intent tracking + `FocusAssistStatus`; no fake “DND on”; optional Settings link `ms-settings:quiethours` | Best-effort real | W9 |
 | Startup with OS | N/A phone | **Done (W9 #583):** `LaunchAtWindowsStartup` + StartupTask (MSIX) / HKCU Run fallback (unpackaged) | Done | W9 |
 | Hotkey rebind | N/A | **Done (W9 #583):** Settings TextBoxes + validate via `HotkeyChordParser` + reset defaults + `RefreshFromSettings` | Done | W9 |
-| Calendar grid | Partial | Missing | Desktop advantage | W13 |
+| Calendar grid | Partial | **Done (W13 #587):** day planner (hours 6–22) + `PlannedTimeBlock` SQLite; create/list/delete; Start → Focus Time Blocking (configure, user starts); prev/next/today; optional task link; free create+start → paywall (`CanUseFocusMode` TimeBlocking); EN/ES/PT Calendar.* + nav. **Residual:** no Outlook/Google sync; no full pixel calendar overlay; WinUI smoke on Windows pending | Desktop advantage | W13 |
 | Multi-monitor mini | N/A | Missing | Stretch excellence | W14 |
 | A11y / keyboard | Varies | **Partial→Done (W15 #589):** `AutomationProperties.Name` on Focus/Tasks/Paywall/Settings/Analytics/Account/Soundscapes/Mini/Main nav; Focus timer `LiveSetting=Polite`; page accelerators Ctrl+Enter start, Ctrl+Space pause, Ctrl+N new task; Settings caption; ThemeResource text on cards; `A11yNames` + Core test; smoke checklist `windows/store/A11Y_SMOKE.md` + cert §7. **Residual:** Narrator/HC/200% smoke on real Windows | Excellent | W15 |
 | Store ship | Live | Not submitted | Internal→Public | #568 |
@@ -278,6 +278,7 @@ Use as acceptance for design-system work:
 
 | Date | Change |
 | ---- | ------ |
+| 2026-08-04 | W13 #587 coded — Calendar day planner + PlannedTimeBlock + Time Blocking start; §7 Calendar grid Done |
 | 2026-08-04 | W12 #586 coded — Tasks keyboard excellence, empty CTAs, free-limit paywall, density chips; §7 Tasks row Done |
 | 2026-08-04 | W15 #589 coded — AutomationProperties + keyboard accelerators + A11Y_SMOKE; §7/G8 partial→checklist ready |
 | 2026-08-04 | v1.0 — Excellence plan from parity audit; backlog W0–W16 + epic **#573** (children #574–#589, Store #568) |

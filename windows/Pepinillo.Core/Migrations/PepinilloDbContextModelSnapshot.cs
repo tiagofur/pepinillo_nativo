@@ -60,6 +60,41 @@ namespace Pepinillo.Core.Migrations
                     b.ToTable("FocusSessions");
                 });
 
+            modelBuilder.Entity("Pepinillo.Core.Models.PlannedTimeBlock", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("StartAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("TaskItemId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartAtUtc");
+
+                    b.HasIndex("TaskItemId");
+
+                    b.ToTable("PlannedTimeBlocks");
+                });
+
             modelBuilder.Entity("Pepinillo.Core.Models.TaskItem", b =>
                 {
                     b.Property<Guid>("Id")

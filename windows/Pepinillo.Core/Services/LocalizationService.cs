@@ -25,12 +25,31 @@ public class LocalizationService : ILocalizationService
         // ── Nav shell ───────────────────────────────────────────────────────
         ("Nav.Focus", "Focus", "Enfoque", "Foco"),
         ("Nav.Tasks", "Tasks", "Tareas", "Tarefas"),
+        ("Nav.Calendar", "Calendar", "Calendario", "Calendário"),
         ("Nav.Analytics", "Analytics", "Analítica", "Análises"),
         ("Nav.Soundscapes", "Soundscapes", "Paisajes sonoros", "Paisagens sonoras"),
         ("Nav.Account", "Account", "Cuenta", "Conta"),
         ("Nav.Upgrade", "Upgrade", "Mejorar plan", "Upgrade"),
         ("Nav.Settings", "Settings", "Configuración", "Configurações"),
         ("Nav.Welcome", "Welcome", "Bienvenida", "Boas-vindas"),
+
+        // ── Calendar / day planner (W13) ────────────────────────────────────
+        ("Calendar.Title", "Plan day", "Planificar el día", "Planejar o dia"),
+        ("Calendar.Subtitle", "Block deep-work hours on the desktop calendar. Start opens Focus in Time Blocking.", "Bloquea horas de trabajo profundo en el calendario de escritorio. Empezar abre Enfoque en Bloque de tiempo.", "Bloqueie horas de trabalho profundo no calendário de desktop. Iniciar abre o Foco em Bloco de tempo."),
+        ("Calendar.Empty", "No time blocks for this day. Add one from the hour list.", "No hay bloques de tiempo para este día. Añade uno desde la lista de horas.", "Não há blocos de tempo para este dia. Adicione um na lista de horas."),
+        ("Calendar.PrevDay", "Previous day", "Día anterior", "Dia anterior"),
+        ("Calendar.NextDay", "Next day", "Día siguiente", "Próximo dia"),
+        ("Calendar.Today", "Today", "Hoy", "Hoje"),
+        ("Calendar.BlocksHeading", "Planned blocks", "Bloques planificados", "Blocos planejados"),
+        ("Calendar.HoursHeading", "Hours", "Horas", "Horas"),
+        ("Calendar.Start", "Start", "Empezar", "Iniciar"),
+        ("Calendar.Delete", "Delete", "Eliminar", "Excluir"),
+        ("Calendar.LinkTask", "Link task (optional)", "Vincular tarea (opcional)", "Vincular tarefa (opcional)"),
+        ("Calendar.AddAtHour", "Add", "Añadir", "Adicionar"),
+        ("Calendar.DefaultTitle", "Time Block", "Bloque de tiempo", "Bloco de tempo"),
+        ("Calendar.DurationMinutes", "{0} min", "{0} min", "{0} min"),
+        ("Calendar.PremiumRequired", "Time Blocking requires Pepinillo+ or Everywhere.", "El bloque de tiempo requiere Pepinillo+ o Everywhere.", "O bloco de tempo requer Pepinillo+ ou Everywhere."),
+        ("Calendar.SessionBusy", "Finish or stop the current focus session before starting a block.", "Termina o detén la sesión de enfoque actual antes de empezar un bloque.", "Finalize ou pare a sessão de foco atual antes de iniciar um bloco."),
 
         // ── Settings ────────────────────────────────────────────────────────
         ("Settings.Title", "Settings", "Configuración", "Configurações"),

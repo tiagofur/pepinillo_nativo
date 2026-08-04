@@ -42,12 +42,14 @@ public static class ServiceCollectionExtensions
         // FocusSessionService after streak protection so constructor injection resolves.
         services.AddSingleton<IFocusSessionService, FocusSessionService>();
         services.AddSingleton<ITaskService, TaskService>();
+        services.AddSingleton<ITimeBlockPlanService, TimeBlockPlanService>();
         services.AddSingleton<ISyncService, SyncService>();
         services.AddSingleton<IReflectService, ReflectService>();
         services.AddSingleton<IModeIntelligenceService, ModeIntelligenceService>();
 
         services.AddSingleton<FocusViewModel>();
         services.AddTransient<TasksViewModel>();
+        services.AddTransient<CalendarViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddTransient<AnalyticsViewModel>();
         services.AddTransient<SoundscapesViewModel>();
