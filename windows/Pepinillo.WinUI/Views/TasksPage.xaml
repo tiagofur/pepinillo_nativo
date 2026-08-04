@@ -12,28 +12,34 @@
     </Page.KeyboardAccelerators>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{StaticResource PepinilloPageMargin}">
-        <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,24">
+        <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,20">
             <TextBlock Text="{x:Bind ViewModel.TitleLabel, Mode=OneWay}"
                        Style="{ThemeResource TitleTextBlockStyle}"
                        FontWeight="Bold"/>
             <TextBlock Text="{x:Bind ViewModel.SubtitleLabel, Mode=OneWay}"
                        Style="{ThemeResource BodyTextBlockStyle}"
                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+            <TextBlock Text="{x:Bind ViewModel.KeyboardHintsLabel, Mode=OneWay}"
+                       Style="{ThemeResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"
+                       Opacity="0.85"
+                       AutomationProperties.Name="Keyboard shortcuts"/>
             <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
                        Style="{ThemeResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
         </StackPanel>
 
-        <StackPanel Grid.Row="1" Spacing="12" Margin="0,0,0,16">
+        <StackPanel Grid.Row="1" Spacing="10" Margin="0,0,0,12">
             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                 <TextBox x:Name="NewTaskTitleBox"
                          Grid.Column="0"
                          PlaceholderText="{x:Bind ViewModel.AddPlaceholder, Mode=OneWay}"
-                         Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay}"
+                         Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          Header="{x:Bind ViewModel.TitleFieldLabel, Mode=OneWay}"
                          IsTabStop="True"
+                         KeyDown="NewTaskTitleBox_KeyDown"
                          AutomationProperties.Name="New task title"
-                         AutomationProperties.HelpText="Keyboard: Ctrl+N focuses this field"/>
+                         AutomationProperties.HelpText="Keyboard: Ctrl+N focuses this field; Enter creates the task"/>
                 <NumberBox Grid.Column="1"
                            Width="140"
                            Header="{x:Bind ViewModel.EstimateLabel, Mode=OneWay}"
@@ -80,7 +86,7 @@
 
         <Pivot Grid.Row="2"
                x:Name="FilterPivot"
-               Margin="0,0,0,8"
+               Margin="0,0,0,6"
                SelectionChanged="FilterPivot_SelectionChanged"
                AutomationProperties.Name="Task filters">
             <PivotItem x:Name="FilterTodayItem"
@@ -107,7 +113,7 @@
                       AutomationProperties.Name="Task list">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:TaskItem">
-                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8" Padding="12,8">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" Padding="8,6">
                             <CheckBox Grid.Column="0"
                                       IsChecked="{x:Bind IsCompleted, Mode=OneWay}"
                                       MinWidth="32"
@@ -116,22 +122,43 @@
                                       IsTabStop="True"
                                       AutomationProperties.Name="Complete task"
                                       AutomationProperties.HelpText="{x:Bind Title}"/>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                 <TextBlock Text="{x:Bind Title}"
                                            FontWeight="SemiBold"
                                            Style="{ThemeResource BodyTextBlockStyle}"
                                            TextWrapping="Wrap"/>
+                                <!-- Compact caption chips: priority · energy · estimate -->
                                 <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <TextBlock Text="{x:Bind PriorityLabel}"
-                                               FontSize="11"
-                                               FontWeight="SemiBold"
-                                               Foreground="{ThemeResource SystemAccentColor}"/>
-                                    <TextBlock Text="{x:Bind EnergyLabel}"
-                                               FontSize="11"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                            CornerRadius="3"
+                                            Padding="6,1"
+                                            Visibility="{x:Bind HasPriority}">
+                                        <TextBlock Text="{x:Bind PriorityLabel}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{ThemeResource SystemAccentColor}"/>
+                                    </Border>
+                                    <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                            CornerRadius="3"
+                                            Padding="6,1"
+                                            Visibility="{x:Bind HasEnergy}">
+                                        <TextBlock Text="{x:Bind EnergyLabel}"
+                                                   FontSize="11"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    </Border>
+                                    <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                            CornerRadius="3"
+                                            Padding="6,1"
+                                            Visibility="{x:Bind HasEstimate}">
+                                        <TextBlock Text="{x:Bind EstimateChipLabel}"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    </Border>
                                     <TextBlock Text="{x:Bind RecurrenceRule}"
                                                FontSize="11"
                                                Opacity="0.7"
+                                               VerticalAlignment="Center"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                 </StackPanel>
                                 <ItemsControl ItemsSource="{x:Bind SubTasks}">
@@ -153,24 +180,13 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
-                            <Border Grid.Column="2"
-                                    Background="{ThemeResource SystemAccentColor}"
-                                    CornerRadius="4"
-                                    Padding="8,4"
-                                    VerticalAlignment="Center"
-                                    AutomationProperties.Name="Estimated minutes badge">
-                                <TextBlock Text="{x:Bind EstimatedMinutes}"
-                                           Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                                           FontSize="12"
-                                           FontWeight="SemiBold"/>
-                            </Border>
-                            <TextBlock Grid.Column="3"
+                            <TextBlock Grid.Column="2"
                                        Text="{x:Bind EstimatedPomodoros}"
                                        VerticalAlignment="Center"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        ToolTipService.ToolTip="Estimated pomodoros"
                                        AutomationProperties.Name="Estimated pomodoros"/>
-                            <Button Grid.Column="4"
+                            <Button Grid.Column="3"
                                     Content="+"
                                     ToolTipService.ToolTip="Add subtask"
                                     Click="AddSubtask_Click"
@@ -178,7 +194,7 @@
                                     VerticalAlignment="Center"
                                     IsTabStop="True"
                                     AutomationProperties.Name="Add subtask"/>
-                            <Button Grid.Column="5"
+                            <Button Grid.Column="4"
                                     Style="{ThemeResource SubtleButtonStyle}"
                                     Click="DeleteTask_Click"
                                     Tag="{x:Bind}"
@@ -205,7 +221,7 @@
                           Opacity="0.55"
                           HorizontalAlignment="Center"
                           Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
-                <TextBlock Text="Ready when you are"
+                <TextBlock Text="{x:Bind ViewModel.EmptyTitle, Mode=OneWay}"
                            Style="{ThemeResource SubtitleTextBlockStyle}"
                            FontWeight="SemiBold"
                            HorizontalAlignment="Center"/>
@@ -215,13 +231,13 @@
                            TextAlignment="Center"
                            TextWrapping="Wrap"
                            Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
-                <Button Content="Add your first task"
+                <Button Content="{x:Bind ViewModel.EmptyCtaLabel, Mode=OneWay}"
                         Style="{ThemeResource AccentButtonStyle}"
                         HorizontalAlignment="Center"
-                        Command="{x:Bind ViewModel.CreateTaskCommand}"
-                        ToolTipService.ToolTip="Uses the title field above — type a name first"
+                        Click="EmptyCta_Click"
+                        ToolTipService.ToolTip="Focus the title field above to type a new task"
                         IsTabStop="True"
-                        AutomationProperties.Name="Add your first task"/>
+                        AutomationProperties.Name="Add a task"/>
             </StackPanel>
         </Grid>
 
@@ -234,6 +250,7 @@
             <TextBox x:Name="SubtaskTitleBox"
                      PlaceholderText="Subtask title"
                      Header="Title"
+                     KeyDown="SubtaskTitleBox_KeyDown"
                      AutomationProperties.Name="Subtask title"/>
         </ContentDialog>
     </Grid>

@@ -46,7 +46,13 @@ public partial class TasksViewModel : ObservableObject
     private bool _isEmpty = true;
 
     [ObservableProperty]
-    private string _emptyHint = "No tasks here yet. Capture one above — even a 25-minute slice counts.";
+    private string _emptyHint = "Nothing scheduled here. Capture a focus-sized task and start a Pomodoro.";
+
+    [ObservableProperty]
+    private string _emptyTitle = "Ready when you are";
+
+    [ObservableProperty]
+    private string _emptyCtaLabel = "Add a task";
 
     [ObservableProperty]
     private double _emptyPanelOpacity = 0.85;
@@ -66,6 +72,10 @@ public partial class TasksViewModel : ObservableObject
     [ObservableProperty]
     private string _subtitleLabel =
         "Plan work into focus-sized tasks. Data is stored offline on this device.";
+
+    /// <summary>Keyboard shortcut caption under the subtitle (Ctrl+N · Enter).</summary>
+    [ObservableProperty]
+    private string _keyboardHintsLabel = "Ctrl+N new · Enter add";
 
     [ObservableProperty]
     private string _filterTodayLabel = "Today";
@@ -106,6 +116,16 @@ public partial class TasksViewModel : ObservableObject
     public string[] EnergyOptions { get; } = { "", "deep", "shallow", "admin" };
     public string[] RecurrenceOptions { get; } = { "None", "FREQ=DAILY", "FREQ=WEEKLY" };
     public int[] PriorityOptions { get; } = { 0, 1, 2, 3 };
+
+    /// <summary>
+    /// Raised when free-tier or premium gating should open the paywall (feature id).
+    /// </summary>
+    public event EventHandler<string>? PremiumFeatureRequested;
+
+    /// <summary>
+    /// Raised after a successful create (or empty CTA) so the page can refocus the title box for rapid entry.
+    /// </summary>
+    public event EventHandler? FocusNewTaskRequested;
 
     public TasksViewModel(
         ITaskService taskService,
@@ -175,7 +195,7 @@ public partial class TasksViewModel : ObservableObject
         }
         catch (InvalidOperationException ex)
         {
-            StatusMessage = LocalizeServiceException(ex.Message);
+            HandleCreateGate(ex.Message);
             return;
         }
 
@@ -185,6 +205,7 @@ public partial class TasksViewModel : ObservableObject
         NewTaskEnergy = string.Empty;
         NewTaskRecurrence = "None";
         await LoadTasksAsync();
+        FocusNewTaskRequested?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
@@ -228,7 +249,7 @@ public partial class TasksViewModel : ObservableObject
         }
         catch (InvalidOperationException ex)
         {
-            StatusMessage = LocalizeServiceException(ex.Message);
+            HandleCreateGate(ex.Message);
             return;
         }
 
@@ -253,6 +274,34 @@ public partial class TasksViewModel : ObservableObject
         await LoadTasksAsync();
     }
 
+    /// <summary>
+    /// Empty-state primary CTA: focus the new-task title box (does not create).
+    /// </summary>
+    [RelayCommand]
+    public void FocusNewTaskComposer()
+    {
+        FocusNewTaskRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void HandleCreateGate(string message)
+    {
+        StatusMessage = LocalizeServiceException(message);
+        var feature = ResolvePremiumFeature(message);
+        if (feature != null)
+            PremiumFeatureRequested?.Invoke(this, feature);
+    }
+
+    private static string? ResolvePremiumFeature(string message)
+    {
+        if (message.Contains("Free plan allows", StringComparison.OrdinalIgnoreCase))
+            return "tasks_limit";
+        if (message.Contains("Subtasks require", StringComparison.OrdinalIgnoreCase))
+            return "subtasks";
+        if (message.Contains("Recurring tasks require", StringComparison.OrdinalIgnoreCase))
+            return "recurrence";
+        return null;
+    }
+
     private async Task ApplyLanguageAsync()
     {
         if (_localizer == null) return;
@@ -273,6 +322,7 @@ public partial class TasksViewModel : ObservableObject
         TitleLabel = T("Tasks.Title", "Tasks");
         SubtitleLabel = T("Tasks.Subtitle",
             "Plan work into focus-sized tasks. Data is stored offline on this device.");
+        KeyboardHintsLabel = T("Tasks.KeyboardHints", "Ctrl+N new · Enter add");
         FilterTodayLabel = T("Tasks.FilterToday", "Today");
         FilterUpcomingLabel = T("Tasks.FilterUpcoming", "Upcoming");
         FilterInboxLabel = T("Tasks.FilterInbox", "Inbox");
@@ -285,6 +335,8 @@ public partial class TasksViewModel : ObservableObject
         EnergyLabel = T("Tasks.Energy", "Energy");
         RecurrenceLabel = T("Tasks.Recurrence", "Recurrence");
         AddSubtaskLabel = T("Tasks.AddSubtask", "Add subtask");
+        EmptyTitle = T("Tasks.EmptyTitle", "Ready when you are");
+        EmptyCtaLabel = T("Tasks.EmptyCta", "Add a task");
         if (IsEmpty)
             EmptyHint = ResolveEmptyHint();
     }
@@ -294,11 +346,11 @@ public partial class TasksViewModel : ObservableObject
         "Today" => T("Tasks.EmptyToday",
             "Nothing due today. Add a focus-sized task and start a Pomodoro."),
         "Upcoming" => T("Tasks.EmptyUpcoming",
-            "No upcoming tasks. Plan tomorrow or switch to Inbox."),
+            "No upcoming tasks. Plan tomorrow or capture ideas in Inbox."),
         "Inbox" => T("Tasks.EmptyInbox",
-            "Inbox is clear. Add a task when an idea lands."),
+            "Inbox is clear. Capture an idea the moment it lands."),
         _ => T("Tasks.EmptyDefault",
-            "No tasks here yet. Capture one above — even a 25-minute slice counts.")
+            "Nothing scheduled here. Capture a focus-sized task and start a Pomodoro.")
     };
 
     private string LocalizeServiceException(string message)
