@@ -8,7 +8,7 @@
     mc:Ignorable="d">
 
     <ScrollViewer>
-        <Grid Padding="32" MaxWidth="720" HorizontalAlignment="Center">
+        <Grid Padding="{StaticResource PepinilloPageMargin}" MaxWidth="720" HorizontalAlignment="Center">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -30,33 +30,62 @@
                            Style="{ThemeResource CaptionTextBlockStyle}"/>
                 <TextBlock Text="{x:Bind ViewModel.PaywallFeatureHint, Mode=OneWay}"
                            Style="{ThemeResource CaptionTextBlockStyle}"
-                           Foreground="Goldenrod"/>
+                           Foreground="{StaticResource PepinilloPaywallHintBrush}"/>
             </StackPanel>
 
-            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,24">
-                <Button Content="Pomodoro" Click="Pomodoro_Click"/>
-                <Button Content="Stopwatch" Click="Stopwatch_Click"/>
-                <Button Content="Flowtime" Click="Flowtime_Click"/>
-                <Button Content="Time Block" Click="TimeBlock_Click"/>
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        Spacing="{StaticResource PepinilloChipSpacing}"
+                        Margin="0,0,0,24">
+                <Button Content="Pomodoro"
+                        Click="Pomodoro_Click"
+                        BorderBrush="{StaticResource FocusModePomodoroBrush}"
+                        Background="{StaticResource FocusModePomodoroSubtleBrush}"
+                        CornerRadius="{StaticResource PepinilloChipCornerRadius}"
+                        BorderThickness="2"
+                        Padding="12,8"/>
+                <Button Content="Stopwatch"
+                        Click="Stopwatch_Click"
+                        BorderBrush="{StaticResource FocusModeStopwatchBrush}"
+                        Background="{StaticResource FocusModeStopwatchSubtleBrush}"
+                        CornerRadius="{StaticResource PepinilloChipCornerRadius}"
+                        BorderThickness="2"
+                        Padding="12,8"/>
+                <Button Content="Flowtime"
+                        Click="Flowtime_Click"
+                        BorderBrush="{StaticResource FocusModeFlowtimeBrush}"
+                        Background="{StaticResource FocusModeFlowtimeSubtleBrush}"
+                        CornerRadius="{StaticResource PepinilloChipCornerRadius}"
+                        BorderThickness="2"
+                        Padding="12,8"/>
+                <Button Content="Time Block"
+                        Click="TimeBlock_Click"
+                        BorderBrush="{StaticResource FocusModeTimeBlockBrush}"
+                        Background="{StaticResource FocusModeTimeBlockSubtleBrush}"
+                        CornerRadius="{StaticResource PepinilloChipCornerRadius}"
+                        BorderThickness="2"
+                        Padding="12,8"/>
             </StackPanel>
 
             <Border Grid.Row="2"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="16"
+                    CornerRadius="{StaticResource PepinilloTimerCardCornerRadius}"
                     Padding="32"
                     Margin="0,0,0,24"
                     HorizontalAlignment="Center"
                     MinWidth="320">
                 <StackPanel Spacing="16" HorizontalAlignment="Center">
                     <TextBlock Text="{x:Bind ViewModel.FormattedTime, Mode=OneWay}"
-                               FontSize="64"
+                               FontSize="{StaticResource PepinilloTimerFontSize}"
                                FontWeight="Bold"
                                HorizontalAlignment="Center"
-                               FontFamily="Segoe UI Variable Display"/>
+                               FontFamily="Segoe UI Variable Display"
+                               Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
                     <ProgressBar Value="{x:Bind ViewModel.ProgressRatio, Mode=OneWay}"
                                  Maximum="1"
                                  Height="8"
-                                 Width="240"/>
+                                 Width="240"
+                                 Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
                     <TextBlock Text="{x:Bind ViewModel.LastCompletedMessage, Mode=OneWay}"
                                Style="{ThemeResource CaptionTextBlockStyle}"
                                HorizontalAlignment="Center"
@@ -93,8 +122,8 @@
 
             <Border Grid.Row="4"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="8"
-                    Padding="16"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPaddingCompact}"
                     Margin="0,0,0,16">
                 <StackPanel Spacing="8">
                     <TextBlock Text="{x:Bind ViewModel.LinkTaskLabel, Mode=OneWay}"
@@ -123,8 +152,8 @@
             <Border Grid.Row="5"
                     x:Name="JournalPanel"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    CornerRadius="8"
-                    Padding="16">
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPaddingCompact}">
                 <StackPanel Spacing="12">
                     <TextBlock Text="{x:Bind ViewModel.JournalTitleLabel, Mode=OneWay}"
                                Style="{ThemeResource SubtitleTextBlockStyle}"

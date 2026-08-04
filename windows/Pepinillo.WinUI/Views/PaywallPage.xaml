@@ -6,15 +6,19 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <ScrollViewer Margin="32">
+    <ScrollViewer Margin="{StaticResource PepinilloPageMargin}">
         <StackPanel Spacing="20" MaxWidth="640" HorizontalAlignment="Left">
             <TextBlock Text="Upgrade Pepinillo"
                        Style="{ThemeResource TitleTextBlockStyle}"
                        FontWeight="Bold"/>
-            <TextBlock Text="{x:Bind ViewModel.PriceDisclaimer, Mode=OneWay}"
-                       Style="{ThemeResource CaptionTextBlockStyle}"
-                       TextWrapping="Wrap"
-                       Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                    Padding="{StaticResource PepinilloCardPaddingCompact}">
+                <TextBlock Text="{x:Bind ViewModel.PriceDisclaimer, Mode=OneWay}"
+                           Style="{ThemeResource BodyTextBlockStyle}"
+                           TextWrapping="Wrap"
+                           Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+            </Border>
             <TextBlock Text="{x:Bind ViewModel.CurrentTierLabel, Mode=OneWay}"
                        Style="{ThemeResource BodyTextBlockStyle}"
                        FontWeight="SemiBold"/>
@@ -22,18 +26,29 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
                 <Border Grid.Column="0"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="12"
-                        Padding="20">
+                        CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                        Padding="{StaticResource PepinilloCardPadding}"
+                        BorderBrush="{StaticResource PepinilloThemeAccentBrush}"
+                        BorderThickness="2">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Pepinillo+"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"
                                    FontWeight="Bold"/>
-                        <TextBlock Text="Lifetime"
-                                   Style="{ThemeResource CaptionTextBlockStyle}"/>
+                        <Border Background="{StaticResource PepinilloPremiumBadgeBrush}"
+                                CornerRadius="4"
+                                Padding="8,4"
+                                HorizontalAlignment="Left">
+                            <TextBlock Text="{x:Bind ViewModel.PepinilloPlusPurchaseType, Mode=OneWay}"
+                                       FontSize="11"
+                                       FontWeight="SemiBold"
+                                       Foreground="Black"
+                                       TextWrapping="Wrap"/>
+                        </Border>
                         <TextBlock Text="{x:Bind ViewModel.PepinilloPlusPrice, Mode=OneWay}"
                                    FontSize="28"
-                                   FontWeight="Bold"/>
-                        <TextBlock Text="Flowtime, Time Blocking, unlimited local tasks, premium soundscapes, desktop power features."
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
+                        <TextBlock Text="Flowtime, Time Blocking, unlimited local tasks, premium themes (Forest, Ocean, Sunset), premium soundscapes, desktop power features."
                                    TextWrapping="Wrap"
                                    Style="{ThemeResource BodyTextBlockStyle}"/>
                         <Button Content="Buy Pepinillo+"
@@ -44,8 +59,8 @@
 
                 <Border Grid.Column="1"
                         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        CornerRadius="12"
-                        Padding="20">
+                        CornerRadius="{StaticResource PepinilloCardCornerRadius}"
+                        Padding="{StaticResource PepinilloCardPadding}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Everywhere / AI+"
                                    Style="{ThemeResource SubtitleTextBlockStyle}"

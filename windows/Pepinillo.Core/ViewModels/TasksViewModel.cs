@@ -43,7 +43,7 @@ public partial class TasksViewModel : ObservableObject
     private bool _isEmpty = true;
 
     [ObservableProperty]
-    private string _emptyHint = "Tip: empty lists show no rows above. Add a task or switch filters.";
+    private string _emptyHint = "No tasks here yet. Capture one above — even a 25-minute slice counts.";
 
     [ObservableProperty]
     private double _emptyPanelOpacity = 0.85;
@@ -69,7 +69,13 @@ public partial class TasksViewModel : ObservableObject
     partial void OnIsEmptyChanged(bool value)
     {
         EmptyHint = value
-            ? "Tip: empty lists show no rows above. Add a task or switch filters."
+            ? SelectedFilter switch
+            {
+                "Today" => "Nothing due today. Add a focus-sized task and start a Pomodoro.",
+                "Upcoming" => "No upcoming tasks. Plan tomorrow or switch to Inbox.",
+                "Inbox" => "Inbox is clear. Add a task when an idea lands.",
+                _ => "No tasks here yet. Capture one above — even a 25-minute slice counts."
+            }
             : string.Empty;
         EmptyPanelOpacity = value ? 0.85 : 0;
     }

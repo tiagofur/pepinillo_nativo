@@ -27,6 +27,11 @@ public interface IEntitlementService
     /// <summary>Free: 7 days; premium: unrestricted (int.MaxValue).</summary>
     int MaxAnalyticsHistoryDays { get; }
 
+    /// <summary>
+    /// Free: System, Light, Dark (and OLEDBlack alias). Premium: Forest, Ocean, Sunset.
+    /// </summary>
+    bool CanUseTheme(string themeName);
+
     /// <summary>Refreshes cache from <see cref="IStoreCommerceService"/>.</summary>
     Task RefreshAsync();
 

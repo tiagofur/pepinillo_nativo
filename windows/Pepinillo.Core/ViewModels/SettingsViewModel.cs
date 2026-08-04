@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -11,11 +12,16 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly ISettingsService _settingsService;
     private readonly ILocalizationService? _localizer;
+    private readonly IEntitlementService? _entitlements;
+    private bool _suppressThemeIndexChange;
 
     /// <summary>
     /// Raised after settings are saved so the shell can apply theme / OS intent flags.
     /// </summary>
     public event EventHandler<UserSettings>? SettingsSaved;
+
+    /// <summary>Raised when a premium theme is selected on free tier (shell navigates to paywall).</summary>
+    public event EventHandler<string>? PremiumFeatureRequested;
 
     [ObservableProperty]
     private UserSettings _settings = new();
@@ -71,12 +77,25 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _upgradeLabel = "Upgrade";
 
+    /// <summary>
+    /// Non-empty when the last theme pick was blocked by free-tier limits.
+    /// </summary>
+    [ObservableProperty]
+    private string _paywallFeatureHint = string.Empty;
+
     public string[] LanguageOptions { get; } = { "en", "es", "pt" };
 
-    public SettingsViewModel(ISettingsService settingsService, ILocalizationService? localizer = null)
+    /// <summary>Theme picker options (System, Light, Dark, Forest, Ocean, Sunset).</summary>
+    public IReadOnlyList<AppThemeInfo> ThemeOptions => AppThemeCatalog.All;
+
+    public SettingsViewModel(
+        ISettingsService settingsService,
+        ILocalizationService? localizer = null,
+        IEntitlementService? entitlements = null)
     {
         _settingsService = settingsService;
         _localizer = localizer;
+        _entitlements = entitlements;
     }
 
     public async Task LoadAsync()
@@ -85,11 +104,24 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             Settings = await _settingsService.GetSettingsAsync();
-            SelectedThemeIndex = ThemeToIndex(Settings.SelectedTheme);
+            // Normalize OLEDBlack → Dark for picker without rewriting until save.
+            var themeForUi = AppThemeCatalog.Normalize(Settings.SelectedTheme);
+            if (!CanUseTheme(themeForUi))
+            {
+                // Premium theme stored but entitlement lapsed — fall back to Dark free.
+                themeForUi = "Dark";
+                Settings.SelectedTheme = themeForUi;
+            }
+
+            _suppressThemeIndexChange = true;
+            SelectedThemeIndex = AppThemeCatalog.ToIndex(themeForUi);
+            _suppressThemeIndexChange = false;
+
             SelectedLanguageIndex = LanguageToIndex(Settings.PreferredLanguage);
             _localizer?.SetLanguage(Settings.PreferredLanguage);
             ApplyLocalizedLabels();
             StatusMessage = string.Empty;
+            PaywallFeatureHint = string.Empty;
         }
         finally
         {
@@ -103,12 +135,20 @@ public partial class SettingsViewModel : ObservableObject
         IsBusy = true;
         try
         {
-            Settings.SelectedTheme = IndexToTheme(SelectedThemeIndex);
+            var theme = AppThemeCatalog.FromIndex(SelectedThemeIndex);
+            if (!CanUseTheme(theme))
+            {
+                BlockPremiumTheme(theme);
+                return;
+            }
+
+            Settings.SelectedTheme = theme;
             Settings.PreferredLanguage = IndexToLanguage(SelectedLanguageIndex);
             await _settingsService.SaveSettingsAsync(Settings);
             _localizer?.SetLanguage(Settings.PreferredLanguage);
             ApplyLocalizedLabels();
             StatusMessage = _localizer?.GetString("Settings.Saved") ?? "Settings saved";
+            PaywallFeatureHint = string.Empty;
             SettingsSaved?.Invoke(this, Settings);
         }
         catch (Exception ex)
@@ -127,20 +167,54 @@ public partial class SettingsViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(themeName))
             return;
 
-        Settings.SelectedTheme = themeName;
-        SelectedThemeIndex = ThemeToIndex(themeName);
+        var normalized = AppThemeCatalog.Normalize(themeName);
+        if (!CanUseTheme(normalized))
+        {
+            BlockPremiumTheme(normalized);
+            return;
+        }
+
+        Settings.SelectedTheme = normalized;
+        _suppressThemeIndexChange = true;
+        SelectedThemeIndex = AppThemeCatalog.ToIndex(normalized);
+        _suppressThemeIndexChange = false;
         OnPropertyChanged(nameof(Settings));
         await SaveSettingsAsync();
     }
 
     partial void OnSelectedThemeIndexChanged(int value)
     {
-        Settings.SelectedTheme = IndexToTheme(value);
+        if (_suppressThemeIndexChange)
+            return;
+
+        var theme = AppThemeCatalog.FromIndex(value);
+        if (!CanUseTheme(theme))
+        {
+            BlockPremiumTheme(theme);
+            _suppressThemeIndexChange = true;
+            SelectedThemeIndex = AppThemeCatalog.ToIndex(Settings.SelectedTheme);
+            _suppressThemeIndexChange = false;
+            return;
+        }
+
+        Settings.SelectedTheme = theme;
+        StatusMessage = string.Empty;
+        PaywallFeatureHint = string.Empty;
     }
 
     partial void OnSelectedLanguageIndexChanged(int value)
     {
         Settings.PreferredLanguage = IndexToLanguage(value);
+    }
+
+    private bool CanUseTheme(string themeName) =>
+        _entitlements == null || _entitlements.CanUseTheme(themeName);
+
+    private void BlockPremiumTheme(string themeName)
+    {
+        StatusMessage = "Upgrade to Pepinillo+ for premium themes.";
+        PaywallFeatureHint = themeName;
+        PremiumFeatureRequested?.Invoke(this, themeName);
     }
 
     private void ApplyLocalizedLabels()
@@ -160,26 +234,6 @@ public partial class SettingsViewModel : ObservableObject
         TermsLabel = _localizer.GetString("Settings.Terms");
         UpgradeLabel = _localizer.GetString("Settings.Upgrade");
     }
-
-    private static int ThemeToIndex(string theme) => theme switch
-    {
-        "Dark" => 1,
-        "Light" => 2,
-        "Forest" => 3,
-        "Ocean" => 4,
-        "OLEDBlack" => 5,
-        _ => 0 // System
-    };
-
-    private static string IndexToTheme(int index) => index switch
-    {
-        1 => "Dark",
-        2 => "Light",
-        3 => "Forest",
-        4 => "Ocean",
-        5 => "OLEDBlack",
-        _ => "System"
-    };
 
     private static int LanguageToIndex(string lang) => lang switch
     {

@@ -38,6 +38,9 @@ public class EntitlementService : IEntitlementService
 
     public int MaxAnalyticsHistoryDays => IsPremium ? int.MaxValue : FreeAnalyticsHistoryDays;
 
+    public bool CanUseTheme(string themeName) =>
+        IsPremium || AppThemeCatalog.IsFreeTheme(themeName);
+
     public async Task RefreshAsync()
     {
         _overrideStatus = null;

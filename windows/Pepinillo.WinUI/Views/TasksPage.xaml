@@ -7,7 +7,7 @@
     xmlns:models="using:Pepinillo.Core.Models"
     mc:Ignorable="d">
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="32">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="{StaticResource PepinilloPageMargin}">
         <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,24">
             <TextBlock Text="Tasks"
                        Style="{ThemeResource TitleTextBlockStyle}"
@@ -149,14 +149,30 @@
 
             <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center"
-                        Spacing="8"
+                        Spacing="12"
+                        MaxWidth="360"
                         IsHitTestVisible="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
                         Opacity="{x:Bind ViewModel.EmptyPanelOpacity, Mode=OneWay}">
-                <FontIcon Glyph="&#xE9D5;" FontSize="40" Opacity="0.5"/>
+                <FontIcon Glyph="&#xE9D5;"
+                          FontSize="48"
+                          Opacity="0.55"
+                          HorizontalAlignment="Center"
+                          Foreground="{StaticResource PepinilloThemeAccentBrush}"/>
+                <TextBlock Text="Ready when you are"
+                           Style="{ThemeResource SubtitleTextBlockStyle}"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"/>
                 <TextBlock Text="{x:Bind ViewModel.EmptyHint, Mode=OneWay}"
-                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Style="{ThemeResource BodyTextBlockStyle}"
                            HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
                            Foreground="{ThemeResource SystemControlPageTextBaseMediumBrush}"/>
+                <Button Content="Add your first task"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        HorizontalAlignment="Center"
+                        Command="{x:Bind ViewModel.CreateTaskCommand}"
+                        ToolTipService.ToolTip="Uses the title field above — type a name first"/>
             </StackPanel>
         </Grid>
 

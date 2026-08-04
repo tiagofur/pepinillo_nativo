@@ -281,6 +281,21 @@ public class CommerceAndSyncTests
         Assert.True(entitlements.CanCreateSubtask);
         Assert.True(entitlements.CanUseRecurrence);
         Assert.Equal(int.MaxValue, entitlements.MaxAnalyticsHistoryDays);
+        Assert.True(entitlements.CanUseTheme("Forest"));
+        Assert.True(entitlements.CanUseTheme("Sunset"));
+    }
+
+    [Fact]
+    public void EntitlementService_Free_BlocksPremiumThemes()
+    {
+        var entitlements = new EntitlementService(new StoreCommerceService(new FakeBackend()));
+        Assert.True(entitlements.CanUseTheme("System"));
+        Assert.True(entitlements.CanUseTheme("Light"));
+        Assert.True(entitlements.CanUseTheme("Dark"));
+        Assert.True(entitlements.CanUseTheme("OLEDBlack"));
+        Assert.False(entitlements.CanUseTheme("Forest"));
+        Assert.False(entitlements.CanUseTheme("Ocean"));
+        Assert.False(entitlements.CanUseTheme("Sunset"));
     }
 
     private static PepinilloDbContext CreateDb()

@@ -3,8 +3,9 @@
 Ordered path from “code ready” to Microsoft Store flight.  
 Related: [RELEASE_RUNBOOK.md](RELEASE_RUNBOOK.md) · [CERTIFICATION_CHECKLIST.md](CERTIFICATION_CHECKLIST.md) · [PARTNER_CENTER_IAP.md](PARTNER_CENTER_IAP.md) · [STORE_LISTING.md](STORE_LISTING.md)
 
-**Branch:** `feat/windows-native-app`  
-**In-repo status:** P0–P3 coded + packaging kit (2026-08).
+**Branch:** `main` / Windows excellence workstreams  
+**In-repo status:** P0–P3 coded + packaging kit (2026-08).  
+**Perfect-product backlog:** [PRD/13_WINDOWS_EXCELLENCE_PLAN.md](../../PRD/13_WINDOWS_EXCELLENCE_PLAN.md) · epic [#573](https://github.com/tiagofur/pepinillo_nativo/issues/573) · smoke **#575** · this Store path **#568**.
 
 ---
 

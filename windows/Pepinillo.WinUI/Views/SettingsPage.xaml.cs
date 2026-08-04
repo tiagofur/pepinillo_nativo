@@ -17,14 +17,22 @@ public sealed partial class SettingsPage : Page
         ViewModel = App.Services.GetRequiredService<SettingsViewModel>();
         InitializeComponent();
         ViewModel.SettingsSaved += OnSettingsSaved;
+        ViewModel.PremiumFeatureRequested += OnPremiumFeatureRequested;
         Loaded += async (_, _) => await ViewModel.LoadAsync();
-        Unloaded += (_, _) => ViewModel.SettingsSaved -= OnSettingsSaved;
+        Unloaded += (_, _) =>
+        {
+            ViewModel.SettingsSaved -= OnSettingsSaved;
+            ViewModel.PremiumFeatureRequested -= OnPremiumFeatureRequested;
+        };
     }
 
     private void OnSettingsSaved(object? sender, UserSettings settings)
     {
-        ThemeHelper.ApplyTheme(settings.SelectedTheme, App.MainWindowInstance);
-        // Refresh focus labels if singleton VM is alive.
+        ThemeHelper.ApplyTheme(
+            settings.SelectedTheme,
+            App.MainWindowInstance,
+            useMica: settings.UseMicaBackdrop);
+
         try
         {
             var focus = App.Services.GetRequiredService<FocusViewModel>();
@@ -34,6 +42,13 @@ public sealed partial class SettingsPage : Page
         {
             // ignore
         }
+    }
+
+    private void OnPremiumFeatureRequested(object? sender, string feature)
+    {
+        // Mirror FocusPage: free user picking premium theme → paywall.
+        if (Frame != null)
+            Frame.Navigate(typeof(PaywallPage));
     }
 
     private async void Privacy_Click(object sender, RoutedEventArgs e)

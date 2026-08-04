@@ -31,6 +31,13 @@ public partial class AnalyticsViewModel : ObservableObject
     private string _aiReportSummary =
         "Complete focus sessions to unlock personalized insights. Full AI reports are part of Everywhere/AI+.";
 
+    /// <summary>Friendly empty-state when there are no completed sessions yet.</summary>
+    [ObservableProperty]
+    private string _emptyStateMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasSessionData;
+
     [ObservableProperty]
     private ObservableCollection<FocusSession> _recentSessions = new();
 
@@ -80,13 +87,17 @@ public partial class AnalyticsViewModel : ObservableObject
 
         RecentSessions = new ObservableCollection<FocusSession>(recent);
 
+        HasSessionData = TodayFocusMinutes > 0 || SevenDayFocusHours > 0 || RecentSessions.Count > 0;
+        EmptyStateMessage = HasSessionData
+            ? string.Empty
+            : "No focus history yet. Finish a Pomodoro or Stopwatch session — stats and streaks will show up here.";
         AiReportSummary = BuildInsightSummary();
     }
 
     private string BuildInsightSummary()
     {
-        if (TodayFocusMinutes <= 0 && SevenDayFocusHours <= 0)
-            return "Complete focus sessions to unlock personalized insights. Full AI reports are part of Everywhere/AI+.";
+        if (!HasSessionData)
+            return "Your insights start after the first completed session. Full AI narrative reports unlock with Everywhere/AI+.";
 
         var window = HistoryWindowDays;
         return $"Last {window} days: {SevenDayFocusHours:0.#}h focus · Streak {CurrentStreakDays}d (best {BestStreakDays}d). " +

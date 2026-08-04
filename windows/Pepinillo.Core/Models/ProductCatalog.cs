@@ -21,5 +21,8 @@ public static class ProductCatalog
     public const string EverywhereAnnualPriceDisplay = "$34.99/yr";
 
     public const string PriceDisclaimer =
-        "Store prices may vary by market. Everywhere plans match mobile so your subscription works across devices.";
+        "Store prices may vary by market. Pepinillo+ is a one-time purchase (not a subscription). Everywhere plans match mobile so your subscription works across devices.";
+
+    /// <summary>Badge under Pepinillo+ card — durable IAP, not recurring billing.</summary>
+    public const string PepinilloPlusPurchaseType = "One-time purchase — not a subscription";
 }

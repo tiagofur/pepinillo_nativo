@@ -331,12 +331,13 @@ Until D1 is decided, implement commerce **behind interfaces** and keep product I
 
 ## 12. Next action
 
-1. **On Windows:** build WinUI, run P0–P2 smoke + execute `CERTIFICATION_CHECKLIST.md`.  
-2. Drop real looping mp3s into `Pepinillo.WinUI/Assets/Soundscapes/`.  
-3. Capture real Store screenshots (replace `windows/store/screenshots/*-placeholder.png`).  
-4. Resolve **D1** pricing, then create Partner Center IAPs per `PARTNER_CENTER_IAP.md`.  
-5. Reserve app name / associate publisher CN; upload MSIX from CI or `pack-msix.ps1` to an **Internal** flight (`RELEASE_RUNBOOK.md`).  
-6. Do not open public Store or live SKUs until D1 + certification pass.
+**P0–P3 scaffold is coded.** Perfect-product work lives in **[13_WINDOWS_EXCELLENCE_PLAN.md](13_WINDOWS_EXCELLENCE_PLAN.md)** and epic **[#573](https://github.com/tiagofur/pepinillo_nativo/issues/573)**.
+
+1. **W1 / #575:** On Windows, build WinUI, run P0–P2 smoke + `CERTIFICATION_CHECKLIST.md`.  
+2. **W3 / #577:** Drop real looping mp3s into `Pepinillo.WinUI/Assets/Soundscapes/`.  
+3. **#568:** Capture real Store screenshots; Partner Center IAPs (D1 prices already resolved); Internal flight.  
+4. Work excellence issues **#574–#589** per PRD/13 order (design, Reflect, desktop power v2, sync, etc.).  
+5. Do not claim public Store “complete” until PRD/13 §9 gates pass.
 
 ---
 
