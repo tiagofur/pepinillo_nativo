@@ -33,6 +33,18 @@ export type MessageKey =
 	| 'focus.mode.locked'
 	| 'focus.upgradeTeaser'
 	| 'focus.autoStart'
+	| 'focus.suggest.title'
+	| 'focus.suggest.apply'
+	| 'focus.suggest.locked'
+	| 'focus.suggest.morning'
+	| 'focus.suggest.deep'
+	| 'focus.suggest.afternoon'
+	| 'focus.suggest.evening'
+	| 'focus.suggest.flexible'
+	| 'focus.phase.idle'
+	| 'focus.phase.running'
+	| 'focus.phase.paused'
+	| 'focus.phase.completed'
 	| 'plan.title'
 	| 'plan.add'
 	| 'plan.empty'
@@ -109,6 +121,18 @@ const en: Dict = {
 	'focus.upgradeTeaser':
 		'Flowtime and Time Block unlock with Everywhere (subscribe or restore on iOS, Android, or Windows). No purchase on web yet.',
 	'focus.autoStart': 'Auto-start next segment',
+	'focus.suggest.title': 'Suggested for now',
+	'focus.suggest.apply': 'Apply',
+	'focus.suggest.locked': 'Unlock with Everywhere',
+	'focus.suggest.morning': 'Morning energy — short focused sprints work well.',
+	'focus.suggest.deep': 'Deep work window — Flowtime helps you stay in flow.',
+	'focus.suggest.afternoon': 'Afternoon structure — Time Block protects the calendar.',
+	'focus.suggest.evening': 'Evening wind-down — one more Pomodoro, then rest.',
+	'focus.suggest.flexible': 'Flexible hours — Stopwatch without pressure.',
+	'focus.phase.idle': 'Ready',
+	'focus.phase.running': 'In session',
+	'focus.phase.paused': 'Paused',
+	'focus.phase.completed': 'Done',
 	'plan.title': 'Plan',
 	'plan.add': 'Add task',
 	'plan.empty': 'No tasks yet. Add up to 3 active tasks on Free.',
@@ -191,6 +215,18 @@ const es: Dict = {
 	'focus.upgradeTeaser':
 		'Flowtime y Time Block se desbloquean con Everywhere (suscribite o restaurá en iOS, Android o Windows). Aún no hay compra en web.',
 	'focus.autoStart': 'Auto-iniciar siguiente segmento',
+	'focus.suggest.title': 'Sugerido ahora',
+	'focus.suggest.apply': 'Aplicar',
+	'focus.suggest.locked': 'Desbloqueá con Everywhere',
+	'focus.suggest.morning': 'Energía de mañana — sprints cortos rinden bien.',
+	'focus.suggest.deep': 'Ventana de deep work — Flowtime te ayuda a flotar.',
+	'focus.suggest.afternoon': 'Estructura de tarde — Time Block protege el calendario.',
+	'focus.suggest.evening': 'Cierre del día — un Pomodoro más y a descansar.',
+	'focus.suggest.flexible': 'Horario flexible — Cronómetro sin presión.',
+	'focus.phase.idle': 'Listo',
+	'focus.phase.running': 'En sesión',
+	'focus.phase.paused': 'Pausado',
+	'focus.phase.completed': 'Listo',
 	'plan.title': 'Plan',
 	'plan.add': 'Agregar tarea',
 	'plan.empty': 'Sin tareas aún. En Free podés tener hasta 3 activas.',
@@ -273,6 +309,18 @@ const pt: Dict = {
 	'focus.upgradeTeaser':
 		'Flowtime e Time Block desbloqueiam com Everywhere (assine ou restaure no iOS, Android ou Windows). Ainda sem compra na web.',
 	'focus.autoStart': 'Autoiniciar próximo segmento',
+	'focus.suggest.title': 'Sugerido agora',
+	'focus.suggest.apply': 'Aplicar',
+	'focus.suggest.locked': 'Desbloqueie com Everywhere',
+	'focus.suggest.morning': 'Energia matinal — sprints curtos funcionam bem.',
+	'focus.suggest.deep': 'Janela de deep work — Flowtime ajuda no fluxo.',
+	'focus.suggest.afternoon': 'Estrutura da tarde — Time Block protege a agenda.',
+	'focus.suggest.evening': 'Encerramento — mais um Pomodoro e descanse.',
+	'focus.suggest.flexible': 'Horário flexível — cronômetro sem pressão.',
+	'focus.phase.idle': 'Pronto',
+	'focus.phase.running': 'Em sessão',
+	'focus.phase.paused': 'Pausado',
+	'focus.phase.completed': 'Concluído',
 	'plan.title': 'Plano',
 	'plan.add': 'Adicionar tarefa',
 	'plan.empty': 'Nenhuma tarefa ainda. No Free você pode ter até 3 ativas.',

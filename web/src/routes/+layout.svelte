@@ -5,6 +5,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { app } from '$lib/stores/app.svelte';
 	import { t } from '$lib/i18n/messages';
+	import NavIcons from '$lib/components/icons/NavIcons.svelte';
 
 	let { children } = $props();
 
@@ -57,19 +58,19 @@
 
 	<nav class="tab-bar" aria-label="Primary">
 		<a href="/focus/" aria-current={pathCurrent('/focus') ? 'page' : undefined}>
-			<span class="tab-icon" aria-hidden="true">◎</span>
+			<span class="tab-icon" aria-hidden="true"><NavIcons name="focus" /></span>
 			<span class="tab-label">{t(locale, 'nav.focus')}</span>
 		</a>
 		<a href="/plan/" aria-current={pathCurrent('/plan') ? 'page' : undefined}>
-			<span class="tab-icon" aria-hidden="true">☰</span>
+			<span class="tab-icon" aria-hidden="true"><NavIcons name="plan" /></span>
 			<span class="tab-label">{t(locale, 'nav.plan')}</span>
 		</a>
 		<a href="/dashboard/" aria-current={pathCurrent('/dashboard') ? 'page' : undefined}>
-			<span class="tab-icon" aria-hidden="true">◔</span>
+			<span class="tab-icon" aria-hidden="true"><NavIcons name="dashboard" /></span>
 			<span class="tab-label">{t(locale, 'nav.dashboard')}</span>
 		</a>
 		<a href="/account/" aria-current={pathCurrent('/account') ? 'page' : undefined}>
-			<span class="tab-icon" aria-hidden="true">☺</span>
+			<span class="tab-icon" aria-hidden="true"><NavIcons name="account" /></span>
 			<span class="tab-label">{t(locale, 'nav.account')}</span>
 		</a>
 	</nav>
