@@ -13,7 +13,9 @@
 	</div>
 
 	{#if app.sessions.length === 0}
-		<p class="muted">{t(locale, 'dashboard.empty')}</p>
+		<div class="empty-state">
+			<p class="muted" style="margin: 0;">{t(locale, 'dashboard.empty')}</p>
+		</div>
 	{/if}
 
 	<div class="stat-grid">

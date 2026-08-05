@@ -56,7 +56,7 @@
 		>
 	</div>
 
-	<form class="stack" onsubmit={onAdd}>
+	<form class="card stack" onsubmit={onAdd}>
 		<div class="field">
 			<label for="task-title">Task</label>
 			<input id="task-title" bind:value={title} placeholder="What needs focus?" required />
@@ -97,7 +97,7 @@
 				</select>
 			</div>
 		</div>
-		<button class="btn btn-primary" type="submit">{t(locale, 'plan.add')}</button>
+		<button class="btn btn-primary btn-block" type="submit">{t(locale, 'plan.add')}</button>
 	</form>
 
 	{#if capError || app.upgradeTeaser === 'tasks'}
@@ -110,7 +110,7 @@
 	<div class="row" role="group" aria-label="Filter">
 		<button
 			type="button"
-			class="chip"
+			class="chip filter"
 			class:active={filter === 'all'}
 			aria-pressed={filter === 'all'}
 			onclick={() => (filter = 'all')}
@@ -119,7 +119,7 @@
 		</button>
 		<button
 			type="button"
-			class="chip"
+			class="chip filter"
 			class:active={filter === 'today'}
 			aria-pressed={filter === 'today'}
 			onclick={() => (filter = 'today')}
@@ -128,7 +128,7 @@
 		</button>
 		<button
 			type="button"
-			class="chip"
+			class="chip filter"
 			class:active={filter === 'upcoming'}
 			aria-pressed={filter === 'upcoming'}
 			onclick={() => (filter = 'upcoming')}
@@ -137,7 +137,7 @@
 		</button>
 		<button
 			type="button"
-			class="chip"
+			class="chip filter"
 			class:active={filter === 'inbox'}
 			aria-pressed={filter === 'inbox'}
 			onclick={() => (filter = 'inbox')}
@@ -147,7 +147,9 @@
 	</div>
 
 	{#if filtered.length === 0}
-		<p class="muted">{t(locale, 'plan.empty')}</p>
+		<div class="empty-state">
+			<p class="muted" style="margin: 0;">{t(locale, 'plan.empty')}</p>
+		</div>
 	{:else}
 		<ul class="task-list">
 			{#each filtered as task (task.id)}

@@ -19,7 +19,13 @@
 	});
 
 	const progress = $derived.by(() => {
-		if (session.targetMs == null || session.targetMs === 0) return 0;
+		if (session.targetMs == null || session.targetMs === 0) {
+			/* count-up floor so ring is never empty at start (parity with mobile) */
+			if (session.mode === 'stopwatch' || session.mode === 'flowtime') {
+				return Math.min(100, Math.max(4, (app.displayElapsedMs / (50 * 60 * 1000)) * 100));
+			}
+			return 0;
+		}
 		const elapsed = app.displayElapsedMs;
 		return Math.min(100, (elapsed / session.targetMs) * 100);
 	});
@@ -55,9 +61,9 @@
 		<h1>{t(locale, 'focus.title')}</h1>
 	</div>
 
-	<p class="banner banner-warn">{t(locale, 'focus.honesty')}</p>
+	<p class="banner banner-soft">{t(locale, 'focus.honesty')}</p>
 
-	<div class="row" role="group" aria-label="Focus mode">
+	<div class="mode-row" role="group" aria-label="Focus mode">
 		{#each modes as mode (mode)}
 			{@const allowed = canUseMode(mode, TIER)}
 			<button
@@ -70,7 +76,7 @@
 			>
 				{modeLabel(mode)}
 				{#if !allowed}
-					<span class="muted">· {t(locale, 'focus.mode.locked')}</span>
+					<span aria-hidden="true"> 🔒</span>
 				{/if}
 			</button>
 		{/each}
@@ -80,82 +86,89 @@
 		<p class="teaser">{t(locale, 'focus.upgradeTeaser')}</p>
 	{/if}
 
-	<div
-		class="timer-ring"
-		style="--progress: {progress}%; --ring-color: {ringColor};"
-		aria-live="polite"
-	>
-		<div class="stack" style="text-align: center; align-items: center;">
-			<span class="timer-display">{formatMs(displayMs)}</span>
-			<span class="muted">{status}</span>
+	<div class="focus-hero">
+		<div
+			class="timer-ring"
+			style="--progress: {progress}%; --ring-color: {ringColor};"
+			aria-live="polite"
+		>
+			<div class="timer-inner">
+				<span class="timer-display">{formatMs(displayMs)}</span>
+				<span class="timer-phase">
+					<span class="timer-mode-dot" aria-hidden="true"></span>
+					{modeLabel(session.mode)} · {status}
+				</span>
+			</div>
+		</div>
+
+		<div class="actions-row" style="--action-color: {ringColor};">
+			{#if status === 'idle'}
+				<button class="btn btn-mode" type="button" onclick={() => app.startFocus()}>
+					{t(locale, 'focus.start')}
+				</button>
+			{:else if status === 'running'}
+				<button class="btn btn-mode" type="button" onclick={() => app.pauseFocus()}>
+					{t(locale, 'focus.pause')}
+				</button>
+				<button class="btn btn-ghost" type="button" onclick={() => app.skipFocus()}>
+					{t(locale, 'focus.skip')}
+				</button>
+				<button class="btn btn-ghost" type="button" onclick={() => app.completeFocus()}>
+					{t(locale, 'focus.complete')}
+				</button>
+			{:else if status === 'paused'}
+				<button class="btn btn-mode" type="button" onclick={() => app.resumeFocus()}>
+					{t(locale, 'focus.resume')}
+				</button>
+				<button class="btn btn-ghost" type="button" onclick={() => app.skipFocus()}>
+					{t(locale, 'focus.skip')}
+				</button>
+				<button class="btn btn-ghost" type="button" onclick={() => app.completeFocus()}>
+					{t(locale, 'focus.complete')}
+				</button>
+			{:else}
+				<button class="btn btn-mode" type="button" onclick={() => app.resetFocus()}>
+					{t(locale, 'focus.reset')}
+				</button>
+			{/if}
 		</div>
 	</div>
 
-	<div class="row" style="justify-content: center;">
-		{#if status === 'idle'}
-			<button class="btn btn-primary" type="button" onclick={() => app.startFocus()}>
-				{t(locale, 'focus.start')}
-			</button>
-		{:else if status === 'running'}
-			<button class="btn btn-primary" type="button" onclick={() => app.pauseFocus()}>
-				{t(locale, 'focus.pause')}
-			</button>
-			<button class="btn btn-ghost" type="button" onclick={() => app.skipFocus()}>
-				{t(locale, 'focus.skip')}
-			</button>
-			<button class="btn btn-ghost" type="button" onclick={() => app.completeFocus()}>
-				{t(locale, 'focus.complete')}
-			</button>
-		{:else if status === 'paused'}
-			<button class="btn btn-primary" type="button" onclick={() => app.resumeFocus()}>
-				{t(locale, 'focus.resume')}
-			</button>
-			<button class="btn btn-ghost" type="button" onclick={() => app.skipFocus()}>
-				{t(locale, 'focus.skip')}
-			</button>
-			<button class="btn btn-ghost" type="button" onclick={() => app.completeFocus()}>
-				{t(locale, 'focus.complete')}
-			</button>
-		{:else}
-			<button class="btn btn-primary" type="button" onclick={() => app.resetFocus()}>
-				{t(locale, 'focus.reset')}
-			</button>
-		{/if}
-	</div>
+	<div class="card">
+		<div class="field" style="margin-bottom: var(--space-3);">
+			<label for="link-task">{t(locale, 'focus.linkTask')}</label>
+			<select
+				id="link-task"
+				value={session.taskId ?? ''}
+				onchange={(e) => {
+					const v = (e.currentTarget as HTMLSelectElement).value;
+					app.setFocusTask(v === '' ? null : v);
+				}}
+			>
+				<option value="">{t(locale, 'focus.noTask')}</option>
+				{#each app.activeTasks as task (task.id)}
+					<option value={task.id}>{task.title}</option>
+				{/each}
+			</select>
+		</div>
 
-	<div class="field">
-		<label for="link-task">{t(locale, 'focus.linkTask')}</label>
-		<select
-			id="link-task"
-			value={session.taskId ?? ''}
-			onchange={(e) => {
-				const v = (e.currentTarget as HTMLSelectElement).value;
-				app.setFocusTask(v === '' ? null : v);
-			}}
-		>
-			<option value="">{t(locale, 'focus.noTask')}</option>
-			{#each app.activeTasks as task (task.id)}
-				<option value={task.id}>{task.title}</option>
-			{/each}
-		</select>
-	</div>
+		<div class="field" style="margin-bottom: var(--space-3);">
+			<label for="journal">{t(locale, 'focus.journal')}</label>
+			<textarea
+				id="journal"
+				value={session.journal}
+				oninput={(e) => app.setFocusJournal((e.currentTarget as HTMLTextAreaElement).value)}
+			></textarea>
+		</div>
 
-	<div class="field">
-		<label for="journal">{t(locale, 'focus.journal')}</label>
-		<textarea
-			id="journal"
-			value={session.journal}
-			oninput={(e) => app.setFocusJournal((e.currentTarget as HTMLTextAreaElement).value)}
-		></textarea>
+		<label class="row muted" style="margin: 0;">
+			<input
+				type="checkbox"
+				checked={app.prefs.autoStartNext}
+				onchange={(e) =>
+					app.updatePrefs({ autoStartNext: (e.currentTarget as HTMLInputElement).checked })}
+			/>
+			{t(locale, 'focus.autoStart')}
+		</label>
 	</div>
-
-	<label class="row muted">
-		<input
-			type="checkbox"
-			checked={app.prefs.autoStartNext}
-			onchange={(e) =>
-				app.updatePrefs({ autoStartNext: (e.currentTarget as HTMLInputElement).checked })}
-		/>
-		{t(locale, 'focus.autoStart')}
-	</label>
 </section>
