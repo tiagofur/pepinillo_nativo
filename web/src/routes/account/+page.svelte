@@ -16,44 +16,61 @@
 	}
 </script>
 
-<section class="panel">
+<section class="panel account-screen">
 	<div class="panel-head">
-		<h1>{t(locale, 'account.title')}</h1>
+		<div>
+			<h1>{t(locale, 'account.title')}</h1>
+			<p class="muted panel-sub">{t(locale, 'account.subtitle')}</p>
+		</div>
 	</div>
 
-	<div class="stat">
-		<span class="muted">{t(locale, 'account.tier')}</span>
-		<strong style="font-size: var(--text-xl);">{t(locale, 'account.tierFree')}</strong>
+	<div class="profile-card card">
+		<div class="avatar" aria-hidden="true">P</div>
+		<div class="profile-text">
+			<span class="muted">{t(locale, 'account.tier')}</span>
+			<strong class="profile-tier">{t(locale, 'account.tierFree')}</strong>
+		</div>
 	</div>
 
-	<div class="field">
-		<label for="locale">{t(locale, 'account.locale')}</label>
-		<select id="locale" value={app.prefs.locale} onchange={onLocale}>
-			{#each LOCALES as code (code)}
-				<option value={code}>{code.toUpperCase()}</option>
-			{/each}
-		</select>
+	<div class="settings-card card">
+		<h2 class="section-title">{t(locale, 'account.settings')}</h2>
+		<div class="field">
+			<label for="locale">{t(locale, 'account.locale')}</label>
+			<select id="locale" value={app.prefs.locale} onchange={onLocale}>
+				{#each LOCALES as code (code)}
+					<option value={code}>{code.toUpperCase()}</option>
+				{/each}
+			</select>
+		</div>
+		<div class="field" style="margin-bottom: 0;">
+			<label for="theme">{t(locale, 'account.theme')}</label>
+			<select id="theme" value={app.prefs.theme} onchange={onTheme}>
+				<option value="system">{t(locale, 'account.theme.system')}</option>
+				<option value="light">{t(locale, 'account.theme.light')}</option>
+				<option value="dark">{t(locale, 'account.theme.dark')}</option>
+			</select>
+			<p class="muted field-hint">{t(locale, 'account.premiumThemes')}</p>
+		</div>
 	</div>
 
-	<div class="field">
-		<label for="theme">{t(locale, 'account.theme')}</label>
-		<select id="theme" value={app.prefs.theme} onchange={onTheme}>
-			<option value="system">{t(locale, 'account.theme.system')}</option>
-			<option value="light">{t(locale, 'account.theme.light')}</option>
-			<option value="dark">{t(locale, 'account.theme.dark')}</option>
-		</select>
-		<p class="muted">Premium themes (Forest / Ocean / Sunset) require Everywhere.</p>
+	<div class="upgrade-card card">
+		<span class="upgrade-kicker">{t(locale, 'account.upgradeTitle')}</span>
+		<p class="teaser-inline">{t(locale, 'account.everywhereTeaser')}</p>
 	</div>
 
-	<p class="banner banner-warn">{t(locale, 'account.storageWarning')}</p>
-	<p class="teaser">{t(locale, 'account.everywhereTeaser')}</p>
-
-	<div class="stack">
-		<p>{t(locale, 'account.about')}</p>
-		<p class="muted">{t(locale, 'account.nonGoals')}</p>
-		<p class="muted">
-			{t(locale, 'account.deviceId')}:
-			<code>{app.deviceId || '…'}</code>
+	<div class="settings-card card">
+		<h2 class="section-title">{t(locale, 'account.storage')}</h2>
+		<p class="banner banner-warn" style="margin-bottom: var(--space-3);">
+			{t(locale, 'account.storageWarning')}
 		</p>
+		<p class="muted" style="margin: 0;">
+			{t(locale, 'account.deviceId')}:
+			<code class="device-code">{app.deviceId || '…'}</code>
+		</p>
+	</div>
+
+	<div class="settings-card card about-card">
+		<p style="margin-bottom: var(--space-2);">{t(locale, 'account.about')}</p>
+		<p class="muted" style="margin: 0;">{t(locale, 'account.nonGoals')}</p>
 	</div>
 </section>

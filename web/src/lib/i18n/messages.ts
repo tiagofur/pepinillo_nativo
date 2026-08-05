@@ -59,14 +59,36 @@ export type MessageKey =
 	| 'plan.filter.today'
 	| 'plan.filter.upcoming'
 	| 'plan.filter.inbox'
+	| 'plan.quickPlaceholder'
+	| 'plan.activeCap'
+	| 'plan.priority.low'
+	| 'plan.priority.medium'
+	| 'plan.priority.high'
+	| 'plan.energy.low'
+	| 'plan.energy.medium'
+	| 'plan.energy.high'
+	| 'plan.listLabel'
+	| 'plan.showOptions'
+	| 'plan.hideOptions'
+	| 'plan.focusTask'
+	| 'plan.reorder'
 	| 'dashboard.title'
+	| 'dashboard.subtitle'
 	| 'dashboard.today'
 	| 'dashboard.last7'
 	| 'dashboard.sessions'
 	| 'dashboard.minutes'
 	| 'dashboard.extendedGated'
 	| 'dashboard.empty'
+	| 'dashboard.heroCta'
+	| 'dashboard.recent'
+	| 'dashboard.avgSession'
 	| 'account.title'
+	| 'account.subtitle'
+	| 'account.premiumThemes'
+	| 'account.settings'
+	| 'account.storage'
+	| 'account.upgradeTitle'
 	| 'account.tier'
 	| 'account.tierFree'
 	| 'account.locale'
@@ -148,7 +170,21 @@ const en: Dict = {
 	'plan.filter.today': 'Today',
 	'plan.filter.upcoming': 'Upcoming',
 	'plan.filter.inbox': 'Inbox',
+	'plan.quickPlaceholder': 'What needs focus?',
+	'plan.activeCap': 'active',
+	'plan.priority.low': 'Low',
+	'plan.priority.medium': 'Med',
+	'plan.priority.high': 'High',
+	'plan.energy.low': 'Shallow',
+	'plan.energy.medium': 'Balanced',
+	'plan.energy.high': 'Deep',
+	'plan.listLabel': 'List',
+	'plan.showOptions': 'More',
+	'plan.hideOptions': 'Less',
+	'plan.focusTask': 'Focus',
+	'plan.reorder': 'Reorder',
 	'dashboard.title': 'Dashboard',
+	'dashboard.subtitle': 'Reflect on what worked',
 	'dashboard.today': 'Today',
 	'dashboard.last7': 'Last 7 days',
 	'dashboard.sessions': 'Sessions',
@@ -156,7 +192,15 @@ const en: Dict = {
 	'dashboard.extendedGated':
 		'30-day and 1-year views unlock with Everywhere. Free shows today + last 7 days.',
 	'dashboard.empty': 'Complete a session to see your summary here.',
+	'dashboard.heroCta': 'Start focusing',
+	'dashboard.recent': 'Recent sessions',
+	'dashboard.avgSession': 'Avg min / session',
 	'account.title': 'Account',
+	'account.subtitle': 'Identity, preferences, companion limits',
+	'account.premiumThemes': 'Forest / Ocean / Sunset unlock with Everywhere.',
+	'account.settings': 'Preferences',
+	'account.storage': 'Local storage',
+	'account.upgradeTitle': 'Everywhere',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -242,6 +286,19 @@ const es: Dict = {
 	'plan.filter.today': 'Hoy',
 	'plan.filter.upcoming': 'Próximas',
 	'plan.filter.inbox': 'Bandeja',
+	'plan.quickPlaceholder': '¿En qué te enfocás?',
+	'plan.activeCap': 'activas',
+	'plan.priority.low': 'Baja',
+	'plan.priority.medium': 'Media',
+	'plan.priority.high': 'Alta',
+	'plan.energy.low': 'Ligera',
+	'plan.energy.medium': 'Media',
+	'plan.energy.high': 'Profunda',
+	'plan.listLabel': 'Lista',
+	'plan.showOptions': 'Más',
+	'plan.hideOptions': 'Menos',
+	'plan.focusTask': 'Foco',
+	'plan.reorder': 'Orden',
 	'dashboard.title': 'Panel',
 	'dashboard.today': 'Hoy',
 	'dashboard.last7': 'Últimos 7 días',
@@ -250,6 +307,10 @@ const es: Dict = {
 	'dashboard.extendedGated':
 		'Las vistas de 30 días y 1 año se desbloquean con Everywhere. Free muestra hoy + últimos 7 días.',
 	'dashboard.empty': 'Completá una sesión para ver el resumen aquí.',
+	'dashboard.subtitle': 'Reflexioná sobre lo que funcionó',
+	'dashboard.heroCta': 'Empezar a enfocarme',
+	'dashboard.recent': 'Sesiones recientes',
+	'dashboard.avgSession': 'Min prom. / sesión',
 	'account.title': 'Cuenta',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · solo navegador local',
@@ -266,7 +327,12 @@ const es: Dict = {
 		'La web es un extra compañero para foco en pantalla grande. No reemplaza funciones nativas del SO.',
 	'account.nonGoals':
 		'No en web: bandeja, atajos globales, widgets, Live Activity, reloj, Health, CloudKit, colaboración en equipo, editor de notas.',
-	'account.deviceId': 'Id de dispositivo (local)'
+	'account.deviceId': 'Id de dispositivo (local)',
+	'account.subtitle': 'Identidad, preferencias y límites del compañero',
+	'account.premiumThemes': 'Forest / Ocean / Sunset se desbloquean con Everywhere.',
+	'account.settings': 'Preferencias',
+	'account.storage': 'Almacenamiento local',
+	'account.upgradeTitle': 'Everywhere'
 };
 
 const pt: Dict = {
@@ -336,6 +402,19 @@ const pt: Dict = {
 	'plan.filter.today': 'Hoje',
 	'plan.filter.upcoming': 'Próximas',
 	'plan.filter.inbox': 'Caixa de entrada',
+	'plan.quickPlaceholder': 'No que focar?',
+	'plan.activeCap': 'ativas',
+	'plan.priority.low': 'Baixa',
+	'plan.priority.medium': 'Média',
+	'plan.priority.high': 'Alta',
+	'plan.energy.low': 'Leve',
+	'plan.energy.medium': 'Média',
+	'plan.energy.high': 'Profunda',
+	'plan.listLabel': 'Lista',
+	'plan.showOptions': 'Mais',
+	'plan.hideOptions': 'Menos',
+	'plan.focusTask': 'Foco',
+	'plan.reorder': 'Ordem',
 	'dashboard.title': 'Painel',
 	'dashboard.today': 'Hoje',
 	'dashboard.last7': 'Últimos 7 dias',
@@ -344,6 +423,10 @@ const pt: Dict = {
 	'dashboard.extendedGated':
 		'Visões de 30 dias e 1 ano desbloqueiam com Everywhere. Free mostra hoje + últimos 7 dias.',
 	'dashboard.empty': 'Conclua uma sessão para ver o resumo aqui.',
+	'dashboard.subtitle': 'Reflita sobre o que funcionou',
+	'dashboard.heroCta': 'Começar a focar',
+	'dashboard.recent': 'Sessões recentes',
+	'dashboard.avgSession': 'Min méd. / sessão',
 	'account.title': 'Conta',
 	'account.tier': 'Plano',
 	'account.tierFree': 'Free · apenas navegador local',
@@ -360,7 +443,12 @@ const pt: Dict = {
 		'A web é um extra companheiro para foco em tela grande. Não substitui recursos nativos do SO.',
 	'account.nonGoals':
 		'Não na web: bandeja, atalhos globais, widgets, Live Activity, relógio, Health, CloudKit, colaboração em equipe, editor de notas.',
-	'account.deviceId': 'Id do dispositivo (local)'
+	'account.deviceId': 'Id do dispositivo (local)',
+	'account.subtitle': 'Identidade, preferências e limites do companion',
+	'account.premiumThemes': 'Forest / Ocean / Sunset desbloqueiam com Everywhere.',
+	'account.settings': 'Preferências',
+	'account.storage': 'Armazenamento local',
+	'account.upgradeTitle': 'Everywhere'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };
