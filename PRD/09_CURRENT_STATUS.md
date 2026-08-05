@@ -17,12 +17,12 @@
 | Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
 | Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |
 | Windows (desktop) | **Excellence W0–W15 code merged** (parity depth + desktop craft + Store kit); **ops left:** WinUI smoke (#575) + Partner Center (#568) | ~100+ C#/XAML | ~6K+ | CI: Core tests + x64/ARM64 build + MSIX pack |
-| Web (companion) | **W1 Free shell on main** + polish (e2e smoke, wake lock, export JSON, pomodoro prefs, toasts) | Svelte/TS | greenfield | `pnpm test` + `pnpm test:e2e` + `pnpm build` |
+| Web (companion) | **W1 Free shell** + polish; **W2 auth/sync client** (email login, entitlement, initial-upload; needs API URL + Everywhere) | Svelte/TS | greenfield | `pnpm test` + `pnpm test:e2e` + `pnpm build` |
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
 
 **Windows tracking docs:** product PRD [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · execution plan [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
 
-**Web companion:** Decision [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md) approved · SDD `web-client` · path `web/` · **W1 Free offline shell** (Pomodoro + Stopwatch, ≤3 tasks, 7-day analytics, EN/ES/PT) + polish: Playwright smoke, Screen Wake Lock while running, session toasts, local JSON export, pomodoro length prefs, Space start/pause. W2+ Everywhere auth/sync needs prod API + CORS. Marketing NG6: keep noindex until verified live.
+**Web companion:** Decision [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md) approved · SDD `web-client` · path `web/` · **W1 Free offline shell** + polish (e2e, wake lock, export, prefs) · **W2**: email register/login, token refresh, `/users/me` entitlement, `POST /sync/initial-upload` when Everywhere (configure `PUBLIC_API_BASE_URL` + CORS). Residual: WS invalidation, Google OAuth web, full bidirectional continuous sync. Marketing NG6: keep noindex until verified live.
 
 ### Monetization Direction (2026-04-22, v3.1)
 

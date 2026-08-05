@@ -97,6 +97,27 @@ export type MessageKey =
 	| 'toast.sessionComplete'
 	| 'toast.sessionSkipped'
 	| 'toast.exportDone'
+	| 'toast.signedIn'
+	| 'toast.registered'
+	| 'toast.signedOut'
+	| 'toast.syncOk'
+	| 'account.signIn'
+	| 'account.signUp'
+	| 'account.signOut'
+	| 'account.email'
+	| 'account.password'
+	| 'account.name'
+	| 'account.syncNow'
+	| 'account.syncing'
+	| 'account.apiMissing'
+	| 'account.everywhereActive'
+	| 'account.everywhereInactive'
+	| 'account.signedInAs'
+	| 'account.refreshEntitlement'
+	| 'sync.everywhereRequired'
+	| 'sync.mergeExisting'
+	| 'sync.ok'
+	| 'auth.required'
 	| 'account.tier'
 	| 'account.tierFree'
 	| 'account.locale'
@@ -217,6 +238,30 @@ const en: Dict = {
 	'toast.sessionComplete': 'Session saved. Nice work.',
 	'toast.sessionSkipped': 'Session skipped and saved.',
 	'toast.exportDone': 'Export downloaded.',
+	'toast.signedIn': 'Signed in.',
+	'toast.registered': 'Account created.',
+	'toast.signedOut': 'Signed out.',
+	'toast.syncOk': 'Local data uploaded.',
+	'account.signIn': 'Sign in',
+	'account.signUp': 'Create account',
+	'account.signOut': 'Sign out',
+	'account.email': 'Email',
+	'account.password': 'Password',
+	'account.name': 'Name',
+	'account.syncNow': 'Upload local data (Everywhere)',
+	'account.syncing': 'Syncing…',
+	'account.apiMissing':
+		'API URL not configured. Set PUBLIC_API_BASE_URL in web/.env to enable account + sync.',
+	'account.everywhereActive': 'Everywhere active — cloud sync available.',
+	'account.everywhereInactive':
+		'Signed in on Free. Subscribe or restore Everywhere on iOS, Android, or Windows, then refresh.',
+	'account.signedInAs': 'Signed in as',
+	'account.refreshEntitlement': 'Refresh subscription',
+	'sync.everywhereRequired': 'Everywhere subscription required for cloud sync.',
+	'sync.mergeExisting':
+		'Server already had data for this account. Local data was merged (LWW). Review tasks on other devices.',
+	'sync.ok': 'Upload complete.',
+	'auth.required': 'Sign in first.',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -356,7 +401,31 @@ const es: Dict = {
 	'account.exportHint': 'Descargá tareas, sesiones y preferencias como JSON de este navegador.',
 	'toast.sessionComplete': 'Sesión guardada. Buen trabajo.',
 	'toast.sessionSkipped': 'Sesión saltada y guardada.',
-	'toast.exportDone': 'Exportación descargada.'
+	'toast.exportDone': 'Exportación descargada.',
+	'toast.signedIn': 'Sesión iniciada.',
+	'toast.registered': 'Cuenta creada.',
+	'toast.signedOut': 'Sesión cerrada.',
+	'toast.syncOk': 'Datos locales subidos.',
+	'account.signIn': 'Iniciar sesión',
+	'account.signUp': 'Crear cuenta',
+	'account.signOut': 'Cerrar sesión',
+	'account.email': 'Email',
+	'account.password': 'Contraseña',
+	'account.name': 'Nombre',
+	'account.syncNow': 'Subir datos locales (Everywhere)',
+	'account.syncing': 'Sincronizando…',
+	'account.apiMissing':
+		'API no configurada. Definí PUBLIC_API_BASE_URL en web/.env para cuenta + sync.',
+	'account.everywhereActive': 'Everywhere activo — sync en la nube disponible.',
+	'account.everywhereInactive':
+		'Sesión Free. Suscribite o restaurá Everywhere en iOS, Android o Windows y refrescá.',
+	'account.signedInAs': 'Sesión como',
+	'account.refreshEntitlement': 'Actualizar suscripción',
+	'sync.everywhereRequired': 'Se requiere Everywhere para sync en la nube.',
+	'sync.mergeExisting':
+		'El servidor ya tenía datos. Se fusionó lo local (LWW). Revisá en otros dispositivos.',
+	'sync.ok': 'Subida completa.',
+	'auth.required': 'Iniciá sesión primero.'
 };
 
 const pt: Dict = {
@@ -480,7 +549,31 @@ const pt: Dict = {
 	'account.exportHint': 'Baixe tarefas, sessões e preferências como JSON deste navegador.',
 	'toast.sessionComplete': 'Sessão salva. Bom trabalho.',
 	'toast.sessionSkipped': 'Sessão pulada e salva.',
-	'toast.exportDone': 'Exportação baixada.'
+	'toast.exportDone': 'Exportação baixada.',
+	'toast.signedIn': 'Sessão iniciada.',
+	'toast.registered': 'Conta criada.',
+	'toast.signedOut': 'Sessão encerrada.',
+	'toast.syncOk': 'Dados locais enviados.',
+	'account.signIn': 'Entrar',
+	'account.signUp': 'Criar conta',
+	'account.signOut': 'Sair',
+	'account.email': 'Email',
+	'account.password': 'Senha',
+	'account.name': 'Nome',
+	'account.syncNow': 'Enviar dados locais (Everywhere)',
+	'account.syncing': 'Sincronizando…',
+	'account.apiMissing':
+		'API não configurada. Defina PUBLIC_API_BASE_URL em web/.env para conta + sync.',
+	'account.everywhereActive': 'Everywhere ativo — sync na nuvem disponível.',
+	'account.everywhereInactive':
+		'Sessão Free. Assine ou restaure Everywhere no iOS, Android ou Windows e atualize.',
+	'account.signedInAs': 'Conectado como',
+	'account.refreshEntitlement': 'Atualizar assinatura',
+	'sync.everywhereRequired': 'Everywhere é necessário para sync na nuvem.',
+	'sync.mergeExisting':
+		'O servidor já tinha dados. Local foi mesclado (LWW). Revise nos outros dispositivos.',
+	'sync.ok': 'Envio concluído.',
+	'auth.required': 'Entre primeiro.'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };

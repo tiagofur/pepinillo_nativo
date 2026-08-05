@@ -1,10 +1,13 @@
 import { browser } from '$app/environment';
 import {
+	clearAuthMeta,
 	getDeviceId,
 	getPreferences,
 	listActiveTasks,
 	listAllTasks,
 	listSessions,
+	loadAuthMeta,
+	saveAuthMeta,
 	savePreferences,
 	saveSession,
 	upsertTask,
@@ -22,7 +25,12 @@ import type {
 	ThemePreference
 } from '$lib/domain/entities/types';
 import { DEFAULT_PREFERENCES } from '$lib/domain/entities/types';
-import { canCreateActiveTask, canUseMode } from '$lib/domain/gates/freeLimits';
+import {
+	canCreateActiveTask,
+	canUseMode,
+	type EntitlementTier
+} from '$lib/domain/gates/freeLimits';
+import { canSync, isEverywhereActive } from '$lib/domain/gates/entitlements';
 import {
 	completeSession,
 	createIdleSession,
@@ -36,9 +44,12 @@ import {
 	startSession,
 	tickSession
 } from '$lib/domain/focus/engine';
+import { ApiClient, ApiError, isApiConfigured } from '$lib/data/remote/apiClient';
+import type { AuthTokens, AuthUser } from '$lib/data/remote/types';
+import { runInitialUpload } from '$lib/data/sync/engine';
 
-/** Free tier only in W1 — no Everywhere entitlement yet. */
-export const TIER = 'free' as const;
+/** @deprecated Prefer `app.tier` — static Free for tests that import TIER. */
+export const TIER: EntitlementTier = 'free';
 
 class AppState {
 	ready = $state(false);
@@ -52,6 +63,17 @@ class AppState {
 	upgradeTeaser = $state<string | null>(null);
 	/** Ephemeral UI toast (session complete, export, etc.) */
 	toast = $state<string | null>(null);
+	/** Signed-in remote user (null = Free local only). */
+	user = $state<AuthUser | null>(null);
+	authBusy = $state(false);
+	authError = $state<string | null>(null);
+	syncBusy = $state(false);
+	lastSyncMessage = $state<string | null>(null);
+	/** Server already had data — show merge notice after upload. */
+	mergeNotice = $state<string | null>(null);
+	accessToken = $state<string | null>(null);
+	#refreshToken: string | null = null;
+	#api: ApiClient | null = null;
 	#tickHandle: ReturnType<typeof setInterval> | null = null;
 	#wakeLock: WakeLockSentinel | null = null;
 	#toastTimer: ReturnType<typeof setTimeout> | null = null;
@@ -72,9 +94,27 @@ class AppState {
 		this.focusSession = createIdleSession(this.selectedMode, {
 			workMinutes: this.prefs.pomodoroWorkMinutes
 		});
+		this.#api = new ApiClient(this.#tokenProvider());
+		await this.#restoreSession();
 		this.ready = true;
 		this.#bindVisibility();
 		this.#bindSystemTheme();
+	}
+
+	get tier(): EntitlementTier {
+		return isEverywhereActive(this.user) ? 'everywhere' : 'free';
+	}
+
+	get isSignedIn(): boolean {
+		return this.user != null && this.#refreshToken != null;
+	}
+
+	get apiConfigured(): boolean {
+		return isApiConfigured();
+	}
+
+	get canUseEverywhereSync(): boolean {
+		return canSync(this.user);
 	}
 
 	get locale(): LocaleCode {
@@ -123,7 +163,7 @@ class AppState {
 	}
 
 	selectMode(mode: FocusMode) {
-		if (!canUseMode(mode, TIER)) {
+		if (!canUseMode(mode, this.tier)) {
 			this.upgradeTeaser = 'mode';
 			return;
 		}
@@ -137,7 +177,7 @@ class AppState {
 	}
 
 	startFocus() {
-		if (!canUseMode(this.selectedMode, TIER)) {
+		if (!canUseMode(this.selectedMode, this.tier)) {
 			this.upgradeTeaser = 'mode';
 			return;
 		}
@@ -249,7 +289,7 @@ class AppState {
 		list: TaskList;
 	}): Promise<{ ok: true } | { ok: false; reason: 'cap' }> {
 		const active = await listActiveTasks();
-		if (!canCreateActiveTask(active.length, TIER)) {
+		if (!canCreateActiveTask(active.length, this.tier)) {
 			this.upgradeTeaser = 'tasks';
 			return { ok: false, reason: 'cap' };
 		}
@@ -296,6 +336,166 @@ class AppState {
 			await upsertTask({ ...task, order: i, updatedAt: now });
 		}
 		this.tasks = await listAllTasks();
+	}
+
+	async login(email: string, password: string) {
+		if (!this.#api) return;
+		this.authBusy = true;
+		this.authError = null;
+		try {
+			const res = await this.#api.login(email.trim(), password);
+			await this.#applyAuth(res.user, res.tokens);
+			this.showToastKey('toast.signedIn');
+		} catch (e) {
+			this.authError = e instanceof ApiError ? e.code : 'login_failed';
+		} finally {
+			this.authBusy = false;
+		}
+	}
+
+	async register(email: string, name: string, password: string) {
+		if (!this.#api) return;
+		this.authBusy = true;
+		this.authError = null;
+		try {
+			const res = await this.#api.register(email.trim(), name.trim(), password);
+			await this.#applyAuth(res.user, res.tokens);
+			this.showToastKey('toast.registered');
+		} catch (e) {
+			this.authError = e instanceof ApiError ? e.code : 'register_failed';
+		} finally {
+			this.authBusy = false;
+		}
+	}
+
+	async logout() {
+		if (this.#api && this.accessToken) {
+			try {
+				await this.#api.logout(this.#refreshToken);
+			} catch {
+				/* still clear local session */
+			}
+		}
+		this.accessToken = null;
+		this.#refreshToken = null;
+		this.user = null;
+		this.mergeNotice = null;
+		this.lastSyncMessage = null;
+		await clearAuthMeta();
+		this.showToastKey('toast.signedOut');
+	}
+
+	async refreshProfile() {
+		if (!this.#api || !this.isSignedIn) return;
+		try {
+			this.user = await this.#api.me();
+			await this.#persistAuthMeta();
+		} catch (e) {
+			if (e instanceof ApiError && e.status === 401) {
+				await this.logout();
+			}
+		}
+	}
+
+	/**
+	 * Upload local Free data to cloud (initial-upload). Requires Everywhere.
+	 * Shows merge notice when server already had data.
+	 */
+	async syncNow() {
+		if (!this.#api || !this.isSignedIn) {
+			this.lastSyncMessage = 'auth.required';
+			return;
+		}
+		if (!this.canUseEverywhereSync) {
+			this.lastSyncMessage = 'sync.everywhereRequired';
+			this.upgradeTeaser = 'sync';
+			return;
+		}
+		this.syncBusy = true;
+		this.lastSyncMessage = null;
+		this.mergeNotice = null;
+		try {
+			const result = await runInitialUpload(this.#api, {
+				deviceId: this.deviceId,
+				tasks: this.tasks,
+				sessions: this.sessions,
+				prefs: this.prefs
+			});
+			if (result.hasExistingData) {
+				this.mergeNotice = 'sync.mergeExisting';
+			}
+			this.lastSyncMessage = 'sync.ok';
+			this.showToastKey('toast.syncOk');
+		} catch (e) {
+			this.lastSyncMessage = e instanceof ApiError ? e.code : 'sync_failed';
+		} finally {
+			this.syncBusy = false;
+		}
+	}
+
+	async #applyAuth(user: AuthUser, tokens: AuthTokens) {
+		this.user = user;
+		this.accessToken = tokens.accessToken;
+		this.#refreshToken = tokens.refreshToken;
+		await this.#persistAuthMeta();
+		// Prefer server profile (tier) right after auth
+		try {
+			this.user = await this.#api!.me();
+			await this.#persistAuthMeta();
+		} catch {
+			/* keep login user payload */
+		}
+	}
+
+	async #restoreSession() {
+		const meta = await loadAuthMeta();
+		this.#refreshToken = meta.refreshToken;
+		if (meta.userJson) {
+			try {
+				this.user = JSON.parse(meta.userJson) as AuthUser;
+			} catch {
+				this.user = null;
+			}
+		}
+		if (!this.#refreshToken || !this.#api || !isApiConfigured()) return;
+		try {
+			const { tokens } = await this.#api.refresh(this.#refreshToken);
+			this.accessToken = tokens.accessToken;
+			this.#refreshToken = tokens.refreshToken;
+			this.user = await this.#api.me();
+			await this.#persistAuthMeta();
+		} catch {
+			this.accessToken = null;
+			this.#refreshToken = null;
+			this.user = null;
+			await clearAuthMeta();
+		}
+	}
+
+	async #persistAuthMeta() {
+		await saveAuthMeta({
+			refreshToken: this.#refreshToken,
+			userJson: this.user ? JSON.stringify(this.user) : null
+		});
+	}
+
+	#tokenProvider() {
+		return {
+			getAccessToken: () => this.accessToken,
+			getRefreshToken: () => this.#refreshToken,
+			setTokens: async (tokens: AuthTokens | null) => {
+				if (!tokens) {
+					this.accessToken = null;
+					this.#refreshToken = null;
+					await this.#persistAuthMeta();
+					return;
+				}
+				this.accessToken = tokens.accessToken;
+				this.#refreshToken = tokens.refreshToken;
+				await this.#persistAuthMeta();
+			},
+			getDeviceId: () => this.deviceId
+		};
 	}
 
 	async #persistSession(session: FocusSession) {

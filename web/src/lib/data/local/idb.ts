@@ -26,9 +26,18 @@ interface PepinilloDB extends DBSchema {
 	};
 	meta: {
 		key: string;
-		value: { id: string; deviceId: string; schemaVersion: number };
+		value:
+			| { id: string; deviceId: string; schemaVersion: number }
+			| AuthMeta
+			| { id: string; [k: string]: unknown };
 	};
 }
+
+export type AuthMeta = {
+	id: 'auth';
+	refreshToken: string | null;
+	userJson: string | null;
+};
 
 let dbPromise: Promise<IDBPDatabase<PepinilloDB>> | null = null;
 
@@ -93,7 +102,7 @@ const PREFS_ID = 'preferences';
 export async function getDeviceId(): Promise<string> {
 	const db = await openDb();
 	const existing = await db.get('meta', DEVICE_META_ID);
-	if (existing?.deviceId) {
+	if (existing && 'deviceId' in existing && typeof existing.deviceId === 'string' && existing.deviceId) {
 		return existing.deviceId;
 	}
 	const deviceId = uuidV4();
@@ -103,6 +112,27 @@ export async function getDeviceId(): Promise<string> {
 		schemaVersion: DB_VERSION
 	});
 	return deviceId;
+}
+
+const AUTH_META_ID = 'auth';
+
+export async function loadAuthMeta(): Promise<AuthMeta> {
+	const db = await openDb();
+	const row = await db.get('meta', AUTH_META_ID);
+	if (row && row.id === 'auth') {
+		return row as AuthMeta;
+	}
+	return { id: 'auth', refreshToken: null, userJson: null };
+}
+
+export async function saveAuthMeta(meta: Omit<AuthMeta, 'id'>): Promise<void> {
+	const db = await openDb();
+	await db.put('meta', { id: AUTH_META_ID, ...meta });
+}
+
+export async function clearAuthMeta(): Promise<void> {
+	const db = await openDb();
+	await db.delete('meta', AUTH_META_ID);
 }
 
 export async function getPreferences(): Promise<Preferences> {
