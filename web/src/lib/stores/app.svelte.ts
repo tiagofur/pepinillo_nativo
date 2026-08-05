@@ -70,6 +70,7 @@ class AppState {
 		});
 		this.ready = true;
 		this.#bindVisibility();
+		this.#bindSystemTheme();
 	}
 
 	get locale(): LocaleCode {
@@ -102,6 +103,19 @@ class AppState {
 		} else {
 			root.setAttribute('data-theme', theme);
 		}
+		this.#syncThemeColor();
+	}
+
+	/** Browser chrome (mobile status bar) follows Pepinillo surfaces. */
+	#syncThemeColor() {
+		if (!browser) return;
+		const meta = document.querySelector('meta[name="theme-color"]');
+		if (!meta) return;
+		const dark =
+			document.documentElement.getAttribute('data-theme') === 'dark' ||
+			(document.documentElement.getAttribute('data-theme') == null &&
+				window.matchMedia('(prefers-color-scheme: dark)').matches);
+		meta.setAttribute('content', dark ? '#1a1c19' : '#38803b');
 	}
 
 	selectMode(mode: FocusMode) {
@@ -272,6 +286,15 @@ class AppState {
 				this.nowMs = Date.now();
 			}
 		});
+	}
+
+	#bindSystemTheme() {
+		if (!browser || !window.matchMedia) return;
+		const mq = window.matchMedia('(prefers-color-scheme: dark)');
+		const onChange = () => {
+			if (this.prefs.theme === 'system') this.#syncThemeColor();
+		};
+		mq.addEventListener('change', onChange);
 	}
 }
 

@@ -1309,6 +1309,100 @@ button {
 	max-width: none;
 }
 
+/* ─── Micro-polish: motion, empty, dark, press ─── */
+.app-main > :global(.panel) {
+	animation: page-in 0.28s ease both;
+}
+
+@keyframes page-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.empty-state {
+	text-align: center;
+	padding: var(--space-7) var(--space-4);
+	color: var(--muted);
+	background: var(--surface-card);
+	border-radius: var(--radius-lg);
+	border: 1px dashed color-mix(in srgb, var(--border) 90%, var(--accent));
+}
+
+.btn:active:not(:disabled),
+.chip:active,
+.mode-chip:active,
+.task-check:active,
+.tab-bar a:active {
+	transform: scale(0.97);
+}
+
+.tab-bar a {
+	transition:
+		color 0.15s ease,
+		background 0.15s ease,
+		transform 0.12s ease;
+}
+
+.task-row {
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease,
+		transform 0.12s ease;
+}
+
+.task-row:active {
+	transform: scale(0.995);
+}
+
+/* Dark mode: softer elevation, less harsh borders */
+:root[data-theme='dark'] .app-shell,
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme='light']) .card,
+	:root:not([data-theme='light']) .task-row,
+	:root:not([data-theme='light']) .stat,
+	:root:not([data-theme='light']) .recent-item,
+	:root:not([data-theme='light']) .suggest-banner,
+	:root:not([data-theme='light']) .quick-add {
+		box-shadow: 0 1px 0 rgb(255 255 255 / 0.04), var(--shadow-sm);
+	}
+
+	:root:not([data-theme='light']) .tab-bar {
+		background: color-mix(in srgb, var(--bg-elevated) 94%, transparent);
+		border-top-color: color-mix(in srgb, var(--border) 80%, transparent);
+	}
+
+	:root:not([data-theme='light']) .app-topbar {
+		border-bottom-color: color-mix(in srgb, var(--border) 70%, transparent);
+	}
+
+	:root:not([data-theme='light']) .timer-ring {
+		box-shadow:
+			0 12px 40px rgb(0 0 0 / 0.45),
+			inset 0 0 0 1px rgb(255 255 255 / 0.04);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.app-main > :global(.panel) {
+		animation: none;
+	}
+
+	.btn:active:not(:disabled),
+	.chip:active,
+	.mode-chip:active,
+	.task-check:active,
+	.tab-bar a:active,
+	.task-row:active {
+		transform: none;
+	}
+}
+
 .card {
 	background: var(--surface-card);
 	border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
@@ -1399,15 +1493,6 @@ button {
 	background: color-mix(in srgb, var(--mode-timeblock) 10%, var(--bg));
 	border: 1px dashed color-mix(in srgb, var(--mode-timeblock) 40%, var(--border));
 	font-size: var(--text-sm);
-}
-
-.empty-state {
-	text-align: center;
-	padding: var(--space-7) var(--space-4);
-	color: var(--muted);
-	background: var(--surface-card);
-	border-radius: var(--radius-lg);
-	border: 1px dashed var(--border);
 }
 
 @media (prefers-reduced-motion: reduce) {

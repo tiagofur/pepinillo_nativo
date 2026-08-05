@@ -4,6 +4,7 @@
 	import { t, type MessageKey } from '$lib/i18n/messages';
 	import type { TaskEnergy, TaskList, TaskPriority } from '$lib/domain/entities/types';
 	import { FREE_MAX_ACTIVE_TASKS } from '$lib/domain/entities/types';
+	import EmptyIllustration from '$lib/components/EmptyIllustration.svelte';
 
 	const locale = $derived(app.locale);
 
@@ -193,6 +194,7 @@
 
 	{#if filtered.length === 0}
 		<div class="empty-state">
+			<EmptyIllustration kind="tasks" />
 			<p class="muted" style="margin: 0 0 var(--space-3);">{t(locale, 'plan.empty')}</p>
 			<button class="btn btn-primary" type="button" onclick={() => document.getElementById('task-title')?.focus()}>
 				{t(locale, 'plan.add')}

@@ -5,6 +5,7 @@
 	import { formatMs } from '$lib/format/time';
 	import { summarizeSessions } from '$lib/domain/dashboard/summary';
 	import type { FocusMode } from '$lib/domain/entities/types';
+	import EmptyIllustration from '$lib/components/EmptyIllustration.svelte';
 
 	const locale = $derived(app.locale);
 	const summary = $derived(summarizeSessions(app.sessions, new Date()));
@@ -73,7 +74,11 @@
 
 	{#if app.sessions.length === 0}
 		<div class="empty-state">
-			<p class="muted" style="margin: 0;">{t(locale, 'dashboard.empty')}</p>
+			<EmptyIllustration kind="dashboard" />
+			<p class="muted" style="margin: 0 0 var(--space-3);">{t(locale, 'dashboard.empty')}</p>
+			<button class="btn btn-primary" type="button" onclick={() => goto('/focus/')}>
+				{t(locale, 'dashboard.heroCta')}
+			</button>
 		</div>
 	{/if}
 
