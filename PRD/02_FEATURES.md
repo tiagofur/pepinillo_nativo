@@ -1,12 +1,14 @@
 # Pepinillo — Unified Features Document
 
-**Version:** 1.5  
-**Last Updated:** 2026-08-03  
-**Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS, Windows (desktop — in progress)  
+**Version:** 1.6  
+**Last Updated:** 2026-08-05  
+**Platforms:** iOS (iPhone/iPad/Mac), Android (Phone/Tablet), watchOS, Wear OS, Windows (desktop), Web (companion — planned)  
 **Author:** Tiago David + Claude Code  
 **Status:** Active
 
 **Windows product & delivery:** [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md) · **excellence backlog** [13_WINDOWS_EXCELLENCE_PLAN.md](13_WINDOWS_EXCELLENCE_PLAN.md) (epic [#573](https://github.com/tiagofur/pepinillo_nativo/issues/573)). Desktop substitutes for Live Activity / widgets / watch are defined there; implement remaining parity via W0–W16 issues.
+
+**Web companion (approved planning):** [14_WEB_CLIENT_DECISION_BRIEF.md](14_WEB_CLIENT_DECISION_BRIEF.md) — Free local browser storage with Free caps; Everywhere/AI+ for entitled web features + multi-device sync. Not marketed until shipped (NG6).
 
 ---
 
@@ -20,6 +22,7 @@
 | **[watchOS]** | Exclusive to Apple Watch                       |
 | **[Wear OS]** | Exclusive to Wear OS                           |
 | **[Windows]** | Exclusive or desktop-specific to Windows (tray, Compact Overlay, global hotkeys, Focus Assist, Microsoft Store IAP) |
+| **[Web]**     | Browser companion client (large screen without install); product surfaces only — no OS shell parity |
 
 ### Commercial Labels
 
@@ -30,6 +33,21 @@
 | **EVERYWHERE/AI+** | Recurring subscription — cross-platform sync + Advanced AI (Coach, Scheduling, Subtask Gen) + 100 AI credits/month |
 
 **Commercial note:** older parts of this document still use legacy `PRO` or `APPLE` wording in places. Unless explicitly stated otherwise, `APPLE` should now be interpreted as **PEPINILLO+** and `EVERYWHERE` as **EVERYWHERE/AI+**. The canonical rollout lives in [PRD/04_MONETIZATION.md](PRD/04_MONETIZATION.md) v3.0.
+
+### Web companion (approved — not shipped)
+
+Canonical matrix and slices: **[PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md)**.
+
+| Topic | Rule |
+| ----- | ---- |
+| Role | Extra / support for larger screens without install; same mental model Focus · Plan · Dashboard · Account |
+| Free | Browser **local-only** persistence; same Free limits as other platforms (`PRD/04` §3.1) |
+| Paid | **Everywhere/AI+ only** (no Pepinillo+ one-time on web) |
+| Everywhere unlocks | Web-capable premium features + Go backend sync with iOS / Android / Windows |
+| N/A on web | Tray, global hotkeys, widgets, watch, Live Activity, reliable timer with tab closed, other OS shells |
+| Commercial | Do not market web until a real client ships (NG6) |
+
+Full feature-by-feature Free / Everywhere / N/A tables live in PRD/14 (not duplicated here to avoid drift). When implementation starts, expand parity tables with a **Web** column or keep PRD/14 as the web SoT until then.
 
 ## Product Reset (2026-04-21)
 
