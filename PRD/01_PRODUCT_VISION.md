@@ -68,9 +68,13 @@ The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness
 | **Android (Phone)** | Kotlin + MVI (Circuit) + Room      | In Development |
 | **watchOS**         | SwiftUI native                     | In Development |
 | **Wear OS**         | Jetpack Compose                    | In Development |
+| **Windows**         | WinUI 3 / Windows App SDK (C#)     | In Development |
+| **Web (companion)** | Lightweight SPA (planned: SvelteKit + TS) | **Planned** — product approved; not shipped ([PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md)) |
 | **iPad**            | SwiftUI (NavigationSplitView)      | Planned        |
 | **macOS**           | SwiftUI native                     | Planned        |
 | **Android Tablets** | Jetpack Compose (adaptive layouts) | Planned        |
+
+**Web role:** companion extra (larger screen without install). Free = browser-local with Free caps; Everywhere/AI+ unlocks web-capable premium features + backend sync. Not a fourth native OS — OS-exclusive surfaces stay N/A. Canonical decision: [14_WEB_CLIENT_DECISION_BRIEF.md](14_WEB_CLIENT_DECISION_BRIEF.md).
 
 ---
 
@@ -98,7 +102,7 @@ The name "Pepinillo" (pickle/gherkin) is a playful contrast with the seriousness
 | **NG3** | **No autonomous AI project manager in MVP** | MVP AI is reflection + coaching + recommendations. Scheduling help and subtask generation are post-MVP only |
 | **NG4** | **No meditation / wellness brand pivot**    | Calm is the tone, but Pepinillo remains a productivity tool, not a relaxation product                       |
 | **NG5** | **No ambient music creation / marketplace** | Curated soundscapes are enough; we are not building an audio business                                       |
-| **NG6** | **No web / desktop promise before reality** | Do not sell value for clients that are not yet shipped or committed                                          |
+| **NG6** | **No web / desktop promise before reality** | Do not market or sell web/macOS value until a real client ships. **Web product model is approved** as a planned companion ([PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md)); commercial promise stays off until W1+ exists. |
 | **NG7** | **No calendar replacement**                 | We align with Apple Calendar / Google Calendar; we do not compete with Fantastical or Google Calendar       |
 
 > **Note:** The former iOS NG1 ("Android remains on Flutter") is **obsolete**. Android is now native Kotlin with full parity.

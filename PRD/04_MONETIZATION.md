@@ -214,7 +214,22 @@ AI+ Features (future, Everywhere/AI+):
 | Backend sync | Requires Everywhere/AI+ |
 | Wear behavior | Wear OS inherits entitlement state from the Android companion |
 
-### 6.3 Product IDs (Reusing Existing SKUs)
+### 6.3 Web (companion client)
+
+**Product decision approved:** [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md). Client not shipped; do not market until live (NG6).
+
+| Aspect | Detail |
+| ------ | ------ |
+| Role | Companion extra — large screen without install; not a native OS replacement |
+| Free | Browser-local storage only; **same Free limits** as §3.1 (Pomodoro + Stopwatch, 3 active tasks, 7-day analytics, etc.) |
+| Primary paid offer | **Everywhere/AI+** Monthly / Annual only |
+| Pepinillo+ (one-time) | **Not offered on web** (Apple-ecosystem purchase) |
+| Local premium on web | Included inside Everywhere/AI+ (same pattern as Android rollout) for web-capable features |
+| Backend sync | Requires Everywhere/AI+; Free web never promises multi-device |
+| Billing channel | TBD at design (Stripe/web checkout vs. subscribe/restore via store apps + account) |
+| Restore | Account + backend entitlement (`everywhere_plus`); cross-device recovery when subscribed |
+
+### 6.4 Product IDs (Reusing Existing SKUs)
 
 **We reuse the 3 existing product IDs in App Store Connect.** Only the metadata (name, description, price) changes.
 
@@ -233,7 +248,7 @@ AI+ Features (future, Everywhere/AI+):
 | `com.pepinillo.app.pro.monthly` | Everywhere/AI+ Monthly | Auto-renewable subscription |
 | `com.pepinillo.app.pro.annual` | Everywhere/AI+ Annual | Auto-renewable subscription |
 
-### 6.4 RevenueCat Entitlement Configuration
+### 6.5 RevenueCat Entitlement Configuration
 
 | Entitlement Name | Products | Capabilities Unlocked |
 | ---------------- | -------- | --------------------- |
@@ -300,7 +315,7 @@ AI+ Features (future, Everywhere/AI+):
 | **Phase 2** | Submit to App Store with Pepinillo+ as primary offer | ⬜ Next |
 | **Phase 3** | Backend Sync + AI+ implementation for Everywhere/AI+ | ⬜ Future |
 | **Phase 4** | Android migration to Everywhere/AI+ | ⬜ Future |
-| **Phase 5** | Marketing expansion (macOS, Web when shipped) | ⬜ Future |
+| **Phase 5** | Marketing expansion (macOS when shipped; **Web companion** only after client live — model approved in PRD/14) | ⬜ Future |
 
 ---
 

@@ -177,18 +177,19 @@ Convention files under `~/.claude/skills/_shared/` (global) or `.agent/skills/_s
 
 ## Cross-Platform Parity Rule (MANDATORY)
 
-This is a multi-platform project: **Android (phone)**, **Wear OS (watch)**, **iOS (phone)**, and **watchOS (Apple Watch)**.
+This is a multi-platform project: **Android (phone)**, **Wear OS (watch)**, **iOS (phone)**, **watchOS (Apple Watch)**, and **Windows (desktop)**.
 
 Whenever a bug is fixed or a new feature is implemented on ANY platform, you MUST check and apply the equivalent fix/feature on ALL other platforms before considering the task complete.
 
-| Changed platform     | Must also review and fix          |
-| -------------------- | --------------------------------- |
-| Android phone        | iOS phone, Wear OS, watchOS       |
-| iOS phone            | Android phone, Wear OS, watchOS   |
-| Wear OS              | watchOS, Android phone, iOS phone |
-| watchOS              | Wear OS, Android phone, iOS phone |
-| Android + Wear OS    | iOS + watchOS                     |
-| iOS + watchOS        | Android + Wear OS                 |
+| Changed platform     | Must also review and fix                    |
+| -------------------- | ------------------------------------------- |
+| Android phone        | iOS phone, Wear OS, watchOS, Windows        |
+| iOS phone            | Android phone, Wear OS, watchOS, Windows    |
+| Wear OS              | watchOS, Android phone, iOS phone, Windows  |
+| watchOS              | Wear OS, Android phone, iOS phone, Windows  |
+| Windows              | iOS phone, Android phone, Wear OS, watchOS  |
+| Android + Wear OS    | iOS + watchOS, Windows                      |
+| iOS + watchOS        | Android + Wear OS, Windows                  |
 
 **This is not optional.** The goal is to keep all platforms functionally identical and free of the same bugs. Always proactively ask or check the counterpart platforms — do not wait for the user to request it.
 
@@ -196,20 +197,24 @@ Whenever a bug is fixed or a new feature is implemented on ANY platform, you MUS
 
 ## PRD Maintenance Rule (MANDATORY)
 
-The unified PRD lives in `PRD/` with 10 documents:
+The unified PRD lives in `PRD/` with **14** documents:
 
-| # | Archivo | Contenido |
-|---|---------|-----------|
-| 01 | `PRODUCT_VISION.md` | Visión, objetivos, usuarios, modos de enfoque |
-| 02 | `FEATURES.md` | Features completas con tabla de paridad cross-platform |
-| 03 | `COMPETITIVE_ANALYSIS.md` | Análisis competitivo global + por plataforma |
-| 04 | `MONETIZATION.md` | Precios, tiers FREE/PRO, feature gating |
-| 05 | `TECHNICAL_ARCHITECTURE_IOS.md` | Arquitectura iOS/watchOS específica |
-| 06 | `TECHNICAL_ARCHITECTURE_ANDROID.md` | Arquitectura Android/Wear OS específica |
-| 07 | `ROADMAP.md` | Timeline y estimaciones ambas plataformas |
-| 08 | `COLLABORATION_GUIDE.md` | Guía de trabajo con Claude Code |
-| 09 | `CURRENT_STATUS.md` | Estado actual de implementación + brechas |
-| 10 | `FLUTTER_MIGRATION_REFERENCE.md` | Referencia de migración desde Flutter |
+| # | File | Content |
+|---|------|---------|
+| 01 | `PRODUCT_VISION.md` | Vision, goals, users, focus modes |
+| 02 | `FEATURES.md` | Features + cross-platform parity table |
+| 03 | `COMPETITIVE_ANALYSIS.md` | Competitive analysis (global + per platform) |
+| 04 | `MONETIZATION.md` | Pricing, FREE/PRO tiers, feature gating |
+| 05 | `TECHNICAL_ARCHITECTURE_IOS.md` | iOS/watchOS architecture |
+| 06 | `TECHNICAL_ARCHITECTURE_ANDROID.md` | Android/Wear OS architecture |
+| 07 | `ROADMAP.md` | Unified roadmap (all platforms) |
+| 08 | `COLLABORATION_GUIDE.md` | Collaboration guide |
+| 09 | `CURRENT_STATUS.md` | Live implementation status + gaps |
+| 10 | `FLUTTER_MIGRATION_REFERENCE.md` | Flutter migration reference |
+| 11 | `WINDOWS_APP_PRD_AND_ROADMAP.md` | Windows product PRD + roadmap |
+| 12 | `WINDOWS_EXECUTION_PLAN.md` | Windows execution plan |
+| 13 | `WINDOWS_EXCELLENCE_PLAN.md` | Windows excellence plan (W0–W15) |
+| 14 | `WEB_CLIENT_DECISION_BRIEF.md` | Web companion decision + Free/Everywhere/N/A matrix |
 
 **After completing any feature, bug fix, or significant modification**, you MUST check if the change affects any PRD document and update it accordingly:
 
@@ -217,14 +222,15 @@ The unified PRD lives in `PRD/` with 10 documents:
 |----------------|-------------------|
 | New feature implemented | `02_FEATURES.md` (parity table), `09_CURRENT_STATUS.md` |
 | Bug fix | `09_CURRENT_STATUS.md` (if it was a known gap) |
-| Architecture change | `05_...IOS.md` or `06_...ANDROID.md` |
-| New dependency added | `05_...IOS.md` or `06_...ANDROID.md` |
+| Architecture change | `05_...IOS.md`, `06_...ANDROID.md`, or Windows PRDs 11–13 |
+| New dependency added | matching architecture / Windows PRD |
 | Pricing/tier change | `04_MONETIZATION.md` |
 | New competitor discovered | `03_COMPETITIVE_ANALYSIS.md` |
 | Roadmap milestone reached | `07_ROADMAP.md`, `09_CURRENT_STATUS.md` |
 | New platform integration | `02_FEATURES.md`, `09_CURRENT_STATUS.md` |
+| Windows Store / excellence ops | `09_CURRENT_STATUS.md`, `11`–`13` as needed |
 
-**This is not optional.** Keeping PRD in sync with the codebase ensures future sessions have accurate context.
+**This is not optional.** Keeping PRD in sync with the codebase ensures future sessions have accurate context. Operational notes live in `docs/` (vault); do not fork full PRD bodies there.
 
 ---
 
@@ -236,9 +242,9 @@ After completing any correction, change, improvement, or new feature, you MUST c
 
 - **Format**: Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `chore:`, `style:`, `test:`)
 - **Language**: English for commit messages
-- **Scope**: Include platform scope when the change is platform-specific: `feat(android):`, `fix(ios):`, `feat(wear):`, `fix(watchos):`
-- **Cross-platform**: When the same change applies to both platforms, use a single commit with no platform scope or list both: `feat(ios,android):`
-- **Co-author**: Always include `Co-Authored-By: Claude Opus 4.6 (1M context) <noreply@anthropic.com>`
+- **Scope**: Include platform scope when the change is platform-specific: `feat(android):`, `fix(ios):`, `feat(wear):`, `fix(watchos):`, `feat(windows):`
+- **Cross-platform**: When the same change applies to multiple platforms, use a single commit with no platform scope or list scopes: `feat(ios,android):`
+- **Attribution**: Do **not** add `Co-Authored-By` or other AI attribution trailers
 
 ### When to Commit
 
