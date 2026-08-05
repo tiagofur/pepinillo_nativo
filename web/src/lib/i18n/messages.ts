@@ -89,6 +89,14 @@ export type MessageKey =
 	| 'account.settings'
 	| 'account.storage'
 	| 'account.upgradeTitle'
+	| 'account.pomodoro'
+	| 'account.workMinutes'
+	| 'account.breakMinutes'
+	| 'account.export'
+	| 'account.exportHint'
+	| 'toast.sessionComplete'
+	| 'toast.sessionSkipped'
+	| 'toast.exportDone'
 	| 'account.tier'
 	| 'account.tierFree'
 	| 'account.locale'
@@ -201,6 +209,14 @@ const en: Dict = {
 	'account.settings': 'Preferences',
 	'account.storage': 'Local storage',
 	'account.upgradeTitle': 'Everywhere',
+	'account.pomodoro': 'Pomodoro lengths',
+	'account.workMinutes': 'Work (minutes)',
+	'account.breakMinutes': 'Break (minutes)',
+	'account.export': 'Export local data',
+	'account.exportHint': 'Download tasks, sessions, and preferences as JSON from this browser.',
+	'toast.sessionComplete': 'Session saved. Nice work.',
+	'toast.sessionSkipped': 'Session skipped and saved.',
+	'toast.exportDone': 'Export downloaded.',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
 	'account.locale': 'Language',
@@ -332,7 +348,15 @@ const es: Dict = {
 	'account.premiumThemes': 'Forest / Ocean / Sunset se desbloquean con Everywhere.',
 	'account.settings': 'Preferencias',
 	'account.storage': 'Almacenamiento local',
-	'account.upgradeTitle': 'Everywhere'
+	'account.upgradeTitle': 'Everywhere',
+	'account.pomodoro': 'Duraciones Pomodoro',
+	'account.workMinutes': 'Trabajo (minutos)',
+	'account.breakMinutes': 'Descanso (minutos)',
+	'account.export': 'Exportar datos locales',
+	'account.exportHint': 'Descargá tareas, sesiones y preferencias como JSON de este navegador.',
+	'toast.sessionComplete': 'Sesión guardada. Buen trabajo.',
+	'toast.sessionSkipped': 'Sesión saltada y guardada.',
+	'toast.exportDone': 'Exportación descargada.'
 };
 
 const pt: Dict = {
@@ -448,7 +472,15 @@ const pt: Dict = {
 	'account.premiumThemes': 'Forest / Ocean / Sunset desbloqueiam com Everywhere.',
 	'account.settings': 'Preferências',
 	'account.storage': 'Armazenamento local',
-	'account.upgradeTitle': 'Everywhere'
+	'account.upgradeTitle': 'Everywhere',
+	'account.pomodoro': 'Durações Pomodoro',
+	'account.workMinutes': 'Trabalho (minutos)',
+	'account.breakMinutes': 'Pausa (minutos)',
+	'account.export': 'Exportar dados locais',
+	'account.exportHint': 'Baixe tarefas, sessões e preferências como JSON deste navegador.',
+	'toast.sessionComplete': 'Sessão salva. Bom trabalho.',
+	'toast.sessionSkipped': 'Sessão pulada e salva.',
+	'toast.exportDone': 'Exportação baixada.'
 };
 
 const catalogs: Record<LocaleCode, Dict> = { en, es, pt };

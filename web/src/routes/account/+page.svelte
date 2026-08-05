@@ -14,6 +14,18 @@
 		const value = (e.currentTarget as HTMLSelectElement).value as ThemePreference;
 		void app.updatePrefs({ theme: value });
 	}
+
+	function onWorkMinutes(e: Event) {
+		const n = Number((e.currentTarget as HTMLInputElement).value);
+		if (!Number.isFinite(n)) return;
+		void app.updatePrefs({ pomodoroWorkMinutes: Math.min(90, Math.max(5, Math.round(n))) });
+	}
+
+	function onBreakMinutes(e: Event) {
+		const n = Number((e.currentTarget as HTMLInputElement).value);
+		if (!Number.isFinite(n)) return;
+		void app.updatePrefs({ pomodoroBreakMinutes: Math.min(30, Math.max(1, Math.round(n))) });
+	}
 </script>
 
 <section class="panel account-screen">
@@ -53,6 +65,34 @@
 		</div>
 	</div>
 
+	<div class="settings-card card">
+		<h2 class="section-title">{t(locale, 'account.pomodoro')}</h2>
+		<div class="options-grid">
+			<div class="field">
+				<label for="work-min">{t(locale, 'account.workMinutes')}</label>
+				<input
+					id="work-min"
+					type="number"
+					min="5"
+					max="90"
+					value={app.prefs.pomodoroWorkMinutes}
+					onchange={onWorkMinutes}
+				/>
+			</div>
+			<div class="field">
+				<label for="break-min">{t(locale, 'account.breakMinutes')}</label>
+				<input
+					id="break-min"
+					type="number"
+					min="1"
+					max="30"
+					value={app.prefs.pomodoroBreakMinutes}
+					onchange={onBreakMinutes}
+				/>
+			</div>
+		</div>
+	</div>
+
 	<div class="upgrade-card card">
 		<span class="upgrade-kicker">{t(locale, 'account.upgradeTitle')}</span>
 		<p class="teaser-inline">{t(locale, 'account.everywhereTeaser')}</p>
@@ -63,10 +103,16 @@
 		<p class="banner banner-warn" style="margin-bottom: var(--space-3);">
 			{t(locale, 'account.storageWarning')}
 		</p>
-		<p class="muted" style="margin: 0;">
+		<p class="muted" style="margin: 0 0 var(--space-3);">
 			{t(locale, 'account.deviceId')}:
 			<code class="device-code">{app.deviceId || '…'}</code>
 		</p>
+		<p class="muted field-hint" style="margin-bottom: var(--space-3);">
+			{t(locale, 'account.exportHint')}
+		</p>
+		<button class="btn btn-primary btn-block" type="button" onclick={() => app.exportLocalData()}>
+			{t(locale, 'account.export')}
+		</button>
 	</div>
 
 	<div class="settings-card card about-card">

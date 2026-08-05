@@ -50,7 +50,11 @@ class AppState {
 	selectedMode = $state<FocusMode>('pomodoro');
 	nowMs = $state(Date.now());
 	upgradeTeaser = $state<string | null>(null);
+	/** Ephemeral UI toast (session complete, export, etc.) */
+	toast = $state<string | null>(null);
 	#tickHandle: ReturnType<typeof setInterval> | null = null;
+	#wakeLock: WakeLockSentinel | null = null;
+	#toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 	async init() {
 		if (!browser) {
@@ -140,39 +144,89 @@ class AppState {
 		const now = new Date().toISOString();
 		this.focusSession = startSession(this.focusSession, now);
 		this.#startTicker();
+		void this.#requestWakeLock();
 	}
 
 	pauseFocus() {
 		const now = new Date().toISOString();
 		this.focusSession = pauseSession(this.focusSession, now);
 		this.#stopTicker();
+		void this.#releaseWakeLock();
 	}
 
 	resumeFocus() {
 		const now = new Date().toISOString();
 		this.focusSession = resumeSession(this.focusSession, now);
 		this.#startTicker();
+		void this.#requestWakeLock();
 	}
 
 	async skipFocus() {
 		const now = new Date().toISOString();
 		this.focusSession = skipSession(this.focusSession, now);
 		this.#stopTicker();
+		void this.#releaseWakeLock();
 		await this.#persistSession(this.focusSession);
+		this.showToastKey('toast.sessionSkipped');
 	}
 
 	async completeFocus() {
 		const now = new Date().toISOString();
 		this.focusSession = completeSession(this.focusSession, now);
 		this.#stopTicker();
+		void this.#releaseWakeLock();
 		await this.#persistSession(this.focusSession);
+		this.showToastKey('toast.sessionComplete');
 	}
 
 	resetFocus() {
 		this.#stopTicker();
+		void this.#releaseWakeLock();
 		this.focusSession = createIdleSession(this.selectedMode, {
 			workMinutes: this.prefs.pomodoroWorkMinutes
 		});
+	}
+
+	showToast(message: string) {
+		this.toast = message;
+		if (this.#toastTimer) clearTimeout(this.#toastTimer);
+		this.#toastTimer = setTimeout(() => {
+			this.toast = null;
+			this.#toastTimer = null;
+		}, 3200);
+	}
+
+	/** Resolve later in UI via i18n; store raw key for layout. */
+	showToastKey(key: string) {
+		this.showToast(key);
+	}
+
+	dismissToast() {
+		this.toast = null;
+		if (this.#toastTimer) {
+			clearTimeout(this.#toastTimer);
+			this.#toastTimer = null;
+		}
+	}
+
+	async exportLocalData(): Promise<void> {
+		if (!browser) return;
+		const payload = {
+			exportedAt: new Date().toISOString(),
+			deviceId: this.deviceId,
+			tier: TIER,
+			preferences: this.prefs,
+			tasks: this.tasks,
+			sessions: this.sessions
+		};
+		const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = `pepinillo-web-export-${new Date().toISOString().slice(0, 10)}.json`;
+		a.click();
+		URL.revokeObjectURL(url);
+		this.showToastKey('toast.exportDone');
 	}
 
 	setFocusJournal(text: string) {
@@ -265,7 +319,9 @@ class AppState {
 				const next = tickSession(this.focusSession, iso);
 				this.focusSession = next;
 				this.#stopTicker();
+				void this.#releaseWakeLock();
 				void this.#persistSession(next);
+				this.showToastKey('toast.sessionComplete');
 			}
 		}, 250);
 	}
@@ -277,6 +333,30 @@ class AppState {
 		}
 	}
 
+	async #requestWakeLock() {
+		if (!browser || !('wakeLock' in navigator)) return;
+		try {
+			await this.#releaseWakeLock();
+			this.#wakeLock = await navigator.wakeLock.request('screen');
+			this.#wakeLock.addEventListener('release', () => {
+				this.#wakeLock = null;
+			});
+		} catch {
+			// Permission / battery policy — best effort only
+			this.#wakeLock = null;
+		}
+	}
+
+	async #releaseWakeLock() {
+		if (!this.#wakeLock) return;
+		try {
+			await this.#wakeLock.release();
+		} catch {
+			/* ignore */
+		}
+		this.#wakeLock = null;
+	}
+
 	#bindVisibility() {
 		if (!browser) return;
 		document.addEventListener('visibilitychange', () => {
@@ -284,6 +364,9 @@ class AppState {
 				const iso = new Date().toISOString();
 				this.focusSession = recomputeOnVisible(this.focusSession, iso);
 				this.nowMs = Date.now();
+				if (this.focusSession.status === 'running') {
+					void this.#requestWakeLock();
+				}
 			}
 		});
 	}

@@ -8,6 +8,7 @@ Browser companion for large-screen Focus / Plan / Dashboard. **W1 Free shell** i
 - `@sveltejs/adapter-static` (SPA fallback)
 - IndexedDB via `idb`
 - Vitest for unit tests
+- Playwright for e2e smoke
 - Package manager: **pnpm**
 
 ## Free limits (PRD/04 §3.1)
@@ -31,6 +32,7 @@ cd web
 pnpm install
 pnpm dev          # http://localhost:5173
 pnpm test         # Vitest unit suite
+pnpm test:e2e     # Playwright smoke (builds + preview)
 pnpm check        # svelte-check
 pnpm build        # static output in build/
 pnpm preview
@@ -46,6 +48,7 @@ src/lib/data/local/ IndexedDB repositories
 src/lib/i18n/       EN / ES / PT strings
 src/routes/         Focus | Plan | Dashboard | Account
 tests/unit/         Vitest
+tests/e2e/          Playwright smoke
 ```
 
 ## Env
