@@ -1,10 +1,11 @@
 # Pepinillo Web Client — Decision Brief & Feature Matrix
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-08-05  
-**Status:** Draft for product approval (planning only — no implementation)  
+**Status:** **Approved** (product decision locked; implementation not started)  
 **Related:** `PRD/01` vision (NG6), `PRD/02` features, `PRD/04` monetization, `PRD/07` roadmap, `PRD/09` status  
-**Audience:** Product + engineering (pre-SDD spec/design)
+**Audience:** Product + engineering (pre-SDD spec/design)  
+**Approved by:** Product (Tiago) — 2026-08-05
 
 ---
 
@@ -291,9 +292,9 @@ Critical product flow (must be designed before W2):
 
 | Role | Name | Date | Verdict |
 | ---- | ---- | ---- | ------- |
-| Product | | | ☐ Approve · ☐ Approve with changes · ☐ Reject |
-| Notes | | | |
+| Product | Tiago | 2026-08-05 | **Approved** |
+| Notes | Companion web: Free local + Everywhere sync; no OS-parity promise; cascade into PRD 01/02/04/07/09 done with this approval. | | |
 
 ---
 
-*End of decision brief v1.0*
+*End of decision brief v1.1 (approved)*

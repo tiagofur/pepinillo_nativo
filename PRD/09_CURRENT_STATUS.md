@@ -17,12 +17,20 @@
 | Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
 | Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |
 | Windows (desktop) | **Excellence W0–W15 code merged** (parity depth + desktop craft + Store kit); **ops left:** WinUI smoke (#575) + Partner Center (#568) | ~100+ C#/XAML | ~6K+ | CI: Core tests + x64/ARM64 build + MSIX pack |
+<<<<<<< HEAD
 | Web (companion) | **W1 Free local shell in progress** (`web/` SvelteKit + IndexedDB; offline Free gates; no Everywhere/auth yet; **noindex**) | Svelte/TS | greenfield | `pnpm test` + `pnpm build` green on `feat/web-w1-free-shell` |
+=======
+| Web (companion) | **Product approved** — not implemented; Free local + Everywhere sync model locked | — | — | See [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md) |
+>>>>>>> 207e57b6 (docs(web): approve companion model and cascade into PRD)
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
 
 **Windows tracking docs:** product PRD [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · execution plan [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
 
+<<<<<<< HEAD
 **Web companion:** SDD change `web-client` · monorepo path `web/` · W1 Free offline shell (Pomodoro + Stopwatch, ≤3 tasks, 7-day analytics, EN/ES/PT). Everywhere auth/sync is W2+ and needs prod API + CORS. Marketing NG6: keep noindex until verified live.
+=======
+**Web tracking:** decision brief + matrix [14_WEB_CLIENT_DECISION_BRIEF.md](14_WEB_CLIENT_DECISION_BRIEF.md) (approved 2026-08-05). Implementation slices W1–W5 not started.
+>>>>>>> 207e57b6 (docs(web): approve companion model and cascade into PRD)
 
 ### Monetization Direction (2026-04-22, v3.1)
 
@@ -463,6 +471,7 @@
 | iPad layouts                         | ⬜                                                | N/A                     | Planned but not implemented                              |
 | Tablet/foldable layouts              | N/A                                               | ✅                      | WindowSizeClass + hinge avoidance                        |
 | macOS target                         | ⬜                                                | N/A                     | Planned but not implemented                              |
+| Web companion                        | ⬜ (approved plan)                                | ⬜ (approved plan)      | [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md); Free local + Everywhere; not marketed until ship |
 
 ### Integrations
 
