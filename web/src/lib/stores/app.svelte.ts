@@ -1,15 +1,20 @@
 import { browser } from '$app/environment';
 import {
 	clearAuthMeta,
+	clearSyncMeta,
 	getDeviceId,
 	getPreferences,
+	getSyncMeta,
 	listActiveTasks,
 	listAllTasks,
 	listSessions,
 	loadAuthMeta,
+	saveAllSessions,
+	saveAllTasks,
 	saveAuthMeta,
 	savePreferences,
 	saveSession,
+	saveSyncMeta,
 	upsertTask,
 	removeTask
 } from '$lib/data/local/idb';
@@ -45,8 +50,10 @@ import {
 	tickSession
 } from '$lib/domain/focus/engine';
 import { ApiClient, ApiError, isApiConfigured } from '$lib/data/remote/apiClient';
-import type { AuthTokens, AuthUser } from '$lib/data/remote/types';
-import { runInitialUpload } from '$lib/data/sync/engine';
+import type { AuthTokens, AuthUser, RemoteFocusSession, RemoteTask, UserPreference } from '$lib/data/remote/types';
+import { runFullPull, runInitialUpload } from '$lib/data/sync/engine';
+import { remoteToSession, remoteToTask, remoteSettingsToPrefs } from '$lib/data/sync/mappers';
+import { mergePrefs, mergeSessions, mergeTasks } from '$lib/data/sync/merge';
 
 /** @deprecated Prefer `app.tier` — static Free for tests that import TIER. */
 export const TIER: EntitlementTier = 'free';
@@ -69,6 +76,8 @@ class AppState {
 	authError = $state<string | null>(null);
 	syncBusy = $state(false);
 	lastSyncMessage = $state<string | null>(null);
+	/** ISO time of the last successful full round-trip sync, for display. */
+	lastSyncAt = $state<string | null>(null);
 	/** Server already had data — show merge notice after upload. */
 	mergeNotice = $state<string | null>(null);
 	accessToken = $state<string | null>(null);
@@ -77,6 +86,10 @@ class AppState {
 	#tickHandle: ReturnType<typeof setInterval> | null = null;
 	#wakeLock: WakeLockSentinel | null = null;
 	#toastTimer: ReturnType<typeof setTimeout> | null = null;
+	/** Epoch ms of the last cloud pull — throttles refresh-on-refocus. */
+	#lastPullAt = 0;
+	/** Debounced auto-sync handle (push local mutations up when Everywhere). */
+	#pushTimer: ReturnType<typeof setTimeout> | null = null;
 
 	async init() {
 		if (!browser) {
@@ -90,6 +103,9 @@ class AppState {
 		}
 		this.tasks = await listAllTasks();
 		this.sessions = await listSessions();
+		const syncMeta = await getSyncMeta();
+		this.lastSyncAt = syncMeta.lastSyncAt;
+		this.#lastPullAt = syncMeta.lastPullAt ?? 0;
 		this.applyTheme(this.prefs.theme);
 		this.focusSession = createIdleSession(this.selectedMode, {
 			workMinutes: this.prefs.pomodoroWorkMinutes
@@ -137,6 +153,7 @@ class AppState {
 		this.prefs = { ...this.prefs, ...partial };
 		if (partial.theme) this.applyTheme(partial.theme);
 		if (browser) await savePreferences(this.prefs);
+		this.#schedulePush();
 	}
 
 	applyTheme(theme: ThemePreference) {
@@ -308,6 +325,7 @@ class AppState {
 		};
 		await upsertTask(task);
 		this.tasks = await listAllTasks();
+		this.#schedulePush();
 		return { ok: true };
 	}
 
@@ -321,11 +339,13 @@ class AppState {
 		};
 		await upsertTask(updated);
 		this.tasks = await listAllTasks();
+		this.#schedulePush();
 	}
 
 	async deleteTask(id: string) {
 		await removeTask(id);
 		this.tasks = await listAllTasks();
+		this.#schedulePush();
 	}
 
 	async reorderTasks(orderedIds: string[]) {
@@ -336,6 +356,7 @@ class AppState {
 			await upsertTask({ ...task, order: i, updatedAt: now });
 		}
 		this.tasks = await listAllTasks();
+		this.#schedulePush();
 	}
 
 	async login(email: string, password: string) {
@@ -376,12 +397,19 @@ class AppState {
 				/* still clear local session */
 			}
 		}
+		if (this.#pushTimer) {
+			clearTimeout(this.#pushTimer);
+			this.#pushTimer = null;
+		}
 		this.accessToken = null;
 		this.#refreshToken = null;
 		this.user = null;
 		this.mergeNotice = null;
 		this.lastSyncMessage = null;
+		this.lastSyncAt = null;
+		this.#lastPullAt = 0;
 		await clearAuthMeta();
+		await clearSyncMeta();
 		this.showToastKey('toast.signedOut');
 	}
 
@@ -398,8 +426,10 @@ class AppState {
 	}
 
 	/**
-	 * Upload local Free data to cloud (initial-upload). Requires Everywhere.
-	 * Shows merge notice when server already had data.
+	 * Full round-trip sync: upload local snapshot (initial-upload is idempotent
+	 * and upserts), then apply the merged server state back to IndexedDB. This
+	 * is the single primitive that makes the web bidirectional. Requires
+	 * Everywhere.
 	 */
 	async syncNow() {
 		if (!this.#api || !this.isSignedIn) {
@@ -421,16 +451,90 @@ class AppState {
 				sessions: this.sessions,
 				prefs: this.prefs
 			});
+			const merged = await this.#applyServerSnapshot(result.tasks, result.sessions, result.settings);
 			if (result.hasExistingData) {
 				this.mergeNotice = 'sync.mergeExisting';
+				this.showToastKey('toast.syncMerged');
+			} else {
+				this.showToastKey('toast.syncOk');
 			}
+			this.lastSyncAt = merged.updatedAt;
+			this.#lastPullAt = Date.now();
+			await saveSyncMeta({ lastSyncAt: this.lastSyncAt, lastPullAt: this.#lastPullAt });
 			this.lastSyncMessage = 'sync.ok';
-			this.showToastKey('toast.syncOk');
 		} catch (e) {
 			this.lastSyncMessage = e instanceof ApiError ? e.code : 'sync_failed';
 		} finally {
 			this.syncBusy = false;
 		}
+	}
+
+	/**
+	 * Read-only pull: fetch the full server state and merge it into local. Used
+	 * for refresh-on-refocus and manual "refresh from cloud". Does not push.
+	 */
+	async pullFromCloud(): Promise<boolean> {
+		if (!this.#api || !this.isSignedIn || !this.canUseEverywhereSync) return false;
+		try {
+			const pulled = await runFullPull(this.#api);
+			const merged = await this.#applyServerSnapshot(pulled.tasks, pulled.sessions, pulled.settings);
+			this.lastSyncAt = pulled.serverTimestamp;
+			this.#lastPullAt = Date.now();
+			await saveSyncMeta({ lastSyncAt: this.lastSyncAt, lastPullAt: this.#lastPullAt });
+			this.showToastKey('toast.syncPullDone');
+			return true;
+		} catch {
+			this.lastSyncMessage = 'sync.pullError';
+			return false;
+		}
+	}
+
+	/**
+	 * Reverse-map remote entities to local shape, LWW-merge with the current
+	 * arrays, persist the merged superset to IndexedDB, and refresh reactive
+	 * state. Returns the resulting `updatedAt` watermark.
+	 */
+	async #applyServerSnapshot(
+		remoteTasks: RemoteTask[],
+		remoteSessions: RemoteFocusSession[],
+		settings: UserPreference[]
+	): Promise<{ updatedAt: string }> {
+		const remoteTasksLocal = remoteTasks.map((rt, i) => remoteToTask(rt, i));
+		const remoteSessionsLocal = remoteSessions.map(remoteToSession);
+		const remotePrefsPartial = remoteSettingsToPrefs(settings);
+
+		const mergedTasks = mergeTasks(this.tasks, remoteTasksLocal);
+		const mergedSessions = mergeSessions(this.sessions, remoteSessionsLocal);
+		const mergedPrefs = mergePrefs(this.prefs, remotePrefsPartial);
+
+		await saveAllTasks(mergedTasks);
+		await saveAllSessions(mergedSessions);
+		if (Object.keys(remotePrefsPartial).length > 0) {
+			this.prefs = mergedPrefs;
+			if (remotePrefsPartial.theme) this.applyTheme(mergedPrefs.theme);
+			await savePreferences(mergedPrefs);
+		}
+
+		this.tasks = mergedTasks;
+		this.sessions = mergedSessions;
+
+		const all = [...mergedTasks.map((t) => t.updatedAt), ...mergedSessions.map((s) => s.updatedAt)];
+		const updatedAt = all.length ? all.sort().at(-1)! : new Date().toISOString();
+		return { updatedAt };
+	}
+
+	/**
+	 * Debounced auto-sync: when an Everywhere user mutates local data, push the
+	 * change up after a short quiet period so bursts coalesce into one request.
+	 * No-op when signed-out or not entitled.
+	 */
+	#schedulePush(delayMs = 3000) {
+		if (!browser || !this.isSignedIn || !this.canUseEverywhereSync) return;
+		if (this.#pushTimer) clearTimeout(this.#pushTimer);
+		this.#pushTimer = setTimeout(() => {
+			this.#pushTimer = null;
+			void this.syncNow();
+		}, delayMs);
 	}
 
 	async #applyAuth(user: AuthUser, tokens: AuthTokens) {
@@ -444,6 +548,11 @@ class AppState {
 			await this.#persistAuthMeta();
 		} catch {
 			/* keep login user payload */
+		}
+		// First sync: upload local Free data and pull the merged cloud state.
+		// Fire-and-forget so the UI never blocks on login.
+		if (this.canUseEverywhereSync) {
+			void this.syncNow();
 		}
 	}
 
@@ -502,6 +611,7 @@ class AppState {
 		if (session.status !== 'completed' && session.status !== 'skipped') return;
 		await saveSession(session);
 		this.sessions = await listSessions();
+		this.#schedulePush();
 	}
 
 	#startTicker() {
@@ -566,6 +676,11 @@ class AppState {
 				this.nowMs = Date.now();
 				if (this.focusSession.status === 'running') {
 					void this.#requestWakeLock();
+				}
+				// Pull fresh data from the cloud when returning to the tab, but
+				// throttle to once per minute so we don't hammer the backend.
+				if (this.isSignedIn && this.canUseEverywhereSync && Date.now() - this.#lastPullAt > 60_000) {
+					void this.pullFromCloud();
 				}
 			}
 		});

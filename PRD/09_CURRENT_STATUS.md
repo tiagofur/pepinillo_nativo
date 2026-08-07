@@ -17,12 +17,12 @@
 | Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
 | Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |
 | Windows (desktop) | **Excellence W0–W15 code merged** (parity depth + desktop craft + Store kit); **ops left:** WinUI smoke (#575) + Partner Center (#568) | ~100+ C#/XAML | ~6K+ | CI: Core tests + x64/ARM64 build + MSIX pack |
-| Web (companion) | **W1 Free shell** + polish; **W2 auth/sync client** (email login, entitlement, initial-upload; needs API URL + Everywhere) | Svelte/TS | greenfield | `pnpm test` + `pnpm test:e2e` + `pnpm build` |
+| Web (companion) | **W1 Free shell** + polish; **W2 auth + bidirectional sync** (email login, entitlement, initial-upload round-trip with merge-back, full-pull, auto-sync on mutation + refocus; needs API URL + Everywhere) | Svelte/TS | greenfield | `pnpm test` + `pnpm test:e2e` + `pnpm build` |
 | Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
 
 **Windows tracking docs:** product PRD [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · execution plan [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
 
-**Web companion:** Decision [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md) approved · SDD `web-client` · path `web/` · **W1 Free offline shell** + polish (e2e, wake lock, export, prefs) · **W2**: email register/login, token refresh, `/users/me` entitlement, `POST /sync/initial-upload` when Everywhere (configure `PUBLIC_API_BASE_URL` + CORS). Residual: WS invalidation, Google OAuth web, full bidirectional continuous sync. Marketing NG6: keep noindex until verified live.
+**Web companion:** Decision [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md) approved · SDD `web-client` · path `web/` · **W1 Free offline shell** + polish (e2e, wake lock, export, prefs) · **W2**: email register/login, token refresh, `/users/me` entitlement, `POST /sync/initial-upload` when Everywhere (configure `PUBLIC_API_BASE_URL` + CORS), **bidirectional sync** — initial-upload round-trip applies the merged server state back to IndexedDB (LWW merge of tasks/sessions/prefs), `GET /sync/full` paginated pull, auto-sync on local mutations (debounced) and on tab refocus (throttled 60s). Residual: WS live invalidation (backend does not yet emit `sync_required`), Google OAuth web, fine-grained dirty-tracking. Marketing NG6: keep noindex until verified live.
 
 ### Monetization Direction (2026-04-22, v3.1)
 

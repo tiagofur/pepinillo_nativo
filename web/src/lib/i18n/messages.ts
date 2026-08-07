@@ -101,6 +101,8 @@ export type MessageKey =
 	| 'toast.registered'
 	| 'toast.signedOut'
 	| 'toast.syncOk'
+	| 'toast.syncMerged'
+	| 'toast.syncPullDone'
 	| 'account.signIn'
 	| 'account.signUp'
 	| 'account.signOut'
@@ -117,6 +119,9 @@ export type MessageKey =
 	| 'sync.everywhereRequired'
 	| 'sync.mergeExisting'
 	| 'sync.ok'
+	| 'sync.pullError'
+	| 'sync.lastSync'
+	| 'sync.autoSyncOn'
 	| 'auth.required'
 	| 'account.tier'
 	| 'account.tierFree'
@@ -242,6 +247,8 @@ const en: Dict = {
 	'toast.registered': 'Account created.',
 	'toast.signedOut': 'Signed out.',
 	'toast.syncOk': 'Local data uploaded.',
+	'toast.syncMerged': 'Data combined from your devices.',
+	'toast.syncPullDone': 'Updated from the cloud.',
 	'account.signIn': 'Sign in',
 	'account.signUp': 'Create account',
 	'account.signOut': 'Sign out',
@@ -261,6 +268,9 @@ const en: Dict = {
 	'sync.mergeExisting':
 		'Server already had data for this account. Local data was merged (LWW). Review tasks on other devices.',
 	'sync.ok': 'Upload complete.',
+	'sync.pullError': 'Could not refresh from the cloud. Try again.',
+	'sync.lastSync': 'Last sync',
+	'sync.autoSyncOn': 'Auto-sync on — changes sync across devices.',
 	'auth.required': 'Sign in first.',
 	'account.tier': 'Plan',
 	'account.tierFree': 'Free · local browser only',
@@ -406,6 +416,8 @@ const es: Dict = {
 	'toast.registered': 'Cuenta creada.',
 	'toast.signedOut': 'Sesión cerrada.',
 	'toast.syncOk': 'Datos locales subidos.',
+	'toast.syncMerged': 'Datos combinados de tus dispositivos.',
+	'toast.syncPullDone': 'Actualizado desde la nube.',
 	'account.signIn': 'Iniciar sesión',
 	'account.signUp': 'Crear cuenta',
 	'account.signOut': 'Cerrar sesión',
@@ -425,6 +437,9 @@ const es: Dict = {
 	'sync.mergeExisting':
 		'El servidor ya tenía datos. Se fusionó lo local (LWW). Revisá en otros dispositivos.',
 	'sync.ok': 'Subida completa.',
+	'sync.pullError': 'No se pudo actualizar desde la nube. Intentá de nuevo.',
+	'sync.lastSync': 'Última sync',
+	'sync.autoSyncOn': 'Auto-sync activo — los cambios se sincronizan entre dispositivos.',
 	'auth.required': 'Iniciá sesión primero.'
 };
 
@@ -554,6 +569,8 @@ const pt: Dict = {
 	'toast.registered': 'Conta criada.',
 	'toast.signedOut': 'Sessão encerrada.',
 	'toast.syncOk': 'Dados locais enviados.',
+	'toast.syncMerged': 'Dados combinados dos seus dispositivos.',
+	'toast.syncPullDone': 'Atualizado da nuvem.',
 	'account.signIn': 'Entrar',
 	'account.signUp': 'Criar conta',
 	'account.signOut': 'Sair',
@@ -573,6 +590,9 @@ const pt: Dict = {
 	'sync.mergeExisting':
 		'O servidor já tinha dados. Local foi mesclado (LWW). Revise nos outros dispositivos.',
 	'sync.ok': 'Envio concluído.',
+	'sync.pullError': 'Não foi possível atualizar da nuvem. Tente novamente.',
+	'sync.lastSync': 'Última sync',
+	'sync.autoSyncOn': 'Auto-sync ativo — as mudanças sincronizam entre dispositivos.',
 	'auth.required': 'Entre primeiro.'
 };
 

@@ -1,4 +1,11 @@
-import type { AuthResponse, AuthTokens, AuthUser, InitialUploadRequest, InitialUploadResponse } from './types';
+import type {
+	AuthResponse,
+	AuthTokens,
+	AuthUser,
+	FullSyncResponse,
+	InitialUploadRequest,
+	InitialUploadResponse
+} from './types';
 
 export class ApiError extends Error {
 	status: number;
@@ -69,8 +76,14 @@ export class ApiClient {
 		});
 	}
 
-	async fullSync(limit = 100): Promise<unknown> {
-		return this.request(`/api/v1/sync/full?limit=${limit}`, { method: 'GET' });
+	async fullSync(opts: { taskCursor?: string; sessionCursor?: string; limit?: number } = {}): Promise<FullSyncResponse> {
+		const params = new URLSearchParams();
+		if (opts.taskCursor) params.set('taskCursor', opts.taskCursor);
+		if (opts.sessionCursor) params.set('sessionCursor', opts.sessionCursor);
+		params.set('limit', String(opts.limit ?? 100));
+		return this.request<FullSyncResponse>(`/api/v1/sync/full?${params.toString()}`, {
+			method: 'GET'
+		});
 	}
 
 	private async requestUnauthed<T>(path: string, init: RequestInit): Promise<T> {

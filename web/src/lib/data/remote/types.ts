@@ -36,6 +36,7 @@ export type RemoteTask = {
 	estimatedPomodoros: number;
 	isDeleted: boolean;
 	updatedAt: string;
+	createdDate?: string | null;
 	category?: string | null;
 };
 
@@ -58,17 +59,40 @@ export type RemoteFocusSession = {
 	updatedAt: string;
 };
 
+/** Backend user preference (key/value row). */
+export type UserPreference = {
+	userId?: string;
+	key: string;
+	value: string;
+	updatedAt?: string;
+};
+
+/** Cursor-paginated page (matches backend `PaginatedPage[T]`). */
+export type PaginatedPage<T> = {
+	items: T[];
+	nextCursor?: string;
+	hasMore: boolean;
+};
+
 export type InitialUploadRequest = {
 	deviceId: string;
 	tasks: RemoteTask[];
 	sessions: RemoteFocusSession[];
-	settings: { key: string; value: string; updatedAt?: string }[];
+	settings: UserPreference[];
 };
 
 export type InitialUploadResponse = {
 	tasks: RemoteTask[];
 	sessions: RemoteFocusSession[];
-	settings: { key: string; value: string }[];
+	settings: UserPreference[];
 	serverTimestamp: string;
 	hasExistingData: boolean;
+};
+
+/** GET /sync/full response. */
+export type FullSyncResponse = {
+	tasks: PaginatedPage<RemoteTask>;
+	sessions: PaginatedPage<RemoteFocusSession>;
+	settings: UserPreference[];
+	serverTimestamp: string;
 };

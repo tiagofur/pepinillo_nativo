@@ -47,10 +47,23 @@
 			'sync.everywhereRequired',
 			'sync.mergeExisting',
 			'sync.ok',
+			'sync.pullError',
 			'auth.required'
 		];
 		if (known.includes(code as MessageKey)) return t(locale, code as MessageKey);
 		return code;
+	}
+
+	function formatSyncTime(iso: string | null): string {
+		if (!iso) return '—';
+		const d = new Date(iso);
+		if (Number.isNaN(d.getTime())) return iso;
+		return d.toLocaleString(locale === 'en' ? 'en-US' : locale === 'es' ? 'es-ES' : 'pt-BR', {
+			hour: '2-digit',
+			minute: '2-digit',
+			day: '2-digit',
+			month: 'short'
+		});
 	}
 </script>
 
@@ -142,12 +155,20 @@
 				<p class="banner banner-soft" style="margin-bottom: var(--space-3);">
 					{t(locale, 'account.everywhereActive')}
 				</p>
+				<p class="muted field-hint" style="margin-bottom: var(--space-3);">
+					{t(locale, 'sync.autoSyncOn')}
+				</p>
 			{:else}
 				<p class="teaser" style="margin-bottom: var(--space-3);">
 					{t(locale, 'account.everywhereInactive')}
 				</p>
 			{/if}
 
+			{#if app.lastSyncAt}
+				<p class="muted field-hint" style="margin-bottom: var(--space-2);">
+					{t(locale, 'sync.lastSync')}: {formatSyncTime(app.lastSyncAt)}
+				</p>
+			{/if}
 			{#if app.mergeNotice}
 				<p class="banner banner-warn">{mapMsg(app.mergeNotice)}</p>
 			{/if}
@@ -164,6 +185,16 @@
 				>
 					{app.syncBusy ? t(locale, 'account.syncing') : t(locale, 'account.syncNow')}
 				</button>
+				{#if app.canUseEverywhereSync}
+					<button
+						class="btn btn-ghost btn-block"
+						type="button"
+						disabled={app.syncBusy}
+						onclick={() => app.pullFromCloud()}
+					>
+						{t(locale, 'toast.syncPullDone')}
+					</button>
+				{/if}
 				<button
 					class="btn btn-ghost btn-block"
 					type="button"
