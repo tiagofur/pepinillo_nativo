@@ -1310,7 +1310,7 @@ button {
 }
 
 /* ─── Micro-polish: motion, empty, dark, press ─── */
-.app-main > :global(.panel) {
+.app-main > .panel {
 	animation: page-in 0.28s ease both;
 }
 
@@ -1411,8 +1411,55 @@ button {
 	}
 }
 
+/* Toast feedback */
+.toast {
+	position: fixed;
+	left: 50%;
+	bottom: calc(var(--nav-height) + var(--space-4) + var(--safe-bottom));
+	transform: translateX(-50%);
+	z-index: 50;
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	max-width: min(22rem, calc(100vw - 2rem));
+	padding: 0.75rem 0.9rem 0.75rem 1rem;
+	border-radius: var(--radius-pill);
+	background: var(--fg);
+	color: var(--bg);
+	font-size: var(--text-sm);
+	font-weight: 600;
+	box-shadow: var(--shadow);
+	animation: toast-in 0.22s ease both;
+}
+
+.toast-dismiss {
+	border: none;
+	background: transparent;
+	color: inherit;
+	font-size: 1.25rem;
+	line-height: 1;
+	padding: 0.1rem 0.25rem;
+	opacity: 0.75;
+	cursor: pointer;
+}
+
+@keyframes toast-in {
+	from {
+		opacity: 0;
+		transform: translateX(-50%) translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(-50%) translateY(0);
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
-	.app-main > :global(.panel) {
+	.app-main > .panel {
+		animation: none;
+	}
+
+	.toast {
 		animation: none;
 	}
 

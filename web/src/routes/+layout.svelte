@@ -4,7 +4,7 @@
 	import { page } from '$app/stores';
 	import favicon from '$lib/assets/favicon.svg';
 	import { app } from '$lib/stores/app.svelte';
-	import { t } from '$lib/i18n/messages';
+	import { t, type MessageKey } from '$lib/i18n/messages';
 	import NavIcons from '$lib/components/icons/NavIcons.svelte';
 
 	let { children } = $props();
@@ -14,6 +14,15 @@
 	});
 
 	const locale = $derived(app.locale);
+
+	const toastText = $derived.by(() => {
+		const raw = app.toast;
+		if (!raw) return null;
+		if (raw.startsWith('toast.')) {
+			return t(locale, raw as MessageKey);
+		}
+		return raw;
+	});
 
 	async function dismissOnboarding(skip: boolean) {
 		void skip;
@@ -77,6 +86,15 @@
 
 	<p class="app-footer-note">{t(locale, 'footer.companion')}</p>
 </div>
+
+{#if toastText}
+	<div class="toast" role="status" aria-live="polite">
+		<span>{toastText}</span>
+		<button type="button" class="toast-dismiss" onclick={() => app.dismissToast()} aria-label="Dismiss">
+			×
+		</button>
+	</div>
+{/if}
 
 {#if app.onboardingOpen}
 	<div class="overlay" role="dialog" aria-modal="true" aria-labelledby="onboard-title">

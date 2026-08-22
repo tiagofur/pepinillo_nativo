@@ -86,7 +86,20 @@
 	function applySuggestion() {
 		app.selectMode(suggestion.mode);
 	}
+
+	function onKey(e: KeyboardEvent) {
+		if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
+			return;
+		}
+		if (e.code !== 'Space') return;
+		e.preventDefault();
+		if (status === 'idle' || status === 'completed') app.startFocus();
+		else if (status === 'running') app.pauseFocus();
+		else if (status === 'paused') app.resumeFocus();
+	}
 </script>
+
+<svelte:window onkeydown={onKey} />
 
 <section class="panel focus-screen" class:session-active={sessionActive}>
 	{#if !sessionActive}

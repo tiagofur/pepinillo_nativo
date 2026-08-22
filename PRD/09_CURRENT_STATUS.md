@@ -6,6 +6,54 @@
 
 ---
 
+## 1. Overall Status
+
+| Platform        | Status                                                              | Files           | Approx. Lines | Build                |
+| --------------- | ------------------------------------------------------------------- | --------------- | ------------- | -------------------- |
+| iOS (iPhone)    | App Store Ready (Audit P0-P3 fixes applied, ready for review)       | ~143 Swift      | ~30K          | BUILD SUCCESSFUL (Pepinillo Dev, iPhone 17 Pro simulator) |
+| watchOS         | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included      | Requires Xcode setup |
+| Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
+| Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |
+| Windows (desktop) | **Excellence W0–W15 code merged** (parity depth + desktop craft + Store kit); **ops left:** WinUI smoke (#575) + Partner Center (#568) | ~100+ C#/XAML | ~6K+ | CI: Core tests + x64/ARM64 build + MSIX pack |
+| Web (companion) | **W1 Free shell on main** + polish (e2e smoke, wake lock, export JSON, pomodoro prefs, toasts) | Svelte/TS | greenfield | `pnpm test` + `pnpm test:e2e` + `pnpm build` |
+| Backend (Go)    | Complete REST API (not deployed)                                    | ~50 Go          | ~8K           | Functional locally   |
+
+**Windows tracking docs:** product PRD [11_WINDOWS_APP_PRD_AND_ROADMAP.md](11_WINDOWS_APP_PRD_AND_ROADMAP.md) · execution plan [12_WINDOWS_EXECUTION_PLAN.md](12_WINDOWS_EXECUTION_PLAN.md)
+
+**Web companion:** Decision [PRD/14](14_WEB_CLIENT_DECISION_BRIEF.md) approved · SDD `web-client` · path `web/` · **W1 Free offline shell** (Pomodoro + Stopwatch, ≤3 tasks, 7-day analytics, EN/ES/PT) + polish: Playwright smoke, Screen Wake Lock while running, session toasts, local JSON export, pomodoro length prefs, Space start/pause. W2+ Everywhere auth/sync needs prod API + CORS. Marketing NG6: keep noindex until verified live.
+
+### Monetization Direction (2026-04-22, v3.1)
+
+- **Approved commercial model:** Pepinillo+ (one-time, NOT a subscription) + Everywhere/AI+ (recurring sync + Advanced AI).
+- **Naming finalized (v3.1):** "Pepinillo+" for the one-time purchase, "Everywhere/AI+" for the subscription. Entitlement IDs: `pepinillo_plus` + `everywhere_plus`.
+- **Product ID reuse:** Existing `pro.lifetime` → Pepinillo+, `pro.monthly`/`pro.annual` → Everywhere/AI+. No new SKUs needed.
+- **Apple Intelligence as hero:** On-device AI Reports (Foundation Models + template fallback) is the primary differentiator.
+- **Próximamente strategy:** Everywhere/AI+ features (Backend Sync, AI Coach, Task Scheduling, Subtask Gen) shown only in paywall with subtle badge.
+- **Transparency principle:** Pepinillo+ is explicitly "One purchase. Yours forever. Not a subscription."
+- **Prices (global):** Pepinillo+ $19.99 one-time · Everywhere/AI+ $4.99/month · $34.99/year.
+- **Prices (LATAM):** Pepinillo+ $9.99 · Everywhere/AI+ $2.49/month · $17.99/year.
+- **Implementation status (code — done):**
+  - [x] `AppConfig.aiInsightsEnabled = true`
+  - [x] `PaywallView.swift` — two-tier design, "NOT a subscription" badge, Apple Intelligence as hero
+  - [x] `SubscriptionClient.swift` — `pepinillo_plus`/`everywhere_plus` entitlements, legacy `premium`/`pro` fallback
+  - [x] `UserCapabilities.swift` — granular capability model
+  - [x] `Pepinillo.storekit` — renamed to "Pepinillo+" / "Everywhere/AI+ Monthly" / "Everywhere/AI+ Annual", prices $19.99/$4.99/$34.99
+  - [x] Mock display names and prices aligned to v3.1
+- **Implementation status (external — manual tasks remaining):**
+  - [ ] **[BLOCKER]** Update revoked API keys in RevenueCat (App Store Connect API: `22YZT9D55J` · In-App Purchase: `Z95PS2LD73`)
+  - [ ] Complete metadata + rename products in App Store Connect
+  - [ ] Create `pepinillo_plus` + `everywhere_plus` entitlements in RevenueCat
+  - [ ] Create new RevenueCat offerings with canonical naming
+  - [ ] Configure S2S Notifications webhook in App Store Connect
+
+### Product Reset Direction (2026-04-21)
+
+- **Hero user:** knowledge worker / creative doing deep work daily.
+- **Canonical product pillars:** `Execute`, `Plan`, `Reflect`, and `Admin`.
+- **Canonical phone surfaces:** `Focus`, `Plan`, and `Dashboard` as primary destinations; `Account / Admin` lives outside the main productivity axis.
+- **Current runtime baseline during transition:** iPhone ships `Focus / Plan / Dashboard / More`; Android phone is converging to the same shell while ownership is consolidated.
+- **Current product gaps:** task depth is still too light, Dashboard/reviews are not yet a unified reflection engine, and AI positioning is more defined in strategy than in product behavior.
+- **Immediate product priority:** stop accumulating disconnected surfaces and redesign screen ownership before major new feature expansion.
 # 1. Product Phase
 
 Pepinillo has moved from a product construction phase into a **growth validation phase**.
