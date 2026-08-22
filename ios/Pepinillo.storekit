@@ -20,9 +20,19 @@
       "internalID" : "A87542D8",
       "localizations" : [
         {
-          "description" : "One purchase. Yours forever. Full local premium, Apple Intelligence, iCloud sync, all widgets, full watchOS companion. Not a subscription.",
+          "description" : "Local premium, iCloud sync, on-device AI",
           "displayName" : "Pepinillo+",
           "locale" : "en_US"
+        },
+        {
+          "description" : "Premium local, iCloud e IA en el dispositivo",
+          "displayName" : "Pepinillo+",
+          "locale" : "es_ES"
+        },
+        {
+          "description" : "Premium local, iCloud e IA no dispositivo",
+          "displayName" : "Pepinillo+",
+          "locale" : "pt_BR"
         }
       ],
       "productID" : "com.pepinillo.app.pro.lifetime",
@@ -66,9 +76,19 @@
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features. Billed monthly.",
+              "description" : "Pepinillo+ with sync and recovery. Monthly.",
               "displayName" : "Everywhere/AI+ Monthly",
               "locale" : "en_US"
+            },
+            {
+              "description" : "Pepinillo+: sincroniza y recupera. Mensual.",
+              "displayName" : "Everywhere/AI+ Mensual",
+              "locale" : "es_ES"
+            },
+            {
+              "description" : "Pepinillo+: sincroniza e recupera. Mensal.",
+              "displayName" : "Everywhere/AI+ Mensal",
+              "locale" : "pt_BR"
             }
           ],
           "productID" : "com.pepinillo.app.pro.monthly",
@@ -94,9 +114,19 @@
           "introductoryOffer" : null,
           "localizations" : [
             {
-              "description" : "Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features. Billed annually — save 42% vs monthly.",
+              "description" : "Pepinillo+ with sync and recovery. Annual.",
               "displayName" : "Everywhere/AI+ Annual",
               "locale" : "en_US"
+            },
+            {
+              "description" : "Pepinillo+: sincroniza y recupera. Anual.",
+              "displayName" : "Everywhere/AI+ Anual",
+              "locale" : "es_ES"
+            },
+            {
+              "description" : "Pepinillo+: sincroniza e recupera. Anual.",
+              "displayName" : "Everywhere/AI+ Anual",
+              "locale" : "pt_BR"
             }
           ],
           "productID" : "com.pepinillo.app.pro.annual",

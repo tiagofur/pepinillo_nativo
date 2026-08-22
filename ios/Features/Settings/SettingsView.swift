@@ -421,7 +421,7 @@ struct SettingsView: View {
     private var syncStatusFooter: String {
         switch store.syncStatus {
         case .appleCloudActive:
-            return String(localized: "Tasks, sessions, and analytics sync across your Apple devices via iCloud.")
+            return String(localized: "Tasks, sessions, settings, and analytics sync between iPhone and iPad via iCloud.")
         case .activatingAppleCloud:
             return String(localized: "Setting up your iCloud store. This usually takes a few seconds.")
         case .appleCloudUnavailable:

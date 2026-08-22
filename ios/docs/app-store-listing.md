@@ -39,7 +39,7 @@ Focus, Flow & Get Things Done
 ### Promotional Text (max 170 characters)
 *Can be changed anytime without a new version.*
 ```
-Master your focus with Pomodoro, Flowtime & Time Blocks. Track your productivity, build streaks, and unlock your best work — on iPhone, iPad, Mac & Apple Watch.
+Master your focus with Pomodoro, Flowtime & Time Blocks. Track productivity, build streaks, and do your best work on iPhone, iPad & Apple Watch.
 ```
 
 ### Description (max 4000 characters)
@@ -82,13 +82,13 @@ DESIGNED FOR YOUR BRAIN
 
 ADHD-friendly guided breaks suggest activities like stretching, walking, or breathing exercises. Session journaling lets you reflect on each work session. Four beautiful themes (Classic, Forest, Ocean, Sunset) let you make it yours.
 
-FLEXIBLE PRO UPGRADE
+FLEXIBLE PREMIUM UPGRADE
 
 Pepinillo is free with Pomodoro and Stopwatch modes included. Unlock more with two tiers:
 
 • **Pepinillo+** — One-time purchase. Full local premium: Flowtime, Time Block, premium soundscapes, advanced analytics, AI-powered Weekly Reports, streak protection, all widgets, and full Apple Watch companion.
-• **Everywhere/AI+** — Monthly or annual subscription. Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features.
-• No ads. No tracking. Your data stays on your device.
+• **Everywhere/AI+** — Monthly or annual subscription. Everything in Pepinillo+ plus Pepinillo account sync and account-based recovery on iPhone and iPad.
+• No ads. No tracking. Pepinillo works without an account. If you sign in or enable sync, the data needed for those features is sent to the relevant service providers.
 
 Start focusing better today. Your best work is waiting.
 ```
@@ -128,7 +128,7 @@ Enfócate, Fluye y Produce Más
 
 ### Promotional Text (max 170 characters)
 ```
-Domina tu enfoque con Pomodoro, Tiempo Fluido y Bloques de Tiempo. Mide tu productividad, construye rachas y haz tu mejor trabajo — en iPhone, iPad, Mac y Apple Watch.
+Domina tu enfoque con Pomodoro, Tiempo Fluido y Bloques de Tiempo. Mide tu productividad, crea rachas y haz tu mejor trabajo en iPhone, iPad y Apple Watch.
 ```
 
 ### Description (max 4000 characters)
@@ -171,13 +171,13 @@ DISEÑADO PARA TU CEREBRO
 
 Descansos guiados amigables con TDAH que sugieren actividades como estirarse, caminar o ejercicios de respiración. El diario de sesiones te permite reflexionar sobre cada sesión de trabajo. Cuatro temas hermosos (Clásico, Bosque, Océano, Atardecer) para hacerlo tuyo.
 
-UPGRADE PRO FLEXIBLE
+MEJORA PREMIUM FLEXIBLE
 
 Pepinillo es gratis con los modos Pomodoro y Cronómetro incluidos. Desbloquea más con dos niveles:
 
 • **Pepinillo+** — Compra única. Premium local completo: Tiempo Fluido, Bloque de Tiempo, paisajes sonoros premium, analíticas avanzadas, Informes Semanales con IA, protección de rachas, todos los widgets y compañero Apple Watch completo.
-• **Everywhere/AI+** — Suscripción mensual o anual. Todo lo de Pepinillo+ más sincronización backend multiplataforma y funciones avanzadas de IA en la nube.
-• Sin anuncios. Sin rastreo. Tus datos se quedan en tu dispositivo.
+• **Everywhere/AI+** — Suscripción mensual o anual. Todo lo de Pepinillo+ más sincronización y recuperación con tu cuenta de Pepinillo en iPhone y iPad.
+• Sin anuncios. Sin rastreo. Pepinillo funciona sin una cuenta. Si inicias sesión o activas la sincronización, los datos necesarios para esas funciones se envían a los proveedores correspondientes.
 
 Empieza a enfocarte mejor hoy. Tu mejor trabajo te está esperando.
 ```
@@ -205,18 +205,54 @@ pomodoro,enfoque,timer,trabajo profundo,productividad,tareas,tdah,concentración
 
 ## App Privacy (Data Collection Declaration)
 
-### Data Collected
+> **Submission rule:** App Store Connect is the live, app-level declaration. This repository cannot prove its current published state. Before every submission, compare the release archive's Xcode privacy report with the table below, update App Store Connect manually, preview the product-page label, and publish the answers.
 
-| Category | Data Type | Linked to Identity | Used for Tracking |
-|----------|-----------|-------------------|-------------------|
-| Health & Fitness | Health | No | No |
+### App Store Connect answers for the current iOS release
 
-**Purpose:** App Functionality (Mindful Minutes logged to Apple Health)
+Start with **Yes, we collect data from this app**. Use the following answers for all iOS/watchOS variants of the App Store app. Apple requires the declaration to include first-party behavior and integrated third-party partners.
 
-### Data Not Collected
+| Category | Data type | Source and condition | Linked to identity | Tracking | Purpose |
+|---|---|---|---|---|---|
+| Contact Info | Name | Optional account registration, Sign in with Apple, or profile editing | Yes | No | App Functionality |
+| Contact Info | Email Address | Optional account authentication, verification, recovery, or profile editing | Yes | No | App Functionality |
+| Identifiers | User ID | Pepinillo account ID; also passed to RevenueCat when an authenticated account is identified | Yes | No | App Functionality |
+| User Content | Photos or Videos | Optional profile photo selected and uploaded by an authenticated user | Yes | No | App Functionality |
+| Purchases | Purchase History | Store product and entitlement state processed by RevenueCat; linked after Pepinillo account identification | Yes | No | App Functionality |
+| Usage Data | Product Interaction | Task-completion and focus-session activity retained for account/backend sync | Yes | No | App Functionality |
+| User Content | Other User Content | Task titles, descriptions, subtasks, and imported reminder content retained for account/backend sync | Yes | No | App Functionality |
+| Other Data | Other Data Types | Source IP retained in the backend's in-memory authentication rate limiter for approximately one minute | Yes | No | App Functionality |
+| Diagnostics | Crash Data | Sentry when the submitted non-debug build has a non-empty DSN | No | No | App Functionality |
+| Diagnostics | Performance Data | Sentry performance tracing and app-hang monitoring when the submitted non-debug build has a non-empty DSN | No | No | App Functionality |
+| Diagnostics | Other Diagnostic Data | Sentry diagnostic context and automatic breadcrumbs when the submitted non-debug build has a non-empty DSN | No | No | App Functionality |
 
-If you do NOT use any analytics SDK and only store data locally:
-Select **"Data Not Collected"** for all other categories.
+Do not select Analytics as a purpose for the focus history above. The current implementation uses it to provide the user's own productivity features, not to measure Pepinillo's audience or product performance. The repository's Production configuration leaves `SENTRY_DSN` empty; keep the three Diagnostics types only if the final submitted build injects a DSN and actually enables Sentry.
+
+Apple instructs developers who retain IP addresses to choose a data type based on how the address is used. Pepinillo uses the source IP temporarily as a security rate-limit key—not for location, technical diagnostics, or as its persistent client-generated device ID—so **Other Data Types** is the conservative fit. It is marked linked because the raw network identifier is not de-identified before its short in-memory retention, and App Functionality covers security and fraud prevention.
+
+### On-device, Apple-service, and request-scoped data
+
+These integrations do not add a collected-data type under the current implementation:
+
+| Data | Current behavior | Submission decision |
+|---|---|---|
+| Apple Health mindful sessions | The app writes Mindful Minutes to HealthKit and requests no HealthKit read types. Pepinillo does not send HealthKit data to its backend or Sentry. | Do not select Health. Data processed only on device is not collected; Apple collects its own service data separately. |
+| Apple Reminders | The app reads incomplete reminders locally. After import, the resulting task can be synced and is then covered by Other User Content. | Do not select Contacts or a separate Reminders type. |
+| Apple Calendar | The app creates and removes focus events through EventKit. It does not send calendar records to Pepinillo or Sentry. | No collected-data type is added for the current on-device behavior. |
+| Apple CloudKit | When enabled, tasks, sessions, settings, analytics, and cached account/profile fields leave the device for the user's private iCloud database. Cached profile data is already represented by Name, Email Address, User ID, and Photos or Videos. The current app does not send that private CloudKit content to Pepinillo's backend. | Apple says developers are not responsible for data collected by Apple. The same account, profile, task, and session categories are already disclosed above because first-party account/backend paths can retain them. |
+| Payment information | Apple handles payment credentials; Pepinillo and RevenueCat receive product/entitlement history, not card or bank details. | Select Purchase History, not Payment Info. |
+| Client-generated sync device ID | Used to exclude the originating live sync connection and not retained by the current backend after servicing that request. This is separate from the source IP retained by the auth rate limiter. | Do not select Device ID for this request-scoped identifier. Declare the retained IP separately as Other Data Types, as shown above. Reassess if backend or SDK retention changes. |
+| Local-only mode | Tasks, sessions, and settings remain on the device while the user stays local-only. | This does not remove the other declarations because Apple requires disclosure of collection that occurs for optional account/sync users. |
+
+### Privacy manifest versus App Store Connect
+
+- `ios/App/PrivacyInfo.xcprivacy` declares first-party collection and required-reason API usage in the app target. It does not update App Store Connect.
+- Sentry and RevenueCat include their own privacy manifests in the built archive. Xcode merges those manifests into the privacy report; App Store Connect still needs the app-level answers above.
+- The main manifest intentionally declares the account-linked RevenueCat purchase state because Pepinillo passes its backend user ID to RevenueCat after sign-in.
+- The app and SDK manifests confirm **no tracking**. Pepinillo does not link app data with third-party data for advertising or advertising measurement.
+
+Official Apple references: [App privacy details](https://developer.apple.com/app-store/app-privacy-details/), [Manage app privacy](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-app-privacy), [Privacy manifest files](https://developer.apple.com/documentation/bundleresources/privacy-manifest-files), and [required-reason API values](https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitypereasons).
+
+This repository guidance covers the iOS/watchOS App Store submission only. Google Play declarations remain part of issue [#618](https://github.com/tiagofur/pepinillo_nativo/issues/618) and must be handled separately before that issue is closed.
 
 ---
 
@@ -230,11 +266,15 @@ Select **"Data Not Collected"** for all other categories.
 
 **Pepinillo+ (EN):**
 - Display Name: Pepinillo+
-- Description: One purchase. Yours forever. Full local premium, Apple Intelligence, iCloud sync, all widgets, full watchOS companion. Not a subscription.
+- Description: Local premium, iCloud sync, on-device AI
 
 **Pepinillo+ (ES):**
 - Display Name: Pepinillo+
-- Description: Una sola compra. Para siempre. Premium local completo, Apple Intelligence, sincronización iCloud, todos los widgets y compañero watchOS completo. No es una suscripción.
+- Description: Premium local, iCloud e IA en el dispositivo
+
+**Pepinillo+ (PT):**
+- Display Name: Pepinillo+
+- Description: Premium local, iCloud e IA no dispositivo
 
 ---
 
@@ -249,19 +289,27 @@ Select **"Data Not Collected"** for all other categories.
 
 **Everywhere/AI+ Monthly (EN):**
 - Display Name: Everywhere/AI+ Monthly
-- Description: Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features. Billed monthly.
+- Description: Pepinillo+ with sync and recovery. Monthly.
 
 **Everywhere/AI+ Monthly (ES):**
 - Display Name: Everywhere/AI+ Mensual
-- Description: Todo lo de Pepinillo+ más sincronización backend multiplataforma y funciones avanzadas de IA en la nube. Cobro mensual.
+- Description: Pepinillo+: sincroniza y recupera. Mensual.
+
+**Everywhere/AI+ Monthly (PT):**
+- Display Name: Everywhere/AI+ Mensal
+- Description: Pepinillo+: sincroniza e recupera. Mensal.
 
 **Everywhere/AI+ Annual (EN):**
 - Display Name: Everywhere/AI+ Annual
-- Description: Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features. Billed annually — save 42% vs monthly.
+- Description: Pepinillo+ with sync and recovery. Annual.
 
 **Everywhere/AI+ Annual (ES):**
 - Display Name: Everywhere/AI+ Anual
-- Description: Todo lo de Pepinillo+ más sincronización backend multiplataforma y funciones avanzadas de IA en la nube. Cobro anual — ahorra 42% vs mensual.
+- Description: Pepinillo+: sincroniza y recupera. Anual.
+
+**Everywhere/AI+ Annual (PT):**
+- Display Name: Everywhere/AI+ Anual
+- Description: Pepinillo+: sincroniza e recupera. Anual.
 
 > **Legacy product IDs (grandfathered — do NOT create as new products):**
 > `com.pepinillo.pro.monthly`, `com.pepinillo.pro.annual` → mapped to Everywhere/AI+
@@ -295,7 +343,7 @@ No action needed in App Store Connect for this.
 ```
 Pepinillo is a focus timer and productivity app. No login is required.
 
-To test Pro features: The app uses StoreKit 2 via RevenueCat. In the sandbox/TestFlight environment, purchase "Pepinillo+" (one-time, $19.99) or subscribe to "Everywhere/AI+" (monthly $4.99 / annual $34.99) to test Pro features: Flowtime mode, Time Block mode, premium soundscapes, advanced analytics, AI-powered Weekly Reports, and streak protection.
+To test paid features: The app uses StoreKit 2 via RevenueCat. In the sandbox/TestFlight environment, purchase "Pepinillo+" (one-time, $19.99) or subscribe to "Everywhere/AI+" (monthly $4.99 / annual $34.99) to test paid features: Flowtime mode, Time Block mode, premium soundscapes, advanced analytics, AI-powered Weekly Reports, and streak protection.
 
 The app integrates with:
 - Apple Health (writes Mindful Minutes)
