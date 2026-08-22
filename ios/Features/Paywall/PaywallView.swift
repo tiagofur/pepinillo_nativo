@@ -13,6 +13,16 @@ struct PaywallView: View {
     @Bindable var store: StoreOf<PaywallFeature>
     @Namespace private var glassNS
 
+    private var purchaseAlertTitle: String {
+        if store.subscriptionState.isEverywhere {
+            return String(localized: "Welcome to Everywhere/AI+! 🎉")
+        }
+        if store.subscriptionState.isPro {
+            return String(localized: "Welcome to Pepinillo+! 🎉")
+        }
+        return String(localized: "Purchase Status")
+    }
+
     var body: some View {
         NavigationStack {
             PaywallContentBody(store: store, glassNamespace: glassNS)
@@ -42,9 +52,7 @@ struct PaywallView: View {
                 }
             }
             .alert(
-                store.subscriptionState.isPro
-                    ? String(localized: "Welcome to Pepinillo+! 🎉")
-                    : String(localized: "Purchase Status"),
+                purchaseAlertTitle,
                 isPresented: Binding(
                     get: { store.purchaseResult != nil },
                     set: { if !$0 { store.send(.alertDismissed) } }
@@ -125,7 +133,7 @@ struct PaywallHeaderSection: View {
                     .lineLimit(3)
                     .minimumScaleFactor(0.86)
 
-                Text(String(localized: "Pepinillo+ keeps your Apple devices in sync with iCloud. Everywhere/AI+ adds the Pepinillo cloud so your data can travel beyond Apple and power server AI."))
+                Text(String(localized: PaywallCommercialClaims.headerBody))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -154,13 +162,8 @@ struct PaywallTierComparisonSection: View {
                 eyebrow: String(localized: "One-time Apple unlock"),
                 icon: "apple.logo",
                 tint: .green,
-                summary: String(localized: "Best if you live on iPhone, iPad, Mac, Apple Watch, and want private Apple sync."),
-                benefits: [
-                    .init(icon: "icloud.fill", title: String(localized: "iCloud sync"), subtitle: String(localized: "Tasks, sessions, settings, analytics across Apple devices.")),
-                    .init(icon: "sparkles", title: String(localized: "On-device AI"), subtitle: String(localized: "Apple Intelligence / local reports without cloud AI credits.")),
-                    .init(icon: "checklist", title: String(localized: "Full local app"), subtitle: String(localized: "Unlimited tasks, subtasks, recurrence, themes, widgets, Watch.")),
-                    .init(icon: "square.and.arrow.up", title: String(localized: "Export access"), subtitle: String(localized: "Keep your focus history portable with data exports."))
-                ]
+                summary: String(localized: PaywallCommercialClaims.pepinilloPlusSummary),
+                benefits: PaywallCommercialClaims.pepinilloPlus.map(\.paywallBenefit)
             )
 
             PaywallTierCard(
@@ -168,13 +171,8 @@ struct PaywallTierComparisonSection: View {
                 eyebrow: String(localized: "Monthly or annual subscription"),
                 icon: "network",
                 tint: .blue,
-                summary: String(localized: "Best if you want Pepinillo synced through the VPS and cloud AI on every platform."),
-                benefits: [
-                    .init(icon: "server.rack", title: String(localized: "Pepinillo cloud sync"), subtitle: String(localized: "Your VPS becomes the source of truth for future cross-platform devices.")),
-                    .init(icon: "bolt.horizontal.cloud.fill", title: String(localized: "Cloud AI credits"), subtitle: String(localized: "Server AI for deeper summaries and recommendations.")),
-                    .init(icon: "person.crop.circle.badge.checkmark", title: String(localized: "Account restore"), subtitle: String(localized: "Restore entitlement through your Pepinillo account.")),
-                    .init(icon: "plus.circle.fill", title: String(localized: "Everything in Pepinillo+"), subtitle: String(localized: "Local premium features remain included."))
-                ]
+                summary: String(localized: PaywallCommercialClaims.everywhereSummary),
+                benefits: PaywallCommercialClaims.everywhere.map(\.paywallBenefit)
             )
         }
     }
@@ -232,6 +230,16 @@ struct PaywallTierCard: View {
             RoundedRectangle(cornerRadius: GlassCornerRadius.hero)
                 .stroke(.primary.opacity(0.06), lineWidth: 1)
         }
+    }
+}
+
+private extension PaywallCommercialClaim {
+    var paywallBenefit: PaywallTierCard.Benefit {
+        .init(
+            icon: icon,
+            title: String(localized: title),
+            subtitle: String(localized: subtitle)
+        )
     }
 }
 
@@ -570,12 +578,12 @@ private extension ProductInfo {
 
     var planSummary: String {
         if isLifetime {
-            return String(localized: "One purchase for full local features, on-device AI, export, Apple Watch, widgets, and iCloud sync.")
+            return String(localized: PaywallCommercialClaims.lifetimeProductSummary)
         }
         if isAnnual {
-            return String(localized: "Everything in Pepinillo+ plus VPS sync, account restore, and cloud AI credits. Best value.")
+            return String(localized: PaywallCommercialClaims.everywhereAnnualProductSummary)
         }
-        return String(localized: "Everything in Pepinillo+ plus VPS sync, account restore, and cloud AI credits.")
+        return String(localized: PaywallCommercialClaims.everywhereProductSummary)
     }
 
     var billingLabel: String {
@@ -593,8 +601,8 @@ private extension ProductInfo {
 
     var complianceLine: String {
         isLifetime
-            ? String(localized: "Not a subscription. Apple-to-Apple sync uses your iCloud account.")
-            : String(localized: "Auto-renewing subscription. VPS sync is the source of truth.")
+            ? String(localized: PaywallCommercialClaims.lifetimeCompliance)
+            : String(localized: PaywallCommercialClaims.everywhereCompliance)
     }
 }
 

@@ -1,7 +1,7 @@
 // PaywallFeature.swift
 // Pepinillo — Deep Work Companion for Apple
 //
-// TCA Reducer for the Pro subscription paywall.
+// TCA reducer for the paid subscription tiers.
 // Loads StoreKit products, handles purchase flow, and emits .proUnlocked on success.
 
 import Foundation
@@ -221,8 +221,11 @@ struct PaywallFeature {
                         mapped = PaywallEntitlementMapper.subscriptionState(forProductID: productID)
                         state.subscriptionState = mapped
                     }
+                    let welcomeMessage = mapped.isEverywhere
+                        ? String(localized: "Welcome to Everywhere/AI+! 🎉")
+                        : String(localized: "Welcome to Pepinillo+! 🎉")
                     state.purchaseResult = State.PurchaseResultAlert(
-                        message: String(localized: "Welcome to Pepinillo Pro! 🎉"),
+                        message: welcomeMessage,
                         isSuccess: true
                     )
                     return .run { [mapped, productID] send in

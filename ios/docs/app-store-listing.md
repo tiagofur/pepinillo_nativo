@@ -39,7 +39,7 @@ Focus, Flow & Get Things Done
 ### Promotional Text (max 170 characters)
 *Can be changed anytime without a new version.*
 ```
-Master your focus with Pomodoro, Flowtime & Time Blocks. Track your productivity, build streaks, and unlock your best work — on iPhone, iPad, Mac & Apple Watch.
+Master your focus with Pomodoro, Flowtime & Time Blocks. Track productivity, build streaks, and do your best work on iPhone, iPad & Apple Watch.
 ```
 
 ### Description (max 4000 characters)
@@ -82,12 +82,12 @@ DESIGNED FOR YOUR BRAIN
 
 ADHD-friendly guided breaks suggest activities like stretching, walking, or breathing exercises. Session journaling lets you reflect on each work session. Four beautiful themes (Classic, Forest, Ocean, Sunset) let you make it yours.
 
-FLEXIBLE PRO UPGRADE
+FLEXIBLE PREMIUM UPGRADE
 
 Pepinillo is free with Pomodoro and Stopwatch modes included. Unlock more with two tiers:
 
 • **Pepinillo+** — One-time purchase. Full local premium: Flowtime, Time Block, premium soundscapes, advanced analytics, AI-powered Weekly Reports, streak protection, all widgets, and full Apple Watch companion.
-• **Everywhere/AI+** — Monthly or annual subscription. Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features.
+• **Everywhere/AI+** — Monthly or annual subscription. Everything in Pepinillo+ plus Pepinillo account sync and account-based recovery on iPhone and iPad.
 • No ads. No tracking. Pepinillo works without an account. If you sign in or enable sync, the data needed for those features is sent to the relevant service providers.
 
 Start focusing better today. Your best work is waiting.
@@ -128,7 +128,7 @@ Enfócate, Fluye y Produce Más
 
 ### Promotional Text (max 170 characters)
 ```
-Domina tu enfoque con Pomodoro, Tiempo Fluido y Bloques de Tiempo. Mide tu productividad, construye rachas y haz tu mejor trabajo — en iPhone, iPad, Mac y Apple Watch.
+Domina tu enfoque con Pomodoro, Tiempo Fluido y Bloques de Tiempo. Mide tu productividad, crea rachas y haz tu mejor trabajo en iPhone, iPad y Apple Watch.
 ```
 
 ### Description (max 4000 characters)
@@ -171,12 +171,12 @@ DISEÑADO PARA TU CEREBRO
 
 Descansos guiados amigables con TDAH que sugieren actividades como estirarse, caminar o ejercicios de respiración. El diario de sesiones te permite reflexionar sobre cada sesión de trabajo. Cuatro temas hermosos (Clásico, Bosque, Océano, Atardecer) para hacerlo tuyo.
 
-UPGRADE PRO FLEXIBLE
+MEJORA PREMIUM FLEXIBLE
 
 Pepinillo es gratis con los modos Pomodoro y Cronómetro incluidos. Desbloquea más con dos niveles:
 
 • **Pepinillo+** — Compra única. Premium local completo: Tiempo Fluido, Bloque de Tiempo, paisajes sonoros premium, analíticas avanzadas, Informes Semanales con IA, protección de rachas, todos los widgets y compañero Apple Watch completo.
-• **Everywhere/AI+** — Suscripción mensual o anual. Todo lo de Pepinillo+ más sincronización backend multiplataforma y funciones avanzadas de IA en la nube.
+• **Everywhere/AI+** — Suscripción mensual o anual. Todo lo de Pepinillo+ más sincronización y recuperación con tu cuenta de Pepinillo en iPhone y iPad.
 • Sin anuncios. Sin rastreo. Pepinillo funciona sin una cuenta. Si inicias sesión o activas la sincronización, los datos necesarios para esas funciones se envían a los proveedores correspondientes.
 
 Empieza a enfocarte mejor hoy. Tu mejor trabajo te está esperando.
@@ -266,11 +266,15 @@ This repository guidance covers the iOS/watchOS App Store submission only. Googl
 
 **Pepinillo+ (EN):**
 - Display Name: Pepinillo+
-- Description: One purchase. Yours forever. Full local premium, Apple Intelligence, iCloud sync, all widgets, full watchOS companion. Not a subscription.
+- Description: Local premium, iCloud sync, on-device AI
 
 **Pepinillo+ (ES):**
 - Display Name: Pepinillo+
-- Description: Una sola compra. Para siempre. Premium local completo, Apple Intelligence, sincronización iCloud, todos los widgets y compañero watchOS completo. No es una suscripción.
+- Description: Premium local, iCloud e IA en el dispositivo
+
+**Pepinillo+ (PT):**
+- Display Name: Pepinillo+
+- Description: Premium local, iCloud e IA no dispositivo
 
 ---
 
@@ -285,19 +289,27 @@ This repository guidance covers the iOS/watchOS App Store submission only. Googl
 
 **Everywhere/AI+ Monthly (EN):**
 - Display Name: Everywhere/AI+ Monthly
-- Description: Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features. Billed monthly.
+- Description: Pepinillo+ with sync and recovery. Monthly.
 
 **Everywhere/AI+ Monthly (ES):**
 - Display Name: Everywhere/AI+ Mensual
-- Description: Todo lo de Pepinillo+ más sincronización backend multiplataforma y funciones avanzadas de IA en la nube. Cobro mensual.
+- Description: Pepinillo+: sincroniza y recupera. Mensual.
+
+**Everywhere/AI+ Monthly (PT):**
+- Display Name: Everywhere/AI+ Mensal
+- Description: Pepinillo+: sincroniza e recupera. Mensal.
 
 **Everywhere/AI+ Annual (EN):**
 - Display Name: Everywhere/AI+ Annual
-- Description: Everything in Pepinillo+ plus cross-platform backend sync and advanced cloud AI features. Billed annually — save 42% vs monthly.
+- Description: Pepinillo+ with sync and recovery. Annual.
 
 **Everywhere/AI+ Annual (ES):**
 - Display Name: Everywhere/AI+ Anual
-- Description: Todo lo de Pepinillo+ más sincronización backend multiplataforma y funciones avanzadas de IA en la nube. Cobro anual — ahorra 42% vs mensual.
+- Description: Pepinillo+: sincroniza y recupera. Anual.
+
+**Everywhere/AI+ Annual (PT):**
+- Display Name: Everywhere/AI+ Anual
+- Description: Pepinillo+: sincroniza e recupera. Anual.
 
 > **Legacy product IDs (grandfathered — do NOT create as new products):**
 > `com.pepinillo.pro.monthly`, `com.pepinillo.pro.annual` → mapped to Everywhere/AI+
@@ -331,7 +343,7 @@ No action needed in App Store Connect for this.
 ```
 Pepinillo is a focus timer and productivity app. No login is required.
 
-To test Pro features: The app uses StoreKit 2 via RevenueCat. In the sandbox/TestFlight environment, purchase "Pepinillo+" (one-time, $19.99) or subscribe to "Everywhere/AI+" (monthly $4.99 / annual $34.99) to test Pro features: Flowtime mode, Time Block mode, premium soundscapes, advanced analytics, AI-powered Weekly Reports, and streak protection.
+To test paid features: The app uses StoreKit 2 via RevenueCat. In the sandbox/TestFlight environment, purchase "Pepinillo+" (one-time, $19.99) or subscribe to "Everywhere/AI+" (monthly $4.99 / annual $34.99) to test paid features: Flowtime mode, Time Block mode, premium soundscapes, advanced analytics, AI-powered Weekly Reports, and streak protection.
 
 The app integrates with:
 - Apple Health (writes Mindful Minutes)
