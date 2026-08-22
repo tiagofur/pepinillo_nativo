@@ -14,10 +14,29 @@
 	<key>NSPrivacyTrackingDomains</key>
 	<array/>
 
-	<!-- Data the app collects and sends off-device -->
+	<!--
+		First-party data that the app can retain off-device. These declarations
+		cover optional account/profile flows and Pepinillo backend sync. Sentry
+		and RevenueCat ship their own privacy manifests; App Store Connect must
+		still include their practices at the app level.
+	-->
 	<key>NSPrivacyCollectedDataTypes</key>
 	<array>
-		<!-- Email address: Sign in with Apple / account auth -->
+		<!-- Name: account registration, Sign in with Apple, and profile editing -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeName</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!-- Email address: account registration/authentication -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeEmailAddress</string>
@@ -28,11 +47,10 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
-				<string>NSPrivacyCollectedDataTypePurposeAccountManagement</string>
 			</array>
 		</dict>
 
-		<!-- User ID: account/subscription identifier issued by our backend -->
+		<!-- User ID: backend account ID and identified RevenueCat customer -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeUserID</string>
@@ -43,16 +61,15 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
-				<string>NSPrivacyCollectedDataTypePurposeAccountManagement</string>
 			</array>
 		</dict>
 
-		<!-- Health and fitness: Mindful Minutes via HealthKit -->
+		<!-- Photos or videos: optional profile photo upload -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
-			<string>NSPrivacyCollectedDataTypeHealth</string>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
-			<false/>
+			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
 			<false/>
 			<key>NSPrivacyCollectedDataTypePurposes</key>
@@ -61,8 +78,21 @@
 			</array>
 		</dict>
 
-		<!-- Product interaction: in-app events used to power the user's own
-		     productivity analytics (locally and in their account) -->
+		<!-- Purchase history: RevenueCat entitlement state linked after account identification -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePurchaseHistory</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!-- Product interaction: focus-session and task-completion activity retained for sync -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
@@ -73,42 +103,27 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
-				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
 			</array>
 		</dict>
 
-		<!-- Crash data: Sentry (stack traces only, no PII) -->
-		<dict>
-			<key>NSPrivacyCollectedDataType</key>
-			<string>NSPrivacyCollectedDataTypeCrashData</string>
-			<key>NSPrivacyCollectedDataTypeLinked</key>
-			<false/>
-			<key>NSPrivacyCollectedDataTypeTracking</key>
-			<false/>
-			<key>NSPrivacyCollectedDataTypePurposes</key>
-			<array>
-				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
-			</array>
-		</dict>
-
-		<!-- Performance data: traces sampled at 10% for app stability/UX -->
-		<dict>
-			<key>NSPrivacyCollectedDataType</key>
-			<string>NSPrivacyCollectedDataTypePerformanceData</string>
-			<key>NSPrivacyCollectedDataTypeLinked</key>
-			<false/>
-			<key>NSPrivacyCollectedDataTypeTracking</key>
-			<false/>
-			<key>NSPrivacyCollectedDataTypePurposes</key>
-			<array>
-				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
-			</array>
-		</dict>
-
-		<!-- Other user content: task titles, session notes typed by the user -->
+		<!-- Other user content: task titles, descriptions, and subtasks retained for sync -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+
+		<!-- Other data: source IP retained briefly in the backend's in-memory auth rate limiter -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherDataTypes</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
@@ -125,8 +140,10 @@
 		first-party code. Apple rejects false declarations.
 
 		Verified usages:
-		- UserDefaults: used pervasively across the app for preferences and
-		  day-change detection. Reason CA92.1 (access info about the app itself).
+		- UserDefaults.standard: app-private preferences and day-change detection.
+		  Reason CA92.1 (information accessible only to the app itself).
+		- UserDefaults(suiteName: AppGroup.id): shared state for the app and its
+		  extensions. Reason 1C8F.1 (same App Group members only).
 	-->
 	<key>NSPrivacyAccessedAPITypes</key>
 	<array>
@@ -136,6 +153,7 @@
 			<key>NSPrivacyAccessedAPITypeReasons</key>
 			<array>
 				<string>CA92.1</string>
+				<string>1C8F.1</string>
 			</array>
 		</dict>
 	</array>
