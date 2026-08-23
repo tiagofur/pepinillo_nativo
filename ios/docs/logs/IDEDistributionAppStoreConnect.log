@@ -15,7 +15,7 @@ Headers:
 'x-b3-parentspanid': '275ea52786eb44b6'
 'Content-Length': '2865'
 'x-b3-spanid': 'd3c8c5c8b63f50bf'
-'Set-Cookie': 'dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzcwOTAwNzYsImp0aSI6IkxwX3dnZU5VdHNLVHhpb3BRMkFUYUEifQ.Z28_hCIud3VnBD8pFCKXjl3NoE7f7FRwDJbcNM9gp18; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:37:56 GMT; Path=/; Secure; HTTPOnly'
+'Set-Cookie': 'dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Sat, 25 Apr 2026 04:37:56 GMT; Path=/; Secure; HTTPOnly'
 'x-b3-traceid': 'b269677194564bef'
 'Server': 'daiquiri/5'
 'x-apple-request-uuid': '8d40a81d-4925-bd06-adbe-fc5bc04f4b58'

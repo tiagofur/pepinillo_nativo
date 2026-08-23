@@ -3,7 +3,7 @@
 2026-03-17 04:16:54 +0000  AppsService: received response: 200 success
 ---
 Headers:
-'Set-Cookie': 'dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzM3MjEwMTQsImp0aSI6ImhCalRCQjZHSDZSaDhDeUtKTXFhaGcifQ.x3qnikGCiT2fmfa4l9PNM3A3OSHRgDhSksBZLgcN1Pc; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:46:54 GMT; Path=/; Secure; HTTPOnly'
+'Set-Cookie': 'dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:46:54 GMT; Path=/; Secure; HTTPOnly'
 'apple-originating-system': 'UnknownOriginatingSystem'
 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
 'x-apple-request-uuid': 'e42dd571-7795-c048-9aa6-9102b9014b05'
@@ -39,7 +39,7 @@ AppStoreConnectAppsResponse(data: [], links: XCServices.AppStoreConnectPagedDocu
 2026-03-17 04:16:55 +0000  AppStoreLocalesService: received response: 200 success
 ---
 Headers:
-'Set-Cookie': 'dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzM3MjEwMTQsImp0aSI6Imc4bWduQ3hiZWVpcXN2eFJicldxSEEifQ.aUGDeTovU741wKipaLJ-qnNaZWjJuLvHX2SG_xoIFx4; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:46:55 GMT; Path=/; Secure; HTTPOnly'
+'Set-Cookie': 'dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:46:55 GMT; Path=/; Secure; HTTPOnly'
 'apple-originating-system': 'UnknownOriginatingSystem'
 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
 'x-apple-request-uuid': 'a8317a47-c010-125d-6e4b-52f6bc78af8b'
@@ -79,7 +79,7 @@ Headers:
 'x-xss-protection': '1; mode=block'
 'x-b3-spanid': '7bf82d0d6aa7d979'
 'x-responding-instance': 'ac-gateway-api:ac-gateway-api-main-6b6d5f87f9-89bv9:ac-gateway-api-main-6b6d5f87f9-89bv9:-1::::'
-'Set-Cookie': 'dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzM3MjEwMjAsImp0aSI6IjEyWl9zSTFCZXpKdXlCQWJjWTdhaUEifQ.9Zc6iPy__Ji0mO1AHY_xuv9jCIqdqIfZ-r7JP6xlp2c; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:47:00 GMT; Path=/; Secure; HTTPOnly'
+'Set-Cookie': 'dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:47:00 GMT; Path=/; Secure; HTTPOnly'
 'x-content-security-policy': 'script-src 'self' *.apple.com'
 'Location': 'https://appstoreconnect.apple.com/iris/provider/62ce890c-6f5c-478c-bce5-0e2220409609/v1/apps/6760687424'
 'apple-originating-system': 'UnknownOriginatingSystem'
@@ -116,7 +116,7 @@ Headers:
 'x-xss-protection': '1; mode=block'
 'x-b3-spanid': 'e5d94a2199dbe010'
 'x-responding-instance': 'ac-gateway-api:ac-gateway-api-main-6b6d5f87f9-stdcb:ac-gateway-api-main-6b6d5f87f9-stdcb:-1::::'
-'Set-Cookie': 'dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzM3MjEwMjQsImp0aSI6IkhESkZudUxEdWM2LUI2cXNCai1DZGcifQ.V0Kp3M0iuCLGChtcgktBVUdQ8vCf8nj4588MDokHlqE; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:47:04 GMT; Path=/; Secure; HTTPOnly'
+'Set-Cookie': 'dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:47:04 GMT; Path=/; Secure; HTTPOnly'
 'x-content-security-policy': 'script-src 'self' *.apple.com'
 'apple-originating-system': 'UnknownOriginatingSystem'
 'Content-Length': '2844'
@@ -152,7 +152,7 @@ Headers:
 'x-xss-protection': '1; mode=block'
 'x-b3-spanid': 'b8715a7d73dce283'
 'x-responding-instance': 'ac-gateway-api:ac-gateway-api-main-6b6d5f87f9-vl4xf:ac-gateway-api-main-6b6d5f87f9-vl4xf:-1::::'
-'Set-Cookie': 'dqsid=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NzM3MjEwMjYsImp0aSI6IjZBME93R1hjc043UVBHSGJBT1VOeHcifQ.K05fvrlCCse-VlpSJDEUaNNofHiPdp-ynP6HxZMaWe4; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:47:06 GMT; Path=/; Secure; HTTPOnly'
+'Set-Cookie': 'dqsid=[REDACTED_TOKEN]; Max-Age=1800; Expires=Tue, 17 Mar 2026 04:47:06 GMT; Path=/; Secure; HTTPOnly'
 'x-content-security-policy': 'script-src 'self' *.apple.com'
 'apple-originating-system': 'UnknownOriginatingSystem'
 'Content-Length': '2844'

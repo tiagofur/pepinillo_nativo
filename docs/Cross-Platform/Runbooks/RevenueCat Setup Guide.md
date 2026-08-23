@@ -506,7 +506,7 @@ appl_xnChlVXXtUFhusIfJyNrNDcMGLj
 
 **Secret API Key (V2) para Backend:**
 ```
-sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ
+<REVENUECAT_SECRET_API_KEY>
 Label: "Pepinillo Backend"
 ```
 
@@ -532,11 +532,11 @@ Label: "Pepinillo Backend"
 5. **Añade a tu backend:**
    - En tu servidor Go, configura la variable de entorno `REVENUECAT_SECRET_KEY`:
      ```bash
-     export REVENUECAT_SECRET_KEY="sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ"
+     export REVENUECAT_SECRET_KEY="<REVENUECAT_SECRET_API_KEY>"
      ```
    - O en tu archivo `.env`:
      ```
-     REVENUECAT_SECRET_KEY=sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ
+     REVENUECAT_SECRET_KEY=<REVENUECAT_SECRET_API_KEY>
      ```
    - En el código Go, se carga vía `config.Load()` en `backend/internal/config/config.go`
 
@@ -579,7 +579,7 @@ https://{YOUR_DOMAIN}/api/v1/webhooks/revenuecat
    - Genera un token secreto aleatorio (ej: UUID v4, 32+ caracteres)
    - Guárdalo como `REVENUECAT_WEBHOOK_AUTH_TOKEN`
    ```bash
-   REVENUECAT_WEBHOOK_AUTH_TOKEN="sk_webhook_xxxxxxxxxxxxxxxxxxxxxxxx"
+   REVENUECAT_WEBHOOK_AUTH_TOKEN="<GENERATED_WEBHOOK_TOKEN>"
    ```
 
 2. **En tu código, valida el header:**
@@ -856,7 +856,7 @@ Tu servidor debe tener las siguientes variables de entorno configuradas junto a 
 
 ```bash
 # En tu servidor (.env, systemd, Docker, etc.)
-REVENUECAT_SECRET_KEY=sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ
+REVENUECAT_SECRET_KEY=<REVENUECAT_SECRET_API_KEY>
 ```
 
 Esta clave permite al backend validar solicitudes de RevenueCat y acceder a la API de RevenueCat para verificar entitlements.
@@ -870,10 +870,10 @@ Genera un token secreto aleatorio y fuerte para validar webhooks entrantes:
 openssl rand -hex 32
 
 # Salida esperada (ejemplo):
-# a7f3e9c2b1d8f4a6c5e9b2d1f8a4c7e9b2d5f8a1c4e7a9d2f5b8e1c4a7d9f
+# <GENERATED_WEBHOOK_TOKEN>
 
 # En tu servidor:
-REVENUECAT_WEBHOOK_AUTH_TOKEN=a7f3e9c2b1d8f4a6c5e9b2d1f8a4c7e9b2d5f8a1c4e7a9d2f5b8e1c4a7d9f
+REVENUECAT_WEBHOOK_AUTH_TOKEN=<GENERATED_WEBHOOK_TOKEN>
 ```
 
 **Importante:** Este token debe ser único y no compartido. Guárdalo de forma segura (gestor de secretos, HashiCorp Vault, AWS Secrets Manager, etc.).
@@ -903,7 +903,7 @@ Una vez el servidor esté en producción, configura el webhook en RevenueCat par
 
 4. **Configura autorización con el token:**
    - **Header Name:** `Authorization`
-   - **Header Value:** `Bearer a7f3e9c2b1d8f4a6c5e9b2d1f8a4c7e9b2d5f8a1c4e7a9d2f5b8e1c4a7d9f`
+   - **Header Value:** `Bearer <webhook-token>`
      (reemplaza con tu token generado en el paso 1b)
 
 5. **Selecciona eventos:**

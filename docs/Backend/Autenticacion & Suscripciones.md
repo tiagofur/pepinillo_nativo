@@ -66,7 +66,7 @@ Logout:
 | Key | Valor |
 |---|---|
 | SDK iOS (público) | `appl_xnChlVXXtUFhusIfJyNrNDcMGLj` |
-| Backend secret | `sk_namFzNibPWRnKGIOqmwHfPVQrbfyZ` (env `REVENUECAT_SECRET_KEY`) |
+| Backend secret | `<REVENUECAT_SECRET_API_KEY>` (env `REVENUECAT_SECRET_KEY`) |
 | Runtime legacy | Entitlement `pro` en iOS / `premium` en Android |
 | Capabilities target | `local_premium`, `apple_cloud_sync`, `backend_sync`, `ai_credits_monthly` |
 
