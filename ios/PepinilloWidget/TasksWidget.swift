@@ -35,15 +35,19 @@ struct TasksWidgetEntryView: View {
     let entry: TasksWidgetEntry
 
     var body: some View {
-        switch family {
-        case .systemSmall:
-            TasksWidgetSmall(entry: entry)
-        case .systemMedium:
-            TasksWidgetMedium(entry: entry)
-        case .systemLarge:
-            TasksWidgetLarge(entry: entry)
-        default:
-            TasksWidgetSmall(entry: entry)
+        if entry.isLocked {
+            TasksWidgetLockedView()
+        } else {
+            switch family {
+            case .systemSmall:
+                TasksWidgetSmall(entry: entry)
+            case .systemMedium:
+                TasksWidgetMedium(entry: entry)
+            case .systemLarge:
+                TasksWidgetLarge(entry: entry)
+            default:
+                TasksWidgetSmall(entry: entry)
+            }
         }
     }
 }
@@ -55,6 +59,7 @@ struct TasksWidgetEntry: TimelineEntry {
     let tasks: [WidgetTask]
     let activeTaskID: String?
     let isSessionActive: Bool
+    let isLocked: Bool
 
     struct WidgetTask: Identifiable {
         let id: String
@@ -66,22 +71,20 @@ struct TasksWidgetEntry: TimelineEntry {
         let priorityValue: Int       // 0=none, 1=low, 2=medium, 3=high
     }
 
-    static let placeholder = TasksWidgetEntry(
+    static let locked = TasksWidgetEntry(
         date: Date(),
-        tasks: [
-            WidgetTask(id: "1", title: "Write research paper", isCompleted: false, energyIcon: "brain.head.profile", completedPomodoros: 2, estimatedPomodoros: 4, priorityValue: 3),
-            WidgetTask(id: "2", title: "Review PRs", isCompleted: false, energyIcon: "tray", completedPomodoros: 0, estimatedPomodoros: 2, priorityValue: 2),
-            WidgetTask(id: "3", title: "Update docs", isCompleted: false, energyIcon: "folder", completedPomodoros: 1, estimatedPomodoros: 1, priorityValue: 1),
-        ],
-        activeTaskID: "1",
-        isSessionActive: true
+        tasks: [],
+        activeTaskID: nil,
+        isSessionActive: false,
+        isLocked: true
     )
 
     static let empty = TasksWidgetEntry(
         date: Date(),
         tasks: [],
         activeTaskID: nil,
-        isSessionActive: false
+        isSessionActive: false,
+        isLocked: false
     )
 }
 

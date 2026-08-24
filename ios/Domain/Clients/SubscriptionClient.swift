@@ -56,6 +56,12 @@ struct SubscriptionState: Equatable, Sendable {
     /// Human-readable tier name.
     var tierName: String { capabilities.tierDisplayName }
 
+    /// Exact canonical tier identity persisted for extension-side authorization.
+    var canonicalTierIdentifier: String? {
+        capabilities == .free ? "free" : capabilities == .pepinilloPlus ? "pepinillo_plus"
+            : capabilities == .everywherePlus ? "everywhere_plus" : nil
+    }
+
     // MARK: Static presets
 
     static let free = SubscriptionState(capabilities: .free)

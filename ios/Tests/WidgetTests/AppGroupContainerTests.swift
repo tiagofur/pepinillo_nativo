@@ -24,11 +24,13 @@ struct AppGroupContainerTests {
 
     @Test("userCapabilities defaults to nil when unset")
     func userCapabilitiesDefaultsNilWhenUnset() {
-        let saved = AppGroupDefaults.userCapabilities
-        defer { AppGroupDefaults.userCapabilities = saved }
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
 
+        AppGroupDefaults.subscriptionTierIdentifier = "everywhere_plus"
         AppGroupDefaults.userCapabilities = nil
         #expect(AppGroupDefaults.userCapabilities == nil)
+        #expect(AppGroupDefaults.subscriptionTierIdentifier == nil)
     }
 
     @Test("userCapabilities stores pepinilloPlus preset")
@@ -83,17 +85,25 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.lastAppleCloudActivationError == "iCloud unavailable")
     }
 
-    @Test("lastVerifiedDate round-trips")
-    func lastVerifiedDateRoundTrip() {
-        let saved = AppGroupDefaults.lastVerifiedDate
-        defer { AppGroupDefaults.lastVerifiedDate = saved }
+    @Test("subscription verification dates round-trip")
+    func subscriptionVerificationDatesRoundTrip() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
 
         let now = Date()
+        AppGroupDefaults.subscriptionTierIdentifier = "everywhere_plus"
         AppGroupDefaults.lastVerifiedDate = now
+        AppGroupDefaults.subscriptionExpirationDate = now.addingTimeInterval(3600)
+        #expect(AppGroupDefaults.subscriptionTierIdentifier == "everywhere_plus")
         #expect(AppGroupDefaults.lastVerifiedDate == now)
+        #expect(AppGroupDefaults.subscriptionExpirationDate == now.addingTimeInterval(3600))
 
+        AppGroupDefaults.subscriptionTierIdentifier = nil
         AppGroupDefaults.lastVerifiedDate = nil
+        AppGroupDefaults.subscriptionExpirationDate = nil
+        #expect(AppGroupDefaults.subscriptionTierIdentifier == nil)
         #expect(AppGroupDefaults.lastVerifiedDate == nil)
+        #expect(AppGroupDefaults.subscriptionExpirationDate == nil)
     }
 
 
@@ -307,23 +317,55 @@ struct AppGroupContainerTests {
         #expect(timerEnd == resumeAt.addingTimeInterval((25 * 60) - 120))
     }
 
-    @Test("StartFocusWithTaskIntent blocks Pro modes for free users (#229)")
-    func startFocusWithTaskIntentProGateForFreeUser() async throws {
+    @Test("Tasks widget start action enforces every entitlement state")
+    func tasksWidgetStartActionEntitlementMatrix() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        let now = Date.now
+        var unknown = UserCapabilities.pepinilloPlus
+        unknown.localAI = false
+        let cases: [(String?, UserCapabilities?, Date?, Date?, Bool)] = [
+            (nil, nil, nil, nil, false), ("free", .free, now, nil, false),
+            ("pepinillo_plus", .pepinilloPlus, nil, nil, true), ("everywhere_plus", .everywherePlus, now, nil, true),
+            ("everywhere_plus", .everywherePlus, nil, nil, false), ("everywhere_plus", .everywherePlus, now, now.addingTimeInterval(-1), false),
+            ("everywhere_plus", .everywherePlus, now.addingTimeInterval(-TasksWidgetAccess.everywhereOfflineGracePeriod), nil, false),
+            ("everywhere_plus", .everywherePlus, now.addingTimeInterval(1), nil, false), ("pepinillo_plus", unknown, nil, nil, false),
+        ]
+        for (tier, capabilities, lastVerifiedDate, expirationDate, isAllowed) in cases {
+            AppGroupDefaults.clearExternalCommands()
+            AppGroupDefaults.clearActiveSession()
+            AppGroupDefaults.userCapabilities = capabilities
+            AppGroupDefaults.subscriptionTierIdentifier = tier
+            AppGroupDefaults.lastVerifiedDate = lastVerifiedDate
+            AppGroupDefaults.subscriptionExpirationDate = expirationDate
+            AppGroupDefaults.widgetSelectedMode = "pomodoro"
+            _ = try await StartFocusFromTasksWidgetIntent().perform()
+
+            #expect(AppGroupDefaults.externalStartRequested == isAllowed)
+            #expect(AppGroupDefaults.isSessionActive == isAllowed)
+        }
+    }
+
+    @Test("StartFocusWithTaskIntent fails closed for free users")
+    func startFocusWithTaskIntentFailsClosedForFreeUser() async throws {
         let saved = AppGroupDefaultsSnapshot.capture()
         defer { saved.restore() }
 
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.userCapabilities = .free
+        AppGroupDefaults.subscriptionTierIdentifier = "free"
+        AppGroupDefaults.lastVerifiedDate = nil
         AppGroupDefaults.isProUser = false
         AppGroupDefaults.widgetSelectedMode = "flowtime"
 
         let taskID = UUID().uuidString
         _ = try await StartFocusWithTaskIntent(taskID: taskID).perform()
 
-        #expect(AppGroupDefaults.externalStartRequested == true)
+        #expect(AppGroupDefaults.externalStartRequested == false)
         #expect(AppGroupDefaults.isSessionActive == false)
-        #expect(AppGroupDefaults.requestedMode == "flowtime")
-        #expect(AppGroupDefaults.requestedTaskID == taskID)
+        #expect(AppGroupDefaults.requestedMode == nil)
+        #expect(AppGroupDefaults.requestedTaskID == nil)
     }
 
     @Test("StartFocusWithTaskIntent preserves the task and creates a widget-started session")
@@ -333,6 +375,10 @@ struct AppGroupContainerTests {
 
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.userCapabilities = .pepinilloPlus
+        AppGroupDefaults.subscriptionTierIdentifier = "pepinillo_plus"
+        AppGroupDefaults.lastVerifiedDate = nil
+        AppGroupDefaults.isProUser = true
         AppGroupDefaults.widgetSelectedMode = "pomodoro"
         AppGroupDefaults.pomodoroDuration = 25 * 60
 
@@ -349,6 +395,20 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.activeTaskID == taskID)
         #expect(AppGroupDefaults.activeSessionTimerStart != nil)
         #expect(AppGroupDefaults.activeSessionTimerEnd != nil)
+    }
+
+    @Test("CompleteTaskFromWidgetIntent cannot bypass entitlement")
+    func completeTaskFromWidgetIntentCannotBypassEntitlement() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        let now = Date.now
+        let taskID = UUID()
+        AppGroupDefaults.userCapabilities = .free
+        AppGroupDefaults.subscriptionTierIdentifier = "free"
+        #expect(CompleteTaskFromWidgetIntent.authorizedTaskID(taskID.uuidString, now: now) == nil)
+        AppGroupDefaults.userCapabilities = .pepinilloPlus
+        AppGroupDefaults.subscriptionTierIdentifier = "pepinillo_plus"
+        #expect(CompleteTaskFromWidgetIntent.authorizedTaskID(taskID.uuidString, now: now) == taskID)
     }
 
     @Test("queueExternalStart blocks premium modes without ghost session (#220)")
@@ -392,6 +452,8 @@ struct AppGroupDefaultsSnapshot {
     var syncStatus: AppGroupDefaults.SyncStatus
     var lastAppleCloudActivationError: String?
     var lastVerifiedDate: Date?
+    var subscriptionExpirationDate: Date?
+    var subscriptionTierIdentifier: String?
     var widgetSelectedMode: String?
     var pomodoroDuration: Double
     var blockDuration: Double
@@ -429,6 +491,8 @@ struct AppGroupDefaultsSnapshot {
             syncStatus: AppGroupDefaults.syncStatus,
             lastAppleCloudActivationError: AppGroupDefaults.lastAppleCloudActivationError,
             lastVerifiedDate: AppGroupDefaults.lastVerifiedDate,
+            subscriptionExpirationDate: AppGroupDefaults.subscriptionExpirationDate,
+            subscriptionTierIdentifier: AppGroupDefaults.subscriptionTierIdentifier,
             widgetSelectedMode: AppGroupDefaults.widgetSelectedMode,
             pomodoroDuration: AppGroupDefaults.pomodoroDuration,
             blockDuration: AppGroupDefaults.blockDuration,
@@ -467,6 +531,8 @@ struct AppGroupDefaultsSnapshot {
         AppGroupDefaults.syncStatus = syncStatus
         AppGroupDefaults.lastAppleCloudActivationError = lastAppleCloudActivationError
         AppGroupDefaults.lastVerifiedDate = lastVerifiedDate
+        AppGroupDefaults.subscriptionExpirationDate = subscriptionExpirationDate
+        AppGroupDefaults.subscriptionTierIdentifier = subscriptionTierIdentifier
         AppGroupDefaults.widgetSelectedMode = widgetSelectedMode
         AppGroupDefaults.pomodoroDuration = pomodoroDuration
         AppGroupDefaults.blockDuration = blockDuration

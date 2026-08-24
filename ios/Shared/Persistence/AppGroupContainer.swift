@@ -254,6 +254,17 @@ enum AppGroupDefaults {
         }
     }
 
+    /// StoreKit/RevenueCat expiration for the cached Everywhere entitlement.
+    static var subscriptionExpirationDate: Date? {
+        get { defaults?.object(forKey: "subscriptionExpirationDate") as? Date }
+        set { defaults?.set(newValue, forKey: "subscriptionExpirationDate") }
+    }
+
+    static var subscriptionTierIdentifier: String? {
+        get { defaults?.string(forKey: "subscriptionTierIdentifier") }
+        set { defaults?.set(newValue, forKey: "subscriptionTierIdentifier") }
+    }
+
 
     /// Full capability payload shared with widgets and extensions.
     static var userCapabilities: UserCapabilities? {
@@ -264,6 +275,8 @@ enum AppGroupDefaults {
         set {
             guard let newValue else {
                 defaults?.removeObject(forKey: userCapabilitiesKey)
+                subscriptionExpirationDate = nil
+                subscriptionTierIdentifier = nil
                 isProUser = false
                 canBackendSync = false
                 canAppleCloudSync = false
@@ -273,6 +286,7 @@ enum AppGroupDefaults {
             if let data = try? JSONEncoder().encode(newValue) {
                 defaults?.set(data, forKey: userCapabilitiesKey)
             }
+            if !newValue.backendSync { subscriptionExpirationDate = nil }
             isProUser = newValue.hasAnyPremium
             canBackendSync = newValue.backendSync
             canAppleCloudSync = newValue.appleCloudSync && !newValue.backendSync

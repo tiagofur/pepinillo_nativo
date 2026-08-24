@@ -151,7 +151,11 @@ jobs:
             -default-test-execution-time-allowance 120 \
             -only-testing:PepinilloTests/TaskListFeatureTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests \
+            -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionStateLoadedWritesCapabilitiesToAppGroup \
+            -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionUpdatedWritesCapabilitiesToAppGroup \
+            -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionUpdatedFreeWritesFreeCapabilities \
             -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
+            -only-testing:PepinilloTests/WidgetTests/WidgetProGatingTests \
             -only-testing:PepinilloTests/WidgetTests/FocusActivityAttributesTests \
             -only-testing:PepinilloTests/SiriIntentsTests/SiriPauseResumeIntentTests
 
@@ -173,7 +177,11 @@ jobs:
             -default-test-execution-time-allowance 180 \
             -only-testing:PepinilloTests/IntegrationTests/LocalToCloudStoreMigratorTests \
             -only-testing:PepinilloTests/IntegrationTests/PersistenceStoreRouterTests \
+            -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionStateLoadedWritesCapabilitiesToAppGroup \
+            -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionUpdatedWritesCapabilitiesToAppGroup \
+            -only-testing:PepinilloTests/IntegrationTests/AppFeatureIntegrationTests/subscriptionUpdatedFreeWritesFreeCapabilities \
             -only-testing:PepinilloTests/WidgetTests/AppGroupContainerTests \
+            -only-testing:PepinilloTests/WidgetTests/WidgetProGatingTests \
             -only-testing:PepinilloTests/WidgetTests/FocusActivityAttributesTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusEngineTests \
             -only-testing:PepinilloTests/FocusFeatureTests/FocusFeatureReducerTests \

@@ -21,6 +21,27 @@ private func energyEmoji(for icon: String) -> String {
     }
 }
 
+struct TasksWidgetLockedView: View {
+    var body: some View {
+        VStack(spacing: 7) {
+            Image(systemName: "lock.fill")
+                .font(.title2)
+                .foregroundStyle(Color.accentColor)
+            Text(String(localized: "Pepinillo+"))
+                .font(.headline)
+            Text(String(localized: LocalizedStringResource(
+                "widget.tasks.locked.message",
+                defaultValue: "Open Pepinillo to unlock the Tasks widget."
+            )))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 // MARK: - Small Widget
 
 struct TasksWidgetSmall: View {
@@ -132,7 +153,7 @@ struct TasksWidgetMedium: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         if !entry.isSessionActive, !entry.tasks.isEmpty {
-                            Button(intent: StartFocusFromWidgetIntent()) {
+                            Button(intent: StartFocusFromTasksWidgetIntent()) {
                                 Image(systemName: "play.fill")
                                     .font(.caption2)
                             }
@@ -269,7 +290,7 @@ struct TasksWidgetLarge: View {
                 Spacer(minLength: 0)
 
                 if !entry.isSessionActive {
-                    Button(intent: StartFocusFromWidgetIntent()) {
+                    Button(intent: StartFocusFromTasksWidgetIntent()) {
                         Label(String(localized: "Start Focus"), systemImage: "play.fill")
                             .font(.caption)
                             .fontWeight(.semibold)

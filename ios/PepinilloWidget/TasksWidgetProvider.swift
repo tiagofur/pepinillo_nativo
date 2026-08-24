@@ -13,25 +13,31 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
     typealias Intent = ConfigureTasksWidgetIntent
 
     func placeholder(in context: Context) -> TasksWidgetEntry {
-        .placeholder
+        .locked
     }
 
     func snapshot(for configuration: ConfigureTasksWidgetIntent, in context: Context) async -> TasksWidgetEntry {
-        context.isPreview ? .placeholder : await buildEntry(configuration: configuration)
+        context.isPreview ? .locked : await buildEntry(configuration: configuration)
     }
 
     func timeline(for configuration: ConfigureTasksWidgetIntent, in context: Context) async -> Timeline<TasksWidgetEntry> {
-        let entry = await buildEntry(configuration: configuration)
-        // Refresh every 15 minutes, or when main app explicitly reloads
-        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: Date.now) ?? Date.now
+        let now = Date.now
+        let entry = await buildEntry(configuration: configuration, now: now)
+        // Refresh before any paid-access boundary can become stale.
+        let routineRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: now) ?? now
+        let nextRefresh = TasksWidgetAccess.nextRefreshDate(now: now, normalRefresh: routineRefresh)
         return Timeline(entries: [entry], policy: .after(nextRefresh))
     }
 
     // MARK: - Entry Construction
 
-    private func buildEntry(configuration: ConfigureTasksWidgetIntent) async -> TasksWidgetEntry {
+    private func buildEntry(configuration: ConfigureTasksWidgetIntent, now: Date = Date.now) async -> TasksWidgetEntry {
         do {
-            let container = try makeWidgetModelContainer()
+            guard let container = try TasksWidgetAccess.loadIfAuthorized(now: now, {
+                try makeWidgetModelContainer()
+            }) else {
+                return .locked
+            }
             let context = ModelContext(container)
 
             // Fetch active tasks, then apply the same "Today" semantics used by
@@ -86,10 +92,11 @@ struct TasksWidgetProvider: AppIntentTimelineProvider {
                 date: Date.now,
                 tasks: widgetTasks,
                 activeTaskID: activeTaskID,
-                isSessionActive: isSessionActive
+                isSessionActive: isSessionActive,
+                isLocked: false
             )
         } catch {
-            // If SwiftData fetch fails, return empty state
+            // If an authorized SwiftData fetch fails, return an unlocked empty state.
             return .empty
         }
     }
