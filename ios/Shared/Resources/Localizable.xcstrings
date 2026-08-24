@@ -18513,6 +18513,30 @@
         }
       }
     },
+    "widget.tasks.locked.message" : {
+      "comment" : "TasksWidget — locked entitlement message",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Pepinillo to unlock the Tasks widget."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre Pepinillo para desbloquear el widget de Tareas."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra o Pepinillo para desbloquear o widget de Tarefas."
+          }
+        }
+      }
+    },
     "Wind down with lighter tasks as the day closes." : {
       "localizations" : {
         "es" : {
