@@ -21,8 +21,6 @@ private func energyEmoji(for icon: String) -> String {
     }
 }
 
-// MARK: - Locked State
-
 struct TasksWidgetLockedView: View {
     var body: some View {
         VStack(spacing: 7) {

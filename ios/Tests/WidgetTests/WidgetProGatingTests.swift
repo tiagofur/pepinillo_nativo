@@ -29,8 +29,6 @@ struct WidgetProGatingTests {
         #expect(AppGroupDefaults.isProUser == false)
     }
 
-    // MARK: - Tasks widget production access boundary
-
     @Test("Tasks widget access and provider loader enforce canonical entitlement states")
     func tasksWidgetAccessMatrix() {
         var unknown = UserCapabilities.pepinilloPlus
@@ -45,7 +43,6 @@ struct WidgetProGatingTests {
             ("everywhere_plus", .everywherePlus, nil, nil, false, 900), ("everywhere_plus", .everywherePlus, now, now.addingTimeInterval(-1), false, 900),
             ("everywhere_plus", .everywherePlus, now.addingTimeInterval(-TasksWidgetAccess.everywhereOfflineGracePeriod), nil, false, 900), ("everywhere_plus", .everywherePlus, now.addingTimeInterval(1), nil, false, 900), ("pepinillo_plus", unknown, nil, nil, false, 900),
         ]
-
         for (tier, capabilities, verified, expiration, expected, refreshInterval) in cases {
             AppGroupDefaults.subscriptionTierIdentifier = tier
             AppGroupDefaults.userCapabilities = capabilities

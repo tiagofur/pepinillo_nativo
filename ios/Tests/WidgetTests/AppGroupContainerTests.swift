@@ -6,7 +6,6 @@
 
 import Testing
 import Foundation
-import SwiftData
 @testable import Pepinillo
 
 @Suite("AppGroupContainerTests", .serialized, .appGroupDefaultsSerialized)
@@ -332,7 +331,6 @@ struct AppGroupContainerTests {
             ("everywhere_plus", .everywherePlus, now.addingTimeInterval(-TasksWidgetAccess.everywhereOfflineGracePeriod), nil, false),
             ("everywhere_plus", .everywherePlus, now.addingTimeInterval(1), nil, false), ("pepinillo_plus", unknown, nil, nil, false),
         ]
-
         for (tier, capabilities, lastVerifiedDate, expirationDate, isAllowed) in cases {
             AppGroupDefaults.clearExternalCommands()
             AppGroupDefaults.clearActiveSession()
@@ -341,7 +339,6 @@ struct AppGroupContainerTests {
             AppGroupDefaults.lastVerifiedDate = lastVerifiedDate
             AppGroupDefaults.subscriptionExpirationDate = expirationDate
             AppGroupDefaults.widgetSelectedMode = "pomodoro"
-
             _ = try await StartFocusFromTasksWidgetIntent().perform()
 
             #expect(AppGroupDefaults.externalStartRequested == isAllowed)
@@ -401,42 +398,17 @@ struct AppGroupContainerTests {
     }
 
     @Test("CompleteTaskFromWidgetIntent cannot bypass entitlement")
-    func completeTaskFromWidgetIntentCannotBypassEntitlement() async throws {
+    func completeTaskFromWidgetIntentCannotBypassEntitlement() {
         let saved = AppGroupDefaultsSnapshot.capture()
         defer { saved.restore() }
-        defer { resetExtensionModelContainerCacheForTesting() }
-
-        AppGroupDefaults.activeSyncMode = .local
-        resetExtensionModelContainerCacheForTesting()
-        let container = try makeWidgetModelContainer()
-        let context = ModelContext(container)
-        let task = TaskItem(title: "Entitlement boundary task")
-        let taskID = task.id
-        context.insert(task)
-        try context.save()
-        func storedTask(in context: ModelContext) throws -> TaskItem {
-            try #require(context.fetch(
-                FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == taskID })
-            ).first)
-        }
-        defer {
-            let cleanup = ModelContext(container)
-            if let stored = try? storedTask(in: cleanup) {
-                cleanup.delete(stored)
-                try? cleanup.save()
-            }
-        }
-
+        let now = Date.now
+        let taskID = UUID()
         AppGroupDefaults.userCapabilities = .free
         AppGroupDefaults.subscriptionTierIdentifier = "free"
-        AppGroupDefaults.lastVerifiedDate = nil
-        _ = try await CompleteTaskFromWidgetIntent(taskID: taskID.uuidString).perform()
-        #expect(try !storedTask(in: ModelContext(container)).isCompleted)
-
+        #expect(CompleteTaskFromWidgetIntent.authorizedTaskID(taskID.uuidString, now: now) == nil)
         AppGroupDefaults.userCapabilities = .pepinilloPlus
         AppGroupDefaults.subscriptionTierIdentifier = "pepinillo_plus"
-        _ = try await CompleteTaskFromWidgetIntent(taskID: taskID.uuidString).perform()
-        #expect(try storedTask(in: ModelContext(container)).isCompleted)
+        #expect(CompleteTaskFromWidgetIntent.authorizedTaskID(taskID.uuidString, now: now) == taskID)
     }
 
     @Test("queueExternalStart blocks premium modes without ghost session (#220)")

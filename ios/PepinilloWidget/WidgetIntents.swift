@@ -195,8 +195,7 @@ struct CompleteTaskFromWidgetIntent: AppIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        guard TasksWidgetAccess.isCurrentUserAuthorized() else { return .result() }
-        guard let uuid = UUID(uuidString: taskID) else { return .result() }
+        guard let uuid = Self.authorizedTaskID(taskID) else { return .result() }
         let container = try makeWidgetModelContainer()
         let context = ModelContext(container)
         var descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == uuid })
@@ -212,5 +211,10 @@ struct CompleteTaskFromWidgetIntent: AppIntent {
         }
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
+    }
+
+    static func authorizedTaskID(_ taskID: String, now: Date = Date()) -> UUID? {
+        guard TasksWidgetAccess.isCurrentUserAuthorized(now: now) else { return nil }
+        return UUID(uuidString: taskID)
     }
 }

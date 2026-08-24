@@ -756,6 +756,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
             $0.keychainClient.hasTokens = { false }
             $0.syncClient.syncAll = { }
@@ -788,6 +789,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
             $0.keychainClient.hasTokens = { false }
             $0.syncClient.syncAll = { }
@@ -829,6 +831,7 @@ struct AppFeatureIntegrationTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
             $0.syncModeClient.reconcile = { _ in }
             $0.keychainClient.hasTokens = { false }
             $0.syncClient.syncAll = { }
