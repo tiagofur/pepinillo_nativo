@@ -46,6 +46,9 @@ authkey*.p8
 # iOS local secrets (copy from Secrets.xcconfig.template)
 ios/Config/Secrets.xcconfig
 
+# Generated distribution logs may contain tokens and personal data
+ios/**/logs/*.log
+
 # === Go / Backend ===
 backend/bin/
 backend/tmp/
@@ -81,4 +84,3 @@ android/.artifacts/
 .zcode/
 .kilo/
 .atl/
-

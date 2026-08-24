@@ -1,6 +1,6 @@
 # Pepinillo — Current Implementation Status
 
-**Last Updated:** 2026-08-21  
+**Last Updated:** 2026-08-23
 **Version:** 3.x  
 **Status:** Production + Growth Validation Phase
 
@@ -40,6 +40,9 @@
   - [x] `Pepinillo.storekit` — renamed to "Pepinillo+" / "Everywhere/AI+ Monthly" / "Everywhere/AI+ Annual", prices $19.99/$4.99/$34.99
   - [x] Mock display names and prices aligned to v3.1
 - **Implementation status (external — manual tasks remaining):**
+  - [x] Repository secret hardening: current tracked credentials/tokens sanitized; redacted CI scanner added (#613)
+  - [ ] **[BLOCKER]** Revoke/rotate the exposed RevenueCat server key and update the production runtime (#613)
+  - [ ] Enable GitHub Secret Protection/push protection and decide coordinated history remediation (#613)
   - [ ] **[BLOCKER]** Update revoked API keys in RevenueCat (App Store Connect API: `22YZT9D55J` · In-App Purchase: `Z95PS2LD73`)
   - [ ] Complete metadata + rename products in App Store Connect
   - [ ] Create `pepinillo_plus` + `everywhere_plus` entitlements in RevenueCat
