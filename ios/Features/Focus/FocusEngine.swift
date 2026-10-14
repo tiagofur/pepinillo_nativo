@@ -289,6 +289,9 @@ public actor FocusEngine {
         let mode: FocusMode
         let phase: FocusPhase
         let elapsed: TimeInterval
+        /// Wall-clock time left at resolve time; nil for open-ended modes.
+        /// Drives the offer sheet and the widget-anchor rebuild on adopt.
+        let remaining: TimeInterval?
         let linkedTaskID: UUID?
     }
 
@@ -329,12 +332,12 @@ public actor FocusEngine {
             )
             let target = mode.strategy.targetDuration(config: config, phase: phase)
             let elapsed = max(0, (target ?? duration) - remaining)
-            return GhostResumeSpec(mode: mode, phase: phase, elapsed: elapsed, linkedTaskID: linkedTaskID)
+            return GhostResumeSpec(mode: mode, phase: phase, elapsed: elapsed, remaining: remaining, linkedTaskID: linkedTaskID)
         }
 
         guard mode == .flowtime || mode == .stopwatch else { return nil }
         let phase: FocusPhase = mode == .flowtime ? .flow : .freeform
-        return GhostResumeSpec(mode: mode, phase: phase, elapsed: max(0, elapsedAnchor), linkedTaskID: linkedTaskID)
+        return GhostResumeSpec(mode: mode, phase: phase, elapsed: max(0, elapsedAnchor), remaining: nil, linkedTaskID: linkedTaskID)
     }
 
     /// Pause the current session.

@@ -1253,4 +1253,77 @@ struct AppFeatureIntegrationTests {
         )
         #expect(seeded == .pepinilloPlus)
     }
+
+    @Test func ghostResumeTappedForwardsAdoptAndClearsOffer() async {
+        let spec = FocusEngine.GhostResumeSpec(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            elapsed: 600,
+            remaining: 900,
+            linkedTaskID: nil
+        )
+        let snapshot = GhostSessionSnapshot(
+            modeName: "pomodoro",
+            startedAt: Date(timeIntervalSince1970: 1_800_000_000),
+            endedAt: Date(timeIntervalSince1970: 1_800_000_600),
+            targetDuration: 1500,
+            actualDuration: 600,
+            pomodoroNumber: 1,
+            totalPomodoros: 4,
+            taskID: nil
+        )
+        var state = AppFeature.State()
+        state.pendingGhostOffer = (spec: spec, snapshot: snapshot)
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        } withDependencies: {
+            $0.focusClient.adoptGhostSession = { _, _, _, _, _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.ghostResumeTapped) {
+            $0.pendingGhostOffer = nil
+        }
+        // S5-T3 RED pre-fix: no resume path exists (compile error).
+        await store.receive(.focus(.adoptGhostSession(spec)))
+    }
+
+    @Test func ghostDiscardTappedPersistsAbandonAndClearsOffer() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+        let spec = FocusEngine.GhostResumeSpec(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            elapsed: 600,
+            remaining: 900,
+            linkedTaskID: nil
+        )
+        let snapshot = GhostSessionSnapshot(
+            modeName: "pomodoro",
+            startedAt: Date(timeIntervalSince1970: 1_800_000_000),
+            endedAt: Date(timeIntervalSince1970: 1_800_000_600),
+            targetDuration: 1500,
+            actualDuration: 600,
+            pomodoroNumber: 1,
+            totalPomodoros: 4,
+            taskID: nil
+        )
+        var state = AppFeature.State()
+        state.pendingGhostOffer = (spec: spec, snapshot: snapshot)
+
+        let store = TestStore(initialState: state) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.ghostDiscardTapped) {
+            $0.pendingGhostOffer = nil
+        }
+
+        #expect(savedSessions.value.count == 1)
+    }
 }

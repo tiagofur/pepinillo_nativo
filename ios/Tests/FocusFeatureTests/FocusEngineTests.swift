@@ -1419,6 +1419,7 @@ struct FocusEngineGhostResumeTests {
             mode: .pomodoro,
             phase: .work(number: 1, total: 4),
             elapsed: 600,
+            remaining: 900,
             linkedTaskID: taskID
         ))
     }
@@ -1509,6 +1510,7 @@ struct FocusEngineGhostResumeTests {
             mode: .flowtime,
             phase: .flow,
             elapsed: 2400,
+            remaining: nil,
             linkedTaskID: nil
         ))
     }

@@ -636,6 +636,52 @@ struct FocusFeatureReducerTests {
         #expect(savedSessions.value.count == 1)
     }
 
+    // MARK: - Ghost adopt (Sprint-5 T3)
+
+@Suite("FocusFeature — Ghost adopt")
+struct FocusGhostAdoptTests {
+
+    @Test func adoptGhostSessionStartsObservation() async throws {
+        let adopted = LockIsolated<FocusEngine.GhostResumeSpec?>(nil)
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.adoptGhostSession = { mode, config, phase, elapsed, linkedTaskID in
+                adopted.setValue(FocusEngine.GhostResumeSpec(
+                    mode: mode,
+                    phase: phase,
+                    elapsed: elapsed,
+                    remaining: nil,
+                    linkedTaskID: linkedTaskID
+                ))
+            }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
+        }
+        store.exhaustivity = .off
+
+        let spec = FocusEngine.GhostResumeSpec(
+            mode: .pomodoro,
+            phase: .work(number: 2, total: 4),
+            elapsed: 300,
+            remaining: 1200,
+            linkedTaskID: nil
+        )
+        await store.send(.adoptGhostSession(spec)) {
+            $0.isRunning = true
+            $0.activeMode = .pomodoro
+            $0.selectedMode = .pomodoro
+            $0.phase = .work(number: 2, total: 4)
+            $0.linkedTaskID = nil
+            $0.linkedTaskTitle = nil
+            $0.pomodoroNumber = 2
+        }
+
+        // S5-T3 RED pre-fix: no adopt path exists (compile error).
+        #expect(adopted.value == spec)
+    }
+}
+
     @Test func stopDuringWaitingHoldDoesNotDuplicatePersistedWork() async {
         let savedSessions = LockIsolated<[FocusSessionResult]>([])
 
