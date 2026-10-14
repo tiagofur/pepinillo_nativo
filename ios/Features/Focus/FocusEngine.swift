@@ -214,6 +214,15 @@ public actor FocusEngine {
             restorePhaseAfterPause(&current)
         }
 
+        // S2: shift a widget-adopted end anchor across the pause so the frozen
+        // remaining time is preserved. Without this, tick() recomputes remaining
+        // from the stale anchor and the pause is silently subtracted from the
+        // phase (early completion + inflated stats). Only anchored sessions are
+        // touched; anchorless sessions keep pure Date-arithmetic timing.
+        if phaseTimerEnd != nil, let remaining = current.remainingSeconds {
+            phaseTimerEnd = Date.now.addingTimeInterval(remaining)
+        }
+
         state = current
         startTicking()
     }
@@ -431,6 +440,11 @@ public actor FocusEngine {
             totalPausedDuration = max(0, Date.now.timeIntervalSince(start) - current.elapsedSeconds)
         }
         current.totalPausedDuration = totalPausedDuration
+
+        // S2: same anchor shift as resume(), for externally-triggered resumes.
+        if phaseTimerEnd != nil, let remaining = current.remainingSeconds {
+            phaseTimerEnd = Date.now.addingTimeInterval(remaining)
+        }
 
         state = current
         startTicking()

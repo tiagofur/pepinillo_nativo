@@ -1150,3 +1150,41 @@ struct FocusEngineSessionTotalTests {
         #expect(total >= 3000 && total < 3000 + 60)
     }
 }
+
+// MARK: - Widget anchor across pause (S2)
+
+@Suite("FocusEngine — Anchored pause")
+struct FocusEngineAnchoredPauseTests {
+
+    @Test func resumePreservesRemainingForWidgetAnchoredSession() async throws {
+        // 4s pomodoro adopted from widget anchors, 2s in: 2s elapsed, 2s remaining.
+        var config = FocusConfig()
+        config.pomodoroDuration = 4
+        let engine = FocusEngine()
+        let now = Date.now
+        await engine.start(
+            mode: .pomodoro,
+            config: config,
+            timerStart: now.addingTimeInterval(-2),
+            timerEnd: now.addingTimeInterval(2)
+        )
+
+        await engine.pause()
+        // A 1s pause must not be subtracted from the phase on resume.
+        try await Task.sleep(for: .milliseconds(1000))
+        await engine.resume()
+        // Let a 4Hz tick recompute remaining from the anchor.
+        try await Task.sleep(for: .milliseconds(500))
+
+        let state = await engine.currentState()
+        // Buggy: ~0.5s (anchor kept pre-pause end). Fixed: ~1.5s (end shifted by pause).
+        let remaining = state?.remainingSeconds ?? -1
+        #expect(remaining > 1.0)
+        if case .work(let number, _) = state?.phase {
+            #expect(number == 1)
+        } else {
+            Issue.record("Phase completed early; anchored pause stole phase time")
+        }
+        await engine.stop()
+    }
+}
