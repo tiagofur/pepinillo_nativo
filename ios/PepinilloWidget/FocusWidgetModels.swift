@@ -16,6 +16,10 @@ struct FocusWidgetEntry: TimelineEntry {
     // Configuration
     let preferredModeID: String?
     let preferredTimerText: String
+    /// Widget configuration toggles (S2). Views hide the streak row and mode
+    /// breakdown unless these are on. Defaults match ConfigureFocusWidgetIntent.
+    let showStreak: Bool = true
+    let showModeBreakdown: Bool = false
 
     // Session state (nil if no active session)
     let isSessionActive: Bool

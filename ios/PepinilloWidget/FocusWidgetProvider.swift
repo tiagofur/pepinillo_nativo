@@ -140,6 +140,9 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
                 isProUser: isPro,
                 preferredModeID: preferredModeID,
                 preferredTimerText: preferredTimerText,
+                // S2: honor the widget's configuration toggles.
+                showStreak: configuration.showStreak,
+                showModeBreakdown: configuration.showModeBreakdown,
                 isSessionActive: isActive,
                 isPaused: isPaused,
                 isWaiting: isWaiting,
@@ -196,6 +199,9 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
             isProUser: AppGroupDefaults.isProUser,
             preferredModeID: preferredModeID,
             preferredTimerText: idleTimerText(for: preferredModeID, preferences: nil),
+            // S2: honor the widget's configuration toggles (not the defaults).
+            showStreak: configuration.showStreak,
+            showModeBreakdown: configuration.showModeBreakdown,
             isSessionActive: isActive,
             isPaused: isPaused,
             isWaiting: isWaiting,
