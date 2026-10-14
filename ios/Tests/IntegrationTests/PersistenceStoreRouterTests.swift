@@ -311,6 +311,60 @@ struct PersistenceStoreRouterTests {
         #expect(router.activeContainer === localContainer)
     }
 
+    @Test("Reconcile arriving mid-flight reruns with latest capabilities")
+    @MainActor
+    func reconcileMidFlightRerunsLatest() async throws {
+        actor ReconcileGate {
+            private var continuation: CheckedContinuation<Void, Never>?
+            private(set) var entered = false
+            private var parkedOnce = false
+            func parkOnce() async {
+                if parkedOnce { return }
+                parkedOnce = true
+                entered = true
+                await withCheckedContinuation { cont in
+                    continuation = cont
+                }
+            }
+            func release() {
+                continuation?.resume()
+                continuation = nil
+            }
+        }
+
+        let syncSnapshot = saveSyncDefaults()
+        defer {
+            restoreSyncDefaults(syncSnapshot)
+            PersistenceStoreRouterTesting.reconcileSuspension = nil
+        }
+
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let localContainer = try makeOnDiskContainer(directory: dir, fileName: "local.sqlite")
+        let router = PersistenceStoreRouter(localContainer: localContainer)
+        let gate = ReconcileGate()
+        PersistenceStoreRouterTesting.reconcileSuspension = {
+            await gate.parkOnce()
+        }
+
+        let first = Task { @MainActor in await router.reconcile(capabilities: .everywherePlus) }
+        for _ in 0..<500 {
+            if await gate.entered { break }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(await gate.entered == true)
+
+        let second = Task { @MainActor in await router.reconcile(capabilities: .free) }
+        await gate.release()
+        await first.value
+        await second.value
+
+        // S5 RED pre-fix: the second capabilities are dropped; mode stays backend.
+        #expect(AppGroupDefaults.activeSyncMode == .local)
+        #expect(AppGroupDefaults.syncStatus == .localOnly)
+    }
+
     @Test("Apple Cloud activation failure surfaces error and keeps local store active")
     @MainActor
     func appleCloudActivationFailureSurfacesError() async throws {
