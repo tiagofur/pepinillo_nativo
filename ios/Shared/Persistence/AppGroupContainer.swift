@@ -345,6 +345,19 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "requestedTaskID") }
     }
 
+    /// Focus Filter toggle tracking (S3). The system invokes the filter intent
+    /// on both activation AND deactivation with no direction flag.
+    static var focusFilterActive: Bool {
+        get { defaults?.bool(forKey: "focusFilterActive") ?? false }
+        set { defaults?.set(newValue, forKey: "focusFilterActive") }
+    }
+    /// Widget mode selected before the filter was applied (S3). Restored on
+    /// deactivation so the filter never permanently hijacks the widget mode.
+    static var focusFilterPreviousMode: String? {
+        get { defaults?.string(forKey: "focusFilterPreviousMode") }
+        set { defaults?.set(newValue, forKey: "focusFilterPreviousMode") }
+    }
+
     /// Task-completion command from the widget (S7). Unlike pause/resume/stop
     /// this is not time-sensitive, so it carries no TTL and survives
     /// stale-discard: clearExternalCommands() intentionally doesn't know these

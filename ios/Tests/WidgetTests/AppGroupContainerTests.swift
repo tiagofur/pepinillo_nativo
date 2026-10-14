@@ -663,6 +663,8 @@ struct AppGroupDefaultsSnapshot {
     var externalStopRequested: Bool
     var externalPauseRequested: Bool
     var externalResumeRequested: Bool
+    var focusFilterActive: Bool
+    var focusFilterPreviousMode: String?
     var externalCompleteTaskRequested: Bool
     var externalCompleteTaskID: String?
     var externalCommandID: String?
@@ -702,6 +704,8 @@ struct AppGroupDefaultsSnapshot {
             externalStopRequested: AppGroupDefaults.externalStopRequested,
             externalPauseRequested: AppGroupDefaults.externalPauseRequested,
             externalResumeRequested: AppGroupDefaults.externalResumeRequested,
+            focusFilterActive: AppGroupDefaults.focusFilterActive,
+            focusFilterPreviousMode: AppGroupDefaults.focusFilterPreviousMode,
             externalCompleteTaskRequested: AppGroupDefaults.externalCompleteTaskRequested,
             externalCompleteTaskID: AppGroupDefaults.externalCompleteTaskID,
             externalCommandID: AppGroupDefaults.externalCommandID,
@@ -742,6 +746,8 @@ struct AppGroupDefaultsSnapshot {
         AppGroupDefaults.externalStopRequested = externalStopRequested
         AppGroupDefaults.externalPauseRequested = externalPauseRequested
         AppGroupDefaults.externalResumeRequested = externalResumeRequested
+        AppGroupDefaults.focusFilterActive = focusFilterActive
+        AppGroupDefaults.focusFilterPreviousMode = focusFilterPreviousMode
         AppGroupDefaults.externalCompleteTaskRequested = externalCompleteTaskRequested
         AppGroupDefaults.externalCompleteTaskID = externalCompleteTaskID
         AppGroupDefaults.externalCommandID = externalCommandID

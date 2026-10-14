@@ -42,12 +42,31 @@ struct PepinilloFocusFilter: SetFocusFilterIntent {
         )
     }
 
+    init() {}
+
+    init(focusMode: FocusModeEntity?, autoStart: Bool) {
+        self.focusMode = focusMode
+        self.autoStart = autoStart
+    }
+
     /// Called by the system when the Focus Mode activates or deactivates.
     func perform() async throws -> some IntentResult {
         guard let modeID = focusMode?.id else {
             return .result()
         }
 
+        // S3: the system invokes this on BOTH enable and disable with no
+        // direction flag. Toggle on persisted state (WWDC22 pattern): the first
+        // call applies, the second reverts — and a disable event must never
+        // auto-start a session. Residual: exact deactivation ordering needs
+        // on-device confirmation (rapid re-configurations could desync).
+        if AppGroupDefaults.focusFilterActive {
+            AppGroupDefaults.focusFilterActive = false
+            AppGroupDefaults.widgetSelectedMode = AppGroupDefaults.focusFilterPreviousMode
+            return .result()
+        }
+        AppGroupDefaults.focusFilterPreviousMode = AppGroupDefaults.widgetSelectedMode
+        AppGroupDefaults.focusFilterActive = true
         AppGroupDefaults.widgetSelectedMode = modeID
 
         if autoStart {
