@@ -232,9 +232,9 @@ struct LocalToCloudStoreMigratorTests {
         #expect(migratedReport.rawPayload == "{\"sessions\":4}")
     }
 
-    @Test("Skips soft-deleted tasks but keeps their sessions unlinked")
+    @Test("Migrates soft-deleted tombstones with sync identity")
     @MainActor
-    func skipsSoftDeletedTasks() throws {
+    func migratesSoftDeletedTombstones() throws {
         let dir = try makeTempDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }
 
@@ -245,6 +245,8 @@ struct LocalToCloudStoreMigratorTests {
         let deletedTask = TaskItem(title: "Deleted")
         deletedTask.isLocallyDeleted = true
         deletedTask.serverId = 99
+        deletedTask.syncId = "sync-del"
+        deletedTask.isDirty = true
         sourceContext.insert(deletedTask)
 
         let activeTask = TaskItem(title: "Active")
@@ -270,12 +272,20 @@ struct LocalToCloudStoreMigratorTests {
 
         let targetContext = targetContainer.mainContext
         let migratedTasks = try targetContext.fetch(FetchDescriptor<TaskItem>())
-        #expect(migratedTasks.count == 1)
-        #expect(migratedTasks.first?.title == "Active")
+        #expect(migratedTasks.count == 2)
+        // The tombstone migrates with its delete marker and server identity
+        // intact, so the pending delete survives the store switch (S2).
+        let tombstone = try #require(migratedTasks.first(where: { $0.title == "Deleted" }))
+        #expect(tombstone.id == deletedTask.id)
+        #expect(tombstone.isLocallyDeleted == true)
+        #expect(tombstone.serverId == 99)
+        #expect(tombstone.syncId == "sync-del")
+        #expect(tombstone.isDirty == true)
 
         let migratedSessions = try targetContext.fetch(FetchDescriptor<FocusSessionRecord>())
         #expect(migratedSessions.count == 1)
-        #expect(migratedSessions.first?.task == nil)
+        // The session stays linked to the migrated tombstone: history preserved.
+        #expect(migratedSessions.first?.task?.id == tombstone.id)
     }
 
     @Test("Cloud→local merge keeps newer task revision by updatedAt")

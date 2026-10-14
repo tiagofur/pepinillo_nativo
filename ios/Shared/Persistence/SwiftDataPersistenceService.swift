@@ -840,9 +840,9 @@ public final class SwiftDataPersistenceService {
     }
 
     public func markAllSyncableDataDirty() throws {
-        let taskDescriptor = FetchDescriptor<TaskItem>(
-            predicate: #Predicate { $0.isLocallyDeleted == false }
-        )
+        // S2: no isLocallyDeleted filter — tombstones must re-push as deletes
+        // after a store switch, or the server copy resurrects on next pull.
+        let taskDescriptor = FetchDescriptor<TaskItem>()
         for task in try context.fetch(taskDescriptor) {
             task.isDirty = true
             task.syncedAt = nil

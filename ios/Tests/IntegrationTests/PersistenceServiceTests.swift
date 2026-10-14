@@ -157,6 +157,36 @@ struct PersistenceServiceTests {
         #expect(unknown == nil)
     }
 
+    @Test("markAllSyncableDataDirty includes soft-deleted tombstones")
+    func markAllSyncableDataDirtyIncludesTombstones() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let live = TaskItem(title: "Live")
+        live.isDirty = false
+        context.insert(live)
+        let tombstone = TaskItem(title: "Gone")
+        tombstone.isLocallyDeleted = true
+        tombstone.isDirty = false
+        tombstone.syncId = "sync-gone"
+        context.insert(tombstone)
+        try context.save()
+
+        try service.markAllSyncableDataDirty()
+
+        // Both re-push after a store switch — the tombstone as a delete (S2).
+        #expect(live.isDirty == true)
+        #expect(tombstone.isDirty == true)
+    }
+
     // MARK: - Issue #74: saveTaskOrder batch reorder
 
     @Test("saveTaskOrder persists new sort orders in a single transaction and marks dirty")
