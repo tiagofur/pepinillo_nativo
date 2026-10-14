@@ -1284,3 +1284,37 @@ struct FocusEngineHoldStopTests {
         #expect(await engine.currentState() == nil)
     }
 }
+
+// MARK: - Direct abandon (S7)
+
+@Suite("FocusEngine — Abandon session")
+struct FocusEngineAbandonTests {
+
+    @Test func abandonSessionReturnsTerminalResultWithoutEmitting() async throws {
+        let engine = FocusEngine()
+        // Seed 10 min into a 25 min work phase via widget-style anchors so the
+        // elapsed time is immune to the 4Hz tick loop (Date arithmetic agrees).
+        let now = Date.now
+        await engine.start(
+            mode: .pomodoro,
+            timerStart: now.addingTimeInterval(-600),
+            timerEnd: now.addingTimeInterval(900)
+        )
+
+        // The result comes back directly: unlike stop(), nothing is emitted to
+        // the stream, so a later start cannot drop it (S7).
+        let result = await engine.abandonSession()
+
+        #expect(result?.mode == .pomodoro)
+        #expect(result?.wasCompleted == false)
+        if case .work = result?.phase {
+        } else {
+            Issue.record("Expected the abandoned .work phase")
+        }
+        let credit = result?.actualDuration ?? -1
+        #expect(credit >= 600 && credit < 600 + 120)
+        #expect(await engine.currentState() == nil)
+        // Second take finds nothing (single-take semantics).
+        #expect(await engine.abandonSession() == nil)
+    }
+}

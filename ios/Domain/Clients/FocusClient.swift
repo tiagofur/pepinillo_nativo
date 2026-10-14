@@ -19,6 +19,9 @@ public struct FocusClient: Sendable {
     public var resume: @Sendable () async -> Void
     /// Stop the active session.
     public var stop: @Sendable (Bool) async -> Void
+    /// Stop without emitting to the event stream, returning the terminal result (S7).
+    /// stopTapped drains the abandon through this instead of the observation task.
+    public var abandonSession: @Sendable () async -> FocusSessionResult? = { nil }
     /// Record an interruption.
     public var recordInterruption: @Sendable () async -> Void
     /// Skip to next phase.
@@ -69,6 +72,9 @@ extension FocusClient: DependencyKey {
             },
             stop: { completed in
                 await engine.stop(completed: completed)
+            },
+            abandonSession: {
+                await engine.abandonSession()
             },
             recordInterruption: {
                 await engine.recordInterruption()

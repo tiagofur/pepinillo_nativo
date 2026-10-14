@@ -229,12 +229,28 @@ public actor FocusEngine {
 
     /// Stop the current session (user-initiated or completed).
     public func stop(completed: Bool = true) {
+        guard let result = takeTerminalResult(completed: completed) else { return }
+        emit(.sessionCompleted(result))
+    }
+
+    /// Stops without emitting to the event stream, returning the terminal result (S7).
+    /// stopTapped uses this so the abandon no longer depends on the observation
+    /// task surviving until delivery: a quick startTapped (or the AppFeature
+    /// stop→start path) used to cancel it and drop the session. Nil when idle.
+    public func abandonSession() -> FocusSessionResult? {
+        takeTerminalResult(completed: false)
+    }
+
+    /// Shared terminal-result builder: cancels timing, folds the final phase into
+    /// the session total (S1), marks hold stops (S4), resets state. Returns nil
+    /// when no session is active.
+    private func takeTerminalResult(completed: Bool) -> FocusSessionResult? {
         timerTask?.cancel()
         timerTask = nil
 
         guard let current = state, strategy != nil else {
             reset()
-            return
+            return nil
         }
 
         // S1: fold the final phase into the session total so the reported total
@@ -269,8 +285,8 @@ public actor FocusEngine {
             isHoldStop: pendingNextPhase != nil
         )
 
-        emit(.sessionCompleted(result))
         reset()
+        return result
     }
 
     /// Record an interruption (phone call, notification tap, etc.)

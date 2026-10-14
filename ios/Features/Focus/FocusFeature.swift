@@ -98,6 +98,7 @@ struct FocusFeature {
         case externalPauseApplied(elapsed: TimeInterval, remaining: TimeInterval?, pausedAt: Date)
         case externalResumeApplied(elapsed: TimeInterval, remaining: TimeInterval?)
         case stopTapped
+        case stopAbandoned(FocusSessionResult)
         case skipPhaseTapped
         case linkTask(UUID?, String?, String?)
         case customDurationChanged(Int)
@@ -512,11 +513,19 @@ struct FocusFeature {
                 let wasRunning = state.isRunning
                 resetState(&state)
                 guard wasRunning else { return .none }
-                // Do NOT cancel engineObservation here — it races with stop(false) and can
-                // drop .sessionCompleted before abandon persistence runs (issue #170).
-                // sessionCompleted cancels observation after handling the result.
+                // S7: cancel observation FIRST, then take the abandon directly.
+                // abandonSession() never emits to the stream, so there is no
+                // terminal event to lose; the old #170 race (cancel dropping a
+                // buffered .sessionCompleted) cannot happen by construction.
+                // A later startTapped observes a fresh stream: nothing is
+                // dropped and nothing is delivered twice.
                 return .merge(
-                    .run { _ in await focusClient.stop(false) },
+                    .cancel(id: CancelID.engineObservation),
+                    .run { [focusClient] send in
+                        if let result = await focusClient.abandonSession() {
+                            await send(.stopAbandoned(result))
+                        }
+                    },
                     .run { [liveActivity] _ in await liveActivity.end(false) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
@@ -690,6 +699,22 @@ struct FocusFeature {
                 return .run { [persistence] send in
                     do {
                         try await persistence.saveSession(backfill)
+                        await send(.delegate(.sessionPersisted))
+                    } catch {
+                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                    }
+                }
+
+            case .stopAbandoned(let result):
+                // S7: persist an abandon taken directly from the engine (see
+                // stopTapped). The stream carries no copy, so this cannot
+                // double-persist. Hold stops carry no new interval (S4).
+                // No teardown/journal: stopTapped already ran those, and the
+                // abandon was never completed.
+                guard !result.isHoldStop else { return .none }
+                return .run { [persistence] send in
+                    do {
+                        try await persistence.saveSession(result)
                         await send(.delegate(.sessionPersisted))
                     } catch {
                         await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
