@@ -751,4 +751,44 @@ struct WatchTimerFeatureTests {
         #expect(store.state.displayTime == "10:00")
         #expect(store.state.lastAppliedSentAt == 500)
     }
+
+    @Test("session sync persists pause state for complications")
+    func sessionStateSyncPersistsPause() async {
+        // persistSessionState writes raw group defaults: save + restore them.
+        let suite = UserDefaults(suiteName: "group.com.pepinillo.app")
+        let keys = [
+            WatchStatsKeys.isSessionActive, WatchStatsKeys.displayTime,
+            WatchStatsKeys.modeEmoji, WatchStatsKeys.linkedTaskTitle,
+            WatchStatsKeys.phaseName, WatchStatsKeys.progress,
+            WatchStatsKeys.pomodoroNumber, WatchStatsKeys.phaseStartDate,
+            WatchStatsKeys.phaseEndDate, WatchStatsKeys.isPaused,
+        ]
+        let saved: [String: Any?] = Dictionary(
+            uniqueKeysWithValues: keys.map { ($0, suite?.object(forKey: $0)) }
+        )
+        defer {
+            for (key, value) in saved {
+                if let value { suite?.set(value, forKey: key) }
+                else { suite?.removeObject(forKey: key) }
+            }
+        }
+        suite?.removeObject(forKey: WatchStatsKeys.isPaused)
+
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        }
+        store.exhaustivity = .off
+
+        let paused = WatchSessionState(
+            isActive: true,
+            isPaused: true,
+            modeID: "pomodoro",
+            displayTime: "20:00",
+            phaseLabel: "Focus"
+        )
+        await store.send(.sessionStateReceived(paused))
+
+        // S6 RED pre-fix: pause never reaches the complication data.
+        #expect(suite?.bool(forKey: WatchStatsKeys.isPaused) == true)
+    }
 }

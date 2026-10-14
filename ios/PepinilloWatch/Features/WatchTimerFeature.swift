@@ -220,6 +220,7 @@ struct WatchTimerFeature {
                 let phaseStartDate = s.phaseStartDate
                 let phaseEndDate = s.phaseEndDate
                 let countsDown = s.countsDown
+                let isPaused = s.isPaused
                 let sessionCompleted = wasActive && !s.isActive
 
                 return .run { _ in
@@ -233,7 +234,8 @@ struct WatchTimerFeature {
                         pomodoroNumber: pomodoroNumber,
                         phaseStartDate: phaseStartDate,
                         phaseEndDate: phaseEndDate,
-                        countsDown: countsDown
+                        countsDown: countsDown,
+                        isPaused: isPaused
                     )
                     if didTransition || sessionCompleted {
                         WidgetCenter.shared.reloadAllTimelines()
@@ -302,10 +304,12 @@ struct WatchTimerFeature {
         pomodoroNumber: Int?,
         phaseStartDate: Date?,
         phaseEndDate: Date?,
-        countsDown: Bool
+        countsDown: Bool,
+        isPaused: Bool
     ) {
         guard let defaults = appGroupDefaults else { return }
         defaults.set(isActive, forKey: WatchStatsKeys.isSessionActive)
+        defaults.set(isPaused, forKey: WatchStatsKeys.isPaused)
         defaults.set(displayTime, forKey: WatchStatsKeys.displayTime)
         defaults.set(modeEmoji, forKey: WatchStatsKeys.modeEmoji)
 

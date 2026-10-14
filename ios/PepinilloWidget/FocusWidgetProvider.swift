@@ -25,9 +25,12 @@ struct FocusWidgetProvider: AppIntentTimelineProvider {
 
     func timeline(for configuration: ConfigureFocusWidgetIntent, in context: Context) async -> Timeline<FocusWidgetEntry> {
         let entry = await buildEntry(configuration: configuration)
-        // Refresh more frequently during active sessions, otherwise every 15 minutes
-        let refreshMinutes = entry.isSessionActive ? 1 : 15
-        let nextRefresh = Calendar.current.date(byAdding: .minute, value: refreshMinutes, to: Date.now) ?? Date.now
+        // S6: no 1-minute polling — Text(timerInterval:) self-ticks from the
+        // entry anchors, and transitions push reloads. Refresh at phase end.
+        if entry.isSessionActive, let timerEnd = entry.timerEnd, timerEnd > Date.now {
+            return Timeline(entries: [entry], policy: .after(timerEnd))
+        }
+        let nextRefresh = Calendar.current.date(byAdding: .minute, value: 15, to: Date.now) ?? Date.now
         return Timeline(entries: [entry], policy: .after(nextRefresh))
     }
 
