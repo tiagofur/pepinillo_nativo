@@ -625,6 +625,33 @@ public actor FocusEngine {
             return
         }
 
+        // S3: a skipped Pomodoro work phase is abandoned focus time. Emit a
+        // partial-credit result (wasCompleted=false) so it persists without
+        // tearing down the session. Other modes need nothing here: Flowtime
+        // folds the elapsed time into the session total (S1), and single-phase
+        // modes terminate via stop() above. Fresh UUID: the session continues
+        // and stop() will emit its own record later.
+        if case .work = phase, current.mode == .pomodoro {
+            let partialElapsed = max(0, elapsed)
+            let partial = FocusSessionResult(
+                id: UUID(),
+                mode: .pomodoro,
+                phase: phase,
+                startedAt: Date.now.addingTimeInterval(-partialElapsed),
+                endedAt: Date.now,
+                targetDuration: current.targetDuration,
+                actualDuration: partialElapsed,
+                wasCompleted: false,
+                interruptions: current.interruptions,
+                pomodoroNumber: current.pomodoroNumber,
+                linkedTaskID: current.linkedTaskID,
+                pauseCount: pauseCount,
+                totalPauseDuration: totalPausedDuration,
+                totalFocusSeconds: partialElapsed
+            )
+            emit(.phaseSkipped(partial))
+        }
+
         // For Pomodoro: increment the work number
         var resolvedPhase = nextPhase
         if case .work(_, let total) = nextPhase, current.mode == .pomodoro {

@@ -519,6 +519,34 @@ struct FocusFeatureReducerTests {
         #expect(savedSessions.value.first?.actualDuration == 3000)
     }
 
+    @Test func skippedWorkPhasePersistsPartialCreditWithoutTeardown() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+        }
+
+        store.exhaustivity = .off
+
+        // Partial credit for a pomodoro work phase skipped at 10 min.
+        let partial = makeSessionResult(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            wasCompleted: false,
+            actualDuration: 600
+        )
+        await store.send(.phaseSkipped(partial))
+        await store.receive(.delegate(.sessionPersisted))
+
+        #expect(savedSessions.value.count == 1)
+        #expect(savedSessions.value.first?.wasCompleted == false)
+        #expect(savedSessions.value.first?.actualDuration == 600)
+    }
+
     @Test func stopTappedAllowsSessionCompletedToPersistAbandonedSession() async {
         let savedSessions = LockIsolated<[FocusSessionResult]>([])
         let eventContinuation = LockIsolated<AsyncStream<FocusEngineEvent>.Continuation?>(nil)

@@ -271,6 +271,10 @@ public enum FocusEngineEvent: Sendable {
     /// The engine is now holding — no countdown is running — waiting for the user
     /// to tap the CTA before the next phase begins.
     case waitingForNextPhase(FocusPhase)
+    /// Emitted when a Pomodoro work phase is skipped before completion (S3).
+    /// Carries a partial-credit result (wasCompleted=false) for persistence;
+    /// the session itself continues into the next phase (no teardown).
+    case phaseSkipped(FocusSessionResult)
 }
 
 // MARK: - Session Result (after completion)

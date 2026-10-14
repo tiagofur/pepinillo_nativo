@@ -1188,3 +1188,54 @@ struct FocusEngineAnchoredPauseTests {
         await engine.stop()
     }
 }
+
+// MARK: - Skipped work partial credit (S3)
+
+@Suite("FocusEngine — Skipped work")
+struct FocusEngineSkippedWorkTests {
+
+    @Test func skippingPomodoroWorkEmitsPartialCreditAndContinuesSession() async throws {
+        let engine = FocusEngine()
+        // Seed 10 min into a 25 min work phase via widget-style anchors so the
+        // elapsed time is immune to the 4Hz tick loop (Date arithmetic agrees).
+        let now = Date.now
+        await engine.start(
+            mode: .pomodoro,
+            timerStart: now.addingTimeInterval(-600),
+            timerEnd: now.addingTimeInterval(900)
+        )
+
+        let partial = await withTaskGroup(of: FocusSessionResult?.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return nil }
+                for await event in events {
+                    if case .phaseSkipped(let partial) = event {
+                        return partial
+                    }
+                }
+                return nil
+            }
+            group.addTask {
+                await engine.skipToNextPhase()
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+
+        #expect(partial?.mode == .pomodoro)
+        #expect(partial?.wasCompleted == false)
+        if case .work = partial?.phase {
+        } else {
+            Issue.record("Expected partial credit for the skipped .work phase")
+        }
+        let credit = partial?.actualDuration ?? -1
+        #expect(credit >= 600 && credit < 600 + 120)
+        // The session continues into the break instead of tearing down.
+        #expect(await engine.currentState() != nil)
+        #expect(await engine.currentState()?.phase.isBreak == true)
+        await engine.stop()
+    }
+}

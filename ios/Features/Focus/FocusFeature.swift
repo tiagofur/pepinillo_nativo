@@ -117,6 +117,7 @@ struct FocusFeature {
         // Engine events (dispatched from the observation effect)
         case timerTicked(FocusSessionState)
         case phaseCompleted(FocusPhase)
+        case phaseSkipped(FocusSessionResult)
         case sessionCompleted(FocusSessionResult)
         case breakSuggested(TimeInterval)
         case midpointReached
@@ -344,6 +345,7 @@ struct FocusFeature {
                             switch event {
                             case .tick(let sessionState):               await send(.timerTicked(sessionState))
                             case .phaseCompleted(let phase):            await send(.phaseCompleted(phase))
+                            case .phaseSkipped(let partial):           await send(.phaseSkipped(partial))
                             case .sessionCompleted(let result):         await send(.sessionCompleted(result))
                             case .breakSuggested(let duration):         await send(.breakSuggested(duration))
                             case .midpointReached:                      await send(.midpointReached)
@@ -665,6 +667,19 @@ struct FocusFeature {
                 })
 
                 return effects.isEmpty ? .none : .merge(effects)
+
+            case .phaseSkipped(let partial):
+                // S3: persist partial credit for a skipped Pomodoro work phase.
+                // The session continues into the next phase: no teardown, no
+                // journal, no completion effects — just the abandoned interval.
+                return .run { [persistence] send in
+                    do {
+                        try await persistence.saveSession(partial)
+                        await send(.delegate(.sessionPersisted))
+                    } catch {
+                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                    }
+                }
 
             case .phaseCompleted(let completedPhase):
                 // Engine handles phase transition automatically;
