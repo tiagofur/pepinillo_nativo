@@ -127,6 +127,7 @@ struct AuthFeatureTests {
             AuthFeature()
         } withDependencies: {
             $0.persistenceClient.getSessionCount = { 3 }
+            $0.persistenceClient.fetchTasks = { [] }
             $0.syncClient.serverHasData = { true }
             // Tripwire: pre-fix code uploads before asking (S1 violation).
             $0.syncClient.initialUpload = { throw ProbeBypassError() }
@@ -152,6 +153,7 @@ struct AuthFeatureTests {
             AuthFeature()
         } withDependencies: {
             $0.persistenceClient.getSessionCount = { 2 }
+            $0.persistenceClient.fetchTasks = { [] }
             $0.syncClient.serverHasData = { false }
             $0.syncClient.initialUpload = { false }
         }

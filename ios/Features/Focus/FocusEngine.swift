@@ -552,6 +552,15 @@ public actor FocusEngine {
             // effectiveElapsed = now - start - totalPausedDuration
             // totalPausedDuration = now - start - effectiveElapsed
             self.totalPausedDuration = max(0, now.timeIntervalSince(start) - elapsed)
+            // Re-anchor the wall clock so subsequent ticks reproduce the
+            // injected values instead of evaporating them within 250ms.
+            // Continuous (no jump) when the injected values already agree
+            // with the wall clock: then totalPausedDuration is unchanged and
+            // phaseStartDate recomputes to the previous start.
+            phaseStartDate = now.addingTimeInterval(-elapsed - self.totalPausedDuration)
+            if phaseTimerEnd != nil, let remaining {
+                phaseTimerEnd = now.addingTimeInterval(remaining)
+            }
             current.elapsedSeconds = max(0, elapsed)
             current.totalPausedDuration = self.totalPausedDuration
             current.remainingSeconds = remaining

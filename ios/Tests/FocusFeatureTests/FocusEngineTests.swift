@@ -9,6 +9,7 @@
 
 import Testing
 import Foundation
+import ComposableArchitecture
 @testable import Pepinillo
 
 // MARK: - Fresh Engine State
@@ -799,7 +800,7 @@ struct FocusEngineFlowtimeBreakTests {
         await engine.start(mode: .flowtime, config: config, timerStart: startDate)
 
         let suggestedDuration = await firstBreakSuggestion(from: engine, within: .milliseconds(500))
-        #expect(abs(suggestedDuration - 300) < 1.0) // 90s focus → 5 min suggested break
+        #expect(abs((suggestedDuration ?? -1) - 300) < 1.0) // 90s focus → 5 min suggested break
     }
 
     @Test func breakSuggestedRespectsDisabledFlag() async throws {
@@ -971,30 +972,25 @@ struct FocusEngineMidpointTests {
         config.defaultBlockDuration = 60 * 60
         let blockConfig = config
 
-        let midpointCount = await withTaskGroup(of: Int.self) { group in
-            group.addTask {
-                guard let events = await engine.events else { return 0 }
-                var count = 0
-                for await event in events {
-                    if case .midpointReached = event {
-                        count += 1
-                    }
+        // Start first so the listener attaches to the live stream: start()
+        // finishes any previous stream, and the first-wins group race can
+        // never observe the event. Count via lock; the listener is cancelled
+        // after the window (reaped at engine deinit, which ends the stream).
+        let start = Date.now.addingTimeInterval(-(30 * 60 + 1))
+        await engine.start(mode: .timeBlock, config: blockConfig, timerStart: start)
+        let midpointCount = LockIsolated(0)
+        let listener = Task {
+            guard let events = await engine.events else { return }
+            for await event in events {
+                if case .midpointReached = event {
+                    midpointCount.withValue { $0 += 1 }
                 }
-                return count
             }
-            group.addTask {
-                let start = Date.now.addingTimeInterval(-(30 * 60 + 1))
-                await engine.start(mode: .timeBlock, config: blockConfig, timerStart: start)
-                try? await Task.sleep(for: .seconds(2))
-                return 0
-            }
-
-            let observed = await group.next() ?? 0
-            group.cancelAll()
-            return observed
         }
+        try? await Task.sleep(for: .seconds(2))
+        listener.cancel()
 
-        #expect(midpointCount == 1)
+        #expect(midpointCount.value == 1)
     }
 
     @Test func midpointDoesNotFireWhenDisabled() async throws {
@@ -1038,29 +1034,23 @@ struct FocusEngineMidpointTests {
         await engine.start(mode: .timeBlock, config: config)
         try await Task.sleep(for: .milliseconds(300))
 
-        let midpointCount = await withTaskGroup(of: Int.self) { group in
-            group.addTask {
-                guard let events = await engine.events else { return 0 }
-                var count = 0
-                for await event in events {
-                    if case .midpointReached = event {
-                        count += 1
-                    }
+        // Same lock-count pattern as above: the first-wins group race can
+        // never observe the event. syncExternalState re-anchors the wall
+        // clock, so the jump past halfway survives subsequent ticks.
+        let midpointCount = LockIsolated(0)
+        let listener = Task {
+            guard let events = await engine.events else { return }
+            for await event in events {
+                if case .midpointReached = event {
+                    midpointCount.withValue { $0 += 1 }
                 }
-                return count
             }
-            group.addTask {
-                await engine.syncExternalState(elapsed: 31 * 60, remaining: 29 * 60)
-                try? await Task.sleep(for: .seconds(2))
-                return 0
-            }
-
-            let observed = await group.next() ?? 0
-            group.cancelAll()
-            return observed
         }
+        await engine.syncExternalState(elapsed: 31 * 60, remaining: 29 * 60)
+        try? await Task.sleep(for: .seconds(2))
+        listener.cancel()
 
-        #expect(midpointCount == 1)
+        #expect(midpointCount.value == 1)
     }
 }
 
