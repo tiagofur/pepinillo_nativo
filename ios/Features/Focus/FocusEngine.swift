@@ -261,7 +261,12 @@ public actor FocusEngine {
             linkedTaskID: current.linkedTaskID,
             pauseCount: pauseCount,
             totalPauseDuration: totalPausedDuration,
-            totalFocusSeconds: accumulatedFocusSeconds
+            totalFocusSeconds: accumulatedFocusSeconds,
+            // S4: stopping from the waiting hold carries no new interval — the
+            // completed phase was already accounted for (persisted or nothing
+            // to persist). The hold never passes through applyPhaseTransition,
+            // so folding here counts the phase exactly once.
+            isHoldStop: pendingNextPhase != nil
         )
 
         emit(.sessionCompleted(result))

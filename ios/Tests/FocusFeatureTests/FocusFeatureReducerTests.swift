@@ -376,7 +376,8 @@ struct FocusFeatureReducerTests {
         phase: FocusPhase,
         wasCompleted: Bool,
         actualDuration: TimeInterval = 600,
-        totalFocusSeconds: TimeInterval? = nil
+        totalFocusSeconds: TimeInterval? = nil,
+        isHoldStop: Bool = false
     ) -> FocusSessionResult {
         FocusSessionResult(
             id: UUID(),
@@ -390,7 +391,8 @@ struct FocusFeatureReducerTests {
             interruptions: 0,
             pomodoroNumber: mode == .pomodoro ? 1 : nil,
             linkedTaskID: nil,
-            totalFocusSeconds: totalFocusSeconds ?? actualDuration
+            totalFocusSeconds: totalFocusSeconds ?? actualDuration,
+            isHoldStop: isHoldStop
         )
     }
 
@@ -545,6 +547,39 @@ struct FocusFeatureReducerTests {
         #expect(savedSessions.value.count == 1)
         #expect(savedSessions.value.first?.wasCompleted == false)
         #expect(savedSessions.value.first?.actualDuration == 600)
+    }
+
+    @Test func stopDuringWaitingHoldDoesNotDuplicatePersistedWork() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.notificationClient.scheduleSessionComplete = { _, _ in }
+            $0.healthClient.isAuthorized = { false }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+        }
+
+        store.exhaustivity = .off
+
+        // Hold-stop after a completed pomodoro work phase: the interval was
+        // already persisted via phaseCompleted under a different UUID.
+        let result = makeSessionResult(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            wasCompleted: false,
+            actualDuration: 1500,
+            isHoldStop: true
+        )
+        await store.send(.sessionCompleted(result))
+
+        #expect(savedSessions.value.isEmpty)
     }
 
     @Test func stopTappedAllowsSessionCompletedToPersistAbandonedSession() async {

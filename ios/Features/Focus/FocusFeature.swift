@@ -796,7 +796,7 @@ struct FocusFeature {
                 case .pomodoro:
                     if wasCompleted {
                         persistEffect = .none
-                    } else if case .work = result.phase {
+                    } else if case .work = result.phase, !result.isHoldStop {
                         persistEffect = .run { [persistence] send in
                             do {
                                 try await persistence.saveSession(result)
@@ -809,12 +809,17 @@ struct FocusFeature {
                         persistEffect = .none
                     }
                 default:
-                    persistEffect = .run { [persistence, sessionTotal] send in
-                        do {
-                            try await persistence.saveSession(result.withActualDuration(sessionTotal))
-                            await send(.delegate(.sessionPersisted))
-                        } catch {
-                            await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                    if result.isHoldStop {
+                        // S4: stop during a hold carries no new interval — never persist.
+                        persistEffect = .none
+                    } else {
+                        persistEffect = .run { [persistence, sessionTotal] send in
+                            do {
+                                try await persistence.saveSession(result.withActualDuration(sessionTotal))
+                                await send(.delegate(.sessionPersisted))
+                            } catch {
+                                await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                            }
                         }
                     }
                 }

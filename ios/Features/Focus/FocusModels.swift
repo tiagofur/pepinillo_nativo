@@ -298,6 +298,10 @@ public struct FocusSessionResult: Sendable, Equatable {
     /// sessions this equals `actualDuration`; for multi-phase sessions (Flowtime)
     /// `actualDuration` carries only the last phase while this carries the total.
     public let totalFocusSeconds: TimeInterval
+    /// True when stop() ran while holding for the next phase (S4). The
+    /// completed phase was already accounted for, so the reducer must not
+    /// persist this result again.
+    public let isHoldStop: Bool
 
     public init(
         id: UUID,
@@ -313,7 +317,8 @@ public struct FocusSessionResult: Sendable, Equatable {
         linkedTaskID: UUID?,
         pauseCount: Int = 0,
         totalPauseDuration: TimeInterval = 0,
-        totalFocusSeconds: TimeInterval = 0
+        totalFocusSeconds: TimeInterval = 0,
+        isHoldStop: Bool = false
     ) {
         self.id = id
         self.mode = mode
@@ -329,6 +334,7 @@ public struct FocusSessionResult: Sendable, Equatable {
         self.pauseCount = pauseCount
         self.totalPauseDuration = totalPauseDuration
         self.totalFocusSeconds = totalFocusSeconds
+        self.isHoldStop = isHoldStop
     }
 
     /// Copy with `actualDuration` replaced, keeping the session total.
@@ -348,7 +354,8 @@ public struct FocusSessionResult: Sendable, Equatable {
             linkedTaskID: linkedTaskID,
             pauseCount: pauseCount,
             totalPauseDuration: totalPauseDuration,
-            totalFocusSeconds: totalFocusSeconds
+            totalFocusSeconds: totalFocusSeconds,
+            isHoldStop: isHoldStop
         )
     }
 }

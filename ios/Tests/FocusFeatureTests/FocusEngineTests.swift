@@ -1239,3 +1239,48 @@ struct FocusEngineSkippedWorkTests {
         await engine.stop()
     }
 }
+
+// MARK: - Stop during waiting hold (S4)
+
+@Suite("FocusEngine — Hold stop")
+struct FocusEngineHoldStopTests {
+
+    @Test func stopDuringHoldMarksResultAsAlreadyAccounted() async throws {
+        // 1s work phases with auto-start OFF: completing work enters the hold.
+        var config = FocusConfig()
+        config.pomodoroDuration = 1
+        config.autoStartBreaks = false
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, config: config)
+        // Let the work phase complete naturally into the waiting hold.
+        try await Task.sleep(for: .milliseconds(2000))
+
+        let result = await withTaskGroup(of: FocusSessionResult?.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return nil }
+                for await event in events {
+                    if case .sessionCompleted(let result) = event {
+                        return result
+                    }
+                }
+                return nil
+            }
+            group.addTask {
+                await engine.stop(completed: false)
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+
+        // The completed work interval was already persisted via phaseCompleted;
+        // the hold-stop result must say so, with the phase folded exactly once.
+        #expect(result?.phase == .work(number: 1, total: 4))
+        #expect(result?.isHoldStop == true)
+        let total = result?.totalFocusSeconds ?? -1
+        #expect(total >= 1.0 && total < 2.0)
+        #expect(await engine.currentState() == nil)
+    }
+}
