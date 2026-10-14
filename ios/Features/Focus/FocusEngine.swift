@@ -34,6 +34,10 @@ public actor FocusEngine {
     private var phaseStartDate: Date?
     private var totalPausedDuration: TimeInterval = 0
 
+    // S1: accumulated focus-phase time across phase transitions within one session.
+    // stop() reports it as FocusSessionResult.totalFocusSeconds.
+    private var accumulatedFocusSeconds: TimeInterval = 0
+
     // For Pomodoro: track which number we're on across phase transitions
     private var currentPomodoroNumber: Int = 1
 
@@ -161,6 +165,7 @@ public actor FocusEngine {
         self.phaseStartDate = effectiveStart
         self.phaseTimerEnd = timerEnd
         self.totalPausedDuration = 0
+        self.accumulatedFocusSeconds = 0
         self.breakSuggestionEmitted = false
         self.midpointEmitted = false
 
@@ -223,6 +228,16 @@ public actor FocusEngine {
             return
         }
 
+        // S1: fold the final phase into the session total so the reported total
+        // covers every focus phase, not just the last one. Break phases never
+        // accumulate. When paused, resolve the underlying timed phase (same as
+        // updateConfig) so stop-while-paused keeps the work done before pausing.
+        let effectivePhase = current.phase == .paused ? (phaseBeforePause ?? current.phase) : current.phase
+        let phaseElapsed = max(0, current.elapsedSeconds)
+        if effectivePhase.isWork {
+            accumulatedFocusSeconds += phaseElapsed
+        }
+
         let result = FocusSessionResult(
             id: current.id,
             mode: current.mode,
@@ -230,13 +245,14 @@ public actor FocusEngine {
             startedAt: current.startedAt,
             endedAt: Date.now,
             targetDuration: current.targetDuration,
-            actualDuration: current.elapsedSeconds,
+            actualDuration: phaseElapsed,
             wasCompleted: completed,
             interruptions: current.interruptions,
             pomodoroNumber: current.pomodoroNumber,
             linkedTaskID: current.linkedTaskID,
             pauseCount: pauseCount,
-            totalPauseDuration: totalPausedDuration
+            totalPauseDuration: totalPausedDuration,
+            totalFocusSeconds: accumulatedFocusSeconds
         )
 
         emit(.sessionCompleted(result))
@@ -622,6 +638,11 @@ public actor FocusEngine {
         guard let strategy = strategy else { return }
 
         let newTarget = strategy.targetDuration(config: config, phase: resolvedPhase)
+        // S1: fold the elapsed focus time of the outgoing phase into the session
+        // total before its counters are reset below. Break phases never accumulate.
+        if current.phase.isWork {
+            accumulatedFocusSeconds += max(0, current.elapsedSeconds)
+        }
         current.phase = resolvedPhase
         current.targetDuration = newTarget
         current.remainingSeconds = newTarget
@@ -677,6 +698,7 @@ public actor FocusEngine {
         state = nil
         phaseStartDate = nil
         totalPausedDuration = 0
+        accumulatedFocusSeconds = 0
         currentPomodoroNumber = 1
         pauseCount = 0
         phaseBeforePause = nil

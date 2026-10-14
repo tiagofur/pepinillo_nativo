@@ -375,7 +375,8 @@ struct FocusFeatureReducerTests {
         mode: FocusMode,
         phase: FocusPhase,
         wasCompleted: Bool,
-        actualDuration: TimeInterval = 600
+        actualDuration: TimeInterval = 600,
+        totalFocusSeconds: TimeInterval? = nil
     ) -> FocusSessionResult {
         FocusSessionResult(
             id: UUID(),
@@ -388,7 +389,8 @@ struct FocusFeatureReducerTests {
             wasCompleted: wasCompleted,
             interruptions: 0,
             pomodoroNumber: mode == .pomodoro ? 1 : nil,
-            linkedTaskID: nil
+            linkedTaskID: nil,
+            totalFocusSeconds: totalFocusSeconds ?? actualDuration
         )
     }
 
@@ -479,6 +481,42 @@ struct FocusFeatureReducerTests {
 
         #expect(scheduledComplete.value?.0 == "flowtime")
         #expect(scheduledComplete.value?.1 == nil)
+    }
+
+    @Test func completedFlowtimeSessionPersistsTotalFocusAcrossPhases() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.notificationClient.scheduleSessionComplete = { _, _ in }
+            $0.healthClient.isAuthorized = { true }
+            $0.healthClient.logMindfulMinutes = { _, _ in }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+        }
+
+        store.exhaustivity = .off
+
+        // Engine-reported result for: 40 min flow → break → 10 min flow, stopped mid second flow.
+        // actualDuration carries only the last phase; totalFocusSeconds carries the session total.
+        let result = makeSessionResult(
+            mode: .flowtime,
+            phase: .flow,
+            wasCompleted: true,
+            actualDuration: 600,
+            totalFocusSeconds: 3000
+        )
+        await store.send(.sessionCompleted(result))
+        await store.receive(.delegate(.sessionPersisted))
+
+        #expect(savedSessions.value.count == 1)
+        #expect(savedSessions.value.first?.actualDuration == 3000)
     }
 
     @Test func stopTappedAllowsSessionCompletedToPersistAbandonedSession() async {

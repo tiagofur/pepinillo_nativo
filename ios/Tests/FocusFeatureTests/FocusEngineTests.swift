@@ -1101,3 +1101,52 @@ struct FocusEngineConfigUpdateTests {
         #expect(state?.isPaused == true)
     }
 }
+
+// MARK: - Session total focus (S1)
+
+@Suite("FocusEngine — Session total focus")
+struct FocusEngineSessionTotalTests {
+
+    @Test func stopAfterMultipleFlowPhasesReportsTotalFocusExcludingBreaks() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .flowtime)
+        // Simulate 40 min of flow without waiting for the 4Hz tick loop.
+        // Back-to-back actor calls complete in microseconds; the first tick
+        // fires after 250ms, so no tick can overwrite the seeded elapsed.
+        await engine.syncExternalState(elapsed: 2400, remaining: nil)
+        // User takes a break: flow → flowBreak. Completed flow time must accumulate.
+        await engine.skipToNextPhase()
+        #expect(await engine.currentState()?.phase.isBreak == true)
+        // Simulate 10 min of break, then return to flow for 10 more min.
+        await engine.syncExternalState(elapsed: 600, remaining: nil)
+        await engine.skipToNextPhase()  // flowBreak → flow; break time must NOT accumulate.
+        #expect(await engine.currentState()?.phase == .flow)
+        await engine.syncExternalState(elapsed: 600, remaining: nil)
+
+        let result = await withTaskGroup(of: FocusSessionResult?.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return nil }
+                for await event in events {
+                    if case .sessionCompleted(let result) = event {
+                        return result
+                    }
+                }
+                return nil
+            }
+            group.addTask {
+                await engine.stop(completed: false)
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+
+        #expect(result?.mode == .flowtime)
+        #expect(result?.wasCompleted == false)
+        // 40 min + 10 min of flow counted; the 10 min break excluded.
+        let total = result?.totalFocusSeconds ?? -1
+        #expect(total >= 3000 && total < 3000 + 60)
+    }
+}

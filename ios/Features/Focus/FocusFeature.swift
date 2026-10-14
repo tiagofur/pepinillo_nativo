@@ -754,6 +754,11 @@ struct FocusFeature {
                 let wasCompleted = result.wasCompleted
                 let sessionID = result.id
                 let actualDuration = result.actualDuration
+                // S1: multi-phase sessions (Flowtime) accumulate focus across phases in
+                // totalFocusSeconds — persist and display the session total, not the
+                // last phase alone. Pomodoro keeps per-interval semantics because its
+                // completed work intervals already persist in phaseCompleted.
+                let sessionTotal = result.mode == .pomodoro ? actualDuration : result.totalFocusSeconds
                 // Completed Pomodoro cycles persist work in phaseCompleted under a
                 // separate UUID; journal must target that record and its focus duration.
                 let journalSessionID: UUID
@@ -763,7 +768,7 @@ struct FocusFeature {
                     journalDuration = state.lastPersistedPomodoroDuration ?? actualDuration
                 } else {
                     journalSessionID = sessionID
-                    journalDuration = actualDuration
+                    journalDuration = sessionTotal
                 }
                 resetState(&state)
 
@@ -789,9 +794,9 @@ struct FocusFeature {
                         persistEffect = .none
                     }
                 default:
-                    persistEffect = .run { [persistence] send in
+                    persistEffect = .run { [persistence, sessionTotal] send in
                         do {
-                            try await persistence.saveSession(result)
+                            try await persistence.saveSession(result.withActualDuration(sessionTotal))
                             await send(.delegate(.sessionPersisted))
                         } catch {
                             await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
@@ -840,9 +845,9 @@ struct FocusFeature {
                 }
 
                 // Pomodoro work intervals log in phaseCompleted; other modes log focused time only.
-                if wasCompleted, result.mode != .pomodoro, result.actualDuration > 0 {
+                if wasCompleted, result.mode != .pomodoro, sessionTotal > 0 {
                     let end = result.endedAt
-                    let start = end.addingTimeInterval(-result.actualDuration)
+                    let start = end.addingTimeInterval(-sessionTotal)
                     completionEffects.append(
                         .run { [healthClient, persistence] _ in
                             let prefs = try await persistence.fetchPreferences()

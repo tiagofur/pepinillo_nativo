@@ -290,6 +290,10 @@ public struct FocusSessionResult: Sendable, Equatable {
     public let linkedTaskID: UUID?
     public let pauseCount: Int               // how many times the user paused
     public let totalPauseDuration: TimeInterval  // total time spent in pause
+    /// Session-total focus time across all focus phases (S1). For single-phase
+    /// sessions this equals `actualDuration`; for multi-phase sessions (Flowtime)
+    /// `actualDuration` carries only the last phase while this carries the total.
+    public let totalFocusSeconds: TimeInterval
 
     public init(
         id: UUID,
@@ -304,7 +308,8 @@ public struct FocusSessionResult: Sendable, Equatable {
         pomodoroNumber: Int?,
         linkedTaskID: UUID?,
         pauseCount: Int = 0,
-        totalPauseDuration: TimeInterval = 0
+        totalPauseDuration: TimeInterval = 0,
+        totalFocusSeconds: TimeInterval = 0
     ) {
         self.id = id
         self.mode = mode
@@ -319,5 +324,27 @@ public struct FocusSessionResult: Sendable, Equatable {
         self.linkedTaskID = linkedTaskID
         self.pauseCount = pauseCount
         self.totalPauseDuration = totalPauseDuration
+        self.totalFocusSeconds = totalFocusSeconds
+    }
+
+    /// Copy with `actualDuration` replaced, keeping the session total.
+    /// Used when persisting multi-phase session totals (S1).
+    public func withActualDuration(_ duration: TimeInterval) -> FocusSessionResult {
+        FocusSessionResult(
+            id: id,
+            mode: mode,
+            phase: phase,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            targetDuration: targetDuration,
+            actualDuration: duration,
+            wasCompleted: wasCompleted,
+            interruptions: interruptions,
+            pomodoroNumber: pomodoroNumber,
+            linkedTaskID: linkedTaskID,
+            pauseCount: pauseCount,
+            totalPauseDuration: totalPauseDuration,
+            totalFocusSeconds: totalFocusSeconds
+        )
     }
 }
