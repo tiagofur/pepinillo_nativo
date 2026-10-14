@@ -43,6 +43,8 @@ struct FocusFeature {
         // Task linking
         var linkedTaskID: UUID?
         var linkedTaskTitle: String?
+        /// Identifier of the Calendar event created at session start (S2).
+        var calendarEventID: String?
         var linkedTaskIcon: String?
 
         // Configuration
@@ -98,6 +100,7 @@ struct FocusFeature {
         case externalPauseApplied(elapsed: TimeInterval, remaining: TimeInterval?, pausedAt: Date)
         case externalResumeApplied(elapsed: TimeInterval, remaining: TimeInterval?)
         case stopTapped
+        case calendarEventCreated(String)
         case stopAbandoned(FocusSessionResult)
         case skipPhaseTapped
         case linkTask(UUID?, String?, String?)
@@ -361,8 +364,9 @@ struct FocusFeature {
                     .run { [soundscapeClient] _ in
                         await soundscapeClient.play(soundscape, soundscapeVolume)
                     },
-                    // Create calendar event if enabled (non-critical, errors silently ignored)
-                    .run { [calendarClient, persistence] _ in
+                    // Create calendar event if enabled (non-critical, errors silently ignored).
+                    // The identifier is kept so aborting removes the event (S2).
+                    .run { [calendarClient, persistence] send in
                         guard let prefs = try? await persistence.fetchPreferences(),
                               prefs.calendarIntegrationEnabled,
                               calendarClient.isAuthorized() else { return }
@@ -375,7 +379,10 @@ struct FocusFeature {
                         } else {
                             durationMinutes = 60 // default for open-ended modes
                         }
-                        try? await calendarClient.createFocusEvent(title, Date.now, durationMinutes, mode.rawValue)
+                        if let eventID = try? await calendarClient.createFocusEvent(title, Date.now, durationMinutes, mode.rawValue),
+                           !eventID.isEmpty {
+                            await send(.calendarEventCreated(eventID))
+                        }
                     },
                     // Request notification permission at first session start (contextual moment).
                     // Fires at most once; denied permission doesn't affect session flow.
@@ -509,8 +516,13 @@ struct FocusFeature {
                     }
                 )
 
+            case .calendarEventCreated(let eventID):
+                state.calendarEventID = eventID
+                return .none
+
             case .stopTapped:
                 let wasRunning = state.isRunning
+                let calendarEventID = state.calendarEventID
                 resetState(&state)
                 guard wasRunning else { return .none }
                 // S7: cancel observation FIRST, then take the abandon directly.
@@ -524,6 +536,13 @@ struct FocusFeature {
                     .run { [focusClient] send in
                         if let result = await focusClient.abandonSession() {
                             await send(.stopAbandoned(result))
+                        }
+                    },
+                    .run { [calendarClient, calendarEventID] _ in
+                        // S2: remove the calendar event created at session start;
+                        // aborting left a phantom busy block in the real calendar.
+                        if let calendarEventID = calendarEventID {
+                            try? await calendarClient.removeFocusEvent(calendarEventID)
                         }
                     },
                     .run { [liveActivity] _ in await liveActivity.end(false) },
@@ -1232,6 +1251,7 @@ struct FocusFeature {
         state.pendingNextPhase = nil
         state.lastPersistedPomodoroSessionID = nil
         state.lastPersistedPomodoroDuration = nil
+        state.calendarEventID = nil
         AppGroupDefaults.isSessionActive = false
         AppGroupDefaults.clearActiveSession()
         updateIdleDisplay(&state)

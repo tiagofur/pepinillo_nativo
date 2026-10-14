@@ -16,13 +16,13 @@ struct CalendarClient: Sendable {
     /// Check whether calendar access has been granted.
     var isAuthorized: @Sendable () -> Bool = { false }
 
-    /// Create a calendar event for a focus session.
+    /// Create a calendar event for a focus session. Returns its identifier (S2).
     var createFocusEvent: @Sendable (
         _ title: String,
         _ startDate: Date,
         _ durationMinutes: Int,
         _ mode: String
-    ) async throws -> Void = { _, _, _, _ in }
+    ) async throws -> String = { _, _, _, _ in "" }
 
     /// Remove a previously created focus event by its identifier.
     var removeFocusEvent: @Sendable (_ eventIdentifier: String) async throws -> Void = { _ in }
@@ -57,6 +57,7 @@ extension CalendarClient: DependencyKey {
                 event.calendar = store.defaultCalendarForNewEvents
                 event.availability = .busy
                 try store.save(event, span: .thisEvent)
+                return event.eventIdentifier ?? ""
             },
             removeFocusEvent: { identifier in
                 guard let event = store.event(withIdentifier: identifier) else { return }

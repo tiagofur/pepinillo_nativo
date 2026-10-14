@@ -1169,3 +1169,48 @@ struct FocusModeSuggestionTests {
         await store.receive(.modeSuggested(nil))
     }
 }
+
+// MARK: - Calendar event cleanup (S2)
+
+@Suite("FocusFeature — Calendar cleanup")
+struct FocusCalendarCleanupTests {
+
+    @Test func stopTappedRemovesCalendarEventCreatedAtStart() async throws {
+        let removedIDs = LockIsolated<[String]>([])
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.calendarEventID = "evt-1"
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.abandonSession = { nil }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+            $0.calendarClient.removeFocusEvent = { id in
+                removedIDs.withValue { $0.append(id) }
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.stopTapped) {
+            $0.isRunning = false
+            $0.activeMode = nil
+            $0.elapsedSeconds = 0
+            $0.pomodoroNumber = nil
+            $0.progress = nil
+            $0.linkedTaskID = nil
+            $0.linkedTaskTitle = nil
+            $0.phase = .work(number: 1, total: 4)
+            $0.displayTime = "25:00"
+            $0.remainingSeconds = 25 * 60
+            $0.phaseLabel = FocusPhase.idle.displayName
+            $0.modeIcon = "timer"
+            $0.calendarEventID = nil
+        }
+
+        // S2 RED pre-fix: stopTapped never removes the calendar event.
+        #expect(removedIDs.value == ["evt-1"])
+    }
+}
