@@ -1318,3 +1318,70 @@ struct FocusEngineAbandonTests {
         #expect(await engine.abandonSession() == nil)
     }
 }
+
+// MARK: - Ghost adoption (Sprint-5 T1)
+
+@Suite("FocusEngine — Ghost adoption")
+struct FocusEngineGhostAdoptionTests {
+
+    @Test func adoptPomodoroWorkResumesWithWallClockMath() async throws {
+        let engine = FocusEngine()
+        // Ghost: pomodoro work #2/4, 25-min target, 20 min remaining.
+        await engine.adoptGhostSession(
+            mode: .pomodoro,
+            phase: .work(number: 2, total: 4),
+            elapsed: 300
+        )
+
+        let state = await engine.currentState()
+        #expect(state?.mode == .pomodoro)
+        #expect(state?.phase == .work(number: 2, total: 4))
+        #expect(state?.isPaused == false)
+        #expect(state?.pomodoroNumber == 2)
+        #expect(state?.totalPomodoros == 4)
+        // Invariant: remaining + elapsed == target (no tick sleep needed).
+        let remaining = state?.remainingSeconds ?? -1
+        let elapsed = state?.elapsedSeconds ?? -1
+        #expect(abs((remaining + elapsed) - 1500) < 1)
+        await engine.stop()
+    }
+
+    @Test func adoptFlowRestartsOpenClock() async throws {
+        let engine = FocusEngine()
+        await engine.adoptGhostSession(mode: .flowtime, phase: .flow, elapsed: 1200)
+
+        let state = await engine.currentState()
+        #expect(state?.mode == .flowtime)
+        #expect(state?.phase == .flow)
+        #expect(state?.targetDuration == nil)
+        #expect(state?.remainingSeconds == nil)
+        let elapsed = state?.elapsedSeconds ?? -1
+        #expect(elapsed >= 1200 && elapsed < 1205)
+        await engine.stop()
+    }
+
+    @Test func adoptWhileRunningIsNoOp() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .stopwatch)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.adoptGhostSession(mode: .pomodoro, phase: .work(number: 1, total: 4), elapsed: 600)
+
+        // Original session untouched.
+        let state = await engine.currentState()
+        #expect(state?.mode == .stopwatch)
+        await engine.stop()
+    }
+
+    @Test func resolveGhostPhaseMatrix() {
+        let config = FocusConfig()
+        #expect(FocusEngine.resolveGhostPhase(mode: .pomodoro, phaseDuration: 1500, pomodoroNumber: 3, config: config) == .work(number: 3, total: 4))
+        #expect(FocusEngine.resolveGhostPhase(mode: .pomodoro, phaseDuration: 300, pomodoroNumber: 1, config: config) == .shortBreak)
+        #expect(FocusEngine.resolveGhostPhase(mode: .pomodoro, phaseDuration: 900, pomodoroNumber: 4, config: config) == .longBreak)
+        #expect(FocusEngine.resolveGhostPhase(mode: .pomodoro, phaseDuration: 12345, pomodoroNumber: nil, config: config) == .work(number: 1, total: 4))
+        #expect(FocusEngine.resolveGhostPhase(mode: .flowtime, phaseDuration: nil, pomodoroNumber: nil, config: config) == .flow)
+        #expect(FocusEngine.resolveGhostPhase(mode: .flowtime, phaseDuration: 480, pomodoroNumber: nil, config: config) == .flowBreak(suggestedDuration: 480))
+        #expect(FocusEngine.resolveGhostPhase(mode: .timeBlock, phaseDuration: 3600, pomodoroNumber: nil, config: config) == .block)
+        #expect(FocusEngine.resolveGhostPhase(mode: .stopwatch, phaseDuration: nil, pomodoroNumber: nil, config: config) == .freeform)
+    }
+}

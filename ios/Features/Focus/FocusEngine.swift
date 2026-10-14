@@ -172,6 +172,117 @@ public actor FocusEngine {
         startTicking()
     }
 
+    /// Adopt a killed session as live (Sprint-5 T1): rebuilds in-memory state
+    /// from ghost anchors with wall-clock math. Only the focus observed from
+    /// now on counts — absence is unmeasurable (no kill timestamp exists), so
+    /// elapsed excludes it and multi-phase totals before the ghost phase stay
+    /// unrecoverable (never persisted). Emits nothing; ticking resumes below.
+    /// Fail-closed: only an idle engine adopts (fresh-launch invariant).
+    public func adoptGhostSession(
+        mode: FocusMode,
+        config: FocusConfig = .default,
+        phase: FocusPhase,
+        elapsed: TimeInterval,
+        linkedTaskID: UUID? = nil
+    ) {
+        guard state == nil else { return }
+
+        // Fresh event stream, like start().
+        eventContinuation?.finish()
+        let (stream, continuation) = AsyncStream<FocusEngineEvent>.makeStream()
+        self.events = stream
+        self.eventContinuation = continuation
+
+        let strategy = mode.strategy
+        self.strategy = strategy
+        self.config = config
+
+        let targetDuration = strategy.targetDuration(config: config, phase: phase)
+        let effectiveElapsed = max(0, elapsed)
+        let effectiveRemaining = targetDuration.map { max(0, $0 - effectiveElapsed) }
+
+        let progress: Double?
+        if let target = targetDuration, target > 0, let remaining = effectiveRemaining {
+            progress = min(max(1.0 - (remaining / target), 0), 1)
+        } else {
+            progress = nil
+        }
+
+        let pomodoroNumber: Int?
+        let totalPomodoros: Int?
+        if case .work(let number, let total) = phase, mode == .pomodoro {
+            pomodoroNumber = number
+            totalPomodoros = total
+            self.currentPomodoroNumber = number
+        } else {
+            pomodoroNumber = nil
+            totalPomodoros = nil
+            self.currentPomodoroNumber = 1
+        }
+
+        let now = Date.now
+        let sessionState = FocusSessionState(
+            id: UUID(),
+            mode: mode,
+            phase: phase,
+            startedAt: now,
+            elapsedSeconds: effectiveElapsed,
+            targetDuration: targetDuration,
+            remainingSeconds: effectiveRemaining,
+            progress: progress,
+            linkedTaskID: linkedTaskID,
+            pomodoroNumber: pomodoroNumber,
+            totalPomodoros: totalPomodoros
+        )
+
+        self.state = sessionState
+        self.phaseStartDate = now.addingTimeInterval(-effectiveElapsed)
+        self.phaseTimerEnd = nil
+        self.totalPausedDuration = 0
+        self.accumulatedFocusSeconds = 0
+        self.breakSuggestionEmitted = false
+        self.midpointEmitted = false
+
+        startTicking()
+    }
+
+    /// Resolve the ghost phase from surviving anchors (Sprint-5 T1): the mode,
+    /// the phase wall-clock duration (timerEnd − timerStart, nil when
+    /// open-ended), and the pomodoro counter. Compares against the current
+    /// config with tolerance; unknown durations fall back to the mode's work
+    /// phase. Pure for testability. Legacy ghosts (no raw phase key ever
+    /// existed) use the same path — no special-casing.
+    static func resolveGhostPhase(
+        mode: FocusMode,
+        phaseDuration: TimeInterval?,
+        pomodoroNumber: Int?,
+        config: FocusConfig
+    ) -> FocusPhase {
+        switch mode {
+        case .pomodoro:
+            let number = pomodoroNumber ?? 1
+            let total = config.pomodorosPerCycle
+            if let duration = phaseDuration {
+                let epsilon: TimeInterval = 120
+                if abs(duration - config.shortBreakDuration) < epsilon { return .shortBreak }
+                if abs(duration - config.longBreakDuration) < epsilon { return .longBreak }
+                if abs(duration - config.pomodoroDuration) < epsilon {
+                    return .work(number: number, total: total)
+                }
+            }
+            return .work(number: number, total: total)
+        case .flowtime:
+            if let duration = phaseDuration {
+                return .flowBreak(suggestedDuration: duration)
+            }
+            return .flow
+        case .timeBlock:
+            return .block
+        case .stopwatch:
+            return .freeform
+        }
+    }
+
     /// Pause the current session.
     public func pause() {
         guard var current = state, !current.isPaused else { return }
