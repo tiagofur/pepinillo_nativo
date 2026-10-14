@@ -20,6 +20,14 @@ private enum AppLaunchDefaults {
 
 private let appLaunchLogger = Logger(subsystem: "com.pepinillo.app", category: "app-launch")
 
+/// Pending ghost-resume offer (Sprint-5 T2): adopt spec plus the abandon
+/// snapshot (persisted only if the user discards the offer). A struct (not a
+/// tuple) so AppFeature.State keeps its synthesized Equatable conformance.
+struct PendingGhostOffer: Equatable, Sendable {
+    var spec: FocusEngine.GhostResumeSpec
+    var snapshot: GhostSessionSnapshot
+}
+
 // MARK: - Offline grace bootstrap (#214)
 
 /// Resolves a launch-time subscription state from App Group cache + lastVerifiedDate.
@@ -70,7 +78,7 @@ struct AppFeature {
         /// Pending ghost-resume offer (Sprint-5 T2): adopt spec plus the abandon
         /// snapshot (persisted only if the user discards the offer). Set once at
         /// launch; nil when no ghost qualified.
-        var pendingGhostOffer: (spec: FocusEngine.GhostResumeSpec, snapshot: GhostSessionSnapshot)?
+        var pendingGhostOffer: PendingGhostOffer?
 
         @Presents var calendar: CalendarFeature.State?
 

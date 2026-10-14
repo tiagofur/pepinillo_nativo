@@ -169,6 +169,10 @@ enum AppGroup {
 
 // MARK: - App Group UserDefaults (cross-process communication)
 
+/// Top-level alias so app and extension targets can reference the killed-session
+/// snapshot unqualified (declared nested to keep the App Group surface together).
+typealias GhostSessionSnapshot = AppGroupDefaults.GhostSessionSnapshot
+
 enum AppGroupDefaults {
     private static var defaults: UserDefaults? { UserDefaults(suiteName: AppGroup.id) }
     private static let userCapabilitiesKey = "userCapabilities"
@@ -785,9 +789,6 @@ enum AppGroupDefaults {
     /// The app layer maps it to FocusSessionResult (see init(ghost:) in FocusModels).
     struct GhostSessionSnapshot: Sendable, Equatable {
         var modeName: String?
-        /// True when the full session window was served (S6 backfill). Ghost
-        /// abandonments (S5) always persist this as false.
-        var wasCompleted: Bool = false
         var startedAt: Date
         var endedAt: Date
         var targetDuration: TimeInterval?
@@ -795,6 +796,11 @@ enum AppGroupDefaults {
         var pomodoroNumber: Int?
         var totalPomodoros: Int?
         var taskID: String?
+        /// True when the full session window was served (S6 backfill). Ghost
+        /// abandonments (S5) always persist this as false. Last so the
+        /// synthesized memberwise init accepts declaration-order arguments
+        /// (enforced under Swift 6).
+        var wasCompleted: Bool = false
     }
 
     enum SessionReconcilePolicy {

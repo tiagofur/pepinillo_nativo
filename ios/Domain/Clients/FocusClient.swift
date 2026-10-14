@@ -126,6 +126,10 @@ extension FocusClient: DependencyKey {
             pause: {},
             resume: {},
             stop: { _ in },
+            // No local engine: nothing to abandon or adopt (explicit because
+            // Swift 6.4 ignores memberwise-init defaults for these).
+            abandonSession: { nil },
+            adoptGhostSession: { _, _, _, _, _ in },
             recordInterruption: {},
             skipPhase: {},
             startNextPhase: {},

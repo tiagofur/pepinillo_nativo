@@ -206,7 +206,7 @@ private final class AppBootstrap: ObservableObject {
                taskID: AppGroupDefaults.activeTaskID,
                now: Date.now
            ) {
-            initialState.pendingGhostOffer = (spec: spec, snapshot: snapshot)
+            initialState.pendingGhostOffer = PendingGhostOffer(spec: spec, snapshot: snapshot)
         }
         let hadGhostOffer = initialState.pendingGhostOffer != nil
 
@@ -232,7 +232,7 @@ private final class AppBootstrap: ObservableObject {
                 // its optimistic countdown may already be served with no engine
                 // to record it. take...() snapshots + clears atomically, so the
                 // interval can neither late-adopt nor double-apply.
-                let staleBackfill = AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill(engineIsRunning: false)
+                let staleBackfill = AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill()
                 // Snapshot a killed mid-session process before clearing (#173, S5).
                 let ghostSnapshot = AppGroupDefaults.SessionReconcilePolicy.ghostSnapshotIfNeeded(engineIsRunning: false)
                 if AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(engineIsRunning: false) || staleBackfill != nil {
