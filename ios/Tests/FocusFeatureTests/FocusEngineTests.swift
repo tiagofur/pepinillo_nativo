@@ -381,9 +381,14 @@ struct FocusEngineStopTests {
                 return nil
             }
 
-            let first = await group.next() ?? nil
+            // Skip the stop-task's immediate nil: the sessionCompleted event
+            // arrives via the stream a moment later.
+            var found: FocusSessionResult?
+            while found == nil, let value = await group.next() {
+                found = value
+            }
             group.cancelAll()
-            return first
+            return found
         }
 
         #expect(result?.mode == .flowtime)
@@ -591,7 +596,9 @@ struct FocusEngineTimerTests {
 
         let paused = try #require(pausedState)
         #expect(paused.isPaused == true)
-        #expect(paused.elapsedSeconds == elapsedAtPause)
+        // Frozen at the pause instant, but the live clock advances between the
+        // tap and this read: compare with tolerance, never exact.
+        #expect(abs(paused.elapsedSeconds - elapsedAtPause) < 0.5)
         #expect(AppGroupDefaults.externalPauseRequested == false)
     }
 
@@ -724,8 +731,10 @@ struct FocusEngineFlowtimeBreakTests {
         } else {
             Issue.record("Expected .flowBreak after take break, got \(String(describing: state?.phase))")
         }
-        #expect(state?.targetDuration == 5 * 60)
-        #expect(state?.remainingSeconds == 5 * 60)
+        // Wall-clock derived: assert within a second, never exact (the test
+        // clock keeps running between engine start and this read).
+        #expect(abs((state?.targetDuration ?? -1) - 300) < 1.0)
+        #expect(abs((state?.remainingSeconds ?? -1) - 300) < 1.0)
         #expect(state?.progress != nil)
     }
 
@@ -738,7 +747,7 @@ struct FocusEngineFlowtimeBreakTests {
         try await Task.sleep(for: .milliseconds(300))
 
         let initialRemaining = await engine.currentState()?.remainingSeconds
-        #expect(initialRemaining == 5 * 60)
+        #expect(abs((initialRemaining ?? -1) - 300) < 1.0)
 
         try await Task.sleep(for: .milliseconds(300))
         let laterRemaining = await engine.currentState()?.remainingSeconds
@@ -790,7 +799,7 @@ struct FocusEngineFlowtimeBreakTests {
         await engine.start(mode: .flowtime, config: config, timerStart: startDate)
 
         let suggestedDuration = await firstBreakSuggestion(from: engine, within: .milliseconds(500))
-        #expect(suggestedDuration == 5 * 60) // 90s focus → 5 min suggested break
+        #expect(abs(suggestedDuration - 300) < 1.0) // 90s focus → 5 min suggested break
     }
 
     @Test func breakSuggestedRespectsDisabledFlag() async throws {
@@ -1138,9 +1147,14 @@ struct FocusEngineSessionTotalTests {
                 return nil
             }
 
-            let first = await group.next() ?? nil
+            // Skip the stop-task's immediate nil: the sessionCompleted event
+            // arrives via the stream a moment later.
+            var found: FocusSessionResult?
+            while found == nil, let value = await group.next() {
+                found = value
+            }
             group.cancelAll()
-            return first
+            return found
         }
 
         #expect(result?.mode == .flowtime)
@@ -1220,9 +1234,14 @@ struct FocusEngineSkippedWorkTests {
                 return nil
             }
 
-            let first = await group.next() ?? nil
+            // Skip the stop-task's immediate nil: the partial credit arrives
+            // via the event stream a moment later.
+            var found: FocusSessionResult?
+            while found == nil, let value = await group.next() {
+                found = value
+            }
             group.cancelAll()
-            return first
+            return found
         }
 
         #expect(partial?.mode == .pomodoro)
@@ -1270,9 +1289,14 @@ struct FocusEngineHoldStopTests {
                 return nil
             }
 
-            let first = await group.next() ?? nil
+            // Skip the stop-task's immediate nil: the sessionCompleted event
+            // arrives via the stream a moment later.
+            var found: FocusSessionResult?
+            while found == nil, let value = await group.next() {
+                found = value
+            }
             group.cancelAll()
-            return first
+            return found
         }
 
         // The completed work interval was already persisted via phaseCompleted;

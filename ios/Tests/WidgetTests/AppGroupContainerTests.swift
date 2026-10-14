@@ -269,7 +269,7 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.externalCommandIssuedAt == pauseAt)
         #expect(AppGroupDefaults.activeSessionPausedAt == pauseAt)
         #expect(AppGroupDefaults.activeSessionElapsed == 90)
-        #expect(AppGroupDefaults.activeSessionRemaining == (25 * 60) - 90)
+        #expect(AppGroupDefaults.activeSessionRemaining == 1410.0)
         #expect(AppGroupDefaults.activeSessionProgress != nil)
     }
 
@@ -608,7 +608,7 @@ struct AppGroupContainerTests {
 
         let backfill = AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill()
         #expect(backfill?.wasCompleted == false)
-        #expect(backfill?.actualDuration == 12 * 3600)
+        #expect(backfill?.actualDuration == 43200.0)
         #expect(backfill?.targetDuration == nil)
     }
 

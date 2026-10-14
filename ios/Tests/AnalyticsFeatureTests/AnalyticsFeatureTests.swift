@@ -406,6 +406,7 @@ struct AnalyticsFeatureTests {
 struct TaskAnalyticsFeatureFailureTests {
 
     @Test("load failure releases spinner instead of wedging on")
+    @MainActor
     func loadFailureReleasesSpinner() async {
         struct AnalyticsError: Error {}
         let store = TestStore(

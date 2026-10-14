@@ -207,6 +207,7 @@ struct SyncClientTests {
             $0.persistenceClient.save = { await seqProbe.record("save") }
             $0.persistenceClient.saveLastSyncTimestamp = { _ in }
             $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+            $0.persistenceClient.rebuildDailyStatsFromSessions = { }
         } operation: {
             SyncClient.liveValue
         }
@@ -309,6 +310,10 @@ struct SyncClientTests {
             $0.persistenceClient.markTasksSynced = { _, _ in }
             $0.persistenceClient.save = { }
             $0.persistenceClient.saveLastSyncTimestamp = { _ in }
+            $0.persistenceClient.getLastSyncTimestamp = { nil }
+            $0.persistenceClient.fetchCachedUser = { nil }
+            $0.persistenceClient.fetchSubtasksForTasks = { _ in [:] }
+            $0.persistenceClient.fetchSessionsForTasks = { _ in [:] }
         } operation: {
             SyncClient.liveValue
         }
@@ -342,6 +347,7 @@ struct SyncClientTests {
 
         let client = withDependencies {
             $0.keychainClient.hasTokens = { true }
+            $0.keychainClient.getOrCreateDeviceId = { "test-device" }
             $0.persistenceClient.fetchTasks = { [localTask] }
             $0.apiClient.initialUpload = { request in
                 await probe.capture(request.tasks)
@@ -350,6 +356,10 @@ struct SyncClientTests {
             $0.persistenceClient.save = { }
             $0.persistenceClient.saveLastSyncTimestamp = { _ in }
             $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+            $0.persistenceClient.fetchCachedUser = { nil }
+            $0.persistenceClient.fetchSubtasksForTasks = { _ in [:] }
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.getAllPreferencesAsKeyValue = { [] }
         } operation: {
             SyncClient.liveValue
         }
@@ -372,7 +382,7 @@ struct SyncClientTests {
             var rating: Int?
             func capture(note: String?, rating: Int?) {
                 journalNote = note
-                rating = rating
+                self.rating = rating
             }
         }
         let probe = RequestProbe()
@@ -400,6 +410,7 @@ struct SyncClientTests {
             $0.persistenceClient.markSessionsSynced = { _ in }
             $0.persistenceClient.save = { }
             $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+            $0.persistenceClient.getLastSessionSyncTimestamp = { nil }
         } operation: {
             SyncClient.liveValue
         }
@@ -477,6 +488,7 @@ struct SyncClientTests {
             $0.persistenceClient.save = {}
             $0.persistenceClient.saveLastSyncTimestamp = { _ in }
             $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+            $0.persistenceClient.rebuildDailyStatsFromSessions = { }
         } operation: {
             SyncClient.liveValue
         }

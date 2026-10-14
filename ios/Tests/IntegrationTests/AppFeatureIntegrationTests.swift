@@ -1273,12 +1273,16 @@ struct AppFeatureIntegrationTests {
             taskID: nil
         )
         var state = AppFeature.State()
-        state.pendingGhostOffer = (spec: spec, snapshot: snapshot)
+        state.pendingGhostOffer = PendingGhostOffer(spec: spec, snapshot: snapshot)
 
         let store = TestStore(initialState: state) {
             AppFeature()
         } withDependencies: {
             $0.focusClient.adoptGhostSession = { _, _, _, _, _ in }
+            $0.focusClient.currentState = { nil }
+            $0.focusClient.events = { .finished }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.soundscapeClient.play = { _, _ in }
         }
         store.exhaustivity = .off
 
@@ -1309,7 +1313,7 @@ struct AppFeatureIntegrationTests {
             taskID: nil
         )
         var state = AppFeature.State()
-        state.pendingGhostOffer = (spec: spec, snapshot: snapshot)
+        state.pendingGhostOffer = PendingGhostOffer(spec: spec, snapshot: snapshot)
 
         let store = TestStore(initialState: state) {
             AppFeature()

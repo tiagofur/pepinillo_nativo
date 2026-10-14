@@ -639,6 +639,7 @@ struct FocusFeatureReducerTests {
     // MARK: - Ghost adopt (Sprint-5 T3)
 
 @Suite("FocusFeature — Ghost adopt")
+@MainActor
 struct FocusGhostAdoptTests {
 
     @Test func adoptGhostSessionStartsObservation() async throws {
@@ -656,6 +657,8 @@ struct FocusGhostAdoptTests {
                 ))
             }
             $0.liveActivityClient.isAvailable = { false }
+            $0.focusClient.currentState = { nil }
+            $0.focusClient.events = { .finished }
             $0.soundscapeClient.play = { _, _ in }
         }
         store.exhaustivity = .off
@@ -678,7 +681,13 @@ struct FocusGhostAdoptTests {
         }
 
         // S5-T3 RED pre-fix: no adopt path exists (compile error).
-        #expect(adopted.value == spec)
+        // The client forwards mode/phase/elapsed/linkedTaskID (what the engine
+        // needs); remaining stays in the spec for the sheet/widget anchors.
+        let adoptedSpec = try #require(adopted.value)
+        #expect(adoptedSpec.mode == spec.mode)
+        #expect(adoptedSpec.phase == spec.phase)
+        #expect(adoptedSpec.elapsed == spec.elapsed)
+        #expect(adoptedSpec.linkedTaskID == spec.linkedTaskID)
     }
 }
 
@@ -729,6 +738,7 @@ struct FocusGhostAdoptTests {
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.abandonSession = { abandonedResult }
             $0.focusClient.currentState = { nil }
+            $0.focusClient.events = { .finished }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
             $0.persistenceClient.saveSession = { result in
@@ -823,6 +833,7 @@ struct FocusGhostAdoptTests {
             $0.persistenceClient.saveSession = { result in
                 savedSessions.withValue { $0.append(result) }
             }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
         }
 
@@ -1050,6 +1061,7 @@ struct FocusGhostAdoptTests {
         } withDependencies: {
             $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
             $0.persistenceClient.saveSession = { _ in }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
         }
 
         store.exhaustivity = .off
@@ -1119,6 +1131,9 @@ struct FocusGhostAdoptTests {
                 loggedIntervals.withValue { $0.append((start, end)) }
             }
             $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+            $0.notificationClient.scheduleSessionComplete = { _, _ in }
         }
         store.exhaustivity = .off
 
@@ -1175,7 +1190,8 @@ struct FocusGhostAdoptTests {
             pomodoroNumber: nil,
             linkedTaskID: nil,
             pauseCount: 0,
-            totalPauseDuration: 0
+            totalPauseDuration: 0,
+            totalFocusSeconds: actualDuration
         )
 
         await store.send(.sessionCompleted(result))
@@ -1190,6 +1206,7 @@ struct FocusGhostAdoptTests {
 // MARK: - Mode suggestion failure (S1)
 
 @Suite("FocusFeature — Mode suggestion")
+@MainActor
 struct FocusModeSuggestionTests {
 
     @Test func linkTaskFailureStillSuggestsNil() async throws {
@@ -1219,6 +1236,7 @@ struct FocusModeSuggestionTests {
 // MARK: - Calendar event cleanup (S2)
 
 @Suite("FocusFeature — Calendar cleanup")
+@MainActor
 struct FocusCalendarCleanupTests {
 
     @Test func stopTappedRemovesCalendarEventCreatedAtStart() async throws {

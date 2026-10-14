@@ -135,7 +135,7 @@ struct AuthFeatureTests {
         await store.send(.authSucceeded(makeUser())) {
             $0.isSyncing = true
         }
-        await store.receive(.initialSyncCompleted) {
+        await store.receive(.initialSyncCompleted(makeUser())) {
             $0.isSyncing = false
             $0.showMergeDialog = true
         }

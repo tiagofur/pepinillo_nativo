@@ -59,15 +59,18 @@ struct WatchSessionStateTests {
     }
 
     @Test func equatableIncludesOptionalFields() {
+        let sentAt = 1_800_000_000.0
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests"
+            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests",
+            sentAt: sentAt
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests"
+            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests",
+            sentAt: sentAt
         )
         #expect(a == b)
     }
