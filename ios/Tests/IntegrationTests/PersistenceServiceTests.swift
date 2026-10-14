@@ -359,6 +359,102 @@ struct PersistenceServiceTests {
         #expect((firstWindow + secondWindow).filter({ $0.startedAt == day1 }).count == 1)
     }
 
+    @Test("upsertTaskFromServer applies newer server state despite dirty flag")
+    func upsertAppliesNewerServerStateDespiteDirty() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        // Local dirty edit from an older clock.
+        let task = TaskItem(title: "Local")
+        task.syncId = "sync-lww"
+        task.isDirty = true
+        task.updatedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        context.insert(task)
+        try context.save()
+
+        let dto = TaskSyncDTO(
+            syncId: "sync-lww",
+            title: "Server",
+            updatedAt: "2024-01-01T00:00:00Z"
+        )
+
+        try service.upsertTaskFromServer(dto, true)
+
+        let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+        // S6 RED pre-fix: the dirty guard drops the newer server state.
+        #expect(after.title == "Server")
+        #expect(after.isDirty == false)
+    }
+
+    @Test("upsertTaskFromServer keeps newer local state over older server data")
+    func upsertKeepsNewerLocalState() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let task = TaskItem(title: "Local")
+        task.syncId = "sync-lww2"
+        task.isDirty = true
+        task.updatedAt = Date.now
+        context.insert(task)
+        try context.save()
+
+        let dto = TaskSyncDTO(
+            syncId: "sync-lww2",
+            title: "Server",
+            updatedAt: "2020-01-01T00:00:00Z"
+        )
+
+        try service.upsertTaskFromServer(dto, true)
+
+        let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+        #expect(after.title == "Local")
+        #expect(after.isDirty == true)
+    }
+
+    @Test("upsertTaskFromServer keeps real completion time instead of fabricating")
+    func upsertKeepsRealCompletionTime() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let dto = TaskSyncDTO(
+            syncId: "sync-done",
+            title: "Done",
+            isFinished: true,
+            updatedAt: "2024-01-01T00:25:00Z"
+        )
+
+        try service.upsertTaskFromServer(dto, true)
+
+        let record = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+        #expect(record.isCompleted == true)
+        let expected = try #require(ISO8601DateFormatter().date(from: "2024-01-01T00:25:00Z"))
+        #expect(record.completedAt == expected)
+    }
+
     @Test("applyServerPreference keeps unpushed local edits")
     func applyServerPreferenceKeepsDirtyLocalEdits() throws {
         let dir = FileManager.default.temporaryDirectory
