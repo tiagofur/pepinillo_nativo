@@ -192,6 +192,24 @@ private final class AppBootstrap: ObservableObject {
             forKey: AppLaunchDefaults.hasCompletedOnboardingKey
         )
 
+        // Sprint-5 T2: resolve a resume offer BEFORE the launch reconcile below
+        // clears the anchors (ghostSnapshotIfNeeded is read-only; the clear
+        // happens later). Eligible ghosts surface an offer; the abandon record
+        // is deferred to Discard. Everything else keeps the T5 abandon path.
+        if let snapshot = AppGroupDefaults.SessionReconcilePolicy.ghostSnapshotIfNeeded(engineIsRunning: false),
+           let spec = FocusEngine.resolveGhostResume(
+               modeName: AppGroupDefaults.activeModeName,
+               timerStart: AppGroupDefaults.activeSessionTimerStart,
+               timerEnd: AppGroupDefaults.activeSessionTimerEnd,
+               elapsedAnchor: AppGroupDefaults.activeSessionElapsed,
+               pomodoroNumber: AppGroupDefaults.activeSessionPomodoroNumber,
+               taskID: AppGroupDefaults.activeTaskID,
+               now: Date.now
+           ) {
+            initialState.pendingGhostOffer = (spec: spec, snapshot: snapshot)
+        }
+        let hadGhostOffer = initialState.pendingGhostOffer != nil
+
         store = Store(initialState: initialState) {
             AppFeature()
         } withDependencies: {
@@ -228,7 +246,10 @@ private final class AppBootstrap: ObservableObject {
                     // S5: persist the killed session's focus time as an abandoned
                     // record instead of letting it evaporate. Best-effort on the
                     // launch path; the snapshot was already cleared above.
-                    if let ghostSnapshot {
+                    // Sprint-5 T2: skipped while a resume offer is pending — the
+                    // abandon is recorded only on Discard (recording now would
+                    // double-count on Resume).
+                    if !hadGhostOffer, let ghostSnapshot {
                         let ghost = FocusSessionResult(ghost: ghostSnapshot)
                         Task { [persistence] in
                             _ = try? await persistence.saveSession(ghost)

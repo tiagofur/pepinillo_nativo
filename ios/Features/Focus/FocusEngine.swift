@@ -283,6 +283,60 @@ public actor FocusEngine {
         }
     }
 
+    /// Resolved resume offer for a ghost snapshot (Sprint-5 T2): the exact inputs
+    /// adoptGhostSession needs. Nil = ineligible (existing abandon path applies).
+    struct GhostResumeSpec: Equatable, Sendable {
+        let mode: FocusMode
+        let phase: FocusPhase
+        let elapsed: TimeInterval
+        let linkedTaskID: UUID?
+    }
+
+    /// Decide whether a ghost snapshot is resumable (Sprint-5 T2): wall-clock
+    /// eligibility + phase/elapsed resolution. Pure for testability.
+    /// - Timed ghosts (timerEnd present): eligible iff the end is still future
+    ///   with >60s left and the phase started today. Elapsed = target − remaining.
+    /// - Open-ended ghosts (flow/stopwatch only): eligible iff started today;
+    ///   elapsed = stale anchor as a lower bound (never over-claims).
+    /// - Everything else (unknown mode, missing timerStart, timeBlock/pomodoro
+    ///   without end): nil — corrupt or ambiguous, abandon path applies.
+    static func resolveGhostResume(
+        modeName: String?,
+        timerStart: Date?,
+        timerEnd: Date?,
+        elapsedAnchor: TimeInterval,
+        pomodoroNumber: Int?,
+        taskID: String?,
+        now: Date = Date.now,
+        calendar: Calendar = .current,
+        config: FocusConfig = .default
+    ) -> GhostResumeSpec? {
+        guard let mode = modeName.flatMap({ FocusMode(rawValue: $0) }) else { return nil }
+        guard let timerStart = timerStart else { return nil }
+        guard calendar.isDate(timerStart, inSameDayAs: now) else { return nil }
+        let linkedTaskID = taskID.flatMap({ UUID(uuidString: $0) })
+
+        if let timerEnd {
+            let remaining = timerEnd.timeIntervalSince(now)
+            guard remaining > 60 else { return nil }
+            let duration = timerEnd.timeIntervalSince(timerStart)
+            guard duration > 0 else { return nil }
+            let phase = resolveGhostPhase(
+                mode: mode,
+                phaseDuration: duration,
+                pomodoroNumber: pomodoroNumber,
+                config: config
+            )
+            let target = mode.strategy.targetDuration(config: config, phase: phase)
+            let elapsed = max(0, (target ?? duration) - remaining)
+            return GhostResumeSpec(mode: mode, phase: phase, elapsed: elapsed, linkedTaskID: linkedTaskID)
+        }
+
+        guard mode == .flowtime || mode == .stopwatch else { return nil }
+        let phase: FocusPhase = mode == .flowtime ? .flow : .freeform
+        return GhostResumeSpec(mode: mode, phase: phase, elapsed: max(0, elapsedAnchor), linkedTaskID: linkedTaskID)
+    }
+
     /// Pause the current session.
     public func pause() {
         guard var current = state, !current.isPaused else { return }

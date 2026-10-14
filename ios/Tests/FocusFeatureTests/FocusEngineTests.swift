@@ -1385,3 +1385,145 @@ struct FocusEngineGhostAdoptionTests {
         #expect(FocusEngine.resolveGhostPhase(mode: .stopwatch, phaseDuration: nil, pomodoroNumber: nil, config: config) == .freeform)
     }
 }
+
+// MARK: - Ghost resume eligibility (Sprint-5 T2)
+
+@Suite("FocusEngine — Ghost resume eligibility")
+struct FocusEngineGhostResumeTests {
+
+    private var utcCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    // Fixed now: 2026-01-15T12:00 UTC.
+    private var now: Date { Date(timeIntervalSince1970: 1_774_958_400) }
+
+    @Test func timedGhostWithTimeLeftIsEligible() {
+        // Pomodoro started 10 min ago, ends in 15 min: work #1/4, 10 min elapsed.
+        let start = now.addingTimeInterval(-600)
+        let end = now.addingTimeInterval(900)
+        let taskID = UUID()
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: start,
+            timerEnd: end,
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: taskID.uuidString,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == FocusEngine.GhostResumeSpec(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            elapsed: 600,
+            linkedTaskID: taskID
+        ))
+    }
+
+    @Test func expiredEndIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: now.addingTimeInterval(-1500),
+            timerEnd: now.addingTimeInterval(-60),
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func shortRemainingIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: now.addingTimeInterval(-1470),
+            timerEnd: now.addingTimeInterval(30),
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func yesterdayStartIsIneligible() {
+        let start = now.addingTimeInterval(-86400 - 600)
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: start,
+            timerEnd: now.addingTimeInterval(900),
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func unknownModeIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "sauna",
+            timerStart: now.addingTimeInterval(-600),
+            timerEnd: now.addingTimeInterval(900),
+            elapsedAnchor: 0,
+            pomodoroNumber: nil,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func missingStartIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: nil,
+            timerEnd: now.addingTimeInterval(900),
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func openFlowGhostIsEligibleWithAnchorElapsed() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "flowtime",
+            timerStart: now.addingTimeInterval(-2400),
+            timerEnd: nil,
+            elapsedAnchor: 2400,
+            pomodoroNumber: nil,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == FocusEngine.GhostResumeSpec(
+            mode: .flowtime,
+            phase: .flow,
+            elapsed: 2400,
+            linkedTaskID: nil
+        ))
+    }
+
+    @Test func openEndedNonFlowModeIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "timeBlock",
+            timerStart: now.addingTimeInterval(-600),
+            timerEnd: nil,
+            elapsedAnchor: 600,
+            pomodoroNumber: nil,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+}

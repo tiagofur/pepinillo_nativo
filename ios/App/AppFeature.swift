@@ -67,6 +67,10 @@ struct AppFeature {
 
         // Celebration overlay
         var pendingCelebration: CelebrationMilestone? = nil
+        /// Pending ghost-resume offer (Sprint-5 T2): adopt spec plus the abandon
+        /// snapshot (persisted only if the user discards the offer). Set once at
+        /// launch; nil when no ghost qualified.
+        var pendingGhostOffer: (spec: FocusEngine.GhostResumeSpec, snapshot: GhostSessionSnapshot)?
 
         @Presents var calendar: CalendarFeature.State?
 
