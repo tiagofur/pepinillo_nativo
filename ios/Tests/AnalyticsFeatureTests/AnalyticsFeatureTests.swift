@@ -428,3 +428,40 @@ struct TaskAnalyticsFeatureFailureTests {
         }
     }
 }
+
+@Suite("MonthlyReview day-equivalent window")
+struct MonthlyReviewWindowTests {
+
+    private var utcCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    @Test("mid-month compares first N days of previous month")
+    func midMonthComparesFirstNDays() {
+        // 2026-03-15 → previous window Feb 1 .. Feb 16.
+        let today = Date(timeIntervalSince1970: 1_773_576_000)
+        let window = MonthlyReviewFeature.previousComparisonWindow(today: today, calendar: utcCalendar)
+        #expect(window.start == Date(timeIntervalSince1970: 1_769_904_000))
+        #expect(window.end == Date(timeIntervalSince1970: 1_771_200_000))
+    }
+
+    @Test("clamps to previous month length so windows never overlap")
+    func clampsToPreviousMonthLength() {
+        // 2026-03-31 → February has 28 days → window Feb 1 .. Mar 1.
+        let today = Date(timeIntervalSince1970: 1_774_958_400)
+        let window = MonthlyReviewFeature.previousComparisonWindow(today: today, calendar: utcCalendar)
+        #expect(window.start == Date(timeIntervalSince1970: 1_769_904_000))
+        #expect(window.end == Date(timeIntervalSince1970: 1_772_323_200))
+    }
+
+    @Test("first of month compares a single day")
+    func firstOfMonthComparesSingleDay() {
+        // 2026-04-01 → window Mar 1 .. Mar 2.
+        let today = Date(timeIntervalSince1970: 1_775_044_800)
+        let window = MonthlyReviewFeature.previousComparisonWindow(today: today, calendar: utcCalendar)
+        #expect(window.start == Date(timeIntervalSince1970: 1_772_323_200))
+        #expect(window.end == Date(timeIntervalSince1970: 1_772_409_600))
+    }
+}

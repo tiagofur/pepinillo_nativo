@@ -80,6 +80,23 @@ struct MonthlyReviewFeature {
         let completionRate: Double
     }
 
+    /// Day-equivalent previous-month window for fair trends (S3): the first N
+    /// days of the previous month, where N is the days elapsed in the current
+    /// month, clamped to the previous month's length so windows never overlap.
+    /// Pure for testability.
+    static func previousComparisonWindow(
+        today: Date,
+        calendar: Calendar = .current
+    ) -> (start: Date, end: Date) {
+        let dayStart = calendar.startOfDay(for: today)
+        let currentMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: dayStart))!
+        let previousMonthStart = calendar.date(byAdding: .month, value: -1, to: currentMonthStart)!
+        let daysElapsed = calendar.component(.day, from: dayStart)
+        let daysInPreviousMonth = calendar.range(of: .day, in: .month, for: previousMonthStart)?.count ?? daysElapsed
+        let end = calendar.date(byAdding: .day, value: min(daysElapsed, daysInPreviousMonth), to: previousMonthStart)!
+        return (previousMonthStart, end)
+    }
+
     @Dependency(\.persistenceClient) var persistence
 
     var body: some ReducerOf<Self> {
@@ -96,9 +113,13 @@ struct MonthlyReviewFeature {
                     let currentMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: today))!
                     let endOfToday = calendar.date(byAdding: .day, value: 1, to: today)!
 
-                    // Previous month: 1st of previous month to 1st of current month
-                    let previousMonthStart = calendar.date(byAdding: .month, value: -1, to: currentMonthStart)!
-                    let previousMonthEnd = currentMonthStart
+                    // Previous window: day-equivalent slice of the previous month (S3).
+                    // Comparing a partial month against a full one always trends
+                    // "down" early in the month; deltas/trends below now compare
+                    // like-for-like windows without changing shape.
+                    let previousWindow = Self.previousComparisonWindow(today: today)
+                    let previousMonthStart = previousWindow.start
+                    let previousMonthEnd = previousWindow.end
 
                     let currentSessions = try await persistence.fetchSessions(currentMonthStart, endOfToday)
                     let previousSessions = try await persistence.fetchSessions(previousMonthStart, previousMonthEnd)
