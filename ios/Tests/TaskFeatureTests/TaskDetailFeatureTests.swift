@@ -141,4 +141,29 @@ struct TaskDetailFeatureTests {
         }
         await store.receive(\.dataLoaded)
     }
+
+    @Test("add subtask failure restores title and surfaces error")
+    func addSubtaskFailureRestoresTitle() async {
+        struct AddError: Error {}
+        let taskID = UUID()
+        var state = detailState(taskID: taskID)
+        state.isProUser = true
+        state.newSubtaskTitle = "Buy milk"
+
+        let store = TestStore(initialState: state) {
+            TaskDetailFeature()
+        } withDependencies: {
+            $0.persistenceClient.addSubtask = { _, _ in throw AddError() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.addSubtaskTapped) {
+            $0.newSubtaskTitle = ""
+        }
+        // S1 RED pre-fix: the effect dies unhandled, nothing is ever received.
+        await store.receive(\.subtaskAddFailed) {
+            $0.newSubtaskTitle = "Buy milk"
+            #expect($0.mutationError != nil)
+        }
+    }
 }

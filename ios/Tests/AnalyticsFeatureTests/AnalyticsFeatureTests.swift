@@ -401,3 +401,30 @@ struct AnalyticsFeatureTests {
         #expect(store.state.focusQualityScore == 75)
     }
 }
+
+@Suite("TaskAnalyticsFeature")
+struct TaskAnalyticsFeatureFailureTests {
+
+    @Test("load failure releases spinner instead of wedging on")
+    func loadFailureReleasesSpinner() async {
+        struct AnalyticsError: Error {}
+        let store = TestStore(
+            initialState: TaskAnalyticsFeature.State(taskID: UUID(), taskTitle: "T")
+        ) {
+            TaskAnalyticsFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTaskAnalytics = { _ in throw AnalyticsError() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+        // S1 RED pre-fix: the effect dies unhandled, nothing is ever received.
+        // The sheet falls back to its existing empty state (no error UI there).
+        await store.receive(.analyticsFailed) {
+            $0.isLoading = false
+            #expect($0.analytics == nil)
+        }
+    }
+}

@@ -568,7 +568,14 @@ struct FocusFeature {
                             await send(.modeSuggested(nil))
                             return
                         }
-                        let sessions = try await persistence.fetchSessions(start, end)
+                        let sessions: [SessionRecordDTO]
+                        do {
+                            sessions = try await persistence.fetchSessions(start, end)
+                        } catch {
+                            // Optional intelligence must never break the flow (S1).
+                            await send(.modeSuggested(nil))
+                            return
+                        }
                         let service = ModeIntelligenceService()
                         let suggestion = service.suggestMode(forTaskID: taskID, sessions: sessions)
                         await send(.modeSuggested(suggestion))

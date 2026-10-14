@@ -1490,4 +1490,27 @@ struct TaskListFeatureTests {
             createdAt: Date(timeIntervalSince1970: 1_000_000)
         )
     }
+
+    @Test("detail dismiss reload failure surfaces load error instead of dying silently")
+    func detailDismissReloadFailureSurfacesError() async {
+        struct ReloadError: Error {}
+        var initialState = TaskListFeature.State()
+        initialState.detail = TaskDetailFeature.State(from: TaskItemDTO(id: UUID(), title: "T"))
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { throw ReloadError() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.detail(.dismiss)) {
+            $0.detail = nil
+        }
+        // S1 RED pre-fix: the effect dies unhandled, nothing is ever received.
+        await store.receive(\.tasksLoadFailed) {
+            $0.isLoading = false
+            #expect($0.loadError != nil)
+        }
+    }
 }

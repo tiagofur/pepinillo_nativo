@@ -635,9 +635,13 @@ struct TaskListFeature {
             case .detail(.dismiss):
                 // Reload to reflect all changes made in the detail sheet
                 return .run { send in
-                    let items = try await persistence.fetchTasks()
-                    let states = items.map { TaskItemState.from($0) }
-                    await send(.tasksLoaded(states))
+                    do {
+                        let items = try await persistence.fetchTasks()
+                        let states = items.map { TaskItemState.from($0) }
+                        await send(.tasksLoaded(states))
+                    } catch {
+                        await send(.tasksLoadFailed(error.localizedDescription))
+                    }
                 }
 
             case .detail:

@@ -1140,3 +1140,32 @@ struct FocusFeatureReducerTests {
         #expect(abs(interval.1.timeIntervalSince(interval.0) - actualDuration) < 1)
     }
 }
+
+// MARK: - Mode suggestion failure (S1)
+
+@Suite("FocusFeature — Mode suggestion")
+struct FocusModeSuggestionTests {
+
+    @Test func linkTaskFailureStillSuggestsNil() async throws {
+        struct SuggestionError: Error {}
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in throw SuggestionError() }
+        }
+        store.exhaustivity = .off
+
+        let taskID = UUID()
+        await store.send(.linkTask(taskID, "T", nil)) {
+            $0.linkedTaskID = taskID
+            $0.linkedTaskTitle = "T"
+            $0.linkedTaskIcon = nil
+            $0.modeSuggestion = nil
+        }
+        // S1 RED pre-fix: the effect dies unhandled, nothing is ever received.
+        await store.receive(.modeSuggested(nil))
+    }
+}

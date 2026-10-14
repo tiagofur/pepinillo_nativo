@@ -104,6 +104,7 @@ struct TaskDetailFeature {
         case newSubtaskTitleChanged(String)
         case addSubtaskTapped
         case subtaskAdded(SubTaskDTO)
+        case subtaskAddFailed(String, String)
         case subtaskToggled(UUID)
         case subtaskDeleted(UUID)
 
@@ -261,8 +262,12 @@ struct TaskDetailFeature {
                 state.newSubtaskTitle = ""
                 let id = state.taskID
                 return .run { send in
-                    let dto = try await persistence.addSubtask(id, title)
-                    await send(.subtaskAdded(dto))
+                    do {
+                        let dto = try await persistence.addSubtask(id, title)
+                        await send(.subtaskAdded(dto))
+                    } catch {
+                        await send(.subtaskAddFailed(title, error.localizedDescription))
+                    }
                 }
 
             case .subtaskAdded(let dto):
@@ -271,6 +276,13 @@ struct TaskDetailFeature {
                     isCompleted: dto.isCompleted, sortOrder: dto.sortOrder
                 )
                 state.subtasks.append(subtaskState)
+                return .none
+
+            case .subtaskAddFailed(let title, let message):
+                // Restore the typed title so nothing the user wrote is lost,
+                // and surface the error like other mutation failures (S1).
+                state.newSubtaskTitle = title
+                state.mutationError = message
                 return .none
 
             case .subtaskToggled(let id):
