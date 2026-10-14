@@ -740,6 +740,20 @@ enum AppGroupDefaults {
     ///
     /// Manual QA (#173): start a Pomodoro from Focus, force-quit mid-session, relaunch — Focus
     /// tab is idle and home/lock widgets show idle (not a running timer).
+    /// Point-in-time snapshot of a killed focus session (S5). Primitives only —
+    /// this file compiles into extension targets, so it cannot reference app models.
+    /// The app layer maps it to FocusSessionResult (see init(ghost:) in FocusModels).
+    struct GhostSessionSnapshot: Sendable, Equatable {
+        var modeName: String?
+        var startedAt: Date
+        var endedAt: Date
+        var targetDuration: TimeInterval?
+        var actualDuration: TimeInterval
+        var pomodoroNumber: Int?
+        var totalPomodoros: Int?
+        var taskID: String?
+    }
+
     enum SessionReconcilePolicy {
         /// Returns `true` when a ghost session was cleared.
         static func clearGhostSessionIfNeeded(engineIsRunning: Bool) -> Bool {
@@ -751,6 +765,71 @@ enum AppGroupDefaults {
             clearActiveSession()
             clearExternalCommands()
             return true
+        }
+
+        /// Minimum ghost focus time worth persisting (S5). Shorter ghosts are
+        /// cleared silently: a seconds-long record would pollute stats and could
+        /// grant a streak day via DailyStats.hadFocusSession.
+        static let minimumGhostPersistSeconds: TimeInterval = 60
+
+        /// Reads the App Group anchors and snapshots a ghost session WITHOUT
+        /// clearing (S5). The caller clears via clearGhostSessionIfNeeded and
+        /// persists the snapshot. Nil when there is no ghost.
+        static func ghostSnapshotIfNeeded(engineIsRunning: Bool) -> GhostSessionSnapshot? {
+            guard isSessionActive,
+                  !engineIsRunning,
+                  !externalStartRequested else {
+                return nil
+            }
+            return validatedGhostSnapshot(
+                isSessionActive: true,
+                isWaiting: activeSessionIsWaiting,
+                modeName: activeModeName,
+                elapsed: activeSessionElapsed,
+                timerStart: activeSessionTimerStart,
+                timerEnd: activeSessionTimerEnd,
+                pomodoroNumber: activeSessionPomodoroNumber,
+                totalPomodoros: activeSessionTotalPomodoros,
+                taskID: activeTaskID
+            )
+        }
+
+        /// Pure ghost-snapshot validator (S5). Returns nil when nothing should
+        /// persist: no ghost, a waiting hold (its phase already completed), or a
+        /// trivial sub-minute ghost. Pass `now` explicitly in tests.
+        static func validatedGhostSnapshot(
+            isSessionActive: Bool,
+            isWaiting: Bool,
+            modeName: String?,
+            elapsed: TimeInterval,
+            timerStart: Date?,
+            timerEnd: Date?,
+            pomodoroNumber: Int?,
+            totalPomodoros: Int?,
+            taskID: String?,
+            now: Date = Date.now
+        ) -> GhostSessionSnapshot? {
+            guard isSessionActive, !isWaiting else { return nil }
+            let endedAt = now
+            let startedAt = timerStart ?? endedAt.addingTimeInterval(-max(0, elapsed))
+            let maxElapsed = max(0, endedAt.timeIntervalSince(startedAt))
+            let actual = min(max(0, elapsed), maxElapsed)
+            guard actual >= minimumGhostPersistSeconds else { return nil }
+            let target: TimeInterval? = {
+                guard let timerStart = timerStart, let timerEnd = timerEnd else { return nil }
+                let duration = timerEnd.timeIntervalSince(timerStart)
+                return duration > 0 ? duration : nil
+            }()
+            return GhostSessionSnapshot(
+                modeName: modeName,
+                startedAt: startedAt,
+                endedAt: endedAt,
+                targetDuration: target,
+                actualDuration: actual,
+                pomodoroNumber: pomodoroNumber,
+                totalPomodoros: totalPomodoros,
+                taskID: taskID
+            )
         }
     }
 

@@ -358,4 +358,42 @@ public struct FocusSessionResult: Sendable, Equatable {
             isHoldStop: isHoldStop
         )
     }
+
+    /// Abandoned-session record for a ghost snapshot (S5): the app was killed
+    /// mid-session. Never completed; carries the focus time that evaporated.
+    /// Unknown modes fall back to pomodoro; work-phase numbering falls back to
+    /// the FocusConfig defaults (1 of 4).
+    init(ghost snapshot: GhostSessionSnapshot) {
+        let mode = snapshot.modeName.flatMap { FocusMode(rawValue: $0) } ?? .pomodoro
+        let pomodoroNumber = snapshot.pomodoroNumber ?? 1
+        let phase: FocusPhase = {
+            switch mode {
+            case .pomodoro:
+                return .work(number: pomodoroNumber, total: snapshot.totalPomodoros ?? 4)
+            case .flowtime:
+                return .flow
+            case .timeBlock:
+                return .block
+            case .stopwatch:
+                return .freeform
+            }
+        }()
+        self.init(
+            id: UUID(),
+            mode: mode,
+            phase: phase,
+            startedAt: snapshot.startedAt,
+            endedAt: snapshot.endedAt,
+            targetDuration: snapshot.targetDuration,
+            actualDuration: snapshot.actualDuration,
+            wasCompleted: false,
+            interruptions: 0,
+            pomodoroNumber: mode == .pomodoro ? pomodoroNumber : nil,
+            linkedTaskID: snapshot.taskID.flatMap { UUID(uuidString: $0) },
+            pauseCount: 0,
+            totalPauseDuration: 0,
+            totalFocusSeconds: snapshot.actualDuration,
+            isHoldStop: false
+        )
+    }
 }
