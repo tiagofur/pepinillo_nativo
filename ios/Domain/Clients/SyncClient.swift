@@ -55,6 +55,9 @@ public struct SyncClient: Sendable {
     public var syncSessions: @Sendable () async throws -> Void
     public var syncSettings: @Sendable () async throws -> Void
     public var initialUpload: @Sendable () async throws -> Bool  // returns hasExistingData
+    /// Read-only probe: does the server hold any tasks/sessions/settings? (S1)
+    /// Used by the login merge flow to ask before uploading anything.
+    public var serverHasData: @Sendable () async throws -> Bool
     public var performInitialSync: @Sendable () async throws -> Void
     public var wipeAndSync: @Sendable () async throws -> Void
     public var hasLocalData: @Sendable () async -> Bool = { false }
@@ -447,6 +450,18 @@ extension SyncClient: DependencyKey {
                 PreferenceDirtyTracker.clearAll()
 
                 return response.hasExistingData
+            },
+            serverHasData: {
+                guard await keychain.hasTokens() else {
+                    throw SyncError.notAuthenticated
+                }
+                // S1: read-only probe for the login merge flow. First page only:
+                // settings ride the first page per server contract, so one small
+                // page answers "does the server hold anything?".
+                let response = try await apiClient.getFullSync(nil, nil, 1)
+                return !response.tasks.items.isEmpty
+                    || !response.sessions.items.isEmpty
+                    || !response.settings.isEmpty
             },
             performInitialSync: {
                 guard await keychain.hasTokens() else {

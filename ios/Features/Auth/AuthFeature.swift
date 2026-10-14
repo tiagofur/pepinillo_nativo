@@ -212,12 +212,16 @@ struct AuthFeature {
 
                     if hasLocalData {
                         do {
-                            let hasExistingData = try await syncClient.initialUpload()
-                            if hasExistingData {
-                                // Server has data too — ask user what to do
+                            // S1: probe FIRST — uploading before the user chooses
+                            // made "Use Account Only" impossible (local data was
+                            // already merged server-side). Ask before uploading.
+                            if try await syncClient.serverHasData() {
+                                // Server has data too — ask user what to do.
+                                // Nothing is uploaded until they pick Merge.
                                 await send(.initialSyncCompleted(userDTO))
                             } else {
-                                // No server data — local data uploaded successfully
+                                // No server data — migrate local data up.
+                                _ = try await syncClient.initialUpload()
                                 await send(.delegate(.authenticated(userDTO)))
                             }
                         } catch {
@@ -249,10 +253,17 @@ struct AuthFeature {
 
             case .mergeTapped:
                 state.showMergeDialog = false
-                // Data was already uploaded via initialUpload — just continue
-                return .run { [persistence] send in
-                    if let user = try await persistence.fetchCachedUser() {
-                        await send(.delegate(.authenticated(user)))
+                state.isSyncing = true
+                // S1: upload NOW — the pre-choice upload was removed, so Merge
+                // is what migrates local data to the server.
+                return .run { [persistence, syncClient] send in
+                    do {
+                        _ = try await syncClient.initialUpload()
+                        if let user = try await persistence.fetchCachedUser() {
+                            await send(.delegate(.authenticated(user)))
+                        }
+                    } catch {
+                        await send(.initialSyncFailed(error.localizedDescription))
                     }
                 }
 
