@@ -567,6 +567,42 @@ struct AppFeatureIntegrationTests {
         #expect(store.state.focus.isRunning == false)
     }
 
+    @Test func consumeExternalCommandsAppliesWidgetTaskCompletion() async {
+        let savedDefaults = AppGroupDefaultsSnapshot.capture()
+        defer { savedDefaults.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.widgetSelectedMode = nil
+
+        let taskID = UUID()
+        AppGroupDefaults.externalCompleteTaskRequested = true
+        AppGroupDefaults.externalCompleteTaskID = taskID.uuidString
+        AppGroupDefaults.externalCommandID = UUID().uuidString
+        AppGroupDefaults.externalCommandIssuedAt = Date.now
+
+        let savedTask = LockIsolated<TaskItemDTO?>(nil)
+        let store = TestStore(initialState: AppFeature.State()) {
+            AppFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTask = { _ in
+                TaskItemDTO(id: taskID, title: "Widget task")
+            }
+            $0.persistenceClient.saveTask = { dto in
+                savedTask.setValue(dto)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.consumeExternalCommands)
+        await store.receive(.tasks(.setTaskCompleted(taskID, true)))
+
+        #expect(savedTask.value?.id == taskID)
+        #expect(savedTask.value?.isCompleted == true)
+        #expect(AppGroupDefaults.externalCompleteTaskRequested == false)
+        #expect(AppGroupDefaults.externalCompleteTaskID == nil)
+    }
+
     @Test func appBecameActiveConsumesWidgetStartedSessionWithAnchors() async throws {
         let savedDefaults = AppGroupDefaultsSnapshot.capture()
         defer { savedDefaults.restore() }

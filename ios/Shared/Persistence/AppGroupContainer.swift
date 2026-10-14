@@ -345,6 +345,33 @@ enum AppGroupDefaults {
         set { defaults?.set(newValue, forKey: "requestedTaskID") }
     }
 
+    /// Task-completion command from the widget (S7). Unlike pause/resume/stop
+    /// this is not time-sensitive, so it carries no TTL and survives
+    /// stale-discard: clearExternalCommands() intentionally doesn't know these
+    /// keys. The widget never writes SwiftData directly (multi-process lost
+    /// updates); the app applies the completion on next activation.
+    static var externalCompleteTaskRequested: Bool {
+        get { defaults?.bool(forKey: "externalCompleteTaskRequested") ?? false }
+        set { defaults?.set(newValue, forKey: "externalCompleteTaskRequested") }
+    }
+    static var externalCompleteTaskID: String? {
+        get { defaults?.string(forKey: "externalCompleteTaskID") }
+        set { defaults?.set(newValue, forKey: "externalCompleteTaskID") }
+    }
+    /// Reads + clears a pending task-completion command atomically (S7).
+    /// Single-slot keys dedup repeat taps; setTaskCompleted's guard makes any
+    /// redelivery a no-op. Nil when nothing is pending (or the ID is invalid).
+    static func takeExternalCompleteTask() -> UUID? {
+        guard externalCompleteTaskRequested,
+              let idString = externalCompleteTaskID,
+              let id = UUID(uuidString: idString) else {
+            return nil
+        }
+        externalCompleteTaskRequested = false
+        externalCompleteTaskID = nil
+        return id
+    }
+
     /// The focus mode currently selected in the widget (interactive selection).
     static var widgetSelectedMode: String? {
         get { defaults?.string(forKey: "widgetSelectedMode") }

@@ -181,19 +181,14 @@ struct CompleteTaskFromWidgetIntent: AppIntent {
 
     func perform() async throws -> some IntentResult {
         guard let uuid = UUID(uuidString: taskID) else { return .result() }
-        let container = try makeWidgetModelContainer()
-        let context = ModelContext(container)
-        var descriptor = FetchDescriptor<TaskItem>(predicate: #Predicate { $0.id == uuid })
-        descriptor.fetchLimit = 1
-        let tasks = try context.fetch(descriptor)
-        if let task = tasks.first {
-            let now = Date.now
-            task.isCompleted = true
-            task.completedAt = now
-            task.updatedAt = now
-            task.isDirty = true
-            try context.save()
-        }
+        // S7: never write SwiftData from the extension process — the app's
+        // cached contexts can overwrite it (lost update). Enqueue a completion
+        // command instead; the app applies it on next activation. The widget
+        // renders the pending command optimistically (see TaskRowInteractive).
+        AppGroupDefaults.externalCommandID = UUID().uuidString
+        AppGroupDefaults.externalCommandIssuedAt = .now
+        AppGroupDefaults.externalCompleteTaskRequested = true
+        AppGroupDefaults.externalCompleteTaskID = uuid.uuidString
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }

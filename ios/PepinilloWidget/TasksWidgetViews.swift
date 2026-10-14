@@ -370,13 +370,17 @@ private struct TaskRowInteractive: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            // Completion toggle
+            // Completion toggle. A pending completion command (not yet consumed
+            // by the app, S7) renders as completed immediately for feedback.
+            let isPendingCompletion = AppGroupDefaults.externalCompleteTaskRequested
+                && AppGroupDefaults.externalCompleteTaskID == task.id
             Button(intent: CompleteTaskFromWidgetIntent(taskID: task.id)) {
-                Image(systemName: "circle")
+                Image(systemName: isPendingCompletion ? "checkmark.circle.fill" : "circle")
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isPendingCompletion ? .green : .secondary)
             }
             .buttonStyle(.plain)
+            .disabled(isPendingCompletion)
 
             // Energy emoji
             Text(energyEmoji(for: task.energyIcon))
