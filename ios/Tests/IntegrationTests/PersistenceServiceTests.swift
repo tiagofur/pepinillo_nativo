@@ -313,6 +313,52 @@ struct PersistenceServiceTests {
         #expect(records.first?.satisfactionRating == 5)
     }
 
+    @Test("fetchSessions excludes sessions exactly on the window end")
+    func fetchSessionsExcludesBoundaryEnd() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let calendar = Calendar.current
+        let day0 = calendar.startOfDay(for: Date.now)
+        let day1 = try #require(calendar.date(byAdding: .day, value: 1, to: day0))
+        let day2 = try #require(calendar.date(byAdding: .day, value: 1, to: day1))
+
+        func insertSession(at start: Date, seconds: TimeInterval) {
+            context.insert(FocusSessionRecord(
+                mode: "pomodoro",
+                phase: "work",
+                startedAt: start,
+                endedAt: start.addingTimeInterval(seconds),
+                actualDuration: seconds,
+                targetDuration: seconds,
+                wasCompleted: true,
+                interruptions: 0,
+                pauseCount: 0,
+                totalPauseDuration: 0
+            ))
+        }
+        insertSession(at: day0.addingTimeInterval(3600), seconds: 600)
+        insertSession(at: day1, seconds: 900)
+        insertSession(at: day1.addingTimeInterval(3600), seconds: 300)
+        try context.save()
+
+        let firstWindow = try service.fetchSessions(from: day0, to: day1)
+        let secondWindow = try service.fetchSessions(from: day1, to: day2)
+
+        // S4 RED pre-fix: the boundary session counts in both windows.
+        #expect(firstWindow.count == 1)
+        #expect(secondWindow.count == 2)
+        #expect((firstWindow + secondWindow).filter({ $0.startedAt == day1 }).count == 1)
+    }
+
     // MARK: - Issue #74: saveTaskOrder batch reorder
 
     @Test("saveTaskOrder persists new sort orders in a single transaction and marks dirty")

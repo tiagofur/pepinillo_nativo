@@ -184,7 +184,10 @@ public final class SwiftDataPersistenceService {
 
     public func fetchSessions(from start: Date, to end: Date) throws -> [FocusSessionRecord] {
         let descriptor = FetchDescriptor<FocusSessionRecord>(
-            predicate: #Predicate { $0.startedAt >= start && $0.startedAt <= end },
+            // S4: exclusive end. Adjacent windows share boundaries (previous
+            // period end == current period start); an inclusive end counted a
+            // session at exactly 00:00:00 in both periods (inflated deltas).
+            predicate: #Predicate { $0.startedAt >= start && $0.startedAt < end },
             sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
         )
         return try context.fetch(descriptor)
