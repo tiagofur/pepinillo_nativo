@@ -386,7 +386,7 @@ public struct FocusSessionResult: Sendable, Equatable {
             endedAt: snapshot.endedAt,
             targetDuration: snapshot.targetDuration,
             actualDuration: snapshot.actualDuration,
-            wasCompleted: false,
+            wasCompleted: snapshot.wasCompleted,
             interruptions: 0,
             pomodoroNumber: mode == .pomodoro ? pomodoroNumber : nil,
             linkedTaskID: snapshot.taskID.flatMap { UUID(uuidString: $0) },

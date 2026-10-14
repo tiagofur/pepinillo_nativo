@@ -549,6 +549,34 @@ struct FocusFeatureReducerTests {
         #expect(savedSessions.value.first?.actualDuration == 600)
     }
 
+    @Test func staleBackfillReceivedPersistsHistoricalRecord() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+        }
+
+        store.exhaustivity = .off
+
+        // Backfilled record for a fully served 25-min widget pomodoro.
+        let backfill = makeSessionResult(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            wasCompleted: true,
+            actualDuration: 1500
+        )
+        await store.send(.staleBackfillReceived(backfill))
+        await store.receive(.delegate(.sessionPersisted))
+
+        #expect(savedSessions.value.count == 1)
+        #expect(savedSessions.value.first?.wasCompleted == true)
+        #expect(savedSessions.value.first?.actualDuration == 1500)
+    }
+
     @Test func stopDuringWaitingHoldDoesNotDuplicatePersistedWork() async {
         let savedSessions = LockIsolated<[FocusSessionResult]>([])
 

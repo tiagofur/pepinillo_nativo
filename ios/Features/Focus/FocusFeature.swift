@@ -118,6 +118,7 @@ struct FocusFeature {
         case timerTicked(FocusSessionState)
         case phaseCompleted(FocusPhase)
         case phaseSkipped(FocusSessionResult)
+        case staleBackfillReceived(FocusSessionResult)
         case sessionCompleted(FocusSessionResult)
         case breakSuggested(TimeInterval)
         case midpointReached
@@ -675,6 +676,20 @@ struct FocusFeature {
                 return .run { [persistence] send in
                     do {
                         try await persistence.saveSession(partial)
+                        await send(.delegate(.sessionPersisted))
+                    } catch {
+                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                    }
+                }
+
+            case .staleBackfillReceived(let backfill):
+                // S6: persist a backfilled record for a stale widget/CC/Siri start
+                // whose optimistic countdown was served while the app was away.
+                // Historical data only: no teardown (nothing is running), no
+                // journal, no notifications — just the unrecorded interval.
+                return .run { [persistence] send in
+                    do {
+                        try await persistence.saveSession(backfill)
                         await send(.delegate(.sessionPersisted))
                     } catch {
                         await send(.delegate(.sessionSaveFailed(error.localizedDescription)))

@@ -745,6 +745,9 @@ enum AppGroupDefaults {
     /// The app layer maps it to FocusSessionResult (see init(ghost:) in FocusModels).
     struct GhostSessionSnapshot: Sendable, Equatable {
         var modeName: String?
+        /// True when the full session window was served (S6 backfill). Ghost
+        /// abandonments (S5) always persist this as false.
+        var wasCompleted: Bool = false
         var startedAt: Date
         var endedAt: Date
         var targetDuration: TimeInterval?
@@ -829,6 +832,92 @@ enum AppGroupDefaults {
                 pomodoroNumber: pomodoroNumber,
                 totalPomodoros: totalPomodoros,
                 taskID: taskID
+            )
+        }
+
+        /// Maximum backfill for open-ended (target-less) stale starts (S6).
+        /// Without a target the served time is unbounded (e.g. days); the cap
+        /// keeps a stale widget tap from corrupting stats. Count-up sessions
+        /// adopted normally are unaffected — only phantom ones are capped.
+        static let maximumOpenEndedBackfillSeconds: TimeInterval = 12 * 3600
+
+        /// Atomically snapshots + clears a stale external start for backfill (S6).
+        /// Only what discardStaleExternalCommandsIfNeeded would silently drop: a
+        /// start command older than the TTL with timer anchors. Fresh snapshots
+        /// (the normal adopt path) are never touched. Nil when there is nothing
+        /// to backfill. The engine-running guard lives with the callers: a live
+        /// session already covers this wall-clock time.
+        static func takeStaleExternalStartBackfill(now: Date = Date.now) -> GhostSessionSnapshot? {
+            guard externalStartRequested, isExternalCommandStale else { return nil }
+            guard let snapshot = validatedStaleStartBackfill(
+                modeName: activeModeName,
+                timerStart: activeSessionTimerStart,
+                timerEnd: activeSessionTimerEnd,
+                pomodoroNumber: activeSessionPomodoroNumber,
+                totalPomodoros: activeSessionTotalPomodoros,
+                taskID: requestedTaskID ?? activeTaskID,
+                now: now
+            ) else { return nil }
+            clearExternalCommands()
+            clearActiveSession()
+            return snapshot
+        }
+
+        /// Pure stale-start backfill validator (S6). Fully served windows become
+        /// completed records; partially served windows become abandoned partials;
+        /// target-less modes are capped. Pass `now` explicitly in tests.
+        static func validatedStaleStartBackfill(
+            modeName: String?,
+            timerStart: Date?,
+            timerEnd: Date?,
+            pomodoroNumber: Int?,
+            totalPomodoros: Int?,
+            taskID: String?,
+            now: Date = Date.now
+        ) -> GhostSessionSnapshot? {
+            guard let timerStart = timerStart else { return nil }
+            let elapsed = max(0, now.timeIntervalSince(timerStart))
+            if let timerEnd = timerEnd {
+                let target = timerEnd.timeIntervalSince(timerStart)
+                guard target > 0 else { return nil }
+                if now >= timerEnd {
+                    return GhostSessionSnapshot(
+                        modeName: modeName,
+                        startedAt: timerStart,
+                        endedAt: timerEnd,
+                        targetDuration: target,
+                        actualDuration: target,
+                        pomodoroNumber: pomodoroNumber,
+                        totalPomodoros: totalPomodoros,
+                        taskID: taskID,
+                        wasCompleted: true
+                    )
+                }
+                guard elapsed >= minimumGhostPersistSeconds else { return nil }
+                return GhostSessionSnapshot(
+                    modeName: modeName,
+                    startedAt: timerStart,
+                    endedAt: now,
+                    targetDuration: target,
+                    actualDuration: elapsed,
+                    pomodoroNumber: pomodoroNumber,
+                    totalPomodoros: totalPomodoros,
+                    taskID: taskID,
+                    wasCompleted: false
+                )
+            }
+            let actual = min(elapsed, maximumOpenEndedBackfillSeconds)
+            guard actual >= minimumGhostPersistSeconds else { return nil }
+            return GhostSessionSnapshot(
+                modeName: modeName,
+                startedAt: timerStart,
+                endedAt: timerStart.addingTimeInterval(actual),
+                targetDuration: nil,
+                actualDuration: actual,
+                pomodoroNumber: pomodoroNumber,
+                totalPomodoros: totalPomodoros,
+                taskID: taskID,
+                wasCompleted: false
             )
         }
     }
