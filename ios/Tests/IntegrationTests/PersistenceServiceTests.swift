@@ -187,6 +187,59 @@ struct PersistenceServiceTests {
         #expect(tombstone.isDirty == true)
     }
 
+    @Test("rebuildDailyStatsFromSessions recomputes aggregates per day and mode")
+    func rebuildDailyStatsRecomputesAggregates() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        // Midday anchors: immune to midnight boundary flakiness.
+        let todayNoon = try #require(Calendar.current.date(byAdding: .hour, value: 12, to: Calendar.current.startOfDay(for: Date.now)))
+        let yesterdayNoon = try #require(Calendar.current.date(byAdding: .day, value: -1, to: todayNoon))
+
+        func insertSession(mode: String, start: Date, seconds: TimeInterval) {
+            context.insert(FocusSessionRecord(
+                mode: mode,
+                phase: "work",
+                startedAt: start,
+                endedAt: start.addingTimeInterval(seconds),
+                actualDuration: seconds,
+                targetDuration: seconds,
+                wasCompleted: true,
+                interruptions: 0,
+                pauseCount: 0,
+                totalPauseDuration: 0
+            ))
+        }
+        insertSession(mode: "pomodoro", start: todayNoon, seconds: 1500)
+        insertSession(mode: "flowtime", start: todayNoon.addingTimeInterval(3600), seconds: 600)
+        insertSession(mode: "stopwatch", start: yesterdayNoon, seconds: 300)
+        try context.save()
+
+        try service.deleteAllStats()
+        try service.rebuildDailyStatsFromSessions()
+
+        let stats = try context.fetch(FetchDescriptor<DailyStats>())
+        #expect(stats.count == 2)
+        let day = Calendar.current.startOfDay(for: Date.now)
+        let todayStats = try #require(stats.first(where: { $0.date == day }))
+        #expect(todayStats.totalFocusSeconds == 2100)
+        #expect(todayStats.pomodoroSeconds == 1500)
+        #expect(todayStats.flowtimeSeconds == 600)
+        #expect(todayStats.sessionsCompleted == 2)
+        #expect(todayStats.hadFocusSession == true)
+        let prevDay = try #require(Calendar.current.date(byAdding: .day, value: -1, to: day))
+        let yesterdayStats = try #require(stats.first(where: { $0.date == prevDay }))
+        #expect(yesterdayStats.totalFocusSeconds == 300)
+    }
+
     // MARK: - Issue #74: saveTaskOrder batch reorder
 
     @Test("saveTaskOrder persists new sort orders in a single transaction and marks dirty")

@@ -811,6 +811,46 @@ public final class SwiftDataPersistenceService {
         stats.recordSession(result)
     }
 
+    /// Rebuilds DailyStats from all stored sessions (S4). wipeAndSync deletes
+    /// aggregates in phase 2; without this, heatmap/streaks stay empty even
+    /// though the sessions were reinserted in phase 3. Reuses the live-save
+    /// aggregation path so rebuilt totals match live-computed ones exactly.
+    public func rebuildDailyStatsFromSessions() throws {
+        let records = try context.fetch(FetchDescriptor<FocusSessionRecord>(
+            sortBy: [SortDescriptor(\.startedAt)]
+        ))
+        for record in records {
+            guard let mode = record.focusMode else { continue }
+            // Phase is unused by aggregation (recordSession sums by mode);
+            // map to the mode's work phase like ghost abandonments do.
+            let phase: FocusPhase = {
+                switch mode {
+                case .pomodoro: return .work(number: record.pomodoroNumber ?? 1, total: 4)
+                case .flowtime: return .flow
+                case .timeBlock: return .block
+                case .stopwatch: return .freeform
+                }
+            }()
+            let result = FocusSessionResult(
+                id: record.id,
+                mode: mode,
+                phase: phase,
+                startedAt: record.startedAt,
+                endedAt: record.endedAt ?? record.startedAt,
+                targetDuration: record.targetDuration,
+                actualDuration: record.actualDuration,
+                wasCompleted: record.wasCompleted,
+                interruptions: record.interruptions,
+                pomodoroNumber: record.pomodoroNumber,
+                linkedTaskID: record.task?.id,
+                pauseCount: record.pauseCount,
+                totalPauseDuration: record.totalPauseDuration
+            )
+            try updateOrCreateDailyStats(with: result)
+        }
+        try context.save()
+    }
+
     // MARK: - Session Sync
 
     public func fetchDirtySessions() throws -> [FocusSessionRecord] {

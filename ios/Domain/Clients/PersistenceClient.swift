@@ -540,6 +540,8 @@ public struct PersistenceClient: Sendable {
 
     // Sessions
     public var saveSession: @Sendable (FocusSessionResult) async throws -> Void
+    /// Rebuild DailyStats aggregates from stored sessions (S4).
+    public var rebuildDailyStatsFromSessions: @Sendable () async throws -> Void
     public var fetchSessions: @Sendable (Date, Date) async throws -> [SessionRecordDTO] = { _, _ in [] }
     // Lifetime aggregate counts (issue #73) — cheap SQLite COUNTs bounded by `from`.
     public var fetchSessionCount: @Sendable (Date) async throws -> Int = { _ in 0 }
@@ -668,6 +670,9 @@ extension PersistenceClient: DependencyKey {
             },
             saveSession: { result in
                 try await actorProvider().saveSession(result)
+            },
+            rebuildDailyStatsFromSessions: {
+                try await actorProvider().rebuildDailyStatsFromSessions()
             },
             fetchSessions: { start, end in
                 try await actorProvider().fetchSessions(from: start, to: end)

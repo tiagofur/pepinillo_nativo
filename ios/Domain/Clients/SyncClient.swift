@@ -621,6 +621,9 @@ extension SyncClient: DependencyKey {
                         try await persistence.upsertSessionFromServer(serverSession, false)
                     }
                 }
+                // S4: phase 2 wiped DailyStats — rebuild aggregates from the
+                // reinserted sessions so heatmap/streaks are not left empty.
+                try await persistence.rebuildDailyStatsFromSessions()
                 // Resolve inbound task links (taskSyncId / taskId → local task)
                 for serverSession in allServerSessions {
                     guard let sessionUUID = UUID(uuidString: serverSession.id) else { continue }

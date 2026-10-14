@@ -224,6 +224,63 @@ struct SyncClientTests {
         #expect(events.contains("upsertTask"), "server task should be upserted after wipe")
     }
 
+    @Test("wipeAndSync rebuilds DailyStats after applying server sessions")
+    func wipeAndSyncRebuildsDailyStats() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        makeCapabilitiesAndSet(.everywherePlus)
+
+        actor RebuildProbe {
+            var called = false
+            func mark() { called = true }
+            func wasCalled() -> Bool { called }
+        }
+        let rebuildProbe = RebuildProbe()
+
+        let fakeSession = FocusSessionSyncDTO(
+            id: UUID().uuidString,
+            startedAt: "2024-01-01T00:00:00Z",
+            endedAt: "2024-01-01T00:25:00Z",
+            mode: "pomodoro",
+            phase: "work",
+            durationSeconds: 1500,
+            elapsedSeconds: 1500,
+            wasCompleted: true,
+            createdAt: "2024-01-01T00:00:00Z",
+            updatedAt: "2024-01-01T00:25:00Z"
+        )
+        let fakeResponse = FullSyncResponse(
+            tasks: PaginatedTaskPage(items: [], nextCursor: nil, hasMore: false),
+            sessions: PaginatedSessionPage(items: [fakeSession], nextCursor: nil, hasMore: false),
+            settings: [],
+            serverTimestamp: "2024-01-01T00:00:00Z"
+        )
+
+        let client = withDependencies {
+            $0.keychainClient.hasTokens = { true }
+            $0.apiClient.getFullSync = { _, _, _ in return fakeResponse }
+            $0.persistenceClient.deleteAllTasks = { }
+            $0.persistenceClient.deleteAllSessions = { }
+            $0.persistenceClient.deleteAllStats = { }
+            $0.persistenceClient.sessionExists = { _ in false }
+            $0.persistenceClient.upsertSessionFromServer = { _, _ in }
+            $0.persistenceClient.save = { }
+            $0.persistenceClient.saveLastSyncTimestamp = { _ in }
+            $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+            $0.persistenceClient.linkSessionToTask = { _, _, _ in }
+            // S4 RED: pre-fix wipeAndSync never calls this (behavioral RED).
+            $0.persistenceClient.rebuildDailyStatsFromSessions = {
+                await rebuildProbe.mark()
+            }
+        } operation: {
+            SyncClient.liveValue
+        }
+
+        try await client.wipeAndSync()
+
+        #expect(await rebuildProbe.wasCalled() == true)
+    }
+
     // MARK: - Asymmetric pagination (tasks done in 1 page, sessions need 2)
 
     @Test("wipeAndSync does not re-request or duplicate tasks when sessions need more pages")
