@@ -23,10 +23,12 @@ struct FocusInsight: Equatable, Sendable {
 
 struct InsightsService {
 
-    /// Generate insights from the last 7 days of session data.
+    /// Generate insights from session data. `periodDays` is the window the
+    /// inputs cover (7/30/364) — hardcoded "7 days" text lied on other periods.
     func generateWeeklyInsights(
         sessions: [SessionRecordDTO],
-        dailyStats: [DailyStatsDTO]
+        dailyStats: [DailyStatsDTO],
+        periodDays: Int = 7
     ) -> [FocusInsight] {
         var insights: [FocusInsight] = []
 
@@ -104,7 +106,7 @@ struct InsightsService {
         if daysWithSessions >= 3 {
             insights.append(FocusInsight(
                 title: String(localized: "Consistency"),
-                body: String(localized: "You focused on \(daysWithSessions) out of 7 days. Keep the momentum going!"),
+                body: String(localized: "You focused on \(daysWithSessions) out of \(periodDays) days. Keep the momentum going!"),
                 emoji: "🔥",
                 category: .streak
             ))
