@@ -173,7 +173,10 @@ extension SyncClient: DependencyKey {
                         focusedSecondsStopwatch: focusedSecondsStopwatch,
                         activeSessionId: nil,
                         isDeleted: false,
-                        subTasks: subTaskDTOs.isEmpty ? nil : subTaskDTOs,
+                        // S6: always send the list, even empty. The backend replaces
+                        // subtasks only for non-nil slices (LWW-gated), so nil
+                        // ("don't touch") resurrected deleted subtasks on the next pull.
+                        subTasks: subTaskDTOs,
                         updatedAt: iso.string(from: task.updatedAt)
                     )
                     taskDTOs.append(dto)
@@ -371,7 +374,10 @@ extension SyncClient: DependencyKey {
                         priority: task.priority.rawValue,
                         estimatedPomodoros: task.estimatedPomodoros,
                         completedPomodoros: task.completedPomodoros,
-                        subTasks: subTaskDTOs.isEmpty ? nil : subTaskDTOs,
+                        // S6: same explicit-empty rule as the dirty push above.
+                        // Safe in merges: the backend LWW-gates incoming tasks, so
+                        // an older [] never wipes newer server subtasks.
+                        subTasks: subTaskDTOs,
                         updatedAt: iso.string(from: task.updatedAt)
                     ))
                 }

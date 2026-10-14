@@ -281,6 +281,86 @@ struct SyncClientTests {
         #expect(await rebuildProbe.wasCalled() == true)
     }
 
+    @Test("syncTasks sends explicit empty subtask list when all subtasks deleted")
+    func syncTasksSendsExplicitEmptySubtasks() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        makeCapabilitiesAndSet(.everywherePlus)
+
+        actor RequestProbe {
+            var tasks: [TaskSyncDTO] = []
+            var captured = false
+            func capture(_ tasks: [TaskSyncDTO]) {
+                self.tasks = tasks
+                captured = true
+            }
+        }
+        let probe = RequestProbe()
+        let dirtyTask = TaskItemDTO(title: "T", syncId: "task-1")
+        let emptyResponse = TaskSyncResponse(tasks: [], deletedSyncIds: [], syncTimestamp: "2024-01-01T00:00:00Z")
+
+        let client = withDependencies {
+            $0.keychainClient.hasTokens = { true }
+            $0.persistenceClient.fetchDirtyTasks = { [dirtyTask] }
+            $0.apiClient.syncTasks = { request in
+                await probe.capture(request.tasks)
+                return emptyResponse
+            }
+            $0.persistenceClient.markTasksSynced = { _, _ in }
+            $0.persistenceClient.save = { }
+            $0.persistenceClient.saveLastSyncTimestamp = { _ in }
+        } operation: {
+            SyncClient.liveValue
+        }
+
+        try await client.syncTasks()
+
+        // S6 RED pre-fix: the builder sends nil ("don't touch") instead of [].
+        #expect(await probe.captured == true)
+        #expect(await probe.tasks.first?.subTasks != nil)
+        #expect(await probe.tasks.first?.subTasks?.isEmpty == true)
+    }
+
+    @Test("initialUpload sends explicit empty subtask list for subtask-less tasks")
+    func initialUploadSendsExplicitEmptySubtasks() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        makeCapabilitiesAndSet(.everywherePlus)
+
+        actor RequestProbe {
+            var tasks: [TaskSyncDTO] = []
+            func capture(_ tasks: [TaskSyncDTO]) {
+                self.tasks = tasks
+            }
+        }
+        let probe = RequestProbe()
+        let localTask = TaskItemDTO(title: "T", syncId: "task-1")
+        let emptyResponse = InitialUploadResponse(
+            tasks: [], sessions: [], settings: [],
+            serverTimestamp: "2024-01-01T00:00:00Z", hasExistingData: false
+        )
+
+        let client = withDependencies {
+            $0.keychainClient.hasTokens = { true }
+            $0.persistenceClient.fetchTasks = { [localTask] }
+            $0.apiClient.initialUpload = { request in
+                await probe.capture(request.tasks)
+                return emptyResponse
+            }
+            $0.persistenceClient.save = { }
+            $0.persistenceClient.saveLastSyncTimestamp = { _ in }
+            $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+        } operation: {
+            SyncClient.liveValue
+        }
+
+        _ = try await client.initialUpload()
+
+        // S6 RED pre-fix: the builder sends nil instead of [].
+        #expect(await probe.tasks.first?.subTasks != nil)
+        #expect(await probe.tasks.first?.subTasks?.isEmpty == true)
+    }
+
     @Test("syncSessions sends journal fields for dirty sessions")
     func syncSessionsSendsJournalFields() async throws {
         let saved = AppGroupDefaults.userCapabilities
