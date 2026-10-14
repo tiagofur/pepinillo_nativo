@@ -261,6 +261,7 @@ struct AppFeature {
     @Dependency(\.webSocketClient) var webSocketClient
     @Dependency(\.syncModeClient) var syncModeClient
     @Dependency(\.networkClient) var networkClient
+    @Dependency(\.spotlightClient) var spotlightClient
     @Dependency(\.liveActivityClient) var liveActivityClient
 
     private enum CancelID {
@@ -1671,7 +1672,7 @@ struct AppFeature {
         state.userEmail = nil
         if dismissProfile { state.profile = nil }
         webSocketClient.disconnect()
-        return .run { [keychain, apiClient, persistence, subscriptionClient] _ in
+        return .run { [keychain, apiClient, persistence, subscriptionClient, spotlightClient] _ in
             if notifyBackendLogout, let refreshToken = await keychain.loadRefreshToken() {
                 try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))
             }
@@ -1689,6 +1690,10 @@ struct AppFeature {
                 try? await persistence.deleteAllTasks()
                 try? await persistence.deleteAllSessions()
                 try? await persistence.deleteAllStats()
+                // S1: deindex Spotlight too — deleted tasks stayed searchable
+                // system-wide with visible titles. Plain sign-out keeps local
+                // data (and its valid index); only the wipe path deindexes.
+                try? await spotlightClient.deleteAll()
             }
             AIReportFeature.clearAllCachedReports()
             await subscriptionClient.logOut()
