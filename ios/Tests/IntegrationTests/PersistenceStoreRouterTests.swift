@@ -5,6 +5,7 @@
 
 import Testing
 import Foundation
+import ComposableArchitecture
 import SwiftData
 @testable import Pepinillo
 
@@ -275,6 +276,39 @@ struct PersistenceStoreRouterTests {
         #expect(AppGroupDefaults.syncStatus == .backendActive)
         #expect(router.activeContainer === localContainer)
         #expect(try fetchTaskTitles(in: localContainer) == ["Export to backend local"])
+    }
+
+    @Test("Backend switch attempts legacy import before swapping stores")
+    @MainActor
+    func backendSwitchAttemptsLegacyImport() async throws {
+        let syncSnapshot = saveSyncDefaults()
+        defer { restoreSyncDefaults(syncSnapshot) }
+
+        let dir = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let localContainer = try makeOnDiskContainer(directory: dir, fileName: "local.sqlite")
+
+        let importKey = LocalToCloudStoreMigrator.legacyImportCompleteKey
+        let savedFlag = UserDefaults.standard.bool(forKey: importKey)
+        defer {
+            UserDefaults.standard.set(savedFlag, forKey: importKey)
+            PersistenceStoreRouterTesting.legacyImportObserver = nil
+        }
+
+        // No legacy file is staged: the branch must still attempt the import
+        // step (S3 RED — pre-fix this never fires). The real import no-ops.
+        let importAttempted = LockIsolated(false)
+        PersistenceStoreRouterTesting.legacyImportObserver = {
+            importAttempted.setValue(true)
+        }
+
+        let router = PersistenceStoreRouter(localContainer: localContainer)
+        await router.reconcile(capabilities: .everywherePlus)
+
+        #expect(importAttempted.value == true)
+        #expect(AppGroupDefaults.activeSyncMode == .backend)
+        #expect(router.activeContainer === localContainer)
     }
 
     @Test("Apple Cloud activation failure surfaces error and keeps local store active")
