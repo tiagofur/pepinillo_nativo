@@ -359,6 +359,69 @@ struct PersistenceServiceTests {
         #expect((firstWindow + secondWindow).filter({ $0.startedAt == day1 }).count == 1)
     }
 
+    @Test("applyServerPreference keeps unpushed local edits")
+    func applyServerPreferenceKeepsDirtyLocalEdits() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let savedDirty = PreferenceDirtyTracker.getDirtyKeys()
+        defer {
+            PreferenceDirtyTracker.clearAll()
+            PreferenceDirtyTracker.markDirtyKeys(Array(savedDirty))
+        }
+
+        // Local edit, not yet pushed.
+        let prefs = try service.fetchPreferences()
+        prefs.pomodoroDuration = TimeInterval(30 * 60)
+        try service.savePreferences(prefs)
+        PreferenceDirtyTracker.markDirty("pomodoroMinutes")
+
+        try service.applyServerPreference(key: "pomodoroMinutes", value: "25", updatedAt: Date.now.addingTimeInterval(3600))
+
+        let after = try service.fetchPreferences()
+        // S5 RED pre-fix: the pull overwrites the newer local edit.
+        #expect(after.pomodoroDuration == TimeInterval(30 * 60))
+    }
+
+    @Test("applyServerPreference applies server value for clean keys")
+    func applyServerPreferenceAppliesCleanKeys() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let savedDirty = PreferenceDirtyTracker.getDirtyKeys()
+        defer {
+            PreferenceDirtyTracker.clearAll()
+            PreferenceDirtyTracker.markDirtyKeys(Array(savedDirty))
+        }
+        PreferenceDirtyTracker.clearAll()
+
+        // Clean but diverged local value (e.g. after a push): server wins.
+        let prefs = try service.fetchPreferences()
+        prefs.pomodoroDuration = TimeInterval(30 * 60)
+        try service.savePreferences(prefs)
+
+        try service.applyServerPreference(key: "pomodoroMinutes", value: "25", updatedAt: Date.now)
+
+        let after = try service.fetchPreferences()
+        #expect(after.pomodoroDuration == TimeInterval(25 * 60))
+    }
+
     // MARK: - Issue #74: saveTaskOrder batch reorder
 
     @Test("saveTaskOrder persists new sort orders in a single transaction and marks dirty")

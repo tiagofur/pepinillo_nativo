@@ -1029,6 +1029,11 @@ public final class SwiftDataPersistenceService {
 
     /// Applies a single server preference by key.
     public func applyServerPreference(key: String, value: String, updatedAt: Date) throws {
+        // S5: never overwrite an unpushed local edit. Dirty keys are exactly the
+        // local edits the server hasn't seen; clean keys are already in sync, so
+        // any inbound value for them is newer-or-equal. (updatedAt is accepted
+        // for API compatibility; local per-key timestamps don't exist.)
+        guard !PreferenceDirtyTracker.getDirtyKeys().contains(key) else { return }
         let prefs = try fetchPreferences()
 
         switch key {
