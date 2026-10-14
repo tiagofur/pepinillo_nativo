@@ -340,6 +340,9 @@ public final class SwiftDataPersistenceService {
         guard let record = try context.fetch(descriptor).first else { return }
         record.journalNote = note
         record.satisfactionRating = rating
+        // S5: a journal added after the session synced must re-push,
+        // or it stays local-only forever (lost on wipe/reinstall).
+        record.isDirty = true
         try context.save()
     }
 
@@ -929,6 +932,10 @@ public final class SwiftDataPersistenceService {
         record.id = sessionUUID
         record.isDirty = false
         record.syncedAt = Date.now
+        // S5: restore journaled reflections pulled from the server (insert
+        // only — existing local sessions are never overwritten by pulls).
+        record.journalNote = dto.journalNote
+        record.satisfactionRating = dto.satisfactionRating
 
         context.insert(record)
         if saveImmediately {

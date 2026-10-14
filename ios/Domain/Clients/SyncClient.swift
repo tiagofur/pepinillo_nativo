@@ -234,6 +234,9 @@ extension SyncClient: DependencyKey {
                         pauseCount: session.pauseCount,
                         totalPauseSeconds: Int(session.totalPauseDuration),
                         wasCompleted: session.wasCompleted,
+                        // S5: journal travels with the session (backend upserts it).
+                        journalNote: session.journalNote,
+                        satisfactionRating: session.satisfactionRating,
                         createdAt: iso.string(from: session.startedAt),
                         updatedAt: iso.string(from: session.startedAt)
                     )
@@ -389,6 +392,9 @@ extension SyncClient: DependencyKey {
                         pauseCount: session.pauseCount,
                         totalPauseSeconds: Int(session.totalPauseDuration),
                         wasCompleted: session.wasCompleted,
+                        // S5: journal travels with the session (backend upserts it).
+                        journalNote: session.journalNote,
+                        satisfactionRating: session.satisfactionRating,
                         createdAt: iso.string(from: session.startedAt),
                         updatedAt: iso.string(from: session.startedAt)
                     )

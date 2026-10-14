@@ -281,6 +281,56 @@ struct SyncClientTests {
         #expect(await rebuildProbe.wasCalled() == true)
     }
 
+    @Test("syncSessions sends journal fields for dirty sessions")
+    func syncSessionsSendsJournalFields() async throws {
+        let saved = AppGroupDefaults.userCapabilities
+        defer { AppGroupDefaults.userCapabilities = saved }
+        makeCapabilitiesAndSet(.everywherePlus)
+
+        actor RequestProbe {
+            var journalNote: String?
+            var rating: Int?
+            func capture(note: String?, rating: Int?) {
+                journalNote = note
+                rating = rating
+            }
+        }
+        let probe = RequestProbe()
+        let dirty = SessionRecordDTO(
+            id: UUID(),
+            startedAt: Date(timeIntervalSince1970: 1_800_000_000),
+            mode: "pomodoro",
+            phase: "work",
+            actualDuration: 1500,
+            wasCompleted: true,
+            interruptions: 0,
+            taskID: nil,
+            journalNote: "Great flow",
+            satisfactionRating: 5
+        )
+        let emptyResponse = SessionSyncResponse(sessions: [], serverTimestamp: "2024-01-01T00:00:00Z")
+
+        let client = withDependencies {
+            $0.keychainClient.hasTokens = { true }
+            $0.persistenceClient.fetchDirtySessions = { [dirty] }
+            $0.apiClient.syncSessions = { request in
+                await probe.capture(note: request.sessions.first?.journalNote, rating: request.sessions.first?.satisfactionRating)
+                return emptyResponse
+            }
+            $0.persistenceClient.markSessionsSynced = { _ in }
+            $0.persistenceClient.save = { }
+            $0.persistenceClient.saveLastSessionSyncTimestamp = { _ in }
+        } operation: {
+            SyncClient.liveValue
+        }
+
+        try await client.syncSessions()
+
+        // S5 RED pre-fix: the push mapping drops journal fields (nil).
+        #expect(await probe.journalNote == "Great flow")
+        #expect(await probe.rating == 5)
+    }
+
     // MARK: - Asymmetric pagination (tasks done in 1 page, sessions need 2)
 
     @Test("wipeAndSync does not re-request or duplicate tasks when sessions need more pages")
