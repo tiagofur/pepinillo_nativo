@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { app, TIER } from '$lib/stores/app.svelte';
+	import { app } from '$lib/stores/app.svelte';
 	import { t, type MessageKey } from '$lib/i18n/messages';
 	import { formatMs } from '$lib/format/time';
 	import { canUseMode } from '$lib/domain/gates/freeLimits';
@@ -133,7 +133,7 @@
 
 		<div class="mode-scroll" role="group" aria-label="Focus mode">
 			{#each modes as mode (mode)}
-				{@const allowed = canUseMode(mode, TIER)}
+				{@const allowed = canUseMode(mode, app.tier)}
 				<button
 					type="button"
 					class="mode-chip {mode}"

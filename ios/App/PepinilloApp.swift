@@ -196,7 +196,8 @@ private final class AppBootstrap: ObservableObject {
             AppFeature()
         } withDependencies: {
             let actorBox = router.activeActorBox()
-            $0.persistenceClient = PersistenceClient.live(actorProvider: { actorBox.current })
+            let persistence = PersistenceClient.live(actorProvider: { actorBox.current })
+            $0.persistenceClient = persistence
             $0.syncModeClient.reconcile = { [weak self] capabilities in
                 await router.reconcile(capabilities: capabilities)
                 await MainActor.run {
@@ -209,7 +210,30 @@ private final class AppBootstrap: ObservableObject {
                 // Clear ghost App Group sessions before Live Activity reconcile (#173).
                 // reconcileOnLaunch adopts activities when isSessionActive is true; a killed
                 // mid-session process leaves that flag set while FocusEngine is still idle.
-                if AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(engineIsRunning: false) {
+                // S6: take a stale external start BEFORE the ghost takeoff below:
+                // its optimistic countdown may already be served with no engine
+                // to record it. take...() snapshots + clears atomically, so the
+                // interval can neither late-adopt nor double-apply.
+                let staleBackfill = AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill(engineIsRunning: false)
+                // Snapshot a killed mid-session process before clearing (#173, S5).
+                let ghostSnapshot = AppGroupDefaults.SessionReconcilePolicy.ghostSnapshotIfNeeded(engineIsRunning: false)
+                if AppGroupDefaults.SessionReconcilePolicy.clearGhostSessionIfNeeded(engineIsRunning: false) || staleBackfill != nil {
+                    // S6: persist the served-but-unrecorded external interval.
+                    if let staleBackfill {
+                        let backfill = FocusSessionResult(ghost: staleBackfill)
+                        Task { [persistence] in
+                            _ = try? await persistence.saveSession(backfill)
+                        }
+                    }
+                    // S5: persist the killed session's focus time as an abandoned
+                    // record instead of letting it evaporate. Best-effort on the
+                    // launch path; the snapshot was already cleared above.
+                    if let ghostSnapshot {
+                        let ghost = FocusSessionResult(ghost: ghostSnapshot)
+                        Task { [persistence] in
+                            _ = try? await persistence.saveSession(ghost)
+                        }
+                    }
                     WidgetCenter.shared.reloadTimelines(ofKind: "FocusHomeScreenWidget")
                     WidgetCenter.shared.reloadTimelines(ofKind: "FocusLockScreenWidget")
                     WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")

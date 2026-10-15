@@ -34,6 +34,10 @@ public actor FocusEngine {
     private var phaseStartDate: Date?
     private var totalPausedDuration: TimeInterval = 0
 
+    // S1: accumulated focus-phase time across phase transitions within one session.
+    // stop() reports it as FocusSessionResult.totalFocusSeconds.
+    private var accumulatedFocusSeconds: TimeInterval = 0
+
     // For Pomodoro: track which number we're on across phase transitions
     private var currentPomodoroNumber: Int = 1
 
@@ -161,6 +165,7 @@ public actor FocusEngine {
         self.phaseStartDate = effectiveStart
         self.phaseTimerEnd = timerEnd
         self.totalPausedDuration = 0
+        self.accumulatedFocusSeconds = 0
         self.breakSuggestionEmitted = false
         self.midpointEmitted = false
 
@@ -209,18 +214,53 @@ public actor FocusEngine {
             restorePhaseAfterPause(&current)
         }
 
+        // S2: shift a widget-adopted end anchor across the pause so the frozen
+        // remaining time is preserved. Without this, tick() recomputes remaining
+        // from the stale anchor and the pause is silently subtracted from the
+        // phase (early completion + inflated stats). Only anchored sessions are
+        // touched; anchorless sessions keep pure Date-arithmetic timing.
+        if phaseTimerEnd != nil, let remaining = current.remainingSeconds {
+            phaseTimerEnd = Date.now.addingTimeInterval(remaining)
+        }
+
         state = current
         startTicking()
     }
 
     /// Stop the current session (user-initiated or completed).
     public func stop(completed: Bool = true) {
+        guard let result = takeTerminalResult(completed: completed) else { return }
+        emit(.sessionCompleted(result))
+    }
+
+    /// Stops without emitting to the event stream, returning the terminal result (S7).
+    /// stopTapped uses this so the abandon no longer depends on the observation
+    /// task surviving until delivery: a quick startTapped (or the AppFeature
+    /// stop→start path) used to cancel it and drop the session. Nil when idle.
+    public func abandonSession() -> FocusSessionResult? {
+        takeTerminalResult(completed: false)
+    }
+
+    /// Shared terminal-result builder: cancels timing, folds the final phase into
+    /// the session total (S1), marks hold stops (S4), resets state. Returns nil
+    /// when no session is active.
+    private func takeTerminalResult(completed: Bool) -> FocusSessionResult? {
         timerTask?.cancel()
         timerTask = nil
 
         guard let current = state, strategy != nil else {
             reset()
-            return
+            return nil
+        }
+
+        // S1: fold the final phase into the session total so the reported total
+        // covers every focus phase, not just the last one. Break phases never
+        // accumulate. When paused, resolve the underlying timed phase (same as
+        // updateConfig) so stop-while-paused keeps the work done before pausing.
+        let effectivePhase = current.phase == .paused ? (phaseBeforePause ?? current.phase) : current.phase
+        let phaseElapsed = max(0, current.elapsedSeconds)
+        if effectivePhase.isWork {
+            accumulatedFocusSeconds += phaseElapsed
         }
 
         let result = FocusSessionResult(
@@ -230,17 +270,23 @@ public actor FocusEngine {
             startedAt: current.startedAt,
             endedAt: Date.now,
             targetDuration: current.targetDuration,
-            actualDuration: current.elapsedSeconds,
+            actualDuration: phaseElapsed,
             wasCompleted: completed,
             interruptions: current.interruptions,
             pomodoroNumber: current.pomodoroNumber,
             linkedTaskID: current.linkedTaskID,
             pauseCount: pauseCount,
-            totalPauseDuration: totalPausedDuration
+            totalPauseDuration: totalPausedDuration,
+            totalFocusSeconds: accumulatedFocusSeconds,
+            // S4: stopping from the waiting hold carries no new interval — the
+            // completed phase was already accounted for (persisted or nothing
+            // to persist). The hold never passes through applyPhaseTransition,
+            // so folding here counts the phase exactly once.
+            isHoldStop: pendingNextPhase != nil
         )
 
-        emit(.sessionCompleted(result))
         reset()
+        return result
     }
 
     /// Record an interruption (phone call, notification tap, etc.)
@@ -415,6 +461,11 @@ public actor FocusEngine {
             totalPausedDuration = max(0, Date.now.timeIntervalSince(start) - current.elapsedSeconds)
         }
         current.totalPausedDuration = totalPausedDuration
+
+        // S2: same anchor shift as resume(), for externally-triggered resumes.
+        if phaseTimerEnd != nil, let remaining = current.remainingSeconds {
+            phaseTimerEnd = Date.now.addingTimeInterval(remaining)
+        }
 
         state = current
         startTicking()
@@ -595,6 +646,33 @@ public actor FocusEngine {
             return
         }
 
+        // S3: a skipped Pomodoro work phase is abandoned focus time. Emit a
+        // partial-credit result (wasCompleted=false) so it persists without
+        // tearing down the session. Other modes need nothing here: Flowtime
+        // folds the elapsed time into the session total (S1), and single-phase
+        // modes terminate via stop() above. Fresh UUID: the session continues
+        // and stop() will emit its own record later.
+        if case .work = phase, current.mode == .pomodoro {
+            let partialElapsed = max(0, elapsed)
+            let partial = FocusSessionResult(
+                id: UUID(),
+                mode: .pomodoro,
+                phase: phase,
+                startedAt: Date.now.addingTimeInterval(-partialElapsed),
+                endedAt: Date.now,
+                targetDuration: current.targetDuration,
+                actualDuration: partialElapsed,
+                wasCompleted: false,
+                interruptions: current.interruptions,
+                pomodoroNumber: current.pomodoroNumber,
+                linkedTaskID: current.linkedTaskID,
+                pauseCount: pauseCount,
+                totalPauseDuration: totalPausedDuration,
+                totalFocusSeconds: partialElapsed
+            )
+            emit(.phaseSkipped(partial))
+        }
+
         // For Pomodoro: increment the work number
         var resolvedPhase = nextPhase
         if case .work(_, let total) = nextPhase, current.mode == .pomodoro {
@@ -622,6 +700,11 @@ public actor FocusEngine {
         guard let strategy = strategy else { return }
 
         let newTarget = strategy.targetDuration(config: config, phase: resolvedPhase)
+        // S1: fold the elapsed focus time of the outgoing phase into the session
+        // total before its counters are reset below. Break phases never accumulate.
+        if current.phase.isWork {
+            accumulatedFocusSeconds += max(0, current.elapsedSeconds)
+        }
         current.phase = resolvedPhase
         current.targetDuration = newTarget
         current.remainingSeconds = newTarget
@@ -677,6 +760,7 @@ public actor FocusEngine {
         state = nil
         phaseStartDate = nil
         totalPausedDuration = 0
+        accumulatedFocusSeconds = 0
         currentPomodoroNumber = 1
         pauseCount = 0
         phaseBeforePause = nil

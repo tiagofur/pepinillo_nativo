@@ -61,6 +61,15 @@ See `env.example`. W1 leaves `PUBLIC_API_BASE_URL` empty. Everywhere auth/sync i
 - Critical shell budget target: ≤ 120 KB gzip (measure with rollup visualizer if regressing)
 - `robots.txt` + meta robots `noindex` until marketing NG6 lift
 
-## Out of scope (W1)
+## W2 Auth + Everywhere (optional)
 
-Auth, sync, WebSocket, Flowtime/Time Block unlock, PWA, soundscapes, export, AI, Electron/Tauri.
+1. Copy `env.example` → `.env` and set `PUBLIC_API_BASE_URL` to your Go API.
+2. Ensure backend `CORS_ALLOWED_ORIGINS` includes your web origin (e.g. `http://localhost:5173`).
+3. Account → Sign in / Create account (email + password).
+4. With **Everywhere** tier on the account, **Upload local data** runs `POST /sync/initial-upload` with `X-Device-ID`.
+
+Without API URL, Free local shell still works offline.
+
+## Out of scope (later)
+
+WebSocket live invalidation polish, Google OAuth web client, Stripe checkout, Flowtime/Time Block unlock UX depth, PWA, AI.

@@ -182,6 +182,7 @@ struct AppFeature {
         case appBecameActive
         case appWentToBackground
         case consumeExternalCommands
+        case reconcileStaleExternalStart
         case appURLReceived(URL)
 
         // Subscription
@@ -533,7 +534,10 @@ struct AppFeature {
                     // Load tasks early so they are available for focus linking
                     .send(.tasks(.onAppear)),
                     // Reconcile widget/intent commands even if they arrived before bootstrap finished.
-                    .send(.consumeExternalCommands),
+                    .concatenate(
+                        .send(.reconcileStaleExternalStart),
+                        .send(.consumeExternalCommands)
+                    ),
                     pushWatchSessionSnapshot(from: state, publishContext: true),
                     // Observe network connectivity for the offline banner (issue #89)
                     .run { [networkClient] send in
@@ -564,7 +568,10 @@ struct AppFeature {
 
             case .appBecameActive:
                 return .merge(
-                    .send(.consumeExternalCommands),
+                    .concatenate(
+                        .send(.reconcileStaleExternalStart),
+                        .send(.consumeExternalCommands)
+                    ),
                     syncWatchStats(isPro: state.subscriptionState.isPro),
                     pushWatchSessionSnapshot(from: state, publishContext: true)
                 )
@@ -590,6 +597,20 @@ struct AppFeature {
                     break
                 }
                 return .none
+
+            case .reconcileStaleExternalStart:
+                // S6: a widget/CC/Siri start fired while the app was away may have
+                // gone stale (past the command TTL) with its optimistic countdown
+                // already served and no engine to record it. take...() atomically
+                // snapshots + clears it so it can neither late-adopt nor
+                // double-apply; the focus scope persists the backfill below.
+                // Skipped while the engine runs: the live session already covers
+                // this wall-clock time (persisting would double-count it).
+                guard !state.focus.isRunning,
+                      let snapshot = AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill() else {
+                    return .none
+                }
+                return .send(.focus(.staleBackfillReceived(FocusSessionResult(ghost: snapshot))))
 
             case .consumeExternalCommands:
                 AppGroupDefaults.discardStaleExternalCommandsIfNeeded()

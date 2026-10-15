@@ -1101,3 +1101,220 @@ struct FocusEngineConfigUpdateTests {
         #expect(state?.isPaused == true)
     }
 }
+
+// MARK: - Session total focus (S1)
+
+@Suite("FocusEngine — Session total focus")
+struct FocusEngineSessionTotalTests {
+
+    @Test func stopAfterMultipleFlowPhasesReportsTotalFocusExcludingBreaks() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .flowtime)
+        // Simulate 40 min of flow without waiting for the 4Hz tick loop.
+        // Back-to-back actor calls complete in microseconds; the first tick
+        // fires after 250ms, so no tick can overwrite the seeded elapsed.
+        await engine.syncExternalState(elapsed: 2400, remaining: nil)
+        // User takes a break: flow → flowBreak. Completed flow time must accumulate.
+        await engine.skipToNextPhase()
+        #expect(await engine.currentState()?.phase.isBreak == true)
+        // Simulate 10 min of break, then return to flow for 10 more min.
+        await engine.syncExternalState(elapsed: 600, remaining: nil)
+        await engine.skipToNextPhase()  // flowBreak → flow; break time must NOT accumulate.
+        #expect(await engine.currentState()?.phase == .flow)
+        await engine.syncExternalState(elapsed: 600, remaining: nil)
+
+        let result = await withTaskGroup(of: FocusSessionResult?.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return nil }
+                for await event in events {
+                    if case .sessionCompleted(let result) = event {
+                        return result
+                    }
+                }
+                return nil
+            }
+            group.addTask {
+                await engine.stop(completed: false)
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+
+        #expect(result?.mode == .flowtime)
+        #expect(result?.wasCompleted == false)
+        // 40 min + 10 min of flow counted; the 10 min break excluded.
+        let total = result?.totalFocusSeconds ?? -1
+        #expect(total >= 3000 && total < 3000 + 60)
+    }
+}
+
+// MARK: - Widget anchor across pause (S2)
+
+@Suite("FocusEngine — Anchored pause")
+struct FocusEngineAnchoredPauseTests {
+
+    @Test func resumePreservesRemainingForWidgetAnchoredSession() async throws {
+        // 4s pomodoro adopted from widget anchors, 2s in: 2s elapsed, 2s remaining.
+        var config = FocusConfig()
+        config.pomodoroDuration = 4
+        let engine = FocusEngine()
+        let now = Date.now
+        await engine.start(
+            mode: .pomodoro,
+            config: config,
+            timerStart: now.addingTimeInterval(-2),
+            timerEnd: now.addingTimeInterval(2)
+        )
+
+        await engine.pause()
+        // A 1s pause must not be subtracted from the phase on resume.
+        try await Task.sleep(for: .milliseconds(1000))
+        await engine.resume()
+        // Let a 4Hz tick recompute remaining from the anchor.
+        try await Task.sleep(for: .milliseconds(500))
+
+        let state = await engine.currentState()
+        // Buggy: ~0.5s (anchor kept pre-pause end). Fixed: ~1.5s (end shifted by pause).
+        let remaining = state?.remainingSeconds ?? -1
+        #expect(remaining > 1.0)
+        if case .work(let number, _) = state?.phase {
+            #expect(number == 1)
+        } else {
+            Issue.record("Phase completed early; anchored pause stole phase time")
+        }
+        await engine.stop()
+    }
+}
+
+// MARK: - Skipped work partial credit (S3)
+
+@Suite("FocusEngine — Skipped work")
+struct FocusEngineSkippedWorkTests {
+
+    @Test func skippingPomodoroWorkEmitsPartialCreditAndContinuesSession() async throws {
+        let engine = FocusEngine()
+        // Seed 10 min into a 25 min work phase via widget-style anchors so the
+        // elapsed time is immune to the 4Hz tick loop (Date arithmetic agrees).
+        let now = Date.now
+        await engine.start(
+            mode: .pomodoro,
+            timerStart: now.addingTimeInterval(-600),
+            timerEnd: now.addingTimeInterval(900)
+        )
+
+        let partial = await withTaskGroup(of: FocusSessionResult?.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return nil }
+                for await event in events {
+                    if case .phaseSkipped(let partial) = event {
+                        return partial
+                    }
+                }
+                return nil
+            }
+            group.addTask {
+                await engine.skipToNextPhase()
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+
+        #expect(partial?.mode == .pomodoro)
+        #expect(partial?.wasCompleted == false)
+        if case .work = partial?.phase {
+        } else {
+            Issue.record("Expected partial credit for the skipped .work phase")
+        }
+        let credit = partial?.actualDuration ?? -1
+        #expect(credit >= 600 && credit < 600 + 120)
+        // The session continues into the break instead of tearing down.
+        #expect(await engine.currentState() != nil)
+        #expect(await engine.currentState()?.phase.isBreak == true)
+        await engine.stop()
+    }
+}
+
+// MARK: - Stop during waiting hold (S4)
+
+@Suite("FocusEngine — Hold stop")
+struct FocusEngineHoldStopTests {
+
+    @Test func stopDuringHoldMarksResultAsAlreadyAccounted() async throws {
+        // 1s work phases with auto-start OFF: completing work enters the hold.
+        var config = FocusConfig()
+        config.pomodoroDuration = 1
+        config.autoStartBreaks = false
+        let engine = FocusEngine()
+        await engine.start(mode: .pomodoro, config: config)
+        // Let the work phase complete naturally into the waiting hold.
+        try await Task.sleep(for: .milliseconds(2000))
+
+        let result = await withTaskGroup(of: FocusSessionResult?.self) { group in
+            group.addTask {
+                guard let events = await engine.events else { return nil }
+                for await event in events {
+                    if case .sessionCompleted(let result) = event {
+                        return result
+                    }
+                }
+                return nil
+            }
+            group.addTask {
+                await engine.stop(completed: false)
+                return nil
+            }
+
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first
+        }
+
+        // The completed work interval was already persisted via phaseCompleted;
+        // the hold-stop result must say so, with the phase folded exactly once.
+        #expect(result?.phase == .work(number: 1, total: 4))
+        #expect(result?.isHoldStop == true)
+        let total = result?.totalFocusSeconds ?? -1
+        #expect(total >= 1.0 && total < 2.0)
+        #expect(await engine.currentState() == nil)
+    }
+}
+
+// MARK: - Direct abandon (S7)
+
+@Suite("FocusEngine — Abandon session")
+struct FocusEngineAbandonTests {
+
+    @Test func abandonSessionReturnsTerminalResultWithoutEmitting() async throws {
+        let engine = FocusEngine()
+        // Seed 10 min into a 25 min work phase via widget-style anchors so the
+        // elapsed time is immune to the 4Hz tick loop (Date arithmetic agrees).
+        let now = Date.now
+        await engine.start(
+            mode: .pomodoro,
+            timerStart: now.addingTimeInterval(-600),
+            timerEnd: now.addingTimeInterval(900)
+        )
+
+        // The result comes back directly: unlike stop(), nothing is emitted to
+        // the stream, so a later start cannot drop it (S7).
+        let result = await engine.abandonSession()
+
+        #expect(result?.mode == .pomodoro)
+        #expect(result?.wasCompleted == false)
+        if case .work = result?.phase {
+        } else {
+            Issue.record("Expected the abandoned .work phase")
+        }
+        let credit = result?.actualDuration ?? -1
+        #expect(credit >= 600 && credit < 600 + 120)
+        #expect(await engine.currentState() == nil)
+        // Second take finds nothing (single-take semantics).
+        #expect(await engine.abandonSession() == nil)
+    }
+}

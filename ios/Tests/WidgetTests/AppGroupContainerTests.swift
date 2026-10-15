@@ -441,6 +441,250 @@ struct AppGroupContainerTests {
         #expect(AppGroupDefaults.externalStartRequested == false)
         #expect(AppGroupDefaults.isSessionActive == false)
     }
+
+    // MARK: - Ghost abandonment persistence (S5)
+
+    @Test("ghost validator ignores inactive sessions and waiting holds")
+    func ghostValidatorIgnoresInactiveAndWaiting() {
+        let now = Date(timeIntervalSince1970: 1_800_300_000)
+        let start = now.addingTimeInterval(-900)
+        let end = start.addingTimeInterval(1500)
+        #expect(AppGroupDefaults.SessionReconcilePolicy.validatedGhostSnapshot(
+            isSessionActive: false, isWaiting: false, modeName: "pomodoro",
+            elapsed: 900, timerStart: start, timerEnd: end,
+            pomodoroNumber: 1, totalPomodoros: 4, taskID: nil, now: now) == nil)
+        // A waiting hold already completed its phase: nothing new to persist.
+        #expect(AppGroupDefaults.SessionReconcilePolicy.validatedGhostSnapshot(
+            isSessionActive: true, isWaiting: true, modeName: "pomodoro",
+            elapsed: 900, timerStart: start, timerEnd: end,
+            pomodoroNumber: 1, totalPomodoros: 4, taskID: nil, now: now) == nil)
+    }
+
+    @Test("ghost validator drops trivial sub-minute ghosts")
+    func ghostValidatorDropsTrivialGhosts() {
+        let now = Date(timeIntervalSince1970: 1_800_300_000)
+        #expect(AppGroupDefaults.SessionReconcilePolicy.validatedGhostSnapshot(
+            isSessionActive: true, isWaiting: false, modeName: "pomodoro",
+            elapsed: 59, timerStart: now.addingTimeInterval(-59), timerEnd: nil,
+            pomodoroNumber: 1, totalPomodoros: 4, taskID: nil, now: now) == nil)
+        let kept = AppGroupDefaults.SessionReconcilePolicy.validatedGhostSnapshot(
+            isSessionActive: true, isWaiting: false, modeName: "pomodoro",
+            elapsed: 61, timerStart: now.addingTimeInterval(-61), timerEnd: nil,
+            pomodoroNumber: 1, totalPomodoros: 4, taskID: nil, now: now)
+        #expect(kept != nil)
+    }
+
+    @Test("ghost validator clamps elapsed to the timer anchors")
+    func ghostValidatorClampsToAnchors() {
+        let now = Date(timeIntervalSince1970: 1_800_300_000)
+        // Elapsed claims 99999s but the timer started 100s ago.
+        let clamped = AppGroupDefaults.SessionReconcilePolicy.validatedGhostSnapshot(
+            isSessionActive: true, isWaiting: false, modeName: "flowtime",
+            elapsed: 99999, timerStart: now.addingTimeInterval(-100), timerEnd: nil,
+            pomodoroNumber: nil, totalPomodoros: nil, taskID: nil, now: now)
+        #expect(abs((clamped?.actualDuration ?? -1) - 100) < 1)
+        #expect(clamped?.targetDuration == nil)
+        // Timer start in the future clamps to zero → trivial → nil.
+        #expect(AppGroupDefaults.SessionReconcilePolicy.validatedGhostSnapshot(
+            isSessionActive: true, isWaiting: false, modeName: "pomodoro",
+            elapsed: 600, timerStart: now.addingTimeInterval(60), timerEnd: nil,
+            pomodoroNumber: 1, totalPomodoros: 4, taskID: nil, now: now) == nil)
+    }
+
+    @Test("ghost snapshot maps to an abandoned pomodoro record")
+    func ghostSnapshotMapsToAbandonedRecord() {
+        let now = Date(timeIntervalSince1970: 1_800_300_000)
+        let taskID = UUID()
+        let snapshot = GhostSessionSnapshot(
+            modeName: "pomodoro",
+            startedAt: now.addingTimeInterval(-600),
+            endedAt: now,
+            targetDuration: 1500,
+            actualDuration: 600,
+            pomodoroNumber: 2,
+            totalPomodoros: 4,
+            taskID: taskID.uuidString
+        )
+        let result = FocusSessionResult(ghost: snapshot)
+        #expect(result.mode == .pomodoro)
+        #expect(result.phase == .work(number: 2, total: 4))
+        #expect(result.wasCompleted == false)
+        #expect(result.actualDuration == 600)
+        #expect(result.totalFocusSeconds == 600)
+        #expect(result.isHoldStop == false)
+        #expect(result.pomodoroNumber == 2)
+        #expect(result.linkedTaskID == taskID)
+        #expect(result.targetDuration == 1500)
+    }
+
+    @Test("ghost snapshot falls back to pomodoro for unknown modes")
+    func ghostSnapshotFallsBackForUnknownMode() {
+        let now = Date(timeIntervalSince1970: 1_800_300_000)
+        let unknown = GhostSessionSnapshot(
+            modeName: "sauna",
+            startedAt: now.addingTimeInterval(-600),
+            endedAt: now,
+            targetDuration: nil,
+            actualDuration: 600,
+            pomodoroNumber: nil,
+            totalPomodoros: nil,
+            taskID: "not-a-uuid"
+        )
+        let fallback = FocusSessionResult(ghost: unknown)
+        #expect(fallback.mode == .pomodoro)
+        #expect(fallback.phase == .work(number: 1, total: 4))
+        #expect(fallback.linkedTaskID == nil)
+
+        let flow = GhostSessionSnapshot(
+            modeName: "flowtime",
+            startedAt: now.addingTimeInterval(-600),
+            endedAt: now,
+            targetDuration: nil,
+            actualDuration: 600,
+            pomodoroNumber: nil,
+            totalPomodoros: nil,
+            taskID: nil
+        )
+        #expect(FocusSessionResult(ghost: flow).phase == .flow)
+    }
+
+    @Test("ghost reader snapshots a staged ghost without clearing")
+    func ghostReaderSnapshotsStagedGhost() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.isSessionActive = true
+        AppGroupDefaults.activeModeName = "flowtime"
+        AppGroupDefaults.activeSessionElapsed = 600
+        AppGroupDefaults.activeSessionTimerStart = Date.now.addingTimeInterval(-600)
+        AppGroupDefaults.externalStartRequested = false
+
+        let snapshot = AppGroupDefaults.SessionReconcilePolicy.ghostSnapshotIfNeeded(engineIsRunning: false)
+        #expect(snapshot?.modeName == "flowtime")
+        #expect(abs((snapshot?.actualDuration ?? -1) - 600) < 1)
+        // The reader never clears; the reconcile step owns clearing.
+        #expect(AppGroupDefaults.isSessionActive == true)
+    }
+
+    // MARK: - Stale external-start backfill (S6)
+
+    @Test("stale external start with fully served window backfills completed")
+    func staleStartWithServedWindowBackfillsCompleted() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.pomodoroDuration = 25 * 60
+        let taskID = UUID()
+        // Widget pomodoro issued 30 min ago: 25-min window fully served.
+        AppGroupDefaults.startWidgetSession(
+            modeID: "pomodoro",
+            taskID: taskID.uuidString,
+            issuedAt: Date.now.addingTimeInterval(-1800)
+        )
+
+        let backfill = AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill()
+        #expect(backfill?.wasCompleted == true)
+        #expect(backfill?.actualDuration == 1500)
+        #expect(backfill?.targetDuration == 1500)
+        #expect(backfill?.modeName == "pomodoro")
+        #expect(backfill?.taskID == taskID.uuidString)
+        // Atomic take: commands + session cleared, second take finds nothing.
+        #expect(AppGroupDefaults.externalStartRequested == false)
+        #expect(AppGroupDefaults.isSessionActive == false)
+        #expect(AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill() == nil)
+    }
+
+    @Test("stale external start mid-window backfills abandoned partial")
+    func staleStartMidWindowBackfillsAbandonedPartial() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.pomodoroDuration = 25 * 60
+        // Widget pomodoro issued 10 min ago: 10 of 25 min served.
+        AppGroupDefaults.startWidgetSession(
+            modeID: "pomodoro",
+            issuedAt: Date.now.addingTimeInterval(-600)
+        )
+
+        let backfill = AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill()
+        #expect(backfill?.wasCompleted == false)
+        #expect(abs((backfill?.actualDuration ?? -1) - 600) < 5)
+        #expect(backfill?.targetDuration == 1500)
+    }
+
+    @Test("fresh external start is never taken for backfill")
+    func freshExternalStartIsNeverTaken() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        AppGroupDefaults.pomodoroDuration = 25 * 60
+        AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: Date.now)
+
+        // Fresh snapshots belong to the normal adopt path: untouched.
+        #expect(AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill() == nil)
+        #expect(AppGroupDefaults.isSessionActive == true)
+        #expect(AppGroupDefaults.externalStartRequested == true)
+    }
+
+    @Test("stale open-ended start is capped as corruption guard")
+    func staleOpenEndedStartIsCapped() {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+        // Widget flowtime issued 3 days ago: unbounded served time.
+        AppGroupDefaults.startWidgetSession(
+            modeID: "flowtime",
+            issuedAt: Date.now.addingTimeInterval(-3 * 86400)
+        )
+
+        let backfill = AppGroupDefaults.SessionReconcilePolicy.takeStaleExternalStartBackfill()
+        #expect(backfill?.wasCompleted == false)
+        #expect(backfill?.actualDuration == 12 * 3600)
+        #expect(backfill?.targetDuration == nil)
+    }
+
+    @Test("stale backfill validator rejects missing or inverted anchors")
+    func staleBackfillValidatorRejectsBadAnchors() {
+        let now = Date(timeIntervalSince1970: 1_800_300_000)
+        #expect(AppGroupDefaults.SessionReconcilePolicy.validatedStaleStartBackfill(
+            modeName: "pomodoro", timerStart: nil, timerEnd: nil,
+            pomodoroNumber: 1, totalPomodoros: 4, taskID: nil, now: now) == nil)
+        let start = now.addingTimeInterval(-600)
+        #expect(AppGroupDefaults.SessionReconcilePolicy.validatedStaleStartBackfill(
+            modeName: "pomodoro", timerStart: start, timerEnd: start,
+            pomodoroNumber: 1, totalPomodoros: 4, taskID: nil, now: now) == nil)
+    }
+
+    @Test("completed backfill maps to a completed record")
+    func completedBackfillMapsToCompletedRecord() {
+        let now = Date(timeIntervalSince1970: 1_800_300_000)
+        let snapshot = GhostSessionSnapshot(
+            modeName: "pomodoro",
+            startedAt: now.addingTimeInterval(-1500),
+            endedAt: now,
+            targetDuration: 1500,
+            actualDuration: 1500,
+            pomodoroNumber: 1,
+            totalPomodoros: 4,
+            taskID: nil,
+            wasCompleted: true
+        )
+        let result = FocusSessionResult(ghost: snapshot)
+        #expect(result.wasCompleted == true)
+        #expect(result.actualDuration == 1500)
+        #expect(result.totalFocusSeconds == 1500)
+        #expect(result.phase == .work(number: 1, total: 4))
+    }
 }
 
 struct AppGroupDefaultsSnapshot {

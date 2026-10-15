@@ -271,6 +271,10 @@ public enum FocusEngineEvent: Sendable {
     /// The engine is now holding — no countdown is running — waiting for the user
     /// to tap the CTA before the next phase begins.
     case waitingForNextPhase(FocusPhase)
+    /// Emitted when a Pomodoro work phase is skipped before completion (S3).
+    /// Carries a partial-credit result (wasCompleted=false) for persistence;
+    /// the session itself continues into the next phase (no teardown).
+    case phaseSkipped(FocusSessionResult)
 }
 
 // MARK: - Session Result (after completion)
@@ -290,6 +294,14 @@ public struct FocusSessionResult: Sendable, Equatable {
     public let linkedTaskID: UUID?
     public let pauseCount: Int               // how many times the user paused
     public let totalPauseDuration: TimeInterval  // total time spent in pause
+    /// Session-total focus time across all focus phases (S1). For single-phase
+    /// sessions this equals `actualDuration`; for multi-phase sessions (Flowtime)
+    /// `actualDuration` carries only the last phase while this carries the total.
+    public let totalFocusSeconds: TimeInterval
+    /// True when stop() ran while holding for the next phase (S4). The
+    /// completed phase was already accounted for, so the reducer must not
+    /// persist this result again.
+    public let isHoldStop: Bool
 
     public init(
         id: UUID,
@@ -304,7 +316,9 @@ public struct FocusSessionResult: Sendable, Equatable {
         pomodoroNumber: Int?,
         linkedTaskID: UUID?,
         pauseCount: Int = 0,
-        totalPauseDuration: TimeInterval = 0
+        totalPauseDuration: TimeInterval = 0,
+        totalFocusSeconds: TimeInterval = 0,
+        isHoldStop: Bool = false
     ) {
         self.id = id
         self.mode = mode
@@ -319,5 +333,67 @@ public struct FocusSessionResult: Sendable, Equatable {
         self.linkedTaskID = linkedTaskID
         self.pauseCount = pauseCount
         self.totalPauseDuration = totalPauseDuration
+        self.totalFocusSeconds = totalFocusSeconds
+        self.isHoldStop = isHoldStop
+    }
+
+    /// Copy with `actualDuration` replaced, keeping the session total.
+    /// Used when persisting multi-phase session totals (S1).
+    public func withActualDuration(_ duration: TimeInterval) -> FocusSessionResult {
+        FocusSessionResult(
+            id: id,
+            mode: mode,
+            phase: phase,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            targetDuration: targetDuration,
+            actualDuration: duration,
+            wasCompleted: wasCompleted,
+            interruptions: interruptions,
+            pomodoroNumber: pomodoroNumber,
+            linkedTaskID: linkedTaskID,
+            pauseCount: pauseCount,
+            totalPauseDuration: totalPauseDuration,
+            totalFocusSeconds: totalFocusSeconds,
+            isHoldStop: isHoldStop
+        )
+    }
+
+    /// Abandoned-session record for a ghost snapshot (S5): the app was killed
+    /// mid-session. Never completed; carries the focus time that evaporated.
+    /// Unknown modes fall back to pomodoro; work-phase numbering falls back to
+    /// the FocusConfig defaults (1 of 4).
+    init(ghost snapshot: GhostSessionSnapshot) {
+        let mode = snapshot.modeName.flatMap { FocusMode(rawValue: $0) } ?? .pomodoro
+        let pomodoroNumber = snapshot.pomodoroNumber ?? 1
+        let phase: FocusPhase = {
+            switch mode {
+            case .pomodoro:
+                return .work(number: pomodoroNumber, total: snapshot.totalPomodoros ?? 4)
+            case .flowtime:
+                return .flow
+            case .timeBlock:
+                return .block
+            case .stopwatch:
+                return .freeform
+            }
+        }()
+        self.init(
+            id: UUID(),
+            mode: mode,
+            phase: phase,
+            startedAt: snapshot.startedAt,
+            endedAt: snapshot.endedAt,
+            targetDuration: snapshot.targetDuration,
+            actualDuration: snapshot.actualDuration,
+            wasCompleted: snapshot.wasCompleted,
+            interruptions: 0,
+            pomodoroNumber: mode == .pomodoro ? pomodoroNumber : nil,
+            linkedTaskID: snapshot.taskID.flatMap { UUID(uuidString: $0) },
+            pauseCount: 0,
+            totalPauseDuration: 0,
+            totalFocusSeconds: snapshot.actualDuration,
+            isHoldStop: false
+        )
     }
 }

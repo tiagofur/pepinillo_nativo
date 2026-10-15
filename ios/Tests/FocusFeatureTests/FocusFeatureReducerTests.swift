@@ -278,7 +278,7 @@ struct FocusFeatureReducerTests {
         let store = TestStore(initialState: state) {
             FocusFeature()
         } withDependencies: {
-            $0.focusClient.stop = { _ in }
+            $0.focusClient.abandonSession = { nil }
             $0.liveActivityClient.end = { _ in }
             $0.soundscapeClient.fadeOut = { }
             $0.notificationClient.clearActiveSession = { }
@@ -375,7 +375,9 @@ struct FocusFeatureReducerTests {
         mode: FocusMode,
         phase: FocusPhase,
         wasCompleted: Bool,
-        actualDuration: TimeInterval = 600
+        actualDuration: TimeInterval = 600,
+        totalFocusSeconds: TimeInterval? = nil,
+        isHoldStop: Bool = false
     ) -> FocusSessionResult {
         FocusSessionResult(
             id: UUID(),
@@ -388,7 +390,9 @@ struct FocusFeatureReducerTests {
             wasCompleted: wasCompleted,
             interruptions: 0,
             pomodoroNumber: mode == .pomodoro ? 1 : nil,
-            linkedTaskID: nil
+            linkedTaskID: nil,
+            totalFocusSeconds: totalFocusSeconds ?? actualDuration,
+            isHoldStop: isHoldStop
         )
     }
 
@@ -481,9 +485,192 @@ struct FocusFeatureReducerTests {
         #expect(scheduledComplete.value?.1 == nil)
     }
 
+    @Test func completedFlowtimeSessionPersistsTotalFocusAcrossPhases() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.notificationClient.scheduleSessionComplete = { _, _ in }
+            $0.healthClient.isAuthorized = { true }
+            $0.healthClient.logMindfulMinutes = { _, _ in }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+        }
+
+        store.exhaustivity = .off
+
+        // Engine-reported result for: 40 min flow → break → 10 min flow, stopped mid second flow.
+        // actualDuration carries only the last phase; totalFocusSeconds carries the session total.
+        let result = makeSessionResult(
+            mode: .flowtime,
+            phase: .flow,
+            wasCompleted: true,
+            actualDuration: 600,
+            totalFocusSeconds: 3000
+        )
+        await store.send(.sessionCompleted(result))
+        await store.receive(.delegate(.sessionPersisted))
+
+        #expect(savedSessions.value.count == 1)
+        #expect(savedSessions.value.first?.actualDuration == 3000)
+    }
+
+    @Test func skippedWorkPhasePersistsPartialCreditWithoutTeardown() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+        }
+
+        store.exhaustivity = .off
+
+        // Partial credit for a pomodoro work phase skipped at 10 min.
+        let partial = makeSessionResult(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            wasCompleted: false,
+            actualDuration: 600
+        )
+        await store.send(.phaseSkipped(partial))
+        await store.receive(.delegate(.sessionPersisted))
+
+        #expect(savedSessions.value.count == 1)
+        #expect(savedSessions.value.first?.wasCompleted == false)
+        #expect(savedSessions.value.first?.actualDuration == 600)
+    }
+
+    @Test func staleBackfillReceivedPersistsHistoricalRecord() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+        }
+
+        store.exhaustivity = .off
+
+        // Backfilled record for a fully served 25-min widget pomodoro.
+        let backfill = makeSessionResult(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            wasCompleted: true,
+            actualDuration: 1500
+        )
+        await store.send(.staleBackfillReceived(backfill))
+        await store.receive(.delegate(.sessionPersisted))
+
+        #expect(savedSessions.value.count == 1)
+        #expect(savedSessions.value.first?.wasCompleted == true)
+        #expect(savedSessions.value.first?.actualDuration == 1500)
+    }
+
+    @Test func stopTappedPersistsAbandonWithoutStreamEvent() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+        let abandonedResult = makeSessionResult(mode: .flowtime, phase: .flow, wasCompleted: false, actualDuration: 900)
+
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.activeMode = .flowtime
+        state.phase = .flow
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            // NOTE: no events stream is stubbed: the abandon must arrive via
+            // abandonSession(), never via .sessionCompleted (S7). Pre-fix this
+            // test fails — stopTapped calls focusClient.stop and persists nothing.
+            $0.focusClient.abandonSession = { abandonedResult }
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+        }
+
+        store.exhaustivity = .off
+
+        await store.send(.stopTapped) {
+            $0.isRunning = false
+            $0.activeMode = nil
+            $0.elapsedSeconds = 0
+            $0.pomodoroNumber = nil
+            $0.progress = nil
+            $0.linkedTaskID = nil
+            $0.linkedTaskTitle = nil
+            $0.phase = .work(number: 1, total: 4)
+            $0.displayTime = "25:00"
+            $0.remainingSeconds = 25 * 60
+            $0.phaseLabel = FocusPhase.idle.displayName
+            $0.modeIcon = "timer"
+        }
+        await store.receive(.stopAbandoned(abandonedResult))
+        await store.receive(.delegate(.sessionPersisted))
+
+        #expect(savedSessions.value.count == 1)
+        #expect(savedSessions.value.first?.wasCompleted == false)
+        #expect(savedSessions.value.first?.actualDuration == 900)
+
+        // A hold-stop abandon carries no new interval and persists nothing (S4).
+        let holdAbandon = makeSessionResult(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            wasCompleted: false,
+            actualDuration: 1500,
+            isHoldStop: true
+        )
+        await store.send(.stopAbandoned(holdAbandon))
+        #expect(savedSessions.value.count == 1)
+    }
+
+    @Test func stopDuringWaitingHoldDoesNotDuplicatePersistedWork() async {
+        let savedSessions = LockIsolated<[FocusSessionResult]>([])
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.saveSession = { result in
+                savedSessions.withValue { $0.append(result) }
+            }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.notificationClient.scheduleSessionComplete = { _, _ in }
+            $0.healthClient.isAuthorized = { false }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+        }
+
+        store.exhaustivity = .off
+
+        // Hold-stop after a completed pomodoro work phase: the interval was
+        // already persisted via phaseCompleted under a different UUID.
+        let result = makeSessionResult(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            wasCompleted: false,
+            actualDuration: 1500,
+            isHoldStop: true
+        )
+        await store.send(.sessionCompleted(result))
+
+        #expect(savedSessions.value.isEmpty)
+    }
+
     @Test func stopTappedAllowsSessionCompletedToPersistAbandonedSession() async {
         let savedSessions = LockIsolated<[FocusSessionResult]>([])
-        let eventContinuation = LockIsolated<AsyncStream<FocusEngineEvent>.Continuation?>(nil)
         let abandonedResult = makeSessionResult(mode: .flowtime, phase: .flow, wasCompleted: false, actualDuration: 900)
 
         var state = FocusFeature.State()
@@ -494,15 +681,7 @@ struct FocusFeatureReducerTests {
             FocusFeature()
         } withDependencies: {
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
-            $0.focusClient.stop = { completed in
-                #expect(completed == false)
-                eventContinuation.value?.yield(.sessionCompleted(abandonedResult))
-            }
-            $0.focusClient.events = {
-                AsyncStream { continuation in
-                    eventContinuation.setValue(continuation)
-                }
-            }
+            $0.focusClient.abandonSession = { abandonedResult }
             $0.focusClient.currentState = { nil }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
@@ -540,7 +719,7 @@ struct FocusFeatureReducerTests {
             $0.modeIcon = "wind"
         }
 
-        await store.receive(.sessionCompleted(abandonedResult))
+        await store.receive(.stopAbandoned(abandonedResult))
         await store.receive(.delegate(.sessionPersisted))
 
         #expect(savedSessions.value.count == 1)

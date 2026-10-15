@@ -98,6 +98,7 @@ struct FocusFeature {
         case externalPauseApplied(elapsed: TimeInterval, remaining: TimeInterval?, pausedAt: Date)
         case externalResumeApplied(elapsed: TimeInterval, remaining: TimeInterval?)
         case stopTapped
+        case stopAbandoned(FocusSessionResult)
         case skipPhaseTapped
         case linkTask(UUID?, String?, String?)
         case customDurationChanged(Int)
@@ -117,6 +118,8 @@ struct FocusFeature {
         // Engine events (dispatched from the observation effect)
         case timerTicked(FocusSessionState)
         case phaseCompleted(FocusPhase)
+        case phaseSkipped(FocusSessionResult)
+        case staleBackfillReceived(FocusSessionResult)
         case sessionCompleted(FocusSessionResult)
         case breakSuggested(TimeInterval)
         case midpointReached
@@ -344,6 +347,7 @@ struct FocusFeature {
                             switch event {
                             case .tick(let sessionState):               await send(.timerTicked(sessionState))
                             case .phaseCompleted(let phase):            await send(.phaseCompleted(phase))
+                            case .phaseSkipped(let partial):           await send(.phaseSkipped(partial))
                             case .sessionCompleted(let result):         await send(.sessionCompleted(result))
                             case .breakSuggested(let duration):         await send(.breakSuggested(duration))
                             case .midpointReached:                      await send(.midpointReached)
@@ -509,11 +513,19 @@ struct FocusFeature {
                 let wasRunning = state.isRunning
                 resetState(&state)
                 guard wasRunning else { return .none }
-                // Do NOT cancel engineObservation here — it races with stop(false) and can
-                // drop .sessionCompleted before abandon persistence runs (issue #170).
-                // sessionCompleted cancels observation after handling the result.
+                // S7: cancel observation FIRST, then take the abandon directly.
+                // abandonSession() never emits to the stream, so there is no
+                // terminal event to lose; the old #170 race (cancel dropping a
+                // buffered .sessionCompleted) cannot happen by construction.
+                // A later startTapped observes a fresh stream: nothing is
+                // dropped and nothing is delivered twice.
                 return .merge(
-                    .run { _ in await focusClient.stop(false) },
+                    .cancel(id: CancelID.engineObservation),
+                    .run { [focusClient] send in
+                        if let result = await focusClient.abandonSession() {
+                            await send(.stopAbandoned(result))
+                        }
+                    },
                     .run { [liveActivity] _ in await liveActivity.end(false) },
                     .run { [soundscapeClient] _ in await soundscapeClient.fadeOut() },
                     .run { [notificationClient] _ in await notificationClient.clearActiveSession() },
@@ -666,6 +678,49 @@ struct FocusFeature {
 
                 return effects.isEmpty ? .none : .merge(effects)
 
+            case .phaseSkipped(let partial):
+                // S3: persist partial credit for a skipped Pomodoro work phase.
+                // The session continues into the next phase: no teardown, no
+                // journal, no completion effects — just the abandoned interval.
+                return .run { [persistence] send in
+                    do {
+                        try await persistence.saveSession(partial)
+                        await send(.delegate(.sessionPersisted))
+                    } catch {
+                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                    }
+                }
+
+            case .staleBackfillReceived(let backfill):
+                // S6: persist a backfilled record for a stale widget/CC/Siri start
+                // whose optimistic countdown was served while the app was away.
+                // Historical data only: no teardown (nothing is running), no
+                // journal, no notifications — just the unrecorded interval.
+                return .run { [persistence] send in
+                    do {
+                        try await persistence.saveSession(backfill)
+                        await send(.delegate(.sessionPersisted))
+                    } catch {
+                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                    }
+                }
+
+            case .stopAbandoned(let result):
+                // S7: persist an abandon taken directly from the engine (see
+                // stopTapped). The stream carries no copy, so this cannot
+                // double-persist. Hold stops carry no new interval (S4).
+                // No teardown/journal: stopTapped already ran those, and the
+                // abandon was never completed.
+                guard !result.isHoldStop else { return .none }
+                return .run { [persistence] send in
+                    do {
+                        try await persistence.saveSession(result)
+                        await send(.delegate(.sessionPersisted))
+                    } catch {
+                        await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                    }
+                }
+
             case .phaseCompleted(let completedPhase):
                 // Engine handles phase transition automatically;
                 // we'll get updated state via the next .timerTicked.
@@ -754,6 +809,11 @@ struct FocusFeature {
                 let wasCompleted = result.wasCompleted
                 let sessionID = result.id
                 let actualDuration = result.actualDuration
+                // S1: multi-phase sessions (Flowtime) accumulate focus across phases in
+                // totalFocusSeconds — persist and display the session total, not the
+                // last phase alone. Pomodoro keeps per-interval semantics because its
+                // completed work intervals already persist in phaseCompleted.
+                let sessionTotal = result.mode == .pomodoro ? actualDuration : result.totalFocusSeconds
                 // Completed Pomodoro cycles persist work in phaseCompleted under a
                 // separate UUID; journal must target that record and its focus duration.
                 let journalSessionID: UUID
@@ -763,7 +823,7 @@ struct FocusFeature {
                     journalDuration = state.lastPersistedPomodoroDuration ?? actualDuration
                 } else {
                     journalSessionID = sessionID
-                    journalDuration = actualDuration
+                    journalDuration = sessionTotal
                 }
                 resetState(&state)
 
@@ -776,7 +836,7 @@ struct FocusFeature {
                 case .pomodoro:
                     if wasCompleted {
                         persistEffect = .none
-                    } else if case .work = result.phase {
+                    } else if case .work = result.phase, !result.isHoldStop {
                         persistEffect = .run { [persistence] send in
                             do {
                                 try await persistence.saveSession(result)
@@ -789,12 +849,17 @@ struct FocusFeature {
                         persistEffect = .none
                     }
                 default:
-                    persistEffect = .run { [persistence] send in
-                        do {
-                            try await persistence.saveSession(result)
-                            await send(.delegate(.sessionPersisted))
-                        } catch {
-                            await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                    if result.isHoldStop {
+                        // S4: stop during a hold carries no new interval — never persist.
+                        persistEffect = .none
+                    } else {
+                        persistEffect = .run { [persistence, sessionTotal] send in
+                            do {
+                                try await persistence.saveSession(result.withActualDuration(sessionTotal))
+                                await send(.delegate(.sessionPersisted))
+                            } catch {
+                                await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
+                            }
                         }
                     }
                 }
@@ -840,9 +905,9 @@ struct FocusFeature {
                 }
 
                 // Pomodoro work intervals log in phaseCompleted; other modes log focused time only.
-                if wasCompleted, result.mode != .pomodoro, result.actualDuration > 0 {
+                if wasCompleted, result.mode != .pomodoro, sessionTotal > 0 {
                     let end = result.endedAt
-                    let start = end.addingTimeInterval(-result.actualDuration)
+                    let start = end.addingTimeInterval(-sessionTotal)
                     completionEffects.append(
                         .run { [healthClient, persistence] _ in
                             let prefs = try await persistence.fetchPreferences()

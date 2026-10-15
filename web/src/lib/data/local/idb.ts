@@ -26,9 +26,18 @@ interface PepinilloDB extends DBSchema {
 	};
 	meta: {
 		key: string;
-		value: { id: string; deviceId: string; schemaVersion: number };
+		value:
+			| { id: string; deviceId: string; schemaVersion: number }
+			| AuthMeta
+			| { id: string; [k: string]: unknown };
 	};
 }
+
+export type AuthMeta = {
+	id: 'auth';
+	refreshToken: string | null;
+	userJson: string | null;
+};
 
 let dbPromise: Promise<IDBPDatabase<PepinilloDB>> | null = null;
 
@@ -93,7 +102,7 @@ const PREFS_ID = 'preferences';
 export async function getDeviceId(): Promise<string> {
 	const db = await openDb();
 	const existing = await db.get('meta', DEVICE_META_ID);
-	if (existing?.deviceId) {
+	if (existing && 'deviceId' in existing && typeof existing.deviceId === 'string' && existing.deviceId) {
 		return existing.deviceId;
 	}
 	const deviceId = uuidV4();
@@ -103,6 +112,27 @@ export async function getDeviceId(): Promise<string> {
 		schemaVersion: DB_VERSION
 	});
 	return deviceId;
+}
+
+const AUTH_META_ID = 'auth';
+
+export async function loadAuthMeta(): Promise<AuthMeta> {
+	const db = await openDb();
+	const row = await db.get('meta', AUTH_META_ID);
+	if (row && row.id === 'auth') {
+		return row as AuthMeta;
+	}
+	return { id: 'auth', refreshToken: null, userJson: null };
+}
+
+export async function saveAuthMeta(meta: Omit<AuthMeta, 'id'>): Promise<void> {
+	const db = await openDb();
+	await db.put('meta', { id: AUTH_META_ID, ...meta });
+}
+
+export async function clearAuthMeta(): Promise<void> {
+	const db = await openDb();
+	await db.delete('meta', AUTH_META_ID);
 }
 
 export async function getPreferences(): Promise<Preferences> {
@@ -149,6 +179,28 @@ export async function saveSession(session: FocusSession): Promise<void> {
 	await db.put('sessions', session);
 }
 
+/**
+ * Bulk-replace task rows after a server merge. Each task is upserted (put) so
+ * records absent from `tasks` are left intact — callers pass the merged superset.
+ */
+export async function saveAllTasks(tasks: Task[]): Promise<void> {
+	const db = await openDb();
+	const tx = db.transaction('tasks', 'readwrite');
+	await Promise.all(tasks.map((t) => tx.store.put(t)));
+	await tx.done;
+}
+
+/**
+ * Bulk-replace session rows after a server merge. Same upsert semantics as
+ * saveAllTasks.
+ */
+export async function saveAllSessions(sessions: FocusSession[]): Promise<void> {
+	const db = await openDb();
+	const tx = db.transaction('sessions', 'readwrite');
+	await Promise.all(sessions.map((s) => tx.store.put(s)));
+	await tx.done;
+}
+
 export async function listSessions(): Promise<FocusSession[]> {
 	const db = await openDb();
 	const all = await db.getAll('sessions');
@@ -157,4 +209,33 @@ export async function listSessions(): Promise<FocusSession[]> {
 		const bKey = b.startedAt ?? b.createdAt;
 		return bKey.localeCompare(aKey);
 	});
+}
+
+export type SyncMeta = {
+	id: 'sync';
+	/** ISO time of the last successful full round-trip (push + pull). */
+	lastSyncAt: string | null;
+	/** Epoch ms of the last pull-only refresh (used to throttle refocus pulls). */
+	lastPullAt: number | null;
+};
+
+const SYNC_META_ID = 'sync';
+
+export async function getSyncMeta(): Promise<SyncMeta> {
+	const db = await openDb();
+	const row = await db.get('meta', SYNC_META_ID);
+	if (row && row.id === 'sync') {
+		return row as SyncMeta;
+	}
+	return { id: 'sync', lastSyncAt: null, lastPullAt: null };
+}
+
+export async function saveSyncMeta(meta: Omit<SyncMeta, 'id'>): Promise<void> {
+	const db = await openDb();
+	await db.put('meta', { id: SYNC_META_ID, ...meta });
+}
+
+export async function clearSyncMeta(): Promise<void> {
+	const db = await openDb();
+	await db.delete('meta', SYNC_META_ID);
 }
