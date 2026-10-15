@@ -43,6 +43,11 @@ struct SyncClientTests {
         defer { AppGroupDefaults.userCapabilities = saved }
 
         makeCapabilitiesAndSet(.free)
+        // canBackendSync is a separate persisted flag: pin it so parallel
+        // tests or leftovers from previous runs cannot open the gate.
+        let savedCanSync = AppGroupDefaults.canBackendSync
+        defer { AppGroupDefaults.canBackendSync = savedCanSync }
+        AppGroupDefaults.canBackendSync = false
 
         let probe = APICallProbe()
         let client = withDependencies {
@@ -68,6 +73,9 @@ struct SyncClientTests {
         defer { AppGroupDefaults.userCapabilities = saved }
 
         makeCapabilitiesAndSet(.pepinilloPlus)
+        let savedCanSync = AppGroupDefaults.canBackendSync
+        defer { AppGroupDefaults.canBackendSync = savedCanSync }
+        AppGroupDefaults.canBackendSync = false
 
         let probe = APICallProbe()
         let client = withDependencies {
@@ -89,6 +97,10 @@ struct SyncClientTests {
         defer { AppGroupDefaults.userCapabilities = saved }
 
         makeCapabilitiesAndSet(.everywherePlus)
+        // Pin the gate open: the leftover value from other tests is not ours.
+        let savedCanSync = AppGroupDefaults.canBackendSync
+        defer { AppGroupDefaults.canBackendSync = savedCanSync }
+        AppGroupDefaults.canBackendSync = true
 
         let probe = APICallProbe()
 
@@ -574,6 +586,11 @@ struct SyncClientTests {
 
         // Set capabilities to PepinilloPlus (backendSync=false)
         makeCapabilitiesAndSet(.pepinilloPlus)
+        // Pin the gate flag too: this test asserts the blocked path, and the
+        // persisted flag must agree with capabilities regardless of leftovers.
+        let savedCanSync = AppGroupDefaults.canBackendSync
+        defer { AppGroupDefaults.canBackendSync = savedCanSync }
+        AppGroupDefaults.canBackendSync = false
 
         let probe = APICallProbe()
         let client = withDependencies {

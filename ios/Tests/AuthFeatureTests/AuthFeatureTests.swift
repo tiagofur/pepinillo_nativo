@@ -8,7 +8,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite("AuthFeature")
+@Suite("AuthFeature", .serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct AuthFeatureTests {
 

@@ -9,7 +9,7 @@ import ComposableArchitecture
 import SwiftData
 @testable import Pepinillo
 
-@Suite("PersistenceStoreRouter Integration Tests", .serialized)
+@Suite("PersistenceStoreRouter Integration Tests", .serialized, .appGroupDefaultsSerialized)
 struct PersistenceStoreRouterTests {
 
     private let migrationKey = LocalToCloudStoreMigrator.appleCloudInitialMigrationCompleteKey

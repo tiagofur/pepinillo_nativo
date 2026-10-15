@@ -14,7 +14,7 @@ import ComposableArchitecture
 
 // MARK: - Fresh Engine State
 
-@Suite("FocusEngine — Initial State")
+@Suite("FocusEngine — Initial State", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineInitialStateTests {
 
     @Test func freshEngineHasNilState() async {
@@ -32,7 +32,7 @@ struct FocusEngineInitialStateTests {
 
 // MARK: - Starting Sessions
 
-@Suite("FocusEngine — Start")
+@Suite("FocusEngine — Start", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineStartTests {
 
     @Test func startPomodoroCreatesActiveState() async throws {
@@ -135,7 +135,7 @@ struct FocusEngineStartTests {
 
 // MARK: - Pause / Resume
 
-@Suite("FocusEngine — Pause and Resume")
+@Suite("FocusEngine — Pause and Resume", .serialized, .appGroupDefaultsSerialized)
 struct FocusEnginePauseResumeTests {
 
     @Test func pauseSetsStateCorrectly() async throws {
@@ -328,7 +328,7 @@ struct FocusEnginePauseResumeTests {
 
 // MARK: - Stop
 
-@Suite("FocusEngine — Stop")
+@Suite("FocusEngine — Stop", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineStopTests {
 
     @Test func stopResetsStateToNil() async throws {
@@ -400,7 +400,7 @@ struct FocusEngineStopTests {
 
 // MARK: - Interruptions
 
-@Suite("FocusEngine — Interruptions")
+@Suite("FocusEngine — Interruptions", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineInterruptionTests {
 
     @Test func recordInterruptionIncrementsCount() async throws {
@@ -430,7 +430,7 @@ struct FocusEngineInterruptionTests {
 
 // MARK: - Session Replacement
 
-@Suite("FocusEngine — Session Replacement")
+@Suite("FocusEngine — Session Replacement", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineSessionReplacementTests {
 
     @Test func startingNewSessionCancelsPrevious() async throws {
@@ -467,7 +467,7 @@ struct FocusEngineSessionReplacementTests {
 
 // MARK: - Custom Duration
 
-@Suite("FocusEngine — Custom Duration")
+@Suite("FocusEngine — Custom Duration", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineCustomDurationTests {
 
     @Test func customDurationForTimeBlock() async throws {
@@ -497,7 +497,7 @@ struct FocusEngineCustomDurationTests {
 
 // MARK: - Linked Task
 
-@Suite("FocusEngine — Linked Task")
+@Suite("FocusEngine — Linked Task", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineLinkedTaskTests {
 
     @Test func linkedTaskIDIsPreserved() async throws {
@@ -652,7 +652,7 @@ struct FocusEngineTimerTests {
 
 // MARK: - Skip Phase
 
-@Suite("FocusEngine — Skip Phase")
+@Suite("FocusEngine — Skip Phase", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineSkipPhaseTests {
 
     @Test func skipWorkPhaseAdvancesToBreak() async throws {
@@ -677,7 +677,7 @@ struct FocusEngineSkipPhaseTests {
 
 // MARK: - FocusConfig Interaction
 
-@Suite("FocusEngine — Config")
+@Suite("FocusEngine — Config", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineConfigTests {
 
     @Test func customPomodoroConfig() async throws {
@@ -714,7 +714,7 @@ struct FocusEngineConfigTests {
 
 // MARK: - Flowtime Break Lifecycle
 
-@Suite("FocusEngine — Flowtime Breaks", .serialized)
+@Suite("FocusEngine — Flowtime Breaks", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineFlowtimeBreakTests {
 
     @Test func takeBreakAdvancesToFlowBreak() async throws {
@@ -756,6 +756,13 @@ struct FocusEngineFlowtimeBreakTests {
     }
 
     @Test func flowBreakCompletesAndReturnsToFlow() async throws {
+        // Isolate the shared App Group: a foreign pause command would freeze
+        // this engine mid-break and the completion would never fire.
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
         let engine = FocusEngine()
         await engine.start(mode: .flowtime)
         try await Task.sleep(for: .milliseconds(300))
@@ -765,7 +772,17 @@ struct FocusEngineFlowtimeBreakTests {
 
         let breakTarget = await engine.currentState()?.targetDuration ?? 0
         await engine.syncExternalState(elapsed: breakTarget, remaining: 0)
-        try await Task.sleep(for: .milliseconds(300))
+        // Completion rides the 250ms tick: poll instead of a fixed sleep so
+        // loaded simulators cannot miss the window.
+        var flowReturned = false
+        for _ in 0..<20 {
+            try await Task.sleep(for: .milliseconds(100))
+            if await engine.currentState()?.phase == .flow {
+                flowReturned = true
+                break
+            }
+        }
+        #expect(flowReturned)
 
         let state = await engine.currentState()
         #expect(state?.phase == .flow)
@@ -775,16 +792,21 @@ struct FocusEngineFlowtimeBreakTests {
     }
 
     @Test func skipFlowBreakReturnsToFlow() async throws {
+        // Isolate the shared App Group (see above): skips are synchronous,
+        // so no polling is needed once foreign commands cannot interfere.
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
         let engine = FocusEngine()
         await engine.start(mode: .flowtime)
         try await Task.sleep(for: .milliseconds(300))
 
         await engine.skipToNextPhase()
-        try await Task.sleep(for: .milliseconds(300))
         #expect(await engine.currentState()?.phase.isBreak == true)
 
         await engine.skipToNextPhase()
-        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.phase == .flow)
@@ -860,7 +882,7 @@ struct FocusEngineFlowtimeBreakTests {
 
 // MARK: - Daily Pomodoro Seed
 
-@Suite("FocusEngine — Daily Pomodoro Seed")
+@Suite("FocusEngine — Daily Pomodoro Seed", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineDailyPomodoroSeedTests {
 
     @Test func startWithNoCompletedSessionsUsesPomodoroOne() async throws {
@@ -940,7 +962,7 @@ struct FocusEngineDailyPomodoroSeedTests {
 
 // MARK: - External Timer Anchors (#176)
 
-@Suite("FocusEngine — External Timer Anchors")
+@Suite("FocusEngine — External Timer Anchors", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineExternalTimerTests {
 
     @Test func startUsesTimerEndForRemainingWhenProvided() async throws {
@@ -962,7 +984,7 @@ struct FocusEngineExternalTimerTests {
 
 // MARK: - Midpoint Check-In (#176)
 
-@Suite("FocusEngine — Midpoint Check-In")
+@Suite("FocusEngine — Midpoint Check-In", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineMidpointTests {
 
     @Test func midpointFiresOnceWhenElapsedCrossesHalf() async throws {
@@ -1056,7 +1078,7 @@ struct FocusEngineMidpointTests {
 
 // MARK: - Config Updates (#176)
 
-@Suite("FocusEngine — Config Updates")
+@Suite("FocusEngine — Config Updates", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineConfigUpdateTests {
 
     @Test func updateConfigWhilePausedEmitsTick() async throws {
@@ -1103,7 +1125,7 @@ struct FocusEngineConfigUpdateTests {
 
 // MARK: - Session total focus (S1)
 
-@Suite("FocusEngine — Session total focus")
+@Suite("FocusEngine — Session total focus", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineSessionTotalTests {
 
     @Test func stopAfterMultipleFlowPhasesReportsTotalFocusExcludingBreaks() async throws {
@@ -1157,7 +1179,7 @@ struct FocusEngineSessionTotalTests {
 
 // MARK: - Widget anchor across pause (S2)
 
-@Suite("FocusEngine — Anchored pause")
+@Suite("FocusEngine — Anchored pause", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineAnchoredPauseTests {
 
     @Test func resumePreservesRemainingForWidgetAnchoredSession() async throws {
@@ -1195,7 +1217,7 @@ struct FocusEngineAnchoredPauseTests {
 
 // MARK: - Skipped work partial credit (S3)
 
-@Suite("FocusEngine — Skipped work")
+@Suite("FocusEngine — Skipped work", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineSkippedWorkTests {
 
     @Test func skippingPomodoroWorkEmitsPartialCreditAndContinuesSession() async throws {
@@ -1251,7 +1273,7 @@ struct FocusEngineSkippedWorkTests {
 
 // MARK: - Stop during waiting hold (S4)
 
-@Suite("FocusEngine — Hold stop")
+@Suite("FocusEngine — Hold stop", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineHoldStopTests {
 
     @Test func stopDuringHoldMarksResultAsAlreadyAccounted() async throws {
@@ -1301,7 +1323,7 @@ struct FocusEngineHoldStopTests {
 
 // MARK: - Direct abandon (S7)
 
-@Suite("FocusEngine — Abandon session")
+@Suite("FocusEngine — Abandon session", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineAbandonTests {
 
     @Test func abandonSessionReturnsTerminalResultWithoutEmitting() async throws {
@@ -1335,7 +1357,7 @@ struct FocusEngineAbandonTests {
 
 // MARK: - Ghost adoption (Sprint-5 T1)
 
-@Suite("FocusEngine — Ghost adoption")
+@Suite("FocusEngine — Ghost adoption", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineGhostAdoptionTests {
 
     @Test func adoptPomodoroWorkResumesWithWallClockMath() async throws {
@@ -1402,7 +1424,7 @@ struct FocusEngineGhostAdoptionTests {
 
 // MARK: - Ghost resume eligibility (Sprint-5 T2)
 
-@Suite("FocusEngine — Ghost resume eligibility")
+@Suite("FocusEngine — Ghost resume eligibility", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineGhostResumeTests {
 
     private var utcCalendar: Calendar {

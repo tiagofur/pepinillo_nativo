@@ -268,7 +268,9 @@ struct SiriPauseResumeIntentTests {
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.clearActiveSession()
 
-        let issuedAt = Date(timeIntervalSince1970: 1_800_400_000)
+        // Start the widget session in the past: a just-started session has
+        // ~0 elapsed and live computations clamp to 0.
+        let issuedAt = Date.now.addingTimeInterval(-90)
         AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.externalStartRequested = false
@@ -331,7 +333,9 @@ struct SiriPauseResumeIntentTests {
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.clearActiveSession()
 
-        let issuedAt = Date(timeIntervalSince1970: 1_800_500_000)
+        // See above: the session must have started in the past for live
+        // elapsed to be meaningful.
+        let issuedAt = Date.now.addingTimeInterval(-90)
         AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.externalStartRequested = false
