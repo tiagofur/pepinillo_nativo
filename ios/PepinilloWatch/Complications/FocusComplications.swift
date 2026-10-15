@@ -14,6 +14,8 @@ import SwiftUI
 struct FocusComplicationEntry: TimelineEntry {
     let date: Date
     let isActive: Bool
+    /// True while paused: views render frozen time instead of ticking (S6).
+    let isPaused: Bool
     let displayTime: String
     let todayMinutes: Int
     let streakDays: Int
@@ -35,6 +37,7 @@ struct FocusComplicationProvider: TimelineProvider {
         FocusComplicationEntry(
             date: Date(),
             isActive: false,
+            isPaused: false,
             displayTime: "25:00",
             todayMinutes: 95,
             streakDays: 7,
@@ -58,33 +61,16 @@ struct FocusComplicationProvider: TimelineProvider {
            let start = entry.phaseStartDate,
            let end = entry.phaseEndDate,
            end > start {
-            // Step timeline while active so countdown families stay live (#248).
-            let now = Date()
-            var entries: [FocusComplicationEntry] = []
-            var cursor = now
-            while cursor <= end && entries.count < 60 {
-                entries.append(FocusComplicationEntry(
-                    date: cursor,
-                    isActive: true,
-                    displayTime: entry.displayTime,
-                    todayMinutes: entry.todayMinutes,
-                    streakDays: entry.streakDays,
-                    modeEmoji: entry.modeEmoji,
-                    linkedTaskTitle: entry.linkedTaskTitle,
-                    phaseName: entry.phaseName,
-                    progress: entry.progress,
-                    pomodoroNumber: entry.pomodoroNumber,
-                    phaseStartDate: start,
-                    phaseEndDate: end
-                ))
-                cursor = cursor.addingTimeInterval(1)
-            }
-            completion(Timeline(entries: entries, policy: .atEnd))
+            // S6: single anchored entry — Text(timerInterval:) self-ticks without
+            // per-second entries (the 1Hz stepping loop burned the daily reload
+            // budget and froze the complication for hours). Refresh at phase end.
+            completion(Timeline(entries: [entry], policy: .after(end)))
             return
         }
 
-        let refreshMinutes = entry.isActive ? 1 : 15
-        let next = Calendar.current.date(byAdding: .minute, value: refreshMinutes, to: Date()) ?? Date()
+        // S6: no 1-minute polling for anchorless active sessions either — state
+        // changes arrive via pushed reloads. Idle cadence for everything else.
+        let next = Calendar.current.date(byAdding: .minute, value: 15, to: Date()) ?? Date()
         completion(Timeline(entries: [entry], policy: .after(next)))
     }
 
@@ -93,6 +79,8 @@ struct FocusComplicationProvider: TimelineProvider {
     private func buildEntry() -> FocusComplicationEntry {
         let defaults = UserDefaults(suiteName: "group.com.pepinillo.app") ?? .standard
         let isActive = defaults.bool(forKey: WatchStatsKeys.isSessionActive)
+        // S6: pause only meaningful while active (also clears stale flags).
+        let isPaused = isActive && defaults.bool(forKey: WatchStatsKeys.isPaused)
         let displayTime = defaults.string(forKey: WatchStatsKeys.displayTime) ?? "—"
         let todayMinutes = defaults.integer(forKey: WatchStatsKeys.todayFocusMinutes)
         let streakDays = defaults.integer(forKey: WatchStatsKeys.currentStreakDays)
@@ -113,6 +101,7 @@ struct FocusComplicationProvider: TimelineProvider {
         return FocusComplicationEntry(
             date: Date(),
             isActive: isActive,
+            isPaused: isPaused,
             displayTime: displayTime,
             todayMinutes: todayMinutes,
             streakDays: streakDays,
@@ -138,7 +127,13 @@ struct CircularComplicationView: View {
     var body: some View {
         ZStack {
             if entry.isActive {
-                if let start = entry.phaseStartDate, let end = entry.phaseEndDate, end > start {
+                // S6: frozen while paused (a live countdown would keep ticking).
+                if entry.isPaused {
+                    ProgressView(value: entry.progress)
+                        .progressViewStyle(.circular)
+                    Text(entry.modeEmoji)
+                        .font(.system(size: 12))
+                } else if let start = entry.phaseStartDate, let end = entry.phaseEndDate, end > start {
                     ProgressView(timerInterval: start...end, countsDown: true) {
                         Text(entry.modeEmoji).font(.system(size: 12))
                     } currentValueLabel: {
@@ -176,7 +171,12 @@ struct RectangularComplicationView: View {
 
             VStack(alignment: .leading, spacing: 1) {
                 if entry.isActive {
-                    if let start = entry.phaseStartDate, let end = entry.phaseEndDate {
+                    // S6: frozen while paused (a live countdown would keep ticking).
+                    if entry.isPaused {
+                        Text(entry.displayTime)
+                            .font(.system(.headline, design: .rounded, weight: .bold))
+                            .monospacedDigit()
+                    } else if let start = entry.phaseStartDate, let end = entry.phaseEndDate {
                         Text(timerInterval: start...end, countsDown: true)
                             .font(.system(.headline, design: .rounded, weight: .bold))
                             .monospacedDigit()
@@ -283,7 +283,10 @@ struct CornerComplicationView: View {
             .font(.title3)
             .widgetLabel {
                 if entry.isActive {
-                    if let start = entry.phaseStartDate, let end = entry.phaseEndDate {
+                    // S6: frozen while paused (a live countdown would keep ticking).
+                    if entry.isPaused {
+                        Text(entry.displayTime)
+                    } else if let start = entry.phaseStartDate, let end = entry.phaseEndDate {
                         Text(timerInterval: start...end, countsDown: true)
                     } else {
                         Text(entry.displayTime)

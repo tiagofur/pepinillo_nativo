@@ -21,6 +21,7 @@ struct TaskAnalyticsFeature {
     enum Action: Equatable {
         case onAppear
         case analyticsLoaded(TaskAnalyticsDTO)
+        case analyticsFailed
         case dismiss
     }
 
@@ -36,9 +37,19 @@ struct TaskAnalyticsFeature {
                 state.isLoading = true
                 let taskID = state.taskID
                 return .run { send in
-                    let analytics = try await persistenceClient.fetchTaskAnalytics(taskID)
-                    await send(.analyticsLoaded(analytics))
+                    do {
+                        let analytics = try await persistenceClient.fetchTaskAnalytics(taskID)
+                        await send(.analyticsLoaded(analytics))
+                    } catch {
+                        await send(.analyticsFailed)
+                    }
                 }
+
+            case .analyticsFailed:
+                // The sheet already renders an empty state when analytics is
+                // nil — just release the spinner (S1).
+                state.isLoading = false
+                return .none
 
             case .analyticsLoaded(let analytics):
                 state.analytics = analytics

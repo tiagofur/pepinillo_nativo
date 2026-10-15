@@ -363,6 +363,10 @@ public struct FocusSessionResult: Sendable, Equatable {
     /// mid-session. Never completed; carries the focus time that evaporated.
     /// Unknown modes fall back to pomodoro; work-phase numbering falls back to
     /// the FocusConfig defaults (1 of 4).
+    ///
+    /// App targets only: GhostSessionSnapshot lives in AppGroupContainer, which
+    /// is not compiled into watch targets (nothing on watch resolves ghosts).
+    #if !os(watchOS)
     init(ghost snapshot: GhostSessionSnapshot) {
         let mode = snapshot.modeName.flatMap { FocusMode(rawValue: $0) } ?? .pomodoro
         let pomodoroNumber = snapshot.pomodoroNumber ?? 1
@@ -396,4 +400,5 @@ public struct FocusSessionResult: Sendable, Equatable {
             isHoldStop: false
         )
     }
+    #endif
 }

@@ -22,6 +22,9 @@ enum WatchStatsKeys {
     static let pomodoroNumber = "watch.pomodoroNumber"
     static let phaseStartDate = "watch.phaseStartDate"
     static let phaseEndDate = "watch.phaseEndDate"
+    /// Whether the session is paused (S6). Complications freeze their
+    /// countdown while set; without it they ticked through pauses.
+    static let isPaused = "watch.isPaused"
 
     // Task complication keys
     static let tasksJSON = "watch.tasksJSON"

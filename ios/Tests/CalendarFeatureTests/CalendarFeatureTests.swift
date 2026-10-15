@@ -411,4 +411,50 @@ struct CalendarFeatureTests {
             #expect(detail?.sessions.count == 2)
         }
     }
+
+    @Test("month load failure degrades to empty month instead of stuck spinner")
+    func monthLoadFailureDegradesToEmpty() async {
+        struct LoadError: Error {}
+        let store = TestStore(initialState: CalendarFeature.State()) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in throw LoadError() }
+            $0.persistenceClient.fetchTasks = { [] }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+
+        // S1 RED pre-fix: the effect dies unhandled, nothing is ever received.
+        await store.receive(\.monthDataLoaded) {
+            $0.isLoading = false
+            $0.activityDays = []
+        }
+    }
+
+    @Test("day load failure degrades to empty detail")
+    func dayLoadFailureDegradesToEmptyDetail() async {
+        struct LoadError: Error {}
+        let targetDay = Calendar.current.startOfDay(for: Date.now)
+        let store = TestStore(initialState: CalendarFeature.State()) {
+            CalendarFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in throw LoadError() }
+            $0.persistenceClient.fetchTasks = { [] }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.daySelected(targetDay)) {
+            $0.selectedDate = targetDay
+        }
+
+        await store.receive(\.dayDetailLoaded) {
+            let detail = $0.selectedDayDetail
+            #expect(detail?.totalFocusMinutes == 0)
+            #expect(detail?.sessionsCompleted == 0)
+            #expect(detail?.sessions.isEmpty == true)
+        }
+    }
 }

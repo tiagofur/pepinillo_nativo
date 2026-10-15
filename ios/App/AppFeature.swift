@@ -20,6 +20,14 @@ private enum AppLaunchDefaults {
 
 private let appLaunchLogger = Logger(subsystem: "com.pepinillo.app", category: "app-launch")
 
+/// Pending ghost-resume offer (Sprint-5 T2): adopt spec plus the abandon
+/// snapshot (persisted only if the user discards the offer). A struct (not a
+/// tuple) so AppFeature.State keeps its synthesized Equatable conformance.
+struct PendingGhostOffer: Equatable, Sendable {
+    var spec: FocusEngine.GhostResumeSpec
+    var snapshot: GhostSessionSnapshot
+}
+
 // MARK: - Offline grace bootstrap (#214)
 
 /// Resolves a launch-time subscription state from App Group cache + lastVerifiedDate.
@@ -67,6 +75,10 @@ struct AppFeature {
 
         // Celebration overlay
         var pendingCelebration: CelebrationMilestone? = nil
+        /// Pending ghost-resume offer (Sprint-5 T2): adopt spec plus the abandon
+        /// snapshot (persisted only if the user discards the offer). Set once at
+        /// launch; nil when no ghost qualified.
+        var pendingGhostOffer: PendingGhostOffer?
 
         @Presents var calendar: CalendarFeature.State?
 
@@ -183,6 +195,8 @@ struct AppFeature {
         case appWentToBackground
         case consumeExternalCommands
         case reconcileStaleExternalStart
+        case ghostResumeTapped
+        case ghostDiscardTapped
         case appURLReceived(URL)
 
         // Subscription
@@ -261,6 +275,7 @@ struct AppFeature {
     @Dependency(\.webSocketClient) var webSocketClient
     @Dependency(\.syncModeClient) var syncModeClient
     @Dependency(\.networkClient) var networkClient
+    @Dependency(\.spotlightClient) var spotlightClient
     @Dependency(\.liveActivityClient) var liveActivityClient
 
     private enum CancelID {
@@ -611,6 +626,22 @@ struct AppFeature {
                     return .none
                 }
                 return .send(.focus(.staleBackfillReceived(FocusSessionResult(ghost: snapshot))))
+
+            case .ghostResumeTapped:
+                // Sprint-5 T3: resume the pending ghost offer in the focus scope.
+                guard let offer = state.pendingGhostOffer else { return .none }
+                state.pendingGhostOffer = nil
+                return .send(.focus(.adoptGhostSession(offer.spec)))
+
+            case .ghostDiscardTapped:
+                // Sprint-5 T3: record the abandon deferred from launch (T2) and
+                // clear the offer. The sheet's X-dismiss routes here too: the
+                // pending state must always resolve, never linger.
+                guard let offer = state.pendingGhostOffer else { return .none }
+                state.pendingGhostOffer = nil
+                return .run { [persistence] _ in
+                    try? await persistence.saveSession(FocusSessionResult(ghost: offer.snapshot))
+                }
 
             case .consumeExternalCommands:
                 AppGroupDefaults.discardStaleExternalCommandsIfNeeded()
@@ -1674,7 +1705,7 @@ struct AppFeature {
         state.userEmail = nil
         if dismissProfile { state.profile = nil }
         webSocketClient.disconnect()
-        return .run { [keychain, apiClient, persistence, subscriptionClient] _ in
+        return .run { [keychain, apiClient, persistence, subscriptionClient, spotlightClient] _ in
             if notifyBackendLogout, let refreshToken = await keychain.loadRefreshToken() {
                 try? await apiClient.logout(LogoutRequest(refreshToken: refreshToken))
             }
@@ -1692,6 +1723,10 @@ struct AppFeature {
                 try? await persistence.deleteAllTasks()
                 try? await persistence.deleteAllSessions()
                 try? await persistence.deleteAllStats()
+                // S1: deindex Spotlight too — deleted tasks stayed searchable
+                // system-wide with visible titles. Plain sign-out keeps local
+                // data (and its valid index); only the wipe path deindexes.
+                try? await spotlightClient.deleteAll()
             }
             AIReportFeature.clearAllCachedReports()
             await subscriptionClient.logOut()

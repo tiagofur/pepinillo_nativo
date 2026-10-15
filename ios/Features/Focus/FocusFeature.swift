@@ -43,6 +43,8 @@ struct FocusFeature {
         // Task linking
         var linkedTaskID: UUID?
         var linkedTaskTitle: String?
+        /// Identifier of the Calendar event created at session start (S2).
+        var calendarEventID: String?
         var linkedTaskIcon: String?
 
         // Configuration
@@ -98,7 +100,9 @@ struct FocusFeature {
         case externalPauseApplied(elapsed: TimeInterval, remaining: TimeInterval?, pausedAt: Date)
         case externalResumeApplied(elapsed: TimeInterval, remaining: TimeInterval?)
         case stopTapped
+        case calendarEventCreated(String)
         case stopAbandoned(FocusSessionResult)
+        case adoptGhostSession(FocusEngine.GhostResumeSpec)
         case skipPhaseTapped
         case linkTask(UUID?, String?, String?)
         case customDurationChanged(Int)
@@ -361,8 +365,9 @@ struct FocusFeature {
                     .run { [soundscapeClient] _ in
                         await soundscapeClient.play(soundscape, soundscapeVolume)
                     },
-                    // Create calendar event if enabled (non-critical, errors silently ignored)
-                    .run { [calendarClient, persistence] _ in
+                    // Create calendar event if enabled (non-critical, errors silently ignored).
+                    // The identifier is kept so aborting removes the event (S2).
+                    .run { [calendarClient, persistence] send in
                         guard let prefs = try? await persistence.fetchPreferences(),
                               prefs.calendarIntegrationEnabled,
                               calendarClient.isAuthorized() else { return }
@@ -375,7 +380,10 @@ struct FocusFeature {
                         } else {
                             durationMinutes = 60 // default for open-ended modes
                         }
-                        try? await calendarClient.createFocusEvent(title, Date.now, durationMinutes, mode.rawValue)
+                        if let eventID = try? await calendarClient.createFocusEvent(title, Date.now, durationMinutes, mode.rawValue),
+                           !eventID.isEmpty {
+                            await send(.calendarEventCreated(eventID))
+                        }
                     },
                     // Request notification permission at first session start (contextual moment).
                     // Fires at most once; denied permission doesn't affect session flow.
@@ -509,8 +517,13 @@ struct FocusFeature {
                     }
                 )
 
+            case .calendarEventCreated(let eventID):
+                state.calendarEventID = eventID
+                return .none
+
             case .stopTapped:
                 let wasRunning = state.isRunning
+                let calendarEventID = state.calendarEventID
                 resetState(&state)
                 guard wasRunning else { return .none }
                 // S7: cancel observation FIRST, then take the abandon directly.
@@ -524,6 +537,13 @@ struct FocusFeature {
                     .run { [focusClient] send in
                         if let result = await focusClient.abandonSession() {
                             await send(.stopAbandoned(result))
+                        }
+                    },
+                    .run { [calendarClient, calendarEventID] _ in
+                        // S2: remove the calendar event created at session start;
+                        // aborting left a phantom busy block in the real calendar.
+                        if let calendarEventID = calendarEventID {
+                            try? await calendarClient.removeFocusEvent(calendarEventID)
                         }
                     },
                     .run { [liveActivity] _ in await liveActivity.end(false) },
@@ -568,7 +588,14 @@ struct FocusFeature {
                             await send(.modeSuggested(nil))
                             return
                         }
-                        let sessions = try await persistence.fetchSessions(start, end)
+                        let sessions: [SessionRecordDTO]
+                        do {
+                            sessions = try await persistence.fetchSessions(start, end)
+                        } catch {
+                            // Optional intelligence must never break the flow (S1).
+                            await send(.modeSuggested(nil))
+                            return
+                        }
                         let service = ModeIntelligenceService()
                         let suggestion = service.suggestMode(forTaskID: taskID, sessions: sessions)
                         await send(.modeSuggested(suggestion))
@@ -720,6 +747,82 @@ struct FocusFeature {
                         await send(.delegate(.sessionSaveFailed(error.localizedDescription)))
                     }
                 }
+
+            case .adoptGhostSession(let spec):
+                // Sprint-5 T3: resume a killed session. State mirrors a fresh
+                // start (the running session owns the mode); engine math was
+                // resolved in T1/T2. Observation + Live Activity + soundscape
+                // restart like startTapped (keep event mapping in sync with it);
+                // no calendar event (the original may still exist) and no
+                // notification ask (one-time, already handled).
+                state.isRunning = true
+                state.activeMode = spec.mode
+                state.selectedMode = spec.mode
+                state.phase = spec.phase
+                state.linkedTaskID = spec.linkedTaskID
+                state.linkedTaskTitle = nil
+                if case .work(let number, _) = spec.phase {
+                    state.pomodoroNumber = number
+                } else {
+                    state.pomodoroNumber = nil
+                }
+                updateDisplayFromPhase(&state)
+                WidgetSurfaceReload.reloadFocusTasksAndControlCenter()
+                let config = state.config
+                let soundscape = state.selectedSoundscape
+                let soundscapeVolume = state.soundscapeVolume
+                return .merge(
+                    .run { [focusClient, liveActivity, spec, config] send in
+                        await focusClient.adoptGhostSession(
+                            spec.mode,
+                            config,
+                            spec.phase,
+                            spec.elapsed,
+                            spec.linkedTaskID
+                        )
+                        if liveActivity.isAvailable(), let snapshot = await focusClient.currentState() {
+                            await liveActivity.start(snapshot, nil)
+                        }
+                        let stream = await focusClient.events()
+                        for await event in stream {
+                            switch event {
+                            case .tick(let sessionState):               await send(.timerTicked(sessionState))
+                            case .phaseCompleted(let phase):            await send(.phaseCompleted(phase))
+                            case .phaseSkipped(let partial):           await send(.phaseSkipped(partial))
+                            case .sessionCompleted(let result):         await send(.sessionCompleted(result))
+                            case .breakSuggested(let duration):         await send(.breakSuggested(duration))
+                            case .midpointReached:                      await send(.midpointReached)
+                            case .interrupted:                          await send(.interrupted)
+                            case .waitingForNextPhase(let nextPhase):   await send(.waitingForNextPhase(nextPhase))
+                            }
+                        }
+                    }
+                    .cancellable(id: CancelID.engineObservation, cancelInFlight: true),
+                    .run { [soundscapeClient] _ in
+                        await soundscapeClient.play(soundscape, soundscapeVolume)
+                    },
+                    .run { [spec] _ in
+                        // Refresh widget anchors from adopted wall-clock state so
+                        // countdown families show live time, not ghost values.
+                        // (Per-tick writes take over within a second after this.)
+                        let now = Date.now
+                        AppGroupDefaults.isSessionActive = true
+                        AppGroupDefaults.activeModeName = spec.mode.rawValue
+                        AppGroupDefaults.activeSessionElapsed = spec.elapsed
+                        if let remaining = spec.remaining {
+                            AppGroupDefaults.activeSessionTimerStart = now.addingTimeInterval(-spec.elapsed)
+                            AppGroupDefaults.activeSessionTimerEnd = now.addingTimeInterval(remaining)
+                            AppGroupDefaults.activeSessionRemaining = remaining
+                        } else {
+                            AppGroupDefaults.activeSessionTimerStart = now.addingTimeInterval(-spec.elapsed)
+                            AppGroupDefaults.activeSessionTimerEnd = nil
+                            AppGroupDefaults.activeSessionRemaining = nil
+                        }
+                        AppGroupDefaults.activeSessionIsPaused = false
+                        AppGroupDefaults.activeSessionIsWaiting = false
+                        WidgetSurfaceReload.reloadFocusTasksAndControlCenter()
+                    }
+                )
 
             case .phaseCompleted(let completedPhase):
                 // Engine handles phase transition automatically;
@@ -1225,6 +1328,7 @@ struct FocusFeature {
         state.pendingNextPhase = nil
         state.lastPersistedPomodoroSessionID = nil
         state.lastPersistedPomodoroDuration = nil
+        state.calendarEventID = nil
         AppGroupDefaults.isSessionActive = false
         AppGroupDefaults.clearActiveSession()
         updateIdleDisplay(&state)

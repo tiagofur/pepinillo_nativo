@@ -636,6 +636,61 @@ struct FocusFeatureReducerTests {
         #expect(savedSessions.value.count == 1)
     }
 
+    // MARK: - Ghost adopt (Sprint-5 T3)
+
+@Suite("FocusFeature — Ghost adopt")
+@MainActor
+struct FocusGhostAdoptTests {
+
+    @Test func adoptGhostSessionStartsObservation() async throws {
+        let adopted = LockIsolated<FocusEngine.GhostResumeSpec?>(nil)
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.adoptGhostSession = { mode, config, phase, elapsed, linkedTaskID in
+                adopted.setValue(FocusEngine.GhostResumeSpec(
+                    mode: mode,
+                    phase: phase,
+                    elapsed: elapsed,
+                    remaining: nil,
+                    linkedTaskID: linkedTaskID
+                ))
+            }
+            $0.liveActivityClient.isAvailable = { false }
+            $0.focusClient.currentState = { nil }
+            $0.focusClient.events = { .finished }
+            $0.soundscapeClient.play = { _, _ in }
+        }
+        store.exhaustivity = .off
+
+        let spec = FocusEngine.GhostResumeSpec(
+            mode: .pomodoro,
+            phase: .work(number: 2, total: 4),
+            elapsed: 300,
+            remaining: 1200,
+            linkedTaskID: nil
+        )
+        await store.send(.adoptGhostSession(spec)) {
+            $0.isRunning = true
+            $0.activeMode = .pomodoro
+            $0.selectedMode = .pomodoro
+            $0.phase = .work(number: 2, total: 4)
+            $0.linkedTaskID = nil
+            $0.linkedTaskTitle = nil
+            $0.pomodoroNumber = 2
+        }
+
+        // S5-T3 RED pre-fix: no adopt path exists (compile error).
+        // The client forwards mode/phase/elapsed/linkedTaskID (what the engine
+        // needs); remaining stays in the spec for the sheet/widget anchors.
+        let adoptedSpec = try #require(adopted.value)
+        #expect(adoptedSpec.mode == spec.mode)
+        #expect(adoptedSpec.phase == spec.phase)
+        #expect(adoptedSpec.elapsed == spec.elapsed)
+        #expect(adoptedSpec.linkedTaskID == spec.linkedTaskID)
+    }
+}
+
     @Test func stopDuringWaitingHoldDoesNotDuplicatePersistedWork() async {
         let savedSessions = LockIsolated<[FocusSessionResult]>([])
 
@@ -683,6 +738,7 @@ struct FocusFeatureReducerTests {
             $0.focusClient.start = { _, _, _, _, _, _, _ in }
             $0.focusClient.abandonSession = { abandonedResult }
             $0.focusClient.currentState = { nil }
+            $0.focusClient.events = { .finished }
             $0.liveActivityClient.isAvailable = { false }
             $0.soundscapeClient.play = { _, _ in }
             $0.persistenceClient.saveSession = { result in
@@ -777,6 +833,7 @@ struct FocusFeatureReducerTests {
             $0.persistenceClient.saveSession = { result in
                 savedSessions.withValue { $0.append(result) }
             }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
             $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
         }
 
@@ -1004,6 +1061,7 @@ struct FocusFeatureReducerTests {
         } withDependencies: {
             $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
             $0.persistenceClient.saveSession = { _ in }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
         }
 
         store.exhaustivity = .off
@@ -1073,6 +1131,9 @@ struct FocusFeatureReducerTests {
                 loggedIntervals.withValue { $0.append((start, end)) }
             }
             $0.notificationClient.scheduleWorkPhaseEnd = { _, _, _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+            $0.notificationClient.scheduleSessionComplete = { _, _ in }
         }
         store.exhaustivity = .off
 
@@ -1129,7 +1190,8 @@ struct FocusFeatureReducerTests {
             pomodoroNumber: nil,
             linkedTaskID: nil,
             pauseCount: 0,
-            totalPauseDuration: 0
+            totalPauseDuration: 0,
+            totalFocusSeconds: actualDuration
         )
 
         await store.send(.sessionCompleted(result))
@@ -1138,5 +1200,81 @@ struct FocusFeatureReducerTests {
         #expect(loggedIntervals.value.count == 1)
         let interval = try #require(loggedIntervals.value.first)
         #expect(abs(interval.1.timeIntervalSince(interval.0) - actualDuration) < 1)
+    }
+}
+
+// MARK: - Mode suggestion failure (S1)
+
+@Suite("FocusFeature — Mode suggestion")
+@MainActor
+struct FocusModeSuggestionTests {
+
+    @Test func linkTaskFailureStillSuggestsNil() async throws {
+        struct SuggestionError: Error {}
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        let store = TestStore(initialState: FocusFeature.State()) {
+            FocusFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in throw SuggestionError() }
+        }
+        store.exhaustivity = .off
+
+        let taskID = UUID()
+        await store.send(.linkTask(taskID, "T", nil)) {
+            $0.linkedTaskID = taskID
+            $0.linkedTaskTitle = "T"
+            $0.linkedTaskIcon = nil
+            $0.modeSuggestion = nil
+        }
+        // S1 RED pre-fix: the effect dies unhandled, nothing is ever received.
+        await store.receive(.modeSuggested(nil))
+    }
+}
+
+// MARK: - Calendar event cleanup (S2)
+
+@Suite("FocusFeature — Calendar cleanup")
+@MainActor
+struct FocusCalendarCleanupTests {
+
+    @Test func stopTappedRemovesCalendarEventCreatedAtStart() async throws {
+        let removedIDs = LockIsolated<[String]>([])
+        var state = FocusFeature.State()
+        state.isRunning = true
+        state.calendarEventID = "evt-1"
+
+        let store = TestStore(initialState: state) {
+            FocusFeature()
+        } withDependencies: {
+            $0.focusClient.abandonSession = { nil }
+            $0.liveActivityClient.end = { _ in }
+            $0.soundscapeClient.fadeOut = { }
+            $0.notificationClient.clearActiveSession = { }
+            $0.calendarClient.removeFocusEvent = { id in
+                removedIDs.withValue { $0.append(id) }
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.stopTapped) {
+            $0.isRunning = false
+            $0.activeMode = nil
+            $0.elapsedSeconds = 0
+            $0.pomodoroNumber = nil
+            $0.progress = nil
+            $0.linkedTaskID = nil
+            $0.linkedTaskTitle = nil
+            $0.phase = .work(number: 1, total: 4)
+            $0.displayTime = "25:00"
+            $0.remainingSeconds = 25 * 60
+            $0.phaseLabel = FocusPhase.idle.displayName
+            $0.modeIcon = "timer"
+            $0.calendarEventID = nil
+        }
+
+        // S2 RED pre-fix: stopTapped never removes the calendar event.
+        #expect(removedIDs.value == ["evt-1"])
     }
 }

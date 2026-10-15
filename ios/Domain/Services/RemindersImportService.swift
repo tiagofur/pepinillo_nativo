@@ -8,6 +8,7 @@
 // REQUIREMENTS (Info.plist):
 //   NSRemindersUsageDescription = "Pepinillo can import your reminders as tasks."
 
+import ComposableArchitecture
 import Foundation
 import EventKit
 
@@ -116,5 +117,40 @@ struct ImportedReminder: Sendable, Identifiable {
             scheduledForToday: scheduledForToday,
             syncId: syncId
         )
+    }
+}
+
+// MARK: - Reminders Client (S7)
+
+/// TCA dependency client wrapping RemindersImportService (EventKit).
+/// Injected (rather than constructed inline in TaskListFeature) so the
+/// Reminders import flow is testable without device permissions.
+struct RemindersClient: Sendable {
+    /// Request Reminders access. Returns true if granted.
+    var requestAccess: @Sendable () async throws -> Bool
+    /// Fetch incomplete reminders from all lists.
+    var fetchIncompleteReminders: @Sendable () async throws -> [ImportedReminder]
+}
+
+extension RemindersClient: DependencyKey {
+    static let liveValue: RemindersClient = RemindersClient(
+        requestAccess: {
+            try await RemindersImportService().requestAccess()
+        },
+        fetchIncompleteReminders: {
+            try await RemindersImportService().fetchIncompleteReminders()
+        }
+    )
+
+    static let testValue: RemindersClient = RemindersClient(
+        requestAccess: { false },
+        fetchIncompleteReminders: { [] }
+    )
+}
+
+extension DependencyValues {
+    var remindersClient: RemindersClient {
+        get { self[RemindersClient.self] }
+        set { self[RemindersClient.self] = newValue }
     }
 }

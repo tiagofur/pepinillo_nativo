@@ -235,6 +235,7 @@ struct TaskListFeature {
 
     @Dependency(\.persistenceClient) var persistence
     @Dependency(\.spotlightClient) var spotlight
+    @Dependency(\.remindersClient) var remindersClient
     @Dependency(\.uuid) var uuid
     @Dependency(\.date) var date
 
@@ -635,9 +636,13 @@ struct TaskListFeature {
             case .detail(.dismiss):
                 // Reload to reflect all changes made in the detail sheet
                 return .run { send in
-                    let items = try await persistence.fetchTasks()
-                    let states = items.map { TaskItemState.from($0) }
-                    await send(.tasksLoaded(states))
+                    do {
+                        let items = try await persistence.fetchTasks()
+                        let states = items.map { TaskItemState.from($0) }
+                        await send(.tasksLoaded(states))
+                    } catch {
+                        await send(.tasksLoadFailed(error.localizedDescription))
+                    }
                 }
 
             case .detail:
@@ -646,25 +651,42 @@ struct TaskListFeature {
             // MARK: - Reminders Import
 
             case .importFromRemindersTapped:
-                return .run { [spotlight] send in
-                    let service = RemindersImportService()
+                let baseActiveCount = state.tasks.filter {
+                    !$0.isCompleted && !$0.isRecurringTemplate
+                }.count
+                // Free tier: same 3-active cap as manual adds (#216, S7).
+                // Without this, imports bypassed the limit entirely.
+                if !state.isProUser, baseActiveCount >= Self.freeActiveTaskLimit {
+                    return .send(.delegate(.showPaywall))
+                }
+                let isProUser = state.isProUser
+                return .run { [spotlight, remindersClient] send in
+                    // Declared outside do so the catch below can surface partial
+                    // progress (S7): rows saved before the failure are already
+                    // persisted — dropping them from state hid them until reload.
+                    var imported: [TaskItemState] = []
+                    var skipped = 0
                     do {
-                        let granted = try await service.requestAccess()
+                        let granted = try await remindersClient.requestAccess()
                         guard granted else {
                             await send(.remindersImportFailed("Reminders access denied"))
                             return
                         }
-                        let reminders = try await service.fetchIncompleteReminders()
+                        let reminders = try await remindersClient.fetchIncompleteReminders()
                         let existing = try await persistence.fetchTasks()
                         let maxSort = existing.map(\.sortOrder).max() ?? -1
-                        var imported: [TaskItemState] = []
-                        var skipped = 0
+                        var capped = false
                         var nextSort = maxSort + 1
                         for reminder in reminders {
                             let syncId = reminder.reminderSyncID
                             if try await persistence.fetchTaskBySyncId(syncId) != nil {
                                 skipped += 1
                                 continue
+                            }
+                            // Enforce the free-tier cap mid-run (S7).
+                            if !isProUser, baseActiveCount + imported.count >= Self.freeActiveTaskLimit {
+                                capped = true
+                                break
                             }
                             let dto = reminder.toTaskItemDTO(
                                 sortOrder: nextSort,
@@ -679,7 +701,14 @@ struct TaskListFeature {
                             WidgetCenter.shared.reloadTimelines(ofKind: "TasksHomeScreenWidget")
                         }
                         await send(.remindersImported(imported: imported, skipped: skipped))
+                        if capped {
+                            await send(.delegate(.showPaywall))
+                        }
+                        return
                     } catch {
+                        if !imported.isEmpty {
+                            await send(.remindersImported(imported: imported, skipped: skipped))
+                        }
                         await send(.remindersImportFailed(error.localizedDescription))
                     }
                 }

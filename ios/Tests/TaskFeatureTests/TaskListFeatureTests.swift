@@ -1490,4 +1490,116 @@ struct TaskListFeatureTests {
             createdAt: Date(timeIntervalSince1970: 1_000_000)
         )
     }
+
+    @Test("detail dismiss reload failure surfaces load error instead of dying silently")
+    func detailDismissReloadFailureSurfacesError() async {
+        struct ReloadError: Error {}
+        var initialState = TaskListFeature.State()
+        initialState.detail = TaskDetailFeature.State(from: TaskListFeature.TaskItemState.from(TaskItemDTO(id: UUID(), title: "T")))
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTasks = { throw ReloadError() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.detail(.dismiss)) {
+            $0.detail = nil
+        }
+        // S1 RED pre-fix: the effect dies unhandled, nothing is ever received.
+        await store.receive(\.tasksLoadFailed) {
+            $0.isLoading = false
+            #expect($0.loadError != nil)
+        }
+    }
+
+    @Test("reminders import at free limit shows paywall without fetching")
+    func remindersImportAtLimitShowsPaywall() async {
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = false
+        initialState.tasks = IdentifiedArrayOf(uniqueElements: (0..<3).map { i in
+            TaskListFeature.TaskItemState.from(TaskItemDTO(title: "T\(i)"))
+        })
+
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.importFromRemindersTapped)
+        // S7 RED pre-fix: proceeds to fetch (real EventKit) instead of paywall.
+        await store.receive(.delegate(.showPaywall))
+    }
+
+    @Test("reminders import stops at free limit mid-run")
+    func remindersImportStopsAtFreeLimit() async {
+        @Sendable func reminder(_ i: Int) -> ImportedReminder {
+            ImportedReminder(externalID: "r\(i)", title: "R\(i)", notes: nil, priority: .none, calendarName: nil, dueDate: nil)
+        }
+
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = false
+        initialState.tasks = IdentifiedArrayOf(uniqueElements: (0..<2).map { i in
+            TaskListFeature.TaskItemState.from(TaskItemDTO(title: "T\(i)"))
+        })
+
+        let savedCount = LockIsolated(0)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.remindersClient.requestAccess = { true }
+            $0.remindersClient.fetchIncompleteReminders = { (0..<5).map(reminder) }
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.fetchTaskBySyncId = { _ in nil }
+            $0.persistenceClient.saveTask = { _ in
+                savedCount.withValue { $0 += 1 }
+            }
+            $0.spotlightClient.indexTasks = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.importFromRemindersTapped)
+        await store.receive(\.remindersImported)
+        await store.receive(.delegate(.showPaywall))
+
+        // S7 RED pre-fix: all 5 import with no cap and no paywall.
+        #expect(savedCount.value == 1)
+        #expect(store.state.tasks.count == 3)
+    }
+
+    @Test("reminders import surfaces partial progress on mid-run failure")
+    func remindersImportSurfacesPartialProgress() async {
+        struct SaveError: Error {}
+        @Sendable func reminder(_ i: Int) -> ImportedReminder {
+            ImportedReminder(externalID: "r\(i)", title: "R\(i)", notes: nil, priority: .none, calendarName: nil, dueDate: nil)
+        }
+
+        var initialState = TaskListFeature.State()
+        initialState.isProUser = true
+
+        let saveCalls = LockIsolated(0)
+        let store = TestStore(initialState: initialState) {
+            TaskListFeature()
+        } withDependencies: {
+            $0.remindersClient.requestAccess = { true }
+            $0.remindersClient.fetchIncompleteReminders = { (0..<3).map(reminder) }
+            $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.fetchTaskBySyncId = { _ in nil }
+            $0.persistenceClient.saveTask = { _ in
+                saveCalls.withValue { $0 += 1 }
+                if saveCalls.value > 1 { throw SaveError() }
+            }
+            $0.spotlightClient.indexTasks = { _ in }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.importFromRemindersTapped)
+        await store.receive(\.remindersImported)
+        await store.receive(\.remindersImportFailed)
+
+        // S7 RED pre-fix: the partial import never reaches state.
+        #expect(store.state.tasks.count == 1)
+        #expect(store.state.importError != nil)
+    }
 }

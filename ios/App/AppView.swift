@@ -72,6 +72,46 @@ struct AppView: View {
             )
             .pepinilloSheetStyle()
         }
+        // Ghost resume offer sheet (Sprint-5 T3)
+        .sheet(
+            isPresented: Binding(
+                get: { store.pendingGhostOffer != nil },
+                set: { if !$0 { store.send(.ghostDiscardTapped) } }
+            )
+        ) {
+            if let offer = store.pendingGhostOffer {
+                VStack(spacing: 20) {
+                    Image(systemName: "timer")
+                        .font(.system(size: 44))
+                        .foregroundStyle(Color.accentColor)
+                    Text(String(localized: "Resume Focus Session?"))
+                        .font(.title2.bold())
+                    if let remaining = offer.spec.remaining {
+                        let minutes = Int(remaining) / 60
+                        let seconds = Int(remaining) % 60
+                        Text(String(localized: "\(offer.spec.mode.displayName) · \(minutes):\(String(format: "%02d", seconds)) left"))
+                            .font(.headline)
+                    } else {
+                        Text(String(localized: "\(offer.spec.mode.displayName) · open session"))
+                            .font(.headline)
+                    }
+                    Text(String(localized: "Your last session ended unexpectedly."))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button(String(localized: "Resume")) { store.send(.ghostResumeTapped) }
+                        .buttonStyle(.borderedProminent)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 52)
+                    Button(String(localized: "Discard")) { store.send(.ghostDiscardTapped) }
+                        .buttonStyle(.bordered)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: 52)
+                }
+                .padding(24)
+                .pepinilloSheetStyle()
+            }
+        }
         // Calendar sheet
         .sheet(item: $store.scope(state: \.calendar, action: \.calendar)) { calendarStore in
             NavigationStack {

@@ -59,15 +59,18 @@ struct WatchSessionStateTests {
     }
 
     @Test func equatableIncludesOptionalFields() {
+        let sentAt = 1_800_000_000.0
         let a = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests"
+            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests",
+            sentAt: sentAt
         )
         let b = WatchSessionState(
             isActive: true, isPaused: false, modeID: "pomodoro",
             displayTime: "24:30", phaseLabel: "Focus 1/4",
-            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests"
+            progress: 0.5, pomodoroNumber: 2, linkedTaskTitle: "Write tests",
+            sentAt: sentAt
         )
         #expect(a == b)
     }
@@ -1407,5 +1410,15 @@ struct UserDefaultsIsolationContractTests {
             #expect(key.hasPrefix("watch."),
                     "WatchStatsKey '\(key)' must use 'watch.' prefix to avoid collisions")
         }
+    }
+
+    @Test func staleWatchCommandsAreDroppedAfterTTL() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        // Missing stamps (older watch apps) keep today's delivery behavior.
+        #expect(WatchConnectivityManager.isStaleCommand(sentAt: nil, now: now) == false)
+        // Fresh stamps deliver.
+        #expect(WatchConnectivityManager.isStaleCommand(sentAt: 1_800_000_000 - 60, now: now) == false)
+        // S7 RED pre-fix: no staleness notion exists (compile error).
+        #expect(WatchConnectivityManager.isStaleCommand(sentAt: 1_800_000_000 - 3600, now: now) == true)
     }
 }

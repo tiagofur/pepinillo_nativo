@@ -514,7 +514,10 @@ struct FocusWidgetMedium: View {
                     .padding(.top, -1)
 
                 HStack(spacing: 18) {
-                    WidgetMetric(icon: "flame.fill", value: entry.currentStreakDays, label: String(localized: "streak"), color: renderingMode == .accented ? .primary : ModeColors.streak)
+                    // S2: the streak row renders only when enabled in widget settings.
+                    if entry.showStreak {
+                        WidgetMetric(icon: "flame.fill", value: entry.currentStreakDays, label: String(localized: "streak"), color: renderingMode == .accented ? .primary : ModeColors.streak)
+                    }
                     WidgetMetric(icon: "checkmark.circle.fill", value: entry.todaySessionsCompleted, label: String(localized: "sessions"), color: .secondary)
                 }
             }
@@ -647,7 +650,8 @@ struct FocusWidgetLarge: View {
 
             WidgetControls(entry: entry, compact: false)
 
-            if !entry.modeMinutes.isEmpty {
+            // S2: honors the widget's Show Mode Breakdown toggle.
+            if entry.showModeBreakdown, !entry.modeMinutes.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(sortedModes.prefix(3), id: \.key) { mode, minutes in
                         ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes, renderingMode: renderingMode)
@@ -699,7 +703,8 @@ struct FocusWidgetLarge: View {
 
             WidgetModeQuickStartGrid(selectedMode: preferredMode, showsTitles: true, isProUser: entry.isProUser, renderingMode: renderingMode)
 
-            if !entry.modeMinutes.isEmpty {
+            // S2: honors the widget's Show Mode Breakdown toggle.
+            if entry.showModeBreakdown, !entry.modeMinutes.isEmpty {
                 VStack(spacing: 8) {
                     ForEach(sortedModes, id: \.key) { mode, minutes in
                         ModeBar(mode: mode, minutes: minutes, totalMinutes: entry.todayFocusMinutes, renderingMode: renderingMode)

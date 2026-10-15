@@ -298,19 +298,224 @@ struct PersistenceServiceTests {
             phase: "work",
             durationSeconds: 1500,
             elapsedSeconds: 1500,
+            wasCompleted: true,
             journalNote: "Great flow",
             satisfactionRating: 5,
-            wasCompleted: true,
             createdAt: "2024-01-01T00:00:00Z",
             updatedAt: "2024-01-01T00:25:00Z"
         )
 
-        try service.upsertSessionFromServer(dto, true)
+        try service.upsertSessionFromServer(dto, saveImmediately: true)
 
         let records = try context.fetch(FetchDescriptor<FocusSessionRecord>())
         #expect(records.count == 1)
         #expect(records.first?.journalNote == "Great flow")
         #expect(records.first?.satisfactionRating == 5)
+    }
+
+    @Test("fetchSessions excludes sessions exactly on the window end")
+    func fetchSessionsExcludesBoundaryEnd() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let calendar = Calendar.current
+        let day0 = calendar.startOfDay(for: Date.now)
+        let day1 = try #require(calendar.date(byAdding: .day, value: 1, to: day0))
+        let day2 = try #require(calendar.date(byAdding: .day, value: 1, to: day1))
+
+        func insertSession(at start: Date, seconds: TimeInterval) {
+            context.insert(FocusSessionRecord(
+                mode: "pomodoro",
+                phase: "work",
+                startedAt: start,
+                endedAt: start.addingTimeInterval(seconds),
+                actualDuration: seconds,
+                targetDuration: seconds,
+                wasCompleted: true,
+                interruptions: 0,
+                pauseCount: 0,
+                totalPauseDuration: 0
+            ))
+        }
+        insertSession(at: day0.addingTimeInterval(3600), seconds: 600)
+        insertSession(at: day1, seconds: 900)
+        insertSession(at: day1.addingTimeInterval(3600), seconds: 300)
+        try context.save()
+
+        let firstWindow = try service.fetchSessions(from: day0, to: day1)
+        let secondWindow = try service.fetchSessions(from: day1, to: day2)
+
+        // S4 RED pre-fix: the boundary session counts in both windows.
+        #expect(firstWindow.count == 1)
+        #expect(secondWindow.count == 2)
+        #expect((firstWindow + secondWindow).filter({ $0.startedAt == day1 }).count == 1)
+    }
+
+    @Test("upsertTaskFromServer applies newer server state despite dirty flag")
+    func upsertAppliesNewerServerStateDespiteDirty() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        // Local dirty edit from an older clock.
+        let task = TaskItem(title: "Local")
+        task.syncId = "sync-lww"
+        task.isDirty = true
+        task.updatedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        context.insert(task)
+        try context.save()
+
+        let dto = TaskSyncDTO(
+            syncId: "sync-lww",
+            title: "Server",
+            updatedAt: "2024-01-01T00:00:00Z"
+        )
+
+        try service.upsertTaskFromServer(dto, saveImmediately: true)
+
+        let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+        // S6 RED pre-fix: the dirty guard drops the newer server state.
+        #expect(after.title == "Server")
+        #expect(after.isDirty == false)
+    }
+
+    @Test("upsertTaskFromServer keeps newer local state over older server data")
+    func upsertKeepsNewerLocalState() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let task = TaskItem(title: "Local")
+        task.syncId = "sync-lww2"
+        task.isDirty = true
+        task.updatedAt = Date.now
+        context.insert(task)
+        try context.save()
+
+        let dto = TaskSyncDTO(
+            syncId: "sync-lww2",
+            title: "Server",
+            updatedAt: "2020-01-01T00:00:00Z"
+        )
+
+        try service.upsertTaskFromServer(dto, saveImmediately: true)
+
+        let after = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+        #expect(after.title == "Local")
+        #expect(after.isDirty == true)
+    }
+
+    @Test("upsertTaskFromServer keeps real completion time instead of fabricating")
+    func upsertKeepsRealCompletionTime() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let dto = TaskSyncDTO(
+            syncId: "sync-done",
+            title: "Done",
+            isFinished: true,
+            updatedAt: "2024-01-01T00:25:00Z"
+        )
+
+        try service.upsertTaskFromServer(dto, saveImmediately: true)
+
+        let record = try #require(try context.fetch(FetchDescriptor<TaskItem>()).first)
+        #expect(record.isCompleted == true)
+        let expected = try #require(ISO8601DateFormatter().date(from: "2024-01-01T00:25:00Z"))
+        #expect(record.completedAt == expected)
+    }
+
+    @Test("applyServerPreference keeps unpushed local edits")
+    func applyServerPreferenceKeepsDirtyLocalEdits() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let savedDirty = PreferenceDirtyTracker.getDirtyKeys()
+        defer {
+            PreferenceDirtyTracker.clearAll()
+            PreferenceDirtyTracker.markDirtyKeys(Array(savedDirty))
+        }
+
+        // Local edit, not yet pushed.
+        let prefs = try service.fetchPreferences()
+        prefs.pomodoroDuration = TimeInterval(30 * 60)
+        try service.savePreferences(prefs)
+        PreferenceDirtyTracker.markDirty("pomodoroMinutes")
+
+        try service.applyServerPreference(key: "pomodoroMinutes", value: "25", updatedAt: Date.now.addingTimeInterval(3600))
+
+        let after = try service.fetchPreferences()
+        // S5 RED pre-fix: the pull overwrites the newer local edit.
+        #expect(after.pomodoroDuration == TimeInterval(30 * 60))
+    }
+
+    @Test("applyServerPreference applies server value for clean keys")
+    func applyServerPreferenceAppliesCleanKeys() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("pepinillo-test-persistence-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let schema = Schema(versionedSchema: SchemaV5.self)
+        let config = ModelConfiguration(schema: schema, url: dir.appendingPathComponent("test.sqlite"), cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: [config])
+        let context = container.mainContext
+        let service = SwiftDataPersistenceService(context: context)
+
+        let savedDirty = PreferenceDirtyTracker.getDirtyKeys()
+        defer {
+            PreferenceDirtyTracker.clearAll()
+            PreferenceDirtyTracker.markDirtyKeys(Array(savedDirty))
+        }
+        PreferenceDirtyTracker.clearAll()
+
+        // Clean but diverged local value (e.g. after a push): server wins.
+        let prefs = try service.fetchPreferences()
+        prefs.pomodoroDuration = TimeInterval(30 * 60)
+        try service.savePreferences(prefs)
+
+        try service.applyServerPreference(key: "pomodoroMinutes", value: "25", updatedAt: Date.now)
+
+        let after = try service.fetchPreferences()
+        #expect(after.pomodoroDuration == TimeInterval(25 * 60))
     }
 
     // MARK: - Issue #74: saveTaskOrder batch reorder

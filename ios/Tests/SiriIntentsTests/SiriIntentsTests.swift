@@ -268,7 +268,9 @@ struct SiriPauseResumeIntentTests {
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.clearActiveSession()
 
-        let issuedAt = Date(timeIntervalSince1970: 1_800_400_000)
+        // Start the widget session in the past: a just-started session has
+        // ~0 elapsed and live computations clamp to 0.
+        let issuedAt = Date.now.addingTimeInterval(-90)
         AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.externalStartRequested = false
@@ -331,7 +333,9 @@ struct SiriPauseResumeIntentTests {
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.clearActiveSession()
 
-        let issuedAt = Date(timeIntervalSince1970: 1_800_500_000)
+        // See above: the session must have started in the past for live
+        // elapsed to be meaningful.
+        let issuedAt = Date.now.addingTimeInterval(-90)
         AppGroupDefaults.startWidgetSession(modeID: "pomodoro", issuedAt: issuedAt)
         AppGroupDefaults.clearExternalCommands()
         AppGroupDefaults.externalStartRequested = false
@@ -356,5 +360,44 @@ struct SiriPauseResumeIntentTests {
 
         #expect(AppGroupDefaults.externalPauseRequested == false)
         #expect(AppGroupDefaults.externalCommandIssuedAt == nil)
+    }
+
+    @Test("FocusFilter first call applies mode without starting when autoStart off")
+    func focusFilterFirstCallApplies() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.focusFilterActive = false
+        AppGroupDefaults.focusFilterPreviousMode = nil
+        AppGroupDefaults.widgetSelectedMode = "stopwatch"
+
+        let intent = PepinilloFocusFilter(focusMode: .pomodoro, autoStart: false)
+        _ = try await intent.perform()
+
+        #expect(AppGroupDefaults.focusFilterActive == true)
+        #expect(AppGroupDefaults.focusFilterPreviousMode == "stopwatch")
+        #expect(AppGroupDefaults.widgetSelectedMode == "pomodoro")
+        #expect(AppGroupDefaults.externalStartRequested == false)
+    }
+
+    @Test("FocusFilter second call reverts mode and never auto-starts")
+    func focusFilterSecondCallRevertsWithoutStarting() async throws {
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+
+        // As if a previous activation applied the filter (autoStart ON).
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.focusFilterActive = true
+        AppGroupDefaults.focusFilterPreviousMode = "stopwatch"
+        AppGroupDefaults.widgetSelectedMode = "pomodoro"
+
+        let intent = PepinilloFocusFilter(focusMode: .pomodoro, autoStart: true)
+        _ = try await intent.perform()
+
+        // S3 RED pre-fix: deactivation queues another start and keeps the mode.
+        #expect(AppGroupDefaults.focusFilterActive == false)
+        #expect(AppGroupDefaults.widgetSelectedMode == "stopwatch")
+        #expect(AppGroupDefaults.externalStartRequested == false)
     }
 }

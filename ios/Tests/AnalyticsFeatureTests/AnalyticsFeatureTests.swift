@@ -36,6 +36,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -54,6 +58,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -76,6 +84,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -311,6 +323,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -399,5 +415,97 @@ struct AnalyticsFeatureTests {
         #expect(store.state.bestDayOfWeek == "Tuesday")
         #expect(store.state.sessionCompletionRate == 0.8)
         #expect(store.state.focusQualityScore == 75)
+    }
+}
+
+@Suite("TaskAnalyticsFeature")
+struct TaskAnalyticsFeatureFailureTests {
+
+    @Test("load failure releases spinner instead of wedging on")
+    @MainActor
+    func loadFailureReleasesSpinner() async {
+        struct AnalyticsError: Error {}
+        let store = TestStore(
+            initialState: TaskAnalyticsFeature.State(taskID: UUID(), taskTitle: "T")
+        ) {
+            TaskAnalyticsFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchTaskAnalytics = { _ in throw AnalyticsError() }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onAppear) {
+            $0.isLoading = true
+        }
+        // S1 RED pre-fix: the effect dies unhandled, nothing is ever received.
+        // The sheet falls back to its existing empty state (no error UI there).
+        await store.receive(.analyticsFailed) {
+            $0.isLoading = false
+            #expect($0.analytics == nil)
+        }
+    }
+}
+
+@Suite("InsightsService period text")
+struct InsightsPeriodTextTests {
+
+    @Test("streak insight uses the selected period length, not hardcoded 7 days")
+    func streakInsightUsesPeriodDays() {
+        let service = InsightsService()
+        let stats = (0..<5).map { i in
+            DailyStatsDTO(
+                date: Date(timeIntervalSince1970: 1_800_000_000 + Double(i * 86400)),
+                totalFocusMinutes: 25,
+                sessionsCompleted: 1,
+                tasksCompleted: 0
+            )
+        }
+
+        let insights30 = service.generateWeeklyInsights(sessions: [], dailyStats: stats, periodDays: 30)
+        let streak30 = insights30.first(where: { $0.category == .streak })
+        // S4 RED pre-fix: no periodDays parameter exists (compile error).
+        #expect(streak30?.body.contains("out of 30 days") == true)
+
+        // Default stays weekly (existing callers unchanged).
+        let insights7 = service.generateWeeklyInsights(sessions: [], dailyStats: stats)
+        let streak7 = insights7.first(where: { $0.category == .streak })
+        #expect(streak7?.body.contains("out of 7 days") == true)
+    }
+}
+
+@Suite("MonthlyReview day-equivalent window")
+struct MonthlyReviewWindowTests {
+
+    private var utcCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    @Test("mid-month compares first N days of previous month")
+    func midMonthComparesFirstNDays() {
+        // 2026-03-15 → previous window Feb 1 .. Feb 16.
+        let today = Date(timeIntervalSince1970: 1_773_576_000)
+        let window = MonthlyReviewFeature.previousComparisonWindow(today: today, calendar: utcCalendar)
+        #expect(window.start == Date(timeIntervalSince1970: 1_769_904_000))
+        #expect(window.end == Date(timeIntervalSince1970: 1_771_200_000))
+    }
+
+    @Test("clamps to previous month length so windows never overlap")
+    func clampsToPreviousMonthLength() {
+        // 2026-03-31 → February has 28 days → window Feb 1 .. Mar 1.
+        let today = Date(timeIntervalSince1970: 1_774_958_400)
+        let window = MonthlyReviewFeature.previousComparisonWindow(today: today, calendar: utcCalendar)
+        #expect(window.start == Date(timeIntervalSince1970: 1_769_904_000))
+        #expect(window.end == Date(timeIntervalSince1970: 1_772_323_200))
+    }
+
+    @Test("first of month compares a single day")
+    func firstOfMonthComparesSingleDay() {
+        // 2026-04-01 → window Mar 1 .. Mar 2.
+        let today = Date(timeIntervalSince1970: 1_775_044_800)
+        let window = MonthlyReviewFeature.previousComparisonWindow(today: today, calendar: utcCalendar)
+        #expect(window.start == Date(timeIntervalSince1970: 1_772_323_200))
+        #expect(window.end == Date(timeIntervalSince1970: 1_772_409_600))
     }
 }

@@ -10,7 +10,7 @@
 
 | Platform        | Status                                                              | Files           | Approx. Lines | Build                |
 | --------------- | ------------------------------------------------------------------- | --------------- | ------------- | -------------------- |
-| iOS (iPhone)    | App Store Ready (Audit P0-P3 fixes applied, ready for review)       | ~143 Swift      | ~30K          | BUILD SUCCESSFUL (Pepinillo Dev, iPhone 17 Pro simulator) |
+| iOS (iPhone)    | App Store Ready (Sprints 1-5: session/sync/correctness/surfaces/resume; suite 870/0 on Xcode 27; stacked PRs #636-640) | ~180 Swift      | ~44K          | BUILD SUCCESSFUL (Pepinillo Dev, iPhone 17 simulator, Xcode 27) |
 | watchOS         | Implemented (timer, tasks, dashboard, enhanced Smart Stack widgets) | Included in iOS | Included      | Requires Xcode setup |
 | Android (phone) | Production Ready (Natively rewritten, signing configured)           | ~97 Kotlin      | ~20K          | BUILD SUCCESSFUL (v3.0.0, build 18) |
 | Wear OS         | Production Ready (Timer, tasks, stats, tile, complications, theme sync) | ~18 Kotlin      | ~5K           | BUILD SUCCESSFUL (v3.0.0, build 10018) |

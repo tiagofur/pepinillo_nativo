@@ -22,6 +22,9 @@ public struct FocusClient: Sendable {
     /// Stop without emitting to the event stream, returning the terminal result (S7).
     /// stopTapped drains the abandon through this instead of the observation task.
     public var abandonSession: @Sendable () async -> FocusSessionResult? = { nil }
+    /// Adopt a killed session as live (Sprint-5 T3). Rebuilds timer state from
+    /// ghost anchors without emitting persistence events.
+    public var adoptGhostSession: @Sendable (FocusMode, FocusConfig, FocusPhase, TimeInterval, UUID?) async -> Void = { _, _, _, _, _ in }
     /// Record an interruption.
     public var recordInterruption: @Sendable () async -> Void
     /// Skip to next phase.
@@ -76,6 +79,15 @@ extension FocusClient: DependencyKey {
             abandonSession: {
                 await engine.abandonSession()
             },
+            adoptGhostSession: { mode, config, phase, elapsed, linkedTaskID in
+                await engine.adoptGhostSession(
+                    mode: mode,
+                    config: config,
+                    phase: phase,
+                    elapsed: elapsed,
+                    linkedTaskID: linkedTaskID
+                )
+            },
             recordInterruption: {
                 await engine.recordInterruption()
             },
@@ -114,6 +126,10 @@ extension FocusClient: DependencyKey {
             pause: {},
             resume: {},
             stop: { _ in },
+            // No local engine: nothing to abandon or adopt (explicit because
+            // Swift 6.4 ignores memberwise-init defaults for these).
+            abandonSession: { nil },
+            adoptGhostSession: { _, _, _, _, _ in },
             recordInterruption: {},
             skipPhase: {},
             startNextPhase: {},

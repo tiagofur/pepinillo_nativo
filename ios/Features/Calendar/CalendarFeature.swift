@@ -107,8 +107,17 @@ struct CalendarFeature {
                 return
             }
 
-            let sessions = try await persistence.fetchSessions(start, end)
-            let tasks = try await persistence.fetchTasks()
+            let sessions: [SessionRecordDTO]
+            let tasks: [TaskItemDTO]
+            do {
+                sessions = try await persistence.fetchSessions(start, end)
+                tasks = try await persistence.fetchTasks()
+            } catch {
+                // Degrade to an empty month (same as the invalid-date guard
+                // above) instead of wedging isLoading on forever (S1).
+                await send(.monthDataLoaded([]))
+                return
+            }
 
             var daySet = Set<DateComponents>()
 
@@ -139,7 +148,15 @@ struct CalendarFeature {
             async let sessionsFetch = persistence.fetchSessions(startOfDay, endOfDay)
             async let tasksFetch = persistence.fetchTasks()
 
-            let (sessions, allTasks) = try await (sessionsFetch, tasksFetch)
+            let loaded: ([SessionRecordDTO], [TaskItemDTO])
+            do {
+                loaded = try await (sessionsFetch, tasksFetch)
+            } catch {
+                // Degrade to an empty day rather than leaving no detail (S1).
+                await send(.dayDetailLoaded(State.DayDetail(date: date, totalFocusMinutes: 0, sessionsCompleted: 0, sessions: [], tasks: [])))
+                return
+            }
+            let (sessions, allTasks) = loaded
 
             let relevantTasks = allTasks.compactMap { task -> State.TaskSummary? in
                 let isDue = task.dueDate.map { calendar.isDate($0, inSameDayAs: date) } ?? false

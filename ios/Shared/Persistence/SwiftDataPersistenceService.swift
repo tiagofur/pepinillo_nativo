@@ -184,7 +184,10 @@ public final class SwiftDataPersistenceService {
 
     public func fetchSessions(from start: Date, to end: Date) throws -> [FocusSessionRecord] {
         let descriptor = FetchDescriptor<FocusSessionRecord>(
-            predicate: #Predicate { $0.startedAt >= start && $0.startedAt <= end },
+            // S4: exclusive end. Adjacent windows share boundaries (previous
+            // period end == current period start); an inclusive end counted a
+            // session at exactly 00:00:00 in both periods (inflated deltas).
+            predicate: #Predicate { $0.startedAt >= start && $0.startedAt < end },
             sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
         )
         return try context.fetch(descriptor)
@@ -674,13 +677,27 @@ public final class SwiftDataPersistenceService {
         let local = localBySyncId ?? localByServerId
 
         if let local {
-            // Only update if local isn't dirty (server wins for clean tasks)
-            guard !local.isDirty else { return }
+            // S6: last-write-wins by updatedAt. A dirty flag alone must not
+            // silently drop the newer side; server wins ties so re-pulls
+            // converge. Unknown server timestamps never overwrite (fail-closed
+            // on malformed payloads).
+            guard let updatedStr = serverTask.updatedAt,
+                  let serverUpdatedAt = ISO8601DateFormatter().date(from: updatedStr),
+                  serverUpdatedAt >= local.updatedAt else { return }
 
             local.title = serverTask.title ?? local.title
             local.notes = serverTask.description
             local.isCompleted = serverTask.isFinished
-            local.completedAt = serverTask.isFinished ? (local.completedAt ?? Date.now) : nil
+            // S6: never clobber a real local completion time. The protocol has
+            // no completion timestamp (finishDate is the due date), so fall back
+            // to the server update time — closer to the event than device-now.
+            if serverTask.isFinished {
+                if local.completedAt == nil {
+                    local.completedAt = serverUpdatedAt
+                }
+            } else {
+                local.completedAt = nil
+            }
             local.priority = TaskPriority(rawValue: serverTask.priority) ?? .none
             local.energyLevel = Self.energyLevelFromString(serverTask.energyLevel)
             local.estimatedPomodoros = serverTask.estimatedPomodoros
@@ -728,7 +745,9 @@ public final class SwiftDataPersistenceService {
             newTask.syncId = serverTask.syncId
             newTask.serverId = serverTask.id
             newTask.isCompleted = serverTask.isFinished
-            newTask.completedAt = serverTask.isFinished ? Date.now : nil
+            // S6: same fallback as the update branch (no completion timestamp
+            // in the protocol; finishDate is the due date, not usable here).
+            newTask.completedAt = serverTask.isFinished ? (serverTask.updatedAt.flatMap(ISO8601DateFormatter().date(from:)) ?? Date.now) : nil
             newTask.completedPomodoros = serverTask.completedPomodoros
             newTask.recurrenceRule = serverTask.recurrenceRule
             newTask.isLocallyDeleted = serverTask.isDeleted
@@ -1026,6 +1045,11 @@ public final class SwiftDataPersistenceService {
 
     /// Applies a single server preference by key.
     public func applyServerPreference(key: String, value: String, updatedAt: Date) throws {
+        // S5: never overwrite an unpushed local edit. Dirty keys are exactly the
+        // local edits the server hasn't seen; clean keys are already in sync, so
+        // any inbound value for them is newer-or-equal. (updatedAt is accepted
+        // for API compatibility; local per-key timestamps don't exist.)
+        guard !PreferenceDirtyTracker.getDirtyKeys().contains(key) else { return }
         let prefs = try fetchPreferences()
 
         switch key {

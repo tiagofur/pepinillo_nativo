@@ -8,7 +8,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite("AuthFeature")
+@Suite("AuthFeature", .serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct AuthFeatureTests {
 
@@ -127,6 +127,7 @@ struct AuthFeatureTests {
             AuthFeature()
         } withDependencies: {
             $0.persistenceClient.getSessionCount = { 3 }
+            $0.persistenceClient.fetchTasks = { [] }
             $0.syncClient.serverHasData = { true }
             // Tripwire: pre-fix code uploads before asking (S1 violation).
             $0.syncClient.initialUpload = { throw ProbeBypassError() }
@@ -135,7 +136,7 @@ struct AuthFeatureTests {
         await store.send(.authSucceeded(makeUser())) {
             $0.isSyncing = true
         }
-        await store.receive(.initialSyncCompleted) {
+        await store.receive(.initialSyncCompleted(makeUser())) {
             $0.isSyncing = false
             $0.showMergeDialog = true
         }
@@ -152,6 +153,7 @@ struct AuthFeatureTests {
             AuthFeature()
         } withDependencies: {
             $0.persistenceClient.getSessionCount = { 2 }
+            $0.persistenceClient.fetchTasks = { [] }
             $0.syncClient.serverHasData = { false }
             $0.syncClient.initialUpload = { false }
         }
