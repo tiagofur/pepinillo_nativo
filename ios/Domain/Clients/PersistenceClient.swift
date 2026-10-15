@@ -563,6 +563,11 @@ public struct PersistenceClient: Sendable {
     }
     public var savePreferences: @Sendable (UserPreferencesDTO) async throws -> Void
 
+    // Achievements (S1-S2): seed the store from derived achievements on first
+    // load and overlay stored first-unlock dates. No default on purpose —
+    // tests must stub explicitly so silent fallbacks never mask wiring gaps.
+    public var resolveAchievements: @Sendable ([UserAchievement]) async throws -> [UserAchievement]
+
     // Cached User
     public var fetchCachedUser: @Sendable () async throws -> CachedUserDTO? = { nil }
     public var saveCachedUser: @Sendable (CachedUserDTO) async throws -> Void
@@ -712,6 +717,9 @@ extension PersistenceClient: DependencyKey {
             },
             savePreferences: { prefsDTO in
                 try await actorProvider().savePreferences(prefsDTO)
+            },
+            resolveAchievements: { derived in
+                try await actorProvider().resolveAchievements(derived)
             },
             fetchCachedUser: {
                 try await actorProvider().fetchCachedUser()

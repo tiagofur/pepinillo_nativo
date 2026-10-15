@@ -40,6 +40,7 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
             $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
             $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
+            $0.persistenceClient.resolveAchievements = { $0 }
         }
         store.exhaustivity = .off
 
@@ -62,6 +63,7 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
             $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
             $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
+            $0.persistenceClient.resolveAchievements = { $0 }
         }
         store.exhaustivity = .off
 
@@ -88,6 +90,7 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
             $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
             $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
+            $0.persistenceClient.resolveAchievements = { $0 }
         }
         store.exhaustivity = .off
 
@@ -96,6 +99,35 @@ struct AnalyticsFeatureTests {
 
         // Chart data should have 7 points for week period (all zeros)
         #expect(store.state.chartData.count == 7)
+    }
+
+    @Test("load overlays stored unlock dates over recomputed ones")
+    func loadOverlaysStoredUnlockDates() async {
+        // Proves the load effect routes through resolveAchievements: the stub
+        // stamps a fixed date and the state must reflect it (not recomputed now).
+        let storedDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let prefs = emptyPrefs()
+        let store = TestStore(initialState: AnalyticsFeature.State()) {
+            AnalyticsFeature()
+        } withDependencies: {
+            $0.persistenceClient.fetchSessions = { _, _ in [] }
+            $0.persistenceClient.fetchPreferences = { prefs }
+            $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
+            $0.persistenceClient.resolveAchievements = { derived in
+                derived.map { UserAchievement(achievement: $0.achievement, unlockedAt: storedDate, progress: $0.progress) }
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.onAppear)
+        await store.skipReceivedActions()
+
+        #expect(!store.state.achievements.isEmpty)
+        #expect(store.state.achievements.allSatisfy { $0.unlockedAt == storedDate })
     }
 
     @Test func periodDays() {
@@ -327,6 +359,7 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
             $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
             $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
+            $0.persistenceClient.resolveAchievements = { $0 }
         }
         store.exhaustivity = .off
 

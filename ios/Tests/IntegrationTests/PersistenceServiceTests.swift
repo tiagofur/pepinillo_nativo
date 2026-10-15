@@ -651,4 +651,37 @@ struct PersistenceServiceTests {
         #expect(stale.scheduledForToday == false)
         #expect(dueToday.scheduledForToday == true)
     }
+
+    // MARK: - AchievementRecord persistence (S1-S2)
+
+    @Test("AchievementRecord persists unlock state across contexts")
+    func achievementRecordPersistsUnlock() throws {
+        // Schema-based container like the other persistence tests: the
+        // type-based init triggers CloudKit model validation even for
+        // in-memory stores.
+        let schema = Schema([AchievementRecord.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: config)
+        let context = ModelContext(container)
+        let unlockedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        context.insert(AchievementRecord(achievementID: "weekStreak", progress: 7, unlockedAt: unlockedAt))
+        try context.save()
+        let fetched = try context.fetch(FetchDescriptor<AchievementRecord>())
+        #expect(fetched.count == 1)
+        #expect(fetched.first?.unlockedAt == unlockedAt)
+    }
+
+    @Test("achievement migration is idempotent")
+    func achievementMigrationIsIdempotent() throws {
+        let schema = Schema([AchievementRecord.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        let container = try ModelContainer(for: schema, configurations: config)
+        let context = ModelContext(container)
+        let achieved = [
+            UserAchievement(achievement: .weekStreak, unlockedAt: Date(timeIntervalSince1970: 1_800_000_000), progress: 7)
+        ]
+        try migrateAchievementsIfNeeded(achieved, into: context)
+        try migrateAchievementsIfNeeded(achieved, into: context)
+        #expect(try context.fetch(FetchDescriptor<AchievementRecord>()).count == 1)
+    }
 }

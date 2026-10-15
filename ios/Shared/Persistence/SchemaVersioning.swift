@@ -1176,6 +1176,28 @@ enum SchemaV5: VersionedSchema {
     }
 }
 
+// MARK: - Schema V6 (Add AchievementRecord) — CURRENT
+
+/// Adds the AchievementRecord table for persisted achievements (S1-S2).
+/// Lightweight migration — only adds a new table, no existing model changes.
+/// Mirrors V5 style (live model classes).
+enum SchemaV6: VersionedSchema {
+    static var versionIdentifier: Schema.Version { Schema.Version(6, 0, 0) }
+
+    static var models: [any PersistentModel.Type] {
+        [
+            TaskItem.self,
+            SubTask.self,
+            FocusSessionRecord.self,
+            DailyStats.self,
+            UserPreferences.self,
+            ProductivityReport.self,
+            CachedUser.self,
+            AchievementRecord.self,
+        ]
+    }
+}
+
 // MARK: - Migration Plan
 
 /// Defines the ordered list of schema versions and migration stages between them.
@@ -1189,6 +1211,7 @@ enum PepinilloMigrationPlan: SchemaMigrationPlan {
             SchemaV3.self,
             SchemaV4.self,
             SchemaV5.self,
+            SchemaV6.self,
         ]
     }
 
@@ -1199,6 +1222,7 @@ enum PepinilloMigrationPlan: SchemaMigrationPlan {
             .lightweight(fromVersion: SchemaV2.self, toVersion: SchemaV3.self),
             .lightweight(fromVersion: SchemaV3.self, toVersion: SchemaV4.self),
             .lightweight(fromVersion: SchemaV4.self, toVersion: SchemaV5.self),
+            .lightweight(fromVersion: SchemaV5.self, toVersion: SchemaV6.self),
         ]
     }
 }
