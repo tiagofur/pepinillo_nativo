@@ -6,7 +6,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite("RevenueCat Identity")
+@Suite("RevenueCat Identity", .serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct RevenueCatIdentityTests {
 
@@ -37,6 +37,8 @@ struct RevenueCatIdentityTests {
             $0.webSocketClient.connect = {}
             $0.persistenceClient.generateRecurringTasks = {}
             $0.persistenceClient.fetchTasks = { [] }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
         }
         store.exhaustivity = .off
 
@@ -67,6 +69,8 @@ struct RevenueCatIdentityTests {
             }
             $0.syncClient.syncAll = {}
             $0.webSocketClient.connect = {}
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
         }
         store.exhaustivity = .off
 
@@ -92,6 +96,8 @@ struct RevenueCatIdentityTests {
                 loggedInID.setValue(userID)
                 return .free
             }
+            $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
         }
         store.exhaustivity = .off
 

@@ -36,6 +36,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -54,6 +58,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -76,6 +84,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -311,6 +323,10 @@ struct AnalyticsFeatureTests {
             $0.persistenceClient.fetchSessions = { _, _ in [] }
             $0.persistenceClient.fetchPreferences = { prefs }
             $0.persistenceClient.fetchDailyStatsRange = { _, _ in [] }
+            $0.persistenceClient.fetchSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchEarlyBirdSessionCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedPomodoroCount = { _ in 0 }
+            $0.persistenceClient.fetchCompletedFlowtimeCount = { _ in 0 }
         }
         store.exhaustivity = .off
 
@@ -406,6 +422,7 @@ struct AnalyticsFeatureTests {
 struct TaskAnalyticsFeatureFailureTests {
 
     @Test("load failure releases spinner instead of wedging on")
+    @MainActor
     func loadFailureReleasesSpinner() async {
         struct AnalyticsError: Error {}
         let store = TestStore(
@@ -426,6 +443,33 @@ struct TaskAnalyticsFeatureFailureTests {
             $0.isLoading = false
             #expect($0.analytics == nil)
         }
+    }
+}
+
+@Suite("InsightsService period text")
+struct InsightsPeriodTextTests {
+
+    @Test("streak insight uses the selected period length, not hardcoded 7 days")
+    func streakInsightUsesPeriodDays() {
+        let service = InsightsService()
+        let stats = (0..<5).map { i in
+            DailyStatsDTO(
+                date: Date(timeIntervalSince1970: 1_800_000_000 + Double(i * 86400)),
+                totalFocusMinutes: 25,
+                sessionsCompleted: 1,
+                tasksCompleted: 0
+            )
+        }
+
+        let insights30 = service.generateWeeklyInsights(sessions: [], dailyStats: stats, periodDays: 30)
+        let streak30 = insights30.first(where: { $0.category == .streak })
+        // S4 RED pre-fix: no periodDays parameter exists (compile error).
+        #expect(streak30?.body.contains("out of 30 days") == true)
+
+        // Default stays weekly (existing callers unchanged).
+        let insights7 = service.generateWeeklyInsights(sessions: [], dailyStats: stats)
+        let streak7 = insights7.first(where: { $0.category == .streak })
+        #expect(streak7?.body.contains("out of 7 days") == true)
     }
 }
 

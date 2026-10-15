@@ -11,7 +11,7 @@ import Foundation
 import ComposableArchitecture
 @testable import Pepinillo
 
-@Suite("Email Verification Gate")
+@Suite("Email Verification Gate", .serialized, .appGroupDefaultsSerialized)
 @MainActor
 struct EmailVerificationGateTests {
 
@@ -23,6 +23,7 @@ struct EmailVerificationGateTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
         }
         store.exhaustivity = .off
 
@@ -49,6 +50,7 @@ struct EmailVerificationGateTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
         }
         store.exhaustivity = .off
 
@@ -77,6 +79,7 @@ struct EmailVerificationGateTests {
             AppFeature()
         } withDependencies: {
             $0.persistenceClient.fetchPreferences = { UserPreferencesDTO() }
+            $0.persistenceClient.savePreferences = { _ in }
         }
         store.exhaustivity = .off
 
@@ -88,7 +91,7 @@ struct EmailVerificationGateTests {
 
         await store.send(.cachedUserLoaded(unverifiedUser)) {
             $0.cachedUser = unverifiedUser
-            $0.displayName = "Apple User"
+            $0.displayName = "apple-user"
             $0.userEmail = "apple-user@example.com"
         }
 

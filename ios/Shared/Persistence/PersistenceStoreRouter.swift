@@ -16,6 +16,9 @@ private let syncRouterLogger = Logger(subsystem: "com.pepinillo.app", category: 
 enum PersistenceStoreRouterTesting {
     nonisolated(unsafe) static var migrationOverride: ((ModelContainer, ModelContainer) throws -> Void)?
     nonisolated(unsafe) static var openAppleCloudContainerOverride: (() throws -> ModelContainer)?
+    /// Suspension hook for tests (S5). Awaited at the start of every reconcile
+    /// round; lets tests park one round mid-flight. Never replaces behavior.
+    nonisolated(unsafe) static var reconcileSuspension: (() async -> Void)?
     /// Observer fired when the router attempts a legacy-store import (S3).
     /// Unlike the overrides above it never replaces behavior.
     nonisolated(unsafe) static var legacyImportObserver: (() -> Void)?
@@ -53,6 +56,12 @@ final class PersistenceStoreRouter: ObservableObject {
     private var appleCloudContainer: ModelContainer?
     /// Serialises overlapping `reconcile` calls so only one store swap runs at a time (#164).
     private var reconcileInFlight: Task<Void, Never>?
+    /// Latest capabilities published while a reconcile runs (S5). A second
+    /// reconcile arriving mid-flight waits, then the loop below re-runs with
+    /// these instead of dropping them (subscription changes were lost until
+    /// the next event). No lock needed: the router is @MainActor, so the
+    /// take-check-create sequence never interleaves.
+    private var pendingCapabilities: UserCapabilities?
 
     /// Background ModelActor that owns its own ModelContext for the active
     /// container. Recreated whenever the active container swaps so persistence
@@ -82,20 +91,32 @@ final class PersistenceStoreRouter: ObservableObject {
     }
 
     func reconcile(capabilities: UserCapabilities) async {
-        if let inFlight = reconcileInFlight {
-            await inFlight.value
-            return
-        }
+        // Publish first: a concurrent caller may supersede us before we run.
+        pendingCapabilities = capabilities
 
-        let task = Task { @MainActor in
-            defer { reconcileInFlight = nil }
-            await performReconcile(capabilities: capabilities)
+        while true {
+            if reconcileInFlight == nil, let pending = pendingCapabilities {
+                pendingCapabilities = nil
+                let task = Task { @MainActor in
+                    defer { reconcileInFlight = nil }
+                    await performReconcile(capabilities: pending)
+                }
+                reconcileInFlight = task
+                await task.value
+            } else if let inFlight = reconcileInFlight {
+                await inFlight.value
+            } else {
+                // Nothing in flight and nothing pending: our capabilities ran
+                // (or were superseded by newer ones, which also ran).
+                return
+            }
         }
-        reconcileInFlight = task
-        await task.value
     }
 
     private func performReconcile(capabilities: UserCapabilities) async {
+        #if DEBUG
+        await PersistenceStoreRouterTesting.reconcileSuspension?()
+        #endif
         if capabilities.backendSync {
             do {
                 // S3: import the legacy CloudKit store here too — the Apple

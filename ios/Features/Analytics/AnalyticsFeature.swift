@@ -371,7 +371,8 @@ struct AnalyticsFeature {
                 }
                 let weeklyInsights = insightsService.generateWeeklyInsights(
                     sessions: periodSessions,
-                    dailyStats: dailyStatsDTOs
+                    dailyStats: dailyStatsDTOs,
+                    periodDays: period.days
                 )
 
                 await send(.allDataLoaded(

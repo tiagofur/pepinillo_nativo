@@ -547,6 +547,18 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
         deliverApplicationContext(applicationContext)
     }
 
+    /// Maximum age of a queued watch command before it is dropped (S7). A tap
+    /// made while the phone is dead must not execute hours later (e.g. an
+    /// obsolete Start). Mirrors the 5-minute App Group command TTL.
+    static let commandTTLSeconds: TimeInterval = 5 * 60
+
+    /// Whether a queued watch command arrived too late to execute (S7).
+    /// Missing stamps (older watch apps) are delivered, as before.
+    static func isStaleCommand(sentAt: TimeInterval?, now: Date = Date.now) -> Bool {
+        guard let sentAt = sentAt else { return false }
+        return now.timeIntervalSince1970 - sentAt > commandTTLSeconds
+    }
+
     /// Handles transferUserInfo delivery (guaranteed queued delivery for tasks).
     func session(_ session: WCSession,
                  didReceiveUserInfo userInfo: [String: Any]) {
@@ -558,6 +570,13 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
                 yield(.tasks(items, sentAt: sentAt))
             }
         case "command":
+            // S7: drop commands queued longer than the TTL — e.g. Start tapped
+            // with the phone dead would otherwise execute hours later.
+            // Real-time sendMessage commands are fresh by construction.
+            if Self.isStaleCommand(sentAt: userInfo["sentAt"] as? TimeInterval) {
+                Self.log.info("Dropping stale queued watch command")
+                break
+            }
             if let cmd = decodeCommand(userInfo) {
                 yield(.command(cmd))
             }
@@ -613,7 +632,8 @@ final class WatchConnectivityManager: NSObject, WCSessionDelegate, @unchecked Se
     // MARK: - Encode / Decode
 
     private func encodeCommand(_ command: WatchCommand) -> [String: Any] {
-        var dict: [String: Any] = ["type": "command"]
+        // S7: stamp commands so stale queued deliveries can be dropped on receipt.
+        var dict: [String: Any] = ["type": "command", "sentAt": Date().timeIntervalSince1970]
         switch command {
         case .startSession(let mode):       dict["action"] = "start"; dict["mode"] = mode
         case .pauseSession:                 dict["action"] = "pause"

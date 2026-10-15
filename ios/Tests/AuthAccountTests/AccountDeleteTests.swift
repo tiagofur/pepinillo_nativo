@@ -73,6 +73,28 @@ struct AccountDeleteTests {
 
     // MARK: - Failure path
 
+    @Test("deleteAccount deindexes Spotlight with local wipe")
+    func deleteAccountDeindexesSpotlight() async {
+        let deindexed = LockIsolated(false)
+        let store = TestStore(initialState: signedInState()) {
+            AppFeature()
+        } withDependencies: { [self] in
+            self.configureDependencies(&$0, deleteSucceeds: true)
+            $0.spotlightClient.deleteAll = {
+                deindexed.setValue(true)
+            }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.deleteAccountTapped) {
+            $0.deleteAccountError = nil
+        }
+        await store.receive(.deleteAccountSucceeded)
+
+        // S1 RED pre-fix: deleteAll is never called (zero callers).
+        #expect(deindexed.value == true)
+    }
+
     @Test("deleteAccount fails keeps session and surfaces error")
     func deleteAccountFailsKeepsSessionShowsError() async {
         let store = TestStore(initialState: signedInState()) {

@@ -1495,7 +1495,7 @@ struct TaskListFeatureTests {
     func detailDismissReloadFailureSurfacesError() async {
         struct ReloadError: Error {}
         var initialState = TaskListFeature.State()
-        initialState.detail = TaskDetailFeature.State(from: TaskItemDTO(id: UUID(), title: "T"))
+        initialState.detail = TaskDetailFeature.State(from: TaskListFeature.TaskItemState.from(TaskItemDTO(id: UUID(), title: "T")))
 
         let store = TestStore(initialState: initialState) {
             TaskListFeature()
@@ -1519,7 +1519,7 @@ struct TaskListFeatureTests {
         var initialState = TaskListFeature.State()
         initialState.isProUser = false
         initialState.tasks = IdentifiedArrayOf(uniqueElements: (0..<3).map { i in
-            TaskItemState.from(TaskItemDTO(title: "T\(i)"))
+            TaskListFeature.TaskItemState.from(TaskItemDTO(title: "T\(i)"))
         })
 
         let store = TestStore(initialState: initialState) {
@@ -1534,14 +1534,14 @@ struct TaskListFeatureTests {
 
     @Test("reminders import stops at free limit mid-run")
     func remindersImportStopsAtFreeLimit() async {
-        func reminder(_ i: Int) -> ImportedReminder {
+        @Sendable func reminder(_ i: Int) -> ImportedReminder {
             ImportedReminder(externalID: "r\(i)", title: "R\(i)", notes: nil, priority: .none, calendarName: nil, dueDate: nil)
         }
 
         var initialState = TaskListFeature.State()
         initialState.isProUser = false
         initialState.tasks = IdentifiedArrayOf(uniqueElements: (0..<2).map { i in
-            TaskItemState.from(TaskItemDTO(title: "T\(i)"))
+            TaskListFeature.TaskItemState.from(TaskItemDTO(title: "T\(i)"))
         })
 
         let savedCount = LockIsolated(0)
@@ -1571,7 +1571,7 @@ struct TaskListFeatureTests {
     @Test("reminders import surfaces partial progress on mid-run failure")
     func remindersImportSurfacesPartialProgress() async {
         struct SaveError: Error {}
-        func reminder(_ i: Int) -> ImportedReminder {
+        @Sendable func reminder(_ i: Int) -> ImportedReminder {
             ImportedReminder(externalID: "r\(i)", title: "R\(i)", notes: nil, priority: .none, calendarName: nil, dueDate: nil)
         }
 

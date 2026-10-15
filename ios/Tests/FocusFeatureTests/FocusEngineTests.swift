@@ -9,11 +9,12 @@
 
 import Testing
 import Foundation
+import ComposableArchitecture
 @testable import Pepinillo
 
 // MARK: - Fresh Engine State
 
-@Suite("FocusEngine — Initial State")
+@Suite("FocusEngine — Initial State", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineInitialStateTests {
 
     @Test func freshEngineHasNilState() async {
@@ -31,7 +32,7 @@ struct FocusEngineInitialStateTests {
 
 // MARK: - Starting Sessions
 
-@Suite("FocusEngine — Start")
+@Suite("FocusEngine — Start", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineStartTests {
 
     @Test func startPomodoroCreatesActiveState() async throws {
@@ -134,7 +135,7 @@ struct FocusEngineStartTests {
 
 // MARK: - Pause / Resume
 
-@Suite("FocusEngine — Pause and Resume")
+@Suite("FocusEngine — Pause and Resume", .serialized, .appGroupDefaultsSerialized)
 struct FocusEnginePauseResumeTests {
 
     @Test func pauseSetsStateCorrectly() async throws {
@@ -327,7 +328,7 @@ struct FocusEnginePauseResumeTests {
 
 // MARK: - Stop
 
-@Suite("FocusEngine — Stop")
+@Suite("FocusEngine — Stop", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineStopTests {
 
     @Test func stopResetsStateToNil() async throws {
@@ -381,9 +382,14 @@ struct FocusEngineStopTests {
                 return nil
             }
 
-            let first = await group.next() ?? nil
+            // Skip the stop-task's immediate nil: the sessionCompleted event
+            // arrives via the stream a moment later.
+            var found: FocusSessionResult?
+            while found == nil, let value = await group.next() {
+                found = value
+            }
             group.cancelAll()
-            return first
+            return found
         }
 
         #expect(result?.mode == .flowtime)
@@ -394,7 +400,7 @@ struct FocusEngineStopTests {
 
 // MARK: - Interruptions
 
-@Suite("FocusEngine — Interruptions")
+@Suite("FocusEngine — Interruptions", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineInterruptionTests {
 
     @Test func recordInterruptionIncrementsCount() async throws {
@@ -424,7 +430,7 @@ struct FocusEngineInterruptionTests {
 
 // MARK: - Session Replacement
 
-@Suite("FocusEngine — Session Replacement")
+@Suite("FocusEngine — Session Replacement", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineSessionReplacementTests {
 
     @Test func startingNewSessionCancelsPrevious() async throws {
@@ -461,7 +467,7 @@ struct FocusEngineSessionReplacementTests {
 
 // MARK: - Custom Duration
 
-@Suite("FocusEngine — Custom Duration")
+@Suite("FocusEngine — Custom Duration", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineCustomDurationTests {
 
     @Test func customDurationForTimeBlock() async throws {
@@ -491,7 +497,7 @@ struct FocusEngineCustomDurationTests {
 
 // MARK: - Linked Task
 
-@Suite("FocusEngine — Linked Task")
+@Suite("FocusEngine — Linked Task", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineLinkedTaskTests {
 
     @Test func linkedTaskIDIsPreserved() async throws {
@@ -591,7 +597,9 @@ struct FocusEngineTimerTests {
 
         let paused = try #require(pausedState)
         #expect(paused.isPaused == true)
-        #expect(paused.elapsedSeconds == elapsedAtPause)
+        // Frozen at the pause instant, but the live clock advances between the
+        // tap and this read: compare with tolerance, never exact.
+        #expect(abs(paused.elapsedSeconds - elapsedAtPause) < 0.5)
         #expect(AppGroupDefaults.externalPauseRequested == false)
     }
 
@@ -644,7 +652,7 @@ struct FocusEngineTimerTests {
 
 // MARK: - Skip Phase
 
-@Suite("FocusEngine — Skip Phase")
+@Suite("FocusEngine — Skip Phase", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineSkipPhaseTests {
 
     @Test func skipWorkPhaseAdvancesToBreak() async throws {
@@ -669,7 +677,7 @@ struct FocusEngineSkipPhaseTests {
 
 // MARK: - FocusConfig Interaction
 
-@Suite("FocusEngine — Config")
+@Suite("FocusEngine — Config", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineConfigTests {
 
     @Test func customPomodoroConfig() async throws {
@@ -706,7 +714,7 @@ struct FocusEngineConfigTests {
 
 // MARK: - Flowtime Break Lifecycle
 
-@Suite("FocusEngine — Flowtime Breaks", .serialized)
+@Suite("FocusEngine — Flowtime Breaks", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineFlowtimeBreakTests {
 
     @Test func takeBreakAdvancesToFlowBreak() async throws {
@@ -724,8 +732,10 @@ struct FocusEngineFlowtimeBreakTests {
         } else {
             Issue.record("Expected .flowBreak after take break, got \(String(describing: state?.phase))")
         }
-        #expect(state?.targetDuration == 5 * 60)
-        #expect(state?.remainingSeconds == 5 * 60)
+        // Wall-clock derived: assert within a second, never exact (the test
+        // clock keeps running between engine start and this read).
+        #expect(abs((state?.targetDuration ?? -1) - 300) < 1.0)
+        #expect(abs((state?.remainingSeconds ?? -1) - 300) < 1.0)
         #expect(state?.progress != nil)
     }
 
@@ -738,7 +748,7 @@ struct FocusEngineFlowtimeBreakTests {
         try await Task.sleep(for: .milliseconds(300))
 
         let initialRemaining = await engine.currentState()?.remainingSeconds
-        #expect(initialRemaining == 5 * 60)
+        #expect(abs((initialRemaining ?? -1) - 300) < 1.0)
 
         try await Task.sleep(for: .milliseconds(300))
         let laterRemaining = await engine.currentState()?.remainingSeconds
@@ -746,6 +756,13 @@ struct FocusEngineFlowtimeBreakTests {
     }
 
     @Test func flowBreakCompletesAndReturnsToFlow() async throws {
+        // Isolate the shared App Group: a foreign pause command would freeze
+        // this engine mid-break and the completion would never fire.
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
         let engine = FocusEngine()
         await engine.start(mode: .flowtime)
         try await Task.sleep(for: .milliseconds(300))
@@ -755,7 +772,17 @@ struct FocusEngineFlowtimeBreakTests {
 
         let breakTarget = await engine.currentState()?.targetDuration ?? 0
         await engine.syncExternalState(elapsed: breakTarget, remaining: 0)
-        try await Task.sleep(for: .milliseconds(300))
+        // Completion rides the 250ms tick: poll instead of a fixed sleep so
+        // loaded simulators cannot miss the window.
+        var flowReturned = false
+        for _ in 0..<20 {
+            try await Task.sleep(for: .milliseconds(100))
+            if await engine.currentState()?.phase == .flow {
+                flowReturned = true
+                break
+            }
+        }
+        #expect(flowReturned)
 
         let state = await engine.currentState()
         #expect(state?.phase == .flow)
@@ -765,16 +792,21 @@ struct FocusEngineFlowtimeBreakTests {
     }
 
     @Test func skipFlowBreakReturnsToFlow() async throws {
+        // Isolate the shared App Group (see above): skips are synchronous,
+        // so no polling is needed once foreign commands cannot interfere.
+        let saved = AppGroupDefaultsSnapshot.capture()
+        defer { saved.restore() }
+        AppGroupDefaults.clearExternalCommands()
+        AppGroupDefaults.clearActiveSession()
+
         let engine = FocusEngine()
         await engine.start(mode: .flowtime)
         try await Task.sleep(for: .milliseconds(300))
 
         await engine.skipToNextPhase()
-        try await Task.sleep(for: .milliseconds(300))
         #expect(await engine.currentState()?.phase.isBreak == true)
 
         await engine.skipToNextPhase()
-        try await Task.sleep(for: .milliseconds(300))
 
         let state = await engine.currentState()
         #expect(state?.phase == .flow)
@@ -790,7 +822,7 @@ struct FocusEngineFlowtimeBreakTests {
         await engine.start(mode: .flowtime, config: config, timerStart: startDate)
 
         let suggestedDuration = await firstBreakSuggestion(from: engine, within: .milliseconds(500))
-        #expect(suggestedDuration == 5 * 60) // 90s focus → 5 min suggested break
+        #expect(abs((suggestedDuration ?? -1) - 300) < 1.0) // 90s focus → 5 min suggested break
     }
 
     @Test func breakSuggestedRespectsDisabledFlag() async throws {
@@ -850,7 +882,7 @@ struct FocusEngineFlowtimeBreakTests {
 
 // MARK: - Daily Pomodoro Seed
 
-@Suite("FocusEngine — Daily Pomodoro Seed")
+@Suite("FocusEngine — Daily Pomodoro Seed", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineDailyPomodoroSeedTests {
 
     @Test func startWithNoCompletedSessionsUsesPomodoroOne() async throws {
@@ -930,7 +962,7 @@ struct FocusEngineDailyPomodoroSeedTests {
 
 // MARK: - External Timer Anchors (#176)
 
-@Suite("FocusEngine — External Timer Anchors")
+@Suite("FocusEngine — External Timer Anchors", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineExternalTimerTests {
 
     @Test func startUsesTimerEndForRemainingWhenProvided() async throws {
@@ -952,7 +984,7 @@ struct FocusEngineExternalTimerTests {
 
 // MARK: - Midpoint Check-In (#176)
 
-@Suite("FocusEngine — Midpoint Check-In")
+@Suite("FocusEngine — Midpoint Check-In", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineMidpointTests {
 
     @Test func midpointFiresOnceWhenElapsedCrossesHalf() async throws {
@@ -962,30 +994,25 @@ struct FocusEngineMidpointTests {
         config.defaultBlockDuration = 60 * 60
         let blockConfig = config
 
-        let midpointCount = await withTaskGroup(of: Int.self) { group in
-            group.addTask {
-                guard let events = await engine.events else { return 0 }
-                var count = 0
-                for await event in events {
-                    if case .midpointReached = event {
-                        count += 1
-                    }
+        // Start first so the listener attaches to the live stream: start()
+        // finishes any previous stream, and the first-wins group race can
+        // never observe the event. Count via lock; the listener is cancelled
+        // after the window (reaped at engine deinit, which ends the stream).
+        let start = Date.now.addingTimeInterval(-(30 * 60 + 1))
+        await engine.start(mode: .timeBlock, config: blockConfig, timerStart: start)
+        let midpointCount = LockIsolated(0)
+        let listener = Task {
+            guard let events = await engine.events else { return }
+            for await event in events {
+                if case .midpointReached = event {
+                    midpointCount.withValue { $0 += 1 }
                 }
-                return count
             }
-            group.addTask {
-                let start = Date.now.addingTimeInterval(-(30 * 60 + 1))
-                await engine.start(mode: .timeBlock, config: blockConfig, timerStart: start)
-                try? await Task.sleep(for: .seconds(2))
-                return 0
-            }
-
-            let observed = await group.next() ?? 0
-            group.cancelAll()
-            return observed
         }
+        try? await Task.sleep(for: .seconds(2))
+        listener.cancel()
 
-        #expect(midpointCount == 1)
+        #expect(midpointCount.value == 1)
     }
 
     @Test func midpointDoesNotFireWhenDisabled() async throws {
@@ -1029,35 +1056,29 @@ struct FocusEngineMidpointTests {
         await engine.start(mode: .timeBlock, config: config)
         try await Task.sleep(for: .milliseconds(300))
 
-        let midpointCount = await withTaskGroup(of: Int.self) { group in
-            group.addTask {
-                guard let events = await engine.events else { return 0 }
-                var count = 0
-                for await event in events {
-                    if case .midpointReached = event {
-                        count += 1
-                    }
+        // Same lock-count pattern as above: the first-wins group race can
+        // never observe the event. syncExternalState re-anchors the wall
+        // clock, so the jump past halfway survives subsequent ticks.
+        let midpointCount = LockIsolated(0)
+        let listener = Task {
+            guard let events = await engine.events else { return }
+            for await event in events {
+                if case .midpointReached = event {
+                    midpointCount.withValue { $0 += 1 }
                 }
-                return count
             }
-            group.addTask {
-                await engine.syncExternalState(elapsed: 31 * 60, remaining: 29 * 60)
-                try? await Task.sleep(for: .seconds(2))
-                return 0
-            }
-
-            let observed = await group.next() ?? 0
-            group.cancelAll()
-            return observed
         }
+        await engine.syncExternalState(elapsed: 31 * 60, remaining: 29 * 60)
+        try? await Task.sleep(for: .seconds(2))
+        listener.cancel()
 
-        #expect(midpointCount == 1)
+        #expect(midpointCount.value == 1)
     }
 }
 
 // MARK: - Config Updates (#176)
 
-@Suite("FocusEngine — Config Updates")
+@Suite("FocusEngine — Config Updates", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineConfigUpdateTests {
 
     @Test func updateConfigWhilePausedEmitsTick() async throws {
@@ -1104,7 +1125,7 @@ struct FocusEngineConfigUpdateTests {
 
 // MARK: - Session total focus (S1)
 
-@Suite("FocusEngine — Session total focus")
+@Suite("FocusEngine — Session total focus", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineSessionTotalTests {
 
     @Test func stopAfterMultipleFlowPhasesReportsTotalFocusExcludingBreaks() async throws {
@@ -1138,9 +1159,14 @@ struct FocusEngineSessionTotalTests {
                 return nil
             }
 
-            let first = await group.next() ?? nil
+            // Skip the stop-task's immediate nil: the sessionCompleted event
+            // arrives via the stream a moment later.
+            var found: FocusSessionResult?
+            while found == nil, let value = await group.next() {
+                found = value
+            }
             group.cancelAll()
-            return first
+            return found
         }
 
         #expect(result?.mode == .flowtime)
@@ -1153,7 +1179,7 @@ struct FocusEngineSessionTotalTests {
 
 // MARK: - Widget anchor across pause (S2)
 
-@Suite("FocusEngine — Anchored pause")
+@Suite("FocusEngine — Anchored pause", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineAnchoredPauseTests {
 
     @Test func resumePreservesRemainingForWidgetAnchoredSession() async throws {
@@ -1191,7 +1217,7 @@ struct FocusEngineAnchoredPauseTests {
 
 // MARK: - Skipped work partial credit (S3)
 
-@Suite("FocusEngine — Skipped work")
+@Suite("FocusEngine — Skipped work", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineSkippedWorkTests {
 
     @Test func skippingPomodoroWorkEmitsPartialCreditAndContinuesSession() async throws {
@@ -1220,9 +1246,14 @@ struct FocusEngineSkippedWorkTests {
                 return nil
             }
 
-            let first = await group.next() ?? nil
+            // Skip the stop-task's immediate nil: the partial credit arrives
+            // via the event stream a moment later.
+            var found: FocusSessionResult?
+            while found == nil, let value = await group.next() {
+                found = value
+            }
             group.cancelAll()
-            return first
+            return found
         }
 
         #expect(partial?.mode == .pomodoro)
@@ -1242,7 +1273,7 @@ struct FocusEngineSkippedWorkTests {
 
 // MARK: - Stop during waiting hold (S4)
 
-@Suite("FocusEngine — Hold stop")
+@Suite("FocusEngine — Hold stop", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineHoldStopTests {
 
     @Test func stopDuringHoldMarksResultAsAlreadyAccounted() async throws {
@@ -1270,9 +1301,14 @@ struct FocusEngineHoldStopTests {
                 return nil
             }
 
-            let first = await group.next() ?? nil
+            // Skip the stop-task's immediate nil: the sessionCompleted event
+            // arrives via the stream a moment later.
+            var found: FocusSessionResult?
+            while found == nil, let value = await group.next() {
+                found = value
+            }
             group.cancelAll()
-            return first
+            return found
         }
 
         // The completed work interval was already persisted via phaseCompleted;
@@ -1287,7 +1323,7 @@ struct FocusEngineHoldStopTests {
 
 // MARK: - Direct abandon (S7)
 
-@Suite("FocusEngine — Abandon session")
+@Suite("FocusEngine — Abandon session", .serialized, .appGroupDefaultsSerialized)
 struct FocusEngineAbandonTests {
 
     @Test func abandonSessionReturnsTerminalResultWithoutEmitting() async throws {
@@ -1316,5 +1352,216 @@ struct FocusEngineAbandonTests {
         #expect(await engine.currentState() == nil)
         // Second take finds nothing (single-take semantics).
         #expect(await engine.abandonSession() == nil)
+    }
+}
+
+// MARK: - Ghost adoption (Sprint-5 T1)
+
+@Suite("FocusEngine — Ghost adoption", .serialized, .appGroupDefaultsSerialized)
+struct FocusEngineGhostAdoptionTests {
+
+    @Test func adoptPomodoroWorkResumesWithWallClockMath() async throws {
+        let engine = FocusEngine()
+        // Ghost: pomodoro work #2/4, 25-min target, 20 min remaining.
+        await engine.adoptGhostSession(
+            mode: .pomodoro,
+            phase: .work(number: 2, total: 4),
+            elapsed: 300
+        )
+
+        let state = await engine.currentState()
+        #expect(state?.mode == .pomodoro)
+        #expect(state?.phase == .work(number: 2, total: 4))
+        #expect(state?.isPaused == false)
+        #expect(state?.pomodoroNumber == 2)
+        #expect(state?.totalPomodoros == 4)
+        // Invariant: remaining + elapsed == target (no tick sleep needed).
+        let remaining = state?.remainingSeconds ?? -1
+        let elapsed = state?.elapsedSeconds ?? -1
+        #expect(abs((remaining + elapsed) - 1500) < 1)
+        await engine.stop()
+    }
+
+    @Test func adoptFlowRestartsOpenClock() async throws {
+        let engine = FocusEngine()
+        await engine.adoptGhostSession(mode: .flowtime, phase: .flow, elapsed: 1200)
+
+        let state = await engine.currentState()
+        #expect(state?.mode == .flowtime)
+        #expect(state?.phase == .flow)
+        #expect(state?.targetDuration == nil)
+        #expect(state?.remainingSeconds == nil)
+        let elapsed = state?.elapsedSeconds ?? -1
+        #expect(elapsed >= 1200 && elapsed < 1205)
+        await engine.stop()
+    }
+
+    @Test func adoptWhileRunningIsNoOp() async throws {
+        let engine = FocusEngine()
+        await engine.start(mode: .stopwatch)
+        try await Task.sleep(for: .milliseconds(300))
+
+        await engine.adoptGhostSession(mode: .pomodoro, phase: .work(number: 1, total: 4), elapsed: 600)
+
+        // Original session untouched.
+        let state = await engine.currentState()
+        #expect(state?.mode == .stopwatch)
+        await engine.stop()
+    }
+
+    @Test func resolveGhostPhaseMatrix() {
+        let config = FocusConfig()
+        #expect(FocusEngine.resolveGhostPhase(mode: .pomodoro, phaseDuration: 1500, pomodoroNumber: 3, config: config) == .work(number: 3, total: 4))
+        #expect(FocusEngine.resolveGhostPhase(mode: .pomodoro, phaseDuration: 300, pomodoroNumber: 1, config: config) == .shortBreak)
+        #expect(FocusEngine.resolveGhostPhase(mode: .pomodoro, phaseDuration: 900, pomodoroNumber: 4, config: config) == .longBreak)
+        #expect(FocusEngine.resolveGhostPhase(mode: .pomodoro, phaseDuration: 12345, pomodoroNumber: nil, config: config) == .work(number: 1, total: 4))
+        #expect(FocusEngine.resolveGhostPhase(mode: .flowtime, phaseDuration: nil, pomodoroNumber: nil, config: config) == .flow)
+        #expect(FocusEngine.resolveGhostPhase(mode: .flowtime, phaseDuration: 480, pomodoroNumber: nil, config: config) == .flowBreak(suggestedDuration: 480))
+        #expect(FocusEngine.resolveGhostPhase(mode: .timeBlock, phaseDuration: 3600, pomodoroNumber: nil, config: config) == .block)
+        #expect(FocusEngine.resolveGhostPhase(mode: .stopwatch, phaseDuration: nil, pomodoroNumber: nil, config: config) == .freeform)
+    }
+}
+
+// MARK: - Ghost resume eligibility (Sprint-5 T2)
+
+@Suite("FocusEngine — Ghost resume eligibility", .serialized, .appGroupDefaultsSerialized)
+struct FocusEngineGhostResumeTests {
+
+    private var utcCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }
+
+    // Fixed now: 2026-01-15T12:00 UTC.
+    private var now: Date { Date(timeIntervalSince1970: 1_774_958_400) }
+
+    @Test func timedGhostWithTimeLeftIsEligible() {
+        // Pomodoro started 10 min ago, ends in 15 min: work #1/4, 10 min elapsed.
+        let start = now.addingTimeInterval(-600)
+        let end = now.addingTimeInterval(900)
+        let taskID = UUID()
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: start,
+            timerEnd: end,
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: taskID.uuidString,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == FocusEngine.GhostResumeSpec(
+            mode: .pomodoro,
+            phase: .work(number: 1, total: 4),
+            elapsed: 600,
+            remaining: 900,
+            linkedTaskID: taskID
+        ))
+    }
+
+    @Test func expiredEndIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: now.addingTimeInterval(-1500),
+            timerEnd: now.addingTimeInterval(-60),
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func shortRemainingIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: now.addingTimeInterval(-1470),
+            timerEnd: now.addingTimeInterval(30),
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func yesterdayStartIsIneligible() {
+        let start = now.addingTimeInterval(-86400 - 600)
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: start,
+            timerEnd: now.addingTimeInterval(900),
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func unknownModeIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "sauna",
+            timerStart: now.addingTimeInterval(-600),
+            timerEnd: now.addingTimeInterval(900),
+            elapsedAnchor: 0,
+            pomodoroNumber: nil,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func missingStartIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "pomodoro",
+            timerStart: nil,
+            timerEnd: now.addingTimeInterval(900),
+            elapsedAnchor: 0,
+            pomodoroNumber: 1,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
+    }
+
+    @Test func openFlowGhostIsEligibleWithAnchorElapsed() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "flowtime",
+            timerStart: now.addingTimeInterval(-2400),
+            timerEnd: nil,
+            elapsedAnchor: 2400,
+            pomodoroNumber: nil,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == FocusEngine.GhostResumeSpec(
+            mode: .flowtime,
+            phase: .flow,
+            elapsed: 2400,
+            remaining: nil,
+            linkedTaskID: nil
+        ))
+    }
+
+    @Test func openEndedNonFlowModeIsIneligible() {
+        let spec = FocusEngine.resolveGhostResume(
+            modeName: "timeBlock",
+            timerStart: now.addingTimeInterval(-600),
+            timerEnd: nil,
+            elapsedAnchor: 600,
+            pomodoroNumber: nil,
+            taskID: nil,
+            now: now,
+            calendar: utcCalendar
+        )
+        #expect(spec == nil)
     }
 }

@@ -13,7 +13,7 @@ import ComposableArchitecture
 // MARK: - WatchTimerFeature Tests
 
 @MainActor
-@Suite("WatchTimerFeature Reducer")
+@Suite("WatchTimerFeature Reducer", .serialized, .appGroupDefaultsSerialized)
 struct WatchTimerFeatureTests {
 
     // MARK: - Helpers
@@ -52,6 +52,14 @@ struct WatchTimerFeatureTests {
 
     @Test("onAppear returns no effect")
     func onAppearReturnsNone() async {
+        // onAppear reads the shared isProUser flag: pin it deterministic.
+        let proSuite = UserDefaults(suiteName: "group.com.pepinillo.app")
+        let savedPro = proSuite?.object(forKey: "isProUser")
+        proSuite?.set(false, forKey: "isProUser")
+        defer {
+            if let savedPro { proSuite?.set(savedPro, forKey: "isProUser") }
+            else { proSuite?.removeObject(forKey: "isProUser") }
+        }
         let store = TestStore(initialState: WatchTimerFeature.State()) {
             WatchTimerFeature()
         }
@@ -79,6 +87,7 @@ struct WatchTimerFeatureTests {
     func startTappedWithFlowtime() async {
         var state = WatchTimerFeature.State()
         state.selectedMode = .flowtime
+        state.isProUser = true
 
         let commandsSent = LockIsolated<[WatchCommand]>([])
 
@@ -119,6 +128,7 @@ struct WatchTimerFeatureTests {
         for mode in FocusMode.allCases {
             var state = WatchTimerFeature.State()
             state.selectedMode = mode
+            state.isProUser = true
 
             let store = TestStore(initialState: state) {
                 WatchTimerFeature()
@@ -243,7 +253,9 @@ struct WatchTimerFeatureTests {
 
     @Test("modeSelected updates mode when idle")
     func modeSelectedWhenIdle() async {
-        let store = TestStore(initialState: WatchTimerFeature.State()) {
+        var state = WatchTimerFeature.State()
+        state.isProUser = true
+        let store = TestStore(initialState: state) {
             WatchTimerFeature()
         }
 
@@ -280,7 +292,9 @@ struct WatchTimerFeatureTests {
 
     @Test("modeSelected cycles through all modes when idle")
     func modeSelectedAllModes() async {
-        let store = TestStore(initialState: WatchTimerFeature.State()) {
+        var initialState = WatchTimerFeature.State()
+        initialState.isProUser = true
+        let store = TestStore(initialState: initialState) {
             WatchTimerFeature()
         }
 
@@ -557,6 +571,14 @@ struct WatchTimerFeatureTests {
 
     @Test("connectivityChanged updates isConnected to true")
     func connectivityChangedTrue() async {
+        // connectivityChanged refreshes isProUser from the shared flag: pin it.
+        let proSuite = UserDefaults(suiteName: "group.com.pepinillo.app")
+        let savedPro = proSuite?.object(forKey: "isProUser")
+        proSuite?.set(false, forKey: "isProUser")
+        defer {
+            if let savedPro { proSuite?.set(savedPro, forKey: "isProUser") }
+            else { proSuite?.removeObject(forKey: "isProUser") }
+        }
         let store = TestStore(initialState: WatchTimerFeature.State()) {
             WatchTimerFeature()
         }
@@ -584,6 +606,13 @@ struct WatchTimerFeatureTests {
     func connectivityChangedIdempotent() async {
         var state = WatchTimerFeature.State()
         state.isConnected = true
+        let proSuite = UserDefaults(suiteName: "group.com.pepinillo.app")
+        let savedPro = proSuite?.object(forKey: "isProUser")
+        proSuite?.set(false, forKey: "isProUser")
+        defer {
+            if let savedPro { proSuite?.set(savedPro, forKey: "isProUser") }
+            else { proSuite?.removeObject(forKey: "isProUser") }
+        }
 
         let store = TestStore(initialState: state) {
             WatchTimerFeature()
@@ -750,5 +779,55 @@ struct WatchTimerFeatureTests {
         await store.send(.sessionStateReceived(stale))
         #expect(store.state.displayTime == "10:00")
         #expect(store.state.lastAppliedSentAt == 500)
+    }
+
+    @Test("session sync persists pause state for complications")
+    func sessionStateSyncPersistsPause() async {
+        // persistSessionState writes raw group defaults: save + restore them.
+        let suite = UserDefaults(suiteName: "group.com.pepinillo.app")
+        let keys = [
+            WatchStatsKeys.isSessionActive, WatchStatsKeys.displayTime,
+            WatchStatsKeys.modeEmoji, WatchStatsKeys.linkedTaskTitle,
+            WatchStatsKeys.phaseName, WatchStatsKeys.progress,
+            WatchStatsKeys.pomodoroNumber, WatchStatsKeys.phaseStartDate,
+            WatchStatsKeys.phaseEndDate, WatchStatsKeys.isPaused,
+        ]
+        let saved: [String: Any?] = Dictionary(
+            uniqueKeysWithValues: keys.map { ($0, suite?.object(forKey: $0)) }
+        )
+        defer {
+            for (key, value) in saved {
+                if let value { suite?.set(value, forKey: key) }
+                else { suite?.removeObject(forKey: key) }
+            }
+        }
+        suite?.removeObject(forKey: WatchStatsKeys.isPaused)
+
+        let store = TestStore(initialState: WatchTimerFeature.State()) {
+            WatchTimerFeature()
+        }
+        store.exhaustivity = .off
+
+        let paused = WatchSessionState(
+            isActive: true,
+            isPaused: true,
+            modeID: "pomodoro",
+            displayTime: "20:00",
+            phaseLabel: "Focus"
+        )
+        await store.send(.sessionStateReceived(paused))
+
+        // The persist runs in a fire-and-forget effect: poll instead of
+        // asserting synchronously. S6 RED pre-fix: pause never reaches
+        // the complication data.
+        var sawPause = false
+        for _ in 0..<40 {
+            try? await Task.sleep(for: .milliseconds(50))
+            if suite?.bool(forKey: WatchStatsKeys.isPaused) == true {
+                sawPause = true
+                break
+            }
+        }
+        #expect(sawPause)
     }
 }
